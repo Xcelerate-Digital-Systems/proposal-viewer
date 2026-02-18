@@ -1,6 +1,13 @@
 import { Resend } from 'resend';
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+
+export function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 // Change this to your verified domain once set up in Resend
 // Until then, Resend allows sending from onboarding@resend.dev

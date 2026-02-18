@@ -1,5 +1,5 @@
 import { createServiceClient } from './supabase-server';
-import { resend, FROM_EMAIL } from './resend';
+import { getResend, FROM_EMAIL } from './resend';
 
 type EventType = 'proposal_viewed' | 'proposal_accepted' | 'comment_added' | 'comment_resolved';
 
@@ -87,7 +87,7 @@ export async function sendNotifications(payload: NotifyPayload) {
   let sent = 0;
   for (const member of toNotify) {
     try {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM_EMAIL,
         to: member.email,
         subject,
