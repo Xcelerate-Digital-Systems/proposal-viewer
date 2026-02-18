@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', client_name: '', client_email: '', description: '' });
   const [file, setFile] = useState<File | null>(null);
@@ -44,11 +45,26 @@ export default function AdminDashboard() {
 
     try {
       const filePath = `${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('proposals')
-        .upload(filePath, file, { contentType: 'application/pdf' });
+      setUploadProgress(0);
 
-      if (uploadError) throw uploadError;
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        });
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Upload failed: ${xhr.status}`));
+        });
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+        xhr.open('POST', `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/proposals/${filePath}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`);
+        xhr.setRequestHeader('Content-Type', 'application/pdf');
+        xhr.setRequestHeader('x-upsert', 'true');
+        xhr.send(file);
+      });
 
       const { error: dbError } = await supabase.from('proposals').insert({
         title: form.title,
@@ -152,13 +168,7 @@ export default function AdminDashboard() {
       <header className="border-b border-[#2a2a2a] bg-[#0f0f0f]/90 backdrop-blur-sm sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#ff6700] to-[#ff8533] flex items-center justify-center">
-              <FileText size={18} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold font-[family-name:var(--font-display)] tracking-tight text-white">Proposals</h1>
-              <p className="text-xs text-[#666]">Xcelerate Digital Systems</p>
-            </div>
+           <img src="/logo-white.svg" alt="Xcelerate Digital Systems" className="h-8" />
           </div>
           <button
             onClick={() => setShowUpload(true)}
@@ -248,12 +258,26 @@ export default function AdminDashboard() {
                     />
                   </label>
                 </div>
+                {uploading && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[#999]">Uploading...</span>
+                      <span className="text-[#ff6700] font-medium">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#ff6700] rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={uploading || !file}
                   className="w-full bg-[#ff6700] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {uploading ? 'Uploading...' : 'Create Proposal'}
+                  {uploading ? 'Creating proposal...' : 'Create Proposal'}
                 </button>
               </form>
             </div>

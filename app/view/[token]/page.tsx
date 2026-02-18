@@ -198,10 +198,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     <div className="h-screen flex flex-col bg-[#0f0f0f] overflow-hidden">
       <header className="h-14 bg-[#0f0f0f] border-b border-[#2a2a2a] flex items-center justify-between px-4 shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff6700] to-[#ff8533] flex items-center justify-center">
-            <FileText size={16} className="text-white" />
-          </div>
-          <div>
+          <img src="/logo-white.svg" alt="Xcelerate Digital Systems" className="h-7" />
+          <div className="border-l border-[#2a2a2a] pl-3">
             <h1 className="text-sm font-semibold text-white font-[family-name:var(--font-display)] truncate max-w-[300px]">
               {proposal?.title}
             </h1>
