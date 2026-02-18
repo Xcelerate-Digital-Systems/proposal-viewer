@@ -1,3 +1,4 @@
+// app/view/[token]/page.tsx
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -18,6 +19,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     setCurrentPage,
     loading,
     notFound,
+    pageEntries,
     comments,
     accepted,
     onDocumentLoadSuccess,
@@ -104,6 +106,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
         <Sidebar
           numPages={numPages}
           currentPage={currentPage}
+          pageEntries={pageEntries}
           getPageName={getPageName}
           onPageSelect={goToPage}
           accepted={accepted}

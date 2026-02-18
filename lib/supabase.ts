@@ -1,9 +1,42 @@
+// lib/supabase.ts
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export type PageNameEntry = {
+  name: string;
+  indent: number; // 0 = top level, 1 = nested child
+};
+
+/**
+ * Normalize page_names from DB into PageNameEntry[].
+ * Handles both legacy string[] and new {name, indent}[] formats.
+ */
+export function normalizePageNames(raw: unknown, count: number): PageNameEntry[] {
+  const result: PageNameEntry[] = [];
+
+  if (Array.isArray(raw)) {
+    for (let i = 0; i < count; i++) {
+      const item = raw[i];
+      if (item && typeof item === 'object' && 'name' in item) {
+        result.push({ name: item.name || `Page ${i + 1}`, indent: item.indent || 0 });
+      } else if (typeof item === 'string') {
+        result.push({ name: item, indent: 0 });
+      } else {
+        result.push({ name: `Page ${i + 1}`, indent: 0 });
+      }
+    }
+  } else {
+    for (let i = 0; i < count; i++) {
+      result.push({ name: `Page ${i + 1}`, indent: 0 });
+    }
+  }
+
+  return result.slice(0, count);
+}
 
 export type Proposal = {
   id: string;
@@ -21,7 +54,7 @@ export type Proposal = {
   accepted_at: string | null;
   declined_at: string | null;
   accepted_by_name: string | null;
-  page_names: string[];
+  page_names: PageNameEntry[] | string[];
   created_at: string;
   updated_at: string;
 };

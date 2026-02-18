@@ -1,7 +1,8 @@
+// hooks/useProposal.ts
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, Proposal, ProposalComment } from '@/lib/supabase';
+import { supabase, Proposal, ProposalComment, PageNameEntry, normalizePageNames } from '@/lib/supabase';
 
 // Fire-and-forget notification — doesn't block UI
 function notify(payload: Record<string, string | undefined>) {
@@ -21,7 +22,7 @@ export function useProposal(token: string) {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [pageNames, setPageNames] = useState<string[]>([]);
+  const [pageEntries, setPageEntries] = useState<PageNameEntry[]>([]);
   const [comments, setComments] = useState<ProposalComment[]>([]);
   const [accepted, setAccepted] = useState(false);
 
@@ -39,7 +40,8 @@ export function useProposal(token: string) {
     }
 
     setProposal(data);
-    setPageNames(data.page_names || []);
+    // Normalize page_names (handles both old string[] and new {name, indent}[] formats)
+    setPageEntries(normalizePageNames(data.page_names, 100));
     if (data.status === 'accepted') setAccepted(true);
 
     const isFirstView = !data.first_viewed_at;
@@ -81,15 +83,15 @@ export function useProposal(token: string) {
 
   const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
     setNumPages(n);
-    setPageNames((prev) => {
-      const names = [...prev];
-      while (names.length < n) names.push(`Page ${names.length + 1}`);
-      return names.slice(0, n);
+    setPageEntries((prev) => {
+      const entries = [...prev];
+      while (entries.length < n) entries.push({ name: `Page ${entries.length + 1}`, indent: 0 });
+      return entries.slice(0, n);
     });
   };
 
   const getPageName = (pageNum: number) => {
-    return pageNames[pageNum - 1] || `Page ${pageNum}`;
+    return pageEntries[pageNum - 1]?.name || `Page ${pageNum}`;
   };
 
   const refreshComments = async () => {
@@ -200,7 +202,7 @@ export function useProposal(token: string) {
     setCurrentPage,
     loading,
     notFound,
-    pageNames,
+    pageEntries,
     comments,
     accepted,
     onDocumentLoadSuccess,
