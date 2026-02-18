@@ -33,5 +33,22 @@ export type ProposalComment = {
   content: string;
   page_number: number | null;
   is_internal: boolean;
+  parent_id: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
   created_at: string;
+};
+
+export type TeamMember = {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member';
+  notify_proposal_viewed: boolean;
+  notify_proposal_accepted: boolean;
+  notify_comment_added: boolean;
+  notify_comment_resolved: boolean;
+  created_at: string;
+  updated_at: string;
 };

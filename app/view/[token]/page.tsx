@@ -24,6 +24,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     getPageName,
     acceptProposal,
     submitComment,
+    replyToComment,
+    resolveComment,
+    unresolveComment,
   } = useProposal(params.token);
 
   const [showComments, setShowComments] = useState(false);
@@ -134,6 +137,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             getPageName={getPageName}
             onGoToPage={goToPage}
             onSubmit={submitComment}
+            onReply={replyToComment}
+            onResolve={resolveComment}
+            onUnresolve={unresolveComment}
             onClose={() => setShowComments(false)}
           />
         )}

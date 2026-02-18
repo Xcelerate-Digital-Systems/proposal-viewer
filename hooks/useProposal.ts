@@ -3,6 +3,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, Proposal, ProposalComment } from '@/lib/supabase';
 
+// Fire-and-forget notification — doesn't block UI
+function notify(payload: Record<string, string | undefined>) {
+  fetch('/api/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {
+    // Silently fail — notifications are non-critical
+  });
+}
+
 export function useProposal(token: string) {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -31,9 +42,11 @@ export function useProposal(token: string) {
     setPageNames(data.page_names || []);
     if (data.status === 'accepted') setAccepted(true);
 
+    const isFirstView = !data.first_viewed_at;
+
     const now = new Date().toISOString();
     const updates: Record<string, string> = { last_viewed_at: now };
-    if (!data.first_viewed_at) updates.first_viewed_at = now;
+    if (isFirstView) updates.first_viewed_at = now;
     if (data.status === 'sent' || data.status === 'draft') updates.status = 'viewed';
 
     await supabase.from('proposals').update(updates).eq('id', data.id);
@@ -41,6 +54,11 @@ export function useProposal(token: string) {
       proposal_id: data.id,
       user_agent: navigator.userAgent,
     });
+
+    // Notify team on first view
+    if (isFirstView) {
+      notify({ event_type: 'proposal_viewed', share_token: token });
+    }
 
     const { data: signedData } = await supabase.storage
       .from('proposals')
@@ -93,17 +111,84 @@ export function useProposal(token: string) {
       accepted_by_name: name,
     }).eq('id', proposal.id);
     setAccepted(true);
+
+    // Notify team of acceptance
+    notify({ event_type: 'proposal_accepted', share_token: token });
   };
 
   const submitComment = async (authorName: string, content: string, pageNumber: number) => {
     if (!proposal) return;
-    await supabase.from('proposal_comments').insert({
+    const { data: newComment } = await supabase.from('proposal_comments').insert({
       proposal_id: proposal.id,
       author_name: authorName,
       content,
       page_number: pageNumber,
       is_internal: false,
+    }).select('id').single();
+
+    await refreshComments();
+
+    // Notify team of new comment
+    notify({
+      event_type: 'comment_added',
+      share_token: token,
+      comment_id: newComment?.id,
+      comment_author: authorName,
+      comment_content: content,
     });
+  };
+
+  const replyToComment = async (parentId: string, authorName: string, content: string) => {
+    if (!proposal) return;
+    const parent = comments.find((c) => c.id === parentId);
+    const { data: newReply } = await supabase.from('proposal_comments').insert({
+      proposal_id: proposal.id,
+      author_name: authorName,
+      content,
+      page_number: parent?.page_number || null,
+      is_internal: false,
+      parent_id: parentId,
+    }).select('id').single();
+
+    await refreshComments();
+
+    // Notify team of reply (also a comment_added event)
+    notify({
+      event_type: 'comment_added',
+      share_token: token,
+      comment_id: newReply?.id,
+      comment_author: authorName,
+      comment_content: content,
+    });
+  };
+
+  const resolveComment = async (commentId: string, resolvedBy: string) => {
+    await supabase
+      .from('proposal_comments')
+      .update({
+        resolved_at: new Date().toISOString(),
+        resolved_by: resolvedBy,
+      })
+      .eq('id', commentId);
+    await refreshComments();
+
+    // Notify team of resolution
+    notify({
+      event_type: 'comment_resolved',
+      share_token: token,
+      comment_id: commentId,
+      resolved_by: resolvedBy,
+    });
+  };
+
+  const unresolveComment = async (commentId: string) => {
+    await supabase
+      .from('proposal_comments')
+      .update({
+        resolved_at: null,
+        resolved_by: null,
+      })
+      .eq('id', commentId);
     await refreshComments();
   };
 
@@ -122,5 +207,8 @@ export function useProposal(token: string) {
     getPageName,
     acceptProposal,
     submitComment,
+    replyToComment,
+    resolveComment,
+    unresolveComment,
   };
 }

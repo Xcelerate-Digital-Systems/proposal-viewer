@@ -1,12 +1,22 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, Settings, LogOut } from 'lucide-react';
+import Link from 'next/link';
 import { supabase, Proposal } from '@/lib/supabase';
+import AuthGuard from '@/components/auth/AuthGuard';
 import UploadModal from '@/components/admin/UploadModal';
 import ProposalCard from '@/components/admin/ProposalCard';
 
 export default function AdminDashboard() {
+  return (
+    <AuthGuard>
+      {(auth) => <DashboardContent signOut={auth.signOut} memberName={auth.teamMember?.name} />}
+    </AuthGuard>
+  );
+}
+
+function DashboardContent({ signOut, memberName }: { signOut: () => Promise<void>; memberName?: string }) {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -29,13 +39,29 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-3">
             <img src="/logo-white.svg" alt="Xcelerate Digital Systems" className="h-8" />
           </div>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 bg-[#ff6700] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors"
-          >
-            <Plus size={16} />
-            New Proposal
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowUpload(true)}
+              className="flex items-center gap-2 bg-[#ff6700] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors"
+            >
+              <Plus size={16} />
+              New Proposal
+            </button>
+            <Link
+              href="/settings"
+              className="p-2.5 text-[#666] hover:text-white hover:bg-[#1a1a1a] rounded-lg transition-colors"
+              title="Settings"
+            >
+              <Settings size={18} />
+            </Link>
+            <button
+              onClick={signOut}
+              className="p-2.5 text-[#666] hover:text-white hover:bg-[#1a1a1a] rounded-lg transition-colors"
+              title={memberName ? `Sign out (${memberName})` : 'Sign out'}
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </header>
 
