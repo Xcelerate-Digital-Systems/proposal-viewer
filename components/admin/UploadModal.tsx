@@ -1,7 +1,9 @@
+// components/admin/UploadModal.tsx
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, LayoutTemplate } from 'lucide-react';
+import CreateFromTemplate from './CreateFromTemplate';
 
 interface UploadModalProps {
   onClose: () => void;
@@ -15,6 +17,7 @@ const formatSize = (bytes: number | null) => {
 };
 
 export default function UploadModal({ onClose, onSuccess }: UploadModalProps) {
+  const [tab, setTab] = useState<'upload' | 'template'>('upload');
   const [form, setForm] = useState({ title: '', client_name: '', client_email: '', description: '' });
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -31,7 +34,6 @@ export default function UploadModal({ onClose, onSuccess }: UploadModalProps) {
     try {
       const filePath = `${Date.now()}-${file.name}`;
 
-      // Use XMLHttpRequest for progress tracking
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener('progress', (ev) => {
@@ -85,98 +87,134 @@ export default function UploadModal({ onClose, onSuccess }: UploadModalProps) {
             <X size={20} />
           </button>
         </div>
-        <form onSubmit={handleUpload} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-[#999] mb-1">Title</label>
-            <input
-              type="text"
-              required
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="e.g. Website Redesign Proposal"
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+
+        {/* Tabs */}
+        <div className="flex border-b border-[#2a2a2a]">
+          <button
+            onClick={() => setTab('upload')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+              tab === 'upload'
+                ? 'text-[#ff6700] border-b-2 border-[#ff6700] -mb-px'
+                : 'text-[#666] hover:text-white'
+            }`}
+          >
+            <Upload size={15} />
+            Upload PDF
+          </button>
+          <button
+            onClick={() => setTab('template')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+              tab === 'template'
+                ? 'text-[#ff6700] border-b-2 border-[#ff6700] -mb-px'
+                : 'text-[#666] hover:text-white'
+            }`}
+          >
+            <LayoutTemplate size={15} />
+            From Template
+          </button>
+        </div>
+
+        {tab === 'upload' ? (
+          <form onSubmit={handleUpload} className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#999] mb-1">Client Name</label>
+              <label className="block text-sm font-medium text-[#999] mb-1">Title</label>
               <input
                 type="text"
                 required
-                value={form.client_name}
-                onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-                placeholder="John Smith"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="e.g. Website Redesign Proposal"
                 className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-[#999] mb-1">Client Email</label>
-              <input
-                type="email"
-                value={form.client_email}
-                onChange={(e) => setForm({ ...form, client_email: e.target.value })}
-                placeholder="john@example.com"
-                className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#999] mb-1">Description (optional)</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={2}
-              placeholder="Brief note about this proposal..."
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 resize-none placeholder:text-[#555]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#999] mb-1">PDF File</label>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#2a2a2a] rounded-xl cursor-pointer hover:border-[#ff6700]/40 hover:bg-[#ff6700]/5 transition-colors">
-              {file ? (
-                <div className="flex items-center gap-2 text-sm text-[#999]">
-                  <FileText size={20} className="text-[#ff6700]" />
-                  <span className="font-medium text-white">{file.name}</span>
-                  <span className="text-[#666]">({formatSize(file.size)})</span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Upload size={24} className="text-[#444]" />
-                  <span className="text-sm text-[#666]">Click to upload PDF</span>
-                </div>
-              )}
-              <input
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-            </label>
-          </div>
-
-          {uploading && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#999]">Uploading...</span>
-                <span className="text-[#ff6700] font-medium">{uploadProgress}%</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-[#999] mb-1">Client Name</label>
+                <input
+                  type="text"
+                  required
+                  value={form.client_name}
+                  onChange={(e) => setForm({ ...form, client_name: e.target.value })}
+                  placeholder="John Smith"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
+                />
               </div>
-              <div className="w-full h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#ff6700] rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${uploadProgress}%` }}
+              <div>
+                <label className="block text-sm font-medium text-[#999] mb-1">Client Email</label>
+                <input
+                  type="email"
+                  value={form.client_email}
+                  onChange={(e) => setForm({ ...form, client_email: e.target.value })}
+                  placeholder="john@example.com"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
                 />
               </div>
             </div>
-          )}
+            <div>
+              <label className="block text-sm font-medium text-[#999] mb-1">Description (optional)</label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={2}
+                placeholder="Brief note about this proposal..."
+                className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 resize-none placeholder:text-[#555]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#999] mb-1">PDF File</label>
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#2a2a2a] rounded-xl cursor-pointer hover:border-[#ff6700]/40 hover:bg-[#ff6700]/5 transition-colors">
+                {file ? (
+                  <div className="flex items-center gap-2 text-sm text-[#999]">
+                    <FileText size={20} className="text-[#ff6700]" />
+                    <span className="font-medium text-white">{file.name}</span>
+                    <span className="text-[#666]">({formatSize(file.size)})</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload size={24} className="text-[#444]" />
+                    <span className="text-sm text-[#666]">Click to upload PDF</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                />
+              </label>
+            </div>
 
-          <button
-            type="submit"
-            disabled={uploading || !file}
-            className="w-full bg-[#ff6700] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {uploading ? 'Creating proposal...' : 'Create Proposal'}
-          </button>
-        </form>
+            {uploading && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#999]">Uploading...</span>
+                  <span className="text-[#ff6700] font-medium">{uploadProgress}%</span>
+                </div>
+                <div className="w-full h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#ff6700] rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={uploading || !file}
+              className="w-full bg-[#ff6700] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {uploading ? 'Creating proposal...' : 'Create Proposal'}
+            </button>
+          </form>
+        ) : (
+          <div className="p-6">
+            <CreateFromTemplate
+              onBack={() => setTab('upload')}
+              onSuccess={() => { onSuccess(); onClose(); }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

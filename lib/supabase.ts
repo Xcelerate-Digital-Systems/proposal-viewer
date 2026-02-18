@@ -55,6 +55,10 @@ export type Proposal = {
   declined_at: string | null;
   accepted_by_name: string | null;
   page_names: PageNameEntry[] | string[];
+  cover_enabled: boolean;
+  cover_image_path: string | null;
+  cover_subtitle: string | null;
+  cover_button_text: string;
   created_at: string;
   updated_at: string;
 };
@@ -69,6 +73,24 @@ export type ProposalComment = {
   parent_id: string | null;
   resolved_at: string | null;
   resolved_by: string | null;
+  created_at: string;
+};
+
+export type ProposalTemplate = {
+  id: string;
+  name: string;
+  description: string | null;
+  page_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TemplatePage = {
+  id: string;
+  template_id: string;
+  page_number: number;
+  file_path: string;
+  label: string;
   created_at: string;
 };
 

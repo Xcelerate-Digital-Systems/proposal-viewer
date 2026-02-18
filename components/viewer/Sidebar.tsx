@@ -1,7 +1,7 @@
 // components/viewer/Sidebar.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle2, MessageSquare, ChevronRight } from 'lucide-react';
 import { PageNameEntry } from '@/lib/supabase';
 
@@ -34,7 +34,6 @@ function buildNavTree(entries: PageNameEntry[]): NavItem[] {
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
     if (entry.indent > 0 && tree.length > 0) {
-      // Nest under last top-level item
       tree[tree.length - 1].children.push({ pageNum: i + 1, name: entry.name });
     } else {
       tree.push({ pageNum: i + 1, name: entry.name, children: [] });
@@ -58,31 +57,47 @@ export default function Sidebar({
 }: SidebarProps) {
   const navTree = buildNavTree(pageEntries.slice(0, numPages));
 
-  // Track which parent groups are expanded — default all open
-  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  // Track which parent group is expanded — null means all collapsed (accordion style)
+  const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
+
+  // Auto-expand the parent group that contains the current page
+  useEffect(() => {
+    for (const item of navTree) {
+      if (item.children.length > 0) {
+        if (item.pageNum === currentPage || item.children.some((c) => c.pageNum === currentPage)) {
+          setExpandedGroup(item.pageNum);
+          return;
+        }
+      }
+    }
+  }, [currentPage, numPages, pageEntries.length]);
 
   const toggleGroup = (pageNum: number) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(pageNum)) {
-        next.delete(pageNum);
-      } else {
-        next.add(pageNum);
-      }
-      return next;
-    });
+    setExpandedGroup((prev) => (prev === pageNum ? null : pageNum));
   };
 
-  // Check if the current page is within a group's children
+  const handleParentClick = (item: NavItem) => {
+    if (item.children.length > 0) {
+      setExpandedGroup((prev) => (prev === item.pageNum ? null : item.pageNum));
+    }
+    onPageSelect(item.pageNum);
+  };
+
   const isChildActive = (item: NavItem) =>
     item.children.some((c) => c.pageNum === currentPage);
 
   return (
     <div className="w-64 bg-[#141414] border-r border-[#2a2a2a] flex flex-col shrink-0">
+      {/* Logo */}
+      <div className="px-5 py-4 border-b border-[#2a2a2a] shrink-0">
+        <img src="/logo-white.svg" alt="Xcelerate Digital Systems" className="h-6" />
+      </div>
+
+      {/* Navigation */}
       <div className="flex-1 overflow-y-auto tab-sidebar pt-2">
         {navTree.map((item) => {
           const hasChildren = item.children.length > 0;
-          const isExpanded = !collapsed.has(item.pageNum);
+          const isExpanded = expandedGroup === item.pageNum;
           const isParentActive = currentPage === item.pageNum;
           const childActive = isChildActive(item);
 
@@ -102,7 +117,7 @@ export default function Sidebar({
                   </button>
                 )}
                 <button
-                  onClick={() => onPageSelect(item.pageNum)}
+                  onClick={() => handleParentClick(item)}
                   className={`flex-1 text-left py-2.5 text-sm transition-colors truncate ${
                     hasChildren ? 'pr-5' : 'px-5'
                   } ${
@@ -140,6 +155,7 @@ export default function Sidebar({
         })}
       </div>
 
+      {/* Bottom actions */}
       <div className="border-t border-[#2a2a2a] p-3 space-y-2">
         {accepted ? (
           <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/30">
@@ -168,7 +184,9 @@ export default function Sidebar({
           {commentCount > 0 && (
             <span
               className={`text-xs w-5 h-5 rounded-full flex items-center justify-center ${
-                showComments ? 'bg-[#ff6700]/20 text-[#ff6700]' : 'bg-[#ff6700] text-white'
+                showComments
+                  ? 'bg-[#ff6700]/20 text-[#ff6700]'
+                  : 'bg-[#2a2a2a] text-[#888]'
               }`}
             >
               {commentCount}

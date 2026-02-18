@@ -1,7 +1,8 @@
+// app/page.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText, Settings, LogOut } from 'lucide-react';
+import { Plus, FileText, Settings, LogOut, LayoutTemplate } from 'lucide-react';
 import Link from 'next/link';
 import { supabase, Proposal } from '@/lib/supabase';
 import AuthGuard from '@/components/auth/AuthGuard';
@@ -47,6 +48,13 @@ function DashboardContent({ signOut, memberName }: { signOut: () => Promise<void
               <Plus size={16} />
               New Proposal
             </button>
+            <Link
+              href="/templates"
+              className="p-2.5 text-[#666] hover:text-white hover:bg-[#1a1a1a] rounded-lg transition-colors"
+              title="Templates"
+            >
+              <LayoutTemplate size={18} />
+            </Link>
             <Link
               href="/settings"
               className="p-2.5 text-[#666] hover:text-white hover:bg-[#1a1a1a] rounded-lg transition-colors"

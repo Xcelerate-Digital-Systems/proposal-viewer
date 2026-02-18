@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
 import { useProposal } from '@/hooks/useProposal';
+import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
 import PdfViewer from '@/components/viewer/PdfViewer';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
@@ -33,6 +34,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
   const [showComments, setShowComments] = useState(false);
   const [showAccept, setShowAccept] = useState(false);
+  const [showCover, setShowCover] = useState(true);
   const mainRef = useRef<HTMLDivElement>(null);
 
   const goToPage = useCallback((page: number) => {
@@ -47,8 +49,10 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
   // Keyboard navigation: Arrow keys + Space to navigate slides
   useEffect(() => {
+    // Don't handle keyboard on cover page
+    if (showCover) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't navigate if user is typing in an input/textarea
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
@@ -69,7 +73,17 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, numPages, goToPage]);
+  }, [currentPage, numPages, goToPage, showCover]);
+
+  // Update browser tab title with proposal info
+  useEffect(() => {
+    if (proposal) {
+      document.title = `Proposal For ${proposal.client_name}`;
+    }
+    return () => {
+      document.title = 'Proposal Viewer';
+    };
+  }, [proposal]);
 
   if (loading) {
     return (
@@ -96,57 +110,56 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     );
   }
 
-  return (
-    <div className="h-screen flex flex-col bg-[#0f0f0f] overflow-hidden">
-      <header className="h-12 bg-[#141414] border-b border-[#2a2a2a] flex items-center px-5 shrink-0 z-20">
-        <img src="/logo-white.svg" alt="Xcelerate Digital Systems" className="h-6" />
-      </header>
+  // Show cover page if enabled and not dismissed
+  if (showCover && proposal?.cover_enabled) {
+    return <CoverPage proposal={proposal} onStart={() => setShowCover(false)} />;
+  }
 
-      <div className="flex flex-1 min-h-0">
-        <Sidebar
-          numPages={numPages}
+  return (
+    <div className="h-screen flex bg-[#0f0f0f] overflow-hidden">
+      <Sidebar
+        numPages={numPages}
+        currentPage={currentPage}
+        pageEntries={pageEntries}
+        getPageName={getPageName}
+        onPageSelect={goToPage}
+        accepted={accepted}
+        onAcceptClick={() => setShowAccept(true)}
+        showComments={showComments}
+        onToggleComments={() => setShowComments(!showComments)}
+        commentCount={comments.length}
+      />
+
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        <PdfViewer
+          pdfUrl={pdfUrl}
           currentPage={currentPage}
-          pageEntries={pageEntries}
-          getPageName={getPageName}
-          onPageSelect={goToPage}
-          accepted={accepted}
-          onAcceptClick={() => setShowAccept(true)}
-          showComments={showComments}
-          onToggleComments={() => setShowComments(!showComments)}
-          commentCount={comments.length}
+          onLoadSuccess={onDocumentLoadSuccess}
+          scrollRef={mainRef}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 relative">
-          <PdfViewer
-            pdfUrl={pdfUrl}
-            currentPage={currentPage}
-            onLoadSuccess={onDocumentLoadSuccess}
-            scrollRef={mainRef}
-          />
-
-          <FloatingToolbar
-            pdfUrl={pdfUrl}
-            title={proposal?.title || ''}
-            currentPage={currentPage}
-            numPages={numPages}
-            onPrevPage={() => goToPage(Math.max(1, currentPage - 1))}
-          />
-        </div>
-
-        {showComments && (
-          <CommentsPanel
-            comments={comments}
-            currentPage={currentPage}
-            getPageName={getPageName}
-            onGoToPage={goToPage}
-            onSubmit={submitComment}
-            onReply={replyToComment}
-            onResolve={resolveComment}
-            onUnresolve={unresolveComment}
-            onClose={() => setShowComments(false)}
-          />
-        )}
+        <FloatingToolbar
+          pdfUrl={pdfUrl}
+          title={proposal?.title || ''}
+          currentPage={currentPage}
+          numPages={numPages}
+          onPrevPage={() => goToPage(Math.max(1, currentPage - 1))}
+        />
       </div>
+
+      {showComments && (
+        <CommentsPanel
+          comments={comments}
+          currentPage={currentPage}
+          getPageName={getPageName}
+          onGoToPage={goToPage}
+          onSubmit={submitComment}
+          onReply={replyToComment}
+          onResolve={resolveComment}
+          onUnresolve={unresolveComment}
+          onClose={() => setShowComments(false)}
+        />
+      )}
 
       {showAccept && (
         <AcceptModal

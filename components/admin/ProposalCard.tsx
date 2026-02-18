@@ -1,12 +1,14 @@
+// components/admin/ProposalCard.tsx
 'use client';
 
 import { useState } from 'react';
 import {
   Link2, Eye, CheckCircle2, Clock, FileText, Copy, Check,
-  Trash2, X, Pencil
+  Trash2, X, Pencil, Image
 } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 import PageEditor from './PageEditor';
+import CoverEditor from './CoverEditor';
 
 interface ProposalCardProps {
   proposal: Proposal;
@@ -35,6 +37,7 @@ const formatDate = (date: string | null) => {
 export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardProps) {
   const [copiedId, setCopiedId] = useState(false);
   const [editingPages, setEditingPages] = useState(false);
+  const [editingCover, setEditingCover] = useState(false);
 
   const sc = statusConfig[p.status];
 
@@ -105,7 +108,14 @@ export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardPro
               </button>
             )}
             <button
-              onClick={() => setEditingPages(!editingPages)}
+              onClick={() => { setEditingCover(!editingCover); setEditingPages(false); }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white hover:bg-[#2a2a2a] transition-colors"
+            >
+              <Image size={14} />
+              Cover
+            </button>
+            <button
+              onClick={() => { setEditingPages(!editingPages); setEditingCover(false); }}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white hover:bg-[#2a2a2a] transition-colors"
             >
               <Pencil size={14} />
@@ -128,6 +138,14 @@ export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardPro
           </div>
         </div>
       </div>
+
+      {editingCover && (
+        <CoverEditor
+          proposal={p}
+          onSave={() => { setEditingCover(false); onRefresh(); }}
+          onCancel={() => setEditingCover(false)}
+        />
+      )}
 
       {editingPages && (
         <PageEditor
