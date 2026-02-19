@@ -10,9 +10,50 @@ function notify(payload: Record<string, string | undefined>) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-  }).catch(() => {
-    // Silently fail — notifications are non-critical
-  });
+  }).catch(() => {});
+}
+
+export type CompanyBranding = {
+  name: string;
+  logo_url: string | null;
+  accent_color: string;
+  website: string | null;
+  bg_primary: string;
+  bg_secondary: string;
+};
+
+const DEFAULT_BRANDING: CompanyBranding = {
+  name: '',
+  logo_url: null,
+  accent_color: '#ff6700',
+  website: null,
+  bg_primary: '#0f0f0f',
+  bg_secondary: '#141414',
+};
+
+/**
+ * Derive a border color by lightening the secondary bg.
+ * Adds ~16 to each RGB channel, clamped at 255.
+ */
+export function deriveBorderColor(bgSecondary: string): string {
+  const hex = bgSecondary.replace('#', '');
+  const r = Math.min(255, parseInt(hex.slice(0, 2), 16) + 22);
+  const g = Math.min(255, parseInt(hex.slice(2, 4), 16) + 22);
+  const b = Math.min(255, parseInt(hex.slice(4, 6), 16) + 22);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+/**
+ * Derive a surface/card color between primary and secondary.
+ * Used for elevated elements like cards and inputs.
+ */
+export function deriveSurfaceColor(bgPrimary: string, bgSecondary: string): string {
+  const p = bgPrimary.replace('#', '');
+  const s = bgSecondary.replace('#', '');
+  const r = Math.round((parseInt(p.slice(0, 2), 16) + parseInt(s.slice(0, 2), 16)) / 2 + 4);
+  const g = Math.round((parseInt(p.slice(2, 4), 16) + parseInt(s.slice(2, 4), 16)) / 2 + 4);
+  const b = Math.round((parseInt(p.slice(4, 6), 16) + parseInt(s.slice(4, 6), 16)) / 2 + 4);
+  return `#${Math.min(255, r).toString(16).padStart(2, '0')}${Math.min(255, g).toString(16).padStart(2, '0')}${Math.min(255, b).toString(16).padStart(2, '0')}`;
 }
 
 export function useProposal(token: string) {
@@ -25,6 +66,7 @@ export function useProposal(token: string) {
   const [pageEntries, setPageEntries] = useState<PageNameEntry[]>([]);
   const [comments, setComments] = useState<ProposalComment[]>([]);
   const [accepted, setAccepted] = useState(false);
+  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
 
   const fetchProposal = useCallback(async () => {
     const { data, error } = await supabase
@@ -40,9 +82,19 @@ export function useProposal(token: string) {
     }
 
     setProposal(data);
-    // Normalize page_names (handles both old string[] and new {name, indent}[] formats)
     setPageEntries(normalizePageNames(data.page_names, 100));
     if (data.status === 'accepted') setAccepted(true);
+
+    // Fetch company branding
+    try {
+      const brandingRes = await fetch(`/api/company/branding?company_id=${data.company_id}`);
+      if (brandingRes.ok) {
+        const brandingData = await brandingRes.json();
+        setBranding(brandingData);
+      }
+    } catch {
+      // Non-critical — fall back to defaults
+    }
 
     const isFirstView = !data.first_viewed_at;
 
@@ -58,7 +110,6 @@ export function useProposal(token: string) {
       company_id: data.company_id,
     });
 
-    // Notify team on first view
     if (isFirstView) {
       notify({ event_type: 'proposal_viewed', share_token: token });
     }
@@ -114,8 +165,6 @@ export function useProposal(token: string) {
       accepted_by_name: name,
     }).eq('id', proposal.id);
     setAccepted(true);
-
-    // Notify team of acceptance
     notify({ event_type: 'proposal_accepted', share_token: token });
   };
 
@@ -131,8 +180,6 @@ export function useProposal(token: string) {
     }).select('id').single();
 
     await refreshComments();
-
-    // Notify team of new comment
     notify({
       event_type: 'comment_added',
       share_token: token,
@@ -156,8 +203,6 @@ export function useProposal(token: string) {
     }).select('id').single();
 
     await refreshComments();
-
-    // Notify team of reply (also a comment_added event)
     notify({
       event_type: 'comment_added',
       share_token: token,
@@ -176,8 +221,6 @@ export function useProposal(token: string) {
       })
       .eq('id', commentId);
     await refreshComments();
-
-    // Notify team of resolution
     notify({
       event_type: 'comment_resolved',
       share_token: token,
@@ -208,6 +251,7 @@ export function useProposal(token: string) {
     pageEntries,
     comments,
     accepted,
+    branding,
     onDocumentLoadSuccess,
     getPageName,
     acceptProposal,

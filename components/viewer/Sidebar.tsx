@@ -2,8 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle2, MessageSquare, ChevronRight } from 'lucide-react';
+import { CheckCircle2, MessageSquare, ChevronRight, Building2 } from 'lucide-react';
 import { PageNameEntry } from '@/lib/supabase';
+import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 
 interface SidebarProps {
   numPages: number;
@@ -16,12 +17,9 @@ interface SidebarProps {
   showComments: boolean;
   onToggleComments: () => void;
   commentCount: number;
+  branding: CompanyBranding;
 }
 
-/**
- * Build a tree structure from flat PageNameEntry[].
- * A page with indent=1 is nested under the most recent indent=0 page above it.
- */
 interface NavItem {
   pageNum: number;
   name: string;
@@ -30,7 +28,6 @@ interface NavItem {
 
 function buildNavTree(entries: PageNameEntry[]): NavItem[] {
   const tree: NavItem[] = [];
-
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
     if (entry.indent > 0 && tree.length > 0) {
@@ -39,7 +36,6 @@ function buildNavTree(entries: PageNameEntry[]): NavItem[] {
       tree.push({ pageNum: i + 1, name: entry.name, children: [] });
     }
   }
-
   return tree;
 }
 
@@ -54,13 +50,15 @@ export default function Sidebar({
   showComments,
   onToggleComments,
   commentCount,
+  branding,
 }: SidebarProps) {
   const navTree = buildNavTree(pageEntries.slice(0, numPages));
-
-  // Track which parent group is expanded — null means all collapsed (accordion style)
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
 
-  // Auto-expand the parent group that contains the current page
+  const accent = branding.accent_color || '#ff6700';
+  const bgSecondary = branding.bg_secondary || '#141414';
+  const border = deriveBorderColor(bgSecondary);
+
   useEffect(() => {
     for (const item of navTree) {
       if (item.children.length > 0) {
@@ -71,10 +69,6 @@ export default function Sidebar({
       }
     }
   }, [currentPage, numPages, pageEntries.length]);
-
-  const toggleGroup = (pageNum: number) => {
-    setExpandedGroup((prev) => (prev === pageNum ? null : pageNum));
-  };
 
   const handleParentClick = (item: NavItem) => {
     if (item.children.length > 0) {
@@ -87,10 +81,19 @@ export default function Sidebar({
     item.children.some((c) => c.pageNum === currentPage);
 
   return (
-    <div className="w-64 bg-[#141414] border-r border-[#2a2a2a] flex flex-col shrink-0">
-      {/* Logo */}
-      <div className="px-5 py-4 border-b border-[#2a2a2a] shrink-0">
-        <img src="/logo-white.svg" alt="Xcelerate Digital Systems" className="h-6" />
+    <div className="w-64 flex flex-col shrink-0 border-r" style={{ backgroundColor: bgSecondary, borderColor: border }}>
+      {/* Company logo / name */}
+      <div className="px-5 py-4 shrink-0 border-b" style={{ borderColor: border }}>
+        {branding.logo_url ? (
+          <img src={branding.logo_url} alt={branding.name} className="h-6 max-w-[180px] object-contain" />
+        ) : branding.name ? (
+          <div className="flex items-center gap-2">
+            <Building2 size={16} className="text-[#555]" />
+            <span className="text-white text-sm font-medium truncate">{branding.name}</span>
+          </div>
+        ) : (
+          <img src="/logo-white.svg" alt="Logo" className="h-6" />
+        )}
       </div>
 
       {/* Navigation */}
@@ -103,17 +106,13 @@ export default function Sidebar({
 
           return (
             <div key={item.pageNum}>
-              {/* Parent / top-level item */}
               <div className="flex items-center">
                 {hasChildren && (
                   <button
-                    onClick={() => toggleGroup(item.pageNum)}
+                    onClick={() => setExpandedGroup((prev) => (prev === item.pageNum ? null : item.pageNum))}
                     className="pl-3 pr-1 py-2.5 text-[#555] hover:text-[#999] transition-colors"
                   >
-                    <ChevronRight
-                      size={13}
-                      className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                    />
+                    <ChevronRight size={13} className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   </button>
                 )}
                 <button
@@ -121,10 +120,8 @@ export default function Sidebar({
                   className={`flex-1 text-left py-2.5 text-sm transition-colors truncate ${
                     hasChildren ? 'pr-5' : 'px-5'
                   } ${
-                    isParentActive
-                      ? 'text-white font-semibold'
-                      : childActive && !isExpanded
-                      ? 'text-[#ccc] font-medium'
+                    isParentActive ? 'text-white font-semibold'
+                      : childActive && !isExpanded ? 'text-[#ccc] font-medium'
                       : 'text-[#888] hover:text-white'
                   }`}
                 >
@@ -132,7 +129,6 @@ export default function Sidebar({
                 </button>
               </div>
 
-              {/* Children */}
               {hasChildren && isExpanded && (
                 <div>
                   {item.children.map((child) => (
@@ -140,9 +136,7 @@ export default function Sidebar({
                       key={child.pageNum}
                       onClick={() => onPageSelect(child.pageNum)}
                       className={`w-full text-left pl-10 pr-5 py-2 text-sm transition-colors truncate ${
-                        currentPage === child.pageNum
-                          ? 'text-white font-semibold'
-                          : 'text-[#666] hover:text-white'
+                        currentPage === child.pageNum ? 'text-white font-semibold' : 'text-[#666] hover:text-white'
                       }`}
                     >
                       {child.name}
@@ -156,7 +150,7 @@ export default function Sidebar({
       </div>
 
       {/* Bottom actions */}
-      <div className="border-t border-[#2a2a2a] p-3 space-y-2">
+      <div className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
         {accepted ? (
           <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/30">
             <CheckCircle2 size={15} />
@@ -165,7 +159,8 @@ export default function Sidebar({
         ) : (
           <button
             onClick={onAcceptClick}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold bg-[#ff6700] text-white hover:bg-[#e85d00] transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: accent }}
           >
             <CheckCircle2 size={15} />
             Accept Proposal
@@ -173,21 +168,21 @@ export default function Sidebar({
         )}
         <button
           onClick={onToggleComments}
-          className={`w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border ${
-            showComments
-              ? 'bg-[#ff6700]/10 border-[#ff6700]/30 text-[#ff6700]'
-              : 'bg-[#1a1a1a] border-[#2a2a2a] text-[#888] hover:text-white hover:border-[#444]'
-          }`}
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border"
+          style={showComments
+            ? { backgroundColor: `${accent}18`, borderColor: `${accent}40`, color: accent }
+            : { backgroundColor: `${bgSecondary}`, borderColor: border, color: '#888' }
+          }
         >
           <MessageSquare size={15} />
           Comments
           {commentCount > 0 && (
             <span
-              className={`text-xs w-5 h-5 rounded-full flex items-center justify-center ${
-                showComments
-                  ? 'bg-[#ff6700]/20 text-[#ff6700]'
-                  : 'bg-[#2a2a2a] text-[#888]'
-              }`}
+              className="text-xs w-5 h-5 rounded-full flex items-center justify-center"
+              style={showComments
+                ? { backgroundColor: `${accent}30`, color: accent }
+                : { backgroundColor: border, color: '#888' }
+              }
             >
               {commentCount}
             </span>

@@ -2,14 +2,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Building2 } from 'lucide-react';
 import { Proposal, supabase } from '@/lib/supabase';
+import { CompanyBranding } from '@/hooks/useProposal';
 
 interface CoverPageProps {
   proposal: Proposal;
+  branding: CompanyBranding;
   onStart: () => void;
 }
 
-export default function CoverPage({ proposal, onStart }: CoverPageProps) {
+export default function CoverPage({ proposal, branding, onStart }: CoverPageProps) {
   const [bgUrl, setBgUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -24,7 +27,6 @@ export default function CoverPage({ proposal, onStart }: CoverPageProps) {
     }
   }, [proposal.cover_image_path]);
 
-  // Fade in once ready
   useEffect(() => {
     const timer = setTimeout(() => setLoaded(true), 100);
     return () => clearTimeout(timer);
@@ -32,6 +34,7 @@ export default function CoverPage({ proposal, onStart }: CoverPageProps) {
 
   const subtitle = proposal.cover_subtitle || `Prepared for ${proposal.client_name}`;
   const buttonText = proposal.cover_button_text || 'START READING PROPOSAL';
+  const accent = branding.accent_color || '#ff6700';
 
   return (
     <div
@@ -50,9 +53,22 @@ export default function CoverPage({ proposal, onStart }: CoverPageProps) {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col justify-between h-full px-10 py-10 md:px-16 md:py-14">
-        {/* Logo */}
-        <div>
-          <img src="/logo-white.svg" alt="Xcelerate Digital Systems" className="h-7 md:h-8 opacity-90" />
+        {/* Company logo / name */}
+        <div className="flex items-center gap-3">
+          {branding.logo_url ? (
+            <img
+              src={branding.logo_url}
+              alt={branding.name}
+              className="h-8 md:h-10 max-w-[200px] object-contain"
+            />
+          ) : branding.name ? (
+            <div className="flex items-center gap-2">
+              <Building2 size={20} className="text-white/70" />
+              <span className="text-white/90 text-sm md:text-base font-medium">{branding.name}</span>
+            </div>
+          ) : (
+            <img src="/logo-white.svg" alt="Logo" className="h-7 md:h-8 opacity-90" />
+          )}
         </div>
 
         {/* Title area */}
@@ -65,7 +81,10 @@ export default function CoverPage({ proposal, onStart }: CoverPageProps) {
           </p>
           <button
             onClick={onStart}
-            className="inline-flex items-center px-8 py-3.5 bg-white text-[#0f0f0f] text-sm font-semibold tracking-wider uppercase rounded-sm hover:bg-white/90 transition-colors"
+            className="inline-flex items-center px-8 py-3.5 text-sm font-semibold tracking-wider uppercase rounded-sm transition-colors"
+            style={{ backgroundColor: accent, color: '#fff' }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
           >
             {buttonText}
           </button>

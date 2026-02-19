@@ -20,7 +20,6 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
@@ -30,7 +29,6 @@ export function useAuth() {
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
@@ -56,16 +54,20 @@ export function useAuth() {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string, inviteToken?: string) => {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { error };
 
-    // Create team_member row via API (uses service role to bypass RLS)
     if (data.user) {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: data.user.id, name, email }),
+        body: JSON.stringify({
+          user_id: data.user.id,
+          name,
+          email,
+          invite_token: inviteToken || undefined,
+        }),
       });
       const result = await res.json();
       if (result.error) return { error: { message: result.error } };
