@@ -11,11 +11,12 @@ import { supabase, ProposalTemplate, TemplatePage } from '@/lib/supabase';
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface CreateFromTemplateProps {
+  companyId: string;
   onBack: () => void;
   onSuccess: () => void;
 }
 
-export default function CreateFromTemplate({ onBack, onSuccess }: CreateFromTemplateProps) {
+export default function CreateFromTemplate({ companyId, onBack, onSuccess }: CreateFromTemplateProps) {
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ProposalTemplate | null>(null);
   const [pages, setPages] = useState<TemplatePage[]>([]);
@@ -141,6 +142,7 @@ export default function CreateFromTemplate({ onBack, onSuccess }: CreateFromTemp
         share_token: shareToken,
         status: 'draft',
         page_names: pageNames,
+        company_id: companyId,
       });
 
       if (insertError) throw new Error('Failed to create proposal');

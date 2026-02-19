@@ -1,3 +1,4 @@
+// hooks/useAuth.ts
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -97,6 +98,7 @@ export function useAuth() {
   return {
     session,
     teamMember,
+    companyId: teamMember?.company_id ?? null,
     loading,
     signInWithPassword,
     signInWithMagicLink,

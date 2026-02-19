@@ -211,7 +211,7 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
           )}
 
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" />
 
           {/* Preview content */}
           <div className="relative z-10 flex flex-col justify-between h-full p-5" style={{ minHeight: 280 }}>

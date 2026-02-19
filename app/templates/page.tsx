@@ -6,6 +6,8 @@ import { Plus, FileText, ArrowLeft, Trash2, Loader2, Upload } from 'lucide-react
 import Link from 'next/link';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import AuthGuard from '@/components/auth/AuthGuard';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
 import TemplateUploadModal from '@/components/admin/TemplateUploadModal';
 import TemplateDetail from '@/components/admin/TemplateDetail';
 
@@ -18,6 +20,8 @@ export default function TemplatesPage() {
 }
 
 function TemplatesContent({ signOut }: { signOut: () => Promise<void> }) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -34,8 +38,14 @@ function TemplatesContent({ signOut }: { signOut: () => Promise<void> }) {
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
-  const deleteTemplate = async (id: string) => {
-    if (!confirm('Delete this template and all its pages? This cannot be undone.')) return;
+  const deleteTemplate = async (id: string, name: string) => {
+    const ok = await confirm({
+      title: 'Delete Template',
+      message: `Delete "${name}" and all its pages? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     // Delete storage files
     const { data: pages } = await supabase
       .from('template_pages')
@@ -46,6 +56,7 @@ function TemplatesContent({ signOut }: { signOut: () => Promise<void> }) {
     }
     await supabase.from('proposal_templates').delete().eq('id', id);
     if (selectedId === id) setSelectedId(null);
+    toast.success('Template deleted');
     fetchTemplates();
   };
 
@@ -144,7 +155,7 @@ function TemplatesContent({ signOut }: { signOut: () => Promise<void> }) {
                       Manage Pages
                     </button>
                     <button
-                      onClick={() => deleteTemplate(t.id)}
+                      onClick={() => deleteTemplate(t.id, t.name)}
                       className="p-2 rounded-lg text-[#555] hover:text-red-400 hover:bg-red-900/20 transition-colors"
                     >
                       <Trash2 size={16} />

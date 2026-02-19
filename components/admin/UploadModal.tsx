@@ -3,9 +3,11 @@
 
 import { useState } from 'react';
 import { Upload, FileText, X, LayoutTemplate } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 import CreateFromTemplate from './CreateFromTemplate';
 
 interface UploadModalProps {
+  companyId: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -16,7 +18,8 @@ const formatSize = (bytes: number | null) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export default function UploadModal({ onClose, onSuccess }: UploadModalProps) {
+export default function UploadModal({ companyId, onClose, onSuccess }: UploadModalProps) {
+  const toast = useToast();
   const [tab, setTab] = useState<'upload' | 'template'>('upload');
   const [form, setForm] = useState({ title: '', client_name: '', client_email: '', description: '' });
   const [file, setFile] = useState<File | null>(null);
@@ -62,6 +65,7 @@ export default function UploadModal({ onClose, onSuccess }: UploadModalProps) {
         file_size_bytes: file.size,
         status: 'draft',
         page_names: [],
+        company_id: companyId,
       });
 
       if (dbError) throw dbError;
@@ -70,7 +74,7 @@ export default function UploadModal({ onClose, onSuccess }: UploadModalProps) {
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Upload failed. Check console for details.');
+      toast.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -210,6 +214,7 @@ export default function UploadModal({ onClose, onSuccess }: UploadModalProps) {
         ) : (
           <div className="p-6">
             <CreateFromTemplate
+              companyId={companyId}
               onBack={() => setTab('upload')}
               onSuccess={() => { onSuccess(); onClose(); }}
             />

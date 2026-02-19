@@ -1,3 +1,4 @@
+// lib/notifications.ts
 import { createServiceClient } from './supabase-server';
 import { getResend, FROM_EMAIL } from './resend';
 
@@ -24,10 +25,10 @@ export async function sendNotifications(payload: NotifyPayload) {
   const supabase = createServiceClient();
   const { event_type, share_token, comment_id, comment_author, comment_content, resolved_by } = payload;
 
-  // 1. Look up the proposal by share_token
+  // 1. Look up the proposal by share_token (include company_id)
   const { data: proposal, error: proposalError } = await supabase
     .from('proposals')
-    .select('id, title, client_name, share_token')
+    .select('id, title, client_name, share_token, company_id')
     .eq('share_token', share_token)
     .single();
 
@@ -35,11 +36,12 @@ export async function sendNotifications(payload: NotifyPayload) {
     return { error: 'Proposal not found' };
   }
 
-  // 2. Find team members who have this notification enabled
+  // 2. Find team members in the same company who have this notification enabled
   const prefColumn = PREF_MAP[event_type];
   const { data: members } = await supabase
     .from('team_members')
     .select('id, name, email')
+    .eq('company_id', proposal.company_id)
     .eq(prefColumn, true);
 
   if (!members || members.length === 0) {
@@ -99,6 +101,7 @@ export async function sendNotifications(payload: NotifyPayload) {
         team_member_id: member.id,
         event_type,
         event_ref: eventRef,
+        company_id: proposal.company_id,
       });
 
       sent++;

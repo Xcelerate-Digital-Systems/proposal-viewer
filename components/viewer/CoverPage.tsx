@@ -46,7 +46,7 @@ export default function CoverPage({ proposal, onStart }: CoverPageProps) {
       )}
 
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col justify-between h-full px-10 py-10 md:px-16 md:py-14">

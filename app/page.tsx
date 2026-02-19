@@ -12,12 +12,18 @@ import ProposalCard from '@/components/admin/ProposalCard';
 export default function AdminDashboard() {
   return (
     <AuthGuard>
-      {(auth) => <DashboardContent signOut={auth.signOut} memberName={auth.teamMember?.name} />}
+      {(auth) => (
+        <DashboardContent
+          signOut={auth.signOut}
+          memberName={auth.teamMember?.name}
+          companyId={auth.companyId!}
+        />
+      )}
     </AuthGuard>
   );
 }
 
-function DashboardContent({ signOut, memberName }: { signOut: () => Promise<void>; memberName?: string }) {
+function DashboardContent({ signOut, memberName, companyId }: { signOut: () => Promise<void>; memberName?: string; companyId: string }) {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -76,6 +82,7 @@ function DashboardContent({ signOut, memberName }: { signOut: () => Promise<void
       <main className="max-w-6xl mx-auto px-6 py-8">
         {showUpload && (
           <UploadModal
+            companyId={companyId}
             onClose={() => setShowUpload(false)}
             onSuccess={fetchProposals}
           />

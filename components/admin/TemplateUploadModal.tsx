@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { X, Upload, FileText, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/Toast';
 
 interface TemplateUploadModalProps {
   onClose: () => void;
@@ -16,10 +16,12 @@ const formatSize = (bytes: number) => {
 };
 
 export default function TemplateUploadModal({ onClose, onSuccess }: TemplateUploadModalProps) {
+  const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [status, setStatus] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,16 +29,34 @@ export default function TemplateUploadModal({ onClose, onSuccess }: TemplateUplo
     if (!file || !name.trim()) return;
 
     setUploading(true);
+    setUploadProgress(0);
     setStatus('Uploading PDF...');
 
-    // Upload to a temp location first
     const tempPath = `templates/temp-${Date.now()}.pdf`;
-    const { error: uploadError } = await supabase.storage
-      .from('proposals')
-      .upload(tempPath, file, { contentType: 'application/pdf' });
 
-    if (uploadError) {
-      setStatus('Upload failed. Please try again.');
+    try {
+      // XHR upload with progress tracking
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', (ev) => {
+          if (ev.lengthComputable) {
+            setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+          }
+        });
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Upload failed: ${xhr.status}`));
+        });
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+        xhr.open('POST', `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/proposals/${tempPath}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`);
+        xhr.setRequestHeader('Content-Type', 'application/pdf');
+        xhr.setRequestHeader('x-upsert', 'true');
+        xhr.send(file);
+      });
+    } catch {
+      toast.error('Upload failed. Please try again.');
+      setStatus('');
       setUploading(false);
       return;
     }
@@ -55,17 +75,18 @@ export default function TemplateUploadModal({ onClose, onSuccess }: TemplateUplo
     });
 
     if (!res.ok) {
-      setStatus('Failed to process template. Please try again.');
+      toast.error('Failed to process template. Please try again.');
+      setStatus('');
       setUploading(false);
       return;
     }
 
     const data = await res.json();
-    setStatus(`Created template with ${data.page_count} pages!`);
+    toast.success(`Template created with ${data.page_count} pages!`);
 
     setTimeout(() => {
       onSuccess();
-    }, 500);
+    }, 300);
   };
 
   return (
@@ -132,10 +153,23 @@ export default function TemplateUploadModal({ onClose, onSuccess }: TemplateUplo
             </label>
           </div>
 
-          {status && (
-            <div className="flex items-center gap-2 text-sm text-[#999]">
-              {uploading && <Loader2 size={14} className="animate-spin text-[#ff6700]" />}
-              {status}
+          {uploading && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#999] flex items-center gap-1.5">
+                  <Loader2 size={12} className="animate-spin text-[#ff6700]" />
+                  {status}
+                </span>
+                {status === 'Uploading PDF...' && (
+                  <span className="text-[#ff6700] font-medium">{uploadProgress}%</span>
+                )}
+              </div>
+              <div className="w-full h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#ff6700] rounded-full transition-all duration-300 ease-out"
+                  style={{ width: status === 'Uploading PDF...' ? `${uploadProgress}%` : '100%' }}
+                />
+              </div>
             </div>
           )}
 

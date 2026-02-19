@@ -10,9 +10,10 @@ export async function POST(req: NextRequest) {
     const templateId = formData.get('template_id') as string;
     const pageNumber = parseInt(formData.get('page_number') as string);
     const label = (formData.get('label') as string) || 'New Page';
+    const companyId = formData.get('company_id') as string;
     const file = formData.get('file') as File;
 
-    if (!templateId || !pageNumber || !file) {
+    if (!templateId || !pageNumber || !file || !companyId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
       page_number: pageNumber,
       file_path: pagePath,
       label,
+      company_id: companyId,
     }, { onConflict: 'template_id,page_number' });
 
     // Update template page count

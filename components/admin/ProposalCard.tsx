@@ -7,6 +7,8 @@ import {
   Trash2, X, Pencil, Image
 } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
 import PageEditor from './PageEditor';
 import CoverEditor from './CoverEditor';
 
@@ -35,6 +37,8 @@ const formatDate = (date: string | null) => {
 };
 
 export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [copiedId, setCopiedId] = useState(false);
   const [editingPages, setEditingPages] = useState(false);
   const [editingCover, setEditingCover] = useState(false);
@@ -50,13 +54,21 @@ export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardPro
 
   const markAsSent = async () => {
     await supabase.from('proposals').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', p.id);
+    toast.success('Proposal marked as sent');
     onRefresh();
   };
 
   const deleteProposal = async () => {
-    if (!confirm('Delete this proposal? This cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Delete Proposal',
+      message: `Delete "${p.title}"? This will remove the PDF and all associated data permanently.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     await supabase.storage.from('proposals').remove([p.file_path]);
     await supabase.from('proposals').delete().eq('id', p.id);
+    toast.success('Proposal deleted');
     onRefresh();
   };
 

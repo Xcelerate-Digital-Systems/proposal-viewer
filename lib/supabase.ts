@@ -59,6 +59,7 @@ export type Proposal = {
   cover_image_path: string | null;
   cover_subtitle: string | null;
   cover_button_text: string;
+  company_id: string;
   created_at: string;
   updated_at: string;
 };
@@ -73,6 +74,7 @@ export type ProposalComment = {
   parent_id: string | null;
   resolved_at: string | null;
   resolved_by: string | null;
+  company_id: string;
   created_at: string;
 };
 
@@ -81,6 +83,7 @@ export type ProposalTemplate = {
   name: string;
   description: string | null;
   page_count: number;
+  company_id: string;
   created_at: string;
   updated_at: string;
 };
@@ -91,15 +94,17 @@ export type TemplatePage = {
   page_number: number;
   file_path: string;
   label: string;
+  company_id: string;
   created_at: string;
 };
 
 export type TeamMember = {
   id: string;
   user_id: string;
+  company_id: string;
   name: string;
   email: string;
-  role: 'admin' | 'member';
+  role: 'owner' | 'admin' | 'member';
   notify_proposal_viewed: boolean;
   notify_proposal_accepted: boolean;
   notify_comment_added: boolean;

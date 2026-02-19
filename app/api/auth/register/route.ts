@@ -1,9 +1,12 @@
+// app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
+const DEFAULT_COMPANY_ID = '00000000-0000-0000-0000-000000000001';
+
 export async function POST(req: NextRequest) {
   try {
-    const { user_id, name, email } = await req.json();
+    const { user_id, name, email, company_id } = await req.json();
 
     if (!user_id || !name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -24,7 +27,12 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('team_members')
-      .insert({ user_id, name, email })
+      .insert({
+        user_id,
+        name,
+        email,
+        company_id: company_id || DEFAULT_COMPANY_ID,
+      })
       .select('id')
       .single();
 

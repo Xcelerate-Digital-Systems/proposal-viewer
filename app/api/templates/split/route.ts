@@ -5,10 +5,10 @@ import { createServiceClient } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { template_name, template_description, file_path } = await req.json();
+    const { template_name, template_description, file_path, company_id } = await req.json();
 
-    if (!template_name || !file_path) {
-      return NextResponse.json({ error: 'Missing template_name or file_path' }, { status: 400 });
+    if (!template_name || !file_path || !company_id) {
+      return NextResponse.json({ error: 'Missing template_name, file_path, or company_id' }, { status: 400 });
     }
 
     const supabase = createServiceClient();
@@ -29,7 +29,12 @@ export async function POST(req: NextRequest) {
     // Create the template record
     const { data: template, error: templateError } = await supabase
       .from('proposal_templates')
-      .insert({ name: template_name, description: template_description || null, page_count: pageCount })
+      .insert({
+        name: template_name,
+        description: template_description || null,
+        page_count: pageCount,
+        company_id,
+      })
       .select()
       .single();
 
@@ -63,6 +68,7 @@ export async function POST(req: NextRequest) {
         page_number: i + 1,
         file_path: pagePath,
         label: `Page ${i + 1}`,
+        company_id,
       });
     }
 

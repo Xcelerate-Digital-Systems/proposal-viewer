@@ -7,6 +7,8 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { ArrowLeft, Pencil, Trash2, Plus, Upload, Check, X, Loader2, GripVertical } from 'lucide-react';
 import { supabase, ProposalTemplate, TemplatePage } from '@/lib/supabase';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -17,6 +19,8 @@ interface TemplateDetailProps {
 }
 
 export default function TemplateDetail({ template, onBack, onRefresh }: TemplateDetailProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [pages, setPages] = useState<TemplatePage[]>([]);
   const [pageUrls, setPageUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -63,10 +67,16 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
   const deletePage = async (pageNumber: number) => {
     if (pages.length <= 1) {
-      alert('Template must have at least one page.');
+      toast.error('Template must have at least one page.');
       return;
     }
-    if (!confirm(`Delete page ${pageNumber}? Remaining pages will be renumbered.`)) return;
+    const ok = await confirm({
+      title: 'Delete Page',
+      message: `Delete page ${pageNumber}? Remaining pages will be renumbered.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     setProcessing(true);
 
     await fetch('/api/templates/pages', {
@@ -76,6 +86,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     });
 
     setProcessing(false);
+    toast.success('Page deleted');
     onRefresh();
     fetchPages();
   };
@@ -92,6 +103,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
     setReplacingPage(null);
     setProcessing(false);
+    toast.success(`Page ${pageNumber} replaced`);
     onRefresh();
     fetchPages();
   };
@@ -109,6 +121,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
     setAddingAfter(null);
     setProcessing(false);
+    toast.success('Page inserted');
     onRefresh();
     fetchPages();
   };

@@ -55,6 +55,7 @@ export function useProposal(token: string) {
     await supabase.from('proposal_views').insert({
       proposal_id: data.id,
       user_agent: navigator.userAgent,
+      company_id: data.company_id,
     });
 
     // Notify team on first view
@@ -126,6 +127,7 @@ export function useProposal(token: string) {
       content,
       page_number: pageNumber,
       is_internal: false,
+      company_id: proposal.company_id,
     }).select('id').single();
 
     await refreshComments();
@@ -150,6 +152,7 @@ export function useProposal(token: string) {
       page_number: parent?.page_number || null,
       is_internal: false,
       parent_id: parentId,
+      company_id: proposal.company_id,
     }).select('id').single();
 
     await refreshComments();
