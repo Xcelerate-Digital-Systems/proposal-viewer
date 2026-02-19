@@ -102,10 +102,10 @@ function LoginContent() {
   // Loading state for invite validation
   if (inviteLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="text-center">
-          <Loader2 size={24} className="animate-spin text-[#ff6700] mx-auto mb-3" />
-          <p className="text-sm text-[#999]">Validating invite...</p>
+          <Loader2 size={24} className="animate-spin text-[#017C87] mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Validating invite...</p>
         </div>
       </div>
     );
@@ -114,16 +114,16 @@ function LoginContent() {
   // Invalid invite
   if (inviteToken && inviteError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="w-full max-w-sm text-center">
-          <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <UserPlus className="text-red-400" size={24} />
+          <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <UserPlus className="text-red-500" size={24} />
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Invalid Invite</h2>
-          <p className="text-[#999] text-sm mb-6">{inviteError}</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Invalid Invite</h2>
+          <p className="text-gray-500 text-sm mb-6">{inviteError}</p>
           <button
             onClick={() => router.replace('/login')}
-            className="text-sm text-[#ff6700] hover:text-[#ff8533] transition-colors"
+            className="text-sm text-[#017C87] hover:text-[#01434A] transition-colors"
           >
             Go to sign in
           </button>
@@ -134,18 +134,18 @@ function LoginContent() {
 
   if (magicLinkSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="w-full max-w-sm text-center">
-          <div className="w-14 h-14 bg-[#ff6700]/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <Mail className="text-[#ff6700]" size={24} />
+          <div className="w-14 h-14 bg-[#017C87]/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <Mail className="text-[#017C87]" size={24} />
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Check your email</h2>
-          <p className="text-[#999] text-sm mb-6">
-            We sent a sign-in link to <strong className="text-white">{email}</strong>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Check your email</h2>
+          <p className="text-gray-500 text-sm mb-6">
+            We sent a sign-in link to <strong className="text-gray-900">{email}</strong>
           </p>
           <button
             onClick={() => { setMagicLinkSent(false); setEmail(''); }}
-            className="text-sm text-[#ff6700] hover:text-[#ff8533] transition-colors"
+            className="text-sm text-[#017C87] hover:text-[#01434A] transition-colors"
           >
             Use a different email
           </button>
@@ -155,37 +155,37 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-6">
-          <img src="/logo-white.svg" alt="Xcelerate Digital Systems" className="h-8 mx-auto mb-6" />
-          <h1 className="text-xl font-semibold text-white">
+          <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-8 mx-auto mb-6" />
+          <h1 className="text-xl font-semibold text-gray-900">
             {inviteInfo
               ? 'Join your team'
               : tab === 'signin'
                 ? 'Sign in to your account'
                 : 'Create your account'}
           </h1>
-          <p className="text-sm text-[#666] mt-1">
+          <p className="text-sm text-gray-400 mt-1">
             {inviteInfo ? 'Complete your account setup' : 'Team members only'}
           </p>
         </div>
 
         {/* Invite Banner */}
         {inviteInfo && (
-          <div className="bg-[#ff6700]/5 border border-[#ff6700]/20 rounded-lg p-4 mb-6">
+          <div className="bg-[#017C87]/5 border border-[#017C87]/20 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">
-              <Building2 size={18} className="text-[#ff6700] mt-0.5 shrink-0" />
+              <Building2 size={18} className="text-[#017C87] mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm text-white font-medium">
+                <p className="text-sm text-gray-900 font-medium">
                   You&apos;ve been invited to join{' '}
-                  <span className="text-[#ff6700]">{inviteInfo.company_name}</span>
+                  <span className="text-[#017C87]">{inviteInfo.company_name}</span>
                 </p>
-                <p className="text-xs text-[#999] mt-1">
-                  Role: <span className="capitalize text-[#ccc]">{inviteInfo.role}</span>
+                <p className="text-xs text-gray-500 mt-1">
+                  Role: <span className="capitalize text-gray-700">{inviteInfo.role}</span>
                   {' · '}Invited as{' '}
-                  <span className="text-[#ccc]">{inviteInfo.email}</span>
+                  <span className="text-gray-700">{inviteInfo.email}</span>
                 </p>
               </div>
             </div>
@@ -194,11 +194,11 @@ function LoginContent() {
 
         {/* Tabs - hide if invite (force signup) */}
         {!inviteInfo && (
-          <div className="flex bg-[#1a1a1a] rounded-lg p-1 mb-6">
+          <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
             <button
               onClick={() => { setTab('signin'); setError(''); }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                tab === 'signin' ? 'bg-[#2a2a2a] text-white' : 'text-[#666] hover:text-[#999]'
+                tab === 'signin' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               Sign In
@@ -206,7 +206,7 @@ function LoginContent() {
             <button
               onClick={() => { setTab('signup'); setError(''); }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                tab === 'signup' ? 'bg-[#2a2a2a] text-white' : 'text-[#666] hover:text-[#999]'
+                tab === 'signup' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               Sign Up
@@ -222,8 +222,8 @@ function LoginContent() {
                 onClick={() => { setMethod('password'); setError(''); }}
                 className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors ${
                   method === 'password'
-                    ? 'border-[#ff6700] text-[#ff6700] bg-[#ff6700]/5'
-                    : 'border-[#2a2a2a] text-[#666] hover:border-[#444]'
+                    ? 'border-[#017C87] text-[#017C87] bg-[#017C87]/5'
+                    : 'border-gray-200 text-gray-400 hover:border-gray-300'
                 }`}
               >
                 Password
@@ -232,8 +232,8 @@ function LoginContent() {
                 onClick={() => { setMethod('magic'); setError(''); }}
                 className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors ${
                   method === 'magic'
-                    ? 'border-[#ff6700] text-[#ff6700] bg-[#ff6700]/5'
-                    : 'border-[#2a2a2a] text-[#666] hover:border-[#444]'
+                    ? 'border-[#017C87] text-[#017C87] bg-[#017C87]/5'
+                    : 'border-gray-200 text-gray-400 hover:border-gray-300'
                 }`}
               >
                 Magic Link
@@ -242,39 +242,39 @@ function LoginContent() {
 
             <form onSubmit={handleSignIn} className="space-y-3">
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
                   placeholder="you@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
                 />
               </div>
 
               {method === 'password' && (
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
+                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="password"
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
                   />
                 </div>
               )}
 
               {error && (
-                <p className="text-xs text-red-400 bg-red-400/10 px-3 py-2 rounded-lg">{error}</p>
+                <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#ff6700] text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] disabled:opacity-50 transition-colors"
+                className="w-full flex items-center justify-center gap-2 bg-[#017C87] text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] disabled:opacity-50 transition-colors"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                 {method === 'magic' ? 'Send Magic Link' : 'Sign In'}
@@ -284,18 +284,18 @@ function LoginContent() {
         ) : (
           <form onSubmit={handleSignUp} className="space-y-3">
             <div className="relative">
-              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
+              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
               />
             </div>
             <div className="relative">
-              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
+              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="email"
                 placeholder="you@company.com"
@@ -303,13 +303,13 @@ function LoginContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 readOnly={!!inviteInfo}
-                className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50 ${
+                className={`w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 ${
                   inviteInfo ? 'opacity-60 cursor-not-allowed' : ''
                 }`}
               />
             </div>
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="password"
                 placeholder="Password (min 6 characters)"
@@ -317,25 +317,25 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
               />
             </div>
 
             {error && (
-              <p className="text-xs text-red-400 bg-red-400/10 px-3 py-2 rounded-lg">{error}</p>
+              <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-[#ff6700] text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] disabled:opacity-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-[#017C87] text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] disabled:opacity-50 transition-colors"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
               {inviteInfo ? `Join ${inviteInfo.company_name}` : 'Create Account'}
             </button>
 
             {!inviteInfo && (
-              <p className="text-xs text-[#555] text-center mt-3">
+              <p className="text-xs text-gray-400 text-center mt-3">
                 A new workspace will be created for you
               </p>
             )}
@@ -344,11 +344,11 @@ function LoginContent() {
 
         {/* Link between sign in and invited signup */}
         {inviteInfo && (
-          <p className="text-xs text-[#555] text-center mt-4">
+          <p className="text-xs text-gray-400 text-center mt-4">
             Already have an account?{' '}
             <button
               onClick={() => router.replace('/login')}
-              className="text-[#ff6700] hover:text-[#ff8533]"
+              className="text-[#017C87] hover:text-[#01434A]"
             >
               Sign in instead
             </button>
@@ -363,8 +363,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-          <Loader2 size={24} className="animate-spin text-[#ff6700]" />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 size={24} className="animate-spin text-[#017C87]" />
         </div>
       }
     >

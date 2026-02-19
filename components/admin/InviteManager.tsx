@@ -73,9 +73,9 @@ export function InviteManager() {
   return (
     <div className="space-y-6">
       {/* Send Invite Form */}
-      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
-        <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
-          <UserPlus size={16} className="text-[#ff6700]" />
+      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <UserPlus size={16} className="text-[#017C87]" />
           Invite Team Member
         </h3>
 
@@ -87,12 +87,12 @@ export function InviteManager() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="flex-1 px-3 py-2 rounded-lg bg-[#0f0f0f] border border-[#2a2a2a] text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50"
+              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
             />
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as 'admin' | 'member')}
-              className="px-3 py-2 rounded-lg bg-[#0f0f0f] border border-[#2a2a2a] text-sm text-white focus:outline-none focus:border-[#ff6700]/50"
+              className="px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -100,16 +100,16 @@ export function InviteManager() {
           </div>
 
           {error && (
-            <p className="text-xs text-red-400 bg-red-400/10 px-3 py-2 rounded-lg">{error}</p>
+            <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
           )}
           {success && (
-            <p className="text-xs text-green-400 bg-green-400/10 px-3 py-2 rounded-lg">{success}</p>
+            <p className="text-xs text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">{success}</p>
           )}
 
           <button
             type="submit"
             disabled={sending}
-            className="flex items-center gap-2 px-4 py-2 bg-[#ff6700] text-white text-sm font-medium rounded-lg hover:bg-[#e85d00] disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#017C87] text-white text-sm font-medium rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
           >
             {sending ? (
               <Loader2 size={14} className="animate-spin" />
@@ -120,7 +120,7 @@ export function InviteManager() {
           </button>
         </form>
 
-        <p className="text-xs text-[#555] mt-3">
+        <p className="text-xs text-gray-400 mt-3">
           Invites expire after 7 days. The recipient must sign up with the invited email.
         </p>
       </div>
@@ -128,24 +128,24 @@ export function InviteManager() {
       {/* Pending Invites */}
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 size={20} className="animate-spin text-[#555]" />
+          <Loader2 size={20} className="animate-spin text-gray-300" />
         </div>
       ) : (
         <>
           {pendingInvites.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-[#999] mb-3">
+              <h3 className="text-sm font-medium text-gray-500 mb-3">
                 Pending Invites ({pendingInvites.length})
               </h3>
               <div className="space-y-2">
                 {pendingInvites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-4 py-3"
+                    className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{invite.email}</p>
-                      <p className="text-xs text-[#666] mt-0.5">
+                      <p className="text-sm text-gray-900 truncate">{invite.email}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
                         <span className="capitalize">{invite.role}</span>
                         {' · '}
                         <Clock size={10} className="inline" />{' '}
@@ -158,18 +158,18 @@ export function InviteManager() {
                     <div className="flex items-center gap-1.5 ml-3">
                       <button
                         onClick={() => handleCopyLink(invite)}
-                        className="p-1.5 rounded-md hover:bg-[#2a2a2a] text-[#999] hover:text-white transition-colors"
+                        className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
                         title="Copy invite link"
                       >
                         {copiedId === invite.id ? (
-                          <Check size={14} className="text-green-400" />
+                          <Check size={14} className="text-emerald-500" />
                         ) : (
                           <Link2 size={14} />
                         )}
                       </button>
                       <button
                         onClick={() => handleRevoke(invite.id)}
-                        className="p-1.5 rounded-md hover:bg-red-500/10 text-[#999] hover:text-red-400 transition-colors"
+                        className="p-1.5 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                         title="Revoke invite"
                       >
                         <X size={14} />
@@ -183,24 +183,24 @@ export function InviteManager() {
 
           {acceptedInvites.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-[#999] mb-3">
+              <h3 className="text-sm font-medium text-gray-500 mb-3">
                 Accepted ({acceptedInvites.length})
               </h3>
               <div className="space-y-2">
                 {acceptedInvites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between bg-[#1a1a1a]/50 border border-[#2a2a2a]/50 rounded-lg px-4 py-3"
+                    className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-lg px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm text-[#999] truncate">{invite.email}</p>
-                      <p className="text-xs text-[#555] mt-0.5">
+                      <p className="text-sm text-gray-500 truncate">{invite.email}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
                         <span className="capitalize">{invite.role}</span>
                         {' · '}
                         Accepted {formatDate(invite.accepted_at!)}
                       </p>
                     </div>
-                    <Check size={14} className="text-green-400/60" />
+                    <Check size={14} className="text-emerald-400" />
                   </div>
                 ))}
               </div>
@@ -209,18 +209,18 @@ export function InviteManager() {
 
           {expiredInvites.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-[#999] mb-3">
+              <h3 className="text-sm font-medium text-gray-500 mb-3">
                 Expired ({expiredInvites.length})
               </h3>
               <div className="space-y-2">
                 {expiredInvites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between bg-[#1a1a1a]/30 border border-[#2a2a2a]/30 rounded-lg px-4 py-3 opacity-60"
+                    className="flex items-center justify-between bg-gray-50/50 border border-gray-100 rounded-lg px-4 py-3 opacity-60"
                   >
                     <div>
-                      <p className="text-sm text-[#666] truncate">{invite.email}</p>
-                      <p className="text-xs text-[#555] mt-0.5">
+                      <p className="text-sm text-gray-400 truncate">{invite.email}</p>
+                      <p className="text-xs text-gray-300 mt-0.5">
                         <span className="capitalize">{invite.role}</span>
                         {' · '}
                         Expired {formatDate(invite.expires_at)}
@@ -228,7 +228,7 @@ export function InviteManager() {
                     </div>
                     <button
                       onClick={() => handleRevoke(invite.id)}
-                      className="p-1.5 rounded-md hover:bg-red-500/10 text-[#555] hover:text-red-400 transition-colors"
+                      className="p-1.5 rounded-md hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
                       title="Remove"
                     >
                       <X size={14} />

@@ -133,40 +133,40 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-[#666] hover:text-white text-sm transition-colors"
+            className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-sm transition-colors"
           >
             <ArrowLeft size={16} />
             All Templates
           </button>
-          <div className="w-px h-5 bg-[#2a2a2a]" />
-          <h2 className="text-white font-semibold text-lg font-[family-name:var(--font-display)]">
+          <div className="w-px h-5 bg-gray-200" />
+          <h2 className="text-gray-900 font-semibold text-lg font-[family-name:var(--font-display)]">
             {template.name}
           </h2>
-          <span className="text-sm text-[#666]">{pages.length} pages</span>
+          <span className="text-sm text-gray-400">{pages.length} pages</span>
         </div>
       </div>
 
       {processing && (
-        <div className="flex items-center gap-2 text-sm text-[#999] mb-4 p-3 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
-          <Loader2 size={14} className="animate-spin text-[#ff6700]" />
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 p-3 rounded-lg bg-gray-50 border border-gray-200">
+          <Loader2 size={14} className="animate-spin text-[#017C87]" />
           Processing changes...
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-[#333] border-t-[#ff6700] rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
         </div>
       ) : (
         <div className="space-y-3">
           {pages.map((page, idx) => (
             <div key={page.id}>
-              <div className="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] overflow-hidden hover:border-[#333] transition-colors">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors shadow-sm">
                 <div className="flex items-stretch">
                   {/* PDF Thumbnail */}
-                  <div className="w-40 bg-[#0f0f0f] border-r border-[#2a2a2a] flex items-center justify-center shrink-0 p-2">
+                  <div className="w-40 bg-gray-50 border-r border-gray-200 flex items-center justify-center shrink-0 p-2">
                     {pageUrls[page.id] ? (
-                      <Document file={pageUrls[page.id]} loading={<Loader2 size={16} className="animate-spin text-[#555]" />}>
+                      <Document file={pageUrls[page.id]} loading={<Loader2 size={16} className="animate-spin text-gray-300" />}>
                         <Page
                           pageNumber={1}
                           width={140}
@@ -176,7 +176,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
                       </Document>
                     ) : (
                       <div className="w-full h-24 flex items-center justify-center">
-                        <Loader2 size={16} className="animate-spin text-[#555]" />
+                        <Loader2 size={16} className="animate-spin text-gray-300" />
                       </div>
                     )}
                   </div>
@@ -185,7 +185,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
                   <div className="flex-1 p-4 flex items-center justify-between min-w-0">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-[#555] uppercase tracking-wider">
+                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                           Page {page.page_number}
                         </span>
                       </div>
@@ -195,34 +195,34 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
                             type="text"
                             value={labelValue}
                             onChange={(e) => setLabelValue(e.target.value)}
-                            className="px-2 py-1 rounded bg-[#0f0f0f] border border-[#2a2a2a] text-white text-sm focus:outline-none focus:border-[#ff6700]/50 w-64"
+                            className="px-2 py-1 rounded bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 w-64"
                             autoFocus
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') saveLabel(page.id);
                               if (e.key === 'Escape') setEditingLabel(null);
                             }}
                           />
-                          <button onClick={() => saveLabel(page.id)} className="text-emerald-400 hover:text-emerald-300">
+                          <button onClick={() => saveLabel(page.id)} className="text-emerald-500 hover:text-emerald-600">
                             <Check size={14} />
                           </button>
-                          <button onClick={() => setEditingLabel(null)} className="text-[#555] hover:text-white">
+                          <button onClick={() => setEditingLabel(null)} className="text-gray-400 hover:text-gray-600">
                             <X size={14} />
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => { setEditingLabel(page.id); setLabelValue(page.label); }}
-                          className="text-white font-medium text-sm hover:text-[#ff6700] transition-colors flex items-center gap-1.5 group"
+                          className="text-gray-900 font-medium text-sm hover:text-[#017C87] transition-colors flex items-center gap-1.5 group"
                         >
                           {page.label}
-                          <Pencil size={12} className="text-[#555] group-hover:text-[#ff6700]" />
+                          <Pencil size={12} className="text-gray-300 group-hover:text-[#017C87]" />
                         </button>
                       )}
                     </div>
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 ml-4">
-                      <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#222] text-[#999] hover:text-white hover:bg-[#2a2a2a] transition-colors cursor-pointer">
+                      <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer">
                         <Upload size={12} />
                         Replace
                         <input
@@ -237,7 +237,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
                       </label>
                       <button
                         onClick={() => deletePage(page.page_number)}
-                        className="p-1.5 rounded-lg text-[#555] hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -248,7 +248,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
               {/* Add page after button */}
               <div className="flex items-center justify-center py-1">
-                <label className="flex items-center gap-1 px-3 py-1 rounded text-xs text-[#444] hover:text-[#ff6700] hover:bg-[#ff6700]/5 transition-colors cursor-pointer">
+                <label className="flex items-center gap-1 px-3 py-1 rounded text-xs text-gray-300 hover:text-[#017C87] hover:bg-[#017C87]/5 transition-colors cursor-pointer">
                   <Plus size={12} />
                   Insert page after
                   <input

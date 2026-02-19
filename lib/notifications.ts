@@ -151,8 +151,8 @@ function buildEmail(params: EmailParams): { subject: string; html: string } {
       headline = 'New Comment';
       body = `
         <p><strong>${commentAuthor || 'Someone'}</strong> left a comment on <strong>"${proposalTitle}"</strong>:</p>
-        <div style="background:#1a1a1a;border-left:3px solid #ff6700;padding:12px 16px;margin:16px 0;border-radius:4px;">
-          <p style="margin:0;color:#ccc;">${escapeHtml(commentContent || '')}</p>
+        <div style="background:#f3fafa;border-left:3px solid #017C87;padding:12px 16px;margin:16px 0;border-radius:4px;">
+          <p style="margin:0;color:#374151;">${escapeHtml(commentContent || '')}</p>
         </div>
       `;
       break;
@@ -184,29 +184,29 @@ function emailTemplate(headline: string, body: string, viewerUrl: string, dashbo
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:0;background:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
     <tr>
       <td align="center">
-        <table width="520" cellpadding="0" cellspacing="0" style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;">
+        <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
           <!-- Header -->
           <tr>
-            <td style="background:#1a1a1a;padding:20px 32px;border-bottom:1px solid #2a2a2a;">
-              <span style="color:#ff6700;font-weight:700;font-size:16px;">Xcelerate Digital</span>
+            <td style="background:#043946;padding:20px 32px;">
+              <span style="color:#ffffff;font-weight:700;font-size:16px;">AgencyViz</span>
             </td>
           </tr>
           <!-- Body -->
           <tr>
             <td style="padding:32px;">
-              <h1 style="margin:0 0 16px;color:#ffffff;font-size:22px;font-weight:600;">${headline}</h1>
-              <div style="color:#999;font-size:15px;line-height:1.6;">
+              <h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">${headline}</h1>
+              <div style="color:#6b7280;font-size:15px;line-height:1.6;">
                 ${body}
               </div>
               <div style="margin-top:28px;">
-                <a href="${viewerUrl}" style="display:inline-block;background:#ff6700;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;margin-right:8px;">
+                <a href="${viewerUrl}" style="display:inline-block;background:#017C87;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;margin-right:8px;">
                   View Proposal
                 </a>
-                <a href="${dashboardUrl}" style="display:inline-block;background:#1a1a1a;color:#999;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;border:1px solid #2a2a2a;">
+                <a href="${dashboardUrl}" style="display:inline-block;background:#f9fafb;color:#6b7280;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;border:1px solid #e5e7eb;">
                   Dashboard
                 </a>
               </div>
@@ -214,8 +214,8 @@ function emailTemplate(headline: string, body: string, viewerUrl: string, dashbo
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding:16px 32px;border-top:1px solid #2a2a2a;">
-              <p style="margin:0;color:#555;font-size:12px;">You can manage notification preferences in your <a href="${dashboardUrl}/settings" style="color:#ff6700;text-decoration:none;">settings</a>.</p>
+            <td style="padding:16px 32px;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#9ca3af;font-size:12px;">You can manage notification preferences in your <a href="${dashboardUrl}/settings" style="color:#017C87;text-decoration:none;">settings</a>.</p>
             </td>
           </tr>
         </table>

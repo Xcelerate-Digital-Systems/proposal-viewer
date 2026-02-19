@@ -74,16 +74,16 @@ function ColorRow({
         value={value}
         onChange={(e) => !disabled && onChange(e.target.value)}
         disabled={disabled}
-        className="w-8 h-8 rounded cursor-pointer border border-[#2a2a2a] bg-transparent disabled:cursor-not-allowed shrink-0"
+        className="w-8 h-8 rounded cursor-pointer border border-gray-200 bg-transparent disabled:cursor-not-allowed shrink-0"
       />
       <input
         type="text"
         value={value}
         onChange={(e) => !disabled && e.target.value.length <= 7 && onChange(e.target.value)}
         disabled={disabled}
-        className="w-24 px-2.5 py-1.5 rounded-lg bg-[#0f0f0f] border border-[#2a2a2a] text-xs text-white font-mono focus:outline-none focus:border-[#ff6700]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-24 px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed"
       />
-      <span className="text-xs text-[#555]">{label}</span>
+      <span className="text-xs text-gray-400">{label}</span>
     </div>
   );
 }
@@ -353,7 +353,7 @@ function CompanySettingsContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 size={24} className="animate-spin text-[#555]" />
+        <Loader2 size={24} className="animate-spin text-gray-300" />
       </div>
     );
   }
@@ -362,12 +362,12 @@ function CompanySettingsContent() {
     <div className="px-6 lg:px-10 py-8">
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-[#1a1a1a] rounded-xl flex items-center justify-center">
-          <Building2 size={20} className="text-[#ff6700]" />
+        <div className="w-10 h-10 bg-[#017C87]/10 rounded-xl flex items-center justify-center">
+          <Building2 size={20} className="text-[#017C87]" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-white">Company Settings</h1>
-          <p className="text-sm text-[#666]">
+          <h1 className="text-xl font-semibold text-gray-900">Company Settings</h1>
+          <p className="text-sm text-gray-400">
             {isOwner ? 'Manage your company profile and branding' : 'View company profile'}
           </p>
         </div>
@@ -375,10 +375,10 @@ function CompanySettingsContent() {
 
       {/* Feedback */}
       {error && (
-        <div className="mb-4 text-xs text-red-400 bg-red-400/10 px-4 py-2.5 rounded-lg">{error}</div>
+        <div className="mb-4 text-xs text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{error}</div>
       )}
       {success && (
-        <div className="mb-4 text-xs text-green-400 bg-green-400/10 px-4 py-2.5 rounded-lg flex items-center gap-1.5">
+        <div className="mb-4 text-xs text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-lg flex items-center gap-1.5">
           <Check size={12} /> {success}
         </div>
       )}
@@ -387,17 +387,17 @@ function CompanySettingsContent() {
         {/* LEFT COLUMN — Settings */}
         <div className="space-y-5">
           {/* Logo */}
-          <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <ImageIcon size={15} className="text-[#666]" />
-              <span className="text-sm font-medium text-[#999]">Company Logo</span>
+              <ImageIcon size={15} className="text-gray-400" />
+              <span className="text-sm font-medium text-gray-500">Company Logo</span>
             </div>
             <div className="flex items-center gap-5">
-              <div className="w-20 h-20 bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl flex items-center justify-center overflow-hidden shrink-0">
+              <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                 {company?.logo_url ? (
                   <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
                 ) : (
-                  <Building2 size={28} className="text-[#333]" />
+                  <Building2 size={28} className="text-gray-200" />
                 )}
               </div>
               {isOwner && (
@@ -406,31 +406,31 @@ function CompanySettingsContent() {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={logoUploading}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white rounded-lg hover:border-[#444] disabled:opacity-50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 text-sm text-gray-600 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
                   >
                     {logoUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                     Upload Logo
                   </button>
                   {company?.logo_url && (
-                    <button onClick={handleLogoRemove} disabled={logoUploading} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:text-red-300 transition-colors">
+                    <button onClick={handleLogoRemove} disabled={logoUploading} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:text-red-600 transition-colors">
                       <Trash2 size={14} /> Remove
                     </button>
                   )}
-                  <p className="text-xs text-[#555]">PNG, JPEG, SVG, or WebP. Max 2MB.</p>
+                  <p className="text-xs text-gray-400">PNG, JPEG, SVG, or WebP. Max 2MB.</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Company Name */}
-          <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-5">
-            <label className="block text-sm font-medium text-[#999] mb-2">Company Name</label>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <label className="block text-sm font-medium text-gray-500 mb-2">Company Name</label>
             <div className="flex gap-2">
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={!isOwner}
-                className="flex-1 px-3 py-2 rounded-lg bg-[#0f0f0f] border border-[#2a2a2a] text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50 disabled:opacity-50 disabled:cursor-not-allowed" />
+                className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
               {isOwner && name !== company?.name && (
                 <button onClick={() => handleSaveField('name', name)} disabled={saving === 'name' || !name.trim()}
-                  className="px-4 py-2 bg-[#ff6700] text-white text-sm rounded-lg hover:bg-[#e85d00] disabled:opacity-50 transition-colors">
+                  className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
                   {saving === 'name' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
                 </button>
               )}
@@ -438,36 +438,36 @@ function CompanySettingsContent() {
           </div>
 
           {/* Slug */}
-          <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
-              <Link2 size={14} className="text-[#666]" />
-              <label className="text-sm font-medium text-[#999]">URL Slug</label>
+              <Link2 size={14} className="text-gray-400" />
+              <label className="text-sm font-medium text-gray-500">URL Slug</label>
             </div>
             <div className="flex gap-2">
               <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} disabled={!isOwner}
-                className="flex-1 px-3 py-2 rounded-lg bg-[#0f0f0f] border border-[#2a2a2a] text-sm text-white font-mono placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50 disabled:opacity-50 disabled:cursor-not-allowed" />
+                className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 font-mono placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
               {isOwner && slug !== company?.slug && (
                 <button onClick={() => handleSaveField('slug', slug)} disabled={saving === 'slug' || slug.length < 2}
-                  className="px-4 py-2 bg-[#ff6700] text-white text-sm rounded-lg hover:bg-[#e85d00] disabled:opacity-50 transition-colors">
+                  className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
                   {saving === 'slug' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
                 </button>
               )}
             </div>
-            <p className="text-xs text-[#555] mt-1.5">Lowercase letters, numbers, and hyphens only.</p>
+            <p className="text-xs text-gray-400 mt-1.5">Lowercase letters, numbers, and hyphens only.</p>
           </div>
 
           {/* Website */}
-          <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
-              <Globe size={14} className="text-[#666]" />
-              <label className="text-sm font-medium text-[#999]">Website</label>
+              <Globe size={14} className="text-gray-400" />
+              <label className="text-sm font-medium text-gray-500">Website</label>
             </div>
             <div className="flex gap-2">
               <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://yourcompany.com" disabled={!isOwner}
-                className="flex-1 px-3 py-2 rounded-lg bg-[#0f0f0f] border border-[#2a2a2a] text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#ff6700]/50 disabled:opacity-50 disabled:cursor-not-allowed" />
+                className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
               {isOwner && website !== (company?.website || '') && (
                 <button onClick={() => handleSaveField('website', website)} disabled={saving === 'website'}
-                  className="px-4 py-2 bg-[#ff6700] text-white text-sm rounded-lg hover:bg-[#e85d00] disabled:opacity-50 transition-colors">
+                  className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
                   {saving === 'website' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
                 </button>
               )}
@@ -475,17 +475,17 @@ function CompanySettingsContent() {
           </div>
 
           {/* Branding Colors */}
-          <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Palette size={15} className="text-[#666]" />
-                <span className="text-sm font-medium text-[#999]">Branding Colors</span>
+                <Palette size={15} className="text-gray-400" />
+                <span className="text-sm font-medium text-gray-500">Branding Colors</span>
               </div>
               {isOwner && colorsChanged && (
                 <button
                   onClick={handleSaveColors}
                   disabled={saving === 'colors' || !/^#[0-9a-fA-F]{6}$/.test(accentColor) || !/^#[0-9a-fA-F]{6}$/.test(bgPrimary) || !/^#[0-9a-fA-F]{6}$/.test(bgSecondary)}
-                  className="px-4 py-1.5 bg-[#ff6700] text-white text-sm rounded-lg hover:bg-[#e85d00] disabled:opacity-50 transition-colors"
+                  className="px-4 py-1.5 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
                 >
                   {saving === 'colors' ? <Loader2 size={14} className="animate-spin" /> : 'Save Colors'}
                 </button>
@@ -494,7 +494,7 @@ function CompanySettingsContent() {
 
             {/* Accent color */}
             <div className="mb-4">
-              <label className="block text-xs text-[#666] mb-2">Accent Color</label>
+              <label className="block text-xs text-gray-400 mb-2">Accent Color</label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {ACCENT_PRESETS.map((color) => (
                   <button
@@ -502,7 +502,7 @@ function CompanySettingsContent() {
                     onClick={() => isOwner && setAccentColor(color)}
                     disabled={!isOwner}
                     className={`w-7 h-7 rounded-lg border-2 transition-all ${
-                      accentColor === color ? 'border-white scale-110' : 'border-transparent hover:border-[#444]'
+                      accentColor === color ? 'border-gray-900 scale-110' : 'border-transparent hover:border-gray-300'
                     } disabled:cursor-not-allowed`}
                     style={{ backgroundColor: color }}
                   />
@@ -513,7 +513,7 @@ function CompanySettingsContent() {
 
             {/* Background presets */}
             <div className="mb-4">
-              <label className="block text-xs text-[#666] mb-2">Background Theme</label>
+              <label className="block text-xs text-gray-400 mb-2">Background Theme</label>
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {BG_PRESETS.map((preset) => (
                   <button
@@ -526,8 +526,8 @@ function CompanySettingsContent() {
                     disabled={!isOwner}
                     className={`rounded-lg border-2 p-2 text-center transition-all disabled:cursor-not-allowed ${
                       bgPrimary === preset.primary && bgSecondary === preset.secondary
-                        ? 'border-white'
-                        : 'border-[#2a2a2a] hover:border-[#444]'
+                        ? 'border-gray-900'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                     style={{ backgroundColor: preset.primary }}
                   >
@@ -549,15 +549,15 @@ function CompanySettingsContent() {
           </div>
 
           {!isOwner && (
-            <div className="bg-[#1a1a1a]/50 border border-[#2a2a2a] rounded-xl p-4 text-center">
-              <p className="text-sm text-[#666]">Only the company owner can edit these settings.</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
+              <p className="text-sm text-gray-400">Only the company owner can edit these settings.</p>
             </div>
           )}
         </div>
 
         {/* RIGHT COLUMN — Live Preview */}
         <div className="lg:sticky lg:top-8 lg:self-start space-y-3">
-          <h3 className="text-sm font-medium text-[#666]">Live Preview — Proposal Viewer</h3>
+          <h3 className="text-sm font-medium text-gray-400">Live Preview — Proposal Viewer</h3>
           <ViewerPreview
             accent={/^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : '#ff6700'}
             bgPrimary={/^#[0-9a-fA-F]{6}$/.test(bgPrimary) ? bgPrimary : '#0f0f0f'}
@@ -565,7 +565,7 @@ function CompanySettingsContent() {
             logoUrl={company?.logo_url || null}
             companyName={name}
           />
-          <p className="text-xs text-[#555]">
+          <p className="text-xs text-gray-400">
             This is how your proposals will appear to clients. Colors update in real-time as you edit.
           </p>
         </div>

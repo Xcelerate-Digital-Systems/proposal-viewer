@@ -29,15 +29,15 @@ export function useToast() {
 }
 
 const icons: Record<ToastType, ReactNode> = {
-  success: <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />,
-  error: <XCircle size={16} className="text-red-400 shrink-0" />,
-  info: <Info size={16} className="text-blue-400 shrink-0" />,
+  success: <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />,
+  error: <XCircle size={16} className="text-red-500 shrink-0" />,
+  info: <Info size={16} className="text-blue-500 shrink-0" />,
 };
 
 const borders: Record<ToastType, string> = {
-  success: 'border-emerald-500/30',
-  error: 'border-red-500/30',
-  info: 'border-blue-500/30',
+  success: 'border-emerald-200',
+  error: 'border-red-200',
+  info: 'border-blue-200',
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -70,13 +70,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl bg-[#1a1a1a] border ${borders[t.type]} shadow-2xl shadow-black/50 animate-slide-up min-w-[280px] max-w-[400px]`}
+            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl bg-white border ${borders[t.type]} shadow-lg shadow-black/10 animate-slide-up min-w-[280px] max-w-[400px]`}
           >
             {icons[t.type]}
-            <span className="text-sm text-white flex-1">{t.message}</span>
+            <span className="text-sm text-gray-900 flex-1">{t.message}</span>
             <button
               onClick={() => removeToast(t.id)}
-              className="text-[#555] hover:text-white transition-colors shrink-0"
+              className="text-gray-300 hover:text-gray-500 transition-colors shrink-0"
             >
               <X size={14} />
             </button>

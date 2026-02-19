@@ -78,16 +78,16 @@ export default function AdminSidebar({
     <div className="flex flex-col h-full">
       {/* Company override banner */}
       {companyOverride && (
-        <div className="px-3 py-2.5 bg-[#ff6700]/10 border-b border-[#ff6700]/20">
+        <div className="px-3 py-2.5 bg-[#8AD9D1]/15 border-b border-[#01434A]">
           <div className="flex items-center gap-2 mb-1.5">
-            <Building2 size={13} className="text-[#ff6700] shrink-0" />
-            <span className="text-xs font-medium text-[#ff6700] truncate">
+            <Building2 size={13} className="text-[#8AD9D1] shrink-0" />
+            <span className="text-xs font-medium text-[#8AD9D1] truncate">
               {companyOverride.companyName}
             </span>
           </div>
           <button
             onClick={handleExitAccount}
-            className="flex items-center gap-1.5 text-xs text-[#ff6700]/70 hover:text-[#ff6700] transition-colors"
+            className="flex items-center gap-1.5 text-xs text-[#8AD9D1]/70 hover:text-[#8AD9D1] transition-colors"
           >
             <ArrowLeft size={11} />
             Back to Accounts
@@ -96,7 +96,7 @@ export default function AdminSidebar({
       )}
 
       {/* Company branding */}
-      <div className="px-4 py-5 border-b border-[#2a2a2a]">
+      <div className="px-4 py-5 border-b border-[#01434A]">
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -108,7 +108,7 @@ export default function AdminSidebar({
             {companyName}
           </span>
         ) : (
-          <img src="/logo-white.svg" alt="Logo" className="h-7" />
+          <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
         )}
       </div>
 
@@ -121,24 +121,24 @@ export default function AdminSidebar({
             onClick={() => setMobileOpen(false)}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
               pathname === '/accounts'
-                ? 'bg-[#ff6700]/10 text-white'
-                : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'
+                ? 'bg-white/10 text-white'
+                : 'text-white/60 hover:text-white hover:bg-[#013036]'
             }`}
           >
             <Building2
               size={18}
-              className={pathname === '/accounts' ? 'text-[#ff6700]' : 'text-[#555] group-hover:text-[#888]'}
+              className={pathname === '/accounts' ? 'text-[#8AD9D1]' : 'text-white/40 group-hover:text-white/60'}
             />
             <span className="flex-1">Accounts</span>
             {pathname === '/accounts' && (
-              <ChevronRight size={14} className="text-[#ff6700]/50" />
+              <ChevronRight size={14} className="text-[#8AD9D1]/50" />
             )}
           </Link>
         )}
 
         {/* Divider between Accounts and regular nav */}
         {isSuperAdmin && !companyOverride && (
-          <div className="!my-2 border-t border-[#2a2a2a]" />
+          <div className="!my-2 border-t border-[#01434A]" />
         )}
 
         {NAV_ITEMS.map((item) => {
@@ -151,17 +151,17 @@ export default function AdminSidebar({
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
                 active
-                  ? 'bg-[#ff6700]/10 text-white'
-                  : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/60 hover:text-white hover:bg-[#013036]'
               }`}
             >
               <Icon
                 size={18}
-                className={active ? 'text-[#ff6700]' : 'text-[#555] group-hover:text-[#888]'}
+                className={active ? 'text-[#8AD9D1]' : 'text-white/40 group-hover:text-white/60'}
               />
               <span className="flex-1">{item.label}</span>
               {active && (
-                <ChevronRight size={14} className="text-[#ff6700]/50" />
+                <ChevronRight size={14} className="text-[#8AD9D1]/50" />
               )}
             </Link>
           );
@@ -169,21 +169,21 @@ export default function AdminSidebar({
       </nav>
 
       {/* User section */}
-      <div className="border-t border-[#2a2a2a] p-3">
+      <div className="border-t border-[#01434A] p-3">
         <div className="flex items-center gap-3 px-2 py-2 mb-1">
-          <div className="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
-            <span className="text-xs font-medium text-[#999]">{initials}</span>
+          <div className="w-8 h-8 rounded-full bg-[#013036] border border-[#01434A] flex items-center justify-center shrink-0">
+            <span className="text-xs font-medium text-[#8AD9D1]">{initials}</span>
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-white truncate">
               {memberName || 'Team Member'}
             </p>
-            <p className="text-xs text-[#555] truncate">{memberEmail}</p>
+            <p className="text-xs text-white/40 truncate">{memberEmail}</p>
           </div>
         </div>
         <button
           onClick={onSignOut}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors"
         >
           <LogOut size={16} />
           Sign out
@@ -197,7 +197,7 @@ export default function AdminSidebar({
       {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-[#141414] border border-[#2a2a2a] rounded-lg flex items-center justify-center text-[#999] hover:text-white transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-[#043946] border border-[#01434A] rounded-lg flex items-center justify-center text-white/70 hover:text-white transition-colors"
       >
         <Menu size={18} />
       </button>
@@ -205,16 +205,16 @@ export default function AdminSidebar({
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/60"
+          className="lg:hidden fixed inset-0 z-50 bg-black/40"
           onClick={() => setMobileOpen(false)}
         >
           <div
-            className="w-[260px] h-full bg-[#111] border-r border-[#2a2a2a]"
+            className="w-[260px] h-full bg-[#043946] border-r border-[#01434A]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute top-4 right-4 text-[#666] hover:text-white"
+              className="absolute top-4 right-4 text-white/40 hover:text-white"
             >
               <X size={18} />
             </button>
@@ -224,7 +224,7 @@ export default function AdminSidebar({
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 bg-[#111] border-r border-[#2a2a2a] h-screen sticky top-0">
+      <aside className="hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 bg-[#043946] border-r border-[#01434A] h-screen sticky top-0">
         {sidebarContent}
       </aside>
     </>

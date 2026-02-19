@@ -18,11 +18,11 @@ interface ProposalCardProps {
 }
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  draft: { icon: <FileText size={14} />, color: 'bg-[#1a1a1a] text-[#999]', label: 'Draft' },
-  sent: { icon: <Clock size={14} />, color: 'bg-blue-900/30 text-blue-400', label: 'Sent' },
-  viewed: { icon: <Eye size={14} />, color: 'bg-amber-900/30 text-amber-400', label: 'Viewed' },
-  accepted: { icon: <CheckCircle2 size={14} />, color: 'bg-emerald-900/30 text-emerald-400', label: 'Accepted' },
-  declined: { icon: <X size={14} />, color: 'bg-red-900/30 text-red-400', label: 'Declined' },
+  draft: { icon: <FileText size={14} />, color: 'bg-gray-100 text-gray-500', label: 'Draft' },
+  sent: { icon: <Clock size={14} />, color: 'bg-blue-50 text-blue-600', label: 'Sent' },
+  viewed: { icon: <Eye size={14} />, color: 'bg-amber-50 text-amber-600', label: 'Viewed' },
+  accepted: { icon: <CheckCircle2 size={14} />, color: 'bg-emerald-50 text-emerald-600', label: 'Accepted' },
+  declined: { icon: <X size={14} />, color: 'bg-red-50 text-red-500', label: 'Declined' },
 };
 
 const formatSize = (bytes: number | null) => {
@@ -73,28 +73,28 @@ export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardPro
   };
 
   return (
-    <div className="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] overflow-hidden hover:border-[#333] transition-colors">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-300 shadow-sm transition-colors">
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-1">
-              <h3 className="text-base font-semibold font-[family-name:var(--font-display)] truncate text-white">
+              <h3 className="text-base font-semibold font-[family-name:var(--font-display)] truncate text-gray-900">
                 {p.title}
               </h3>
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>
                 {sc.icon} {sc.label}
               </span>
             </div>
-            <div className="flex items-center gap-4 text-sm text-[#666]">
+            <div className="flex items-center gap-4 text-sm text-gray-400">
               <span>{p.client_name}</span>
-              <span className="text-[#333]">&middot;</span>
+              <span className="text-gray-200">&middot;</span>
               <span>{formatSize(p.file_size_bytes)}</span>
-              <span className="text-[#333]">&middot;</span>
+              <span className="text-gray-200">&middot;</span>
               <span>{formatDate(p.created_at)}</span>
               {p.accepted_at && (
                 <>
-                  <span className="text-[#333]">&middot;</span>
-                  <span className="text-emerald-400 font-medium">
+                  <span className="text-gray-200">&middot;</span>
+                  <span className="text-emerald-600 font-medium">
                     Accepted {formatDate(p.accepted_at)}
                     {p.accepted_by_name && ` by ${p.accepted_by_name}`}
                   </span>
@@ -105,15 +105,15 @@ export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardPro
           <div className="flex items-center gap-2">
             <button
               onClick={copyLink}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white hover:bg-[#2a2a2a] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
             >
-              {copiedId ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+              {copiedId ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
               {copiedId ? 'Copied!' : 'Copy Link'}
             </button>
             {p.status === 'draft' && (
               <button
                 onClick={markAsSent}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-blue-900/20 text-blue-400 hover:bg-blue-900/30 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
               >
                 <Link2 size={14} />
                 Mark Sent
@@ -121,14 +121,14 @@ export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardPro
             )}
             <button
               onClick={() => { setEditingCover(!editingCover); setEditingPages(false); }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white hover:bg-[#2a2a2a] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
             >
               <Image size={14} />
               Cover
             </button>
             <button
               onClick={() => { setEditingPages(!editingPages); setEditingCover(false); }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white hover:bg-[#2a2a2a] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
             >
               <Pencil size={14} />
               Edit Pages
@@ -136,14 +136,14 @@ export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardPro
             <a
               href={`/view/${p.share_token}`}
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#ff6700] text-white hover:bg-[#e85d00] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors"
             >
               <Eye size={14} />
               Preview
             </a>
             <button
               onClick={deleteProposal}
-              className="p-2 rounded-lg text-[#555] hover:text-red-400 hover:bg-red-900/20 transition-colors"
+              className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
             >
               <Trash2 size={16} />
             </button>

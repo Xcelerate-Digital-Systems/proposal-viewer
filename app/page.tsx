@@ -39,16 +39,16 @@ function DashboardContent({ companyId }: { companyId: string }) {
       {/* Page header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-white font-[family-name:var(--font-display)]">
+          <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)]">
             Proposals
           </h1>
-          <p className="text-sm text-[#666] mt-0.5">
+          <p className="text-sm text-gray-400 mt-0.5">
             {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 bg-[#ff6700] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors"
+          className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
         >
           <Plus size={16} />
           New Proposal
@@ -65,15 +65,15 @@ function DashboardContent({ companyId }: { companyId: string }) {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-[#333] border-t-[#ff6700] rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
         </div>
       ) : proposals.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-16 h-16 bg-[#1a1a1a] rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FileText size={28} className="text-[#444]" />
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <FileText size={28} className="text-gray-300" />
           </div>
-          <h3 className="text-lg font-semibold text-[#999] mb-1">No proposals yet</h3>
-          <p className="text-sm text-[#666]">Upload your first proposal to get started</p>
+          <h3 className="text-lg font-semibold text-gray-500 mb-1">No proposals yet</h3>
+          <p className="text-sm text-gray-400">Upload your first proposal to get started</p>
         </div>
       ) : (
         <div className="space-y-3">

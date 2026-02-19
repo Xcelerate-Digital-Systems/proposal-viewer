@@ -5,8 +5,8 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 
 export const metadata: Metadata = {
-  title: 'Proposal Viewer',
-  description: 'Professional proposal viewer by Xcelerate Digital Systems',
+  title: 'AgencyViz',
+  description: 'Professional proposal viewer by AgencyViz',
   icons: {
     icon: '/favicon.svg',
   },

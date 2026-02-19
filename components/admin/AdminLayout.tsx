@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <AuthGuard>
       {(auth) => (
-        <div className="flex min-h-screen bg-[#0f0f0f]">
+        <div className="flex min-h-screen bg-gray-50">
           <AdminSidebar
             memberName={auth.teamMember?.name}
             memberEmail={auth.teamMember?.email}

@@ -65,16 +65,16 @@ function TemplatesContent({ companyId }: { companyId: string }) {
       {/* Page header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-white font-[family-name:var(--font-display)]">
+          <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)]">
             Templates
           </h1>
-          <p className="text-sm text-[#666] mt-0.5">
+          <p className="text-sm text-gray-400 mt-0.5">
             {templates.length} template{templates.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 bg-[#ff6700] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors"
+          className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
         >
           <Plus size={16} />
           New Template
@@ -91,18 +91,18 @@ function TemplatesContent({ companyId }: { companyId: string }) {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-[#333] border-t-[#ff6700] rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
         </div>
       ) : templates.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-16 h-16 bg-[#1a1a1a] rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FileText size={28} className="text-[#444]" />
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <FileText size={28} className="text-gray-300" />
           </div>
-          <h3 className="text-lg font-semibold text-[#999] mb-1">No templates yet</h3>
-          <p className="text-sm text-[#666] mb-4">Upload a PDF to create your first template</p>
+          <h3 className="text-lg font-semibold text-gray-500 mb-1">No templates yet</h3>
+          <p className="text-sm text-gray-400 mb-4">Upload a PDF to create your first template</p>
           <button
             onClick={() => setShowUpload(true)}
-            className="inline-flex items-center gap-2 bg-[#ff6700] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors"
+            className="inline-flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
           >
             <Upload size={16} />
             Upload Template PDF
@@ -119,20 +119,20 @@ function TemplatesContent({ companyId }: { companyId: string }) {
           {templates.map((t) => (
             <div
               key={t.id}
-              className="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] p-5 hover:border-[#333] transition-colors"
+              className="bg-white rounded-xl border border-gray-200 p-5 hover:border-gray-300 shadow-sm transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-semibold text-white font-[family-name:var(--font-display)]">
+                  <h3 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)]">
                     {t.name}
                   </h3>
-                  <div className="flex items-center gap-4 text-sm text-[#666] mt-1">
+                  <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
                     <span>{t.page_count} pages</span>
-                    <span className="text-[#333]">&middot;</span>
+                    <span className="text-gray-200">&middot;</span>
                     <span>Created {new Date(t.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                     {t.description && (
                       <>
-                        <span className="text-[#333]">&middot;</span>
+                        <span className="text-gray-200">&middot;</span>
                         <span className="truncate max-w-xs">{t.description}</span>
                       </>
                     )}
@@ -141,14 +141,14 @@ function TemplatesContent({ companyId }: { companyId: string }) {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setSelectedId(t.id)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white hover:bg-[#2a2a2a] transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
                   >
                     <FileText size={14} />
                     Manage Pages
                   </button>
                   <button
                     onClick={() => deleteTemplate(t.id, t.name)}
-                    className="p-2 rounded-lg text-[#555] hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                    className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>

@@ -147,27 +147,27 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const goNext = () => setSelectedPage((p) => Math.min(pageCount - 1, p + 1));
 
   return (
-    <div className="border-t border-[#2a2a2a] bg-[#151515] p-5">
+    <div className="border-t border-gray-200 bg-gray-50 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-white">Edit Page Labels</h4>
+        <h4 className="text-sm font-semibold text-gray-900">Edit Page Labels</h4>
         <div className="flex items-center gap-2">
           <button
             onClick={handleSave}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#ff6700] text-white hover:bg-[#e85d00] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors"
           >
             <Save size={14} />
             Save
           </button>
           <button
             onClick={onCancel}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-white text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
           >
             Cancel
           </button>
         </div>
       </div>
 
-      <p className="text-xs text-[#666] mb-3">
+      <p className="text-xs text-gray-400 mb-3">
         Choose a label from the dropdown or select &quot;Custom&quot; to type your own. Use the indent button to nest pages under a parent.
       </p>
 
@@ -186,12 +186,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                   key={i}
                   className={`flex items-center gap-2 rounded-lg px-1.5 py-1 cursor-pointer transition-colors ${
                     isSelected
-                      ? 'bg-[#ff6700]/10 ring-1 ring-[#ff6700]/30'
-                      : 'hover:bg-[#1a1a1a]'
+                      ? 'bg-[#017C87]/10 ring-1 ring-[#017C87]/30'
+                      : 'hover:bg-gray-100'
                   }`}
                   onClick={() => setSelectedPage(i)}
                 >
-                  <span className="text-xs text-[#555] w-6 text-right shrink-0">{i + 1}.</span>
+                  <span className="text-xs text-gray-400 w-6 text-right shrink-0">{i + 1}.</span>
 
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleIndent(i); }}
@@ -199,17 +199,17 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                     title={entry.indent ? 'Remove indent' : 'Indent under parent'}
                     className={`shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors ${
                       i === 0
-                        ? 'text-[#333] cursor-not-allowed'
+                        ? 'text-gray-200 cursor-not-allowed'
                         : entry.indent
-                        ? 'text-[#ff6700] bg-[#ff6700]/10 hover:bg-[#ff6700]/20'
-                        : 'text-[#555] hover:text-[#999] hover:bg-[#222]'
+                        ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     {entry.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
                   </button>
 
                   {entry.indent > 0 && (
-                    <span className="text-[10px] text-[#ff6700]/50 shrink-0">SUB</span>
+                    <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
                   )}
 
                   <div className="flex-1 relative min-w-0" onClick={(e) => e.stopPropagation()}>
@@ -220,12 +220,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                           value={entry.name}
                           onChange={(e) => updateEntry(i, { name: e.target.value })}
                           onFocus={() => setSelectedPage(i)}
-                          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-l-md border border-r-0 border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:border-[#ff6700]/50 placeholder:text-[#555]"
+                          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
                           placeholder="Custom label..."
                         />
                         <button
                           onClick={() => setOpenDropdown(isDropdownOpen ? null : i)}
-                          className="px-2 py-1.5 rounded-r-md border border-[#2a2a2a] bg-[#0f0f0f] text-[#666] hover:text-white transition-colors"
+                          className="px-2 py-1.5 rounded-r-md border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
                         >
                           <ChevronDown size={13} className={isDropdownOpen ? 'rotate-180' : ''} />
                         </button>
@@ -233,23 +233,23 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                     ) : (
                       <button
                         onClick={() => setOpenDropdown(isDropdownOpen ? null : i)}
-                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm hover:border-[#444] transition-colors"
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm hover:border-gray-300 transition-colors"
                       >
                         <span className="truncate">{entry.name}</span>
-                        <ChevronDown size={13} className={`text-[#666] shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={13} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                     )}
 
                     {isDropdownOpen && (
-                      <div className="absolute z-20 mt-1 w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                         {PRESET_LABELS.map((label) => (
                           <button
                             key={label}
                             onClick={() => selectPreset(i, label)}
-                            className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-[#222] last:border-0 ${
+                            className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-gray-100 last:border-0 ${
                               entry.name === label
-                                ? 'text-[#ff6700] bg-[#ff6700]/5'
-                                : 'text-[#ccc] hover:bg-[#252525] hover:text-white'
+                                ? 'text-[#017C87] bg-[#017C87]/5'
+                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                             }`}
                           >
                             {label}
@@ -257,7 +257,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         ))}
                         <button
                           onClick={() => selectPreset(i, CUSTOM_VALUE)}
-                          className="w-full text-left px-3 py-2 text-sm text-[#999] hover:bg-[#252525] hover:text-white transition-colors italic"
+                          className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors italic"
                         >
                           Custom...
                         </button>
@@ -269,7 +269,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
             })}
 
             {entries.length === 0 && (
-              <p className="text-sm text-[#555]">Loading pages...</p>
+              <p className="text-sm text-gray-400">Loading pages...</p>
             )}
           </div>
         </div>
@@ -284,29 +284,29 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               )}
 
               {pageCount > 0 && (
-                <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#0a0a0a] min-h-0">
+                <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
                   {/* Preview header with nav */}
-                  <div className="shrink-0 px-3 py-2 bg-[#1a1a1a] border-b border-[#2a2a2a] flex items-center justify-between">
+                  <div className="shrink-0 px-3 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={goPrev}
                         disabled={selectedPage === 0}
-                        className="w-6 h-6 flex items-center justify-center rounded text-[#888] hover:text-white hover:bg-[#333] disabled:text-[#333] disabled:hover:bg-transparent transition-colors"
+                        className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
                       >
                         <ChevronLeft size={14} />
                       </button>
-                      <span className="text-xs text-[#888] font-medium">
+                      <span className="text-xs text-gray-500 font-medium">
                         Page {selectedPage + 1} of {pageCount}
                       </span>
                       <button
                         onClick={goNext}
                         disabled={selectedPage >= pageCount - 1}
-                        className="w-6 h-6 flex items-center justify-center rounded text-[#888] hover:text-white hover:bg-[#333] disabled:text-[#333] disabled:hover:bg-transparent transition-colors"
+                        className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
                       >
                         <ChevronRight size={14} />
                       </button>
                     </div>
-                    <span className="text-xs text-[#ff6700] font-medium truncate ml-2">
+                    <span className="text-xs text-[#017C87] font-medium truncate ml-2">
                       {entries[selectedPage]?.name || ''}
                     </span>
                   </div>
@@ -325,10 +325,10 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               )}
             </Document>
           ) : (
-            <div className="flex-1 rounded-lg border border-[#2a2a2a] bg-[#0a0a0a] flex items-center justify-center">
+            <div className="flex-1 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2">
-                <div className="w-5 h-5 border-2 border-[#555] border-t-transparent rounded-full animate-spin" />
-                <p className="text-xs text-[#555]">Loading PDF...</p>
+                <div className="w-5 h-5 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+                <p className="text-xs text-gray-400">Loading PDF...</p>
               </div>
             </div>
           )}

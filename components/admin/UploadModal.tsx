@@ -81,25 +81,25 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-lg border border-[#2a2a2a]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a]">
-          <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-white">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-gray-900">
             New Proposal
           </h2>
-          <button onClick={onClose} className="text-[#666] hover:text-white">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-[#2a2a2a]">
+        <div className="flex border-b border-gray-200">
           <button
             onClick={() => setTab('upload')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
               tab === 'upload'
-                ? 'text-[#ff6700] border-b-2 border-[#ff6700] -mb-px'
-                : 'text-[#666] hover:text-white'
+                ? 'text-[#017C87] border-b-2 border-[#017C87] -mb-px'
+                : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             <Upload size={15} />
@@ -109,8 +109,8 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
             onClick={() => setTab('template')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
               tab === 'template'
-                ? 'text-[#ff6700] border-b-2 border-[#ff6700] -mb-px'
-                : 'text-[#666] hover:text-white'
+                ? 'text-[#017C87] border-b-2 border-[#017C87] -mb-px'
+                : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             <LayoutTemplate size={15} />
@@ -121,62 +121,62 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
         {tab === 'upload' ? (
           <form onSubmit={handleUpload} className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#999] mb-1">Title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
               <input
                 type="text"
                 required
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. Website Redesign Proposal"
-                className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-[#999] mb-1">Client Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
                 <input
                   type="text"
                   required
                   value={form.client_name}
                   onChange={(e) => setForm({ ...form, client_name: e.target.value })}
                   placeholder="John Smith"
-                  className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#999] mb-1">Client Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client Email</label>
                 <input
                   type="email"
                   value={form.client_email}
                   onChange={(e) => setForm({ ...form, client_email: e.target.value })}
                   placeholder="john@example.com"
-                  className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#999] mb-1">Description (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={2}
                 placeholder="Brief note about this proposal..."
-                className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 resize-none placeholder:text-[#555]"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 resize-none placeholder:text-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#999] mb-1">PDF File</label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#2a2a2a] rounded-xl cursor-pointer hover:border-[#ff6700]/40 hover:bg-[#ff6700]/5 transition-colors">
+              <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-colors">
                 {file ? (
-                  <div className="flex items-center gap-2 text-sm text-[#999]">
-                    <FileText size={20} className="text-[#ff6700]" />
-                    <span className="font-medium text-white">{file.name}</span>
-                    <span className="text-[#666]">({formatSize(file.size)})</span>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <FileText size={20} className="text-[#017C87]" />
+                    <span className="font-medium text-gray-900">{file.name}</span>
+                    <span className="text-gray-400">({formatSize(file.size)})</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2">
-                    <Upload size={24} className="text-[#444]" />
-                    <span className="text-sm text-[#666]">Click to upload PDF</span>
+                    <Upload size={24} className="text-gray-300" />
+                    <span className="text-sm text-gray-400">Click to upload PDF</span>
                   </div>
                 )}
                 <input
@@ -191,12 +191,12 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
             {uploading && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#999]">Uploading...</span>
-                  <span className="text-[#ff6700] font-medium">{uploadProgress}%</span>
+                  <span className="text-gray-500">Uploading...</span>
+                  <span className="text-[#017C87] font-medium">{uploadProgress}%</span>
                 </div>
-                <div className="w-full h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#ff6700] rounded-full transition-all duration-300 ease-out"
+                    className="h-full bg-[#017C87] rounded-full transition-all duration-300 ease-out"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -206,7 +206,7 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
             <button
               type="submit"
               disabled={uploading || !file}
-              className="w-full bg-[#ff6700] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#017C87] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? 'Creating proposal...' : 'Create Proposal'}
             </button>

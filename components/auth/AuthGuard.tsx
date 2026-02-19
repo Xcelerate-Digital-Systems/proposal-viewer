@@ -1,3 +1,4 @@
+// components/auth/AuthGuard.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -21,8 +22,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   if (auth.loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-        <Loader2 className="w-6 h-6 text-[#ff6700] animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-6 h-6 text-[#017C87] animate-spin" />
       </div>
     );
   }

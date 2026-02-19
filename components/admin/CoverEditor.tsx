@@ -78,21 +78,21 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
   };
 
   return (
-    <div className="border-t border-[#2a2a2a] bg-[#151515] p-5">
+    <div className="border-t border-gray-200 bg-gray-50 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-white">Cover Page Settings</h4>
+        <h4 className="text-sm font-semibold text-gray-900">Cover Page Settings</h4>
         <div className="flex items-center gap-2">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#ff6700] text-white hover:bg-[#e85d00] transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
           >
             <Save size={14} />
             {saving ? 'Saving...' : 'Save'}
           </button>
           <button
             onClick={onCancel}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-white text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
           >
             Cancel
           </button>
@@ -103,89 +103,89 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
         {/* Left: Settings */}
         <div className="space-y-4">
           {/* Enable/disable toggle */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-[#0f0f0f] border border-[#2a2a2a]">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-white border border-gray-200">
             <div className="flex items-center gap-2">
-              {coverEnabled ? <Eye size={16} className="text-[#ff6700]" /> : <EyeOff size={16} className="text-[#555]" />}
-              <span className="text-sm text-white font-medium">Cover Page</span>
+              {coverEnabled ? <Eye size={16} className="text-[#017C87]" /> : <EyeOff size={16} className="text-gray-400" />}
+              <span className="text-sm text-gray-900 font-medium">Cover Page</span>
             </div>
             <button
               onClick={() => setCoverEnabled(!coverEnabled)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${coverEnabled ? 'bg-[#ff6700]' : 'bg-[#333]'}`}
+              className={`relative w-10 h-5 rounded-full transition-colors ${coverEnabled ? 'bg-[#017C87]' : 'bg-gray-200'}`}
             >
               <span
-                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${coverEnabled ? 'left-5' : 'left-0.5'}`}
+                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${coverEnabled ? 'left-5' : 'left-0.5'}`}
               />
             </button>
           </div>
 
           {/* Subtitle */}
           <div>
-            <label className="block text-sm font-medium text-[#999] mb-1">Subtitle</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
             <input
               type="text"
               value={subtitle}
               onChange={(e) => setSubtitle(e.target.value)}
               placeholder={`Prepared for ${proposal.client_name}`}
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
             />
-            <p className="text-xs text-[#555] mt-1">Leave blank for &quot;Prepared for {proposal.client_name}&quot;</p>
+            <p className="text-xs text-gray-400 mt-1">Leave blank for &quot;Prepared for {proposal.client_name}&quot;</p>
           </div>
 
           {/* Button text */}
           <div>
-            <label className="block text-sm font-medium text-[#999] mb-1">Cover Button Text</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cover Button Text</label>
             <input
               type="text"
               value={buttonText}
               onChange={(e) => setButtonText(e.target.value)}
               placeholder="START READING PROPOSAL"
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
             />
           </div>
 
           {/* Accept button text */}
           <div>
-            <label className="block text-sm font-medium text-[#999] mb-1">Approve Button Text</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Approve Button Text</label>
             <input
               type="text"
               value={acceptButtonText}
               onChange={(e) => setAcceptButtonText(e.target.value)}
               placeholder="Approve & Continue"
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
             />
-            <p className="text-xs text-[#555] mt-1">Customise the button clients click to approve. e.g. &quot;Book Strategy Session&quot; or &quot;Request SLA&quot;</p>
+            <p className="text-xs text-gray-400 mt-1">Customise the button clients click to approve. e.g. &quot;Book Strategy Session&quot; or &quot;Request SLA&quot;</p>
           </div>
 
           {/* Image upload */}
           <div>
-            <label className="block text-sm font-medium text-[#999] mb-1">Background Image</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Background Image</label>
             {imageUrl ? (
               <div className="flex items-center gap-3">
-                <div className="w-20 h-12 rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#0f0f0f]">
+                <div className="w-20 h-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
                   <img src={imageUrl} alt="Cover" className="w-full h-full object-cover" />
                 </div>
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-[#222] text-[#999] hover:text-white transition-colors"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
                 >
                   Replace
                 </button>
                 <button
                   onClick={removeImage}
-                  className="p-1.5 rounded-lg text-[#555] hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#2a2a2a] rounded-xl cursor-pointer hover:border-[#ff6700]/40 hover:bg-[#ff6700]/5 transition-colors">
+              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-colors">
                 {uploading ? (
-                  <span className="text-sm text-[#666]">Uploading...</span>
+                  <span className="text-sm text-gray-400">Uploading...</span>
                 ) : (
                   <div className="flex flex-col items-center gap-1">
-                    <Image size={20} className="text-[#444]" />
-                    <span className="text-sm text-[#666]">Click to upload image</span>
-                    <span className="text-xs text-[#444]">JPG, PNG, or WebP</span>
+                    <Image size={20} className="text-gray-300" />
+                    <span className="text-sm text-gray-400">Click to upload image</span>
+                    <span className="text-xs text-gray-300">JPG, PNG, or WebP</span>
                   </div>
                 )}
                 <input
@@ -213,8 +213,8 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
           </div>
         </div>
 
-        {/* Right: Live preview */}
-        <div className="rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#0a0a0a] relative" style={{ minHeight: 280 }}>
+        {/* Right: Live preview — stays dark as it shows client-facing viewer appearance */}
+        <div className="rounded-lg overflow-hidden border border-gray-200 bg-[#0a0a0a] relative" style={{ minHeight: 280 }}>
           {/* Background */}
           {imageUrl ? (
             <div
