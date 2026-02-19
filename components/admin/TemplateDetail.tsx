@@ -5,12 +5,43 @@ import { useState, useEffect, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { ArrowLeft, Pencil, Trash2, Plus, Upload, Check, X, Loader2, GripVertical } from 'lucide-react';
+import {
+  ArrowLeft, Trash2, Plus, Upload, Loader2,
+  ChevronDown, CornerDownRight, Save,
+} from 'lucide-react';
 import { supabase, ProposalTemplate, TemplatePage } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+const PRESET_LABELS = [
+  'INTRODUCTION',
+  'TABLE OF CONTENTS',
+  'EXECUTIVE SUMMARY',
+  'WHO ARE WE',
+  'ABOUT US',
+  'OUR APPROACH',
+  'YOUR SOLUTION',
+  'SERVICES',
+  'SCOPE OF WORK',
+  'HOW WE GET RESULTS',
+  'METHODOLOGY',
+  'DELIVERABLES',
+  'CASE STUDIES',
+  'CASE STUDY',
+  'TESTIMONIALS',
+  'YOUR INVESTMENT',
+  'PRICING',
+  'TIMELINE',
+  'FAQ',
+  'TERMS & CONDITIONS',
+  'NEXT STEPS',
+  'CONTACT',
+  'APPENDIX',
+];
+
+const CUSTOM_VALUE = '__custom__';
 
 interface TemplateDetailProps {
   template: ProposalTemplate;
@@ -24,13 +55,13 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   const [pages, setPages] = useState<TemplatePage[]>([]);
   const [pageUrls, setPageUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [editingLabel, setEditingLabel] = useState<string | null>(null);
-  const [labelValue, setLabelValue] = useState('');
-  const [replacingPage, setReplacingPage] = useState<number | null>(null);
-  const [addingAfter, setAddingAfter] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const addFileRef = useRef<HTMLInputElement>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
+  // Track local edits: label + indent keyed by page id
+  const [localEdits, setLocalEdits] = useState<Record<string, { label: string; indent: number }>>({});
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchPages = async () => {
     const { data } = await supabase
@@ -39,8 +70,16 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
       .eq('template_id', template.id)
       .order('page_number', { ascending: true });
 
-    const templatePages = data || [];
+    const templatePages = (data || []) as TemplatePage[];
     setPages(templatePages);
+
+    // Seed local edits from DB
+    const edits: Record<string, { label: string; indent: number }> = {};
+    for (const p of templatePages) {
+      edits[p.id] = { label: p.label, indent: p.indent ?? 0 };
+    }
+    setLocalEdits(edits);
+    setHasChanges(false);
 
     // Get signed URLs for all pages
     const urls: Record<string, string> = {};
@@ -56,13 +95,63 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
   useEffect(() => { fetchPages(); }, [template.id]);
 
-  const saveLabel = async (pageId: string) => {
-    if (!labelValue.trim()) return;
-    await supabase.from('template_pages')
-      .update({ label: labelValue.trim() })
-      .eq('id', pageId);
-    setEditingLabel(null);
-    fetchPages();
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const getEdit = (pageId: string) =>
+    localEdits[pageId] ?? { label: '', indent: 0 };
+
+  const updateEdit = (pageId: string, changes: Partial<{ label: string; indent: number }>) => {
+    setLocalEdits((prev) => ({
+      ...prev,
+      [pageId]: { ...prev[pageId], ...changes },
+    }));
+    setHasChanges(true);
+  };
+
+  const isPreset = (name: string) => PRESET_LABELS.includes(name.toUpperCase());
+
+  const selectPreset = (pageId: string, label: string) => {
+    if (label === CUSTOM_VALUE) {
+      // Keep current label, just close dropdown
+    } else {
+      updateEdit(pageId, { label });
+    }
+    setOpenDropdown(null);
+  };
+
+  const toggleIndent = (pageId: string, pageIndex: number) => {
+    if (pageIndex === 0) return;
+    const current = getEdit(pageId);
+    updateEdit(pageId, { indent: current.indent === 0 ? 1 : 0 });
+  };
+
+  const saveAllLabels = async () => {
+    setSaving(true);
+    try {
+      for (const page of pages) {
+        const edit = getEdit(page.id);
+        if (edit.label !== page.label || (edit.indent ?? 0) !== (page.indent ?? 0)) {
+          await supabase.from('template_pages')
+            .update({ label: edit.label, indent: edit.indent })
+            .eq('id', page.id);
+        }
+      }
+      toast.success('Labels saved');
+      setHasChanges(false);
+      fetchPages();
+    } catch {
+      toast.error('Failed to save labels');
+    }
+    setSaving(false);
   };
 
   const deletePage = async (pageNumber: number) => {
@@ -93,15 +182,15 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
   const handleReplacePage = async (pageNumber: number, file: File) => {
     setProcessing(true);
+    const page = pages.find(p => p.page_number === pageNumber);
     const formData = new FormData();
     formData.append('template_id', template.id);
     formData.append('page_number', pageNumber.toString());
-    formData.append('label', pages.find(p => p.page_number === pageNumber)?.label || `Page ${pageNumber}`);
+    formData.append('label', page?.label || `Page ${pageNumber}`);
     formData.append('file', file);
 
     await fetch('/api/templates/pages', { method: 'POST', body: formData });
 
-    setReplacingPage(null);
     setProcessing(false);
     toast.success(`Page ${pageNumber} replaced`);
     onRefresh();
@@ -114,12 +203,11 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     const formData = new FormData();
     formData.append('template_id', template.id);
     formData.append('page_number', newPageNumber.toString());
-    formData.append('label', `New Page`);
+    formData.append('label', 'New Page');
     formData.append('file', file);
 
     await fetch('/api/templates/pages', { method: 'POST', body: formData });
 
-    setAddingAfter(null);
     setProcessing(false);
     toast.success('Page inserted');
     onRefresh();
@@ -127,7 +215,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   };
 
   return (
-    <div>
+    <div ref={dropdownRef}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -144,7 +232,22 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
           </h2>
           <span className="text-sm text-gray-400">{pages.length} pages</span>
         </div>
+
+        {hasChanges && (
+          <button
+            onClick={saveAllLabels}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            Save Labels
+          </button>
+        )}
       </div>
+
+      <p className="text-xs text-gray-400 mb-4">
+        Choose a label from the dropdown or type a custom one. Use the indent button to nest pages under a parent tab — this structure carries through when creating proposals from this template.
+      </p>
 
       {processing && (
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 p-3 rounded-lg bg-gray-50 border border-gray-200">
@@ -159,116 +262,160 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
         </div>
       ) : (
         <div className="space-y-3">
-          {pages.map((page, idx) => (
-            <div key={page.id}>
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors shadow-sm">
-                <div className="flex items-stretch">
-                  {/* PDF Thumbnail */}
-                  <div className="w-40 bg-gray-50 border-r border-gray-200 flex items-center justify-center shrink-0 p-2">
-                    {pageUrls[page.id] ? (
-                      <Document file={pageUrls[page.id]} loading={<Loader2 size={16} className="animate-spin text-gray-300" />}>
-                        <Page
-                          pageNumber={1}
-                          width={140}
-                          renderTextLayer={false}
-                          renderAnnotationLayer={false}
-                        />
-                      </Document>
-                    ) : (
-                      <div className="w-full h-24 flex items-center justify-center">
-                        <Loader2 size={16} className="animate-spin text-gray-300" />
-                      </div>
-                    )}
-                  </div>
+          {pages.map((page, idx) => {
+            const edit = getEdit(page.id);
+            const isCustom = !isPreset(edit.label);
+            const isDropdownOpen = openDropdown === page.id;
 
-                  {/* Page info */}
-                  <div className="flex-1 p-4 flex items-center justify-between min-w-0">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Page {page.page_number}
-                        </span>
-                      </div>
-                      {editingLabel === page.id ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={labelValue}
-                            onChange={(e) => setLabelValue(e.target.value)}
-                            className="px-2 py-1 rounded bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 w-64"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') saveLabel(page.id);
-                              if (e.key === 'Escape') setEditingLabel(null);
-                            }}
+            return (
+              <div key={page.id}>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors shadow-sm">
+                  <div className="flex items-stretch">
+                    {/* PDF Thumbnail */}
+                    <div className="w-36 bg-gray-50 border-r border-gray-200 flex items-center justify-center shrink-0 p-2">
+                      {pageUrls[page.id] ? (
+                        <Document file={pageUrls[page.id]} loading={<Loader2 size={16} className="animate-spin text-gray-300" />}>
+                          <Page
+                            pageNumber={1}
+                            width={125}
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
                           />
-                          <button onClick={() => saveLabel(page.id)} className="text-emerald-500 hover:text-emerald-600">
-                            <Check size={14} />
-                          </button>
-                          <button onClick={() => setEditingLabel(null)} className="text-gray-400 hover:text-gray-600">
-                            <X size={14} />
-                          </button>
-                        </div>
+                        </Document>
                       ) : (
-                        <button
-                          onClick={() => { setEditingLabel(page.id); setLabelValue(page.label); }}
-                          className="text-gray-900 font-medium text-sm hover:text-[#017C87] transition-colors flex items-center gap-1.5 group"
-                        >
-                          {page.label}
-                          <Pencil size={12} className="text-gray-300 group-hover:text-[#017C87]" />
-                        </button>
+                        <div className="w-full h-24 flex items-center justify-center">
+                          <Loader2 size={16} className="animate-spin text-gray-300" />
+                        </div>
                       )}
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 ml-4">
-                      <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer">
-                        <Upload size={12} />
-                        Replace
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleReplacePage(page.page_number, f);
-                          }}
-                        />
-                      </label>
+                    {/* Page info */}
+                    <div className="flex-1 p-4 flex items-center gap-3 min-w-0">
+                      {/* Page number */}
+                      <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0 w-8 text-right">
+                        {page.page_number}.
+                      </span>
+
+                      {/* Indent toggle */}
                       <button
-                        onClick={() => deletePage(page.page_number)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        onClick={() => toggleIndent(page.id, idx)}
+                        disabled={idx === 0}
+                        title={edit.indent ? 'Remove indent' : 'Indent under parent'}
+                        className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                          idx === 0
+                            ? 'text-gray-200 cursor-not-allowed'
+                            : edit.indent
+                            ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
+                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                        }`}
                       >
-                        <Trash2 size={14} />
+                        {edit.indent ? <ArrowLeft size={14} /> : <CornerDownRight size={14} />}
                       </button>
+
+                      {edit.indent > 0 && (
+                        <span className="text-[10px] text-[#017C87]/50 shrink-0 font-medium">SUB</span>
+                      )}
+
+                      {/* Label: dropdown or custom input */}
+                      <div className="flex-1 relative min-w-0">
+                        {isCustom ? (
+                          <div className="flex items-center gap-0">
+                            <input
+                              type="text"
+                              value={edit.label}
+                              onChange={(e) => updateEdit(page.id, { label: e.target.value })}
+                              className="flex-1 min-w-0 px-3 py-2 rounded-l-lg border border-r-0 border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+                              placeholder="Custom label..."
+                            />
+                            <button
+                              onClick={() => setOpenDropdown(isDropdownOpen ? null : page.id)}
+                              className="px-2.5 py-2 rounded-r-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              <ChevronDown size={14} className={isDropdownOpen ? 'rotate-180' : ''} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setOpenDropdown(isDropdownOpen ? null : page.id)}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm hover:border-gray-300 transition-colors"
+                          >
+                            <span className="truncate">{edit.label}</span>
+                            <ChevronDown size={14} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                        )}
+
+                        {isDropdownOpen && (
+                          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                            {PRESET_LABELS.map((label) => (
+                              <button
+                                key={label}
+                                onClick={() => selectPreset(page.id, label)}
+                                className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-gray-100 last:border-0 ${
+                                  edit.label === label
+                                    ? 'text-[#017C87] bg-[#017C87]/5'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                            <button
+                              onClick={() => selectPreset(page.id, CUSTOM_VALUE)}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors italic"
+                            >
+                              Custom...
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer">
+                          <Upload size={12} />
+                          Replace
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleReplacePage(page.page_number, f);
+                            }}
+                          />
+                        </label>
+                        <button
+                          onClick={() => deletePage(page.page_number)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Add page after button */}
-              <div className="flex items-center justify-center py-1">
-                <label className="flex items-center gap-1 px-3 py-1 rounded text-xs text-gray-300 hover:text-[#017C87] hover:bg-[#017C87]/5 transition-colors cursor-pointer">
-                  <Plus size={12} />
-                  Insert page after
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleAddPage(page.page_number, f);
-                    }}
-                  />
-                </label>
+                {/* Add page after button */}
+                <div className="flex items-center justify-center py-1">
+                  <label className="flex items-center gap-1 px-3 py-1 rounded text-xs text-gray-300 hover:text-[#017C87] hover:bg-[#017C87]/5 transition-colors cursor-pointer">
+                    <Plus size={12} />
+                    Insert page after
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleAddPage(page.page_number, f);
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
-
-      <input ref={fileRef} type="file" accept=".pdf" className="hidden" />
-      <input ref={addFileRef} type="file" accept=".pdf" className="hidden" />
     </div>
   );
 }

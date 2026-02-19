@@ -122,15 +122,15 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       if (!mergeRes.ok) throw new Error('Failed to merge pages');
       const mergeData = await mergeRes.json();
 
-      // 4. Build page_names from template labels
+      // 4. Build page_names from template labels + indent
       const pageNames = pages.map((p) => ({
         name: p.label,
-        indent: 0,
+        indent: p.indent ?? 0,
       }));
 
       // 5. Create the proposal record
       setStatus('Creating proposal...');
-      const shareToken = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      const shareToken = crypto.randomUUID();
 
       const { error: insertError } = await supabase.from('proposals').insert({
         title: title.trim(),
@@ -276,8 +276,11 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-xs text-gray-400 font-mono w-5 shrink-0">{page.page_number}</span>
+                      {(page.indent ?? 0) > 0 && (
+                        <span className="text-[10px] text-[#017C87]/50 shrink-0 font-medium">SUB</span>
+                      )}
                       <span className={`truncate ${isReplaced ? 'text-[#017C87]' : 'text-gray-700'}`}>
-                        {page.label}
+                        {(page.indent ?? 0) > 0 ? `└ ${page.label}` : page.label}
                       </span>
                       {isReplaced && (
                         <span className="text-xs text-[#017C87] bg-[#017C87]/10 px-1.5 py-0.5 rounded shrink-0">

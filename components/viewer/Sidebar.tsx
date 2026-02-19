@@ -67,6 +67,7 @@ export default function Sidebar({
 
   const label = acceptButtonText || 'Approve & Continue';
 
+  // Auto-expand the group containing the current page, collapse when leaving
   useEffect(() => {
     for (const item of navTree) {
       if (item.children.length > 0) {
@@ -76,12 +77,11 @@ export default function Sidebar({
         }
       }
     }
+    // Current page is not inside any parent group — collapse all
+    setExpandedGroup(null);
   }, [currentPage, numPages, pageEntries.length]);
 
   const handleParentClick = (item: NavItem) => {
-    if (item.children.length > 0) {
-      setExpandedGroup((prev) => (prev === item.pageNum ? null : item.pageNum));
-    }
     onPageSelect(item.pageNum);
     onMobileClose?.();
   };
@@ -132,25 +132,18 @@ export default function Sidebar({
           return (
             <div key={item.pageNum}>
               <div className="flex items-center">
-                {hasChildren && (
-                  <button
-                    onClick={() => setExpandedGroup((prev) => (prev === item.pageNum ? null : item.pageNum))}
-                    className="pl-3 pr-1 py-2.5 text-[#555] hover:text-[#999] transition-colors"
-                  >
-                    <ChevronRight size={13} className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                  </button>
-                )}
                 <button
                   onClick={() => handleParentClick(item)}
-                  className={`flex-1 text-left py-2.5 text-sm transition-colors truncate ${
-                    hasChildren ? 'pr-5' : 'px-5'
-                  } ${
+                  className={`flex-1 flex items-center text-left py-2.5 text-sm transition-colors truncate px-5 ${
                     isParentActive ? 'text-white font-semibold'
                       : childActive && !isExpanded ? 'text-[#ccc] font-medium'
                       : 'text-[#888] hover:text-white'
                   }`}
                 >
-                  {item.name}
+                  {hasChildren && (
+                    <ChevronRight size={13} className={`mr-1.5 shrink-0 text-[#555] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                  )}
+                  <span className="truncate">{item.name}</span>
                 </button>
               </div>
 

@@ -95,6 +95,7 @@ export type TemplatePage = {
   page_number: number;
   file_path: string;
   label: string;
+  indent: number; // 0 = top level, 1 = nested child (matches PageNameEntry)
   company_id: string;
   created_at: string;
 };
