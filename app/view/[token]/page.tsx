@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText, Loader2, Menu, CheckCircle2, MessageSquare } from 'lucide-react';
 import { useProposal, deriveBorderColor } from '@/hooks/useProposal';
 import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
@@ -36,6 +36,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const [showComments, setShowComments] = useState(false);
   const [showAccept, setShowAccept] = useState(false);
   const [showCover, setShowCover] = useState(true);
+  const [mobileSidebar, setMobileSidebar] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
 
   const goToPage = useCallback((page: number) => {
@@ -81,6 +82,10 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   }, [proposal]);
 
   const bgPrimary = branding.bg_primary || '#0f0f0f';
+  const bgSecondary = branding.bg_secondary || '#141414';
+  const accent = branding.accent_color || '#ff6700';
+  const border = deriveBorderColor(bgSecondary);
+  const acceptLabel = proposal?.accept_button_text || undefined;
 
   if (loading) {
     return (
@@ -98,7 +103,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: bgPrimary }}>
         <div className="text-center">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: branding.bg_secondary || '#1a1a1a' }}>
+            style={{ backgroundColor: bgSecondary }}>
             <FileText size={28} className="text-[#444]" />
           </div>
           <h2 className="text-xl font-semibold text-white mb-2">Proposal Not Found</h2>
@@ -113,7 +118,57 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   }
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: bgPrimary }}>
+    <div className="h-screen flex flex-col lg:flex-row overflow-hidden" style={{ backgroundColor: bgPrimary }}>
+      {/* Mobile header bar */}
+      <div
+        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0"
+        style={{ backgroundColor: bgSecondary, borderColor: border }}
+      >
+        <button
+          onClick={() => setMobileSidebar(true)}
+          className="p-2 text-[#888] hover:text-white transition-colors rounded-lg"
+        >
+          <Menu size={20} />
+        </button>
+
+        <div className="flex-1 min-w-0 mx-3 text-center">
+          <span className="text-xs text-[#666]">
+            {getPageName(currentPage)}
+            {numPages > 0 && ` · ${currentPage}/${numPages}`}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className="relative p-2 transition-colors rounded-lg"
+            style={{ color: showComments ? accent : '#888' }}
+          >
+            <MessageSquare size={18} />
+            {comments.filter(c => !c.parent_id && !c.resolved_at).length > 0 && (
+              <span
+                className="absolute top-1 right-1 w-2 h-2 rounded-full"
+                style={{ backgroundColor: accent }}
+              />
+            )}
+          </button>
+          {!accepted ? (
+            <button
+              onClick={() => setShowAccept(true)}
+              className="p-2 text-white rounded-lg transition-opacity hover:opacity-90"
+              style={{ backgroundColor: accent }}
+            >
+              <CheckCircle2 size={18} />
+            </button>
+          ) : (
+            <div className="p-2 text-emerald-400">
+              <CheckCircle2 size={18} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sidebar (desktop persistent + mobile drawer) */}
       <Sidebar
         numPages={numPages}
         currentPage={currentPage}
@@ -126,6 +181,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
         onToggleComments={() => setShowComments(!showComments)}
         commentCount={comments.length}
         branding={branding}
+        acceptButtonText={acceptLabel}
+        mobileOpen={mobileSidebar}
+        onMobileClose={() => setMobileSidebar(false)}
       />
 
       <div className="flex-1 flex flex-col min-w-0 relative">
@@ -142,8 +200,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           currentPage={currentPage}
           numPages={numPages}
           onPrevPage={() => goToPage(Math.max(1, currentPage - 1))}
-          bgColor={branding.bg_secondary}
-          borderColor={deriveBorderColor(branding.bg_secondary || '#141414')}
+          bgColor={bgSecondary}
+          borderColor={border}
         />
       </div>
 
@@ -158,9 +216,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           onResolve={resolveComment}
           onUnresolve={unresolveComment}
           onClose={() => setShowComments(false)}
-          accentColor={branding.accent_color}
-          bgPrimary={branding.bg_primary}
-          bgSecondary={branding.bg_secondary}
+          accentColor={accent}
+          bgPrimary={bgPrimary}
+          bgSecondary={bgSecondary}
         />
       )}
 
@@ -169,8 +227,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           title={proposal?.title || ''}
           onAccept={handleAccept}
           onClose={() => setShowAccept(false)}
-          accentColor={branding.accent_color}
-          bgSecondary={branding.bg_secondary}
+          accentColor={accent}
+          bgSecondary={bgSecondary}
+          buttonText={acceptLabel}
         />
       )}
     </div>

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   FileText, LayoutTemplate, Users, Palette, Bell,
-  LogOut, Menu, X, ChevronRight,
+  LogOut, Menu, X, ChevronRight, Building2, ArrowLeft,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -15,6 +15,9 @@ interface AdminSidebarProps {
   memberEmail?: string;
   memberRole?: string;
   companyId?: string;
+  isSuperAdmin?: boolean;
+  companyOverride?: { companyId: string; companyName: string } | null;
+  onClearOverride?: () => void;
   onSignOut: () => Promise<void>;
 }
 
@@ -31,6 +34,9 @@ export default function AdminSidebar({
   memberEmail,
   memberRole,
   companyId,
+  isSuperAdmin,
+  companyOverride,
+  onClearOverride,
   onSignOut,
 }: AdminSidebarProps) {
   const pathname = usePathname();
@@ -63,8 +69,32 @@ export default function AdminSidebar({
         .slice(0, 2)
     : '?';
 
+  const handleExitAccount = () => {
+    if (onClearOverride) onClearOverride();
+    window.location.href = '/accounts';
+  };
+
   const sidebarContent = (
     <div className="flex flex-col h-full">
+      {/* Company override banner */}
+      {companyOverride && (
+        <div className="px-3 py-2.5 bg-[#ff6700]/10 border-b border-[#ff6700]/20">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Building2 size={13} className="text-[#ff6700] shrink-0" />
+            <span className="text-xs font-medium text-[#ff6700] truncate">
+              {companyOverride.companyName}
+            </span>
+          </div>
+          <button
+            onClick={handleExitAccount}
+            className="flex items-center gap-1.5 text-xs text-[#ff6700]/70 hover:text-[#ff6700] transition-colors"
+          >
+            <ArrowLeft size={11} />
+            Back to Accounts
+          </button>
+        </div>
+      )}
+
       {/* Company branding */}
       <div className="px-4 py-5 border-b border-[#2a2a2a]">
         {logoUrl ? (
@@ -84,6 +114,33 @@ export default function AdminSidebar({
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+        {/* Super admin: Accounts link */}
+        {isSuperAdmin && !companyOverride && (
+          <Link
+            href="/accounts"
+            onClick={() => setMobileOpen(false)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
+              pathname === '/accounts'
+                ? 'bg-[#ff6700]/10 text-white'
+                : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'
+            }`}
+          >
+            <Building2
+              size={18}
+              className={pathname === '/accounts' ? 'text-[#ff6700]' : 'text-[#555] group-hover:text-[#888]'}
+            />
+            <span className="flex-1">Accounts</span>
+            {pathname === '/accounts' && (
+              <ChevronRight size={14} className="text-[#ff6700]/50" />
+            )}
+          </Link>
+        )}
+
+        {/* Divider between Accounts and regular nav */}
+        {isSuperAdmin && !companyOverride && (
+          <div className="!my-2 border-t border-[#2a2a2a]" />
+        )}
+
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);

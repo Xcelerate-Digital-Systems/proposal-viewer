@@ -13,12 +13,12 @@ import TemplateDetail from '@/components/admin/TemplateDetail';
 export default function TemplatesPage() {
   return (
     <AdminLayout>
-      {() => <TemplatesContent />}
+      {(auth) => <TemplatesContent companyId={auth.companyId ?? ''} />}
     </AdminLayout>
   );
 }
 
-function TemplatesContent() {
+function TemplatesContent({ companyId }: { companyId: string }) {
   const confirm = useConfirm();
   const toast = useToast();
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
@@ -83,6 +83,7 @@ function TemplatesContent() {
 
       {showUpload && (
         <TemplateUploadModal
+          companyId={companyId}
           onClose={() => setShowUpload(false)}
           onSuccess={() => { setShowUpload(false); fetchTemplates(); }}
         />

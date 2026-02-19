@@ -19,6 +19,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             memberEmail={auth.teamMember?.email}
             memberRole={auth.teamMember?.role}
             companyId={auth.companyId ?? undefined}
+            isSuperAdmin={auth.isSuperAdmin}
+            companyOverride={auth.companyOverride}
+            onClearOverride={auth.clearCompanyOverride}
             onSignOut={auth.signOut}
           />
           <main className="flex-1 min-w-0 lg:h-screen lg:overflow-y-auto">

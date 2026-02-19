@@ -63,23 +63,23 @@ export default function FloatingToolbar({
 
   return (
     <div
-      className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 backdrop-blur-sm rounded-xl px-2 py-1.5 border shadow-xl shadow-black/30"
+      className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-0.5 sm:gap-1 backdrop-blur-sm rounded-xl px-1.5 sm:px-2 py-1 sm:py-1.5 border shadow-xl shadow-black/30"
       style={{ backgroundColor: `${bgColor}e6`, borderColor }}
     >
       <button onClick={onPrevPage} disabled={currentPage === 1}
-        className="p-2 text-[#888] hover:text-white disabled:opacity-30 transition-colors rounded-lg hover:bg-white/5" title="Previous page">
+        className="p-1.5 sm:p-2 text-[#888] hover:text-white disabled:opacity-30 transition-colors rounded-lg hover:bg-white/5" title="Previous page">
         <ChevronUp size={18} />
       </button>
       <button onClick={handleShare}
-        className="p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5" title="Share">
+        className="p-1.5 sm:p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5" title="Share">
         <Share2 size={18} />
       </button>
       <button onClick={handleDownload} disabled={downloading}
-        className="p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5 disabled:opacity-50" title="Download">
+        className="p-1.5 sm:p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5 disabled:opacity-50" title="Download">
         {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
       </button>
       <button onClick={handlePrint}
-        className="p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5" title="Print">
+        className="hidden sm:block p-1.5 sm:p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5" title="Print">
         <Printer size={18} />
       </button>
     </div>

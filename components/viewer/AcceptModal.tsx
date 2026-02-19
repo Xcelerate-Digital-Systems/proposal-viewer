@@ -11,6 +11,7 @@ interface AcceptModalProps {
   onClose: () => void;
   accentColor?: string;
   bgSecondary?: string;
+  buttonText?: string;
 }
 
 export default function AcceptModal({
@@ -19,12 +20,15 @@ export default function AcceptModal({
   onClose,
   accentColor = '#ff6700',
   bgSecondary = '#141414',
+  buttonText,
 }: AcceptModalProps) {
   const [name, setName] = useState('');
   const [accepting, setAccepting] = useState(false);
 
   const surface = deriveSurfaceColor('#0f0f0f', bgSecondary);
   const border = deriveBorderColor(bgSecondary);
+
+  const label = buttonText || 'Approve & Continue';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +43,7 @@ export default function AcceptModal({
       <div className="rounded-2xl shadow-2xl w-full max-w-md border" style={{ backgroundColor: surface, borderColor: border }}>
         <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: border }}>
           <h2 className="text-lg font-semibold text-white font-[family-name:var(--font-display)]">
-            Accept Proposal
+            {label}
           </h2>
           <button onClick={onClose} className="text-[#666] hover:text-white">
             <X size={20} />
@@ -47,9 +51,9 @@ export default function AcceptModal({
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <p className="text-sm text-[#999] mb-4">
-            By clicking accept, you acknowledge that you have reviewed the proposal
+            By confirming below, you acknowledge that you&rsquo;ve reviewed
             &ldquo;<span className="text-white font-medium">{title}</span>&rdquo;
-            and agree to proceed with the next steps.
+            and would like to proceed with the next steps.
           </p>
           <div className="mb-4">
             <label className="block text-sm font-medium text-[#999] mb-1">Your Full Name</label>
@@ -58,7 +62,7 @@ export default function AcceptModal({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your full name to accept"
+              placeholder="Enter your full name to confirm"
               className="w-full px-3 py-2.5 rounded-lg text-sm text-white placeholder:text-[#555] focus:outline-none"
               style={{
                 backgroundColor: bgSecondary,
@@ -75,10 +79,10 @@ export default function AcceptModal({
             style={{ backgroundColor: accentColor }}
           >
             {accepting ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
-            {accepting ? 'Processing...' : 'I Accept — Proceed'}
+            {accepting ? 'Processing...' : `${label} →`}
           </button>
           <p className="text-xs text-[#555] mt-3 text-center">
-            This action will be timestamped and recorded.
+            This will be timestamped and recorded.
           </p>
         </form>
       </div>

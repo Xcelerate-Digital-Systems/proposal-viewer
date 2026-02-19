@@ -6,6 +6,7 @@ import { X, Upload, FileText, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
 interface TemplateUploadModalProps {
+  companyId: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -15,7 +16,7 @@ const formatSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export default function TemplateUploadModal({ onClose, onSuccess }: TemplateUploadModalProps) {
+export default function TemplateUploadModal({ companyId, onClose, onSuccess }: TemplateUploadModalProps) {
   const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -71,6 +72,7 @@ export default function TemplateUploadModal({ onClose, onSuccess }: TemplateUplo
         template_name: name.trim(),
         template_description: description.trim() || null,
         file_path: tempPath,
+        company_id: companyId,
       }),
     });
 

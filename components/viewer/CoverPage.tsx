@@ -52,14 +52,14 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col justify-between h-full px-10 py-10 md:px-16 md:py-14">
+      <div className="relative z-10 flex flex-col justify-between h-full px-6 py-8 sm:px-10 sm:py-10 md:px-16 md:py-14">
         {/* Company logo / name */}
         <div className="flex items-center gap-3">
           {branding.logo_url ? (
             <img
               src={branding.logo_url}
               alt={branding.name}
-              className="h-8 md:h-10 max-w-[200px] object-contain"
+              className="h-7 sm:h-8 md:h-10 max-w-[180px] object-contain"
             />
           ) : branding.name ? (
             <div className="flex items-center gap-2">
@@ -67,21 +67,21 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
               <span className="text-white/90 text-sm md:text-base font-medium">{branding.name}</span>
             </div>
           ) : (
-            <img src="/logo-white.svg" alt="Logo" className="h-7 md:h-8 opacity-90" />
+            <img src="/logo-white.svg" alt="Logo" className="h-6 sm:h-7 md:h-8 opacity-90" />
           )}
         </div>
 
         {/* Title area */}
         <div className="max-w-2xl">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-tight mb-4 font-[family-name:var(--font-display)]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-tight mb-3 sm:mb-4 font-[family-name:var(--font-display)]">
             {proposal.title}
           </h1>
-          <p className="text-lg md:text-xl text-white/70 mb-8">
+          <p className="text-base sm:text-lg md:text-xl text-white/70 mb-6 sm:mb-8">
             {subtitle}
           </p>
           <button
             onClick={onStart}
-            className="inline-flex items-center px-8 py-3.5 text-sm font-semibold tracking-wider uppercase rounded-sm transition-colors"
+            className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded-sm transition-colors"
             style={{ backgroundColor: accent, color: '#fff' }}
             onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
             onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}

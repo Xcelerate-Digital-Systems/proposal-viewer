@@ -59,6 +59,7 @@ export type Proposal = {
   cover_image_path: string | null;
   cover_subtitle: string | null;
   cover_button_text: string;
+  accept_button_text: string | null;
   company_id: string;
   created_at: string;
   updated_at: string;
@@ -105,6 +106,7 @@ export type TeamMember = {
   name: string;
   email: string;
   role: 'owner' | 'admin' | 'member';
+  is_super_admin: boolean;
   notify_proposal_viewed: boolean;
   notify_proposal_accepted: boolean;
   notify_comment_added: boolean;

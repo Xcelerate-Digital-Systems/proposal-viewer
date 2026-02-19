@@ -15,6 +15,7 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
   const [coverEnabled, setCoverEnabled] = useState(proposal.cover_enabled);
   const [subtitle, setSubtitle] = useState(proposal.cover_subtitle || '');
   const [buttonText, setButtonText] = useState(proposal.cover_button_text || 'START READING PROPOSAL');
+  const [acceptButtonText, setAcceptButtonText] = useState(proposal.accept_button_text || '');
   const [imagePath, setImagePath] = useState(proposal.cover_image_path || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -70,6 +71,7 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
       cover_image_path: imagePath || null,
       cover_subtitle: subtitle || null,
       cover_button_text: buttonText || 'START READING PROPOSAL',
+      accept_button_text: acceptButtonText.trim() || null,
     }).eq('id', proposal.id);
     setSaving(false);
     onSave();
@@ -131,7 +133,7 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
 
           {/* Button text */}
           <div>
-            <label className="block text-sm font-medium text-[#999] mb-1">Button Text</label>
+            <label className="block text-sm font-medium text-[#999] mb-1">Cover Button Text</label>
             <input
               type="text"
               value={buttonText}
@@ -139,6 +141,19 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
               placeholder="START READING PROPOSAL"
               className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
             />
+          </div>
+
+          {/* Accept button text */}
+          <div>
+            <label className="block text-sm font-medium text-[#999] mb-1">Approve Button Text</label>
+            <input
+              type="text"
+              value={acceptButtonText}
+              onChange={(e) => setAcceptButtonText(e.target.value)}
+              placeholder="Approve & Continue"
+              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6700]/30 focus:border-[#ff6700]/50 placeholder:text-[#555]"
+            />
+            <p className="text-xs text-[#555] mt-1">Customise the button clients click to approve. e.g. &quot;Book Strategy Session&quot; or &quot;Request SLA&quot;</p>
           </div>
 
           {/* Image upload */}

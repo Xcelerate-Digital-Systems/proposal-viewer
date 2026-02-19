@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle2, MessageSquare, ChevronRight, Building2 } from 'lucide-react';
+import { CheckCircle2, MessageSquare, ChevronRight, Building2, X } from 'lucide-react';
 import { PageNameEntry } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 
@@ -18,6 +18,9 @@ interface SidebarProps {
   onToggleComments: () => void;
   commentCount: number;
   branding: CompanyBranding;
+  acceptButtonText?: string;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 interface NavItem {
@@ -51,6 +54,9 @@ export default function Sidebar({
   onToggleComments,
   commentCount,
   branding,
+  acceptButtonText,
+  mobileOpen = false,
+  onMobileClose,
 }: SidebarProps) {
   const navTree = buildNavTree(pageEntries.slice(0, numPages));
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
@@ -58,6 +64,8 @@ export default function Sidebar({
   const accent = branding.accent_color || '#ff6700';
   const bgSecondary = branding.bg_secondary || '#141414';
   const border = deriveBorderColor(bgSecondary);
+
+  const label = acceptButtonText || 'Approve & Continue';
 
   useEffect(() => {
     for (const item of navTree) {
@@ -75,24 +83,41 @@ export default function Sidebar({
       setExpandedGroup((prev) => (prev === item.pageNum ? null : item.pageNum));
     }
     onPageSelect(item.pageNum);
+    onMobileClose?.();
+  };
+
+  const handleChildClick = (pageNum: number) => {
+    onPageSelect(pageNum);
+    onMobileClose?.();
   };
 
   const isChildActive = (item: NavItem) =>
     item.children.some((c) => c.pageNum === currentPage);
 
-  return (
-    <div className="w-64 flex flex-col shrink-0 border-r" style={{ backgroundColor: bgSecondary, borderColor: border }}>
+  const sidebarContent = (
+    <>
       {/* Company logo / name */}
-      <div className="px-5 py-4 shrink-0 border-b" style={{ borderColor: border }}>
-        {branding.logo_url ? (
-          <img src={branding.logo_url} alt={branding.name} className="h-6 max-w-[180px] object-contain" />
-        ) : branding.name ? (
-          <div className="flex items-center gap-2">
-            <Building2 size={16} className="text-[#555]" />
-            <span className="text-white text-sm font-medium truncate">{branding.name}</span>
-          </div>
-        ) : (
-          <img src="/logo-white.svg" alt="Logo" className="h-6" />
+      <div className="px-5 py-4 shrink-0 border-b flex items-center justify-between" style={{ borderColor: border }}>
+        <div className="min-w-0">
+          {branding.logo_url ? (
+            <img src={branding.logo_url} alt={branding.name} className="h-6 max-w-[180px] object-contain" />
+          ) : branding.name ? (
+            <div className="flex items-center gap-2">
+              <Building2 size={16} className="text-[#555]" />
+              <span className="text-white text-sm font-medium truncate">{branding.name}</span>
+            </div>
+          ) : (
+            <img src="/logo-white.svg" alt="Logo" className="h-6" />
+          )}
+        </div>
+        {/* Mobile close button */}
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            className="lg:hidden p-1 text-[#666] hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
         )}
       </div>
 
@@ -134,7 +159,7 @@ export default function Sidebar({
                   {item.children.map((child) => (
                     <button
                       key={child.pageNum}
-                      onClick={() => onPageSelect(child.pageNum)}
+                      onClick={() => handleChildClick(child.pageNum)}
                       className={`w-full text-left pl-10 pr-5 py-2 text-sm transition-colors truncate ${
                         currentPage === child.pageNum ? 'text-white font-semibold' : 'text-[#666] hover:text-white'
                       }`}
@@ -154,7 +179,7 @@ export default function Sidebar({
         {accepted ? (
           <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/30">
             <CheckCircle2 size={15} />
-            Accepted
+            Approved
           </div>
         ) : (
           <button
@@ -163,7 +188,7 @@ export default function Sidebar({
             style={{ backgroundColor: accent }}
           >
             <CheckCircle2 size={15} />
-            Accept Proposal
+            {label}
           </button>
         )}
         <button
@@ -189,6 +214,31 @@ export default function Sidebar({
           )}
         </button>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible */}
+      <div
+        className="hidden lg:flex w-64 flex-col shrink-0 border-r"
+        style={{ backgroundColor: bgSecondary, borderColor: border }}
+      >
+        {sidebarContent}
+      </div>
+
+      {/* Mobile sidebar — slide-over drawer */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={onMobileClose} />
+          <div
+            className="absolute left-0 top-0 bottom-0 w-[280px] flex flex-col shadow-2xl animate-in slide-in-from-left duration-200"
+            style={{ backgroundColor: bgSecondary }}
+          >
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

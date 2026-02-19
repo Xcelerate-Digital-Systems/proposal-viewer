@@ -1,3 +1,4 @@
+// components/viewer/PdfViewer.tsx
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
@@ -61,7 +62,7 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
               loading={
                 <div className="flex items-center justify-center py-20 gap-3 text-[#666]">
                   <Loader2 className="animate-spin text-[#ff6700]" size={20} />
-                  <span>Loading PDF...</span>
+                  <span>Loading proposal...</span>
                 </div>
               }
             >
