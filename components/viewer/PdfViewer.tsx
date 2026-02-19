@@ -19,6 +19,7 @@ interface PdfViewerProps {
 export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRef }: PdfViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [nativePdfWidth, setNativePdfWidth] = useState<number | null>(null);
   const [renderedPage, setRenderedPage] = useState(currentPage);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -51,6 +52,19 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
     });
   }, [currentPage]);
 
+  // Capture native PDF page width on first load
+  const handlePageLoadSuccess = useCallback((page: { originalWidth: number }) => {
+    if (nativePdfWidth === null) {
+      // PDF points are 72 DPI; scale up to ~150 DPI for crisp rendering
+      setNativePdfWidth(Math.round(page.originalWidth * 1.5));
+    }
+  }, [nativePdfWidth]);
+
+  // Never render wider than the PDF's native width (scaled)
+  const renderWidth = nativePdfWidth
+    ? Math.min(containerWidth, nativePdfWidth)
+    : containerWidth;
+
   return (
     <div className="flex-1 relative overflow-hidden bg-[#0f0f0f]">
       <div ref={scrollRef} className="absolute inset-0 overflow-auto">
@@ -68,16 +82,17 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
             >
               {containerWidth > 0 && (
                 <div
-                  className="transition-opacity duration-200 ease-in-out"
-                  style={{ opacity: isTransitioning ? 0 : 1 }}
+                  className="transition-opacity duration-200 ease-in-out mx-auto"
+                  style={{ opacity: isTransitioning ? 0 : 1, maxWidth: renderWidth }}
                 >
                   <Page
                     pageNumber={currentPage}
-                    width={containerWidth}
+                    width={renderWidth}
                     className="[&_canvas]:!w-full"
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
                     onRenderSuccess={handlePageRenderSuccess}
+                    onLoadSuccess={handlePageLoadSuccess}
                     loading={<></>}
                   />
                 </div>
