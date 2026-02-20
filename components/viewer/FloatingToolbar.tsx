@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronUp, Share2, Download, Printer, Loader2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Share2, Download, Printer, Loader2 } from 'lucide-react';
 
 interface FloatingToolbarProps {
   pdfUrl: string | null;
@@ -10,6 +10,7 @@ interface FloatingToolbarProps {
   currentPage: number;
   numPages: number;
   onPrevPage: () => void;
+  onNextPage: () => void;
   bgColor?: string;
   borderColor?: string;
   accentColor?: string;
@@ -21,6 +22,7 @@ export default function FloatingToolbar({
   currentPage,
   numPages,
   onPrevPage,
+  onNextPage,
   bgColor = '#1a1a1a',
   borderColor = '#2a2a2a',
   accentColor = '#ff6700',
@@ -75,13 +77,22 @@ export default function FloatingToolbar({
       style={{ backgroundColor: `${bgColor}e6`, borderColor: accentColor }}
     >
       <button onClick={onPrevPage} disabled={currentPage === 1}
-        className="p-1.5 sm:p-2 disabled:opacity-30 transition-colors rounded-lg"
+        className="p-2 sm:p-2.5 disabled:opacity-30 transition-colors rounded-lg"
         style={btnStyle}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         title="Previous page">
-        <ChevronUp size={18} />
+        <ChevronUp size={22} />
       </button>
+      <button onClick={onNextPage} disabled={currentPage >= numPages}
+        className="p-2 sm:p-2.5 disabled:opacity-30 transition-colors rounded-lg"
+        style={btnStyle}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        title="Next page">
+        <ChevronDown size={22} />
+      </button>
+      <div className="w-px h-5 mx-0.5" style={{ backgroundColor: `${accentColor}30` }} />
       <button onClick={handleShare}
         className="p-1.5 sm:p-2 transition-colors rounded-lg"
         style={btnStyle}

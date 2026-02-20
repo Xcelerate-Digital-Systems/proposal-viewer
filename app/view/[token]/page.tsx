@@ -121,10 +121,13 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const sidebarText = branding.sidebar_text_color || '#ffffff';
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row overflow-hidden" style={{ backgroundColor: bgPrimary }}>
-      {/* Mobile header bar — sticky, branded */}
+    <div
+      className="flex flex-col lg:flex-row overflow-hidden"
+      style={{ backgroundColor: bgPrimary, height: '100dvh' }}
+    >
+      {/* Mobile header bar — fixed to top, branded */}
       <div
-        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 sticky top-0 z-20"
+        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
         style={{ backgroundColor: bgSecondary, borderColor: border }}
       >
         <button
@@ -223,6 +226,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           currentPage={currentPage}
           numPages={numPages}
           onPrevPage={() => goToPage(Math.max(1, currentPage - 1))}
+          onNextPage={() => goToPage(Math.min(numPages, currentPage + 1))}
           bgColor={bgSecondary}
           borderColor={border}
           accentColor={accent}
