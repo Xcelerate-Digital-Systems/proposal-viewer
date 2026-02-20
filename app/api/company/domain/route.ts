@@ -60,6 +60,28 @@ async function vercelFetch(path: string, options: RequestInit = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
+/**
+ * Check if a domain's DNS is actually configured and pointing to Vercel.
+ * Vercel's "verified" flag only means ownership is confirmed (no other project claims it).
+ * The /v6/domains/{domain}/config endpoint tells us if DNS is actually set up.
+ * Returns { configured: boolean, misconfigured: boolean }
+ */
+async function checkDnsConfigured(domain: string): Promise<{ configured: boolean; misconfigured: boolean }> {
+  try {
+    const { ok, data } = await vercelFetch(`/v6/domains/${domain}/config`);
+    if (!ok) {
+      return { configured: false, misconfigured: true };
+    }
+    // misconfigured=false means DNS is properly pointing to Vercel
+    return {
+      configured: data.misconfigured === false,
+      misconfigured: data.misconfigured !== false,
+    };
+  } catch {
+    return { configured: false, misconfigured: true };
+  }
+}
+
 // ─── GET — Get current domain status ────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
@@ -84,34 +106,53 @@ export async function GET(req: NextRequest) {
     // If there's a domain set, check its current status on Vercel
     let vercel_status = null;
     if (company.custom_domain && VERCEL_TOKEN && VERCEL_PROJECT_ID) {
+      // Check ownership verification status
       const { ok, data } = await vercelFetch(
         `/v9/projects/${VERCEL_PROJECT_ID}/domains/${company.custom_domain}`
       );
+
       if (ok) {
+        // Check actual DNS configuration separately
+        const dnsCheck = await checkDnsConfigured(company.custom_domain);
+
+        // Domain is truly connected only when ownership is verified AND DNS points to Vercel
+        const fullyConnected = (data.verified ?? false) && dnsCheck.configured;
+
         vercel_status = {
           verified: data.verified ?? false,
+          dns_configured: dnsCheck.configured,
+          fully_connected: fullyConnected,
           verification: data.verification || [],
         };
 
-        // Sync verification status to DB if it changed
-        if (data.verified && !company.domain_verified) {
+        // Sync to DB if status changed
+        if (fullyConnected && !company.domain_verified) {
           await supabase
             .from('companies')
             .update({ domain_verified: true })
             .eq('id', companyId);
-        } else if (!data.verified && company.domain_verified) {
+          company.domain_verified = true;
+        } else if (!fullyConnected && company.domain_verified) {
           await supabase
             .from('companies')
             .update({ domain_verified: false })
             .eq('id', companyId);
+          company.domain_verified = false;
         }
       }
+    }
+
+    // If domain exists but isn't verified, include DNS instructions
+    let dns_instructions = null;
+    if (company.custom_domain && !company.domain_verified) {
+      dns_instructions = await fetchDnsInstructions(company.custom_domain);
     }
 
     return NextResponse.json({
       custom_domain: company.custom_domain,
       domain_verified: company.domain_verified,
       vercel_status,
+      dns_instructions,
     });
   } catch (err) {
     console.error('Get domain error:', err);
@@ -197,12 +238,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errorMsg }, { status });
     }
 
-    // Save to database
+    // IMPORTANT: Never mark as verified on initial add.
+    // Vercel's "verified" only means ownership, not DNS configuration.
+    // The user must configure DNS and then click "Check DNS Configuration".
     const { error: dbError } = await supabase
       .from('companies')
       .update({
         custom_domain: domain,
-        domain_verified: vercelData.verified ?? false,
+        domain_verified: false, // Always start unverified — DNS hasn't been configured yet
       })
       .eq('id', companyId);
 
@@ -215,11 +258,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save domain' }, { status: 500 });
     }
 
+    // Fetch the real DNS configuration from Vercel (unique CNAME target, etc.)
+    const dnsInstructions = await fetchDnsInstructions(domain);
+
     return NextResponse.json({
       custom_domain: domain,
-      domain_verified: vercelData.verified ?? false,
+      domain_verified: false,
       verification: vercelData.verification || [],
-      dns_instructions: buildDnsInstructions(domain, vercelData),
+      dns_instructions: dnsInstructions,
     });
   } catch (err) {
     console.error('Add domain error:', err);
@@ -280,12 +326,58 @@ export async function DELETE(req: NextRequest) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function buildDnsInstructions(domain: string, vercelData: Record<string, unknown>) {
+/**
+ * Fetch real DNS configuration from Vercel's config endpoint.
+ * Returns the actual CNAME target or A record IP that Vercel assigns,
+ * NOT hardcoded values (Vercel assigns unique CNAME targets per domain).
+ */
+async function fetchDnsInstructions(domain: string) {
+  try {
+    const { ok, data } = await vercelFetch(`/v6/domains/${domain}/config`);
+
+    if (!ok) {
+      // Fallback to generic instructions if config endpoint fails
+      return buildFallbackDnsInstructions(domain);
+    }
+
+    const parts = domain.split('.');
+    const isSubdomain = parts.length > 2;
+
+    if (isSubdomain) {
+      // For subdomains, use the recommended CNAME from Vercel
+      const subdomain = parts.slice(0, -2).join('.');
+      const cnameValue = data.recommendedCNAME?.[0]?.value || 'cname.vercel-dns.com';
+
+      return {
+        type: 'CNAME',
+        name: subdomain,
+        value: cnameValue,
+        instructions: `Add a CNAME record for "${subdomain}" pointing to "${cnameValue}" in your DNS provider.`,
+      };
+    } else {
+      // For apex domains, use the recommended A record IP from Vercel
+      const ipValue = data.recommendedIPv4?.[0]?.value?.[0] || '76.76.21.21';
+
+      return {
+        type: 'A',
+        name: '@',
+        value: ipValue,
+        instructions: `Add an A record for "@" pointing to "${ipValue}" in your DNS provider.`,
+      };
+    }
+  } catch {
+    return buildFallbackDnsInstructions(domain);
+  }
+}
+
+/**
+ * Fallback DNS instructions if Vercel config endpoint is unavailable.
+ */
+function buildFallbackDnsInstructions(domain: string) {
   const parts = domain.split('.');
   const isSubdomain = parts.length > 2;
 
   if (isSubdomain) {
-    // e.g. proposals.clientco.com → CNAME the subdomain
     const subdomain = parts.slice(0, -2).join('.');
     return {
       type: 'CNAME',
@@ -294,7 +386,6 @@ function buildDnsInstructions(domain: string, vercelData: Record<string, unknown
       instructions: `Add a CNAME record for "${subdomain}" pointing to "cname.vercel-dns.com" in your DNS provider.`,
     };
   } else {
-    // Apex domain (e.g. clientco.com) → A record
     return {
       type: 'A',
       name: '@',

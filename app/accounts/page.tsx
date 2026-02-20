@@ -31,7 +31,7 @@ export default function AccountsPage() {
         if (!auth.isSuperAdmin) {
           return (
             <div className="flex items-center justify-center h-screen">
-              <p className="text-[#666]">Access denied</p>
+              <p className="text-gray-400">Access denied</p>
             </div>
           );
         }
@@ -91,16 +91,16 @@ function AccountsContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-white font-[family-name:var(--font-display)]">
+          <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)]">
             Accounts
           </h1>
-          <p className="text-sm text-[#666] mt-0.5">
+          <p className="text-sm text-gray-400 mt-0.5">
             {companies.length} account{companies.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-[#ff6700] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors"
+          className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
         >
           <Plus size={16} />
           New Account
@@ -110,16 +110,18 @@ function AccountsContent() {
       {/* Loading */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-[#ff6700] animate-spin" />
+          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
         </div>
       ) : companies.length === 0 ? (
         <div className="text-center py-20">
-          <Building2 size={48} className="mx-auto text-[#333] mb-4" />
-          <h2 className="text-lg font-medium text-white mb-2">No accounts yet</h2>
-          <p className="text-sm text-[#666] mb-6">Create your first client account to get started.</p>
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Building2 size={28} className="text-gray-300" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-500 mb-1">No accounts yet</h3>
+          <p className="text-sm text-gray-400 mb-6">Create your first client account to get started.</p>
           <button
             onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 bg-[#ff6700] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors"
+            className="inline-flex items-center gap-2 bg-[#017C87] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
           >
             <Plus size={16} />
             New Account
@@ -131,14 +133,14 @@ function AccountsContent() {
           {companies.map((company) => (
             <div
               key={company.id}
-              className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-5 flex items-center gap-5 hover:border-[#333] transition-colors group"
+              className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-5 hover:border-gray-300 shadow-sm transition-colors group"
             >
               {/* Logo / initial */}
               <div
                 className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold"
                 style={{
-                  backgroundColor: company.accent_color + '18',
-                  color: company.accent_color || '#ff6700',
+                  backgroundColor: (company.accent_color || '#017C87') + '18',
+                  color: company.accent_color || '#017C87',
                 }}
               >
                 {company.name.charAt(0).toUpperCase()}
@@ -146,22 +148,22 @@ function AccountsContent() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-white truncate">{company.name}</h3>
-                <p className="text-xs text-[#555] mt-0.5 truncate">{company.slug}</p>
+                <h3 className="text-sm font-medium text-gray-900 truncate">{company.name}</h3>
+                <p className="text-xs text-gray-400 mt-0.5 truncate">{company.slug}</p>
               </div>
 
               {/* Stats */}
-              <div className="hidden sm:flex items-center gap-6 text-xs text-[#666]">
+              <div className="hidden sm:flex items-center gap-6 text-xs text-gray-400">
                 <div className="flex items-center gap-1.5" title="Proposals">
-                  <FileText size={13} className="text-[#555]" />
+                  <FileText size={13} className="text-gray-300" />
                   <span>{company.stats.proposals}</span>
                 </div>
                 <div className="flex items-center gap-1.5" title="Team members">
-                  <Users size={13} className="text-[#555]" />
+                  <Users size={13} className="text-gray-300" />
                   <span>{company.stats.members}</span>
                 </div>
                 <div className="flex items-center gap-1.5 min-w-[80px]" title="Last activity">
-                  <Clock size={13} className="text-[#555]" />
+                  <Clock size={13} className="text-gray-300" />
                   <span>{formatDate(company.stats.lastActivity)}</span>
                 </div>
               </div>
@@ -170,8 +172,8 @@ function AccountsContent() {
               <button
                 onClick={() => handleEnter(company)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                  bg-[#1a1a1a] text-[#999] border border-[#2a2a2a]
-                  hover:bg-[#ff6700]/10 hover:text-[#ff6700] hover:border-[#ff6700]/30
+                  bg-gray-50 text-gray-500 border border-gray-200
+                  hover:bg-[#017C87]/10 hover:text-[#017C87] hover:border-[#017C87]/30
                   transition-all"
               >
                 <LogIn size={14} />
@@ -252,12 +254,12 @@ function CreateAccountModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-xl w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a]">
-          <h2 className="text-base font-semibold text-white">New Account</h2>
-          <button onClick={onClose} className="text-[#666] hover:text-white transition-colors">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-base font-semibold text-gray-900">New Account</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -265,48 +267,48 @@ function CreateAccountModal({
         {/* Body */}
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-[#888] mb-1.5">Company Name</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Company Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Acme Plumbing"
-              className="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-[#ff6700]/50"
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#888] mb-1.5">Slug</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Slug</label>
             <input
               type="text"
               value={slug}
               onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
               placeholder="acme-plumbing"
-              className="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-[#ff6700]/50"
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
             />
-            <p className="text-xs text-[#555] mt-1">Used for internal identification</p>
+            <p className="text-xs text-gray-400 mt-1">Used for internal identification</p>
           </div>
 
           {error && (
-            <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#2a2a2a]">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-[#888] hover:text-white transition-colors"
+            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!name.trim() || !slug.trim() || saving}
-            className="flex items-center gap-2 bg-[#ff6700] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#e85d00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-[#017C87] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             Create Account

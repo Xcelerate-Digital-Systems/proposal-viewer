@@ -38,6 +38,28 @@ function resolveCompanyId(req: NextRequest, member: { company_id: string; is_sup
   return member.company_id;
 }
 
+/**
+ * Helper to call the Vercel API
+ */
+async function vercelFetch(path: string, options: RequestInit = {}) {
+  const url = new URL(path, 'https://api.vercel.com');
+  if (VERCEL_TEAM_ID) {
+    url.searchParams.set('teamId', VERCEL_TEAM_ID);
+  }
+
+  const res = await fetch(url.toString(), {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${VERCEL_TOKEN}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
 // POST — Trigger domain verification check on Vercel
 export async function POST(req: NextRequest) {
   try {
@@ -67,31 +89,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No custom domain configured' }, { status: 404 });
     }
 
-    // Already verified
-    if (company.domain_verified) {
+    // Step 1: Ask Vercel to verify ownership (in case a TXT record was needed)
+    const verifyRes = await vercelFetch(
+      `/v9/projects/${VERCEL_PROJECT_ID}/domains/${company.custom_domain}/verify`,
+      { method: 'POST' }
+    );
+    const verifyData = verifyRes.data;
+
+    // If ownership isn't verified yet, return the verification challenges
+    if (!verifyData.verified) {
       return NextResponse.json({
-        verified: true,
+        verified: false,
         custom_domain: company.custom_domain,
+        verification: verifyData.verification || [],
+        message: 'Domain ownership not yet verified. Please add the required TXT record.',
       });
     }
 
-    // Ask Vercel to verify the domain
-    const teamParam = VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : '';
-    const res = await fetch(
-      `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${company.custom_domain}/verify${teamParam}`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${VERCEL_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    // Step 2: Ownership is verified — now check if DNS is actually configured
+    // The /v6/domains/{domain}/config endpoint tells us if DNS points to Vercel
+    const configRes = await vercelFetch(`/v6/domains/${company.custom_domain}/config`);
+    const dnsConfigured = configRes.ok && configRes.data.misconfigured === false;
 
-    const data = await res.json().catch(() => ({}));
-
-    if (data.verified) {
-      // Update DB
+    if (dnsConfigured) {
+      // Both ownership AND DNS are good — mark as fully verified
       await supabase
         .from('companies')
         .update({ domain_verified: true })
@@ -103,10 +124,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Ownership verified but DNS not pointing to Vercel yet
     return NextResponse.json({
       verified: false,
       custom_domain: company.custom_domain,
-      verification: data.verification || [],
+      verification: [],
+      message: 'Domain ownership verified, but DNS is not yet pointing to Vercel. Please add the required DNS record and allow time for propagation.',
     });
   } catch (err) {
     console.error('Verify domain error:', err);

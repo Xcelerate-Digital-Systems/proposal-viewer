@@ -67,6 +67,10 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
         if (data.custom_domain) {
           setDomainInput(data.custom_domain);
         }
+        // Use DNS instructions from the API (real Vercel values)
+        if (data.dns_instructions) {
+          setDnsInstructions(data.dns_instructions);
+        }
       }
     } catch {
       // Non-critical
@@ -149,7 +153,7 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
         setDnsInstructions(null);
         showFeedback('Domain verified and connected!');
       } else {
-        setError('DNS not yet detected. It can take up to 48 hours to propagate. Try again shortly.');
+        setError(data.message || 'DNS not yet detected. It can take up to 48 hours to propagate. Try again shortly.');
         // Update verification challenges if returned
         if (data.verification?.length) {
           setDomainState(prev => prev ? {
@@ -214,8 +218,8 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
   const isVerified = domainState?.domain_verified ?? false;
   const isNewDomain = domainInput.trim().toLowerCase() !== (domainState?.custom_domain || '');
 
-  // Build DNS instructions from state if not already set
-  const effectiveDns = dnsInstructions || (hasDomain && !isVerified ? buildLocalDnsInstructions(domainState!.custom_domain!) : null);
+  // DNS instructions come from the API (real Vercel-assigned values)
+  const effectiveDns = dnsInstructions;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -407,27 +411,4 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
       )}
     </div>
   );
-}
-
-// ─── Local helper ────────────────────────────────────────────────────────────
-function buildLocalDnsInstructions(domain: string): DnsInstruction {
-  const parts = domain.split('.');
-  const isSubdomain = parts.length > 2;
-
-  if (isSubdomain) {
-    const subdomain = parts.slice(0, -2).join('.');
-    return {
-      type: 'CNAME',
-      name: subdomain,
-      value: 'cname.vercel-dns.com',
-      instructions: `Add a CNAME record for "${subdomain}" pointing to "cname.vercel-dns.com" in your DNS provider.`,
-    };
-  } else {
-    return {
-      type: 'A',
-      name: '@',
-      value: '76.76.21.21',
-      instructions: `Add an A record for "@" pointing to "76.76.21.21" in your DNS provider.`,
-    };
-  }
 }

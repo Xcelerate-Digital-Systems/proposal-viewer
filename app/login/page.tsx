@@ -102,10 +102,10 @@ function LoginContent() {
   // Loading state for invite validation
   if (inviteLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[#017C87] px-4">
         <div className="text-center">
-          <Loader2 size={24} className="animate-spin text-[#017C87] mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Validating invite...</p>
+          <Loader2 size={24} className="animate-spin text-white/70 mx-auto mb-3" />
+          <p className="text-sm text-white/70">Validating invite...</p>
         </div>
       </div>
     );
@@ -114,8 +114,8 @@ function LoginContent() {
   // Invalid invite
   if (inviteToken && inviteError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-sm text-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#017C87] px-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8 text-center">
           <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <UserPlus className="text-red-500" size={24} />
           </div>
@@ -134,8 +134,8 @@ function LoginContent() {
 
   if (magicLinkSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-sm text-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#017C87] px-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8 text-center">
           <div className="w-14 h-14 bg-[#017C87]/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <Mail className="text-[#017C87]" size={24} />
           </div>
@@ -155,8 +155,8 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-[#017C87] px-4">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8">
         {/* Logo */}
         <div className="text-center mb-6">
           <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-8 mx-auto mb-6" />
@@ -363,8 +363,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <Loader2 size={24} className="animate-spin text-[#017C87]" />
+        <div className="min-h-screen flex items-center justify-center bg-[#017C87]">
+          <Loader2 size={24} className="animate-spin text-white/70" />
         </div>
       }
     >
