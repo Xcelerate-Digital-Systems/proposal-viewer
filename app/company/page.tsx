@@ -24,6 +24,15 @@ type CompanyData = {
   website: string | null;
   current_role: string;
   created_at: string;
+  // Cover page branding
+  cover_bg_style: 'gradient' | 'solid';
+  cover_bg_color_1: string;
+  cover_bg_color_2: string;
+  cover_text_color: string;
+  cover_subtitle_color: string;
+  cover_button_bg: string;
+  cover_button_text: string;
+  cover_overlay_opacity: number;
 };
 
 export default function CompanySettingsPage() {
@@ -57,6 +66,17 @@ function deriveSurface(bgPrimary: string, bgSecondary: string): string {
   return `#${Math.min(255, r).toString(16).padStart(2, '0')}${Math.min(255, g).toString(16).padStart(2, '0')}${Math.min(255, b).toString(16).padStart(2, '0')}`;
 }
 
+/**
+ * Convert a hex color to rgba for gradients / overlays.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // ---------- Color Picker Row ----------
 function ColorRow({
   label,
@@ -73,7 +93,7 @@ function ColorRow({
     <div className="flex items-center gap-3">
       <input
         type="color"
-        value={value}
+        value={value.slice(0, 7)}
         onChange={(e) => !disabled && onChange(e.target.value)}
         disabled={disabled}
         className="w-8 h-8 rounded cursor-pointer border border-gray-200 bg-transparent disabled:cursor-not-allowed shrink-0"
@@ -81,7 +101,7 @@ function ColorRow({
       <input
         type="text"
         value={value}
-        onChange={(e) => !disabled && e.target.value.length <= 7 && onChange(e.target.value)}
+        onChange={(e) => !disabled && e.target.value.length <= 9 && onChange(e.target.value)}
         disabled={disabled}
         className="w-24 px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed"
       />
@@ -90,7 +110,7 @@ function ColorRow({
   );
 }
 
-// ---------- Live Preview ----------
+// ---------- Viewer Live Preview ----------
 function ViewerPreview({
   accent,
   bgPrimary,
@@ -116,14 +136,12 @@ function ViewerPreview({
       className="rounded-xl overflow-hidden border shadow-2xl shadow-black/40"
       style={{ borderColor: border }}
     >
-      {/* Mini viewer layout */}
       <div className="flex h-[320px]" style={{ backgroundColor: bgPrimary }}>
         {/* Sidebar */}
         <div
           className="w-[160px] shrink-0 flex flex-col border-r"
           style={{ backgroundColor: bgSecondary, borderColor: border }}
         >
-          {/* Logo area */}
           <div className="px-3 py-2.5 border-b flex items-center gap-1.5" style={{ borderColor: border }}>
             {logoUrl ? (
               <img src={logoUrl} alt="" className="h-4 max-w-[120px] object-contain" />
@@ -136,8 +154,6 @@ function ViewerPreview({
               <div className="w-16 h-3 rounded" style={{ backgroundColor: border }} />
             )}
           </div>
-
-          {/* Nav items */}
           <div className="flex-1 py-2 space-y-0.5 px-1">
             {['Executive Summary', 'Our Approach', 'Project Timeline', 'Investment', 'Case Studies', 'Next Steps'].map((item, i) => (
               <div
@@ -154,8 +170,6 @@ function ViewerPreview({
               </div>
             ))}
           </div>
-
-          {/* Bottom buttons */}
           <div className="p-2 space-y-1.5 border-t" style={{ borderColor: border }}>
             <div
               className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[9px] font-semibold"
@@ -187,7 +201,6 @@ function ViewerPreview({
         {/* Main content area */}
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-[260px] space-y-3">
-            {/* Fake slide content */}
             <div
               className="rounded-lg p-4 border"
               style={{ backgroundColor: surface, borderColor: border }}
@@ -201,7 +214,6 @@ function ViewerPreview({
                 <div className="w-12 h-6 rounded border" style={{ borderColor: border }} />
               </div>
             </div>
-            {/* Fake image placeholder */}
             <div
               className="rounded-lg h-16 border flex items-center justify-center"
               style={{ backgroundColor: surface, borderColor: border }}
@@ -209,6 +221,93 @@ function ViewerPreview({
               <ImageIcon size={16} style={{ color: `${border}` }} />
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Cover Page Live Preview ----------
+function CoverPreview({
+  bgStyle,
+  bgColor1,
+  bgColor2,
+  textColor,
+  subtitleColor,
+  buttonBg,
+  buttonText,
+  overlayOpacity,
+  logoUrl,
+  companyName,
+}: {
+  bgStyle: 'gradient' | 'solid';
+  bgColor1: string;
+  bgColor2: string;
+  textColor: string;
+  subtitleColor: string;
+  buttonBg: string;
+  buttonText: string;
+  overlayOpacity: number;
+  logoUrl: string | null;
+  companyName: string;
+}) {
+  const baseBg = bgStyle === 'solid' ? bgColor1 : undefined;
+  const baseBgImage = bgStyle === 'gradient'
+    ? `linear-gradient(135deg, ${bgColor1}, ${bgColor2})`
+    : undefined;
+
+  return (
+    <div
+      className="rounded-xl overflow-hidden border border-gray-200 shadow-2xl shadow-black/40 relative"
+      style={{ backgroundColor: bgColor1 }}
+    >
+      <div className="relative h-[280px]">
+        {/* Background */}
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: baseBg, backgroundImage: baseBgImage }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between h-full p-5">
+          {/* Logo */}
+          <div>
+            {logoUrl ? (
+              <img src={logoUrl} alt="" className="h-4 max-w-[100px] object-contain" />
+            ) : companyName ? (
+              <div className="flex items-center gap-1.5">
+                <Building2 size={12} style={{ color: subtitleColor }} />
+                <span className="text-[10px] font-medium" style={{ color: textColor, opacity: 0.9 }}>{companyName}</span>
+              </div>
+            ) : (
+              <div className="w-14 h-3 rounded bg-white/20" />
+            )}
+          </div>
+
+          {/* Title area */}
+          <div>
+            <h3 className="text-base font-semibold leading-tight mb-1" style={{ color: textColor }}>
+              Project Proposal
+            </h3>
+            <p className="text-[11px] mb-3" style={{ color: subtitleColor }}>
+              Prepared for Client Name
+            </p>
+            <div
+              className="inline-block px-3 py-1.5 text-[9px] font-semibold tracking-wider uppercase rounded-sm"
+              style={{ backgroundColor: buttonBg, color: buttonText }}
+            >
+              START READING
+            </div>
+          </div>
+
+          <div />
+        </div>
+
+        {/* Overlay opacity indicator */}
+        <div className="absolute bottom-2 right-2 z-20">
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-white/60">
+            overlay: {Math.round(overlayOpacity * 100)}%
+          </span>
         </div>
       </div>
     </div>
@@ -223,7 +322,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Form state
+  // Form state — viewer branding
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [accentColor, setAccentColor] = useState('#ff6700');
@@ -233,6 +332,16 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [acceptTextColor, setAcceptTextColor] = useState('#ffffff');
   const [website, setWebsite] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
+
+  // Form state — cover page branding
+  const [coverBgStyle, setCoverBgStyle] = useState<'gradient' | 'solid'>('gradient');
+  const [coverBgColor1, setCoverBgColor1] = useState('#0f0f0f');
+  const [coverBgColor2, setCoverBgColor2] = useState('#141414');
+  const [coverTextColor, setCoverTextColor] = useState('#ffffff');
+  const [coverSubtitleColor, setCoverSubtitleColor] = useState('#ffffffb3');
+  const [coverButtonBg, setCoverButtonBg] = useState('#ff6700');
+  const [coverButtonText, setCoverButtonText] = useState('#ffffff');
+  const [coverOverlayOpacity, setCoverOverlayOpacity] = useState(0.65);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -259,6 +368,15 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setSidebarTextColor(data.sidebar_text_color || '#ffffff');
         setAcceptTextColor(data.accept_text_color || '#ffffff');
         setWebsite(data.website || '');
+        // Cover page
+        setCoverBgStyle(data.cover_bg_style || 'gradient');
+        setCoverBgColor1(data.cover_bg_color_1 || '#0f0f0f');
+        setCoverBgColor2(data.cover_bg_color_2 || '#141414');
+        setCoverTextColor(data.cover_text_color || '#ffffff');
+        setCoverSubtitleColor(data.cover_subtitle_color || '#ffffffb3');
+        setCoverButtonBg(data.cover_button_bg || '#ff6700');
+        setCoverButtonText(data.cover_button_text || '#ffffff');
+        setCoverOverlayOpacity(parseFloat(data.cover_overlay_opacity) || 0.65);
       }
     } finally {
       setLoading(false);
@@ -302,7 +420,13 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     const res = await fetch(`/api/company?company_id=${companyId}`, {
       method: 'PATCH',
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accent_color: accentColor, bg_primary: bgPrimary, bg_secondary: bgSecondary, sidebar_text_color: sidebarTextColor, accept_text_color: acceptTextColor }),
+      body: JSON.stringify({
+        accent_color: accentColor,
+        bg_primary: bgPrimary,
+        bg_secondary: bgSecondary,
+        sidebar_text_color: sidebarTextColor,
+        accept_text_color: acceptTextColor,
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -310,6 +434,34 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     } else {
       setCompany(prev => prev ? { ...prev, ...data } : prev);
       showFeedback('Branding saved');
+    }
+    setSaving(null);
+  };
+
+  const handleSaveCoverColors = async () => {
+    if (!isOwner) return;
+    setSaving('coverColors');
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/company?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cover_bg_style: coverBgStyle,
+        cover_bg_color_1: coverBgColor1,
+        cover_bg_color_2: coverBgColor2,
+        cover_text_color: coverTextColor,
+        cover_subtitle_color: coverSubtitleColor,
+        cover_button_bg: coverButtonBg,
+        cover_button_text: coverButtonText,
+        cover_overlay_opacity: coverOverlayOpacity,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showFeedback(data.error || 'Failed to save', true);
+    } else {
+      setCompany(prev => prev ? { ...prev, ...data } : prev);
+      showFeedback('Cover page colors saved');
     }
     setSaving(null);
   };
@@ -351,6 +503,16 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     bgSecondary !== (company?.bg_secondary || '#141414') ||
     sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
     acceptTextColor !== (company?.accept_text_color || '#ffffff');
+
+  const coverColorsChanged =
+    coverBgStyle !== (company?.cover_bg_style || 'gradient') ||
+    coverBgColor1 !== (company?.cover_bg_color_1 || '#0f0f0f') ||
+    coverBgColor2 !== (company?.cover_bg_color_2 || '#141414') ||
+    coverTextColor !== (company?.cover_text_color || '#ffffff') ||
+    coverSubtitleColor !== (company?.cover_subtitle_color || '#ffffffb3') ||
+    coverButtonBg !== (company?.cover_button_bg || '#ff6700') ||
+    coverButtonText !== (company?.cover_button_text || '#ffffff') ||
+    coverOverlayOpacity !== (parseFloat(String(company?.cover_overlay_opacity)) || 0.65);
 
   const ACCENT_PRESETS = [
     '#ff6700', '#ef4444', '#f59e0b', '#22c55e',
@@ -495,7 +657,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Palette size={15} className="text-gray-400" />
-                <span className="text-sm font-medium text-gray-500">Branding Colors</span>
+                <span className="text-sm font-medium text-gray-500">Viewer Colors</span>
               </div>
               {isOwner && colorsChanged && (
                 <button
@@ -573,6 +735,116 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             </div>
           </div>
 
+          {/* ===== COVER PAGE COLORS ===== */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon size={15} className="text-gray-400" />
+                <span className="text-sm font-medium text-gray-500">Cover Page Colors</span>
+              </div>
+              {isOwner && coverColorsChanged && (
+                <button
+                  onClick={handleSaveCoverColors}
+                  disabled={saving === 'coverColors'}
+                  className="px-4 py-1.5 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
+                >
+                  {saving === 'coverColors' ? <Loader2 size={14} className="animate-spin" /> : 'Save Cover Colors'}
+                </button>
+              )}
+            </div>
+
+            {/* Background style toggle */}
+            <div className="mb-4">
+              <label className="block text-xs text-gray-400 mb-2">Background Style</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => isOwner && setCoverBgStyle('gradient')}
+                  disabled={!isOwner}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all disabled:cursor-not-allowed ${
+                    coverBgStyle === 'gradient'
+                      ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 rounded" style={{ background: `linear-gradient(135deg, ${coverBgColor1}, ${coverBgColor2})` }} />
+                    Gradient
+                  </div>
+                </button>
+                <button
+                  onClick={() => isOwner && setCoverBgStyle('solid')}
+                  disabled={!isOwner}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all disabled:cursor-not-allowed ${
+                    coverBgStyle === 'solid'
+                      ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 rounded" style={{ backgroundColor: coverBgColor1 }} />
+                    Solid
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Background colors */}
+            <div className="mb-4">
+              <label className="block text-xs text-gray-400 mb-2">Background Colors</label>
+              <div className="space-y-2">
+                <ColorRow
+                  label={coverBgStyle === 'gradient' ? 'Gradient start' : 'Background color'}
+                  value={coverBgColor1}
+                  onChange={setCoverBgColor1}
+                  disabled={!isOwner}
+                />
+                {coverBgStyle === 'gradient' && (
+                  <ColorRow
+                    label="Gradient end"
+                    value={coverBgColor2}
+                    onChange={setCoverBgColor2}
+                    disabled={!isOwner}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Overlay opacity */}
+            <div className="mb-4">
+              <label className="block text-xs text-gray-400 mb-2">
+                Image Overlay Opacity — {Math.round(coverOverlayOpacity * 100)}%
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(coverOverlayOpacity * 100)}
+                onChange={(e) => isOwner && setCoverOverlayOpacity(parseInt(e.target.value) / 100)}
+                disabled={!isOwner}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87] disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <p className="text-xs text-gray-400 mt-1">Controls how much the background color shows over uploaded cover images.</p>
+            </div>
+
+            {/* Text colors */}
+            <div className="mb-4 pt-4 border-t border-gray-100">
+              <label className="block text-xs text-gray-400 mb-2">Text Colors</label>
+              <div className="space-y-2">
+                <ColorRow label="Title text" value={coverTextColor} onChange={setCoverTextColor} disabled={!isOwner} />
+                <ColorRow label="Subtitle text" value={coverSubtitleColor} onChange={setCoverSubtitleColor} disabled={!isOwner} />
+              </div>
+            </div>
+
+            {/* Button colors */}
+            <div className="pt-4 border-t border-gray-100">
+              <label className="block text-xs text-gray-400 mb-2">Button Colors</label>
+              <div className="space-y-2">
+                <ColorRow label="Button background" value={coverButtonBg} onChange={setCoverButtonBg} disabled={!isOwner} />
+                <ColorRow label="Button text" value={coverButtonText} onChange={setCoverButtonText} disabled={!isOwner} />
+              </div>
+            </div>
+          </div>
+
           {!isOwner && (
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
               <p className="text-sm text-gray-400">Only the company owner can edit these settings.</p>
@@ -580,21 +852,44 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           )}
         </div>
 
-        {/* RIGHT COLUMN — Live Preview */}
-        <div className="lg:sticky lg:top-8 lg:self-start space-y-3">
-          <h3 className="text-sm font-medium text-gray-400">Live Preview — Proposal Viewer</h3>
-          <ViewerPreview
-            accent={/^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : '#ff6700'}
-            bgPrimary={/^#[0-9a-fA-F]{6}$/.test(bgPrimary) ? bgPrimary : '#0f0f0f'}
-            bgSecondary={/^#[0-9a-fA-F]{6}$/.test(bgSecondary) ? bgSecondary : '#141414'}
-            sidebarTextColor={/^#[0-9a-fA-F]{6}$/.test(sidebarTextColor) ? sidebarTextColor : '#ffffff'}
-            acceptTextColor={/^#[0-9a-fA-F]{6}$/.test(acceptTextColor) ? acceptTextColor : '#ffffff'}
-            logoUrl={company?.logo_url || null}
-            companyName={name}
-          />
-          <p className="text-xs text-gray-400">
-            This is how your proposals will appear to clients. Colors update in real-time as you edit.
-          </p>
+        {/* RIGHT COLUMN — Live Previews */}
+        <div className="lg:sticky lg:top-8 lg:self-start space-y-6">
+          {/* Viewer Preview */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-gray-400">Live Preview — Proposal Viewer</h3>
+            <ViewerPreview
+              accent={/^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : '#ff6700'}
+              bgPrimary={/^#[0-9a-fA-F]{6}$/.test(bgPrimary) ? bgPrimary : '#0f0f0f'}
+              bgSecondary={/^#[0-9a-fA-F]{6}$/.test(bgSecondary) ? bgSecondary : '#141414'}
+              sidebarTextColor={/^#[0-9a-fA-F]{6}$/.test(sidebarTextColor) ? sidebarTextColor : '#ffffff'}
+              acceptTextColor={/^#[0-9a-fA-F]{6}$/.test(acceptTextColor) ? acceptTextColor : '#ffffff'}
+              logoUrl={company?.logo_url || null}
+              companyName={name}
+            />
+            <p className="text-xs text-gray-400">
+              This is how your proposals will appear to clients.
+            </p>
+          </div>
+
+          {/* Cover Page Preview */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-gray-400">Live Preview — Cover Page</h3>
+            <CoverPreview
+              bgStyle={coverBgStyle}
+              bgColor1={/^#[0-9a-fA-F]{6}$/.test(coverBgColor1) ? coverBgColor1 : '#0f0f0f'}
+              bgColor2={/^#[0-9a-fA-F]{6}$/.test(coverBgColor2) ? coverBgColor2 : '#141414'}
+              textColor={/^#[0-9a-fA-F]{6,8}$/.test(coverTextColor) ? coverTextColor : '#ffffff'}
+              subtitleColor={/^#[0-9a-fA-F]{6,8}$/.test(coverSubtitleColor) ? coverSubtitleColor : '#ffffffb3'}
+              buttonBg={/^#[0-9a-fA-F]{6}$/.test(coverButtonBg) ? coverButtonBg : '#ff6700'}
+              buttonText={/^#[0-9a-fA-F]{6}$/.test(coverButtonText) ? coverButtonText : '#ffffff'}
+              overlayOpacity={coverOverlayOpacity}
+              logoUrl={company?.logo_url || null}
+              companyName={name}
+            />
+            <p className="text-xs text-gray-400">
+              Cover page shown before the proposal. Background image is set per-proposal.
+            </p>
+          </div>
         </div>
       </div>
     </div>

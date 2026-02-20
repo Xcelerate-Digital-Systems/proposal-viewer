@@ -22,6 +22,15 @@ export type CompanyBranding = {
   bg_secondary: string;
   sidebar_text_color: string;
   accept_text_color: string;
+  // Cover page branding
+  cover_bg_style: 'gradient' | 'solid';
+  cover_bg_color_1: string;
+  cover_bg_color_2: string;
+  cover_text_color: string;
+  cover_subtitle_color: string;
+  cover_button_bg: string;
+  cover_button_text: string;
+  cover_overlay_opacity: number;
 };
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -33,6 +42,15 @@ const DEFAULT_BRANDING: CompanyBranding = {
   bg_secondary: '#141414',
   sidebar_text_color: '#ffffff',
   accept_text_color: '#ffffff',
+  // Cover page defaults
+  cover_bg_style: 'gradient',
+  cover_bg_color_1: '#0f0f0f',
+  cover_bg_color_2: '#141414',
+  cover_text_color: '#ffffff',
+  cover_subtitle_color: '#ffffffb3',
+  cover_button_bg: '#ff6700',
+  cover_button_text: '#ffffff',
+  cover_overlay_opacity: 0.65,
 };
 
 /**

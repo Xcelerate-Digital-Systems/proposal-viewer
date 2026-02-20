@@ -12,6 +12,17 @@ interface CoverPageProps {
   onStart: () => void;
 }
 
+/**
+ * Convert a hex color to an rgba string for use in gradients / overlays.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export default function CoverPage({ proposal, branding, onStart }: CoverPageProps) {
   const [bgUrl, setBgUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -34,22 +45,65 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
 
   const subtitle = proposal.cover_subtitle || `Prepared for ${proposal.client_name}`;
   const buttonText = proposal.cover_button_text || 'START READING PROPOSAL';
-  const accent = branding.accent_color || '#ff6700';
+
+  // Cover branding from company settings
+  const bgStyle = branding.cover_bg_style || 'gradient';
+  const bgColor1 = branding.cover_bg_color_1 || '#0f0f0f';
+  const bgColor2 = branding.cover_bg_color_2 || '#141414';
+  const textColor = branding.cover_text_color || '#ffffff';
+  const subtitleColor = branding.cover_subtitle_color || '#ffffffb3';
+  const btnBg = branding.cover_button_bg || '#ff6700';
+  const btnText = branding.cover_button_text || '#ffffff';
+  const overlayOpacity = branding.cover_overlay_opacity ?? 0.65;
+
+  // Build background: solid or gradient
+  const baseBg = bgStyle === 'solid'
+    ? bgColor1
+    : undefined;
+  const baseBgImage = bgStyle === 'gradient'
+    ? `linear-gradient(135deg, ${bgColor1}, ${bgColor2})`
+    : undefined;
+
+  // Build overlay for when a cover image is present
+  const imageOverlay = bgStyle === 'solid'
+    ? hexToRgba(bgColor1, overlayOpacity)
+    : `linear-gradient(to bottom, ${hexToRgba(bgColor1, overlayOpacity)}, ${hexToRgba(bgColor2, overlayOpacity + 0.1 > 1 ? 1 : overlayOpacity + 0.1)})`;
 
   return (
     <div
       className={`h-screen w-screen flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      style={{ backgroundColor: bgColor1 }}
     >
-      {/* Background image */}
-      {bgUrl && (
+      {/* Background: either uploaded image or the branding bg */}
+      {bgUrl ? (
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${bgUrl})` }}
         />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundColor: baseBg,
+            backgroundImage: baseBgImage,
+          }}
+        />
       )}
 
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" />
+      {/* Overlay — only needed when there's a background image */}
+      {bgUrl && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background: typeof imageOverlay === 'string' && imageOverlay.startsWith('linear')
+              ? imageOverlay
+              : undefined,
+            backgroundColor: typeof imageOverlay === 'string' && !imageOverlay.startsWith('linear')
+              ? imageOverlay
+              : undefined,
+          }}
+        />
+      )}
 
       {/* Content */}
       <div className="relative z-10 flex flex-col justify-between h-full px-6 py-8 sm:px-10 sm:py-10 md:px-16 md:py-14">
@@ -63,8 +117,10 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
             />
           ) : branding.name ? (
             <div className="flex items-center gap-2">
-              <Building2 size={20} className="text-white/70" />
-              <span className="text-white/90 text-sm md:text-base font-medium">{branding.name}</span>
+              <Building2 size={20} style={{ color: subtitleColor }} />
+              <span className="text-sm md:text-base font-medium" style={{ color: textColor, opacity: 0.9 }}>
+                {branding.name}
+              </span>
             </div>
           ) : (
             <img src="/logo-white.svg" alt="Logo" className="h-6 sm:h-7 md:h-8 opacity-90" />
@@ -73,16 +129,22 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
 
         {/* Title area */}
         <div className="max-w-2xl">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-tight mb-3 sm:mb-4 font-[family-name:var(--font-display)]">
+          <h1
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight mb-3 sm:mb-4 font-[family-name:var(--font-display)]"
+            style={{ color: textColor }}
+          >
             {proposal.title}
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-white/70 mb-6 sm:mb-8">
+          <p
+            className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8"
+            style={{ color: subtitleColor }}
+          >
             {subtitle}
           </p>
           <button
             onClick={onStart}
-            className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded-sm transition-colors"
-            style={{ backgroundColor: accent, color: '#fff' }}
+            className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded-sm transition-opacity"
+            style={{ backgroundColor: btnBg, color: btnText }}
             onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
             onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
           >

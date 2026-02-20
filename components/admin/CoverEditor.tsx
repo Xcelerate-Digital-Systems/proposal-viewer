@@ -2,13 +2,24 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Save, Upload, Trash2, Image, Eye, EyeOff } from 'lucide-react';
+import { Save, Trash2, Image, Eye, EyeOff } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 
 interface CoverEditorProps {
   proposal: Proposal;
   onSave: () => void;
   onCancel: () => void;
+}
+
+/**
+ * Convert a hex color to an rgba string for use in gradients.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorProps) {
@@ -21,6 +32,41 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Branding state for preview (fetched from company)
+  const [branding, setBranding] = useState({
+    cover_bg_style: 'gradient' as 'gradient' | 'solid',
+    cover_bg_color_1: '#0f0f0f',
+    cover_bg_color_2: '#141414',
+    cover_text_color: '#ffffff',
+    cover_subtitle_color: '#ffffffb3',
+    cover_button_bg: '#ff6700',
+    cover_button_text: '#ffffff',
+    cover_overlay_opacity: 0.65,
+  });
+
+  // Fetch company branding for accurate preview
+  useEffect(() => {
+    if (proposal.company_id) {
+      fetch(`/api/company/branding?company_id=${proposal.company_id}`)
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (data) {
+            setBranding({
+              cover_bg_style: data.cover_bg_style || 'gradient',
+              cover_bg_color_1: data.cover_bg_color_1 || '#0f0f0f',
+              cover_bg_color_2: data.cover_bg_color_2 || '#141414',
+              cover_text_color: data.cover_text_color || '#ffffff',
+              cover_subtitle_color: data.cover_subtitle_color || '#ffffffb3',
+              cover_button_bg: data.cover_button_bg || '#ff6700',
+              cover_button_text: data.cover_button_text || '#ffffff',
+              cover_overlay_opacity: data.cover_overlay_opacity ?? 0.65,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [proposal.company_id]);
 
   // Load existing cover image preview
   useEffect(() => {
@@ -76,6 +122,27 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
     setSaving(false);
     onSave();
   };
+
+  // Build preview background using branding
+  const { cover_bg_style, cover_bg_color_1, cover_bg_color_2, cover_overlay_opacity } = branding;
+
+  const previewBg = imageUrl
+    ? undefined
+    : cover_bg_style === 'solid'
+      ? cover_bg_color_1
+      : undefined;
+
+  const previewBgImage = imageUrl
+    ? undefined
+    : cover_bg_style === 'gradient'
+      ? `linear-gradient(135deg, ${cover_bg_color_1}, ${cover_bg_color_2})`
+      : undefined;
+
+  const previewOverlay = imageUrl
+    ? cover_bg_style === 'solid'
+      ? hexToRgba(cover_bg_color_1, cover_overlay_opacity)
+      : `linear-gradient(to bottom, ${hexToRgba(cover_bg_color_1, cover_overlay_opacity)}, ${hexToRgba(cover_bg_color_2, Math.min(1, cover_overlay_opacity + 0.1))})`
+    : undefined;
 
   return (
     <div className="border-t border-gray-200 bg-gray-50 p-5">
@@ -211,22 +278,40 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
               }}
             />
           </div>
+
+          <p className="text-xs text-gray-400">
+            Cover colors are managed in <span className="font-medium text-gray-500">Branding → Cover Page Colors</span>.
+          </p>
         </div>
 
-        {/* Right: Live preview — stays dark as it shows client-facing viewer appearance */}
-        <div className="rounded-lg overflow-hidden border border-gray-200 bg-[#0a0a0a] relative" style={{ minHeight: 280 }}>
-          {/* Background */}
+        {/* Right: Live preview — uses branding colors */}
+        <div
+          className="rounded-lg overflow-hidden border border-gray-200 relative"
+          style={{ minHeight: 280, backgroundColor: cover_bg_color_1 }}
+        >
+          {/* Background image or branding bg */}
           {imageUrl ? (
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${imageUrl})` }}
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]" />
+            <div
+              className="absolute inset-0"
+              style={{ backgroundColor: previewBg, backgroundImage: previewBgImage }}
+            />
           )}
 
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" />
+          {/* Overlay for image */}
+          {imageUrl && previewOverlay && (
+            <div
+              className="absolute inset-0"
+              style={{
+                background: previewOverlay.startsWith('linear') ? previewOverlay : undefined,
+                backgroundColor: !previewOverlay.startsWith('linear') ? previewOverlay : undefined,
+              }}
+            />
+          )}
 
           {/* Preview content */}
           <div className="relative z-10 flex flex-col justify-between h-full p-5" style={{ minHeight: 280 }}>
@@ -234,13 +319,19 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
               <img src="/logo-white.svg" alt="Logo" className="h-4 opacity-90" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white leading-tight mb-1 font-[family-name:var(--font-display)]">
+              <h2
+                className="text-lg font-semibold leading-tight mb-1 font-[family-name:var(--font-display)]"
+                style={{ color: branding.cover_text_color }}
+              >
                 {proposal.title}
               </h2>
-              <p className="text-xs text-white/70 mb-3">
+              <p className="text-xs mb-3" style={{ color: branding.cover_subtitle_color }}>
                 {subtitle || `Prepared for ${proposal.client_name}`}
               </p>
-              <div className="inline-block px-4 py-1.5 bg-white text-[#0f0f0f] text-[10px] font-semibold tracking-wider uppercase rounded-sm">
+              <div
+                className="inline-block px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase rounded-sm"
+                style={{ backgroundColor: branding.cover_button_bg, color: branding.cover_button_text }}
+              >
                 {buttonText || 'START READING PROPOSAL'}
               </div>
             </div>

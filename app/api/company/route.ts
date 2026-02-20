@@ -101,7 +101,14 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const allowedFields = ['name', 'slug', 'accent_color', 'website', 'logo_path', 'bg_primary', 'bg_secondary', 'sidebar_text_color', 'accept_text_color'];
+    const allowedFields = [
+      'name', 'slug', 'accent_color', 'website', 'logo_path',
+      'bg_primary', 'bg_secondary', 'sidebar_text_color', 'accept_text_color',
+      // Cover page branding
+      'cover_bg_style', 'cover_bg_color_1', 'cover_bg_color_2',
+      'cover_text_color', 'cover_subtitle_color',
+      'cover_button_bg', 'cover_button_text', 'cover_overlay_opacity',
+    ];
     const updates: Record<string, unknown> = {};
 
     for (const key of allowedFields) {
@@ -135,15 +142,35 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    // Validate color fields
-    const colorFields = ['accent_color', 'bg_primary', 'bg_secondary', 'sidebar_text_color', 'accept_text_color'];
+    // Validate color fields (all #RRGGBB format)
+    const colorFields = [
+      'accent_color', 'bg_primary', 'bg_secondary', 'sidebar_text_color', 'accept_text_color',
+      'cover_bg_color_1', 'cover_bg_color_2', 'cover_text_color', 'cover_subtitle_color',
+      'cover_button_bg', 'cover_button_text',
+    ];
     for (const field of colorFields) {
       if (updates[field]) {
         const color = String(updates[field]);
-        if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
-          return NextResponse.json({ error: `Invalid color format for ${field}. Use #RRGGBB` }, { status: 400 });
+        if (!/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(color)) {
+          return NextResponse.json({ error: `Invalid color format for ${field}. Use #RRGGBB or #RRGGBBAA` }, { status: 400 });
         }
       }
+    }
+
+    // Validate cover_bg_style
+    if (updates.cover_bg_style) {
+      if (!['gradient', 'solid'].includes(String(updates.cover_bg_style))) {
+        return NextResponse.json({ error: 'cover_bg_style must be "gradient" or "solid"' }, { status: 400 });
+      }
+    }
+
+    // Validate cover_overlay_opacity
+    if (updates.cover_overlay_opacity !== undefined) {
+      const opacity = Number(updates.cover_overlay_opacity);
+      if (isNaN(opacity) || opacity < 0 || opacity > 1) {
+        return NextResponse.json({ error: 'cover_overlay_opacity must be between 0 and 1' }, { status: 400 });
+      }
+      updates.cover_overlay_opacity = opacity;
     }
 
     updates.updated_at = new Date().toISOString();
