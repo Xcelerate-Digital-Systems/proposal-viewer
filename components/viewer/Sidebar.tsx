@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle2, MessageSquare, ChevronRight, Building2, X } from 'lucide-react';
+import { CheckCircle2, MessageSquare, Building2, X } from 'lucide-react';
 import { PageNameEntry } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 
@@ -128,33 +128,67 @@ export default function Sidebar({
           const isExpanded = expandedGroup === item.pageNum;
           const isParentActive = currentPage === item.pageNum;
           const childActive = isChildActive(item);
+          const groupActive = isParentActive || childActive;
 
           return (
             <div key={item.pageNum}>
-              <div className="flex items-center">
-                <button
-                  onClick={() => handleParentClick(item)}
-                  className={`flex-1 flex items-center text-left py-2.5 text-sm transition-colors truncate px-5 ${
-                    isParentActive ? 'text-white font-semibold'
-                      : childActive && !isExpanded ? 'text-[#ccc] font-medium'
+              {/* Parent tab */}
+              <button
+                onClick={() => handleParentClick(item)}
+                className="w-full text-left flex items-center justify-between transition-colors truncate relative"
+                style={{ padding: '10px 20px' }}
+              >
+                <span
+                  className={`truncate text-sm ${
+                    isParentActive
+                      ? 'text-white font-semibold'
+                      : childActive && !isExpanded
+                      ? 'text-[#ccc] font-medium'
+                      : hasChildren
+                      ? 'text-[#aaa] hover:text-white'
                       : 'text-[#888] hover:text-white'
                   }`}
                 >
-                  {hasChildren && (
-                    <ChevronRight size={13} className={`mr-1.5 shrink-0 text-[#555] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                  )}
-                  <span className="truncate">{item.name}</span>
-                </button>
-              </div>
+                  {item.name}
+                </span>
 
+                {/* Small accent dot on right for parents with children */}
+                {hasChildren && (
+                  <span
+                    className="shrink-0 ml-2 w-1 h-1 rounded-full transition-opacity"
+                    style={{
+                      backgroundColor: groupActive ? accent : '#555',
+                      opacity: isExpanded ? 1 : 0.7,
+                    }}
+                  />
+                )}
+
+                {/* Accent underline for parent items with children */}
+                {hasChildren && (
+                  <span
+                    className="absolute bottom-0 left-5 right-5 h-px transition-opacity"
+                    style={{
+                      backgroundColor: groupActive ? accent : '#333',
+                      opacity: isExpanded ? 0.4 : 0.15,
+                    }}
+                  />
+                )}
+              </button>
+
+              {/* Children — shown with accent left border */}
               {hasChildren && isExpanded && (
-                <div>
+                <div
+                  className="ml-5 mr-3 mb-1"
+                  style={{ borderLeft: `2px solid ${accent}40` }}
+                >
                   {item.children.map((child) => (
                     <button
                       key={child.pageNum}
                       onClick={() => handleChildClick(child.pageNum)}
-                      className={`w-full text-left pl-10 pr-5 py-2 text-sm transition-colors truncate ${
-                        currentPage === child.pageNum ? 'text-white font-semibold' : 'text-[#666] hover:text-white'
+                      className={`w-full text-left pl-4 pr-3 py-2 text-sm transition-colors truncate ${
+                        currentPage === child.pageNum
+                          ? 'text-white font-semibold'
+                          : 'text-[#666] hover:text-white'
                       }`}
                     >
                       {child.name}

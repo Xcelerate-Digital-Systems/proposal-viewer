@@ -96,22 +96,42 @@ export function useProposal(token: string) {
       // Non-critical — fall back to defaults
     }
 
-    const isFirstView = !data.first_viewed_at;
+    // Check if the viewer is a logged-in team member of this company (i.e. a preview)
+    let isTeamPreview = false;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.user?.id) {
+        const { data: member } = await supabase
+          .from('team_members')
+          .select('id')
+          .eq('user_id', sessionData.session.user.id)
+          .eq('company_id', data.company_id)
+          .single();
+        if (member) isTeamPreview = true;
+      }
+    } catch {
+      // Not logged in or not a team member — treat as client view
+    }
 
-    const now = new Date().toISOString();
-    const updates: Record<string, string> = { last_viewed_at: now };
-    if (isFirstView) updates.first_viewed_at = now;
-    if (data.status === 'sent' || data.status === 'draft') updates.status = 'viewed';
+    // Only track views and fire notifications for actual client views
+    if (!isTeamPreview) {
+      const isFirstView = !data.first_viewed_at;
 
-    await supabase.from('proposals').update(updates).eq('id', data.id);
-    await supabase.from('proposal_views').insert({
-      proposal_id: data.id,
-      user_agent: navigator.userAgent,
-      company_id: data.company_id,
-    });
+      const now = new Date().toISOString();
+      const updates: Record<string, string> = { last_viewed_at: now };
+      if (isFirstView) updates.first_viewed_at = now;
+      if (data.status === 'sent' || data.status === 'draft') updates.status = 'viewed';
 
-    if (isFirstView) {
-      notify({ event_type: 'proposal_viewed', share_token: token });
+      await supabase.from('proposals').update(updates).eq('id', data.id);
+      await supabase.from('proposal_views').insert({
+        proposal_id: data.id,
+        user_agent: navigator.userAgent,
+        company_id: data.company_id,
+      });
+
+      if (isFirstView) {
+        notify({ event_type: 'proposal_viewed', share_token: token });
+      }
     }
 
     const { data: signedData } = await supabase.storage

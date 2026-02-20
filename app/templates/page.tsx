@@ -27,15 +27,21 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const fetchTemplates = useCallback(async () => {
+    if (!companyId) return;
     const { data } = await supabase
       .from('proposal_templates')
       .select('*')
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false });
     setTemplates(data || []);
     setLoading(false);
-  }, []);
+  }, [companyId]);
 
-  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+  useEffect(() => {
+    setLoading(true);
+    setSelectedId(null);
+    fetchTemplates();
+  }, [fetchTemplates]);
 
   const deleteTemplate = async (id: string, name: string) => {
     const ok = await confirm({

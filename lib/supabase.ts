@@ -60,6 +60,9 @@ export type Proposal = {
   cover_subtitle: string | null;
   cover_button_text: string;
   accept_button_text: string | null;
+  post_accept_action: 'redirect' | 'message' | null;
+  post_accept_redirect_url: string | null;
+  post_accept_message: string | null;
   company_id: string;
   created_at: string;
   updated_at: string;
@@ -112,6 +115,21 @@ export type TeamMember = {
   notify_proposal_accepted: boolean;
   notify_comment_added: boolean;
   notify_comment_resolved: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Webhook = {
+  id: string;
+  company_id: string;
+  url: string;
+  secret: string | null;
+  on_proposal_viewed: boolean;
+  on_proposal_accepted: boolean;
+  on_comment_added: boolean;
+  on_comment_resolved: boolean;
+  enabled: boolean;
+  description: string | null;
   created_at: string;
   updated_at: string;
 };

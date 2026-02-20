@@ -1,6 +1,7 @@
 // lib/notifications.ts
 import { createServiceClient } from './supabase-server';
 import { getResend, FROM_EMAIL } from './resend';
+import crypto from 'crypto';
 
 type EventType = 'proposal_viewed' | 'proposal_accepted' | 'comment_added' | 'comment_resolved';
 
@@ -10,6 +11,14 @@ const PREF_MAP: Record<EventType, string> = {
   proposal_accepted: 'notify_proposal_accepted',
   comment_added: 'notify_comment_added',
   comment_resolved: 'notify_comment_resolved',
+};
+
+// Maps event_type to the webhook column that controls it
+const WEBHOOK_MAP: Record<EventType, string> = {
+  proposal_viewed: 'on_proposal_viewed',
+  proposal_accepted: 'on_proposal_accepted',
+  comment_added: 'on_comment_added',
+  comment_resolved: 'on_comment_resolved',
 };
 
 interface NotifyPayload {
@@ -110,7 +119,103 @@ export async function sendNotifications(payload: NotifyPayload) {
     }
   }
 
+  // 7. Fire webhooks (non-blocking)
+  fireWebhooks({
+    event_type,
+    company_id: proposal.company_id,
+    proposal: {
+      id: proposal.id,
+      title: proposal.title,
+      client_name: proposal.client_name,
+      share_token: proposal.share_token,
+    },
+    comment_id,
+    comment_author,
+    comment_content,
+    resolved_by,
+  }).catch((err) => console.error('Webhook dispatch error:', err));
+
   return { sent };
+}
+
+// --- Webhook dispatch ---
+
+interface WebhookPayload {
+  event_type: EventType;
+  company_id: string;
+  proposal: {
+    id: string;
+    title: string;
+    client_name: string;
+    share_token: string;
+  };
+  comment_id?: string;
+  comment_author?: string;
+  comment_content?: string;
+  resolved_by?: string;
+}
+
+async function fireWebhooks(payload: WebhookPayload) {
+  const supabase = createServiceClient();
+  const { event_type, company_id } = payload;
+  const webhookColumn = WEBHOOK_MAP[event_type];
+
+  const { data: webhooks } = await supabase
+    .from('webhooks')
+    .select('*')
+    .eq('company_id', company_id)
+    .eq('enabled', true)
+    .eq(webhookColumn, true);
+
+  if (!webhooks || webhooks.length === 0) return;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+  const body = JSON.stringify({
+    event: event_type,
+    timestamp: new Date().toISOString(),
+    proposal: {
+      id: payload.proposal.id,
+      title: payload.proposal.title,
+      client_name: payload.proposal.client_name,
+      viewer_url: `${appUrl}/view/${payload.proposal.share_token}`,
+    },
+    ...(payload.comment_id && {
+      comment: {
+        id: payload.comment_id,
+        author: payload.comment_author,
+        content: payload.comment_content,
+      },
+    }),
+    ...(payload.resolved_by && { resolved_by: payload.resolved_by }),
+  });
+
+  for (const webhook of webhooks) {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'AgencyViz-Webhooks/1.0',
+      };
+
+      // HMAC-SHA256 signature if secret is set
+      if (webhook.secret) {
+        const signature = crypto
+          .createHmac('sha256', webhook.secret)
+          .update(body)
+          .digest('hex');
+        headers['X-Webhook-Signature'] = `sha256=${signature}`;
+      }
+
+      await fetch(webhook.url, {
+        method: 'POST',
+        headers,
+        body,
+        signal: AbortSignal.timeout(10000), // 10s timeout
+      });
+    } catch (err) {
+      console.error(`Webhook failed for ${webhook.url}:`, err);
+    }
+  }
 }
 
 // --- Email templates ---

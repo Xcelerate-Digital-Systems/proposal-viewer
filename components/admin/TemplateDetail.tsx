@@ -1,13 +1,13 @@
 // components/admin/TemplateDetail.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import {
   ArrowLeft, Trash2, Plus, Upload, Loader2,
-  ChevronDown, CornerDownRight, Save,
+  ChevronDown, CornerDownRight, Check,
 } from 'lucide-react';
 import { supabase, ProposalTemplate, TemplatePage } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -57,11 +57,18 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [saving, setSaving] = useState(false);
   // Track local edits: label + indent keyed by page id
   const [localEdits, setLocalEdits] = useState<Record<string, { label: string; indent: number }>>({});
+  // Track autosave status per page: 'saving' | 'saved' | null
+  const [saveStatus, setSaveStatus] = useState<Record<string, 'saving' | 'saved' | null>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // Debounce timers keyed by page id
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  // "Saved" indicator clear timers
+  const savedTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  // Keep a ref to localEdits so flushPendingSaves can read current values
+  const localEditsRef = useRef(localEdits);
+  localEditsRef.current = localEdits;
 
   const fetchPages = async () => {
     const { data } = await supabase
@@ -79,7 +86,6 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
       edits[p.id] = { label: p.label, indent: p.indent ?? 0 };
     }
     setLocalEdits(edits);
-    setHasChanges(false);
 
     // Get signed URLs for all pages
     const urls: Record<string, string> = {};
@@ -95,6 +101,14 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
   useEffect(() => { fetchPages(); }, [template.id]);
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(clearTimeout);
+      Object.values(savedTimers.current).forEach(clearTimeout);
+    };
+  }, []);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -106,15 +120,54 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // Autosave a single page's label + indent to DB
+  const savePageEdit = useCallback(async (pageId: string, label: string, indent: number) => {
+    setSaveStatus((prev) => ({ ...prev, [pageId]: 'saving' }));
+    try {
+      await supabase.from('template_pages')
+        .update({ label, indent })
+        .eq('id', pageId);
+      setSaveStatus((prev) => ({ ...prev, [pageId]: 'saved' }));
+      // Clear "saved" indicator after 2s
+      if (savedTimers.current[pageId]) clearTimeout(savedTimers.current[pageId]);
+      savedTimers.current[pageId] = setTimeout(() => {
+        setSaveStatus((prev) => ({ ...prev, [pageId]: null }));
+      }, 2000);
+    } catch {
+      toast.error('Failed to save');
+      setSaveStatus((prev) => ({ ...prev, [pageId]: null }));
+    }
+  }, [toast]);
+
+  // Flush any pending debounced saves (call before delete/replace/insert)
+  const flushPendingSaves = useCallback(async () => {
+    const promises: Promise<void>[] = [];
+    for (const [pageId, timer] of Object.entries(debounceTimers.current)) {
+      clearTimeout(timer);
+      const edit = localEditsRef.current[pageId];
+      if (edit) {
+        promises.push(savePageEdit(pageId, edit.label, edit.indent));
+      }
+    }
+    debounceTimers.current = {};
+    if (promises.length > 0) await Promise.all(promises);
+  }, [savePageEdit]);
+
   const getEdit = (pageId: string) =>
     localEdits[pageId] ?? { label: '', indent: 0 };
 
   const updateEdit = (pageId: string, changes: Partial<{ label: string; indent: number }>) => {
-    setLocalEdits((prev) => ({
-      ...prev,
-      [pageId]: { ...prev[pageId], ...changes },
-    }));
-    setHasChanges(true);
+    const updated = { ...getEdit(pageId), ...changes };
+    setLocalEdits((prev) => ({ ...prev, [pageId]: updated }));
+
+    // Debounce save — 800ms for typing, instant for indent/preset selection
+    if (debounceTimers.current[pageId]) clearTimeout(debounceTimers.current[pageId]);
+    const isInstant = changes.indent !== undefined;
+    const delay = isInstant ? 0 : 800;
+    debounceTimers.current[pageId] = setTimeout(() => {
+      savePageEdit(pageId, updated.label, updated.indent);
+      delete debounceTimers.current[pageId];
+    }, delay);
   };
 
   const isPreset = (name: string) => PRESET_LABELS.includes(name.toUpperCase());
@@ -134,26 +187,6 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     updateEdit(pageId, { indent: current.indent === 0 ? 1 : 0 });
   };
 
-  const saveAllLabels = async () => {
-    setSaving(true);
-    try {
-      for (const page of pages) {
-        const edit = getEdit(page.id);
-        if (edit.label !== page.label || (edit.indent ?? 0) !== (page.indent ?? 0)) {
-          await supabase.from('template_pages')
-            .update({ label: edit.label, indent: edit.indent })
-            .eq('id', page.id);
-        }
-      }
-      toast.success('Labels saved');
-      setHasChanges(false);
-      fetchPages();
-    } catch {
-      toast.error('Failed to save labels');
-    }
-    setSaving(false);
-  };
-
   const deletePage = async (pageNumber: number) => {
     if (pages.length <= 1) {
       toast.error('Template must have at least one page.');
@@ -166,6 +199,10 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
       destructive: true,
     });
     if (!ok) return;
+
+    // Flush any pending saves before page operations
+    await flushPendingSaves();
+
     setProcessing(true);
 
     await fetch('/api/templates/pages', {
@@ -181,12 +218,14 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   };
 
   const handleReplacePage = async (pageNumber: number, file: File) => {
+    await flushPendingSaves();
     setProcessing(true);
     const page = pages.find(p => p.page_number === pageNumber);
     const formData = new FormData();
     formData.append('template_id', template.id);
     formData.append('page_number', pageNumber.toString());
     formData.append('label', page?.label || `Page ${pageNumber}`);
+    formData.append('company_id', template.company_id);
     formData.append('file', file);
 
     await fetch('/api/templates/pages', { method: 'POST', body: formData });
@@ -198,12 +237,14 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   };
 
   const handleAddPage = async (afterPageNumber: number, file: File) => {
+    await flushPendingSaves();
     setProcessing(true);
     const newPageNumber = afterPageNumber + 1;
     const formData = new FormData();
     formData.append('template_id', template.id);
     formData.append('page_number', newPageNumber.toString());
     formData.append('label', 'New Page');
+    formData.append('company_id', template.company_id);
     formData.append('file', file);
 
     await fetch('/api/templates/pages', { method: 'POST', body: formData });
@@ -232,21 +273,10 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
           </h2>
           <span className="text-sm text-gray-400">{pages.length} pages</span>
         </div>
-
-        {hasChanges && (
-          <button
-            onClick={saveAllLabels}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
-          >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Save Labels
-          </button>
-        )}
       </div>
 
       <p className="text-xs text-gray-400 mb-4">
-        Choose a label from the dropdown or type a custom one. Use the indent button to nest pages under a parent tab — this structure carries through when creating proposals from this template.
+        Choose a label from the dropdown or type a custom one. Changes save automatically. Use the indent button to nest pages under a parent tab.
       </p>
 
       {processing && (
@@ -266,6 +296,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
             const edit = getEdit(page.id);
             const isCustom = !isPreset(edit.label);
             const isDropdownOpen = openDropdown === page.id;
+            const status = saveStatus[page.id];
 
             return (
               <div key={page.id}>
@@ -369,8 +400,18 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
                         )}
                       </div>
 
+                      {/* Autosave status indicator */}
+                      <div className="shrink-0 w-5 flex items-center justify-center">
+                        {status === 'saving' && (
+                          <Loader2 size={12} className="animate-spin text-gray-300" />
+                        )}
+                        {status === 'saved' && (
+                          <Check size={13} className="text-emerald-400" />
+                        )}
+                      </div>
+
                       {/* Actions */}
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <div className="flex items-center gap-2 shrink-0 ml-1">
                         <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer">
                           <Upload size={12} />
                           Replace

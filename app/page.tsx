@@ -24,15 +24,20 @@ function DashboardContent({ companyId }: { companyId: string }) {
   const [showUpload, setShowUpload] = useState(false);
 
   const fetchProposals = useCallback(async () => {
+    if (!companyId) return;
     const { data } = await supabase
       .from('proposals')
       .select('*')
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false });
     setProposals(data || []);
     setLoading(false);
-  }, []);
+  }, [companyId]);
 
-  useEffect(() => { fetchProposals(); }, [fetchProposals]);
+  useEffect(() => {
+    setLoading(true);
+    fetchProposals();
+  }, [fetchProposals]);
 
   return (
     <div className="px-6 lg:px-10 py-8">
