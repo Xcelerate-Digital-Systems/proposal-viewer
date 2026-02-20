@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { supabase } from '@/lib/supabase';
+import CustomDomainManager from '@/components/admin/CustomDomainManager';
 
 type CompanyData = {
   id: string;
@@ -677,6 +678,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               )}
             </div>
           </div>
+          {/* Custom Domain */}
+          <CustomDomainManager companyId={companyId} isOwner={isOwner} />
 
           {/* Branding Colors */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">

@@ -113,10 +113,10 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         <div
           className="absolute inset-0"
           style={{
-            background: typeof imageOverlay === 'string' && imageOverlay.startsWith('linear')
+            background: typeof imageOverlay === 'string' && imageOverlay.includes('-gradient(')
               ? imageOverlay
               : undefined,
-            backgroundColor: typeof imageOverlay === 'string' && !imageOverlay.startsWith('linear')
+            backgroundColor: typeof imageOverlay === 'string' && !imageOverlay.includes('-gradient(')
               ? imageOverlay
               : undefined,
           }}

@@ -5,8 +5,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { Save, ChevronDown, ChevronLeft, ChevronRight, CornerDownRight, ArrowLeft } from 'lucide-react';
+import {
+  Save, ChevronDown, ChevronLeft, ChevronRight, CornerDownRight,
+  ArrowLeft, Upload, Loader2, Plus, Trash2,
+} from 'lucide-react';
 import { supabase, PageNameEntry, normalizePageNames } from '@/lib/supabase';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -37,7 +42,7 @@ const PRESET_LABELS = [
 ];
 
 const CUSTOM_VALUE = '__custom__';
-const PANEL_HEIGHT = 480;
+const PANEL_HEIGHT = 520;
 
 interface PageEditorProps {
   proposalId: string;
@@ -48,12 +53,16 @@ interface PageEditorProps {
 }
 
 export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel }: PageEditorProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [entries, setEntries] = useState<PageNameEntry[]>([]);
   const [pageCount, setPageCount] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [selectedPage, setSelectedPage] = useState<number>(0);
   const [previewWidth, setPreviewWidth] = useState(300);
+  const [processing, setProcessing] = useState(false);
+  const [pdfVersion, setPdfVersion] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -71,13 +80,14 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     return () => window.removeEventListener('resize', measure);
   }, []);
 
+  const loadPdfUrl = async () => {
+    const { data } = await supabase.storage.from('proposals').createSignedUrl(filePath, 3600);
+    if (data?.signedUrl) setPdfUrl(data.signedUrl + '&v=' + Date.now());
+  };
+
   useEffect(() => {
-    const loadPdf = async () => {
-      const { data } = await supabase.storage.from('proposals').createSignedUrl(filePath, 3600);
-      if (data?.signedUrl) setPdfUrl(data.signedUrl);
-    };
-    loadPdf();
-  }, [filePath]);
+    loadPdfUrl();
+  }, [filePath, pdfVersion]);
 
   useEffect(() => {
     const normalized = normalizePageNames(initialPageNames, initialPageNames.length || 0);
@@ -97,7 +107,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   // Scroll the selected row into view
   useEffect(() => {
     if (listRef.current) {
-      const row = listRef.current.children[selectedPage] as HTMLElement | undefined;
+      const row = listRef.current.querySelector(`[data-page-index="${selectedPage}"]`) as HTMLElement | undefined;
       if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, [selectedPage]);
@@ -138,29 +148,184 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
   const isPreset = (name: string) => PRESET_LABELS.includes(name.toUpperCase());
 
+  /* ------------------------------------------------------------------ */
+  /*  Save labels to DB                                                  */
+  /* ------------------------------------------------------------------ */
   const handleSave = async () => {
     await supabase.from('proposals').update({ page_names: entries }).eq('id', proposalId);
     onSave();
   };
 
+  /* ------------------------------------------------------------------ */
+  /*  Replace a single page's PDF                                        */
+  /* ------------------------------------------------------------------ */
+  const handleReplacePage = async (pageNumber: number, file: File) => {
+    setProcessing(true);
+    try {
+      const formData = new FormData();
+      formData.append('proposal_id', proposalId);
+      formData.append('page_number', pageNumber.toString());
+      formData.append('file', file);
+
+      const res = await fetch('/api/proposals/replace-page', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to replace page');
+        setProcessing(false);
+        return;
+      }
+
+      toast.success(`Page ${pageNumber} replaced`);
+      setPdfVersion((v) => v + 1);
+    } catch {
+      toast.error('Failed to replace page');
+    }
+    setProcessing(false);
+  };
+
+  /* ------------------------------------------------------------------ */
+  /*  Insert a page after a given position                               */
+  /* ------------------------------------------------------------------ */
+  const handleInsertPage = async (afterPage: number, file: File) => {
+    // Save current labels first so nothing is lost
+    await supabase.from('proposals').update({ page_names: entries }).eq('id', proposalId);
+
+    setProcessing(true);
+    try {
+      const formData = new FormData();
+      formData.append('proposal_id', proposalId);
+      formData.append('after_page', afterPage.toString());
+      formData.append('file', file);
+
+      const res = await fetch('/api/proposals/insert-page', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to insert page');
+        setProcessing(false);
+        return;
+      }
+
+      const result = await res.json();
+
+      // Update entries locally to match what the server wrote
+      setEntries((prev) => {
+        const updated = [...prev];
+        const newEntries = Array.from(
+          { length: result.pages_inserted || 1 },
+          (_, idx) => ({ name: `Page ${afterPage + idx + 1}`, indent: 0 })
+        );
+        updated.splice(afterPage, 0, ...newEntries);
+        return updated;
+      });
+
+      setPageCount(result.total_pages);
+      setSelectedPage(afterPage); // Select the first inserted page
+      toast.success(`Page inserted after page ${afterPage || 'start'}`);
+      setPdfVersion((v) => v + 1);
+    } catch {
+      toast.error('Failed to insert page');
+    }
+    setProcessing(false);
+  };
+
+  /* ------------------------------------------------------------------ */
+  /*  Delete a page                                                      */
+  /* ------------------------------------------------------------------ */
+  const handleDeletePage = async (pageNumber: number) => {
+    if (pageCount <= 1) {
+      toast.error('Cannot delete the only remaining page');
+      return;
+    }
+
+    const ok = await confirm({
+      title: 'Delete page?',
+      message: `This will permanently remove page ${pageNumber} from the proposal PDF. This cannot be undone.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    // Save current labels first so nothing is lost
+    await supabase.from('proposals').update({ page_names: entries }).eq('id', proposalId);
+
+    setProcessing(true);
+    try {
+      const res = await fetch('/api/proposals/delete-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposal_id: proposalId, page_number: pageNumber }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to delete page');
+        setProcessing(false);
+        return;
+      }
+
+      const result = await res.json();
+
+      // Update entries locally
+      setEntries((prev) => {
+        const updated = [...prev];
+        updated.splice(pageNumber - 1, 1);
+        return updated;
+      });
+
+      setPageCount(result.total_pages);
+
+      // Adjust selection
+      if (selectedPage >= result.total_pages) {
+        setSelectedPage(Math.max(0, result.total_pages - 1));
+      }
+
+      toast.success(`Page ${pageNumber} deleted`);
+      setPdfVersion((v) => v + 1);
+    } catch {
+      toast.error('Failed to delete page');
+    }
+    setProcessing(false);
+  };
+
   const goPrev = () => setSelectedPage((p) => Math.max(0, p - 1));
   const goNext = () => setSelectedPage((p) => Math.min(pageCount - 1, p + 1));
 
+  /* ------------------------------------------------------------------ */
+  /*  Render                                                              */
+  /* ------------------------------------------------------------------ */
   return (
     <div className="border-t border-gray-200 bg-gray-50 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-gray-900">Edit Page Labels</h4>
+        <div className="flex items-center gap-3">
+          <h4 className="text-sm font-semibold text-gray-900">Edit Page Labels</h4>
+          {processing && (
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <Loader2 size={12} className="animate-spin text-[#017C87]" />
+              Processing...
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleSave}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors"
+            disabled={processing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
           >
             <Save size={14} />
             Save
           </button>
           <button
             onClick={onCancel}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-white text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
+            disabled={processing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-white text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -175,94 +340,190 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       <div className="flex gap-5" style={{ height: PANEL_HEIGHT }}>
         {/* Left half: page label controls */}
         <div className="w-1/2 min-w-0 overflow-hidden flex flex-col" ref={dropdownRef}>
-          <div ref={listRef} className="flex-1 space-y-1.5 overflow-y-auto pr-1">
+          <div ref={listRef} className="flex-1 overflow-y-auto pr-1">
+            {/* Insert-at-start button */}
+            <div className="flex justify-center py-0.5">
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${
+                  processing
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'text-gray-400 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
+                }`}
+                title="Insert page at start"
+              >
+                <Plus size={10} />
+                Insert
+                <input
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  disabled={processing}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleInsertPage(0, f);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+
             {entries.map((entry, i) => {
               const isCustom = !isPreset(entry.name);
               const isDropdownOpen = openDropdown === i;
               const isSelected = selectedPage === i;
 
               return (
-                <div
-                  key={i}
-                  className={`flex items-center gap-2 rounded-lg px-1.5 py-1 cursor-pointer transition-colors ${
-                    isSelected
-                      ? 'bg-[#017C87]/10 ring-1 ring-[#017C87]/30'
-                      : 'hover:bg-gray-100'
-                  }`}
-                  onClick={() => setSelectedPage(i)}
-                >
-                  <span className="text-xs text-gray-400 w-6 text-right shrink-0">{i + 1}.</span>
-
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleIndent(i); }}
-                    disabled={i === 0}
-                    title={entry.indent ? 'Remove indent' : 'Indent under parent'}
-                    className={`shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors ${
-                      i === 0
-                        ? 'text-gray-200 cursor-not-allowed'
-                        : entry.indent
-                        ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                <div key={`page-${i}-${pageCount}`}>
+                  {/* Page row */}
+                  <div
+                    data-page-index={i}
+                    className={`flex items-center gap-1.5 rounded-lg px-1.5 py-1 cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-[#017C87]/10 ring-1 ring-[#017C87]/30'
+                        : 'hover:bg-gray-100'
                     }`}
+                    onClick={() => setSelectedPage(i)}
                   >
-                    {entry.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
-                  </button>
+                    <span className="text-xs text-gray-400 w-5 text-right shrink-0">{i + 1}.</span>
 
-                  {entry.indent > 0 && (
-                    <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
-                  )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleIndent(i); }}
+                      disabled={i === 0}
+                      title={entry.indent ? 'Remove indent' : 'Indent under parent'}
+                      className={`shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                        i === 0
+                          ? 'text-gray-200 cursor-not-allowed'
+                          : entry.indent
+                          ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
+                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {entry.indent ? <ArrowLeft size={12} /> : <CornerDownRight size={12} />}
+                    </button>
 
-                  <div className="flex-1 relative min-w-0" onClick={(e) => e.stopPropagation()}>
-                    {isCustom ? (
-                      <div className="flex items-center gap-0">
-                        <input
-                          type="text"
-                          value={entry.name}
-                          onChange={(e) => updateEntry(i, { name: e.target.value })}
-                          onFocus={() => setSelectedPage(i)}
-                          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
-                          placeholder="Custom label..."
-                        />
+                    {entry.indent > 0 && (
+                      <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
+                    )}
+
+                    <div className="flex-1 relative min-w-0" onClick={(e) => e.stopPropagation()}>
+                      {isCustom ? (
+                        <div className="flex items-center gap-0">
+                          <input
+                            type="text"
+                            value={entry.name}
+                            onChange={(e) => updateEntry(i, { name: e.target.value })}
+                            onFocus={() => setSelectedPage(i)}
+                            className="flex-1 min-w-0 px-2 py-1 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-900 text-xs focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+                            placeholder="Custom label..."
+                          />
+                          <button
+                            onClick={() => setOpenDropdown(isDropdownOpen ? null : i)}
+                            className="px-1.5 py-1 rounded-r-md border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <ChevronDown size={12} className={isDropdownOpen ? 'rotate-180' : ''} />
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           onClick={() => setOpenDropdown(isDropdownOpen ? null : i)}
-                          className="px-2 py-1.5 rounded-r-md border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
+                          className="w-full flex items-center justify-between px-2 py-1 rounded-md border border-gray-200 bg-white text-gray-900 text-xs hover:border-gray-300 transition-colors"
                         >
-                          <ChevronDown size={13} className={isDropdownOpen ? 'rotate-180' : ''} />
+                          <span className="truncate">{entry.name}</span>
+                          <ChevronDown size={12} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setOpenDropdown(isDropdownOpen ? null : i)}
-                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm hover:border-gray-300 transition-colors"
-                      >
-                        <span className="truncate">{entry.name}</span>
-                        <ChevronDown size={13} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                    )}
+                      )}
 
-                    {isDropdownOpen && (
-                      <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                        {PRESET_LABELS.map((label) => (
+                      {isDropdownOpen && (
+                        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                          {PRESET_LABELS.map((label) => (
+                            <button
+                              key={label}
+                              onClick={() => selectPreset(i, label)}
+                              className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-gray-100 last:border-0 ${
+                                entry.name === label
+                                  ? 'text-[#017C87] bg-[#017C87]/5'
+                                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
                           <button
-                            key={label}
-                            onClick={() => selectPreset(i, label)}
-                            className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-gray-100 last:border-0 ${
-                              entry.name === label
-                                ? 'text-[#017C87] bg-[#017C87]/5'
-                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                            }`}
+                            onClick={() => selectPreset(i, CUSTOM_VALUE)}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors italic"
                           >
-                            {label}
+                            Custom...
                           </button>
-                        ))}
-                        <button
-                          onClick={() => selectPreset(i, CUSTOM_VALUE)}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors italic"
-                        >
-                          Custom...
-                        </button>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Replace page button */}
+                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <label
+                        className={`p-1 rounded flex items-center justify-center transition-colors ${
+                          processing
+                            ? 'text-gray-200 cursor-not-allowed'
+                            : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 cursor-pointer'
+                        }`}
+                        title="Replace page PDF"
+                      >
+                        <Upload size={11} />
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          className="hidden"
+                          disabled={processing}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleReplacePage(i + 1, f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    {/* Delete page button */}
+                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleDeletePage(i + 1)}
+                        disabled={processing || pageCount <= 1}
+                        className={`p-1 rounded flex items-center justify-center transition-colors ${
+                          processing || pageCount <= 1
+                            ? 'text-gray-200 cursor-not-allowed'
+                            : 'text-gray-300 hover:text-red-500 hover:bg-red-50'
+                        }`}
+                        title="Delete page"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Insert-after button */}
+                  <div className="flex justify-center py-0.5">
+                    <label
+                      className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${
+                        processing
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : 'text-gray-400 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
+                      }`}
+                      title={`Insert page after page ${i + 1}`}
+                    >
+                      <Plus size={10} />
+                      Insert
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        className="hidden"
+                        disabled={processing}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleInsertPage(i + 1, f);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
                   </div>
                 </div>
               );
@@ -277,7 +538,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         {/* Right half: full-height PDF preview */}
         <div className="w-1/2 min-w-0 flex flex-col" ref={previewContainerRef}>
           {pdfUrl ? (
-            <Document file={pdfUrl} onLoadSuccess={onDocLoadSuccess} loading={null}>
+            <Document file={pdfUrl} onLoadSuccess={onDocLoadSuccess} loading={null} key={pdfVersion}>
               {/* Hidden page for initial load trigger */}
               {pageCount === 0 && (
                 <div className="hidden"><Page pageNumber={1} width={1} /></div>

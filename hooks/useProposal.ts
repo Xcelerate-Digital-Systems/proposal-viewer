@@ -121,22 +121,16 @@ export function useProposal(token: string) {
     } catch {
       // Non-critical — fall back to defaults
     }
-
-    // Check if the viewer is a logged-in team member of this company (i.e. a preview)
+    // Check if the viewer is a logged-in user (i.e. a team member previewing).
+    // Clients never have auth sessions — they view via share token only.
     let isTeamPreview = false;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session?.user?.id) {
-        const { data: member } = await supabase
-          .from('team_members')
-          .select('id')
-          .eq('user_id', sessionData.session.user.id)
-          .eq('company_id', data.company_id)
-          .single();
-        if (member) isTeamPreview = true;
+        isTeamPreview = true;
       }
     } catch {
-      // Not logged in or not a team member — treat as client view
+      // No session — treat as client view
     }
 
     // Only track views and fire notifications for actual client views

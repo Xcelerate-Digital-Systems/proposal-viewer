@@ -43,7 +43,6 @@ const PRESET_LABELS = [
 ];
 
 const CUSTOM_VALUE = '__custom__';
-const PANEL_HEIGHT = 520;
 
 interface TemplateDetailProps {
   template: ProposalTemplate;
@@ -76,6 +75,8 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelHeight, setPanelHeight] = useState(520);
 
   // Debounce timers keyed by page id
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -86,17 +87,28 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   localEditsRef.current = localEdits;
 
   // Measure preview container width for PDF rendering
+  // Measure preview container width + dynamic panel height
   useEffect(() => {
     const measure = () => {
       if (previewContainerRef.current) {
         const w = previewContainerRef.current.offsetWidth - 2;
         setPreviewWidth(Math.max(200, w));
       }
+      if (panelRef.current) {
+        const rect = panelRef.current.getBoundingClientRect();
+        const available = window.innerHeight - rect.top - 32; // 32px bottom breathing room
+        setPanelHeight(Math.max(400, available));
+      }
     };
     measure();
+    // Small delay to let layout settle after page loads
+    const timer = setTimeout(measure, 100);
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
+    return () => {
+      window.removeEventListener('resize', measure);
+      clearTimeout(timer);
+    };
+  }, [loading, coverImageUrl]);
 
   const fetchPages = async () => {
     const { data } = await supabase
@@ -458,10 +470,10 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
           </div>
         ) : (
           /* 50/50 split — fixed height so both sides fill equally */
-          <div className="flex gap-5" style={{ height: PANEL_HEIGHT }}>
+          <div ref={panelRef} className="flex gap-5" style={{ height: panelHeight }}>
             {/* Left half: page label controls */}
             <div className="w-1/2 min-w-0 overflow-hidden flex flex-col" ref={dropdownRef}>
-              <div ref={listRef} className="flex-1 space-y-0.5 overflow-y-auto pr-1">
+              <div ref={listRef} className="flex-1 space-y-0.5 p-1 overflow-y-auto pr-1">
                 {pages.map((page, idx) => {
                   const edit = getEdit(page.id);
                   const isCustom = !isPreset(edit.label);

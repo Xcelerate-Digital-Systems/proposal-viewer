@@ -1,6 +1,7 @@
 // lib/notifications.ts
 import { createServiceClient } from './supabase-server';
 import { getResend, FROM_EMAIL } from './resend';
+import { buildProposalUrl } from './proposal-url';
 import crypto from 'crypto';
 
 type EventType = 'proposal_viewed' | 'proposal_accepted' | 'comment_added' | 'comment_resolved';
@@ -78,9 +79,16 @@ export async function sendNotifications(payload: NotifyPayload) {
     return { sent: 0, reason: 'All eligible members already notified' };
   }
 
-  // 5. Build the email
+  // 5. Build the email — look up company's custom domain for viewer URL
+  const { data: company } = await supabase
+    .from('companies')
+    .select('custom_domain, domain_verified')
+    .eq('id', proposal.company_id)
+    .single();
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const viewerUrl = `${appUrl}/view/${proposal.share_token}`;
+  const verifiedDomain = company?.domain_verified ? company.custom_domain : null;
+  const viewerUrl = buildProposalUrl(proposal.share_token, verifiedDomain, appUrl);
   const dashboardUrl = appUrl;
 
   const { subject, html } = buildEmail({
@@ -119,10 +127,11 @@ export async function sendNotifications(payload: NotifyPayload) {
     }
   }
 
-  // 7. Fire webhooks (non-blocking)
+  // 7. Fire webhooks (non-blocking) — pass custom domain info
   fireWebhooks({
     event_type,
     company_id: proposal.company_id,
+    custom_domain: verifiedDomain,
     proposal: {
       id: proposal.id,
       title: proposal.title,
@@ -143,6 +152,7 @@ export async function sendNotifications(payload: NotifyPayload) {
 interface WebhookPayload {
   event_type: EventType;
   company_id: string;
+  custom_domain?: string | null;
   proposal: {
     id: string;
     title: string;
@@ -157,7 +167,7 @@ interface WebhookPayload {
 
 async function fireWebhooks(payload: WebhookPayload) {
   const supabase = createServiceClient();
-  const { event_type, company_id } = payload;
+  const { event_type, company_id, custom_domain } = payload;
   const webhookColumn = WEBHOOK_MAP[event_type];
 
   const { data: webhooks } = await supabase
@@ -178,7 +188,7 @@ async function fireWebhooks(payload: WebhookPayload) {
       id: payload.proposal.id,
       title: payload.proposal.title,
       client_name: payload.proposal.client_name,
-      viewer_url: `${appUrl}/view/${payload.proposal.share_token}`,
+      viewer_url: buildProposalUrl(payload.proposal.share_token, custom_domain, appUrl),
     },
     ...(payload.comment_id && {
       comment: {

@@ -22,6 +22,7 @@ function DashboardContent({ companyId }: { companyId: string }) {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
 
   const fetchProposals = useCallback(async () => {
     if (!companyId) return;
@@ -34,10 +35,26 @@ function DashboardContent({ companyId }: { companyId: string }) {
     setLoading(false);
   }, [companyId]);
 
+  // Fetch the company's verified custom domain (if any)
+  const fetchCustomDomain = useCallback(async () => {
+    if (!companyId) return;
+    const { data } = await supabase
+      .from('companies')
+      .select('custom_domain, domain_verified')
+      .eq('id', companyId)
+      .single();
+    if (data?.domain_verified && data.custom_domain) {
+      setCustomDomain(data.custom_domain);
+    } else {
+      setCustomDomain(null);
+    }
+  }, [companyId]);
+
   useEffect(() => {
     setLoading(true);
     fetchProposals();
-  }, [fetchProposals]);
+    fetchCustomDomain();
+  }, [fetchProposals, fetchCustomDomain]);
 
   return (
     <div className="px-6 lg:px-10 py-8">
@@ -83,7 +100,12 @@ function DashboardContent({ companyId }: { companyId: string }) {
       ) : (
         <div className="space-y-3">
           {proposals.map((p) => (
-            <ProposalCard key={p.id} proposal={p} onRefresh={fetchProposals} />
+            <ProposalCard
+              key={p.id}
+              proposal={p}
+              onRefresh={fetchProposals}
+              customDomain={customDomain}
+            />
           ))}
         </div>
       )}

@@ -7,6 +7,7 @@ import {
   Trash2, X, Pencil, Image
 } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
+import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import PageEditor from './PageEditor';
@@ -15,6 +16,7 @@ import CoverEditor from './CoverEditor';
 interface ProposalCardProps {
   proposal: Proposal;
   onRefresh: () => void;
+  customDomain?: string | null;
 }
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
@@ -36,7 +38,7 @@ const formatDate = (date: string | null) => {
   return new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardProps) {
+export default function ProposalCard({ proposal: p, onRefresh, customDomain }: ProposalCardProps) {
   const confirm = useConfirm();
   const toast = useToast();
   const [copiedId, setCopiedId] = useState(false);
@@ -46,7 +48,7 @@ export default function ProposalCard({ proposal: p, onRefresh }: ProposalCardPro
   const sc = statusConfig[p.status];
 
   const copyLink = () => {
-    const url = `${window.location.origin}/view/${p.share_token}`;
+    const url = buildProposalUrl(p.share_token, customDomain, window.location.origin);
     navigator.clipboard.writeText(url);
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
