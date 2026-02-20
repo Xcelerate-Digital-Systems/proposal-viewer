@@ -1,8 +1,8 @@
 // hooks/useProposal.ts
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabase, Proposal, ProposalComment, PageNameEntry, normalizePageNames } from '@/lib/supabase';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { supabase, Proposal, ProposalComment, ProposalPricing, PageNameEntry, normalizePageNames } from '@/lib/supabase';
 
 // Fire-and-forget notification — doesn't block UI
 function notify(payload: Record<string, string | undefined>) {
@@ -82,10 +82,57 @@ export function deriveSurfaceColor(bgPrimary: string, bgSecondary: string): stri
   return `#${Math.min(255, r).toString(16).padStart(2, '0')}${Math.min(255, g).toString(16).padStart(2, '0')}${Math.min(255, b).toString(16).padStart(2, '0')}`;
 }
 
+/**
+ * Virtual page mapping:
+ * When pricing is enabled, it's inserted into the page sequence.
+ * - position = -1 → pricing is the last page (after all PDF pages)
+ * - position = N  → pricing appears after PDF page N (0 = first page)
+ *
+ * virtualPage is the 1-indexed page number the user sees.
+ * pdfPage is the 1-indexed page number in the actual PDF.
+ * pricingPage is the 1-indexed virtual page where the pricing page lives.
+ */
+function buildPageMap(pdfPageCount: number, pricing: ProposalPricing | null) {
+  const hasPricing = pricing?.enabled && pdfPageCount > 0;
+  if (!hasPricing || !pricing) {
+    return {
+      totalPages: pdfPageCount,
+      pricingVirtualPage: -1,
+      isPricingPage: (_vp: number) => false,
+      toPdfPage: (vp: number) => vp,
+    };
+  }
+
+  // Calculate where pricing lands in the virtual sequence
+  let pricingVirtualPage: number;
+  if (pricing.position === -1 || pricing.position >= pdfPageCount) {
+    // Last page
+    pricingVirtualPage = pdfPageCount + 1;
+  } else if (pricing.position === 0) {
+    // First page
+    pricingVirtualPage = 1;
+  } else {
+    // After page N → virtual page N+1
+    pricingVirtualPage = pricing.position + 1;
+  }
+
+  const totalPages = pdfPageCount + 1;
+
+  const isPricingPage = (vp: number) => vp === pricingVirtualPage;
+
+  const toPdfPage = (vp: number): number => {
+    if (vp === pricingVirtualPage) return -1; // Not a PDF page
+    if (vp < pricingVirtualPage) return vp;
+    return vp - 1; // Shift down after pricing page
+  };
+
+  return { totalPages, pricingVirtualPage, isPricingPage, toPdfPage };
+}
+
 export function useProposal(token: string) {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [numPages, setNumPages] = useState(0);
+  const [pdfPageCount, setPdfPageCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -93,6 +140,7 @@ export function useProposal(token: string) {
   const [comments, setComments] = useState<ProposalComment[]>([]);
   const [accepted, setAccepted] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [pricing, setPricing] = useState<ProposalPricing | null>(null);
 
   const fetchProposal = useCallback(async () => {
     const { data, error } = await supabase
@@ -121,6 +169,20 @@ export function useProposal(token: string) {
     } catch {
       // Non-critical — fall back to defaults
     }
+
+    // Fetch pricing data
+    try {
+      const pricingRes = await fetch(`/api/proposals/pricing?share_token=${token}`);
+      if (pricingRes.ok) {
+        const pricingData = await pricingRes.json();
+        if (pricingData && pricingData.enabled) {
+          setPricing(pricingData);
+        }
+      }
+    } catch {
+      // Non-critical — no pricing page
+    }
+
     // Check if the viewer is a logged-in user (i.e. a team member previewing).
     // Clients never have auth sessions — they view via share token only.
     let isTeamPreview = false;
@@ -173,8 +235,27 @@ export function useProposal(token: string) {
 
   useEffect(() => { fetchProposal(); }, [fetchProposal]);
 
+  // Build virtual page map
+  const pageMap = useMemo(
+    () => buildPageMap(pdfPageCount, pricing),
+    [pdfPageCount, pricing]
+  );
+
+  // Build page entries with pricing page inserted
+  const allPageEntries = useMemo(() => {
+    if (!pricing?.enabled || pdfPageCount === 0) return pageEntries.slice(0, pdfPageCount);
+
+    const pdfEntries = pageEntries.slice(0, pdfPageCount);
+    const pricingEntry: PageNameEntry = { name: pricing.title || 'Your Investment', indent: 0 };
+    const insertAt = pageMap.pricingVirtualPage - 1; // convert to 0-indexed
+
+    const result = [...pdfEntries];
+    result.splice(insertAt, 0, pricingEntry);
+    return result;
+  }, [pageEntries, pdfPageCount, pricing, pageMap.pricingVirtualPage]);
+
   const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
-    setNumPages(n);
+    setPdfPageCount(n);
     setPageEntries((prev) => {
       const entries = [...prev];
       while (entries.length < n) entries.push({ name: `Page ${entries.length + 1}`, indent: 0 });
@@ -183,7 +264,7 @@ export function useProposal(token: string) {
   };
 
   const getPageName = (pageNum: number) => {
-    return pageEntries[pageNum - 1]?.name || `Page ${pageNum}`;
+    return allPageEntries[pageNum - 1]?.name || `Page ${pageNum}`;
   };
 
   const refreshComments = async () => {
@@ -283,15 +364,20 @@ export function useProposal(token: string) {
   return {
     proposal,
     pdfUrl,
-    numPages,
+    numPages: pageMap.totalPages,
+    pdfPageCount,
     currentPage,
     setCurrentPage,
     loading,
     notFound,
-    pageEntries,
+    pageEntries: allPageEntries,
     comments,
     accepted,
     branding,
+    pricing,
+    // Page map helpers
+    isPricingPage: pageMap.isPricingPage,
+    toPdfPage: pageMap.toPdfPage,
     onDocumentLoadSuccess,
     getPageName,
     acceptProposal,

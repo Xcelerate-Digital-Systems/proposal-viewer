@@ -130,3 +130,69 @@ export type WebhookEndpoint = {
   created_at: string;
   updated_at: string;
 };
+
+// ─── Pricing types ───────────────────────────────────────────────────────────
+
+export type PricingLineItem = {
+  id: string;
+  label: string;
+  description: string;
+  percentage: number;
+  amount: number;
+  sort_order: number;
+};
+
+export type PricingOptionalItem = {
+  id: string;
+  label: string;
+  description: string;
+  amount: number;
+  sort_order: number;
+};
+
+export type ProposalPricing = {
+  id: string;
+  proposal_id: string;
+  company_id: string;
+  enabled: boolean;
+  position: number; // -1 = last page, otherwise 0-indexed insert position
+  title: string;
+  intro_text: string | null;
+  items: PricingLineItem[];
+  optional_items: PricingOptionalItem[];
+  tax_enabled: boolean;
+  tax_rate: number;
+  tax_label: string;
+  validity_days: number | null;
+  proposal_date: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TemplatePricing = Omit<ProposalPricing, 'proposal_id' | 'proposal_date'> & {
+  template_id: string;
+};
+
+/** Helper: compute subtotal from line items */
+export function pricingSubtotal(items: PricingLineItem[]): number {
+  return items.reduce((sum, item) => sum + item.amount, 0);
+}
+
+/** Helper: compute tax amount */
+export function pricingTax(subtotal: number, rate: number): number {
+  return Math.round(subtotal * (rate / 100) * 100) / 100;
+}
+
+/** Helper: format AUD currency */
+export function formatAUD(amount: number): string {
+  return new Intl.NumberFormat('en-AU', {
+    style: 'currency',
+    currency: 'AUD',
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
+
+/** Helper: generate a short unique id for line items */
+export function generateItemId(): string {
+  return Math.random().toString(36).substring(2, 10);
+}

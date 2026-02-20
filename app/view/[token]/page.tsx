@@ -7,6 +7,7 @@ import { useProposal, deriveBorderColor } from '@/hooks/useProposal';
 import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
 import PdfViewer from '@/components/viewer/PdfViewer';
+import PricingPage from '@/components/viewer/PricingPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import CommentsPanel from '@/components/viewer/CommentsPanel';
 import AcceptModal from '@/components/viewer/AcceptModal';
@@ -24,6 +25,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     comments,
     accepted,
     branding,
+    pricing,
+    isPricingPage,
+    toPdfPage,
     onDocumentLoadSuccess,
     getPageName,
     acceptProposal,
@@ -48,6 +52,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     await acceptProposal(name);
     setShowAccept(false);
   };
+
+  // Is the current virtual page the pricing page?
+  const onPricingPage = isPricingPage(currentPage);
+  // If not pricing, what PDF page should we show?
+  const pdfPage = toPdfPage(currentPage);
 
   // Keyboard navigation
   useEffect(() => {
@@ -211,14 +220,29 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       />
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <PdfViewer
-          pdfUrl={pdfUrl}
-          currentPage={currentPage}
-          onLoadSuccess={onDocumentLoadSuccess}
-          scrollRef={mainRef}
-          bgColor={bgPrimary}
-          accentColor={accent}
-        />
+        {/* Conditionally render PDF or Pricing page */}
+        {onPricingPage && pricing ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <PricingPage
+              pricing={pricing}
+              branding={branding}
+              clientName={proposal?.client_name}
+            />
+          </div>
+        ) : (
+          <PdfViewer
+            pdfUrl={pdfUrl}
+            currentPage={pdfPage}
+            onLoadSuccess={onDocumentLoadSuccess}
+            scrollRef={mainRef}
+            bgColor={bgPrimary}
+            accentColor={accent}
+          />
+        )}
 
         <FloatingToolbar
           pdfUrl={pdfUrl}
