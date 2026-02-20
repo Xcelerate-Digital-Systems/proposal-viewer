@@ -14,9 +14,11 @@ interface PdfViewerProps {
   currentPage: number;
   onLoadSuccess: (data: { numPages: number }) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
+  bgColor?: string;
+  accentColor?: string;
 }
 
-export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRef }: PdfViewerProps) {
+export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRef, bgColor = '#0f0f0f', accentColor = '#ff6700' }: PdfViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [nativePdfWidth, setNativePdfWidth] = useState<number | null>(null);
@@ -44,9 +46,7 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
   }, [currentPage, renderedPage]);
 
   const handlePageRenderSuccess = useCallback(() => {
-    // New page has rendered — complete the transition
     setRenderedPage(currentPage);
-    // Small delay to let the canvas paint before fading in
     requestAnimationFrame(() => {
       setIsTransitioning(false);
     });
@@ -55,7 +55,6 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
   // Capture native PDF page width on first load
   const handlePageLoadSuccess = useCallback((page: { originalWidth: number }) => {
     if (nativePdfWidth === null) {
-      // PDF points are 72 DPI; scale up to ~150 DPI for crisp rendering
       setNativePdfWidth(Math.round(page.originalWidth * 1.5));
     }
   }, [nativePdfWidth]);
@@ -66,8 +65,8 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
     : containerWidth;
 
   return (
-    <div className="flex-1 relative overflow-hidden bg-[#0f0f0f]">
-      <div ref={scrollRef} className="absolute inset-0 overflow-auto">
+    <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: bgColor }}>
+      <div ref={scrollRef} className="absolute inset-0 overflow-auto flex items-center justify-center">
         <div ref={contentRef} className="w-full">
           {pdfUrl ? (
             <Document
@@ -75,7 +74,7 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
               onLoadSuccess={onLoadSuccess}
               loading={
                 <div className="flex items-center justify-center py-20 gap-3 text-[#666]">
-                  <Loader2 className="animate-spin text-[#ff6700]" size={20} />
+                  <Loader2 className="animate-spin" size={20} style={{ color: accentColor }} />
                   <span>Loading proposal...</span>
                 </div>
               }
@@ -100,17 +99,20 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
             </Document>
           ) : (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-[#ff6700]" size={24} />
+              <Loader2 className="animate-spin" size={24} style={{ color: accentColor }} />
             </div>
           )}
         </div>
       </div>
 
-      {/* Loading indicator — centered within PDF viewer visible frame */}
+      {/* Loading indicator */}
       {isTransitioning && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <div className="flex items-center gap-2.5 bg-[#1a1a1a]/80 backdrop-blur-sm px-4 py-2 rounded-full border border-[#2a2a2a]">
-            <Loader2 className="animate-spin text-[#ff6700]" size={16} />
+          <div
+            className="flex items-center gap-2.5 backdrop-blur-sm px-4 py-2 rounded-full border"
+            style={{ backgroundColor: `${bgColor}cc`, borderColor: `${bgColor}ff` }}
+          >
+            <Loader2 className="animate-spin" size={16} style={{ color: accentColor }} />
             <span className="text-xs text-[#999]">Loading...</span>
           </div>
         </div>

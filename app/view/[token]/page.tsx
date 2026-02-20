@@ -192,6 +192,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           currentPage={currentPage}
           onLoadSuccess={onDocumentLoadSuccess}
           scrollRef={mainRef}
+          bgColor={bgPrimary}
+          accentColor={accent}
         />
 
         <FloatingToolbar
@@ -202,6 +204,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           onPrevPage={() => goToPage(Math.max(1, currentPage - 1))}
           bgColor={bgSecondary}
           borderColor={border}
+          accentColor={accent}
         />
       </div>
 
@@ -228,7 +231,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           onAccept={handleAccept}
           onClose={() => setShowAccept(false)}
           accentColor={accent}
-          bgSecondary={bgSecondary}
+          bgColor={bgSecondary}
+          textColor={branding.sidebar_text_color || '#ffffff'}
+          acceptTextColor={branding.accept_text_color || '#ffffff'}
           buttonText={acceptLabel}
         />
       )}

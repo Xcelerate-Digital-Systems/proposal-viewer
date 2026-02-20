@@ -12,6 +12,7 @@ interface FloatingToolbarProps {
   onPrevPage: () => void;
   bgColor?: string;
   borderColor?: string;
+  accentColor?: string;
 }
 
 export default function FloatingToolbar({
@@ -22,6 +23,7 @@ export default function FloatingToolbar({
   onPrevPage,
   bgColor = '#1a1a1a',
   borderColor = '#2a2a2a',
+  accentColor = '#ff6700',
 }: FloatingToolbarProps) {
   const [downloading, setDownloading] = useState(false);
 
@@ -61,25 +63,47 @@ export default function FloatingToolbar({
 
   if (numPages <= 1) return null;
 
+  const btnStyle = {
+    color: accentColor,
+  };
+
+  const btnHoverBg = `${accentColor}15`;
+
   return (
     <div
       className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-0.5 sm:gap-1 backdrop-blur-sm rounded-xl px-1.5 sm:px-2 py-1 sm:py-1.5 border shadow-xl shadow-black/30"
-      style={{ backgroundColor: `${bgColor}e6`, borderColor }}
+      style={{ backgroundColor: `${bgColor}e6`, borderColor: accentColor }}
     >
       <button onClick={onPrevPage} disabled={currentPage === 1}
-        className="p-1.5 sm:p-2 text-[#888] hover:text-white disabled:opacity-30 transition-colors rounded-lg hover:bg-white/5" title="Previous page">
+        className="p-1.5 sm:p-2 disabled:opacity-30 transition-colors rounded-lg"
+        style={btnStyle}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        title="Previous page">
         <ChevronUp size={18} />
       </button>
       <button onClick={handleShare}
-        className="p-1.5 sm:p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5" title="Share">
+        className="p-1.5 sm:p-2 transition-colors rounded-lg"
+        style={btnStyle}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        title="Share">
         <Share2 size={18} />
       </button>
       <button onClick={handleDownload} disabled={downloading}
-        className="p-1.5 sm:p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5 disabled:opacity-50" title="Download">
+        className="p-1.5 sm:p-2 transition-colors rounded-lg disabled:opacity-50"
+        style={btnStyle}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        title="Download">
         {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
       </button>
       <button onClick={handlePrint}
-        className="hidden sm:block p-1.5 sm:p-2 text-[#888] hover:text-white transition-colors rounded-lg hover:bg-white/5" title="Print">
+        className="hidden sm:block p-1.5 sm:p-2 transition-colors rounded-lg"
+        style={btnStyle}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        title="Print">
         <Printer size={18} />
       </button>
     </div>

@@ -144,13 +144,11 @@ export default function CommentsPanel({
         {replyingTo === comment.id && (
           <div className="ml-4 mt-2 space-y-2">
             <input type="text" placeholder="Your name" value={replyName} onChange={(e) => setReplyName(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-md text-xs text-white placeholder:text-[#555] focus:outline-none"
-              style={{ backgroundColor: bgPrimary, borderWidth: 1, borderStyle: 'solid', borderColor: replyName.trim() ? `${accentColor}50` : border }} />
+              className="w-full px-2.5 py-1.5 rounded-md text-xs text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
             <div className="flex gap-2">
               <input type="text" placeholder="Write a reply..." value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(comment.id); } }}
-                className="flex-1 px-2.5 py-1.5 rounded-md text-xs text-white placeholder:text-[#555] focus:outline-none"
-                style={{ backgroundColor: bgPrimary, borderWidth: 1, borderStyle: 'solid', borderColor: replyText.trim() ? `${accentColor}50` : border }}
+                className="flex-1 px-2.5 py-1.5 rounded-md text-xs text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300"
                 autoFocus />
               <button onClick={() => handleReply(comment.id)} disabled={replySubmitting || !replyText.trim() || !replyName.trim()}
                 className="px-2 py-1.5 text-white rounded-md disabled:opacity-40 transition-opacity hover:opacity-90"
@@ -201,12 +199,10 @@ export default function CommentsPanel({
 
         <form onSubmit={handleSubmit} className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
           <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder:text-[#555] focus:outline-none"
-            style={{ backgroundColor: bgPrimary, borderWidth: 1, borderStyle: 'solid', borderColor: commentName.trim() ? `${accentColor}50` : border }} />
+            className="w-full px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
           <div className="flex gap-2">
             <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg text-sm text-white placeholder:text-[#555] focus:outline-none"
-              style={{ backgroundColor: bgPrimary, borderWidth: 1, borderStyle: 'solid', borderColor: commentText.trim() ? `${accentColor}50` : border }} />
+              className="flex-1 px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
             <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
               className="px-3 py-2 text-white rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
               style={{ backgroundColor: accentColor }}>
@@ -254,12 +250,10 @@ export default function CommentsPanel({
 
           <form onSubmit={handleSubmit} className="p-3 space-y-2 border-t pb-safe" style={{ borderColor: border }}>
             <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder:text-[#555] focus:outline-none"
-              style={{ backgroundColor: bgPrimary, borderWidth: 1, borderStyle: 'solid', borderColor: commentName.trim() ? `${accentColor}50` : border }} />
+              className="w-full px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
             <div className="flex gap-2">
               <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg text-sm text-white placeholder:text-[#555] focus:outline-none"
-                style={{ backgroundColor: bgPrimary, borderWidth: 1, borderStyle: 'solid', borderColor: commentText.trim() ? `${accentColor}50` : border }} />
+                className="flex-1 px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
               <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
                 className="px-3 py-2 text-white rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
                 style={{ backgroundColor: accentColor }}>

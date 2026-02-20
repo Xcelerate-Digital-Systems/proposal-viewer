@@ -236,8 +236,8 @@ export default function Sidebar({
           onClick={onToggleComments}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border"
           style={showComments
-            ? { backgroundColor: `${accent}18`, borderColor: `${accent}40`, color: accent }
-            : { backgroundColor: `${bgSecondary}`, borderColor: border, color: '#888' }
+            ? { backgroundColor: accent, borderColor: accent, color: acceptText }
+            : { backgroundColor: 'transparent', borderColor: accent, color: accent }
           }
         >
           <MessageSquare size={15} />
@@ -246,8 +246,8 @@ export default function Sidebar({
             <span
               className="text-xs w-5 h-5 rounded-full flex items-center justify-center"
               style={showComments
-                ? { backgroundColor: `${accent}30`, color: accent }
-                : { backgroundColor: border, color: '#888' }
+                ? { backgroundColor: `${acceptText}30`, color: acceptText }
+                : { backgroundColor: `${accent}25`, color: accent }
               }
             >
               {commentCount}
