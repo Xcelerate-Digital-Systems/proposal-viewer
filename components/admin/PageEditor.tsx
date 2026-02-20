@@ -1,12 +1,12 @@
 // components/admin/PageEditor.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import {
-  Save, ChevronDown, ChevronLeft, ChevronRight, CornerDownRight,
+  Check, ChevronDown, ChevronLeft, ChevronRight, CornerDownRight,
   ArrowLeft, Upload, Loader2, Plus, Trash2,
 } from 'lucide-react';
 import { supabase, PageNameEntry, normalizePageNames } from '@/lib/supabase';
@@ -42,7 +42,6 @@ const PRESET_LABELS = [
 ];
 
 const CUSTOM_VALUE = '__custom__';
-const PANEL_HEIGHT = 520;
 
 interface PageEditorProps {
   proposalId: string;
@@ -63,21 +62,43 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const [previewWidth, setPreviewWidth] = useState(300);
   const [processing, setProcessing] = useState(false);
   const [pdfVersion, setPdfVersion] = useState(0);
+  const [panelHeight, setPanelHeight] = useState(520);
+
+  // Autosave state
+  const [saveStatus, setSaveStatus] = useState<Record<number, 'saving' | 'saved' | null>>({});
+  const [dirtyRows, setDirtyRows] = useState<Set<number>>(new Set());
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const entriesRef = useRef(entries);
+  entriesRef.current = entries;
+  const dirtyRowsRef = useRef(dirtyRows);
+  dirtyRowsRef.current = dirtyRows;
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  // Measure preview container width for PDF rendering
+  // Measure preview container width + dynamic panel height
   useEffect(() => {
     const measure = () => {
       if (previewContainerRef.current) {
         const w = previewContainerRef.current.offsetWidth - 2;
         setPreviewWidth(Math.max(200, w));
       }
+      if (panelRef.current) {
+        const rect = panelRef.current.getBoundingClientRect();
+        const available = window.innerHeight - rect.top - 32;
+        setPanelHeight(Math.max(400, available));
+      }
     };
     measure();
+    const timer = setTimeout(measure, 100);
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      clearTimeout(timer);
+    };
   }, []);
 
   const loadPdfUrl = async () => {
@@ -112,6 +133,14 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     }
   }, [selectedPage]);
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      Object.values(savedTimers.current).forEach(clearTimeout);
+    };
+  }, []);
+
   const onDocLoadSuccess = ({ numPages }: { numPages: number }) => {
     setPageCount(numPages);
     setEntries((prev) => {
@@ -123,12 +152,75 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     });
   };
 
+  /* ------------------------------------------------------------------ */
+  /*  Autosave logic                                                     */
+  /* ------------------------------------------------------------------ */
+  const saveEntries = useCallback(async (entriesToSave: PageNameEntry[], rowsToMark: Set<number>) => {
+    // Mark all dirty rows as saving
+    const savingStatus: Record<number, 'saving'> = {};
+    rowsToMark.forEach((idx) => { savingStatus[idx] = 'saving'; });
+    setSaveStatus((prev) => ({ ...prev, ...savingStatus }));
+
+    try {
+      await supabase.from('proposals').update({ page_names: entriesToSave }).eq('id', proposalId);
+
+      // Mark as saved
+      const savedStatus: Record<number, 'saved'> = {};
+      rowsToMark.forEach((idx) => { savedStatus[idx] = 'saved'; });
+      setSaveStatus((prev) => ({ ...prev, ...savedStatus }));
+
+      // Clear saved indicators after 2s
+      rowsToMark.forEach((idx) => {
+        if (savedTimers.current[idx]) clearTimeout(savedTimers.current[idx]);
+        savedTimers.current[idx] = setTimeout(() => {
+          setSaveStatus((prev) => ({ ...prev, [idx]: null }));
+        }, 2000);
+      });
+    } catch {
+      toast.error('Failed to save');
+      const clearedStatus: Record<number, null> = {};
+      rowsToMark.forEach((idx) => { clearedStatus[idx] = null; });
+      setSaveStatus((prev) => ({ ...prev, ...clearedStatus }));
+    }
+  }, [proposalId, toast]);
+
+  const scheduleSave = useCallback((delay: number, changedIndex: number) => {
+    setDirtyRows((prev) => {
+      const next = new Set(prev);
+      next.add(changedIndex);
+      return next;
+    });
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      const currentEntries = entriesRef.current;
+      const currentDirty = new Set(dirtyRowsRef.current);
+      setDirtyRows(new Set());
+      saveEntries(currentEntries, currentDirty);
+      debounceTimer.current = null;
+    }, delay);
+  }, [saveEntries]);
+
+  const flushPendingSaves = useCallback(async () => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    const currentDirty = new Set(dirtyRowsRef.current);
+    if (currentDirty.size > 0) {
+      setDirtyRows(new Set());
+      await saveEntries(entriesRef.current, currentDirty);
+    }
+  }, [saveEntries]);
+
   const updateEntry = (index: number, changes: Partial<PageNameEntry>) => {
     setEntries((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], ...changes };
       return updated;
     });
+    const isInstant = changes.indent !== undefined;
+    scheduleSave(isInstant ? 0 : 800, index);
   };
 
   const selectPreset = (index: number, label: string) => {
@@ -149,10 +241,10 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const isPreset = (name: string) => PRESET_LABELS.includes(name.toUpperCase());
 
   /* ------------------------------------------------------------------ */
-  /*  Save labels to DB                                                  */
+  /*  Done button — flush saves and close                                */
   /* ------------------------------------------------------------------ */
-  const handleSave = async () => {
-    await supabase.from('proposals').update({ page_names: entries }).eq('id', proposalId);
+  const handleDone = async () => {
+    await flushPendingSaves();
     onSave();
   };
 
@@ -160,6 +252,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   /*  Replace a single page's PDF                                        */
   /* ------------------------------------------------------------------ */
   const handleReplacePage = async (pageNumber: number, file: File) => {
+    await flushPendingSaves();
     setProcessing(true);
     try {
       const formData = new FormData();
@@ -191,9 +284,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   /*  Insert a page after a given position                               */
   /* ------------------------------------------------------------------ */
   const handleInsertPage = async (afterPage: number, file: File) => {
-    // Save current labels first so nothing is lost
-    await supabase.from('proposals').update({ page_names: entries }).eq('id', proposalId);
-
+    await flushPendingSaves();
     setProcessing(true);
     try {
       const formData = new FormData();
@@ -215,7 +306,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
       const result = await res.json();
 
-      // Update entries locally to match what the server wrote
       setEntries((prev) => {
         const updated = [...prev];
         const newEntries = Array.from(
@@ -227,7 +317,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       });
 
       setPageCount(result.total_pages);
-      setSelectedPage(afterPage); // Select the first inserted page
+      setSelectedPage(afterPage);
       toast.success(`Page inserted after page ${afterPage || 'start'}`);
       setPdfVersion((v) => v + 1);
     } catch {
@@ -253,9 +343,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     });
     if (!ok) return;
 
-    // Save current labels first so nothing is lost
-    await supabase.from('proposals').update({ page_names: entries }).eq('id', proposalId);
-
+    await flushPendingSaves();
     setProcessing(true);
     try {
       const res = await fetch('/api/proposals/delete-page', {
@@ -273,7 +361,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
       const result = await res.json();
 
-      // Update entries locally
       setEntries((prev) => {
         const updated = [...prev];
         updated.splice(pageNumber - 1, 1);
@@ -282,7 +369,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
       setPageCount(result.total_pages);
 
-      // Adjust selection
       if (selectedPage >= result.total_pages) {
         setSelectedPage(Math.max(0, result.total_pages - 1));
       }
@@ -302,7 +388,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   /*  Render                                                              */
   /* ------------------------------------------------------------------ */
   return (
-    <div className="border-t border-gray-200 bg-gray-50 p-5">
+    <div className="border-t border-gray-200 bg-gray-50 p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h4 className="text-sm font-semibold text-gray-900">Edit Page Labels</h4>
@@ -313,38 +399,29 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleSave}
-            disabled={processing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
-          >
-            <Save size={14} />
-            Save
-          </button>
-          <button
-            onClick={onCancel}
-            disabled={processing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-white text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-        </div>
+        <button
+          onClick={handleDone}
+          disabled={processing}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
+        >
+          <Check size={14} />
+          Done
+        </button>
       </div>
 
-      <p className="text-xs text-gray-400 mb-3">
-        Choose a label from the dropdown or select &quot;Custom&quot; to type your own. Use the indent button to nest pages under a parent.
+      <p className="text-xs text-gray-400 mb-4">
+        Choose a label from the dropdown or select &quot;Custom&quot; to type your own. Use the indent button to nest pages under a parent. Changes save automatically.
       </p>
 
-      {/* 50/50 split — fixed height so both sides fill equally */}
-      <div className="flex gap-5" style={{ height: PANEL_HEIGHT }}>
+      {/* 50/50 split — dynamic height */}
+      <div ref={panelRef} className="flex gap-6" style={{ height: panelHeight }}>
         {/* Left half: page label controls */}
         <div className="w-1/2 min-w-0 overflow-hidden flex flex-col" ref={dropdownRef}>
-          <div ref={listRef} className="flex-1 overflow-y-auto pr-1">
+          <div ref={listRef} className="flex-1 overflow-y-auto pr-1 space-y-0.5">
             {/* Insert-at-start button */}
-            <div className="flex justify-center py-0.5">
+            <div className="flex justify-center py-1">
               <label
-                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] transition-colors ${
                   processing
                     ? 'text-gray-300 cursor-not-allowed'
                     : 'text-gray-400 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
@@ -371,26 +448,27 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               const isCustom = !isPreset(entry.name);
               const isDropdownOpen = openDropdown === i;
               const isSelected = selectedPage === i;
+              const status = saveStatus[i];
 
               return (
                 <div key={`page-${i}-${pageCount}`}>
                   {/* Page row */}
                   <div
                     data-page-index={i}
-                    className={`flex items-center gap-1.5 rounded-lg px-1.5 py-1 cursor-pointer transition-colors ${
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors ${
                       isSelected
                         ? 'bg-[#017C87]/10 ring-1 ring-[#017C87]/30'
                         : 'hover:bg-gray-100'
                     }`}
                     onClick={() => setSelectedPage(i)}
                   >
-                    <span className="text-xs text-gray-400 w-5 text-right shrink-0">{i + 1}.</span>
+                    <span className="text-xs text-gray-400 w-6 text-right shrink-0 font-medium">{i + 1}.</span>
 
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleIndent(i); }}
                       disabled={i === 0}
                       title={entry.indent ? 'Remove indent' : 'Indent under parent'}
-                      className={`shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                      className={`shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors ${
                         i === 0
                           ? 'text-gray-200 cursor-not-allowed'
                           : entry.indent
@@ -398,7 +476,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                           : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                       }`}
                     >
-                      {entry.indent ? <ArrowLeft size={12} /> : <CornerDownRight size={12} />}
+                      {entry.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
                     </button>
 
                     {entry.indent > 0 && (
@@ -413,23 +491,23 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                             value={entry.name}
                             onChange={(e) => updateEntry(i, { name: e.target.value })}
                             onFocus={() => setSelectedPage(i)}
-                            className="flex-1 min-w-0 px-2 py-1 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-900 text-xs focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+                            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
                             placeholder="Custom label..."
                           />
                           <button
                             onClick={() => setOpenDropdown(isDropdownOpen ? null : i)}
-                            className="px-1.5 py-1 rounded-r-md border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
+                            className="px-2 py-1.5 rounded-r-md border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
                           >
-                            <ChevronDown size={12} className={isDropdownOpen ? 'rotate-180' : ''} />
+                            <ChevronDown size={13} className={isDropdownOpen ? 'rotate-180' : ''} />
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setOpenDropdown(isDropdownOpen ? null : i)}
-                          className="w-full flex items-center justify-between px-2 py-1 rounded-md border border-gray-200 bg-white text-gray-900 text-xs hover:border-gray-300 transition-colors"
+                          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm hover:border-gray-300 transition-colors"
                         >
                           <span className="truncate">{entry.name}</span>
-                          <ChevronDown size={12} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                          <ChevronDown size={13} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
                       )}
 
@@ -458,17 +536,28 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                       )}
                     </div>
 
-                    {/* Replace page button */}
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {/* Autosave status */}
+                    <div className="shrink-0 w-5 flex items-center justify-center">
+                      {status === 'saving' && (
+                        <Loader2 size={12} className="animate-spin text-gray-300" />
+                      )}
+                      {status === 'saved' && (
+                        <Check size={13} className="text-emerald-400" />
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {/* Replace page button */}
                       <label
-                        className={`p-1 rounded flex items-center justify-center transition-colors ${
+                        className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
                           processing
-                            ? 'text-gray-200 cursor-not-allowed'
-                            : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 cursor-pointer'
+                            ? 'text-gray-200 border-gray-100 cursor-not-allowed'
+                            : 'text-[#017C87] border-[#017C87]/25 hover:bg-[#017C87]/5 hover:border-[#017C87]/40 cursor-pointer'
                         }`}
                         title="Replace page PDF"
                       >
-                        <Upload size={11} />
+                        <Upload size={13} />
                         <input
                           type="file"
                           accept=".pdf"
@@ -481,29 +570,27 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                           }}
                         />
                       </label>
-                    </div>
 
-                    {/* Delete page button */}
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {/* Delete page button */}
                       <button
                         onClick={() => handleDeletePage(i + 1)}
                         disabled={processing || pageCount <= 1}
-                        className={`p-1 rounded flex items-center justify-center transition-colors ${
+                        className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
                           processing || pageCount <= 1
-                            ? 'text-gray-200 cursor-not-allowed'
-                            : 'text-gray-300 hover:text-red-500 hover:bg-red-50'
+                            ? 'text-gray-200 border-gray-100 cursor-not-allowed'
+                            : 'text-[#017C87] border-[#017C87]/25 hover:text-red-500 hover:bg-red-50 hover:border-red-200'
                         }`}
                         title="Delete page"
                       >
-                        <Trash2 size={11} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
 
                   {/* Insert-after button */}
-                  <div className="flex justify-center py-0.5">
+                  <div className="flex justify-center py-1">
                     <label
-                      className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] transition-colors ${
                         processing
                           ? 'text-gray-300 cursor-not-allowed'
                           : 'text-gray-400 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
@@ -547,12 +634,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               {pageCount > 0 && (
                 <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
                   {/* Preview header with nav */}
-                  <div className="shrink-0 px-3 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
+                  <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={goPrev}
                         disabled={selectedPage === 0}
-                        className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
+                        className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
                       >
                         <ChevronLeft size={14} />
                       </button>
@@ -562,7 +649,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                       <button
                         onClick={goNext}
                         disabled={selectedPage >= pageCount - 1}
-                        className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
+                        className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
                       >
                         <ChevronRight size={14} />
                       </button>
@@ -573,10 +660,10 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                   </div>
 
                   {/* PDF page — fills remaining height, scales to fit */}
-                  <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center">
+                  <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center p-2">
                     <Page
                       pageNumber={selectedPage + 1}
-                      width={previewWidth}
+                      width={previewWidth - 16}
                       renderAnnotationLayer={false}
                       renderTextLayer={false}
                       className="max-h-full"

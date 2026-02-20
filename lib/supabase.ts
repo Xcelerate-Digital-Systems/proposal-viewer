@@ -120,17 +120,13 @@ export type TeamMember = {
   updated_at: string;
 };
 
-export type Webhook = {
+export type WebhookEndpoint = {
   id: string;
   company_id: string;
+  event_type: 'proposal_viewed' | 'proposal_accepted' | 'comment_added' | 'comment_resolved';
   url: string;
   secret: string | null;
-  on_proposal_viewed: boolean;
-  on_proposal_accepted: boolean;
-  on_comment_added: boolean;
-  on_comment_resolved: boolean;
   enabled: boolean;
-  description: string | null;
   created_at: string;
   updated_at: string;
 };
