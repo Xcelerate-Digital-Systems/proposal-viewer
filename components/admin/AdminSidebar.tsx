@@ -1,14 +1,13 @@
 // components/admin/AdminSidebar.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   FileText, LayoutTemplate, Users, Palette, Bell,
   LogOut, Menu, X, ChevronRight, Building2, ArrowLeft,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 interface AdminSidebarProps {
   memberName?: string;
@@ -41,19 +40,6 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [companyName, setCompanyName] = useState('');
-
-  useEffect(() => {
-    if (!companyId) return;
-    fetch(`/api/company/branding?company_id=${companyId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setLogoUrl(data.logo_url || null);
-        setCompanyName(data.name || '');
-      })
-      .catch(() => {});
-  }, [companyId]);
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -95,21 +81,9 @@ export default function AdminSidebar({
         </div>
       )}
 
-      {/* Company branding */}
+      {/* AgencyViz branding */}
       <div className="px-4 py-5 border-b border-[#01434A]">
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt={companyName}
-            className="h-7 max-w-[160px] object-contain"
-          />
-        ) : companyName ? (
-          <span className="text-sm font-semibold text-white truncate">
-            {companyName}
-          </span>
-        ) : (
-          <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
-        )}
+        <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
       </div>
 
       {/* Navigation */}

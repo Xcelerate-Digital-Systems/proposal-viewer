@@ -58,6 +58,11 @@ function TemplatesContent({ companyId }: { companyId: string }) {
     if (pages && pages.length > 0) {
       await supabase.storage.from('proposals').remove(pages.map((p) => p.file_path));
     }
+    // Clean up cover image if present
+    const tmpl = templates.find((t) => t.id === id);
+    if (tmpl?.cover_image_path) {
+      await supabase.storage.from('proposals').remove([tmpl.cover_image_path]);
+    }
     await supabase.from('proposal_templates').delete().eq('id', id);
     if (selectedId === id) setSelectedId(null);
     toast.success('Template deleted');

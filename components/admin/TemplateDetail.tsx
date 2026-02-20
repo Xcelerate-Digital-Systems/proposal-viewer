@@ -7,7 +7,8 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import {
   ArrowLeft, Trash2, Plus, Upload, Loader2,
-  ChevronDown, CornerDownRight, Check,
+  ChevronDown, ChevronLeft, ChevronRight, CornerDownRight, Check,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { supabase, ProposalTemplate, TemplatePage } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -42,6 +43,7 @@ const PRESET_LABELS = [
 ];
 
 const CUSTOM_VALUE = '__custom__';
+const PANEL_HEIGHT = 520;
 
 interface TemplateDetailProps {
   template: ProposalTemplate;
@@ -57,11 +59,24 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [selectedPage, setSelectedPage] = useState<number>(0);
+  const [previewWidth, setPreviewWidth] = useState(300);
+
   // Track local edits: label + indent keyed by page id
   const [localEdits, setLocalEdits] = useState<Record<string, { label: string; indent: number }>>({});
   // Track autosave status per page: 'saving' | 'saved' | null
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saving' | 'saved' | null>>({});
+
+  // Cover image state
+  const [coverImagePath, setCoverImagePath] = useState<string | null>(template.cover_image_path || null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverFileRef = useRef<HTMLInputElement>(null);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
   // Debounce timers keyed by page id
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // "Saved" indicator clear timers
@@ -69,6 +84,19 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
   // Keep a ref to localEdits so flushPendingSaves can read current values
   const localEditsRef = useRef(localEdits);
   localEditsRef.current = localEdits;
+
+  // Measure preview container width for PDF rendering
+  useEffect(() => {
+    const measure = () => {
+      if (previewContainerRef.current) {
+        const w = previewContainerRef.current.offsetWidth - 2;
+        setPreviewWidth(Math.max(200, w));
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   const fetchPages = async () => {
     const { data } = await supabase
@@ -101,6 +129,25 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
   useEffect(() => { fetchPages(); }, [template.id]);
 
+  // Load cover image signed URL
+  useEffect(() => {
+    if (coverImagePath) {
+      supabase.storage
+        .from('proposals')
+        .createSignedUrl(coverImagePath, 3600)
+        .then(({ data }) => {
+          if (data?.signedUrl) setCoverImageUrl(data.signedUrl);
+        });
+    } else {
+      setCoverImageUrl(null);
+    }
+  }, [coverImagePath]);
+
+  // Reset cover state when template changes
+  useEffect(() => {
+    setCoverImagePath(template.cover_image_path || null);
+  }, [template.id, template.cover_image_path]);
+
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
@@ -120,6 +167,47 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // Scroll the selected row into view
+  useEffect(() => {
+    if (listRef.current) {
+      const row = listRef.current.children[selectedPage] as HTMLElement | undefined;
+      if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedPage]);
+
+  // Cover image handlers
+  const handleCoverUpload = async (file: File) => {
+    setCoverUploading(true);
+    const filePath = `covers/template-${template.id}-${Date.now()}.${file.name.split('.').pop()}`;
+    if (coverImagePath) {
+      await supabase.storage.from('proposals').remove([coverImagePath]);
+    }
+    const { error } = await supabase.storage.from('proposals').upload(filePath, file, {
+      contentType: file.type,
+      upsert: true,
+    });
+    if (!error) {
+      await supabase.from('proposal_templates').update({ cover_image_path: filePath }).eq('id', template.id);
+      setCoverImagePath(filePath);
+      toast.success('Cover image saved');
+      onRefresh();
+    } else {
+      toast.error('Failed to upload image');
+    }
+    setCoverUploading(false);
+  };
+
+  const removeCoverImage = async () => {
+    if (coverImagePath) {
+      await supabase.storage.from('proposals').remove([coverImagePath]);
+    }
+    await supabase.from('proposal_templates').update({ cover_image_path: null }).eq('id', template.id);
+    setCoverImagePath(null);
+    setCoverImageUrl(null);
+    toast.success('Cover image removed');
+    onRefresh();
+  };
+
   // Autosave a single page's label + indent to DB
   const savePageEdit = useCallback(async (pageId: string, label: string, indent: number) => {
     setSaveStatus((prev) => ({ ...prev, [pageId]: 'saving' }));
@@ -128,7 +216,6 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
         .update({ label, indent })
         .eq('id', pageId);
       setSaveStatus((prev) => ({ ...prev, [pageId]: 'saved' }));
-      // Clear "saved" indicator after 2s
       if (savedTimers.current[pageId]) clearTimeout(savedTimers.current[pageId]);
       savedTimers.current[pageId] = setTimeout(() => {
         setSaveStatus((prev) => ({ ...prev, [pageId]: null }));
@@ -139,7 +226,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     }
   }, [toast]);
 
-  // Flush any pending debounced saves (call before delete/replace/insert)
+  // Flush any pending debounced saves
   const flushPendingSaves = useCallback(async () => {
     const promises: Promise<void>[] = [];
     for (const [pageId, timer] of Object.entries(debounceTimers.current)) {
@@ -160,7 +247,6 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     const updated = { ...getEdit(pageId), ...changes };
     setLocalEdits((prev) => ({ ...prev, [pageId]: updated }));
 
-    // Debounce save — 800ms for typing, instant for indent/preset selection
     if (debounceTimers.current[pageId]) clearTimeout(debounceTimers.current[pageId]);
     const isInstant = changes.indent !== undefined;
     const delay = isInstant ? 0 : 800;
@@ -200,9 +286,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     });
     if (!ok) return;
 
-    // Flush any pending saves before page operations
     await flushPendingSaves();
-
     setProcessing(true);
 
     await fetch('/api/templates/pages', {
@@ -213,6 +297,12 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
 
     setProcessing(false);
     toast.success('Page deleted');
+
+    // Adjust selection
+    if (selectedPage >= pages.length - 1) {
+      setSelectedPage(Math.max(0, pages.length - 2));
+    }
+
     onRefresh();
     fetchPages();
   };
@@ -227,6 +317,7 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     formData.append('label', page?.label || `Page ${pageNumber}`);
     formData.append('company_id', template.company_id);
     formData.append('file', file);
+    formData.append('mode', 'replace');
 
     await fetch('/api/templates/pages', { method: 'POST', body: formData });
 
@@ -246,17 +337,25 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
     formData.append('label', 'New Page');
     formData.append('company_id', template.company_id);
     formData.append('file', file);
+    formData.append('mode', 'insert');
 
     await fetch('/api/templates/pages', { method: 'POST', body: formData });
 
     setProcessing(false);
     toast.success('Page inserted');
+    setSelectedPage(newPageNumber - 1);
     onRefresh();
     fetchPages();
   };
 
+  const goPrev = () => setSelectedPage((p) => Math.max(0, p - 1));
+  const goNext = () => setSelectedPage((p) => Math.min(pages.length - 1, p + 1));
+
+  const selectedPageData = pages[selectedPage];
+  const selectedPageUrl = selectedPageData ? pageUrls[selectedPageData.id] : null;
+
   return (
-    <div ref={dropdownRef}>
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -275,188 +374,303 @@ export default function TemplateDetail({ template, onBack, onRefresh }: Template
         </div>
       </div>
 
-      <p className="text-xs text-gray-400 mb-4">
-        Choose a label from the dropdown or type a custom one. Changes save automatically. Use the indent button to nest pages under a parent tab.
-      </p>
+      {/* Cover Image Section */}
+      <div className="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Cover Page Background</h3>
+        <p className="text-xs text-gray-400 mb-3">
+          Upload a background image for the cover page. This will be used for all proposals created from this template.
+        </p>
+        {coverImageUrl ? (
+          <div className="flex items-center gap-4">
+            <div className="w-32 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shrink-0">
+              <img src={coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => coverFileRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
+              >
+                <Upload size={12} />
+                Replace
+              </button>
+              <button
+                onClick={removeCoverImage}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 size={12} />
+                Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-colors">
+            {coverUploading ? (
+              <span className="text-sm text-gray-400">Uploading...</span>
+            ) : (
+              <div className="flex flex-col items-center gap-1">
+                <ImageIcon size={20} className="text-gray-300" />
+                <span className="text-sm text-gray-400">Click to upload cover image</span>
+                <span className="text-xs text-gray-300">JPG, PNG, or WebP</span>
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleCoverUpload(f);
+              }}
+            />
+          </label>
+        )}
+        <input
+          ref={coverFileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleCoverUpload(f);
+          }}
+        />
+      </div>
 
-      {processing && (
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 p-3 rounded-lg bg-gray-50 border border-gray-200">
-          <Loader2 size={14} className="animate-spin text-[#017C87]" />
-          Processing changes...
+      {/* Page Editor Section — 50/50 split matching PageEditor */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-900">Template Pages</h3>
+          {processing && (
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <Loader2 size={12} className="animate-spin text-[#017C87]" />
+              Processing...
+            </div>
+          )}
         </div>
-      )}
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {pages.map((page, idx) => {
-            const edit = getEdit(page.id);
-            const isCustom = !isPreset(edit.label);
-            const isDropdownOpen = openDropdown === page.id;
-            const status = saveStatus[page.id];
+        <p className="text-xs text-gray-400 mb-3">
+          Choose a label from the dropdown or select &quot;Custom&quot; to type your own. Use the indent button to nest pages under a parent.
+        </p>
 
-            return (
-              <div key={page.id}>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors shadow-sm">
-                  <div className="flex items-stretch">
-                    {/* PDF Thumbnail */}
-                    <div className="w-36 bg-gray-50 border-r border-gray-200 flex items-center justify-center shrink-0 p-2">
-                      {pageUrls[page.id] ? (
-                        <Document file={pageUrls[page.id]} loading={<Loader2 size={16} className="animate-spin text-gray-300" />}>
-                          <Page
-                            pageNumber={1}
-                            width={125}
-                            renderTextLayer={false}
-                            renderAnnotationLayer={false}
-                          />
-                        </Document>
-                      ) : (
-                        <div className="w-full h-24 flex items-center justify-center">
-                          <Loader2 size={16} className="animate-spin text-gray-300" />
-                        </div>
-                      )}
-                    </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+          </div>
+        ) : (
+          /* 50/50 split — fixed height so both sides fill equally */
+          <div className="flex gap-5" style={{ height: PANEL_HEIGHT }}>
+            {/* Left half: page label controls */}
+            <div className="w-1/2 min-w-0 overflow-hidden flex flex-col" ref={dropdownRef}>
+              <div ref={listRef} className="flex-1 space-y-0.5 overflow-y-auto pr-1">
+                {pages.map((page, idx) => {
+                  const edit = getEdit(page.id);
+                  const isCustom = !isPreset(edit.label);
+                  const isDropdownOpen = openDropdown === page.id;
+                  const isSelected = selectedPage === idx;
+                  const status = saveStatus[page.id];
 
-                    {/* Page info */}
-                    <div className="flex-1 p-4 flex items-center gap-3 min-w-0">
-                      {/* Page number */}
-                      <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0 w-8 text-right">
-                        {page.page_number}.
-                      </span>
-
-                      {/* Indent toggle */}
-                      <button
-                        onClick={() => toggleIndent(page.id, idx)}
-                        disabled={idx === 0}
-                        title={edit.indent ? 'Remove indent' : 'Indent under parent'}
-                        className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                          idx === 0
-                            ? 'text-gray-200 cursor-not-allowed'
-                            : edit.indent
-                            ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
-                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  return (
+                    <div key={page.id}>
+                      <div
+                        className={`flex items-center gap-2 rounded-lg px-1.5 py-1 cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-[#017C87]/10 ring-1 ring-[#017C87]/30'
+                            : 'hover:bg-gray-100'
                         }`}
+                        onClick={() => setSelectedPage(idx)}
                       >
-                        {edit.indent ? <ArrowLeft size={14} /> : <CornerDownRight size={14} />}
-                      </button>
+                        <span className="text-xs text-gray-400 w-6 text-right shrink-0">
+                          {page.page_number}.
+                        </span>
 
-                      {edit.indent > 0 && (
-                        <span className="text-[10px] text-[#017C87]/50 shrink-0 font-medium">SUB</span>
-                      )}
+                        {/* Indent toggle */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleIndent(page.id, idx); }}
+                          disabled={idx === 0}
+                          title={edit.indent ? 'Remove indent' : 'Indent under parent'}
+                          className={`shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors ${
+                            idx === 0
+                              ? 'text-gray-200 cursor-not-allowed'
+                              : edit.indent
+                              ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
+                              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          {edit.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
+                        </button>
 
-                      {/* Label: dropdown or custom input */}
-                      <div className="flex-1 relative min-w-0">
-                        {isCustom ? (
-                          <div className="flex items-center gap-0">
-                            <input
-                              type="text"
-                              value={edit.label}
-                              onChange={(e) => updateEdit(page.id, { label: e.target.value })}
-                              className="flex-1 min-w-0 px-3 py-2 rounded-l-lg border border-r-0 border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
-                              placeholder="Custom label..."
-                            />
+                        {edit.indent > 0 && (
+                          <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
+                        )}
+
+                        {/* Label: dropdown or custom input */}
+                        <div className="flex-1 relative min-w-0" onClick={(e) => e.stopPropagation()}>
+                          {isCustom ? (
+                            <div className="flex items-center gap-0">
+                              <input
+                                type="text"
+                                value={edit.label}
+                                onChange={(e) => updateEdit(page.id, { label: e.target.value })}
+                                onFocus={() => setSelectedPage(idx)}
+                                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+                                placeholder="Custom label..."
+                              />
+                              <button
+                                onClick={() => setOpenDropdown(isDropdownOpen ? null : page.id)}
+                                className="px-2 py-1.5 rounded-r-md border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
+                              >
+                                <ChevronDown size={13} className={isDropdownOpen ? 'rotate-180' : ''} />
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               onClick={() => setOpenDropdown(isDropdownOpen ? null : page.id)}
-                              className="px-2.5 py-2 rounded-r-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
+                              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm hover:border-gray-300 transition-colors"
                             >
-                              <ChevronDown size={14} className={isDropdownOpen ? 'rotate-180' : ''} />
+                              <span className="truncate">{edit.label}</span>
+                              <ChevronDown size={13} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setOpenDropdown(isDropdownOpen ? null : page.id)}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm hover:border-gray-300 transition-colors"
-                          >
-                            <span className="truncate">{edit.label}</span>
-                            <ChevronDown size={14} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                        )}
+                          )}
 
-                        {isDropdownOpen && (
-                          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                            {PRESET_LABELS.map((label) => (
+                          {isDropdownOpen && (
+                            <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                              {PRESET_LABELS.map((label) => (
+                                <button
+                                  key={label}
+                                  onClick={() => selectPreset(page.id, label)}
+                                  className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-gray-100 last:border-0 ${
+                                    edit.label === label
+                                      ? 'text-[#017C87] bg-[#017C87]/5'
+                                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
                               <button
-                                key={label}
-                                onClick={() => selectPreset(page.id, label)}
-                                className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-gray-100 last:border-0 ${
-                                  edit.label === label
-                                    ? 'text-[#017C87] bg-[#017C87]/5'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                                }`}
+                                onClick={() => selectPreset(page.id, CUSTOM_VALUE)}
+                                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors italic"
                               >
-                                {label}
+                                Custom...
                               </button>
-                            ))}
-                            <button
-                              onClick={() => selectPreset(page.id, CUSTOM_VALUE)}
-                              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors italic"
-                            >
-                              Custom...
-                            </button>
-                          </div>
-                        )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Autosave status */}
+                        <div className="shrink-0 w-5 flex items-center justify-center">
+                          {status === 'saving' && (
+                            <Loader2 size={12} className="animate-spin text-gray-300" />
+                          )}
+                          {status === 'saved' && (
+                            <Check size={13} className="text-emerald-400" />
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <label className="p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer" title="Replace page PDF">
+                            <Upload size={12} />
+                            <input
+                              type="file"
+                              accept=".pdf"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) handleReplacePage(page.page_number, f);
+                              }}
+                            />
+                          </label>
+                          <button
+                            onClick={() => deletePage(page.page_number)}
+                            className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Delete page"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Autosave status indicator */}
-                      <div className="shrink-0 w-5 flex items-center justify-center">
-                        {status === 'saving' && (
-                          <Loader2 size={12} className="animate-spin text-gray-300" />
-                        )}
-                        {status === 'saved' && (
-                          <Check size={13} className="text-emerald-400" />
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 shrink-0 ml-1">
-                        <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer">
-                          <Upload size={12} />
-                          Replace
+                      {/* Insert page after */}
+                      <div className="flex items-center justify-center py-0.5">
+                        <label className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-gray-300 hover:text-[#017C87] hover:bg-[#017C87]/5 transition-colors cursor-pointer">
+                          <Plus size={10} />
+                          Insert after
                           <input
                             type="file"
                             accept=".pdf"
                             className="hidden"
                             onChange={(e) => {
                               const f = e.target.files?.[0];
-                              if (f) handleReplacePage(page.page_number, f);
+                              if (f) handleAddPage(page.page_number, f);
                             }}
                           />
                         </label>
-                        <button
-                          onClick={() => deletePage(page.page_number)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right half: full-height PDF preview */}
+            <div className="w-1/2 min-w-0 flex flex-col" ref={previewContainerRef}>
+              {selectedPageUrl ? (
+                <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
+                  {/* Preview header with nav */}
+                  <div className="shrink-0 px-3 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={goPrev}
+                        disabled={selectedPage === 0}
+                        className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <span className="text-xs text-gray-500 font-medium">
+                        Page {selectedPage + 1} of {pages.length}
+                      </span>
+                      <button
+                        onClick={goNext}
+                        disabled={selectedPage >= pages.length - 1}
+                        className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                    <span className="text-xs text-[#017C87] font-medium truncate ml-2">
+                      {selectedPageData ? getEdit(selectedPageData.id).label : ''}
+                    </span>
+                  </div>
+
+                  {/* PDF page — fills remaining height */}
+                  <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center">
+                    <Document
+                      file={selectedPageUrl}
+                      loading={<Loader2 size={16} className="animate-spin text-gray-300" />}
+                    >
+                      <Page
+                        pageNumber={1}
+                        width={previewWidth}
+                        renderAnnotationLayer={false}
+                        renderTextLayer={false}
+                        className="max-h-full"
+                      />
+                    </Document>
                   </div>
                 </div>
-
-                {/* Add page after button */}
-                <div className="flex items-center justify-center py-1">
-                  <label className="flex items-center gap-1 px-3 py-1 rounded text-xs text-gray-300 hover:text-[#017C87] hover:bg-[#017C87]/5 transition-colors cursor-pointer">
-                    <Plus size={12} />
-                    Insert page after
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleAddPage(page.page_number, f);
-                      }}
-                    />
-                  </label>
+              ) : (
+                <div className="flex-1 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+                    <p className="text-xs text-gray-400">Loading preview...</p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

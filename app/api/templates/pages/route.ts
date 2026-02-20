@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
     const label = (formData.get('label') as string) || 'New Page';
     const companyId = formData.get('company_id') as string;
     const file = formData.get('file') as File;
+    const mode = (formData.get('mode') as string) || 'auto'; // 'insert' | 'replace' | 'auto'
 
     if (!templateId || !pageNumber || !file || !companyId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -27,21 +28,7 @@ export async function POST(req: NextRequest) {
     singlePageDoc.addPage(copiedPage);
     const singlePageBytes = await singlePageDoc.save();
 
-    const pagePath = `templates/${templateId}/page-${pageNumber}.pdf`;
-
-    // Upload the page
-    const { error: uploadError } = await supabase.storage
-      .from('proposals')
-      .upload(pagePath, singlePageBytes, {
-        contentType: 'application/pdf',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      return NextResponse.json({ error: 'Failed to upload page' }, { status: 500 });
-    }
-
-    // Shift existing pages if inserting (not replacing)
+    // Check if a page already exists at this position
     const { data: existingPage } = await supabase
       .from('template_pages')
       .select('id')
@@ -49,8 +36,12 @@ export async function POST(req: NextRequest) {
       .eq('page_number', pageNumber)
       .single();
 
-    if (!existingPage) {
-      // Inserting new — shift pages at and after this position up by 1
+    const isReplace = mode === 'replace' || (mode === 'auto' && !!existingPage);
+    const isInsert = mode === 'insert' || (mode === 'auto' && !existingPage);
+
+    // If inserting, shift existing pages BEFORE uploading the new file
+    if (isInsert && existingPage) {
+      // There's a page at this slot — shift it and everything after it up by 1
       const { data: laterPages } = await supabase
         .from('template_pages')
         .select('*')
@@ -61,10 +52,27 @@ export async function POST(req: NextRequest) {
       if (laterPages && laterPages.length > 0) {
         for (const p of laterPages) {
           const newNum = p.page_number + 1;
-          const newPath = `templates/${templateId}/page-${newNum}.pdf`;
-          // Move file in storage
+          const newPath = `templates/${templateId}/page-${newNum}-${Date.now()}.pdf`;
           await supabase.storage.from('proposals').move(p.file_path, newPath);
-          // Update record
+          await supabase.from('template_pages')
+            .update({ page_number: newNum, file_path: newPath })
+            .eq('id', p.id);
+        }
+      }
+    } else if (!isInsert && !existingPage) {
+      // Nothing to shift, just inserting at an empty slot — shift pages at and after
+      const { data: laterPages } = await supabase
+        .from('template_pages')
+        .select('*')
+        .eq('template_id', templateId)
+        .gte('page_number', pageNumber)
+        .order('page_number', { ascending: false });
+
+      if (laterPages && laterPages.length > 0) {
+        for (const p of laterPages) {
+          const newNum = p.page_number + 1;
+          const newPath = `templates/${templateId}/page-${newNum}-${Date.now()}.pdf`;
+          await supabase.storage.from('proposals').move(p.file_path, newPath);
           await supabase.from('template_pages')
             .update({ page_number: newNum, file_path: newPath })
             .eq('id', p.id);
@@ -72,14 +80,44 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Upsert the page record
-    await supabase.from('template_pages').upsert({
-      template_id: templateId,
-      page_number: pageNumber,
-      file_path: pagePath,
-      label,
-      company_id: companyId,
-    }, { onConflict: 'template_id,page_number' });
+    // Use a unique filename to avoid collisions
+    const pagePath = `templates/${templateId}/page-${pageNumber}-${Date.now()}.pdf`;
+
+    // Upload the page
+    const { error: uploadError } = await supabase.storage
+      .from('proposals')
+      .upload(pagePath, singlePageBytes, {
+        contentType: 'application/pdf',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      return NextResponse.json({ error: 'Failed to upload page' }, { status: 500 });
+    }
+
+    if (isReplace && existingPage) {
+      // Replace — remove old file and update record
+      const { data: oldPage } = await supabase
+        .from('template_pages')
+        .select('file_path')
+        .eq('id', existingPage.id)
+        .single();
+      if (oldPage?.file_path) {
+        await supabase.storage.from('proposals').remove([oldPage.file_path]);
+      }
+      await supabase.from('template_pages')
+        .update({ file_path: pagePath, label })
+        .eq('id', existingPage.id);
+    } else {
+      // Insert new record
+      await supabase.from('template_pages').insert({
+        template_id: templateId,
+        page_number: pageNumber,
+        file_path: pagePath,
+        label,
+        company_id: companyId,
+      });
+    }
 
     // Update template page count
     const { count } = await supabase
@@ -138,7 +176,7 @@ export async function DELETE(req: NextRequest) {
     if (laterPages && laterPages.length > 0) {
       for (const p of laterPages) {
         const newNum = p.page_number - 1;
-        const newPath = `templates/${template_id}/page-${newNum}.pdf`;
+        const newPath = `templates/${template_id}/page-${newNum}-${Date.now()}.pdf`;
         await supabase.storage.from('proposals').move(p.file_path, newPath);
         await supabase.from('template_pages')
           .update({ page_number: newNum, file_path: newPath })

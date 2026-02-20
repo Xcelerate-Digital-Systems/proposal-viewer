@@ -17,6 +17,7 @@ interface CommentsPanelProps {
   onUnresolve: (commentId: string) => Promise<void>;
   onClose: () => void;
   accentColor?: string;
+  acceptTextColor?: string;
   bgPrimary?: string;
   bgSecondary?: string;
 }
@@ -32,6 +33,7 @@ export default function CommentsPanel({
   onUnresolve,
   onClose,
   accentColor = '#ff6700',
+  acceptTextColor = '#ffffff',
   bgPrimary = '#0f0f0f',
   bgSecondary = '#141414',
 }: CommentsPanelProps) {
@@ -151,8 +153,8 @@ export default function CommentsPanel({
                 className="flex-1 px-2.5 py-1.5 rounded-md text-xs text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300"
                 autoFocus />
               <button onClick={() => handleReply(comment.id)} disabled={replySubmitting || !replyText.trim() || !replyName.trim()}
-                className="px-2 py-1.5 text-white rounded-md disabled:opacity-40 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: accentColor }}>
+                className="px-2 py-1.5 rounded-md disabled:opacity-40 transition-opacity hover:opacity-90"
+                style={{ backgroundColor: accentColor, color: acceptTextColor }}>
                 <Send size={12} />
               </button>
             </div>
@@ -204,8 +206,8 @@ export default function CommentsPanel({
             <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
               className="flex-1 px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
             <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
-              className="px-3 py-2 text-white rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
-              style={{ backgroundColor: accentColor }}>
+              className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
+              style={{ backgroundColor: accentColor, color: acceptTextColor }}>
               <Send size={15} />
             </button>
           </div>
@@ -255,8 +257,8 @@ export default function CommentsPanel({
               <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
               <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
-                className="px-3 py-2 text-white rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: accentColor }}>
+                className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
+                style={{ backgroundColor: accentColor, color: acceptTextColor }}>
                 <Send size={15} />
               </button>
             </div>

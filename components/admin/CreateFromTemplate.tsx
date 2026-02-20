@@ -128,7 +128,22 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         indent: p.indent ?? 0,
       }));
 
-      // 5. Create the proposal record
+      // 5. Copy template cover image if present
+      let coverImagePath: string | null = null;
+      if (selectedTemplate.cover_image_path) {
+        setStatus('Copying cover image...');
+        const ext = selectedTemplate.cover_image_path.split('.').pop() || 'jpg';
+        coverImagePath = `covers/${Date.now()}-${title.trim().replace(/\s+/g, '-').toLowerCase()}.${ext}`;
+        const { error: copyError } = await supabase.storage
+          .from('proposals')
+          .copy(selectedTemplate.cover_image_path, coverImagePath);
+        if (copyError) {
+          console.warn('Cover image copy failed, continuing without:', copyError);
+          coverImagePath = null;
+        }
+      }
+
+      // 6. Create the proposal record
       setStatus('Creating proposal...');
       const shareToken = crypto.randomUUID();
 
@@ -142,12 +157,13 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         share_token: shareToken,
         status: 'draft',
         page_names: pageNames,
+        cover_image_path: coverImagePath,
         company_id: companyId,
       });
 
       if (insertError) throw new Error('Failed to create proposal');
 
-      // 6. Clean up temp replacement files
+      // 7. Clean up temp replacement files
       const tempPaths = Object.values(replacementPaths);
       if (tempPaths.length > 0) {
         await supabase.storage.from('proposals').remove(tempPaths);

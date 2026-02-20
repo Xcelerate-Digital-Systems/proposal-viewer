@@ -87,6 +87,7 @@ export type ProposalTemplate = {
   name: string;
   description: string | null;
   page_count: number;
+  cover_image_path: string | null;
   company_id: string;
   created_at: string;
   updated_at: string;

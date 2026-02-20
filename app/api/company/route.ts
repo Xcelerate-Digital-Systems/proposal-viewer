@@ -108,6 +108,7 @@ export async function PATCH(req: NextRequest) {
       'cover_bg_style', 'cover_bg_color_1', 'cover_bg_color_2',
       'cover_text_color', 'cover_subtitle_color',
       'cover_button_bg', 'cover_button_text', 'cover_overlay_opacity',
+      'cover_gradient_type', 'cover_gradient_angle',
     ];
     const updates: Record<string, unknown> = {};
 
@@ -171,6 +172,22 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'cover_overlay_opacity must be between 0 and 1' }, { status: 400 });
       }
       updates.cover_overlay_opacity = opacity;
+    }
+
+    // Validate cover_gradient_type
+    if (updates.cover_gradient_type) {
+      if (!['linear', 'radial', 'conic'].includes(String(updates.cover_gradient_type))) {
+        return NextResponse.json({ error: 'cover_gradient_type must be "linear", "radial", or "conic"' }, { status: 400 });
+      }
+    }
+
+    // Validate cover_gradient_angle
+    if (updates.cover_gradient_angle !== undefined) {
+      const angle = Number(updates.cover_gradient_angle);
+      if (isNaN(angle) || angle < 0 || angle > 360) {
+        return NextResponse.json({ error: 'cover_gradient_angle must be between 0 and 360' }, { status: 400 });
+      }
+      updates.cover_gradient_angle = angle;
     }
 
     updates.updated_at = new Date().toISOString();

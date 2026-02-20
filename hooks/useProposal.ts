@@ -31,6 +31,8 @@ export type CompanyBranding = {
   cover_button_bg: string;
   cover_button_text: string;
   cover_overlay_opacity: number;
+  cover_gradient_type: 'linear' | 'radial' | 'conic';
+  cover_gradient_angle: number;
 };
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -51,6 +53,8 @@ const DEFAULT_BRANDING: CompanyBranding = {
   cover_button_bg: '#ff6700',
   cover_button_text: '#ffffff',
   cover_overlay_opacity: 0.65,
+  cover_gradient_type: 'linear',
+  cover_gradient_angle: 135,
 };
 
 /**

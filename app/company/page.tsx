@@ -33,6 +33,8 @@ type CompanyData = {
   cover_button_bg: string;
   cover_button_text: string;
   cover_overlay_opacity: number;
+  cover_gradient_type: 'linear' | 'radial' | 'conic';
+  cover_gradient_angle: number;
 };
 
 export default function CompanySettingsPage() {
@@ -237,6 +239,8 @@ function CoverPreview({
   buttonBg,
   buttonText,
   overlayOpacity,
+  gradientType,
+  gradientAngle,
   logoUrl,
   companyName,
 }: {
@@ -248,12 +252,26 @@ function CoverPreview({
   buttonBg: string;
   buttonText: string;
   overlayOpacity: number;
+  gradientType: 'linear' | 'radial' | 'conic';
+  gradientAngle: number;
   logoUrl: string | null;
   companyName: string;
 }) {
   const baseBg = bgStyle === 'solid' ? bgColor1 : undefined;
+
+  function buildGradient(c1: string, c2: string): string {
+    switch (gradientType) {
+      case 'radial':
+        return `radial-gradient(circle, ${c1}, ${c2})`;
+      case 'conic':
+        return `conic-gradient(from ${gradientAngle}deg, ${c1}, ${c2})`;
+      default:
+        return `linear-gradient(${gradientAngle}deg, ${c1}, ${c2})`;
+    }
+  }
+
   const baseBgImage = bgStyle === 'gradient'
-    ? `linear-gradient(135deg, ${bgColor1}, ${bgColor2})`
+    ? buildGradient(bgColor1, bgColor2)
     : undefined;
 
   return (
@@ -342,6 +360,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [coverButtonBg, setCoverButtonBg] = useState('#ff6700');
   const [coverButtonText, setCoverButtonText] = useState('#ffffff');
   const [coverOverlayOpacity, setCoverOverlayOpacity] = useState(0.65);
+  const [coverGradientType, setCoverGradientType] = useState<'linear' | 'radial' | 'conic'>('linear');
+  const [coverGradientAngle, setCoverGradientAngle] = useState(135);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -377,6 +397,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setCoverButtonBg(data.cover_button_bg || '#ff6700');
         setCoverButtonText(data.cover_button_text || '#ffffff');
         setCoverOverlayOpacity(parseFloat(data.cover_overlay_opacity) || 0.65);
+        setCoverGradientType(data.cover_gradient_type || 'linear');
+        setCoverGradientAngle(parseInt(data.cover_gradient_angle) || 135);
       }
     } finally {
       setLoading(false);
@@ -454,6 +476,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         cover_button_bg: coverButtonBg,
         cover_button_text: coverButtonText,
         cover_overlay_opacity: coverOverlayOpacity,
+        cover_gradient_type: coverGradientType,
+        cover_gradient_angle: coverGradientAngle,
       }),
     });
     const data = await res.json();
@@ -512,7 +536,9 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     coverSubtitleColor !== (company?.cover_subtitle_color || '#ffffffb3') ||
     coverButtonBg !== (company?.cover_button_bg || '#ff6700') ||
     coverButtonText !== (company?.cover_button_text || '#ffffff') ||
-    coverOverlayOpacity !== (parseFloat(String(company?.cover_overlay_opacity)) || 0.65);
+    coverOverlayOpacity !== (parseFloat(String(company?.cover_overlay_opacity)) || 0.65) ||
+    coverGradientType !== (company?.cover_gradient_type || 'linear') ||
+    coverGradientAngle !== (parseInt(String(company?.cover_gradient_angle)) || 135);
 
   const ACCENT_PRESETS = [
     '#ff6700', '#ef4444', '#f59e0b', '#22c55e',
@@ -767,7 +793,11 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
                   }`}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 rounded" style={{ background: `linear-gradient(135deg, ${coverBgColor1}, ${coverBgColor2})` }} />
+                    <div className="w-5 h-5 rounded" style={{ background: coverGradientType === 'radial'
+                      ? `radial-gradient(circle, ${coverBgColor1}, ${coverBgColor2})`
+                      : coverGradientType === 'conic'
+                      ? `conic-gradient(from ${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`
+                      : `linear-gradient(${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})` }} />
                     Gradient
                   </div>
                 </button>
@@ -787,6 +817,89 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
                 </button>
               </div>
             </div>
+
+            {/* Gradient Type — only when gradient style is selected */}
+            {coverBgStyle === 'gradient' && (
+              <div className="mb-4">
+                <label className="block text-xs text-gray-400 mb-2">Gradient Type</label>
+                <div className="flex gap-2">
+                  {(['linear', 'radial', 'conic'] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => isOwner && setCoverGradientType(type)}
+                      disabled={!isOwner}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all disabled:cursor-not-allowed ${
+                        coverGradientType === type
+                          ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <div
+                          className="w-5 h-5 rounded"
+                          style={{
+                            background: type === 'linear'
+                              ? `linear-gradient(${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`
+                              : type === 'radial'
+                              ? `radial-gradient(circle, ${coverBgColor1}, ${coverBgColor2})`
+                              : `conic-gradient(from ${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`,
+                          }}
+                        />
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Gradient Angle — for linear and conic only */}
+            {coverBgStyle === 'gradient' && coverGradientType !== 'radial' && (
+              <div className="mb-4">
+                <label className="block text-xs text-gray-400 mb-2">
+                  Gradient Angle — {coverGradientAngle}°
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    value={coverGradientAngle}
+                    onChange={(e) => isOwner && setCoverGradientAngle(parseInt(e.target.value))}
+                    disabled={!isOwner}
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87] disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="360"
+                    value={coverGradientAngle}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value);
+                      if (!isNaN(v) && v >= 0 && v <= 360) setCoverGradientAngle(v);
+                    }}
+                    disabled={!isOwner}
+                    className="w-16 px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-900 font-mono text-center focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+                    <button
+                      key={deg}
+                      onClick={() => isOwner && setCoverGradientAngle(deg)}
+                      disabled={!isOwner}
+                      className={`text-[10px] px-1.5 py-0.5 rounded transition-colors disabled:cursor-not-allowed ${
+                        coverGradientAngle === deg
+                          ? 'text-[#017C87] bg-[#017C87]/10 font-medium'
+                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {deg}°
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Background colors */}
             <div className="mb-4">
@@ -883,6 +996,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               buttonBg={/^#[0-9a-fA-F]{6}$/.test(coverButtonBg) ? coverButtonBg : '#ff6700'}
               buttonText={/^#[0-9a-fA-F]{6}$/.test(coverButtonText) ? coverButtonText : '#ffffff'}
               overlayOpacity={coverOverlayOpacity}
+              gradientType={coverGradientType}
+              gradientAngle={coverGradientAngle}
               logoUrl={company?.logo_url || null}
               companyName={name}
             />

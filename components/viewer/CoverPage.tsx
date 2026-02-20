@@ -55,19 +55,37 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
   const btnBg = branding.cover_button_bg || '#ff6700';
   const btnText = branding.cover_button_text || '#ffffff';
   const overlayOpacity = branding.cover_overlay_opacity ?? 0.65;
+  const gradientType = branding.cover_gradient_type || 'linear';
+  const gradientAngle = branding.cover_gradient_angle ?? 135;
 
-  // Build background: solid or gradient
+  // Build background: solid or gradient (linear / radial / conic)
   const baseBg = bgStyle === 'solid'
     ? bgColor1
     : undefined;
+
+  function buildGradient(color1: string, color2: string): string {
+    switch (gradientType) {
+      case 'radial':
+        return `radial-gradient(circle, ${color1}, ${color2})`;
+      case 'conic':
+        return `conic-gradient(from ${gradientAngle}deg, ${color1}, ${color2})`;
+      default:
+        return `linear-gradient(${gradientAngle}deg, ${color1}, ${color2})`;
+    }
+  }
+
   const baseBgImage = bgStyle === 'gradient'
-    ? `linear-gradient(135deg, ${bgColor1}, ${bgColor2})`
+    ? buildGradient(bgColor1, bgColor2)
     : undefined;
 
   // Build overlay for when a cover image is present
+  const overlayEnd = overlayOpacity + 0.1 > 1 ? 1 : overlayOpacity + 0.1;
   const imageOverlay = bgStyle === 'solid'
     ? hexToRgba(bgColor1, overlayOpacity)
-    : `linear-gradient(to bottom, ${hexToRgba(bgColor1, overlayOpacity)}, ${hexToRgba(bgColor2, overlayOpacity + 0.1 > 1 ? 1 : overlayOpacity + 0.1)})`;
+    : buildGradient(
+        hexToRgba(bgColor1, overlayOpacity),
+        hexToRgba(bgColor2, overlayEnd)
+      );
 
   return (
     <div

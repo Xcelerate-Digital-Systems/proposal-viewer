@@ -220,6 +220,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           onUnresolve={unresolveComment}
           onClose={() => setShowComments(false)}
           accentColor={accent}
+          acceptTextColor={branding.accept_text_color || '#ffffff'}
           bgPrimary={bgPrimary}
           bgSecondary={bgSecondary}
         />
