@@ -27,6 +27,7 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
   const [bgUrl, setBgUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  // Fetch signed URL for cover image
   useEffect(() => {
     if (proposal.cover_image_path) {
       supabase.storage
@@ -38,10 +39,21 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
     }
   }, [proposal.cover_image_path]);
 
+  // Wait for cover image to fully load before revealing, or fade in immediately if no image
   useEffect(() => {
-    const timer = setTimeout(() => setLoaded(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
+    if (proposal.cover_image_path && !bgUrl) return; // Still fetching signed URL
+
+    if (bgUrl) {
+      const img = new Image();
+      img.onload = () => setTimeout(() => setLoaded(true), 50);
+      img.onerror = () => setTimeout(() => setLoaded(true), 50);
+      img.src = bgUrl;
+    } else {
+      // No cover image — fade in after brief delay
+      const timer = setTimeout(() => setLoaded(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [bgUrl, proposal.cover_image_path]);
 
   const subtitle = proposal.cover_subtitle || `Prepared for ${proposal.client_name}`;
   const buttonText = proposal.cover_button_text || 'START READING PROPOSAL';

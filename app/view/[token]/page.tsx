@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FileText, Loader2, Menu, CheckCircle2, MessageSquare } from 'lucide-react';
+import { FileText, Loader2, Menu, CheckCircle2, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProposal, deriveBorderColor } from '@/hooks/useProposal';
 import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
@@ -88,11 +88,12 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const acceptLabel = proposal?.accept_button_text || undefined;
 
   if (loading) {
+    const loaderTextColor = branding.sidebar_text_color || '#ffffff';
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: bgPrimary }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: bgSecondary }}>
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: branding.accent_color }} />
-          <p className="text-[#666] text-sm">Loading proposal...</p>
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: loaderTextColor }} />
+          <p className="text-sm" style={{ color: loaderTextColor, opacity: 0.45 }}>Loading proposal...</p>
         </div>
       </div>
     );
@@ -117,32 +118,52 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     return <CoverPage proposal={proposal} branding={branding} onStart={() => setShowCover(false)} />;
   }
 
+  const sidebarText = branding.sidebar_text_color || '#ffffff';
+
   return (
     <div className="h-screen flex flex-col lg:flex-row overflow-hidden" style={{ backgroundColor: bgPrimary }}>
-      {/* Mobile header bar */}
+      {/* Mobile header bar — sticky, branded */}
       <div
-        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0"
+        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 sticky top-0 z-20"
         style={{ backgroundColor: bgSecondary, borderColor: border }}
       >
         <button
           onClick={() => setMobileSidebar(true)}
-          className="p-2 text-[#888] hover:text-white transition-colors rounded-lg"
+          className="p-2 transition-opacity hover:opacity-70 rounded-lg"
+          style={{ color: sidebarText }}
         >
           <Menu size={20} />
         </button>
 
-        <div className="flex-1 min-w-0 mx-3 text-center">
-          <span className="text-xs text-[#666]">
+        {/* Page navigation arrows + label */}
+        <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
+          <button
+            onClick={() => currentPage > 1 && goToPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="p-1.5 rounded-lg transition-opacity disabled:opacity-20"
+            style={{ color: sidebarText }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-xs truncate px-1" style={{ color: sidebarText, opacity: 0.55 }}>
             {getPageName(currentPage)}
             {numPages > 0 && ` · ${currentPage}/${numPages}`}
           </span>
+          <button
+            onClick={() => currentPage < numPages && goToPage(currentPage + 1)}
+            disabled={currentPage >= numPages}
+            className="p-1.5 rounded-lg transition-opacity disabled:opacity-20"
+            style={{ color: sidebarText }}
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
 
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowComments(!showComments)}
             className="relative p-2 transition-colors rounded-lg"
-            style={{ color: showComments ? accent : '#888' }}
+            style={{ color: showComments ? accent : sidebarText, opacity: showComments ? 1 : 0.55 }}
           >
             <MessageSquare size={18} />
             {comments.filter(c => !c.parent_id && !c.resolved_at).length > 0 && (
@@ -155,8 +176,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           {!accepted ? (
             <button
               onClick={() => setShowAccept(true)}
-              className="p-2 text-white rounded-lg transition-opacity hover:opacity-90"
-              style={{ backgroundColor: accent }}
+              className="p-2 rounded-lg transition-opacity hover:opacity-90"
+              style={{ backgroundColor: accent, color: branding.accept_text_color || '#ffffff' }}
             >
               <CheckCircle2 size={18} />
             </button>

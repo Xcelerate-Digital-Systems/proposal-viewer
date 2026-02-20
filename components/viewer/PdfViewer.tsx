@@ -81,7 +81,7 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
             >
               {containerWidth > 0 && (
                 <div
-                  className="transition-opacity duration-200 ease-in-out mx-auto"
+                  className="transition-opacity duration-[600ms] ease-in-out mx-auto"
                   style={{ opacity: isTransitioning ? 0 : 1, maxWidth: renderWidth }}
                 >
                   <Page
@@ -105,18 +105,6 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
         </div>
       </div>
 
-      {/* Loading indicator */}
-      {isTransitioning && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <div
-            className="flex items-center gap-2.5 backdrop-blur-sm px-4 py-2 rounded-full border"
-            style={{ backgroundColor: `${bgColor}cc`, borderColor: `${bgColor}ff` }}
-          >
-            <Loader2 className="animate-spin" size={16} style={{ color: accentColor }} />
-            <span className="text-xs text-[#999]">Loading...</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
