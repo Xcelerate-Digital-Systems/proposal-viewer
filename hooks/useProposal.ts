@@ -20,6 +20,8 @@ export type CompanyBranding = {
   website: string | null;
   bg_primary: string;
   bg_secondary: string;
+  sidebar_text_color: string;
+  accept_text_color: string;
 };
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -29,6 +31,8 @@ const DEFAULT_BRANDING: CompanyBranding = {
   website: null,
   bg_primary: '#0f0f0f',
   bg_secondary: '#141414',
+  sidebar_text_color: '#ffffff',
+  accept_text_color: '#ffffff',
 };
 
 /**

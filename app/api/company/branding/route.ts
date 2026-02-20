@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     const { data: company, error } = await supabase
       .from('companies')
-      .select('id, name, slug, logo_path, accent_color, website, bg_primary, bg_secondary')
+      .select('id, name, slug, logo_path, accent_color, website, bg_primary, bg_secondary, sidebar_text_color, accept_text_color')
       .eq('id', companyId)
       .single();
 
@@ -38,6 +38,8 @@ export async function GET(req: NextRequest) {
       website: company.website,
       bg_primary: company.bg_primary || '#0f0f0f',
       bg_secondary: company.bg_secondary || '#141414',
+      sidebar_text_color: company.sidebar_text_color || '#ffffff',
+      accept_text_color: company.accept_text_color || '#ffffff',
     });
   } catch (err) {
     console.error('Branding fetch error:', err);

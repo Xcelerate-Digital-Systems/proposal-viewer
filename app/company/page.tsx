@@ -19,6 +19,8 @@ type CompanyData = {
   accent_color: string;
   bg_primary: string;
   bg_secondary: string;
+  sidebar_text_color: string;
+  accept_text_color: string;
   website: string | null;
   current_role: string;
   created_at: string;
@@ -27,7 +29,7 @@ type CompanyData = {
 export default function CompanySettingsPage() {
   return (
     <AdminLayout>
-      {() => <CompanySettingsContent />}
+      {(auth) => <CompanySettingsContent companyId={auth.companyId ?? ''} />}
     </AdminLayout>
   );
 }
@@ -95,12 +97,16 @@ function ViewerPreview({
   bgSecondary,
   logoUrl,
   companyName,
+  sidebarTextColor,
+  acceptTextColor,
 }: {
   accent: string;
   bgPrimary: string;
   bgSecondary: string;
   logoUrl: string | null;
   companyName: string;
+  sidebarTextColor: string;
+  acceptTextColor: string;
 }) {
   const border = deriveBorder(bgSecondary);
   const surface = deriveSurface(bgPrimary, bgSecondary);
@@ -138,7 +144,7 @@ function ViewerPreview({
                 key={item}
                 className="flex items-center gap-1 px-2 py-1.5 rounded text-[9px] truncate"
                 style={{
-                  color: i === 0 ? '#fff' : '#888',
+                  color: i === 0 ? sidebarTextColor : `${sidebarTextColor}88`,
                   fontWeight: i === 0 ? 600 : 400,
                   backgroundColor: i === 0 ? `${accent}15` : 'transparent',
                 }}
@@ -152,8 +158,8 @@ function ViewerPreview({
           {/* Bottom buttons */}
           <div className="p-2 space-y-1.5 border-t" style={{ borderColor: border }}>
             <div
-              className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[9px] font-semibold text-white"
-              style={{ backgroundColor: accent }}
+              className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[9px] font-semibold"
+              style={{ backgroundColor: accent, color: acceptTextColor }}
             >
               <CheckCircle2 size={10} />
               Accept Proposal
@@ -210,7 +216,7 @@ function ViewerPreview({
 }
 
 // ---------- Main Content ----------
-function CompanySettingsContent() {
+function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -223,6 +229,8 @@ function CompanySettingsContent() {
   const [accentColor, setAccentColor] = useState('#ff6700');
   const [bgPrimary, setBgPrimary] = useState('#0f0f0f');
   const [bgSecondary, setBgSecondary] = useState('#141414');
+  const [sidebarTextColor, setSidebarTextColor] = useState('#ffffff');
+  const [acceptTextColor, setAcceptTextColor] = useState('#ffffff');
   const [website, setWebsite] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
 
@@ -236,9 +244,10 @@ function CompanySettingsContent() {
   };
 
   const fetchCompany = useCallback(async () => {
+    if (!companyId) return;
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/company', { headers });
+      const res = await fetch(`/api/company?company_id=${companyId}`, { headers });
       const data = await res.json();
       if (res.ok) {
         setCompany(data);
@@ -247,14 +256,19 @@ function CompanySettingsContent() {
         setAccentColor(data.accent_color || '#ff6700');
         setBgPrimary(data.bg_primary || '#0f0f0f');
         setBgSecondary(data.bg_secondary || '#141414');
+        setSidebarTextColor(data.sidebar_text_color || '#ffffff');
+        setAcceptTextColor(data.accept_text_color || '#ffffff');
         setWebsite(data.website || '');
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [companyId]);
 
-  useEffect(() => { fetchCompany(); }, [fetchCompany]);
+  useEffect(() => {
+    setLoading(true);
+    fetchCompany();
+  }, [fetchCompany]);
 
   const showFeedback = (msg: string, isError = false) => {
     if (isError) { setError(msg); setSuccess(''); }
@@ -266,7 +280,7 @@ function CompanySettingsContent() {
     if (!isOwner) return;
     setSaving(field);
     const headers = await getAuthHeaders();
-    const res = await fetch('/api/company', {
+    const res = await fetch(`/api/company?company_id=${companyId}`, {
       method: 'PATCH',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value }),
@@ -285,10 +299,10 @@ function CompanySettingsContent() {
     if (!isOwner) return;
     setSaving('colors');
     const headers = await getAuthHeaders();
-    const res = await fetch('/api/company', {
+    const res = await fetch(`/api/company?company_id=${companyId}`, {
       method: 'PATCH',
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accent_color: accentColor, bg_primary: bgPrimary, bg_secondary: bgSecondary }),
+      body: JSON.stringify({ accent_color: accentColor, bg_primary: bgPrimary, bg_secondary: bgSecondary, sidebar_text_color: sidebarTextColor, accept_text_color: acceptTextColor }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -307,7 +321,7 @@ function CompanySettingsContent() {
     const headers = await getAuthHeaders();
     const formData = new FormData();
     formData.append('logo', file);
-    const res = await fetch('/api/company/logo', { method: 'POST', headers, body: formData });
+    const res = await fetch(`/api/company/logo?company_id=${companyId}`, { method: 'POST', headers, body: formData });
     const data = await res.json();
     if (!res.ok) {
       showFeedback(data.error || 'Upload failed', true);
@@ -323,7 +337,7 @@ function CompanySettingsContent() {
     if (!confirm('Remove company logo?')) return;
     setLogoUploading(true);
     const headers = await getAuthHeaders();
-    const res = await fetch('/api/company/logo', { method: 'DELETE', headers });
+    const res = await fetch(`/api/company/logo?company_id=${companyId}`, { method: 'DELETE', headers });
     if (res.ok) {
       setCompany(prev => prev ? { ...prev, logo_path: null, logo_url: null } : prev);
       showFeedback('Logo removed');
@@ -334,7 +348,9 @@ function CompanySettingsContent() {
   const colorsChanged =
     accentColor !== (company?.accent_color || '#ff6700') ||
     bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
-    bgSecondary !== (company?.bg_secondary || '#141414');
+    bgSecondary !== (company?.bg_secondary || '#141414') ||
+    sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
+    acceptTextColor !== (company?.accept_text_color || '#ffffff');
 
   const ACCENT_PRESETS = [
     '#ff6700', '#ef4444', '#f59e0b', '#22c55e',
@@ -484,7 +500,7 @@ function CompanySettingsContent() {
               {isOwner && colorsChanged && (
                 <button
                   onClick={handleSaveColors}
-                  disabled={saving === 'colors' || !/^#[0-9a-fA-F]{6}$/.test(accentColor) || !/^#[0-9a-fA-F]{6}$/.test(bgPrimary) || !/^#[0-9a-fA-F]{6}$/.test(bgSecondary)}
+                  disabled={saving === 'colors' || !/^#[0-9a-fA-F]{6}$/.test(accentColor) || !/^#[0-9a-fA-F]{6}$/.test(bgPrimary) || !/^#[0-9a-fA-F]{6}$/.test(bgSecondary) || !/^#[0-9a-fA-F]{6}$/.test(sidebarTextColor) || !/^#[0-9a-fA-F]{6}$/.test(acceptTextColor)}
                   className="px-4 py-1.5 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
                 >
                   {saving === 'colors' ? <Loader2 size={14} className="animate-spin" /> : 'Save Colors'}
@@ -546,6 +562,15 @@ function CompanySettingsContent() {
               <ColorRow label="Main background" value={bgPrimary} onChange={setBgPrimary} disabled={!isOwner} />
               <ColorRow label="Sidebar / panels" value={bgSecondary} onChange={setBgSecondary} disabled={!isOwner} />
             </div>
+
+            {/* Text colors */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <label className="block text-xs text-gray-400 mb-2">Text Colors</label>
+              <div className="space-y-2">
+                <ColorRow label="Sidebar nav text" value={sidebarTextColor} onChange={setSidebarTextColor} disabled={!isOwner} />
+                <ColorRow label="Accept button text" value={acceptTextColor} onChange={setAcceptTextColor} disabled={!isOwner} />
+              </div>
+            </div>
           </div>
 
           {!isOwner && (
@@ -562,6 +587,8 @@ function CompanySettingsContent() {
             accent={/^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : '#ff6700'}
             bgPrimary={/^#[0-9a-fA-F]{6}$/.test(bgPrimary) ? bgPrimary : '#0f0f0f'}
             bgSecondary={/^#[0-9a-fA-F]{6}$/.test(bgSecondary) ? bgSecondary : '#141414'}
+            sidebarTextColor={/^#[0-9a-fA-F]{6}$/.test(sidebarTextColor) ? sidebarTextColor : '#ffffff'}
+            acceptTextColor={/^#[0-9a-fA-F]{6}$/.test(acceptTextColor) ? acceptTextColor : '#ffffff'}
             logoUrl={company?.logo_url || null}
             companyName={name}
           />

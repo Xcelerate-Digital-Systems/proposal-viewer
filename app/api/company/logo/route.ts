@@ -26,6 +26,17 @@ async function getAuthenticatedMember(req: NextRequest) {
   return member;
 }
 
+/**
+ * Resolve the effective company_id, respecting super admin overrides.
+ */
+function resolveCompanyId(req: NextRequest, member: { company_id: string; is_super_admin?: boolean }): string {
+  const overrideId = req.nextUrl.searchParams.get('company_id');
+  if (overrideId && member.is_super_admin) {
+    return overrideId;
+  }
+  return member.company_id;
+}
+
 // POST - Upload company logo
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +45,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (member.role !== 'owner') {
+    const companyId = resolveCompanyId(req, member);
+    const isSuperAdminOverride = member.is_super_admin && companyId !== member.company_id;
+
+    if (member.role !== 'owner' && !isSuperAdminOverride) {
       return NextResponse.json({ error: 'Only owners can update the logo' }, { status: 403 });
     }
 
@@ -61,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
     const ext = file.name.split('.').pop() || 'png';
-    const filePath = `${member.company_id}/logo.${ext}`;
+    const filePath = `${companyId}/logo.${ext}`;
 
     // Upload to storage
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -80,7 +94,7 @@ export async function POST(req: NextRequest) {
     const { error: updateError } = await supabase
       .from('companies')
       .update({ logo_path: filePath, updated_at: new Date().toISOString() })
-      .eq('id', member.company_id);
+      .eq('id', companyId);
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
@@ -109,7 +123,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (member.role !== 'owner') {
+    const companyId = resolveCompanyId(req, member);
+    const isSuperAdminOverride = member.is_super_admin && companyId !== member.company_id;
+
+    if (member.role !== 'owner' && !isSuperAdminOverride) {
       return NextResponse.json({ error: 'Only owners can remove the logo' }, { status: 403 });
     }
 
@@ -119,7 +136,7 @@ export async function DELETE(req: NextRequest) {
     const { data: company } = await supabase
       .from('companies')
       .select('logo_path')
-      .eq('id', member.company_id)
+      .eq('id', companyId)
       .single();
 
     if (company?.logo_path) {
@@ -132,7 +149,7 @@ export async function DELETE(req: NextRequest) {
     await supabase
       .from('companies')
       .update({ logo_path: null, updated_at: new Date().toISOString() })
-      .eq('id', member.company_id);
+      .eq('id', companyId);
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -26,6 +26,19 @@ async function getAuthenticatedMember(req: NextRequest) {
   return member;
 }
 
+/**
+ * Resolve the effective company_id, respecting super admin overrides.
+ * If a company_id query param is provided and the user is a super admin,
+ * use that instead of their own company_id.
+ */
+function resolveCompanyId(req: NextRequest, member: { company_id: string; is_super_admin?: boolean }): string {
+  const overrideId = req.nextUrl.searchParams.get('company_id');
+  if (overrideId && member.is_super_admin) {
+    return overrideId;
+  }
+  return member.company_id;
+}
+
 // GET - Get company details
 export async function GET(req: NextRequest) {
   try {
@@ -34,12 +47,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const companyId = resolveCompanyId(req, member);
     const supabase = createServiceClient();
 
     const { data: company, error } = await supabase
       .from('companies')
       .select('*')
-      .eq('id', member.company_id)
+      .eq('id', companyId)
       .single();
 
     if (error || !company) {
@@ -54,10 +68,15 @@ export async function GET(req: NextRequest) {
       logo_url = urlData?.publicUrl || null;
     }
 
+    // If super admin is viewing another company, treat as owner for UI purposes
+    const effectiveRole = (member.is_super_admin && companyId !== member.company_id)
+      ? 'owner'
+      : member.role;
+
     return NextResponse.json({
       ...company,
       logo_url,
-      current_role: member.role,
+      current_role: effectiveRole,
     });
   } catch (err) {
     console.error('Get company error:', err);
@@ -73,12 +92,16 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (member.role !== 'owner') {
+    const companyId = resolveCompanyId(req, member);
+
+    // Allow if owner of the company OR super admin
+    const isSuperAdminOverride = member.is_super_admin && companyId !== member.company_id;
+    if (member.role !== 'owner' && !isSuperAdminOverride) {
       return NextResponse.json({ error: 'Only owners can update company settings' }, { status: 403 });
     }
 
     const body = await req.json();
-    const allowedFields = ['name', 'slug', 'accent_color', 'website', 'logo_path', 'bg_primary', 'bg_secondary'];
+    const allowedFields = ['name', 'slug', 'accent_color', 'website', 'logo_path', 'bg_primary', 'bg_secondary', 'sidebar_text_color', 'accept_text_color'];
     const updates: Record<string, unknown> = {};
 
     for (const key of allowedFields) {
@@ -104,7 +127,7 @@ export async function PATCH(req: NextRequest) {
         .from('companies')
         .select('id')
         .eq('slug', slug)
-        .neq('id', member.company_id)
+        .neq('id', companyId)
         .single();
 
       if (existing) {
@@ -113,7 +136,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Validate color fields
-    const colorFields = ['accent_color', 'bg_primary', 'bg_secondary'];
+    const colorFields = ['accent_color', 'bg_primary', 'bg_secondary', 'sidebar_text_color', 'accept_text_color'];
     for (const field of colorFields) {
       if (updates[field]) {
         const color = String(updates[field]);
@@ -129,7 +152,7 @@ export async function PATCH(req: NextRequest) {
     const { data, error } = await supabase
       .from('companies')
       .update(updates)
-      .eq('id', member.company_id)
+      .eq('id', companyId)
       .select('*')
       .single();
 

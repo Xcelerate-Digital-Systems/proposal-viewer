@@ -64,6 +64,8 @@ export default function Sidebar({
   const accent = branding.accent_color || '#ff6700';
   const bgSecondary = branding.bg_secondary || '#141414';
   const border = deriveBorderColor(bgSecondary);
+  const sidebarText = branding.sidebar_text_color || '#ffffff';
+  const acceptText = branding.accept_text_color || '#ffffff';
 
   const label = acceptButtonText || 'Approve & Continue';
 
@@ -104,7 +106,7 @@ export default function Sidebar({
           ) : branding.name ? (
             <div className="flex items-center gap-2">
               <Building2 size={16} className="text-[#555]" />
-              <span className="text-white text-sm font-medium truncate">{branding.name}</span>
+              <span className="text-sm font-medium truncate" style={{ color: sidebarText }}>{branding.name}</span>
             </div>
           ) : (
             <img src="/logo-white.svg" alt="Logo" className="h-6" />
@@ -141,13 +143,20 @@ export default function Sidebar({
                 <span
                   className={`truncate text-sm ${
                     isParentActive
-                      ? 'text-white font-semibold'
+                      ? 'font-semibold'
                       : childActive && !isExpanded
-                      ? 'text-[#ccc] font-medium'
-                      : hasChildren
-                      ? 'text-[#aaa] hover:text-white'
-                      : 'text-[#888] hover:text-white'
+                      ? 'font-medium'
+                      : ''
                   }`}
+                  style={{
+                    color: isParentActive
+                      ? sidebarText
+                      : childActive && !isExpanded
+                      ? `${sidebarText}cc`
+                      : hasChildren
+                      ? `${sidebarText}aa`
+                      : `${sidebarText}88`,
+                  }}
                 >
                   {item.name}
                 </span>
@@ -187,9 +196,14 @@ export default function Sidebar({
                       onClick={() => handleChildClick(child.pageNum)}
                       className={`w-full text-left pl-4 pr-3 py-2 text-sm transition-colors truncate ${
                         currentPage === child.pageNum
-                          ? 'text-white font-semibold'
-                          : 'text-[#666] hover:text-white'
+                          ? 'font-semibold'
+                          : ''
                       }`}
+                      style={{
+                        color: currentPage === child.pageNum
+                          ? sidebarText
+                          : `${sidebarText}66`,
+                      }}
                     >
                       {child.name}
                     </button>
@@ -211,8 +225,8 @@ export default function Sidebar({
         ) : (
           <button
             onClick={onAcceptClick}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: accent }}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ backgroundColor: accent, color: acceptText }}
           >
             <CheckCircle2 size={15} />
             {label}
