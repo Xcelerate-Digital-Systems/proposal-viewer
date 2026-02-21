@@ -23,6 +23,7 @@ const CATEGORIES = [
   { key: 'sans-serif', label: 'Sans Serif' },
   { key: 'serif', label: 'Serif' },
   { key: 'display', label: 'Display' },
+  { key: 'monospace', label: 'Mono' },
 ] as const;
 
 function FontSelect({
