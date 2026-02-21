@@ -10,7 +10,7 @@ import { supabase, Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
-import { PageEditor } from './page-editor';
+import { PageEditor } from '../page-editor';
 import CoverEditor from './CoverEditor';
 import PricingTab from './PricingTab';
 

@@ -153,16 +153,117 @@ export type PricingOptionalItem = {
   sort_order: number;
 };
 
+export type MilestonePayment = {
+  id: string;
+  label: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  note: string;
+};
+
+export type PaymentSchedule = {
+  one_off: {
+    enabled: boolean;
+    amount: number;
+    label: string;
+    note: string;
+  };
+  milestones: {
+    enabled: boolean;
+    payments: MilestonePayment[];
+  };
+  recurring: {
+    enabled: boolean;
+    amount: number;
+    frequency: 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'annually';
+    label: string;
+    note: string;
+  };
+};
+
+export const DEFAULT_PAYMENT_SCHEDULE: PaymentSchedule = {
+  one_off: { enabled: false, amount: 0, label: 'One-off Payment', note: 'Due on signing' },
+  milestones: {
+    enabled: false,
+    payments: [
+      { id: 'ms_deposit', label: 'Deposit', type: 'percentage', value: 50, note: 'Due on signing' },
+      { id: 'ms_final', label: 'Final Payment', type: 'percentage', value: 50, note: 'Due on completion' },
+    ],
+  },
+  recurring: { enabled: false, amount: 0, frequency: 'monthly', label: 'Ongoing Retainer', note: '' },
+};
+
+/**
+ * Normalize a payment schedule from DB, handling both the old deposit/balance
+ * format and the new milestones format for backward compatibility.
+ */
+export function normalizePaymentSchedule(raw: unknown): PaymentSchedule {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_PAYMENT_SCHEDULE };
+
+  const r = raw as Record<string, unknown>;
+
+  // Already new format
+  if (r.milestones && typeof r.milestones === 'object') {
+    // Ensure one_off has amount field (may be missing from older data)
+    const oneOff = r.one_off as Record<string, unknown> | undefined;
+    return {
+      ...(raw as PaymentSchedule),
+      one_off: {
+        enabled: !!(oneOff?.enabled),
+        amount: (oneOff?.amount as number) ?? 0,
+        label: (oneOff?.label as string) || 'One-off Payment',
+        note: (oneOff?.note as string) || '',
+      },
+    };
+  }
+
+  // Legacy deposit/balance → migrate to milestones
+  const dep = r.deposit as Record<string, unknown> | undefined;
+  const bal = r.balance as Record<string, unknown> | undefined;
+
+  if (dep) {
+    const payments: MilestonePayment[] = [
+      {
+        id: 'ms_deposit',
+        label: (dep.label as string) || 'Deposit',
+        type: (dep.type as 'percentage' | 'fixed') || 'percentage',
+        value: (dep.value as number) || 50,
+        note: (dep.note as string) || 'Due on signing',
+      },
+    ];
+    if (bal) {
+      payments.push({
+        id: 'ms_balance',
+        label: (bal.label as string) || 'Balance Payment',
+        type: 'percentage',
+        value: dep.type === 'percentage' ? 100 - ((dep.value as number) || 50) : 0,
+        note: (bal.note as string) || 'Due on project completion',
+      });
+    }
+    return {
+      one_off: (r.one_off as PaymentSchedule['one_off']) || DEFAULT_PAYMENT_SCHEDULE.one_off,
+      milestones: {
+        enabled: !!(dep.enabled),
+        payments,
+      },
+      recurring: (r.recurring as PaymentSchedule['recurring']) || DEFAULT_PAYMENT_SCHEDULE.recurring,
+    };
+  }
+
+  return { ...DEFAULT_PAYMENT_SCHEDULE };
+}
+
 export type ProposalPricing = {
   id: string;
   proposal_id: string;
   company_id: string;
   enabled: boolean;
-  position: number; // -1 = last page, otherwise 0-indexed insert position
+  position: number;
   title: string;
   intro_text: string | null;
   items: PricingLineItem[];
   optional_items: PricingOptionalItem[];
+  payment_schedule: PaymentSchedule | null;
   tax_enabled: boolean;
   tax_rate: number;
   tax_label: string;
@@ -198,4 +299,24 @@ export function formatAUD(amount: number): string {
 /** Helper: generate a short unique id for line items */
 export function generateItemId(): string {
   return Math.random().toString(36).substring(2, 10);
+}
+
+/** Helper: calculate the dollar amount for a milestone payment */
+export function milestoneAmount(payment: MilestonePayment, projectTotal: number): number {
+  if (payment.type === 'fixed') return payment.value;
+  return Math.round(projectTotal * (payment.value / 100) * 100) / 100;
+}
+
+/** Helper: sum of all milestone percentages */
+export function milestoneTotalPercent(payments: MilestonePayment[]): number {
+  return payments
+    .filter((p) => p.type === 'percentage')
+    .reduce((sum, p) => sum + p.value, 0);
+}
+
+/** Helper: sum of all milestone fixed amounts */
+export function milestoneTotalFixed(payments: MilestonePayment[]): number {
+  return payments
+    .filter((p) => p.type === 'fixed')
+    .reduce((sum, p) => sum + p.value, 0);
 }

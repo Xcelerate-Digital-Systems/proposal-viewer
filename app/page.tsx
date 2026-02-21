@@ -5,8 +5,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, FileText } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
-import UploadModal from '@/components/admin/UploadModal';
-import ProposalCard from '@/components/admin/ProposalCard';
+import UploadModal from '@/components/admin/proposals/UploadModal';
+import ProposalCard from '@/components/admin/proposals/ProposalCard';
 
 export default function AdminDashboard() {
   return (

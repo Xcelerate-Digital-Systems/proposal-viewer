@@ -1,14 +1,18 @@
-// components/admin/TemplatePricingTab.tsx
+// components/admin/templates/TemplatePricingTab.tsx
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Check, DollarSign, Loader2 } from 'lucide-react';
-import { TemplatePricing, PricingLineItem, PricingOptionalItem } from '@/lib/supabase';
+import {
+  TemplatePricing, PricingLineItem, PricingOptionalItem,
+  PaymentSchedule, DEFAULT_PAYMENT_SCHEDULE,
+} from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
-import PricingSettings from './pricing/PricingSettings';
-import PricingLineItems from './pricing/PricingLineItems';
-import PricingOptionalItems from './pricing/PricingOptionalItems';
-import PricingTotals from './pricing/PricingTotals';
+import PricingSettings from '../pricing/PricingSettings';
+import PricingLineItems from '../pricing/PricingLineItems';
+import PricingOptionalItems from '../pricing/PricingOptionalItems';
+import PricingTotals from '../pricing/PricingTotals';
+import PricingPaymentSchedule from '../pricing/PricingPaymentSchedule';
 
 const DEFAULT_INTRO = 'The following costs are based on the agreed scope of works outlined within this proposal. All pricing has been carefully prepared to reflect the works required for successful project delivery.';
 
@@ -18,6 +22,7 @@ type PricingFormState = {
   introText: string;
   items: PricingLineItem[];
   optionalItems: PricingOptionalItem[];
+  paymentSchedule: PaymentSchedule;
   taxEnabled: boolean;
   taxRate: number;
   taxLabel: string;
@@ -30,6 +35,7 @@ const DEFAULT_PRICING: PricingFormState = {
   introText: DEFAULT_INTRO,
   items: [],
   optionalItems: [],
+  paymentSchedule: DEFAULT_PAYMENT_SCHEDULE,
   taxEnabled: true,
   taxRate: 10,
   taxLabel: 'GST (10%)',
@@ -51,12 +57,10 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cleanup
   useEffect(() => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
-  // Load pricing data
   useEffect(() => {
     const fetchPricing = async () => {
       try {
@@ -72,6 +76,7 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
               introText: data.intro_text || DEFAULT_INTRO,
               items: data.items || [],
               optionalItems: data.optional_items || [],
+              paymentSchedule: data.payment_schedule || DEFAULT_PAYMENT_SCHEDULE,
               taxEnabled: data.tax_enabled,
               taxRate: data.tax_rate,
               taxLabel: data.tax_label,
@@ -85,7 +90,6 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
     fetchPricing();
   }, [templateId]);
 
-  // Save pricing
   const savePricing = useCallback(async (formData: PricingFormState, pos: number) => {
     setSaveStatus('saving');
     try {
@@ -100,6 +104,7 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
           intro_text: formData.introText,
           items: formData.items,
           optional_items: formData.optionalItems,
+          payment_schedule: formData.paymentSchedule,
           tax_enabled: formData.taxEnabled,
           tax_rate: formData.taxRate,
           tax_label: formData.taxLabel,
@@ -114,7 +119,6 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
     }
   }, [templateId, toast]);
 
-  // Debounced update
   const updateForm = useCallback((changes: Partial<PricingFormState>) => {
     setForm((prev) => {
       const next = { ...prev, ...changes };
@@ -127,7 +131,6 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
     });
   }, [savePricing, position]);
 
-  // Toggle enabled — immediate save
   const toggleEnabled = useCallback(async () => {
     const newEnabled = !form.enabled;
     const updated = { ...form, enabled: newEnabled };
@@ -188,7 +191,6 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
               <Check size={12} /> Saved
             </span>
           )}
-          {/* Custom toggle switch */}
           <div className={`relative w-12 h-7 rounded-full transition-colors ${
             form.enabled ? 'bg-[#017C87]' : 'bg-gray-300'
           }`}>
@@ -199,7 +201,6 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
         </div>
       </button>
 
-      {/* Pricing editor — shown when enabled */}
       {form.enabled ? (
         <div className="space-y-6 max-w-3xl">
           <PricingSettings
@@ -227,6 +228,13 @@ export default function TemplatePricingTab({ templateId }: TemplatePricingTabPro
             taxEnabled={form.taxEnabled}
             taxRate={form.taxRate}
             taxLabel={form.taxLabel}
+          />
+          <PricingPaymentSchedule
+            schedule={form.paymentSchedule}
+            items={form.items}
+            taxEnabled={form.taxEnabled}
+            taxRate={form.taxRate}
+            onChange={(paymentSchedule) => updateForm({ paymentSchedule })}
           />
         </div>
       ) : (

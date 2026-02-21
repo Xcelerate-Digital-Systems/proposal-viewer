@@ -1,14 +1,18 @@
-// components/admin/PricingTab.tsx
+// components/admin/proposals/PricingTab.tsx
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Check, DollarSign, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
-import { ProposalPricing, PricingLineItem, PricingOptionalItem } from '@/lib/supabase';
+import {
+ProposalPricing, PricingLineItem, PricingOptionalItem,
+PaymentSchedule, DEFAULT_PAYMENT_SCHEDULE, normalizePaymentSchedule,
+} from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
-import PricingSettings from './pricing/PricingSettings';
-import PricingLineItems from './pricing/PricingLineItems';
-import PricingOptionalItems from './pricing/PricingOptionalItems';
-import PricingTotals from './pricing/PricingTotals';
+import PricingSettings from '../pricing/PricingSettings';
+import PricingLineItems from '../pricing/PricingLineItems';
+import PricingOptionalItems from '../pricing/PricingOptionalItems';
+import PricingTotals from '../pricing/PricingTotals';
+import PricingPaymentSchedule from '../pricing/PricingPaymentSchedule';
 
 const DEFAULT_INTRO = 'The following costs are based on the agreed scope of works outlined within this proposal. All pricing has been carefully prepared to reflect the works required for successful project delivery.';
 
@@ -18,6 +22,7 @@ type PricingFormState = {
   introText: string;
   items: PricingLineItem[];
   optionalItems: PricingOptionalItem[];
+  paymentSchedule: PaymentSchedule;
   taxEnabled: boolean;
   taxRate: number;
   taxLabel: string;
@@ -31,6 +36,7 @@ const DEFAULT_PRICING: PricingFormState = {
   introText: DEFAULT_INTRO,
   items: [],
   optionalItems: [],
+  paymentSchedule: DEFAULT_PAYMENT_SCHEDULE,
   taxEnabled: true,
   taxRate: 10,
   taxLabel: 'GST (10%)',
@@ -53,12 +59,10 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cleanup
   useEffect(() => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
-  // Load pricing data
   useEffect(() => {
     const fetchPricing = async () => {
       try {
@@ -74,6 +78,7 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
               introText: data.intro_text || DEFAULT_INTRO,
               items: data.items || [],
               optionalItems: data.optional_items || [],
+              paymentSchedule: normalizePaymentSchedule(data.payment_schedule),
               taxEnabled: data.tax_enabled,
               taxRate: data.tax_rate,
               taxLabel: data.tax_label,
@@ -88,7 +93,6 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
     fetchPricing();
   }, [proposalId]);
 
-  // Save pricing
   const savePricing = useCallback(async (formData: PricingFormState, pos: number) => {
     setSaveStatus('saving');
     try {
@@ -103,6 +107,7 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
           intro_text: formData.introText,
           items: formData.items,
           optional_items: formData.optionalItems,
+          payment_schedule: formData.paymentSchedule,
           tax_enabled: formData.taxEnabled,
           tax_rate: formData.taxRate,
           tax_label: formData.taxLabel,
@@ -118,7 +123,6 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
     }
   }, [proposalId, toast]);
 
-  // Debounced update
   const updateForm = useCallback((changes: Partial<PricingFormState>) => {
     setForm((prev) => {
       const next = { ...prev, ...changes };
@@ -131,14 +135,12 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
     });
   }, [savePricing, position]);
 
-  // Toggle enabled — immediate save
   const toggleEnabled = useCallback(async () => {
     const newEnabled = !form.enabled;
     const updated = { ...form, enabled: newEnabled };
     setForm(updated);
 
     if (!exists) {
-      // First time enabling — create pricing record
       setExists(true);
       await savePricing(updated, -1);
       toast.success('Pricing page enabled');
@@ -200,7 +202,6 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
         </div>
       </div>
 
-      {/* Pricing editor — shown when enabled */}
       {form.enabled ? (
         <div className="space-y-6 max-w-3xl">
           <PricingSettings
@@ -228,6 +229,13 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
             taxEnabled={form.taxEnabled}
             taxRate={form.taxRate}
             taxLabel={form.taxLabel}
+          />
+          <PricingPaymentSchedule
+            schedule={form.paymentSchedule}
+            items={form.items}
+            taxEnabled={form.taxEnabled}
+            taxRate={form.taxRate}
+            onChange={(paymentSchedule) => updateForm({ paymentSchedule })}
           />
         </div>
       ) : (

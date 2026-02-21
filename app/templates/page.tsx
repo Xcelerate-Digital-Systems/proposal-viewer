@@ -6,8 +6,8 @@ import { Plus, FileText, Upload } from 'lucide-react';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
-import TemplateUploadModal from '@/components/admin/TemplateUploadModal';
-import TemplateCard from '@/components/admin/TemplateCard';
+import TemplateUploadModal from '@/components/admin/templates/TemplateUploadModal';
+import TemplateCard from '@/components/admin/templates/TemplateCard';
 
 export default function TemplatesPage() {
   return (
