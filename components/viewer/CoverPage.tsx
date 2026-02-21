@@ -175,7 +175,7 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
           <button
             onClick={onStart}
             className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded-sm transition-opacity"
-            style={{ backgroundColor: btnBg, color: btnText }}
+            style={{ backgroundColor: btnBg, color: btnText, fontFamily: fontFamily(branding.font_body), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}
             onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
             onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
           >
