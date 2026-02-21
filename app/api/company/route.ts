@@ -109,6 +109,7 @@ export async function PATCH(req: NextRequest) {
       'cover_text_color', 'cover_subtitle_color',
       'cover_button_bg', 'cover_button_text', 'cover_overlay_opacity',
       'cover_gradient_type', 'cover_gradient_angle',
+      'font_heading', 'font_body', 'font_sidebar',
     ];
     const updates: Record<string, unknown> = {};
 

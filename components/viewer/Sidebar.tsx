@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle2, MessageSquare, Building2, X } from 'lucide-react';
 import { PageNameEntry } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
+import { fontFamily } from '@/lib/google-fonts';
 
 interface SidebarProps {
   numPages: number;
@@ -124,7 +125,7 @@ export default function Sidebar({
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto tab-sidebar pt-2">
+      <div className="flex-1 overflow-y-auto tab-sidebar pt-2" style={{ fontFamily: fontFamily(branding.font_sidebar) }}>
         {navTree.map((item) => {
           const hasChildren = item.children.length > 0;
           const isExpanded = expandedGroup === item.pageNum;

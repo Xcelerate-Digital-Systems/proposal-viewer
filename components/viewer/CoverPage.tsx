@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Building2 } from 'lucide-react';
 import { Proposal, supabase } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
+import { fontFamily } from '@/lib/google-fonts';
 
 interface CoverPageProps {
   proposal: Proposal;
@@ -161,13 +162,13 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         <div className="max-w-2xl">
           <h1
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight mb-3 sm:mb-4 font-[family-name:var(--font-display)]"
-            style={{ color: textColor }}
+            style={{ color: textColor, fontFamily: fontFamily(branding.font_heading) }}
           >
             {proposal.title}
           </h1>
           <p
             className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8"
-            style={{ color: subtitleColor }}
+            style={{ color: subtitleColor, fontFamily: fontFamily(branding.font_body) }}
           >
             {subtitle}
           </p>

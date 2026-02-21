@@ -11,6 +11,7 @@ import PricingPage from '@/components/viewer/PricingPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import CommentsPanel from '@/components/viewer/CommentsPanel';
 import AcceptModal from '@/components/viewer/AcceptModal';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
   const {
@@ -124,7 +125,12 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   }
 
   if (showCover && proposal?.cover_enabled) {
-    return <CoverPage proposal={proposal} branding={branding} onStart={() => setShowCover(false)} />;
+    return (
+      <>
+        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+        <CoverPage proposal={proposal} branding={branding} onStart={() => setShowCover(false)} />
+      </>
+    );
   }
 
   const sidebarText = branding.sidebar_text_color || '#ffffff';
@@ -134,6 +140,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       className="flex flex-col lg:flex-row overflow-hidden"
       style={{ backgroundColor: bgPrimary, height: '100dvh' }}
     >
+      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+
       {/* Mobile header bar — fixed to top, branded */}
       <div
         className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"

@@ -39,42 +39,40 @@ export async function POST(req: NextRequest) {
     const isReplace = mode === 'replace' || (mode === 'auto' && !!existingPage);
     const isInsert = mode === 'insert' || (mode === 'auto' && !existingPage);
 
-    // If inserting, shift existing pages BEFORE uploading the new file
+    // If inserting, shift existing pages BEFORE uploading the new file.
+    // Only update page_number — do NOT move files in storage.
+    // File paths are just unique identifiers; the actual ordering comes from page_number.
+    // Moving files in storage is fragile and can fail silently, causing DB/storage mismatches.
     if (isInsert && existingPage) {
       // There's a page at this slot — shift it and everything after it up by 1
       const { data: laterPages } = await supabase
         .from('template_pages')
-        .select('*')
+        .select('id, page_number')
         .eq('template_id', templateId)
         .gte('page_number', pageNumber)
         .order('page_number', { ascending: false });
 
       if (laterPages && laterPages.length > 0) {
+        // Process in descending order to avoid unique constraint conflicts
         for (const p of laterPages) {
-          const newNum = p.page_number + 1;
-          const newPath = `templates/${templateId}/page-${newNum}-${Date.now()}.pdf`;
-          await supabase.storage.from('proposals').move(p.file_path, newPath);
           await supabase.from('template_pages')
-            .update({ page_number: newNum, file_path: newPath })
+            .update({ page_number: p.page_number + 1 })
             .eq('id', p.id);
         }
       }
     } else if (!isInsert && !existingPage) {
-      // Nothing to shift, just inserting at an empty slot — shift pages at and after
+      // Nothing to replace — shift pages at and after this slot up by 1
       const { data: laterPages } = await supabase
         .from('template_pages')
-        .select('*')
+        .select('id, page_number')
         .eq('template_id', templateId)
         .gte('page_number', pageNumber)
         .order('page_number', { ascending: false });
 
       if (laterPages && laterPages.length > 0) {
         for (const p of laterPages) {
-          const newNum = p.page_number + 1;
-          const newPath = `templates/${templateId}/page-${newNum}-${Date.now()}.pdf`;
-          await supabase.storage.from('proposals').move(p.file_path, newPath);
           await supabase.from('template_pages')
-            .update({ page_number: newNum, file_path: newPath })
+            .update({ page_number: p.page_number + 1 })
             .eq('id', p.id);
         }
       }
@@ -165,21 +163,21 @@ export async function DELETE(req: NextRequest) {
     // Delete record
     await supabase.from('template_pages').delete().eq('id', page.id);
 
-    // Shift later pages down
+    // Shift later pages down (only update page_number, keep files in place).
+    // File paths are just unique identifiers — the actual ordering comes from page_number.
+    // Moving files in storage is fragile and can fail silently, causing DB/storage mismatches.
     const { data: laterPages } = await supabase
       .from('template_pages')
-      .select('*')
+      .select('id, page_number')
       .eq('template_id', template_id)
       .gt('page_number', page_number)
       .order('page_number', { ascending: true });
 
     if (laterPages && laterPages.length > 0) {
+      // Process in ascending order so lower numbers are freed first
       for (const p of laterPages) {
-        const newNum = p.page_number - 1;
-        const newPath = `templates/${template_id}/page-${newNum}-${Date.now()}.pdf`;
-        await supabase.storage.from('proposals').move(p.file_path, newPath);
         await supabase.from('template_pages')
-          .update({ page_number: newNum, file_path: newPath })
+          .update({ page_number: p.page_number - 1 })
           .eq('id', p.id);
       }
     }

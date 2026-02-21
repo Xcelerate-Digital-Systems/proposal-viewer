@@ -37,12 +37,13 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
     supabase
       .from('proposal_templates')
       .select('*')
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         setTemplates(data || []);
         setLoading(false);
       });
-  }, []);
+  }, [companyId]);
 
   const selectTemplate = async (t: ProposalTemplate) => {
     setSelectedTemplate(t);

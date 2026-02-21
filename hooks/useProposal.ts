@@ -33,6 +33,9 @@ export type CompanyBranding = {
   cover_overlay_opacity: number;
   cover_gradient_type: 'linear' | 'radial' | 'conic';
   cover_gradient_angle: number;
+  font_heading: string | null;
+  font_body: string | null;
+  font_sidebar: string | null;
 };
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -55,6 +58,9 @@ const DEFAULT_BRANDING: CompanyBranding = {
   cover_overlay_opacity: 0.65,
   cover_gradient_type: 'linear',
   cover_gradient_angle: 135,
+  font_heading: null,
+  font_body: null,
+  font_sidebar: null,
 };
 
 /**

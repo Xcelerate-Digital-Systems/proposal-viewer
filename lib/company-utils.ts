@@ -24,9 +24,10 @@ export type CompanyData = {
   cover_button_text: string;
   cover_overlay_opacity: number;
   cover_gradient_type: 'linear' | 'radial' | 'conic';
-  cover_gradient_angle: number;
+  cover_gradient_angle: number;font_heading: string | null;
+  font_body: string | null;
+  font_sidebar: string | null;
 };
-
 /**
  * Derive a border color by lightening the secondary bg.
  */

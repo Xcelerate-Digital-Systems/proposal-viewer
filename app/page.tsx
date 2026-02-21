@@ -7,7 +7,7 @@ import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
 import ProposalCard from '@/components/admin/proposals/ProposalCard';
-
+import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
 export default function AdminDashboard() {
   return (
     <AdminLayout>
@@ -23,6 +23,10 @@ function DashboardContent({ companyId }: { companyId: string }) {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
+  const [coverGradientAngle, setCoverGradientAngle] = useState(135);
+  const [fontHeading, setFontHeading] = useState<string | null>(null);
+  const [fontBody, setFontBody] = useState<string | null>(null);
+  const [fontSidebar, setFontSidebar] = useState<string | null>(null);
 
   const fetchProposals = useCallback(async () => {
     if (!companyId) return;

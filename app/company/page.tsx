@@ -14,6 +14,7 @@ import ViewerPreview from '@/components/admin/company/ViewerPreview';
 import CoverPreview from '@/components/admin/company/CoverPreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
 import CoverColorsSection from '@/components/admin/company/CoverColorsSection';
+import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
 
 export default function CompanySettingsPage() {
   return (
@@ -53,6 +54,11 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [coverGradientType, setCoverGradientType] = useState<'linear' | 'radial' | 'conic'>('linear');
   const [coverGradientAngle, setCoverGradientAngle] = useState(135);
 
+  // Font state
+  const [fontHeading, setFontHeading] = useState<string | null>(null);
+  const [fontBody, setFontBody] = useState<string | null>(null);
+  const [fontSidebar, setFontSidebar] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isOwner = company?.current_role === 'owner';
 
@@ -87,6 +93,9 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setCoverOverlayOpacity(parseFloat(data.cover_overlay_opacity) || 0.65);
         setCoverGradientType(data.cover_gradient_type || 'linear');
         setCoverGradientAngle(parseInt(data.cover_gradient_angle) || 135);
+        setFontHeading(data.font_heading || null);
+        setFontBody(data.font_body || null);
+        setFontSidebar(data.font_sidebar || null);
       }
     } finally {
       setLoading(false);
@@ -178,6 +187,31 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     setSaving(null);
   };
 
+  const handleSaveFonts = async () => {
+    if (!isOwner) return;
+    setSaving('fonts');
+    setError('');
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/company?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        font_heading: fontHeading,
+        font_body: fontBody,
+        font_sidebar: fontSidebar,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showFeedback(data.error || 'Failed to save fonts', true);
+    } else {
+      setCompany(prev => prev ? { ...prev, ...data } : prev);
+      showFeedback('Fonts saved');
+      fetchCompany();
+    }
+    setSaving(null);
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -227,6 +261,11 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     coverOverlayOpacity !== (parseFloat(String(company?.cover_overlay_opacity)) || 0.65) ||
     coverGradientType !== (company?.cover_gradient_type || 'linear') ||
     coverGradientAngle !== (parseInt(String(company?.cover_gradient_angle)) || 135);
+
+  const fontsChanged =
+    fontHeading !== (company?.font_heading || null) ||
+    fontBody !== (company?.font_body || null) ||
+    fontSidebar !== (company?.font_sidebar || null);
 
   if (loading) {
     return (
@@ -399,6 +438,20 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             setCoverButtonBg={setCoverButtonBg}
             coverButtonText={coverButtonText}
             setCoverButtonText={setCoverButtonText}
+          />
+
+          {/* Viewer Fonts */}
+          <ViewerFontsSection
+            isOwner={isOwner}
+            saving={saving}
+            fontsChanged={fontsChanged}
+            fontHeading={fontHeading}
+            setFontHeading={setFontHeading}
+            fontBody={fontBody}
+            setFontBody={setFontBody}
+            fontSidebar={fontSidebar}
+            setFontSidebar={setFontSidebar}
+            onSave={handleSaveFonts}
           />
 
           {!isOwner && (
