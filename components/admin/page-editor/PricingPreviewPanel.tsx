@@ -37,6 +37,9 @@ const DEFAULT_BRANDING: CompanyBranding = {
   font_heading: null,
   font_body: null,
   font_sidebar: null,
+  font_heading_weight: null,
+  font_body_weight: null,
+  font_sidebar_weight: null,
 };
 
 export default function PricingPreviewPanel({
