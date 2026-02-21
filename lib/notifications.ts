@@ -14,14 +14,6 @@ const PREF_MAP: Record<EventType, string> = {
   comment_resolved: 'notify_comment_resolved',
 };
 
-// Maps event_type to the webhook column that controls it
-const WEBHOOK_MAP: Record<EventType, string> = {
-  proposal_viewed: 'on_proposal_viewed',
-  proposal_accepted: 'on_proposal_accepted',
-  comment_added: 'on_comment_added',
-  comment_resolved: 'on_comment_resolved',
-};
-
 interface NotifyPayload {
   event_type: EventType;
   share_token: string;           // validates the request
@@ -168,14 +160,14 @@ interface WebhookPayload {
 async function fireWebhooks(payload: WebhookPayload) {
   const supabase = createServiceClient();
   const { event_type, company_id, custom_domain } = payload;
-  const webhookColumn = WEBHOOK_MAP[event_type];
 
+  // Query webhook_endpoints table — each row is one URL for one event_type
   const { data: webhooks } = await supabase
-    .from('webhooks')
+    .from('webhook_endpoints')
     .select('*')
     .eq('company_id', company_id)
     .eq('enabled', true)
-    .eq(webhookColumn, true);
+    .eq('event_type', event_type);
 
   if (!webhooks || webhooks.length === 0) return;
 
