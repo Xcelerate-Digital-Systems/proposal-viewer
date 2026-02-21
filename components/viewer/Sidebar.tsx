@@ -125,7 +125,7 @@ export default function Sidebar({
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto tab-sidebar pt-2" style={{ fontFamily: fontFamily(branding.font_sidebar) }}>
+      <div className="flex-1 overflow-y-auto tab-sidebar pt-2" style={{ fontFamily: fontFamily(branding.font_sidebar), fontWeight: branding.font_sidebar_weight ? Number(branding.font_sidebar_weight) : undefined }}>
         {navTree.map((item) => {
           const hasChildren = item.children.length > 0;
           const isExpanded = expandedGroup === item.pageNum;

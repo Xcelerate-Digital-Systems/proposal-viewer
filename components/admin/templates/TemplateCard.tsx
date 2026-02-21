@@ -3,13 +3,14 @@
 
 import { useState } from 'react';
 import {
-  FileText, Trash2, Pencil, Image, Copy, Check, Plus,
+  FileText, Trash2, Pencil, Image, DollarSign, Copy, Check, Plus,
 } from 'lucide-react';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import TemplatePageManager from './TemplatePageManager';
 import TemplateCoverEditor from './TemplateCoverEditor';
+import TemplatePricingTab from './TemplatePricingTab';
 
 interface TemplateCardProps {
   template: ProposalTemplate;
@@ -17,7 +18,7 @@ interface TemplateCardProps {
   onCreateProposal?: (templateId: string) => void;
 }
 
-type ActiveTab = 'pages' | 'cover' | null;
+type ActiveTab = 'pages' | 'pricing' | 'cover' | null;
 
 const formatDate = (date: string | null) => {
   if (!date) return '\u2014';
@@ -26,6 +27,7 @@ const formatDate = (date: string | null) => {
 
 const tabDefs: { key: ActiveTab; label: string; icon: React.ReactNode }[] = [
   { key: 'pages', label: 'Edit Pages', icon: <Pencil size={14} /> },
+  { key: 'pricing', label: 'Pricing', icon: <DollarSign size={14} /> },
   { key: 'cover', label: 'Cover', icon: <Image size={14} /> },
 ];
 
@@ -143,6 +145,10 @@ export default function TemplateCard({ template: t, onRefresh, onCreateProposal 
           template={t}
           onRefresh={onRefresh}
         />
+      )}
+
+      {activeTab === 'pricing' && (
+        <TemplatePricingTab templateId={t.id} />
       )}
 
       {activeTab === 'cover' && (

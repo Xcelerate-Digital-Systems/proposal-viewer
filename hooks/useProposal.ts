@@ -22,7 +22,6 @@ export type CompanyBranding = {
   bg_secondary: string;
   sidebar_text_color: string;
   accept_text_color: string;
-  // Cover page branding
   cover_bg_style: 'gradient' | 'solid';
   cover_bg_color_1: string;
   cover_bg_color_2: string;
@@ -36,6 +35,9 @@ export type CompanyBranding = {
   font_heading: string | null;
   font_body: string | null;
   font_sidebar: string | null;
+  font_heading_weight: string | null;
+  font_body_weight: string | null;
+  font_sidebar_weight: string | null;
 };
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -61,6 +63,9 @@ const DEFAULT_BRANDING: CompanyBranding = {
   font_heading: null,
   font_body: null,
   font_sidebar: null,
+  font_heading_weight: null,
+  font_body_weight: null,
+  font_sidebar_weight: null,
 };
 
 /**

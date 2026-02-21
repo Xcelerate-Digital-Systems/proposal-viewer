@@ -14,6 +14,7 @@ interface ViewerPreviewProps {
   sidebarTextColor: string;
   acceptTextColor: string;
   fontSidebar?: string | null;
+  fontSidebarWeight?: string | null;
 }
 
 export default function ViewerPreview({
@@ -25,6 +26,7 @@ export default function ViewerPreview({
   sidebarTextColor,
   acceptTextColor,
   fontSidebar,
+  fontSidebarWeight,
 }: ViewerPreviewProps) {
   const border = deriveBorder(bgSecondary);
   const surface = deriveSurface(bgPrimary, bgSecondary);
@@ -52,7 +54,7 @@ export default function ViewerPreview({
               <div className="w-16 h-3 rounded" style={{ backgroundColor: border }} />
             )}
           </div>
-          <div className="flex-1 py-2 space-y-0.5 px-1" style={{ fontFamily: fontFamily(fontSidebar) }}>
+          <div className="flex-1 py-2 space-y-0.5 px-1" style={{ fontFamily: fontFamily(fontSidebar), fontWeight: fontSidebarWeight ? Number(fontSidebarWeight) : undefined }}>
             {['Executive Summary', 'Our Approach', 'Project Timeline', 'Investment', 'Case Studies', 'Next Steps'].map((item, i) => (
               <div
                 key={item}

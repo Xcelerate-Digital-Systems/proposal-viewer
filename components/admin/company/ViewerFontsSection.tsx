@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Check, Loader2, Type, X } from 'lucide-react';
-import { GOOGLE_FONTS, buildGoogleFontsUrl, fontFamily } from '@/lib/google-fonts';
+import { Check, Loader2, Type, X, ChevronDown } from 'lucide-react';
+import { GOOGLE_FONTS, WEIGHT_OPTIONS, getAvailableWeights, buildGoogleFontsUrl, fontFamily } from '@/lib/google-fonts';
 
 interface ViewerFontsSectionProps {
   isOwner: boolean;
@@ -15,6 +15,12 @@ interface ViewerFontsSectionProps {
   setFontBody: (v: string | null) => void;
   fontSidebar: string | null;
   setFontSidebar: (v: string | null) => void;
+  fontHeadingWeight: string | null;
+  setFontHeadingWeight: (v: string | null) => void;
+  fontBodyWeight: string | null;
+  setFontBodyWeight: (v: string | null) => void;
+  fontSidebarWeight: string | null;
+  setFontSidebarWeight: (v: string | null) => void;
   onSave: () => void;
   lastSaved?: boolean;
 }
@@ -27,6 +33,45 @@ const CATEGORIES = [
   { key: 'monospace', label: 'Mono' },
 ] as const;
 
+function WeightPicker({
+  font,
+  value,
+  onChange,
+  disabled,
+}: {
+  font: string | null;
+  value: string | null;
+  onChange: (v: string | null) => void;
+  disabled: boolean;
+}) {
+  const available = getAvailableWeights(font);
+  const options = WEIGHT_OPTIONS.filter((w) => available.includes(w.value));
+
+  // If only 1 weight available or no font selected, don't show picker
+  if (!font || options.length <= 1) return null;
+
+  const current = value || '400';
+
+  return (
+    <div className="relative">
+      <select
+        value={current}
+        onChange={(e) => onChange(e.target.value === '400' ? null : e.target.value)}
+        disabled={disabled}
+        className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        style={{ fontWeight: Number(current) }}
+      >
+        {options.map((w) => (
+          <option key={w.value} value={w.value} style={{ fontWeight: Number(w.value) }}>
+            {w.label} ({w.value})
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+    </div>
+  );
+}
+
 function FontSelect({
   label,
   description,
@@ -34,6 +79,8 @@ function FontSelect({
   onChange,
   disabled,
   previewText,
+  weight,
+  onWeightChange,
 }: {
   label: string;
   description: string;
@@ -41,6 +88,8 @@ function FontSelect({
   onChange: (v: string | null) => void;
   disabled: boolean;
   previewText: string;
+  weight: string | null;
+  onWeightChange: (v: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -83,6 +132,8 @@ function FontSelect({
     document.head.appendChild(link);
   }, [value]);
 
+  const effectiveWeight = weight || '400';
+
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
@@ -90,6 +141,12 @@ function FontSelect({
           <span className="text-sm font-medium text-gray-700">{label}</span>
           <p className="text-xs text-gray-400">{description}</p>
         </div>
+        <WeightPicker
+          font={value}
+          value={weight}
+          onChange={onWeightChange}
+          disabled={disabled}
+        />
       </div>
 
       {/* Current value display / trigger */}
@@ -102,14 +159,14 @@ function FontSelect({
         >
           <span
             className={value ? 'text-gray-900' : 'text-gray-400'}
-            style={value ? { fontFamily: fontFamily(value, 'sans-serif') } : undefined}
+            style={value ? { fontFamily: fontFamily(value, 'sans-serif'), fontWeight: Number(effectiveWeight) } : undefined}
           >
             {value || 'System default'}
           </span>
           {value ? (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onChange(null); }}
+              onClick={(e) => { e.stopPropagation(); onChange(null); onWeightChange(null); }}
               className="p-0.5 text-gray-300 hover:text-gray-500 transition-colors"
             >
               <X size={14} />
@@ -123,7 +180,7 @@ function FontSelect({
         {value && (
           <div
             className="mt-1.5 px-3 py-2 rounded-lg bg-gray-900 text-white text-lg"
-            style={{ fontFamily: fontFamily(value, 'sans-serif') }}
+            style={{ fontFamily: fontFamily(value, 'sans-serif'), fontWeight: Number(effectiveWeight) }}
           >
             {previewText}
           </div>
@@ -168,7 +225,7 @@ function FontSelect({
                 {/* System default option */}
                 <button
                   type="button"
-                  onClick={() => { onChange(null); setOpen(false); setSearch(''); }}
+                  onClick={() => { onChange(null); onWeightChange(null); setOpen(false); setSearch(''); }}
                   className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors border-b border-gray-50 ${
                     !value ? 'bg-[#017C87]/5 text-[#017C87] font-medium' : 'text-gray-500'
                   }`}
@@ -221,6 +278,12 @@ export default function ViewerFontsSection({
   setFontBody,
   fontSidebar,
   setFontSidebar,
+  fontHeadingWeight,
+  setFontHeadingWeight,
+  fontBodyWeight,
+  setFontBodyWeight,
+  fontSidebarWeight,
+  setFontSidebarWeight,
   onSave,
   lastSaved,
 }: ViewerFontsSectionProps) {
@@ -245,7 +308,7 @@ export default function ViewerFontsSection({
       </div>
 
       <p className="text-xs text-gray-400 mb-4">
-        Choose Google Fonts for your proposal viewer. Changes save automatically.
+        Choose Google Fonts and weights for your proposal viewer. Changes save automatically.
       </p>
 
       <div className="space-y-5">
@@ -256,6 +319,8 @@ export default function ViewerFontsSection({
           onChange={setFontHeading}
           disabled={!isOwner}
           previewText="Your Proposal Title"
+          weight={fontHeadingWeight}
+          onWeightChange={setFontHeadingWeight}
         />
 
         <FontSelect
@@ -265,6 +330,8 @@ export default function ViewerFontsSection({
           onChange={setFontBody}
           disabled={!isOwner}
           previewText="Prepared for your client"
+          weight={fontBodyWeight}
+          onWeightChange={setFontBodyWeight}
         />
 
         <FontSelect
@@ -274,6 +341,8 @@ export default function ViewerFontsSection({
           onChange={setFontSidebar}
           disabled={!isOwner}
           previewText="Executive Summary"
+          weight={fontSidebarWeight}
+          onWeightChange={setFontSidebarWeight}
         />
       </div>
     </div>

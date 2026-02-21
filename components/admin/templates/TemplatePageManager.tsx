@@ -25,13 +25,26 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import SortableTemplateRow from './SortableTemplateRow';
 import SortableTemplatePricingRow from './SortableTemplatePricingRow';
-import TemplatePricingPanel, { TemplatePricingFormState } from './TemplatePricingPanel';
+import TemplatePricingPreviewPanel from './TemplatePricingPreviewPanel';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const CUSTOM_VALUE = '__custom__';
 
 const DEFAULT_INTRO = 'The following costs are based on the agreed scope of works outlined within this proposal. All pricing has been carefully prepared to reflect the works required for successful project delivery.';
+
+export type TemplatePricingFormState = {
+  enabled: boolean;
+  title: string;
+  introText: string;
+  items: PricingLineItem[];
+  optionalItems: PricingOptionalItem[];
+  paymentSchedule: PaymentSchedule;
+  taxEnabled: boolean;
+  taxRate: number;
+  taxLabel: string;
+  validityDays: number | null;
+};
 
 const DEFAULT_PRICING: TemplatePricingFormState = {
   enabled: true,
@@ -297,18 +310,6 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     }
   }, [template.id, toast]);
 
-  const updatePricing = useCallback((changes: Partial<TemplatePricingFormState>) => {
-    setPricingForm((prev) => {
-      const next = { ...prev, ...changes };
-      if (pricingDebounce.current) clearTimeout(pricingDebounce.current);
-      pricingDebounce.current = setTimeout(() => {
-        savePricing(next, pricingPosition);
-        pricingDebounce.current = null;
-      }, 800);
-      return next;
-    });
-  }, [savePricing, pricingPosition]);
-
   // ─── Add / Remove pricing ───────────────────────────────────────
   const handleAddPricing = async () => {
     const pos = pages.length; // default: at end
@@ -495,6 +496,8 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   const selectedPageData = selectedPdfIndex >= 0 ? pages[selectedPdfIndex] : null;
   const selectedPageUrl = selectedPageData ? pageUrls[selectedPageData.id] : null;
   const currentVisualIdx = unifiedItems.findIndex((i) => i.id === selectedId);
+  const canGoPrev = currentVisualIdx > 0;
+  const canGoNext = currentVisualIdx < unifiedItems.length - 1;
 
   // ─── Render ──────────────────────────────────────────────────────
   return (
@@ -626,14 +629,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
             </div>
           </div>
 
-          {/* Right half: preview or pricing editor */}
+          {/* Right half: preview */}
           <div className="w-1/2 min-w-0 flex flex-col" ref={previewContainerRef}>
             {selectedIsPricing && pricingExists ? (
-              <TemplatePricingPanel
-                pricingForm={pricingForm}
-                pricingSaveStatus={pricingSaveStatus}
-                onUpdate={updatePricing}
-                onRemove={handleRemovePricing}
+              <TemplatePricingPreviewPanel
+                templateId={template.id}
+                companyId={template.company_id}
+                onGoPrev={goPrev}
+                onGoNext={goNext}
+                canGoPrev={canGoPrev}
+                canGoNext={canGoNext}
               />
             ) : selectedPageUrl ? (
               <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
@@ -642,7 +647,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                   <div className="flex items-center gap-2">
                     <button
                       onClick={goPrev}
-                      disabled={currentVisualIdx <= 0}
+                      disabled={!canGoPrev}
                       className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
                     >
                       <ChevronLeft size={14} />
@@ -652,7 +657,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                     </span>
                     <button
                       onClick={goNext}
-                      disabled={currentVisualIdx >= unifiedItems.length - 1}
+                      disabled={!canGoNext}
                       className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
                     >
                       <ChevronRight size={14} />

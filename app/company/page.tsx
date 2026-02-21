@@ -54,11 +54,12 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [coverOverlayOpacity, setCoverOverlayOpacity] = useState(0.65);
   const [coverGradientType, setCoverGradientType] = useState<'linear' | 'radial' | 'conic'>('linear');
   const [coverGradientAngle, setCoverGradientAngle] = useState(135);
-
-  // Font state
   const [fontHeading, setFontHeading] = useState<string | null>(null);
   const [fontBody, setFontBody] = useState<string | null>(null);
   const [fontSidebar, setFontSidebar] = useState<string | null>(null);
+  const [fontHeadingWeight, setFontHeadingWeight] = useState<string | null>(null);
+  const [fontBodyWeight, setFontBodyWeight] = useState<string | null>(null);
+  const [fontSidebarWeight, setFontSidebarWeight] = useState<string | null>(null);
   const [fontsSaved, setFontsSaved] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +99,9 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setFontHeading(data.font_heading || null);
         setFontBody(data.font_body || null);
         setFontSidebar(data.font_sidebar || null);
+        setFontHeadingWeight(data.font_heading_weight || null);
+        setFontBodyWeight(data.font_body_weight || null);
+        setFontSidebarWeight(data.font_sidebar_weight || null);
       }
     } finally {
       setLoading(false);
@@ -201,6 +205,9 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         font_heading: fontHeading,
         font_body: fontBody,
         font_sidebar: fontSidebar,
+        font_heading_weight: fontHeadingWeight,
+        font_body_weight: fontBodyWeight,
+        font_sidebar_weight: fontSidebarWeight,
       }),
     });
     const data = await res.json();
@@ -218,7 +225,10 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const fontsChanged =
     fontHeading !== (company?.font_heading || null) ||
     fontBody !== (company?.font_body || null) ||
-    fontSidebar !== (company?.font_sidebar || null);
+    fontSidebar !== (company?.font_sidebar || null) ||
+    fontHeadingWeight !== (company?.font_heading_weight || null) ||
+    fontBodyWeight !== (company?.font_body_weight || null) ||
+    fontSidebarWeight !== (company?.font_sidebar_weight || null);
 
   useEffect(() => {
     if (!fontsChanged || !isOwner || !company) return;
@@ -226,7 +236,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
       handleSaveFonts();
     }, 800);
     return () => clearTimeout(timer);
-  }, [fontHeading, fontBody, fontSidebar]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fontHeading, fontBody, fontSidebar, fontHeadingWeight, fontBodyWeight, fontSidebarWeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -465,6 +475,12 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             setFontBody={setFontBody}
             fontSidebar={fontSidebar}
             setFontSidebar={setFontSidebar}
+            fontHeadingWeight={fontHeadingWeight}
+            setFontHeadingWeight={setFontHeadingWeight}
+            fontBodyWeight={fontBodyWeight}
+            setFontBodyWeight={setFontBodyWeight}
+            fontSidebarWeight={fontSidebarWeight}
+            setFontSidebarWeight={setFontSidebarWeight}
             onSave={handleSaveFonts}
             lastSaved={fontsSaved}
           />
@@ -490,10 +506,11 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               logoUrl={company?.logo_url || null}
               companyName={name}
               fontSidebar={fontSidebar}
+              fontSidebarWeight={fontSidebarWeight}
             />
             <p className="text-xs text-gray-400">
               This is how your proposals will appear to clients.
-            </p>
+              </p>
           </div>
 
           {/* Cover Page Preview */}
@@ -514,6 +531,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               companyName={name}
               fontHeading={fontHeading}
               fontBody={fontBody}
+              fontHeadingWeight={fontHeadingWeight}
+              fontBodyWeight={fontBodyWeight}
             />
             <p className="text-xs text-gray-400">
               Cover page shown before the proposal. Background image is set per-proposal.

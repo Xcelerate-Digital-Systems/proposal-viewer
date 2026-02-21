@@ -162,13 +162,13 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         <div className="max-w-2xl">
           <h1
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight mb-3 sm:mb-4 font-[family-name:var(--font-display)]"
-            style={{ color: textColor, fontFamily: fontFamily(branding.font_heading) }}
+            style={{ color: textColor, fontFamily: fontFamily(branding.font_heading), fontWeight: branding.font_heading_weight ? Number(branding.font_heading_weight) : undefined }}
           >
             {proposal.title}
           </h1>
           <p
             className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8"
-            style={{ color: subtitleColor, fontFamily: fontFamily(branding.font_body) }}
+            style={{ color: subtitleColor, fontFamily: fontFamily(branding.font_body), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}
           >
             {subtitle}
           </p>

@@ -19,6 +19,8 @@ interface CoverPreviewProps {
   companyName: string;
   fontHeading?: string | null;
   fontBody?: string | null;
+  fontHeadingWeight?: string | null;
+  fontBodyWeight?: string | null;
 }
 
 function buildGradient(
@@ -52,6 +54,8 @@ export default function CoverPreview({
   companyName,
   fontHeading,
   fontBody,
+  fontHeadingWeight,
+  fontBodyWeight,
 }: CoverPreviewProps) {
   const baseBg = bgStyle === 'solid' ? bgColor1 : undefined;
   const baseBgImage = bgStyle === 'gradient'
@@ -90,19 +94,19 @@ export default function CoverPreview({
           <div>
             <h3
               className="text-base font-semibold leading-tight mb-1"
-              style={{ color: textColor, fontFamily: fontFamily(fontHeading) }}
+              style={{ color: textColor, fontFamily: fontFamily(fontHeading), fontWeight: fontHeadingWeight ? Number(fontHeadingWeight) : undefined }}
             >
               Project Proposal
             </h3>
             <p
               className="text-[11px] mb-3"
-              style={{ color: subtitleColor, fontFamily: fontFamily(fontBody) }}
+              style={{ color: subtitleColor, fontFamily: fontFamily(fontBody), fontWeight: fontBodyWeight ? Number(fontBodyWeight) : undefined }}
             >
               Prepared for Client Name
             </p>
             <div
               className="inline-block px-3 py-1.5 text-[9px] font-semibold tracking-wider uppercase rounded-sm"
-              style={{ backgroundColor: buttonBg, color: buttonText }}
+              style={{ backgroundColor: buttonBg, color: buttonText, fontFamily: fontFamily(fontBody), fontWeight: fontBodyWeight ? Number(fontBodyWeight) : undefined }}
             >
               START READING
             </div>

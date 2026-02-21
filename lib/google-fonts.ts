@@ -116,6 +116,33 @@ export const GOOGLE_FONTS: FontOption[] = [
 ];
 
 /**
+ * Named weight options for the UI weight picker.
+ */
+export const WEIGHT_OPTIONS = [
+  { value: '300', label: 'Light' },
+  { value: '400', label: 'Regular' },
+  { value: '500', label: 'Medium' },
+  { value: '600', label: 'Semibold' },
+  { value: '700', label: 'Bold' },
+  { value: '800', label: 'Extra Bold' },
+] as const;
+
+/**
+ * Default weights loaded from Google Fonts.
+ */
+const DEFAULT_WEIGHTS = ['300', '400', '500', '600', '700', '800'];
+
+/**
+ * Get the available weights for a given font family.
+ * Returns the font's explicit weights or the defaults.
+ */
+export function getAvailableWeights(family: string | null | undefined): string[] {
+  if (!family) return DEFAULT_WEIGHTS;
+  const font = GOOGLE_FONTS.find((f) => f.family === family);
+  return font?.weights || DEFAULT_WEIGHTS;
+}
+
+/**
  * Build a Google Fonts URL for a set of font families.
  * Returns null if no fonts specified.
  */
@@ -125,7 +152,7 @@ export function buildGoogleFontsUrl(fonts: (string | null | undefined)[]): strin
 
   const families = unique.map((family) => {
     const font = GOOGLE_FONTS.find((f) => f.family === family);
-    const weights = font?.weights || ['400', '500', '600', '700'];
+    const weights = font?.weights || DEFAULT_WEIGHTS;
     return `family=${family.replace(/ /g, '+')}:wght@${weights.join(';')}`;
   });
 
@@ -134,8 +161,12 @@ export function buildGoogleFontsUrl(fonts: (string | null | undefined)[]): strin
 
 /**
  * Get the CSS font-family string with fallbacks.
+ * Uses the font's category as the generic fallback (e.g. sans-serif, serif).
+ * When font is null, returns the fallback value (default: 'inherit').
  */
 export function fontFamily(font: string | null | undefined, fallback: string = 'inherit'): string {
   if (!font) return fallback;
-  return `'${font}', ${fallback}`;
+  const entry = GOOGLE_FONTS.find((f) => f.family === font);
+  const generic = entry?.category || 'sans-serif';
+  return `'${font}', ${generic}`;
 }

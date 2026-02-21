@@ -110,6 +110,7 @@ export async function PATCH(req: NextRequest) {
       'cover_button_bg', 'cover_button_text', 'cover_overlay_opacity',
       'cover_gradient_type', 'cover_gradient_angle',
       'font_heading', 'font_body', 'font_sidebar',
+      'font_heading_weight', 'font_body_weight', 'font_sidebar_weight',
     ];
     const updates: Record<string, unknown> = {};
 

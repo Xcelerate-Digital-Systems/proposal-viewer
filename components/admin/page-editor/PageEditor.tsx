@@ -19,7 +19,7 @@ import { usePdfOperations } from './usePdfOperations';
 import SortablePdfRow from './SortablePdfRow';
 import SortablePricingRow from './SortablePricingRow';
 import PdfPreviewPanel from './PdfPreviewPanel';
-import PricingPanel from './PricingPanel';
+import PricingPreviewPanel from './PricingPreviewPanel';
 
 export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel }: PageEditorProps) {
   // UI state
@@ -177,6 +177,11 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     if (idx < unifiedItems.length - 1) setSelectedId(unifiedItems[idx + 1].id);
   };
 
+  // Compute nav availability for pricing preview
+  const selectedUnifiedIdx = unifiedItems.findIndex((i) => i.id === selectedId);
+  const canGoPrev = selectedUnifiedIdx > 0;
+  const canGoNext = selectedUnifiedIdx < unifiedItems.length - 1;
+
   /* ─── Done ───────────────────────────────────────────────────────── */
 
   const handleDone = async () => {
@@ -316,14 +321,15 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
           </div>
         </div>
 
-        {/* Right half: preview or pricing editor */}
+        {/* Right half: preview */}
         <div className="w-1/2 min-w-0 flex flex-col">
           {selectedIsPricing && pricingExists ? (
-            <PricingPanel
-              pricingForm={pricingForm}
-              pricingSaveStatus={pricingSaveStatus}
-              onUpdate={updatePricing}
-              onRemove={handleRemovePricing}
+            <PricingPreviewPanel
+              proposalId={proposalId}
+              onGoPrev={goPrev}
+              onGoNext={goNext}
+              canGoPrev={canGoPrev}
+              canGoNext={canGoNext}
             />
           ) : (
             <PdfPreviewPanel

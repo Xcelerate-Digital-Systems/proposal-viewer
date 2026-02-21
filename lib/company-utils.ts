@@ -14,7 +14,6 @@ export type CompanyData = {
   website: string | null;
   current_role: string;
   created_at: string;
-  // Cover page branding
   cover_bg_style: 'gradient' | 'solid';
   cover_bg_color_1: string;
   cover_bg_color_2: string;
@@ -24,9 +23,13 @@ export type CompanyData = {
   cover_button_text: string;
   cover_overlay_opacity: number;
   cover_gradient_type: 'linear' | 'radial' | 'conic';
-  cover_gradient_angle: number;font_heading: string | null;
+  cover_gradient_angle: number;
+  font_heading: string | null;
   font_body: string | null;
   font_sidebar: string | null;
+  font_heading_weight: string | null;
+  font_body_weight: string | null;
+  font_sidebar_weight: string | null;
 };
 /**
  * Derive a border color by lightening the secondary bg.
