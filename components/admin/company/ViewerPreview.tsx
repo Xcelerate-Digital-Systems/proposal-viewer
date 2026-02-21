@@ -3,6 +3,7 @@
 
 import { Building2, CheckCircle2, MessageSquare, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import { deriveBorder, deriveSurface } from '@/lib/company-utils';
+import { fontFamily } from '@/lib/google-fonts';
 
 interface ViewerPreviewProps {
   accent: string;
@@ -12,6 +13,7 @@ interface ViewerPreviewProps {
   companyName: string;
   sidebarTextColor: string;
   acceptTextColor: string;
+  fontSidebar?: string | null;
 }
 
 export default function ViewerPreview({
@@ -22,6 +24,7 @@ export default function ViewerPreview({
   companyName,
   sidebarTextColor,
   acceptTextColor,
+  fontSidebar,
 }: ViewerPreviewProps) {
   const border = deriveBorder(bgSecondary);
   const surface = deriveSurface(bgPrimary, bgSecondary);
@@ -49,7 +52,7 @@ export default function ViewerPreview({
               <div className="w-16 h-3 rounded" style={{ backgroundColor: border }} />
             )}
           </div>
-          <div className="flex-1 py-2 space-y-0.5 px-1">
+          <div className="flex-1 py-2 space-y-0.5 px-1" style={{ fontFamily: fontFamily(fontSidebar) }}>
             {['Executive Summary', 'Our Approach', 'Project Timeline', 'Investment', 'Case Studies', 'Next Steps'].map((item, i) => (
               <div
                 key={item}

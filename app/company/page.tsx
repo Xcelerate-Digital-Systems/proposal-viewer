@@ -15,6 +15,7 @@ import CoverPreview from '@/components/admin/company/CoverPreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
 import CoverColorsSection from '@/components/admin/company/CoverColorsSection';
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 
 export default function CompanySettingsPage() {
   return (
@@ -58,6 +59,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [fontHeading, setFontHeading] = useState<string | null>(null);
   const [fontBody, setFontBody] = useState<string | null>(null);
   const [fontSidebar, setFontSidebar] = useState<string | null>(null);
+  const [fontsSaved, setFontsSaved] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isOwner = company?.current_role === 'owner';
@@ -206,11 +208,25 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
       showFeedback(data.error || 'Failed to save fonts', true);
     } else {
       setCompany(prev => prev ? { ...prev, ...data } : prev);
-      showFeedback('Fonts saved');
-      fetchCompany();
+      setFontsSaved(true);
+      setTimeout(() => setFontsSaved(false), 2000);
     }
     setSaving(null);
   };
+
+  // Autosave fonts — debounce 800ms after any font change
+  const fontsChanged =
+    fontHeading !== (company?.font_heading || null) ||
+    fontBody !== (company?.font_body || null) ||
+    fontSidebar !== (company?.font_sidebar || null);
+
+  useEffect(() => {
+    if (!fontsChanged || !isOwner || !company) return;
+    const timer = setTimeout(() => {
+      handleSaveFonts();
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [fontHeading, fontBody, fontSidebar]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -262,11 +278,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     coverGradientType !== (company?.cover_gradient_type || 'linear') ||
     coverGradientAngle !== (parseInt(String(company?.cover_gradient_angle)) || 135);
 
-  const fontsChanged =
-    fontHeading !== (company?.font_heading || null) ||
-    fontBody !== (company?.font_body || null) ||
-    fontSidebar !== (company?.font_sidebar || null);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -277,6 +288,9 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
 
   return (
     <div className="px-6 lg:px-10 py-8">
+      {/* Load selected Google Fonts for previews */}
+      <GoogleFontLoader fonts={[fontHeading, fontBody, fontSidebar]} />
+
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 bg-[#017C87]/10 rounded-xl flex items-center justify-center">
@@ -452,6 +466,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             fontSidebar={fontSidebar}
             setFontSidebar={setFontSidebar}
             onSave={handleSaveFonts}
+            lastSaved={fontsSaved}
           />
 
           {!isOwner && (
@@ -474,6 +489,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               acceptTextColor={isValidHex6(acceptTextColor) ? acceptTextColor : '#ffffff'}
               logoUrl={company?.logo_url || null}
               companyName={name}
+              fontSidebar={fontSidebar}
             />
             <p className="text-xs text-gray-400">
               This is how your proposals will appear to clients.
@@ -496,6 +512,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               gradientAngle={coverGradientAngle}
               logoUrl={company?.logo_url || null}
               companyName={name}
+              fontHeading={fontHeading}
+              fontBody={fontBody}
             />
             <p className="text-xs text-gray-400">
               Cover page shown before the proposal. Background image is set per-proposal.

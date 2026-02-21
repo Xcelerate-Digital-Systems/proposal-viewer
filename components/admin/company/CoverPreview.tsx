@@ -2,6 +2,7 @@
 'use client';
 
 import { Building2 } from 'lucide-react';
+import { fontFamily } from '@/lib/google-fonts';
 
 interface CoverPreviewProps {
   bgStyle: 'gradient' | 'solid';
@@ -16,6 +17,8 @@ interface CoverPreviewProps {
   gradientAngle: number;
   logoUrl: string | null;
   companyName: string;
+  fontHeading?: string | null;
+  fontBody?: string | null;
 }
 
 function buildGradient(
@@ -47,6 +50,8 @@ export default function CoverPreview({
   gradientAngle,
   logoUrl,
   companyName,
+  fontHeading,
+  fontBody,
 }: CoverPreviewProps) {
   const baseBg = bgStyle === 'solid' ? bgColor1 : undefined;
   const baseBgImage = bgStyle === 'gradient'
@@ -83,10 +88,16 @@ export default function CoverPreview({
 
           {/* Title area */}
           <div>
-            <h3 className="text-base font-semibold leading-tight mb-1" style={{ color: textColor }}>
+            <h3
+              className="text-base font-semibold leading-tight mb-1"
+              style={{ color: textColor, fontFamily: fontFamily(fontHeading) }}
+            >
               Project Proposal
             </h3>
-            <p className="text-[11px] mb-3" style={{ color: subtitleColor }}>
+            <p
+              className="text-[11px] mb-3"
+              style={{ color: subtitleColor, fontFamily: fontFamily(fontBody) }}
+            >
               Prepared for Client Name
             </p>
             <div

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, Type, X } from 'lucide-react';
+import { Check, Loader2, Type, X } from 'lucide-react';
 import { GOOGLE_FONTS, buildGoogleFontsUrl, fontFamily } from '@/lib/google-fonts';
 
 interface ViewerFontsSectionProps {
@@ -16,6 +16,7 @@ interface ViewerFontsSectionProps {
   fontSidebar: string | null;
   setFontSidebar: (v: string | null) => void;
   onSave: () => void;
+  lastSaved?: boolean;
 }
 
 const CATEGORIES = [
@@ -221,6 +222,7 @@ export default function ViewerFontsSection({
   fontSidebar,
   setFontSidebar,
   onSave,
+  lastSaved,
 }: ViewerFontsSectionProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -229,19 +231,21 @@ export default function ViewerFontsSection({
           <Type size={15} className="text-gray-400" />
           <span className="text-sm font-medium text-gray-500">Viewer Fonts</span>
         </div>
-        {isOwner && fontsChanged && (
-          <button
-            onClick={onSave}
-            disabled={saving === 'fonts'}
-            className="px-4 py-1.5 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
-          >
-            {saving === 'fonts' ? <Loader2 size={14} className="animate-spin" /> : 'Save Fonts'}
-          </button>
+        {/* Autosave status */}
+        {isOwner && saving === 'fonts' && (
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <Loader2 size={12} className="animate-spin" /> Saving…
+          </span>
+        )}
+        {isOwner && !fontsChanged && lastSaved && saving !== 'fonts' && (
+          <span className="flex items-center gap-1.5 text-xs text-emerald-500">
+            <Check size={12} /> Saved
+          </span>
         )}
       </div>
 
       <p className="text-xs text-gray-400 mb-4">
-        Choose Google Fonts for your proposal viewer. Leave blank to use the system default.
+        Choose Google Fonts for your proposal viewer. Changes save automatically.
       </p>
 
       <div className="space-y-5">
