@@ -1,4 +1,4 @@
-// components/admin/CreateFromTemplate.tsx
+// components/admin/proposals/CreateFromTemplate.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -148,7 +148,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       setStatus('Creating proposal...');
       const shareToken = crypto.randomUUID();
 
-      const { error: insertError } = await supabase.from('proposals').insert({
+      const { data: newProposal, error: insertError } = await supabase.from('proposals').insert({
         title: title.trim(),
         client_name: clientName.trim(),
         client_email: clientEmail.trim() || null,
@@ -160,11 +160,45 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         page_names: pageNames,
         cover_image_path: coverImagePath,
         company_id: companyId,
-      });
+      }).select('id').single();
 
-      if (insertError) throw new Error('Failed to create proposal');
+      if (insertError || !newProposal) throw new Error('Failed to create proposal');
 
-      // 7. Clean up temp replacement files
+      // 8. Copy template pricing to proposal pricing
+      setStatus('Copying pricing...');
+      const { data: templatePricing } = await supabase
+        .from('template_pricing')
+        .select('enabled, position, title, intro_text, items, optional_items, tax_enabled, tax_rate, tax_label, validity_days, payment_schedule')
+        .eq('template_id', selectedTemplate.id)
+        .order('position', { ascending: true });
+
+      if (templatePricing && templatePricing.length > 0) {
+        const pricingRows = templatePricing.map((tp) => ({
+          proposal_id: newProposal.id,
+          company_id: companyId,
+          enabled: tp.enabled,
+          position: tp.position,
+          title: tp.title,
+          intro_text: tp.intro_text,
+          items: tp.items,
+          optional_items: tp.optional_items,
+          tax_enabled: tp.tax_enabled,
+          tax_rate: tp.tax_rate,
+          tax_label: tp.tax_label,
+          validity_days: tp.validity_days,
+          payment_schedule: tp.payment_schedule,
+        }));
+
+        const { error: pricingError } = await supabase
+          .from('proposal_pricing')
+          .insert(pricingRows);
+
+        if (pricingError) {
+          console.warn('Failed to copy pricing from template:', pricingError);
+        }
+      }
+
+      // 9. Clean up temp replacement files
       const tempPaths = Object.values(replacementPaths);
       if (tempPaths.length > 0) {
         await supabase.storage.from('proposals').remove(tempPaths);
