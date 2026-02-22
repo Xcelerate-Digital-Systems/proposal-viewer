@@ -29,7 +29,9 @@ export default function TeamPage() {
     <AdminLayout>
       {(auth) => (
         <TeamContent
+          companyId={auth.companyId!}
           currentRole={auth.teamMember?.role || 'member'}
+          isSuperAdmin={auth.isSuperAdmin}
         />
       )}
     </AdminLayout>
@@ -37,9 +39,13 @@ export default function TeamPage() {
 }
 
 function TeamContent({
+  companyId,
   currentRole,
+  isSuperAdmin,
 }: {
+  companyId: string;
   currentRole: string;
+  isSuperAdmin: boolean;
 }) {
   const [members, setMembers] = useState<TeamMemberRow[]>([]);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
@@ -50,7 +56,7 @@ function TeamContent({
 
   const isOwner = currentRole === 'owner';
   const isAdmin = currentRole === 'admin';
-  const canManage = isOwner || isAdmin;
+  const canManage = isOwner || isAdmin || isSuperAdmin;
 
   const getAuthHeaders = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -60,10 +66,18 @@ function TeamContent({
     };
   };
 
+  const buildUrl = (path: string) => {
+    if (companyId) {
+      const separator = path.includes('?') ? '&' : '?';
+      return `${path}${separator}company_id=${companyId}`;
+    }
+    return path;
+  };
+
   const fetchTeam = useCallback(async () => {
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/team', { headers });
+      const res = await fetch(buildUrl('/api/team'), { headers });
       const data = await res.json();
       if (res.ok) {
         setMembers(data.members || []);
@@ -73,7 +87,8 @@ function TeamContent({
     } finally {
       setLoading(false);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
 
   useEffect(() => {
     fetchTeam();
@@ -83,7 +98,7 @@ function TeamContent({
     setActionLoading(memberId);
     setActionMenuId(null);
     const headers = await getAuthHeaders();
-    const res = await fetch(`/api/team/${memberId}`, {
+    const res = await fetch(buildUrl(`/api/team/${memberId}`), {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ role: newRole }),
@@ -101,7 +116,7 @@ function TeamContent({
     setActionLoading(memberId);
     setActionMenuId(null);
     const headers = await getAuthHeaders();
-    const res = await fetch(`/api/team/${memberId}`, {
+    const res = await fetch(buildUrl(`/api/team/${memberId}`), {
       method: 'DELETE',
       headers,
     });
@@ -220,7 +235,7 @@ function TeamContent({
                                 onClick={() => setActionMenuId(null)}
                               />
                               <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
-                                {isOwner && (
+                                {(isOwner || isSuperAdmin) && (
                                   <>
                                     {m.role !== 'admin' && (
                                       <button
@@ -264,11 +279,11 @@ function TeamContent({
             </div>
           </div>
 
-          {/* Invite Section - only for owners/admins */}
+          {/* Invite Section - only for owners/admins/super admins */}
           {canManage && (
             <div>
               <h2 className="text-sm font-medium text-gray-500 mb-3">Invites</h2>
-              <InviteManager />
+              <InviteManager companyId={companyId} />
             </div>
           )}
 

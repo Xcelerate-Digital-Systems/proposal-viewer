@@ -18,6 +18,7 @@ interface CommentsPanelProps {
   onClose: () => void;
   accentColor?: string;
   acceptTextColor?: string;
+  textColor?: string;
   bgPrimary?: string;
   bgSecondary?: string;
 }
@@ -34,6 +35,7 @@ export default function CommentsPanel({
   onClose,
   accentColor = '#ff6700',
   acceptTextColor = '#ffffff',
+  textColor = '#ffffff',
   bgPrimary = '#0f0f0f',
   bgSecondary = '#141414',
 }: CommentsPanelProps) {
@@ -97,8 +99,8 @@ export default function CommentsPanel({
         >
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-2">
-              {isReply && <CornerDownRight size={12} className="text-[#555] shrink-0" />}
-              <span className="text-sm font-medium text-white">{comment.author_name}</span>
+              {isReply && <CornerDownRight size={12} className="shrink-0" style={{ color: textColor, opacity: 0.35 }} />}
+              <span className="text-sm font-medium" style={{ color: textColor }}>{comment.author_name}</span>
             </div>
             {!isReply && comment.page_number && (
               <button
@@ -111,16 +113,17 @@ export default function CommentsPanel({
             )}
           </div>
 
-          <p className="text-sm text-[#999] leading-relaxed">{comment.content}</p>
+          <p className="text-sm leading-relaxed" style={{ color: textColor, opacity: 0.6 }}>{comment.content}</p>
 
           <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-[#555]">{formatDate(comment.created_at)}</span>
+            <span className="text-xs" style={{ color: textColor, opacity: 0.35 }}>{formatDate(comment.created_at)}</span>
             {!isReply && (
               <div className="flex items-center gap-2">
                 {!isResolved && (
                   <button
                     onClick={() => { setReplyingTo(replyingTo === comment.id ? null : comment.id); setReplyName(commentName); }}
-                    className="text-xs text-[#666] hover:text-white transition-colors"
+                    className="text-xs hover:opacity-80 transition-colors"
+                    style={{ color: textColor, opacity: 0.4 }}
                   >Reply</button>
                 )}
                 {isResolved ? (
@@ -128,7 +131,7 @@ export default function CommentsPanel({
                     <CheckCircle2 size={12} /> Resolved
                   </button>
                 ) : (
-                  <button onClick={() => handleResolve(comment.id)} className="flex items-center gap-1 text-xs text-[#666] hover:text-emerald-400 transition-colors">
+                  <button onClick={() => handleResolve(comment.id)} className="flex items-center gap-1 text-xs hover:text-emerald-400 transition-colors" style={{ color: textColor, opacity: 0.4 }}>
                     <CheckCircle2 size={12} /> Resolve
                   </button>
                 )}
@@ -146,11 +149,13 @@ export default function CommentsPanel({
         {replyingTo === comment.id && (
           <div className="ml-4 mt-2 space-y-2">
             <input type="text" placeholder="Your name" value={replyName} onChange={(e) => setReplyName(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-md text-xs text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
+              className="w-full px-2.5 py-1.5 rounded-md text-xs focus:outline-none border"
+              style={{ backgroundColor: border, color: textColor, borderColor: border }} />
             <div className="flex gap-2">
               <input type="text" placeholder="Write a reply..." value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(comment.id); } }}
-                className="flex-1 px-2.5 py-1.5 rounded-md text-xs text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300"
+                className="flex-1 px-2.5 py-1.5 rounded-md text-xs focus:outline-none border"
+                style={{ backgroundColor: border, color: textColor, borderColor: border }}
                 autoFocus />
               <button onClick={() => handleReply(comment.id)} disabled={replySubmitting || !replyText.trim() || !replyName.trim()}
                 className="px-2 py-1.5 rounded-md disabled:opacity-40 transition-opacity hover:opacity-90"
@@ -172,23 +177,23 @@ export default function CommentsPanel({
         style={{ backgroundColor: bgSecondary, borderColor: border }}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: border }}>
-          <h3 className="text-sm font-semibold text-white">
+          <h3 className="text-sm font-semibold" style={{ color: textColor }}>
             Comments
             {unresolvedComments.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal text-[#666]">({unresolvedComments.length})</span>
+              <span className="ml-1.5 text-xs font-normal" style={{ color: textColor, opacity: 0.4 }}>({unresolvedComments.length})</span>
             )}
           </h3>
-          <button onClick={onClose} className="text-[#666] hover:text-white"><X size={16} /></button>
+          <button onClick={onClose} className="hover:opacity-80 transition-opacity" style={{ color: textColor, opacity: 0.4 }}><X size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
           {topLevelComments.length === 0 && (
-            <p className="text-sm text-[#555] text-center py-8">No comments yet</p>
+            <p className="text-sm text-center py-8" style={{ color: textColor, opacity: 0.35 }}>No comments yet</p>
           )}
           {unresolvedComments.map((c) => renderComment(c))}
           {resolvedComments.length > 0 && (
             <div>
-              <button onClick={() => setShowResolved(!showResolved)} className="flex items-center gap-1.5 text-xs text-[#555] hover:text-[#999] transition-colors w-full py-2">
+              <button onClick={() => setShowResolved(!showResolved)} className="flex items-center gap-1.5 text-xs hover:opacity-80 transition-colors w-full py-2" style={{ color: textColor, opacity: 0.35 }}>
                 {showResolved ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 {resolvedComments.length} resolved comment{resolvedComments.length !== 1 ? 's' : ''}
               </button>
@@ -201,17 +206,19 @@ export default function CommentsPanel({
 
         <form onSubmit={handleSubmit} className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
           <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
+            className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none border"
+            style={{ backgroundColor: border, color: textColor, borderColor: border }} />
           <div className="flex gap-2">
             <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
+              className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none border"
+              style={{ backgroundColor: border, color: textColor, borderColor: border }} />
             <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
               className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
               style={{ backgroundColor: accentColor, color: acceptTextColor }}>
               <Send size={15} />
             </button>
           </div>
-          <p className="text-xs text-[#555]">Commenting on: {getPageName(currentPage)}</p>
+          <p className="text-xs" style={{ color: textColor, opacity: 0.35 }}>Commenting on: {getPageName(currentPage)}</p>
         </form>
       </div>
 
@@ -223,23 +230,23 @@ export default function CommentsPanel({
           style={{ backgroundColor: bgSecondary }}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: border }}>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold" style={{ color: textColor }}>
               Comments
               {unresolvedComments.length > 0 && (
-                <span className="ml-1.5 text-xs font-normal text-[#666]">({unresolvedComments.length})</span>
+                <span className="ml-1.5 text-xs font-normal" style={{ color: textColor, opacity: 0.4 }}>({unresolvedComments.length})</span>
               )}
             </h3>
-            <button onClick={onClose} className="text-[#666] hover:text-white"><X size={16} /></button>
+            <button onClick={onClose} className="hover:opacity-80 transition-opacity" style={{ color: textColor, opacity: 0.4 }}><X size={16} /></button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {topLevelComments.length === 0 && (
-              <p className="text-sm text-[#555] text-center py-8">No comments yet</p>
+              <p className="text-sm text-center py-8" style={{ color: textColor, opacity: 0.35 }}>No comments yet</p>
             )}
             {unresolvedComments.map((c) => renderComment(c))}
             {resolvedComments.length > 0 && (
               <div>
-                <button onClick={() => setShowResolved(!showResolved)} className="flex items-center gap-1.5 text-xs text-[#555] hover:text-[#999] transition-colors w-full py-2">
+                <button onClick={() => setShowResolved(!showResolved)} className="flex items-center gap-1.5 text-xs hover:opacity-80 transition-colors w-full py-2" style={{ color: textColor, opacity: 0.35 }}>
                   {showResolved ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   {resolvedComments.length} resolved comment{resolvedComments.length !== 1 ? 's' : ''}
                 </button>
@@ -252,17 +259,19 @@ export default function CommentsPanel({
 
           <form onSubmit={handleSubmit} className="p-3 space-y-2 border-t pb-safe" style={{ borderColor: border }}>
             <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none border"
+              style={{ backgroundColor: border, color: textColor, borderColor: border }} />
             <div className="flex gap-2">
               <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none border border-gray-200 focus:border-gray-300" />
+                className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none border"
+                style={{ backgroundColor: border, color: textColor, borderColor: border }} />
               <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
                 className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
                 style={{ backgroundColor: accentColor, color: acceptTextColor }}>
                 <Send size={15} />
               </button>
             </div>
-            <p className="text-xs text-[#555]">Commenting on: {getPageName(currentPage)}</p>
+            <p className="text-xs" style={{ color: textColor, opacity: 0.35 }}>Commenting on: {getPageName(currentPage)}</p>
           </form>
         </div>
       </div>

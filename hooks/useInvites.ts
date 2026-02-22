@@ -15,7 +15,7 @@ export type CompanyInvite = {
   invited_by_member?: { name: string };
 };
 
-export function useInvites() {
+export function useInvites(companyId?: string) {
   const [invites, setInvites] = useState<CompanyInvite[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -27,11 +27,19 @@ export function useInvites() {
     };
   };
 
+  const buildUrl = (path: string) => {
+    if (companyId) {
+      const separator = path.includes('?') ? '&' : '?';
+      return `${path}${separator}company_id=${companyId}`;
+    }
+    return path;
+  };
+
   const fetchInvites = useCallback(async () => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/invites', { headers });
+      const res = await fetch(buildUrl('/api/invites'), { headers });
       const data = await res.json();
       if (res.ok) {
         setInvites(data.invites || []);
@@ -39,11 +47,12 @@ export function useInvites() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
 
   const createInvite = async (email: string, role: 'admin' | 'member' = 'member') => {
     const headers = await getAuthHeaders();
-    const res = await fetch('/api/invites', {
+    const res = await fetch(buildUrl('/api/invites'), {
       method: 'POST',
       headers,
       body: JSON.stringify({ email, role }),
@@ -59,7 +68,7 @@ export function useInvites() {
 
   const revokeInvite = async (inviteId: string) => {
     const headers = await getAuthHeaders();
-    const res = await fetch(`/api/invites/${inviteId}`, {
+    const res = await fetch(buildUrl(`/api/invites/${inviteId}`), {
       method: 'DELETE',
       headers,
     });

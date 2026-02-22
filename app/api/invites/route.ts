@@ -1,42 +1,20 @@
 // app/api/invites/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
-
-// Helper to get authenticated user's team member record
-async function getAuthenticatedMember(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { data: { user } } = await supabaseAuth.auth.getUser(token);
-  if (!user) return null;
-
-  const supabase = createServiceClient();
-  const { data: member } = await supabase
-    .from('team_members')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  return member;
-}
+import { getAuthContext } from '@/lib/api-auth';
 
 // POST - Create a new invite
 export async function POST(req: NextRequest) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only owners and admins can invite
-    if (member.role !== 'owner' && member.role !== 'admin') {
+    const { member, companyId } = auth;
+
+    // Only owners and admins can invite (or super admins viewing any company)
+    if (!member.is_super_admin && member.role !== 'owner' && member.role !== 'admin') {
       return NextResponse.json({ error: 'Only owners and admins can send invites' }, { status: 403 });
     }
 
@@ -57,7 +35,7 @@ export async function POST(req: NextRequest) {
       .from('team_members')
       .select('id')
       .eq('email', email.toLowerCase())
-      .eq('company_id', member.company_id)
+      .eq('company_id', companyId)
       .single();
 
     if (existingMember) {
@@ -69,7 +47,7 @@ export async function POST(req: NextRequest) {
       .from('company_invites')
       .select('id')
       .eq('email', email.toLowerCase())
-      .eq('company_id', member.company_id)
+      .eq('company_id', companyId)
       .is('accepted_at', null)
       .gt('expires_at', new Date().toISOString())
       .single();
@@ -82,14 +60,14 @@ export async function POST(req: NextRequest) {
     const { data: company } = await supabase
       .from('companies')
       .select('name')
-      .eq('id', member.company_id)
+      .eq('id', companyId)
       .single();
 
     // Create the invite
     const { data: invite, error } = await supabase
       .from('company_invites')
       .insert({
-        company_id: member.company_id,
+        company_id: companyId,
         email: email.toLowerCase(),
         role,
         invited_by: member.id,
@@ -120,15 +98,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET - List invites for the current user's company
+// GET - List invites for the current (or overridden) company
 export async function GET(req: NextRequest) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (member.role !== 'owner' && member.role !== 'admin') {
+    const { member, companyId } = auth;
+
+    // Only owners and admins can view invites (or super admins)
+    if (!member.is_super_admin && member.role !== 'owner' && member.role !== 'admin') {
       return NextResponse.json({ error: 'Only owners and admins can view invites' }, { status: 403 });
     }
 
@@ -137,7 +118,7 @@ export async function GET(req: NextRequest) {
     const { data: invites, error } = await supabase
       .from('company_invites')
       .select('*, invited_by_member:invited_by(name)')
-      .eq('company_id', member.company_id)
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false });
 
     if (error) {

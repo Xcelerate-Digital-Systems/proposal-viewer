@@ -5,7 +5,11 @@ import { useState, useEffect } from 'react';
 import { UserPlus, Copy, Check, X, Clock, Loader2, Link2 } from 'lucide-react';
 import { useInvites, CompanyInvite } from '@/hooks/useInvites';
 
-export function InviteManager() {
+interface InviteManagerProps {
+  companyId?: string;
+}
+
+export function InviteManager({ companyId }: InviteManagerProps) {
   const {
     pendingInvites,
     acceptedInvites,
@@ -14,7 +18,7 @@ export function InviteManager() {
     fetchInvites,
     createInvite,
     revokeInvite,
-  } = useInvites();
+  } = useInvites(companyId);
 
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'admin' | 'member'>('member');

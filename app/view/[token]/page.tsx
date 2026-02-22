@@ -278,6 +278,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           onClose={() => setShowComments(false)}
           accentColor={accent}
           acceptTextColor={branding.accept_text_color || '#ffffff'}
+          textColor={branding.sidebar_text_color || '#ffffff'}
           bgPrimary={bgPrimary}
           bgSecondary={bgSecondary}
         />

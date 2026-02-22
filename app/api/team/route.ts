@@ -1,45 +1,23 @@
 // app/api/team/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { getAuthContext } from '@/lib/api-auth';
 
-async function getAuthenticatedMember(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { data: { user } } = await supabaseAuth.auth.getUser(token);
-  if (!user) return null;
-
-  const supabase = createServiceClient();
-  const { data: member } = await supabase
-    .from('team_members')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  return member;
-}
-
-// GET - List team members for the current company
+// GET - List team members for the current (or overridden) company
 export async function GET(req: NextRequest) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { member, companyId } = auth;
     const supabase = createServiceClient();
 
     const { data: members, error } = await supabase
       .from('team_members')
       .select('id, name, email, role, created_at')
-      .eq('company_id', member.company_id)
+      .eq('company_id', companyId)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -50,7 +28,7 @@ export async function GET(req: NextRequest) {
     const { data: company } = await supabase
       .from('companies')
       .select('id, name, slug')
-      .eq('id', member.company_id)
+      .eq('id', companyId)
       .single();
 
     return NextResponse.json({

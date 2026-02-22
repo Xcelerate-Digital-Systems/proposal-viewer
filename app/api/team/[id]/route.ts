@@ -1,30 +1,7 @@
 // app/api/team/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
-
-async function getAuthenticatedMember(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { data: { user } } = await supabaseAuth.auth.getUser(token);
-  if (!user) return null;
-
-  const supabase = createServiceClient();
-  const { data: member } = await supabase
-    .from('team_members')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  return member;
-}
+import { getAuthContext } from '@/lib/api-auth';
 
 // PATCH - Update a team member's role
 export async function PATCH(
@@ -32,12 +9,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (member.role !== 'owner') {
+    const { member, companyId } = auth;
+
+    // Only owners or super admins can change roles
+    if (!member.is_super_admin && member.role !== 'owner') {
       return NextResponse.json({ error: 'Only owners can change roles' }, { status: 403 });
     }
 
@@ -55,14 +35,14 @@ export async function PATCH(
 
     const supabase = createServiceClient();
 
-    // Verify target is in same company
+    // Verify target is in the effective company
     const { data: target } = await supabase
       .from('team_members')
       .select('id, company_id, role')
       .eq('id', id)
       .single();
 
-    if (!target || target.company_id !== member.company_id) {
+    if (!target || target.company_id !== companyId) {
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
     }
 
@@ -92,12 +72,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (member.role !== 'owner' && member.role !== 'admin') {
+    const { member, companyId } = auth;
+
+    // Only owners, admins, or super admins can remove members
+    if (!member.is_super_admin && member.role !== 'owner' && member.role !== 'admin') {
       return NextResponse.json({ error: 'Only owners and admins can remove members' }, { status: 403 });
     }
 
@@ -110,14 +93,14 @@ export async function DELETE(
 
     const supabase = createServiceClient();
 
-    // Verify target is in same company and not owner
+    // Verify target is in the effective company and not owner
     const { data: target } = await supabase
       .from('team_members')
       .select('id, company_id, role, user_id')
       .eq('id', id)
       .single();
 
-    if (!target || target.company_id !== member.company_id) {
+    if (!target || target.company_id !== companyId) {
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
     }
 
@@ -125,8 +108,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Cannot remove the owner' }, { status: 400 });
     }
 
-    // Admins can only remove members, not other admins
-    if (member.role === 'admin' && target.role === 'admin') {
+    // Admins can only remove members, not other admins (super admins can remove anyone except owner)
+    if (!member.is_super_admin && member.role === 'admin' && target.role === 'admin') {
       return NextResponse.json({ error: 'Admins cannot remove other admins' }, { status: 403 });
     }
 
