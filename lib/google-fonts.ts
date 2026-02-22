@@ -125,12 +125,13 @@ export const WEIGHT_OPTIONS = [
   { value: '600', label: 'Semibold' },
   { value: '700', label: 'Bold' },
   { value: '800', label: 'Extra Bold' },
+  { value: '900', label: 'Black' },
 ] as const;
 
 /**
  * Default weights loaded from Google Fonts.
  */
-const DEFAULT_WEIGHTS = ['300', '400', '500', '600', '700', '800'];
+const DEFAULT_WEIGHTS = ['300', '400', '500', '600', '700', '800', '900'];
 
 /**
  * Get the available weights for a given font family.
