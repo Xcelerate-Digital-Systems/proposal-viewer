@@ -47,7 +47,7 @@ export async function sendNotifications(payload: NotifyPayload) {
     .eq('id', proposal.company_id)
     .single();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
   const verifiedDomain = company?.domain_verified ? company.custom_domain : null;
   const viewerUrl = buildProposalUrl(proposal.share_token, verifiedDomain, appUrl);
   const dashboardUrl = appUrl;
@@ -279,7 +279,7 @@ async function fireWebhooks(payload: WebhookPayload) {
 
   if (!webhooks || webhooks.length === 0) return;
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
   const body = JSON.stringify({
     event: event_type,

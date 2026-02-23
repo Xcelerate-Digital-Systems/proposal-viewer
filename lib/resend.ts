@@ -1,3 +1,4 @@
+// lib/resend.ts
 import { Resend } from 'resend';
 
 let _resend: Resend | null = null;
@@ -9,6 +10,4 @@ export function getResend() {
   return _resend;
 }
 
-// Change this to your verified domain once set up in Resend
-// Until then, Resend allows sending from onboarding@resend.dev
-export const FROM_EMAIL = process.env.EMAIL_FROM || 'Xcelerate Digital <onboarding@resend.dev>';
+export const FROM_EMAIL = process.env.EMAIL_FROM || 'AgencyViz <notifications@update.agencyviz.io>';
