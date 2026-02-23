@@ -401,33 +401,97 @@ export function useProposal(token: string) {
   );
 
   // Build page entries with special pages inserted for sidebar
+  // Groups (section headers) are preserved at their original positions relative to PDF pages
   const allPageEntries = useMemo(() => {
     if (pdfPageCount === 0) return pageEntries;
 
-    const pdfEntries = pageEntries.slice(0, pdfPageCount);
+    // Separate groups from real page entries, tracking group positions
+    const pdfEntries: PageNameEntry[] = [];
+    const groupsBefore: Map<number, PageNameEntry[]> = new Map();
+    let pendingGroups: PageNameEntry[] = [];
+
+    for (const entry of pageEntries) {
+      if (entry.type === 'group') {
+        pendingGroups.push(entry);
+      } else {
+        if (pendingGroups.length > 0) {
+          groupsBefore.set(pdfEntries.length, [...pendingGroups]);
+          pendingGroups = [];
+        }
+        pdfEntries.push(entry);
+      }
+    }
+    const trailingGroups = pendingGroups;
 
     if (!pageMap.pageSequence || pageMap.pageSequence.length === 0) {
-      return pdfEntries;
+      // No special pages — return pageEntries as-is (groups preserved)
+      return pageEntries;
     }
 
-    return pageMap.pageSequence.map((entry) => {
-      if (entry.type === 'pdf') {
-        return pdfEntries[entry.pdfPage - 1] || { name: `Page ${entry.pdfPage}`, indent: 0 };
-      } else if (entry.type === 'pricing') {
-        return { name: pricing?.title || 'Your Investment', indent: 0 };
+    // Build from page sequence, inserting groups before their associated PDF page
+    const result: PageNameEntry[] = [];
+    for (const seqEntry of pageMap.pageSequence) {
+      if (seqEntry.type === 'pdf') {
+        const pdfIndex = seqEntry.pdfPage - 1;
+        // Emit any groups that precede this PDF page
+        const groups = groupsBefore.get(pdfIndex);
+        if (groups) result.push(...groups);
+        // Emit the PDF page entry
+        result.push(pdfEntries[pdfIndex] || { name: `Page ${seqEntry.pdfPage}`, indent: 0 });
+      } else if (seqEntry.type === 'pricing') {
+        result.push({ name: pricing?.title || 'Your Investment', indent: 0 });
       } else {
-        const tp = textPages.find((t) => t.id === entry.textPageId);
-        return { name: tp?.title || 'Text Page', indent: 0 };
+        const tp = textPages.find((t) => t.id === seqEntry.textPageId);
+        result.push({ name: tp?.title || 'Text Page', indent: 0 });
       }
-    });
+    }
+
+    // Append any trailing groups (groups after the last PDF page)
+    result.push(...trailingGroups);
+
+    return result;
   }, [pageEntries, pdfPageCount, pricing, textPages, pageMap.pageSequence]);
 
   const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
     setPdfPageCount(n);
     setPageEntries((prev) => {
-      const entries = [...prev];
-      while (entries.length < n) entries.push({ name: `Page ${entries.length + 1}`, indent: 0 });
-      return entries.slice(0, n);
+      // Separate groups from real page entries
+      const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
+      const realEntries: PageNameEntry[] = [];
+      for (const entry of prev) {
+        if (entry.type === 'group') {
+          groups.push({ beforePdfIndex: realEntries.length, entry });
+        } else {
+          realEntries.push(entry);
+        }
+      }
+
+      // Pad/trim real entries to match PDF page count
+      while (realEntries.length < n) realEntries.push({ name: `Page ${realEntries.length + 1}`, indent: 0 });
+      const trimmed = realEntries.slice(0, n);
+
+      // Re-insert groups at their original positions (if still valid)
+      const result: PageNameEntry[] = [];
+      let realIdx = 0;
+      let groupIdx = 0;
+      while (realIdx < trimmed.length || groupIdx < groups.length) {
+        // Insert any groups that belong before the current real entry
+        while (groupIdx < groups.length && groups[groupIdx].beforePdfIndex <= realIdx) {
+          result.push(groups[groupIdx].entry);
+          groupIdx++;
+        }
+        if (realIdx < trimmed.length) {
+          result.push(trimmed[realIdx]);
+          realIdx++;
+        }
+      }
+      // Trailing groups
+      while (groupIdx < groups.length) {
+        result.push(groups[groupIdx].entry);
+        groupIdx++;
+      }
+
+      return result;
     });
   };
 

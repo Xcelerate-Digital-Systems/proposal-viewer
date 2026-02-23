@@ -9,6 +9,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export type PageNameEntry = {
   name: string;
   indent: number; // 0 = top level, 1 = nested child
+  type?: 'page' | 'group'; // 'group' = section header only (no navigable page), default 'page'
 };
 
 /**
@@ -22,7 +23,12 @@ export function normalizePageNames(raw: unknown, count: number): PageNameEntry[]
     for (let i = 0; i < count; i++) {
       const item = raw[i];
       if (item && typeof item === 'object' && 'name' in item) {
-        result.push({ name: item.name || `Page ${i + 1}`, indent: item.indent || 0 });
+        const obj = item as Record<string, unknown>;
+        result.push({
+          name: (obj.name as string) || `Page ${i + 1}`,
+          indent: (obj.indent as number) || 0,
+          ...(obj.type === 'group' ? { type: 'group' as const } : {}),
+        });
       } else if (typeof item === 'string') {
         result.push({ name: item, indent: 0 });
       } else {
@@ -36,6 +42,59 @@ export function normalizePageNames(raw: unknown, count: number): PageNameEntry[]
   }
 
   return result.slice(0, count);
+}
+
+/**
+ * Convert a 0-based PDF page index to the corresponding index in the entries array,
+ * skipping over group entries that don't map to PDF pages.
+ * Returns -1 if not found.
+ */
+export function pdfIndexToEntryIndex(entries: PageNameEntry[], pdfIndex: number): number {
+  let pdfCount = 0;
+  for (let i = 0; i < entries.length; i++) {
+    if (entries[i].type === 'group') continue;
+    if (pdfCount === pdfIndex) return i;
+    pdfCount++;
+  }
+  return -1;
+}
+
+/**
+ * Normalize page_names from DB into PageNameEntry[], preserving groups.
+ * Unlike normalizePageNames (which limits to `count` entries), this preserves
+ * ALL entries including groups, only padding non-group entries to match `pdfCount`.
+ */
+export function normalizePageNamesWithGroups(raw: unknown, pdfCount: number): PageNameEntry[] {
+  if (!Array.isArray(raw)) {
+    return Array.from({ length: pdfCount }, (_, i) => ({ name: `Page ${i + 1}`, indent: 0 }));
+  }
+
+  const result: PageNameEntry[] = [];
+  let realPagesSeen = 0;
+
+  for (const item of raw) {
+    if (item && typeof item === 'object' && 'name' in item) {
+      const obj = item as Record<string, unknown>;
+      const isGroup = obj.type === 'group';
+      result.push({
+        name: (obj.name as string) || (isGroup ? 'Section' : `Page ${realPagesSeen + 1}`),
+        indent: (obj.indent as number) || 0,
+        ...(isGroup ? { type: 'group' as const } : {}),
+      });
+      if (!isGroup) realPagesSeen++;
+    } else if (typeof item === 'string') {
+      result.push({ name: item, indent: 0 });
+      realPagesSeen++;
+    }
+  }
+
+  // Pad if we have fewer real entries than PDF pages
+  while (realPagesSeen < pdfCount) {
+    result.push({ name: `Page ${realPagesSeen + 1}`, indent: 0 });
+    realPagesSeen++;
+  }
+
+  return result;
 }
 
 export type Proposal = {

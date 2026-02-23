@@ -37,12 +37,45 @@ export function usePageEditorState(
   }, []);
 
   // Sync entries when PDF loads (ensure we have enough entries for all pages)
+  // Preserves group entries (section headers) which don't count as PDF pages
   const syncPageCount = useCallback((numPages: number) => {
     setPageCount(numPages);
     setEntries((prev) => {
-      const updated = [...prev];
-      while (updated.length < numPages) updated.push({ name: `Page ${updated.length + 1}`, indent: 0 });
-      return updated.slice(0, numPages);
+      // Separate groups from real page entries
+      const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
+      const realEntries: PageNameEntry[] = [];
+      for (const entry of prev) {
+        if (entry.type === 'group') {
+          groups.push({ beforePdfIndex: realEntries.length, entry });
+        } else {
+          realEntries.push(entry);
+        }
+      }
+
+      // Pad/trim real entries to match PDF page count
+      while (realEntries.length < numPages) realEntries.push({ name: `Page ${realEntries.length + 1}`, indent: 0 });
+      const trimmed = realEntries.slice(0, numPages);
+
+      // Re-insert groups at their original positions
+      const result: PageNameEntry[] = [];
+      let realIdx = 0;
+      let groupIdx = 0;
+      while (realIdx < trimmed.length || groupIdx < groups.length) {
+        while (groupIdx < groups.length && groups[groupIdx].beforePdfIndex <= realIdx) {
+          result.push(groups[groupIdx].entry);
+          groupIdx++;
+        }
+        if (realIdx < trimmed.length) {
+          result.push(trimmed[realIdx]);
+          realIdx++;
+        }
+      }
+      while (groupIdx < groups.length) {
+        result.push(groups[groupIdx].entry);
+        groupIdx++;
+      }
+
+      return result;
     });
   }, []);
 
@@ -110,6 +143,37 @@ export function usePageEditorState(
     setSaveStatus(newSaveStatus);
   }, [saveStatus]);
 
+  // Add a section header (group) at the end of entries
+  const addGroup = useCallback((name: string = 'New Section') => {
+    setEntries((prev) => {
+      const updated = [...prev, { name, indent: 0, type: 'group' as const }];
+      return updated;
+    });
+    // Immediately save
+    setTimeout(() => {
+      const currentEntries = entriesRef.current;
+      const currentDirty = new Set(dirtyRowsRef.current);
+      currentDirty.add(currentEntries.length - 1);
+      setDirtyRows(new Set());
+      saveEntries(currentEntries, currentDirty);
+    }, 50);
+  }, [saveEntries]);
+
+  // Remove a group entry by its index in the entries array
+  const removeGroup = useCallback((entryIndex: number) => {
+    setEntries((prev) => {
+      if (prev[entryIndex]?.type !== 'group') return prev;
+      const updated = [...prev];
+      updated.splice(entryIndex, 1);
+      return updated;
+    });
+    // Immediately save
+    setTimeout(() => {
+      const currentEntries = entriesRef.current;
+      saveEntries(currentEntries, new Set([0]));
+    }, 50);
+  }, [saveEntries]);
+
   return {
     entries,
     setEntries,
@@ -120,5 +184,7 @@ export function usePageEditorState(
     updateEntry,
     flushPendingSaves,
     remapSaveStatus,
+    addGroup,
+    removeGroup,
   };
 }

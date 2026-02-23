@@ -6,9 +6,10 @@ import { PageNameEntry, PricingLineItem, PricingOptionalItem } from '@/lib/supab
 
 export type UnifiedItem = {
   id: string;
-  type: 'pdf' | 'pricing' | 'text';
+  type: 'pdf' | 'pricing' | 'text' | 'group';
   pdfIndex: number;
   textPageId?: string; // UUID of the text page record
+  entryIndex?: number; // Index in entries array (for groups)
 };
 
 export type PricingFormState = {

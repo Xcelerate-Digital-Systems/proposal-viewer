@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
+import { normalizePageNamesWithGroups, pdfIndexToEntryIndex, PageNameEntry } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,21 +74,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Update page_names array: remove the entry at the deleted position
-    const currentNames: Array<{ name: string; indent: number }> = Array.isArray(proposal.page_names)
-      ? proposal.page_names.map((entry: unknown) => {
-          if (typeof entry === 'string') return { name: entry, indent: 0 };
-          const obj = entry as { name?: string; indent?: number };
-          return { name: obj.name || '', indent: obj.indent || 0 };
-        })
-      : [];
+    // Use group-aware normalization to preserve section headers
+    const currentNames = normalizePageNamesWithGroups(proposal.page_names, totalPages);
 
-    // Pad if needed
-    while (currentNames.length < totalPages) {
-      currentNames.push({ name: `Page ${currentNames.length + 1}`, indent: 0 });
+    // Find the correct entry index (PDF page_number is 1-indexed, pdfIndex is 0-indexed)
+    const entryIdx = pdfIndexToEntryIndex(currentNames, page_number - 1);
+    if (entryIdx >= 0) {
+      currentNames.splice(entryIdx, 1);
     }
-
-    // Remove the entry
-    currentNames.splice(page_number - 1, 1);
 
     const newTotalPages = existingDoc.getPageCount();
 

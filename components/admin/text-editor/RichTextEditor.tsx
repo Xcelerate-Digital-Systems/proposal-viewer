@@ -8,17 +8,49 @@ import TiptapUnderline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import TiptapLink from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import {
   Bold, Italic, Underline, Strikethrough,
   Heading1, Heading2, Heading3, List, ListOrdered, Quote,
   AlignLeft, AlignCenter, AlignRight, Link, Link2Off,
   Undo, Redo, Code2, ChevronDown, Minus,
+  Palette, Highlighter, X,
 } from 'lucide-react';
 import { DynamicFieldExtension, DYNAMIC_FIELDS } from './DynamicFieldExtension';
 import { FontSizeExtension } from './FontSizeExtension';
 
 const FONT_SIZES = ['8', '10', '12', '14', '16', '18', '20', '24', '28', '32', '36'];
+
+const TEXT_COLORS = [
+  { label: 'Default', value: '' },
+  { label: 'Black', value: '#000000' },
+  { label: 'Dark Gray', value: '#374151' },
+  { label: 'Gray', value: '#6b7280' },
+  { label: 'Red', value: '#dc2626' },
+  { label: 'Orange', value: '#ea580c' },
+  { label: 'Amber', value: '#d97706' },
+  { label: 'Green', value: '#16a34a' },
+  { label: 'Teal', value: '#0d9488' },
+  { label: 'Blue', value: '#2563eb' },
+  { label: 'Indigo', value: '#4f46e5' },
+  { label: 'Purple', value: '#9333ea' },
+  { label: 'Pink', value: '#db2777' },
+  { label: 'White', value: '#ffffff' },
+];
+
+const HIGHLIGHT_COLORS = [
+  { label: 'None', value: '' },
+  { label: 'Yellow', value: '#fef08a' },
+  { label: 'Green', value: '#bbf7d0' },
+  { label: 'Blue', value: '#bfdbfe' },
+  { label: 'Purple', value: '#e9d5ff' },
+  { label: 'Pink', value: '#fbcfe8' },
+  { label: 'Orange', value: '#fed7aa' },
+  { label: 'Red', value: '#fecaca' },
+  { label: 'Teal', value: '#99f6e4' },
+];
 
 interface RichTextEditorProps {
   content: unknown; // TipTap JSON
@@ -29,8 +61,12 @@ interface RichTextEditorProps {
 export default function RichTextEditor({ content, onUpdate, placeholder }: RichTextEditorProps) {
   const [showFieldMenu, setShowFieldMenu] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const fieldMenuRef = useRef<HTMLDivElement>(null);
+  const textColorRef = useRef<HTMLDivElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -43,6 +79,8 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
       }),
       TiptapUnderline,
       TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
       FontSizeExtension,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -77,11 +115,17 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
     }
   }, [editor, content]);
 
-  // Close field menu on outside click
+  // Close menus on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (fieldMenuRef.current && !fieldMenuRef.current.contains(e.target as Node)) {
         setShowFieldMenu(false);
+      }
+      if (textColorRef.current && !textColorRef.current.contains(e.target as Node)) {
+        setShowTextColorPicker(false);
+      }
+      if (highlightRef.current && !highlightRef.current.contains(e.target as Node)) {
+        setShowHighlightPicker(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -109,6 +153,10 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
 
   // Get current font size from selection
   const currentFontSize = editor.getAttributes('textStyle')?.fontSize?.replace('px', '') || '';
+  // Get current text color from selection
+  const currentTextColor = editor.getAttributes('textStyle')?.color || '';
+  // Get current highlight color from selection
+  const currentHighlight = editor.getAttributes('highlight')?.color || '';
 
   const ToolbarButton = ({
     onClick,
@@ -189,6 +237,149 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
         <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Strikethrough">
           <Strikethrough size={14} />
         </ToolbarButton>
+
+        <Separator />
+
+        {/* Text Color */}
+        <div className="relative" ref={textColorRef}>
+          <button
+            type="button"
+            onClick={() => { setShowTextColorPicker(!showTextColorPicker); setShowHighlightPicker(false); }}
+            title="Text Color"
+            className={`p-1.5 rounded transition-colors flex items-center gap-0.5 ${
+              showTextColorPicker
+                ? 'bg-[#017C87]/15 text-[#017C87]'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <div className="relative">
+              <Palette size={14} />
+              {currentTextColor && (
+                <div
+                  className="absolute -bottom-0.5 left-0 right-0 h-[3px] rounded-full"
+                  style={{ backgroundColor: currentTextColor }}
+                />
+              )}
+            </div>
+          </button>
+          {showTextColorPicker && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-2 w-[180px]">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-semibold uppercase text-gray-400 tracking-wider">Text Color</span>
+                <button
+                  onClick={() => setShowTextColorPicker(false)}
+                  className="text-gray-400 hover:text-gray-600 p-0.5"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {TEXT_COLORS.map((c) => (
+                  <button
+                    key={c.value || 'default'}
+                    onClick={() => {
+                      if (c.value) {
+                        editor.chain().focus().setColor(c.value).run();
+                      } else {
+                        editor.chain().focus().unsetColor().run();
+                      }
+                      setShowTextColorPicker(false);
+                    }}
+                    title={c.label}
+                    className={`w-6 h-6 rounded border transition-all hover:scale-110 ${
+                      currentTextColor === c.value
+                        ? 'ring-2 ring-[#017C87] ring-offset-1'
+                        : 'border-gray-200 hover:border-gray-400'
+                    }`}
+                    style={{
+                      backgroundColor: c.value || '#ffffff',
+                      ...(c.value === '' ? {
+                        background: 'linear-gradient(135deg, #fff 43%, #ef4444 43%, #ef4444 57%, #fff 57%)',
+                      } : {}),
+                    }}
+                  />
+                ))}
+              </div>
+              {/* Custom color input */}
+              <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={currentTextColor || '#000000'}
+                  onChange={(e) => {
+                    editor.chain().focus().setColor(e.target.value).run();
+                  }}
+                  className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0"
+                  title="Custom color"
+                />
+                <span className="text-[10px] text-gray-400">Custom</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Highlight Color */}
+        <div className="relative" ref={highlightRef}>
+          <button
+            type="button"
+            onClick={() => { setShowHighlightPicker(!showHighlightPicker); setShowTextColorPicker(false); }}
+            title="Highlight Color"
+            className={`p-1.5 rounded transition-colors flex items-center gap-0.5 ${
+              showHighlightPicker
+                ? 'bg-[#017C87]/15 text-[#017C87]'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <div className="relative">
+              <Highlighter size={14} />
+              {currentHighlight && (
+                <div
+                  className="absolute -bottom-0.5 left-0 right-0 h-[3px] rounded-full"
+                  style={{ backgroundColor: currentHighlight }}
+                />
+              )}
+            </div>
+          </button>
+          {showHighlightPicker && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-2 w-[170px]">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-semibold uppercase text-gray-400 tracking-wider">Highlight</span>
+                <button
+                  onClick={() => setShowHighlightPicker(false)}
+                  className="text-gray-400 hover:text-gray-600 p-0.5"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+              <div className="grid grid-cols-5 gap-1">
+                {HIGHLIGHT_COLORS.map((c) => (
+                  <button
+                    key={c.value || 'none'}
+                    onClick={() => {
+                      if (c.value) {
+                        editor.chain().focus().toggleHighlight({ color: c.value }).run();
+                      } else {
+                        editor.chain().focus().unsetHighlight().run();
+                      }
+                      setShowHighlightPicker(false);
+                    }}
+                    title={c.label}
+                    className={`w-6 h-6 rounded border transition-all hover:scale-110 ${
+                      currentHighlight === c.value
+                        ? 'ring-2 ring-[#017C87] ring-offset-1'
+                        : 'border-gray-200 hover:border-gray-400'
+                    }`}
+                    style={{
+                      backgroundColor: c.value || '#ffffff',
+                      ...(c.value === '' ? {
+                        background: 'linear-gradient(135deg, #fff 43%, #ef4444 43%, #ef4444 57%, #fff 57%)',
+                      } : {}),
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <Separator />
 
@@ -386,6 +577,10 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
         .ProseMirror a {
           color: #017C87;
           text-decoration: underline;
+        }
+        .ProseMirror mark {
+          border-radius: 2px;
+          padding: 1px 2px;
         }
       `}</style>
     </div>

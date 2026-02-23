@@ -10,7 +10,7 @@ import {
   SortableContext, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Check, Loader2, Plus, DollarSign, FileText } from 'lucide-react';
+import { Check, Loader2, Plus, DollarSign, FileText, FolderOpen } from 'lucide-react';
 
 import { PageEditorProps, UnifiedItem, CUSTOM_VALUE } from './pageEditorTypes';
 import { usePageEditorState } from './usePageEditorState';
@@ -20,6 +20,7 @@ import { usePdfOperations } from './usePdfOperations';
 import SortablePdfRow from './SortablePdfRow';
 import SortablePricingRow from './SortablePricingRow';
 import SortableTextRow from './SortableTextRow';
+import SortableGroupRow from './SortableGroupRow';
 import PdfPreviewPanel from './PdfPreviewPanel';
 import PricingPreviewPanel from './PricingPreviewPanel';
 import TextPagePreviewPanel from './TextPagePreviewPanel';
@@ -38,6 +39,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     entries, setEntries, pageCount, setPageCount,
     saveStatus, syncPageCount, updateEntry,
     flushPendingSaves, remapSaveStatus,
+    addGroup, removeGroup,
     } = usePageEditorState(proposalId, initialPageNames, tableName);
 
   const {
@@ -76,17 +78,30 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   /* ——— Computed unified items ——————————————————————————————————— */
 
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
-    const items: UnifiedItem[] = entries.map((_, i) => ({
-      id: `pdf-${i}`,
-      type: 'pdf' as const,
-      pdfIndex: i,
-    }));
+    // Build items from entries, separating groups from PDF pages
+    const items: UnifiedItem[] = [];
+    let pdfIdx = 0;
+    for (let i = 0; i < entries.length; i++) {
+      if (entries[i].type === 'group') {
+        items.push({ id: `group-${i}`, type: 'group', pdfIndex: -1, entryIndex: i });
+      } else {
+        items.push({ id: `pdf-${pdfIdx}`, type: 'pdf', pdfIndex: pdfIdx, entryIndex: i });
+        pdfIdx++;
+      }
+    }
 
-    // Insert pricing page at its position
+    // Insert pricing page at its position (relative to PDF pages)
     if (pricingExists && pricingForm.enabled) {
-      const insertIdx = pricingPosition === -1 || pricingPosition >= items.length
-        ? items.length
-        : pricingPosition;
+      // Count PDF items to find insert position
+      let pdfCount = 0;
+      let insertIdx = items.length;
+      if (pricingPosition >= 0) {
+        for (let i = 0; i < items.length; i++) {
+          if (pdfCount >= pricingPosition) { insertIdx = i; break; }
+          if (items[i].type === 'pdf') pdfCount++;
+          insertIdx = i + 1;
+        }
+      }
       items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pdfIndex: -1 });
     }
 
@@ -99,11 +114,9 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         pdfIndex: -1,
         textPageId: tp.id,
       };
-      // Find the right insert position accounting for already-inserted special pages
       if (tp.position === -1 || tp.position >= items.length) {
         items.push(textItem);
       } else {
-        // Count how many PDF pages come before the target position
         let pdfCount = 0;
         let insertAt = 0;
         for (let i = 0; i < items.length; i++) {
@@ -122,6 +135,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   }, [entries, pricingExists, pricingForm.enabled, pricingPosition, textPages]);
 
   const selectedIsPricing = selectedId === 'pricing';
+  const selectedIsGroup = selectedId.startsWith('group-');
   const selectedTextPage = selectedId.startsWith('text-')
     ? textPages.find((tp) => tp.id === selectedId.replace('text-', ''))
     : null;
@@ -162,6 +176,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
   const toggleIndent = (index: number) => {
     if (index === 0) return;
+    if (entries[index]?.type === 'group') return; // groups can't be indented
     updateEntry(index, { indent: entries[index].indent === 0 ? 1 : 0 });
   };
 
@@ -177,7 +192,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
     const reordered = arrayMove(unifiedItems, oldIdx, newIdx);
 
-    // Extract new PDF page order
+    // Extract new PDF page order (for physical PDF reorder)
     const pdfItems = reordered.filter((i) => i.type === 'pdf');
     const newPageOrder = pdfItems.map((i) => i.pdfIndex);
 
@@ -208,7 +223,21 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       }
     }
 
-    // Check if PDF order actually changed
+    // Rebuild entries array from reordered items (groups + PDF entries in new visual order)
+    // Only items that live in entries (pdf + group) are included; pricing/text are stored separately
+    const newEntries: typeof entries = [];
+    for (const item of reordered) {
+      if ((item.type === 'pdf' || item.type === 'group') && item.entryIndex !== undefined) {
+        newEntries.push(entries[item.entryIndex]);
+      }
+    }
+    const entriesOrderChanged = newEntries.length !== entries.length || newEntries.some((e, i) => e !== entries[i]);
+    if (entriesOrderChanged) {
+      setEntries(newEntries);
+      await flushPendingSaves();
+    }
+
+    // Check if physical PDF order actually changed
     const orderChanged = newPageOrder.some((v, i) => v !== i);
     if (orderChanged) {
       await handleReorder(newPageOrder);
@@ -349,7 +378,25 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                     );
                   }
 
-                  const entry = entries[item.pdfIndex];
+                  if (item.type === 'group') {
+                    const entryIdx = item.entryIndex!;
+                    const entry = entries[entryIdx];
+                    if (!entry) return null;
+                    return (
+                      <SortableGroupRow
+                        key={item.id}
+                        id={item.id}
+                        name={entry.name}
+                        isSelected={selectedId === item.id}
+                        onSelect={() => setSelectedId(item.id)}
+                        onRename={(name) => updateEntry(entryIdx, { name })}
+                        onRemove={() => removeGroup(entryIdx)}
+                      />
+                    );
+                  }
+
+                  const entryIdx = item.entryIndex ?? item.pdfIndex;
+                  const entry = entries[entryIdx];
                   if (!entry) return null;
                   const i = item.pdfIndex;
 
@@ -360,16 +407,16 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         entry={entry}
                         visualNum={visualIdx + 1}
                         isSelected={selectedId === item.id}
-                        isDropdownOpen={openDropdown === i}
-                        status={saveStatus[i] || null}
+                        isDropdownOpen={openDropdown === entryIdx}
+                        status={saveStatus[entryIdx] || null}
                         processing={processing}
                         pageCount={pageCount}
                         index={i}
                         onSelect={() => setSelectedId(item.id)}
-                        onToggleIndent={() => toggleIndent(i)}
-                        onUpdateEntry={(changes) => updateEntry(i, changes)}
-                        onOpenDropdown={(open) => setOpenDropdown(open ? i : null)}
-                        onSelectPreset={(label) => selectPreset(i, label)}
+                        onToggleIndent={() => toggleIndent(entryIdx)}
+                        onUpdateEntry={(changes) => updateEntry(entryIdx, changes)}
+                        onOpenDropdown={(open) => setOpenDropdown(open ? entryIdx : null)}
+                        onSelectPreset={(label) => selectPreset(entryIdx, label)}
                         onReplacePage={(file) => handleReplacePage(i, file)}
                         onDeletePage={() => handleDeletePage(i)}
                       />
@@ -416,6 +463,15 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                   <FileText size={12} />
                   Add Text Page
                 </button>
+
+                {/* Add section header button */}
+                <button
+                  onClick={() => addGroup('New Section')}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-amber-600 border border-dashed border-amber-300 hover:bg-amber-50 hover:border-amber-400 transition-colors"
+                >
+                  <FolderOpen size={12} />
+                  Add Section Header
+                </button>
               </div>
             )}
 
@@ -444,6 +500,14 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
             />
+          ) : selectedIsGroup ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+              <FolderOpen size={32} className="text-amber-400 mb-3" />
+              <p className="text-sm font-medium text-amber-700">Section Header</p>
+              <p className="text-xs text-amber-500 mt-1 max-w-[240px]">
+                This is a non-navigable group header. Pages nested below it will appear as children in the sidebar.
+              </p>
+            </div>
           ) : (
             <PdfPreviewPanel
               filePath={filePath}

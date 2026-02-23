@@ -44,7 +44,7 @@ function renderNode(
   if (node.type === 'text') {
     let element: React.ReactNode = node.text || '';
 
-    // Apply marks (bold, italic, underline, strike, link, code)
+    // Apply marks (bold, italic, underline, strike, link, code, textStyle, highlight)
     if (node.marks) {
       for (const mark of node.marks) {
         switch (mark.type) {
@@ -88,14 +88,33 @@ function renderNode(
               </code>
             );
             break;
-            case 'textStyle': {
+          case 'textStyle': {
             const style: React.CSSProperties = {};
             if (mark.attrs?.fontSize) {
               style.fontSize = mark.attrs.fontSize as string;
             }
+            if (mark.attrs?.color) {
+              style.color = mark.attrs.color as string;
+            }
             if (Object.keys(style).length > 0) {
               element = <span key={`mark-${key}`} style={style}>{element}</span>;
             }
+            break;
+          }
+          case 'highlight': {
+            const highlightColor = mark.attrs?.color as string || '#fef08a';
+            element = (
+              <mark
+                key={`mark-${key}`}
+                style={{
+                  backgroundColor: highlightColor,
+                  borderRadius: 2,
+                  padding: '1px 2px',
+                }}
+              >
+                {element}
+              </mark>
+            );
             break;
           }
         }

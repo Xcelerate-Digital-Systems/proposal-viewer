@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
+import { normalizePageNamesWithGroups, pdfIndexToEntryIndex, PageNameEntry } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -81,25 +82,27 @@ export async function POST(req: NextRequest) {
     }
 
     // Update page_names array: insert default entries for the new pages
-    const currentNames: Array<{ name: string; indent: number }> = Array.isArray(proposal.page_names)
-      ? proposal.page_names.map((entry: unknown) => {
-          if (typeof entry === 'string') return { name: entry, indent: 0 };
-          const obj = entry as { name?: string; indent?: number };
-          return { name: obj.name || '', indent: obj.indent || 0 };
-        })
-      : [];
+    // Use group-aware normalization to preserve section headers
+    const currentNames = normalizePageNamesWithGroups(proposal.page_names, totalPages);
 
-    // Pad if needed
-    while (currentNames.length < totalPages) {
-      currentNames.push({ name: `Page ${currentNames.length + 1}`, indent: 0 });
+    // Find the correct insertion point in the entries array
+    // afterPage is a PDF position (0 = before first, N = after Nth PDF page)
+    let entryInsertIdx: number;
+    if (afterPage === 0) {
+      // Insert at the very start (before any entries including groups)
+      entryInsertIdx = 0;
+    } else {
+      // Find the entry index of the PDF page at position (afterPage - 1), then insert after it
+      const prevEntryIdx = pdfIndexToEntryIndex(currentNames, afterPage - 1);
+      entryInsertIdx = prevEntryIdx >= 0 ? prevEntryIdx + 1 : currentNames.length;
     }
 
     // Insert new entries at the correct position
     const newEntries = Array.from({ length: uploadedPageCount }, (_, i) => ({
-      name: `Page ${insertIndex + i + 1}`,
+      name: `Page ${afterPage + i + 1}`,
       indent: 0,
     }));
-    currentNames.splice(insertIndex, 0, ...newEntries);
+    currentNames.splice(entryInsertIdx, 0, ...newEntries);
 
     const newTotalPages = existingDoc.getPageCount();
 

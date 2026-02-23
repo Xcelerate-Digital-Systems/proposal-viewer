@@ -1,7 +1,7 @@
 // components/admin/page-editor/usePdfOperations.ts
 
 import { useState, useCallback } from 'react';
-import { PageNameEntry, normalizePageNames } from '@/lib/supabase';
+import { PageNameEntry, normalizePageNames, pdfIndexToEntryIndex } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 
@@ -65,7 +65,15 @@ export function usePdfOperations({
       setEntries((prev) => {
         const updated = [...prev];
         const newEntries = Array.from({ length: result.pages_inserted || 1 }, (_, idx) => ({ name: `Page ${afterPage + idx + 1}`, indent: 0 }));
-        updated.splice(afterPage, 0, ...newEntries);
+        // Find correct insertion point by skipping groups
+        let entryInsertIdx: number;
+        if (afterPage === 0) {
+          entryInsertIdx = 0;
+        } else {
+          const prevIdx = pdfIndexToEntryIndex(updated, afterPage - 1);
+          entryInsertIdx = prevIdx >= 0 ? prevIdx + 1 : updated.length;
+        }
+        updated.splice(entryInsertIdx, 0, ...newEntries);
         return updated;
       });
       setPageCount(result.total_pages);
@@ -93,7 +101,13 @@ export function usePdfOperations({
       });
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed to delete page'); setProcessing(false); return; }
       const result = await res.json();
-      setEntries((prev) => { const updated = [...prev]; updated.splice(pageIndex, 1); return updated; });
+      setEntries((prev) => {
+        const updated = [...prev];
+        // Find the correct entry index by skipping groups
+        const entryIdx = pdfIndexToEntryIndex(updated, pageIndex);
+        if (entryIdx >= 0) updated.splice(entryIdx, 1);
+        return updated;
+      });
       setPageCount(result.total_pages);
       if (selectedPdfIndex >= result.total_pages) setSelectedId(`pdf-${Math.max(0, result.total_pages - 1)}`);
       toast.success(`Page ${pageIndex + 1} deleted`);
@@ -103,8 +117,8 @@ export function usePdfOperations({
   }, [proposalId, pageCount, selectedPdfIndex, flushPendingSaves, setEntries, setPageCount, setSelectedId, confirm, toast]);
 
   const handleReorder = useCallback(async (newPageOrder: number[]) => {
-    const newEntries = newPageOrder.map((origIdx) => entries[origIdx]);
-    setEntries(newEntries);
+    // NOTE: entries are already reordered by handleDragEnd in PageEditor.tsx
+    // We only need to remap save statuses and call the API for PDF reorder
     remapSaveStatus(newPageOrder);
 
     setProcessing(true);
@@ -125,7 +139,7 @@ export function usePdfOperations({
       toast.error('Failed to reorder pages');
     }
     setProcessing(false);
-  }, [proposalId, entries, initialPageNames, setEntries, remapSaveStatus, toast]);
+  }, [proposalId, initialPageNames, setEntries, remapSaveStatus, toast]);
 
   return {
     processing,
