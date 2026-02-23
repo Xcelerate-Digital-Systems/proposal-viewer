@@ -2,12 +2,13 @@
 
 import { PageNameEntry, PricingLineItem, PricingOptionalItem } from '@/lib/supabase';
 
-/* ─── Types ─────────────────────────────────────────────────────────── */
+/* ——— Types ——————————————————————————————————————————————————— */
 
 export type UnifiedItem = {
   id: string;
-  type: 'pdf' | 'pricing';
+  type: 'pdf' | 'pricing' | 'text';
   pdfIndex: number;
+  textPageId?: string; // UUID of the text page record
 };
 
 export type PricingFormState = {
@@ -32,7 +33,7 @@ export interface PageEditorProps {
   tableName?: 'proposals' | 'documents';
 }
 
-/* ─── Constants ─────────────────────────────────────────────────────── */
+/* ——— Constants ——————————————————————————————————————————————— */
 
 export const PRESET_LABELS = [
   'INTRODUCTION', 'TABLE OF CONTENTS', 'EXECUTIVE SUMMARY', 'WHO ARE WE',
@@ -59,6 +60,6 @@ export const DEFAULT_PRICING: PricingFormState = {
   proposalDate: new Date().toISOString().split('T')[0],
 };
 
-/* ─── Helpers ───────────────────────────────────────────────────────── */
+/* ——— Helpers ——————————————————————————————————————————————————— */
 
 export const isPreset = (name: string) => PRESET_LABELS.includes(name.toUpperCase());

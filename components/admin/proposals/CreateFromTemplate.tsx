@@ -166,7 +166,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
 
       if (insertError || !newProposal) throw new Error('Failed to create proposal');
 
-      // 8. Copy template pricing to proposal pricing
+      // 7. Copy template pricing to proposal pricing
       setStatus('Copying pricing...');
       const { data: templatePricing } = await supabase
         .from('template_pricing')
@@ -197,6 +197,34 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
 
         if (pricingError) {
           console.warn('Failed to copy pricing from template:', pricingError);
+        }
+      }
+
+      // 8. Copy template text pages to proposal text pages
+      setStatus('Copying text pages...');
+      const { data: templateTextPages } = await supabase
+        .from('template_text_pages')
+        .select('enabled, position, title, content, sort_order')
+        .eq('template_id', selectedTemplate.id)
+        .order('sort_order', { ascending: true });
+
+      if (templateTextPages && templateTextPages.length > 0) {
+        const textPageRows = templateTextPages.map((tp) => ({
+          proposal_id: newProposal.id,
+          company_id: companyId,
+          enabled: tp.enabled,
+          position: tp.position,
+          title: tp.title,
+          content: tp.content,
+          sort_order: tp.sort_order,
+        }));
+
+        const { error: textPageError } = await supabase
+          .from('proposal_text_pages')
+          .insert(textPageRows);
+
+        if (textPageError) {
+          console.warn('Failed to copy text pages from template:', textPageError);
         }
       }
 

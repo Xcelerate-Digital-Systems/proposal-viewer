@@ -9,6 +9,7 @@ import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
 import PdfViewer from '@/components/viewer/PdfViewer';
 import PricingPage from '@/components/viewer/PricingPage';
+import TextPage from '@/components/viewer/TextPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import CommentsPanel from '@/components/viewer/CommentsPanel';
 import AcceptModal from '@/components/viewer/AcceptModal';
@@ -30,6 +31,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     brandingLoaded,
     pricing,
     isPricingPage,
+    isTextPage,
+    getTextPageId,
+    getTextPage,
     toPdfPage,
     onDocumentLoadSuccess,
     getPageName,
@@ -58,7 +62,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
   // Is the current virtual page the pricing page?
   const onPricingPage = isPricingPage(currentPage);
-  // If not pricing, what PDF page should we show?
+  // Is the current virtual page a text page?
+  const onTextPage = isTextPage(currentPage);
+  const currentTextPageId = getTextPageId(currentPage);
+  const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
+  // If not pricing or text, what PDF page should we show?
   const pdfPage = toPdfPage(currentPage);
 
   // Dismiss cover state when cover isn't enabled so keyboard nav works
@@ -234,7 +242,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       />
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Conditionally render PDF or Pricing page */}
+        {/* Conditionally render PDF, Pricing, or Text page */}
         {onPricingPage && pricing ? (
           <div
             ref={mainRef}
@@ -245,6 +253,21 @@ export default function ProposalViewerPage({ params }: { params: { token: string
               pricing={pricing}
               branding={branding}
               clientName={proposal?.client_name}
+            />
+          </div>
+        ) : onTextPage && currentTextPage ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <TextPage
+              textPage={currentTextPage}
+              branding={branding}
+              clientName={proposal?.client_name}
+              companyName={branding.name}
+              userName={undefined}
+              proposalTitle={proposal?.title}
             />
           </div>
         ) : (

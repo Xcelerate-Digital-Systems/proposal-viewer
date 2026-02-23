@@ -10,16 +10,19 @@ import {
   SortableContext, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Check, Loader2, Plus, DollarSign } from 'lucide-react';
+import { Check, Loader2, Plus, DollarSign, FileText } from 'lucide-react';
 
 import { PageEditorProps, UnifiedItem, CUSTOM_VALUE } from './pageEditorTypes';
 import { usePageEditorState } from './usePageEditorState';
 import { usePricingState } from './usePricingState';
+import { useTextPagesState } from './useTextPagesState';
 import { usePdfOperations } from './usePdfOperations';
 import SortablePdfRow from './SortablePdfRow';
 import SortablePricingRow from './SortablePricingRow';
+import SortableTextRow from './SortableTextRow';
 import PdfPreviewPanel from './PdfPreviewPanel';
 import PricingPreviewPanel from './PricingPreviewPanel';
+import TextPageEditorPanel from './TextPageEditorPanel';
 
 export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel, tableName = 'proposals' }: PageEditorProps) {
   // UI state
@@ -43,7 +46,18 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     addPricingPage, removePricingPage, savePricing,
   } = usePricingState(proposalId);
 
-  const selectedPdfIndex = selectedId === 'pricing' ? -1 : parseInt(selectedId.replace('pdf-', ''));
+  const isProposalOrTemplate = tableName !== 'documents';
+
+  const {
+    textPagesLoaded, textPages, textPageSaveStatuses,
+    updateTextPage, updateTextPagePosition, flushTextPageSaves,
+    addTextPage, removeTextPage,
+  } = useTextPagesState({
+    entityId: proposalId,
+    entityType: isProposalOrTemplate ? 'proposal' : 'proposal',
+  });
+
+  const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
 
   const {
     processing, pdfVersion,
@@ -59,7 +73,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  /* ─── Computed unified items ─────────────────────────────────────── */
+  /* ——— Computed unified items ——————————————————————————————————— */
 
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
     const items: UnifiedItem[] = entries.map((_, i) => ({
@@ -68,6 +82,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       pdfIndex: i,
     }));
 
+    // Insert pricing page at its position
     if (pricingExists && pricingForm.enabled) {
       const insertIdx = pricingPosition === -1 || pricingPosition >= items.length
         ? items.length
@@ -75,12 +90,43 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pdfIndex: -1 });
     }
 
+    // Insert text pages at their positions
+    for (const tp of textPages) {
+      if (!tp.enabled) continue;
+      const textItem: UnifiedItem = {
+        id: `text-${tp.id}`,
+        type: 'text',
+        pdfIndex: -1,
+        textPageId: tp.id,
+      };
+      // Find the right insert position accounting for already-inserted special pages
+      if (tp.position === -1 || tp.position >= items.length) {
+        items.push(textItem);
+      } else {
+        // Count how many PDF pages come before the target position
+        let pdfCount = 0;
+        let insertAt = 0;
+        for (let i = 0; i < items.length; i++) {
+          if (pdfCount >= tp.position) {
+            insertAt = i;
+            break;
+          }
+          if (items[i].type === 'pdf') pdfCount++;
+          insertAt = i + 1;
+        }
+        items.splice(insertAt, 0, textItem);
+      }
+    }
+
     return items;
-  }, [entries, pricingExists, pricingForm.enabled, pricingPosition]);
+  }, [entries, pricingExists, pricingForm.enabled, pricingPosition, textPages]);
 
   const selectedIsPricing = selectedId === 'pricing';
+  const selectedTextPage = selectedId.startsWith('text-')
+    ? textPages.find((tp) => tp.id === selectedId.replace('text-', ''))
+    : null;
 
-  /* ─── Measure panel height ───────────────────────────────────────── */
+  /* ——— Measure panel height ————————————————————————————————————— */
 
   useEffect(() => {
     const measure = () => {
@@ -95,7 +141,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, []);
 
-  /* ─── Close dropdown on outside click ────────────────────────────── */
+  /* ——— Close dropdown on outside click —————————————————————————— */
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -107,7 +153,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  /* ─── Label helpers ──────────────────────────────────────────────── */
+  /* ——— Label helpers ———————————————————————————————————————————— */
 
   const selectPreset = (index: number, label: string) => {
     if (label !== CUSTOM_VALUE) updateEntry(index, { name: label });
@@ -119,7 +165,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     updateEntry(index, { indent: entries[index].indent === 0 ? 1 : 0 });
   };
 
-  /* ─── Drag and drop ──────────────────────────────────────────────── */
+  /* ——— Drag and drop ——————————————————————————————————————————— */
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -135,15 +181,30 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     const pdfItems = reordered.filter((i) => i.type === 'pdf');
     const newPageOrder = pdfItems.map((i) => i.pdfIndex);
 
-    // Compute new pricing position
+    // Helper: count PDF pages before a given index in the reordered list
+    const countPdfBefore = (idx: number) =>
+      reordered.slice(0, idx).filter((i) => i.type === 'pdf').length;
+
+    // Update pricing position
     if (pricingExists && pricingForm.enabled) {
       const pricingIdx = reordered.findIndex((i) => i.type === 'pricing');
-      const pdfBeforePricing = reordered.slice(0, pricingIdx).filter((i) => i.type === 'pdf').length;
       const isLast = pricingIdx === reordered.length - 1;
-      const newPos = isLast ? -1 : pdfBeforePricing;
+      const newPos = isLast ? -1 : countPdfBefore(pricingIdx);
       if (newPos !== pricingPosition) {
         setPricingPosition(newPos);
         savePricing(pricingForm, newPos);
+      }
+    }
+
+    // Update text page positions
+    for (const tp of textPages) {
+      if (!tp.enabled) continue;
+      const textIdx = reordered.findIndex((i) => i.id === `text-${tp.id}`);
+      if (textIdx === -1) continue;
+      const isLast = textIdx === reordered.length - 1;
+      const newPos = isLast ? -1 : countPdfBefore(textIdx);
+      if (newPos !== tp.position) {
+        updateTextPagePosition(tp.id, newPos);
       }
     }
 
@@ -154,7 +215,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     }
   };
 
-  /* ─── Add/remove pricing ─────────────────────────────────────────── */
+  /* ——— Add/remove pricing ————————————————————————————————————— */
 
   const handleAddPricing = async () => {
     await addPricingPage();
@@ -166,7 +227,21 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     if (removed) setSelectedId('pdf-0');
   };
 
-  /* ─── Navigation ─────────────────────────────────────────────────── */
+  /* ——— Add/remove text pages ————————————————————————————————— */
+
+  const handleAddTextPage = async () => {
+    const newPage = await addTextPage();
+    if (newPage) {
+      setSelectedId(`text-${newPage.id}`);
+    }
+  };
+
+  const handleRemoveTextPage = async (pageId: string) => {
+    const removed = await removeTextPage(pageId);
+    if (removed) setSelectedId('pdf-0');
+  };
+
+  /* ——— Navigation ————————————————————————————————————————————— */
 
   const goPrev = () => {
     const idx = unifiedItems.findIndex((i) => i.id === selectedId);
@@ -177,20 +252,21 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     if (idx < unifiedItems.length - 1) setSelectedId(unifiedItems[idx + 1].id);
   };
 
-  // Compute nav availability for pricing preview
+  // Compute nav availability
   const selectedUnifiedIdx = unifiedItems.findIndex((i) => i.id === selectedId);
   const canGoPrev = selectedUnifiedIdx > 0;
   const canGoNext = selectedUnifiedIdx < unifiedItems.length - 1;
 
-  /* ─── Done ───────────────────────────────────────────────────────── */
+  /* ——— Done —————————————————————————————————————————————————— */
 
   const handleDone = async () => {
     await flushPendingSaves();
     await flushPricingSave();
+    await flushTextPageSaves();
     onSave();
   };
 
-  /* ─── Render ─────────────────────────────────────────────────────── */
+  /* ——— Render ———————————————————————————————————————————————— */
 
   return (
     <div className="border-t border-gray-200 bg-gray-50 p-6">
@@ -259,6 +335,20 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                     );
                   }
 
+                  if (item.type === 'text') {
+                    const tp = textPages.find((t) => t.id === item.textPageId);
+                    return (
+                      <SortableTextRow
+                        key={item.id}
+                        id={item.id}
+                        title={tp?.title || 'Text Page'}
+                        isSelected={selectedId === item.id}
+                        onSelect={() => setSelectedId(item.id)}
+                        onRemove={() => tp && handleRemoveTextPage(tp.id)}
+                      />
+                    );
+                  }
+
                   const entry = entries[item.pdfIndex];
                   if (!entry) return null;
                   const i = item.pdfIndex;
@@ -304,27 +394,50 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               </SortableContext>
             </DndContext>
 
-            {/* Add pricing page button */}
-            {tableName !== 'documents' && pricingLoaded && (!pricingExists || !pricingForm.enabled) && (
-              <div className="flex justify-center pt-3 pb-2">
+            {/* Action buttons at bottom */}
+            {isProposalOrTemplate && (pricingLoaded && textPagesLoaded) && (
+              <div className="flex flex-wrap justify-center gap-2 pt-3 pb-2">
+                {/* Add pricing page button */}
+                {(!pricingExists || !pricingForm.enabled) && (
+                  <button
+                    onClick={handleAddPricing}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+                  >
+                    <DollarSign size={12} />
+                    Add Pricing Page
+                  </button>
+                )}
+
+                {/* Add text page button */}
                 <button
-                  onClick={handleAddPricing}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+                  onClick={handleAddTextPage}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-purple-600 border border-dashed border-purple-300 hover:bg-purple-50 hover:border-purple-400 transition-colors"
                 >
-                  <DollarSign size={12} />
-                  Add Pricing Page
+                  <FileText size={12} />
+                  Add Text Page
                 </button>
               </div>
             )}
+
             {entries.length === 0 && <p className="text-sm text-gray-400">Loading pages...</p>}
           </div>
         </div>
 
-        {/* Right half: preview */}
+        {/* Right half: preview / editor */}
         <div className="w-1/2 min-w-0 flex flex-col">
           {selectedIsPricing && pricingExists ? (
             <PricingPreviewPanel
               proposalId={proposalId}
+              onGoPrev={goPrev}
+              onGoNext={goNext}
+              canGoPrev={canGoPrev}
+              canGoNext={canGoNext}
+            />
+          ) : selectedTextPage ? (
+            <TextPageEditorPanel
+              page={selectedTextPage}
+              saveStatus={textPageSaveStatuses[selectedTextPage.id] || 'idle'}
+              onUpdate={updateTextPage}
               onGoPrev={goPrev}
               onGoNext={goNext}
               canGoPrev={canGoPrev}
