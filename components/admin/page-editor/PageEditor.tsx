@@ -22,7 +22,7 @@ import SortablePricingRow from './SortablePricingRow';
 import SortableTextRow from './SortableTextRow';
 import PdfPreviewPanel from './PdfPreviewPanel';
 import PricingPreviewPanel from './PricingPreviewPanel';
-import TextPageEditorPanel from './TextPageEditorPanel';
+import TextPagePreviewPanel from './TextPagePreviewPanel';
 
 export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel, tableName = 'proposals' }: PageEditorProps) {
   // UI state
@@ -434,7 +434,8 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               canGoNext={canGoNext}
             />
           ) : selectedTextPage ? (
-            <TextPageEditorPanel
+            <TextPagePreviewPanel
+              proposalId={proposalId}
               page={selectedTextPage}
               saveStatus={textPageSaveStatuses[selectedTextPage.id] || 'idle'}
               onUpdate={updateTextPage}

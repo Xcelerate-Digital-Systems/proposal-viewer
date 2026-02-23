@@ -29,6 +29,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
   const fieldMenuRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },

@@ -38,6 +38,10 @@ export type CompanyBranding = {
   font_heading_weight: string | null;
   font_body_weight: string | null;
   font_sidebar_weight: string | null;
+  text_page_bg_color: string;
+  text_page_text_color: string;
+  text_page_heading_color: string | null;
+  text_page_font_size: string;
 };
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -65,6 +69,10 @@ const DEFAULT_BRANDING: CompanyBranding = {
   font_heading_weight: null,
   font_body_weight: null,
   font_sidebar_weight: null,
+  text_page_bg_color: '#141414',
+  text_page_text_color: '#ffffff',
+  text_page_heading_color: null,
+  text_page_font_size: '14',
 };
 
 /**

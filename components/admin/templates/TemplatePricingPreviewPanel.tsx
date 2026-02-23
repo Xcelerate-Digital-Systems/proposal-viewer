@@ -44,6 +44,10 @@ const DEFAULT_BRANDING: CompanyBranding = {
   font_heading_weight: null,
   font_body_weight: null,
   font_sidebar_weight: null,
+  text_page_bg_color: '#141414',
+  text_page_text_color: '#ffffff',
+  text_page_heading_color: null,
+  text_page_font_size: '14',
 };
 
 export default function TemplatePricingPreviewPanel({

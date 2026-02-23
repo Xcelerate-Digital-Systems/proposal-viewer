@@ -102,15 +102,34 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json();
     const allowedFields = [
-      'name', 'slug', 'accent_color', 'website', 'logo_path',
-      'bg_primary', 'bg_secondary', 'sidebar_text_color', 'accept_text_color',
-      // Cover page branding
-      'cover_bg_style', 'cover_bg_color_1', 'cover_bg_color_2',
-      'cover_text_color', 'cover_subtitle_color',
-      'cover_button_bg', 'cover_button_text', 'cover_overlay_opacity',
-      'cover_gradient_type', 'cover_gradient_angle',
-      'font_heading', 'font_body', 'font_sidebar',
-      'font_heading_weight', 'font_body_weight', 'font_sidebar_weight',
+      'name', 'slug', 
+      'accent_color', 
+      'website', 
+      'logo_path',
+      'bg_primary', 
+      'bg_secondary', 
+      'sidebar_text_color', 
+      'accept_text_color',
+      'cover_bg_style', 
+      'cover_bg_color_1', 
+      'cover_bg_color_2',
+      'cover_text_color', 
+      'cover_subtitle_color',
+      'cover_button_bg', 
+      'cover_button_text', 
+      'cover_overlay_opacity',
+      'cover_gradient_type', 
+      'cover_gradient_angle',
+      'font_heading', 
+      'font_body', 
+      'font_sidebar',
+      'font_heading_weight', 
+      'font_body_weight', 
+      'font_sidebar_weight',
+      'text_page_bg_color', 
+      'text_page_text_color', 
+      'text_page_heading_color', 
+      'text_page_font_size',
     ];
     const updates: Record<string, unknown> = {};
 
@@ -147,9 +166,20 @@ export async function PATCH(req: NextRequest) {
 
     // Validate color fields (all #RRGGBB format)
     const colorFields = [
-      'accent_color', 'bg_primary', 'bg_secondary', 'sidebar_text_color', 'accept_text_color',
-      'cover_bg_color_1', 'cover_bg_color_2', 'cover_text_color', 'cover_subtitle_color',
-      'cover_button_bg', 'cover_button_text',
+      'accent_color', 
+      'bg_primary', 
+      'bg_secondary', 
+      'sidebar_text_color', 
+      'accept_text_color',
+      'cover_bg_color_1', 
+      'cover_bg_color_2', 
+      'cover_text_color', 
+      'cover_subtitle_color',
+      'cover_button_bg', 
+      'cover_button_text', 
+      'text_page_bg_color', 
+      'text_page_text_color', 
+      'text_page_heading_color',
     ];
     for (const field of colorFields) {
       if (updates[field]) {
