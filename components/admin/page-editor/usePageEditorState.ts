@@ -145,33 +145,32 @@ export function usePageEditorState(
 
   // Add a section header (group) at the end of entries
   const addGroup = useCallback((name: string = 'New Section') => {
+    let newEntries: PageNameEntry[] = [];
     setEntries((prev) => {
-      const updated = [...prev, { name, indent: 0, type: 'group' as const }];
-      return updated;
+      newEntries = [...prev, { name, indent: 0, type: 'group' as const }];
+      return newEntries;
     });
-    // Immediately save
-    setTimeout(() => {
-      const currentEntries = entriesRef.current;
-      const currentDirty = new Set(dirtyRowsRef.current);
-      currentDirty.add(currentEntries.length - 1);
-      setDirtyRows(new Set());
-      saveEntries(currentEntries, currentDirty);
-    }, 50);
+    // Save immediately with the computed entries (don't rely on ref timing)
+    requestAnimationFrame(() => {
+      saveEntries(newEntries, new Set([newEntries.length - 1]));
+    });
   }, [saveEntries]);
 
   // Remove a group entry by its index in the entries array
   const removeGroup = useCallback((entryIndex: number) => {
+    let newEntries: PageNameEntry[] = [];
     setEntries((prev) => {
       if (prev[entryIndex]?.type !== 'group') return prev;
-      const updated = [...prev];
-      updated.splice(entryIndex, 1);
-      return updated;
+      newEntries = [...prev];
+      newEntries.splice(entryIndex, 1);
+      return newEntries;
     });
-    // Immediately save
-    setTimeout(() => {
-      const currentEntries = entriesRef.current;
-      saveEntries(currentEntries, new Set([0]));
-    }, 50);
+    // Save immediately with the computed entries
+    requestAnimationFrame(() => {
+      if (newEntries.length > 0) {
+        saveEntries(newEntries, new Set([0]));
+      }
+    });
   }, [saveEntries]);
 
   return {

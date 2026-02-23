@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Get proposal to find file_path and current page_names
+    // Get proposal to find file_path
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
-      .select('id, file_path, page_names')
+      .select('id, file_path')
       .eq('id', proposal_id)
       .single();
 
@@ -89,29 +89,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload reordered PDF' }, { status: 500 });
     }
 
-    // Reorder page_names array to match
-    const currentNames: Array<{ name: string; indent: number }> = Array.isArray(proposal.page_names)
-      ? proposal.page_names.map((entry: unknown) => {
-          if (typeof entry === 'string') return { name: entry, indent: 0 };
-          const obj = entry as { name?: string; indent?: number };
-          return { name: obj.name || '', indent: obj.indent || 0 };
-        })
-      : [];
-
-    // Pad if needed
-    while (currentNames.length < totalPages) {
-      currentNames.push({ name: `Page ${currentNames.length + 1}`, indent: 0 });
-    }
-
-    // Reorder page_names to match new PDF order
-    const reorderedNames = page_order.map((oldIndex: number) => currentNames[oldIndex]);
-
-    // Update proposal record
+    // NOTE: page_names reordering is handled by the client via flushPendingSaves()
+    // before calling this API. The client's handleDragEnd rebuilds the entries array
+    // with groups in correct positions and saves it. We only update file metadata here.
     await supabase
       .from('proposals')
       .update({
         file_size_bytes: modifiedBytes.byteLength,
-        page_names: reorderedNames,
         updated_at: new Date().toISOString(),
       })
       .eq('id', proposal_id);
@@ -120,7 +104,6 @@ export async function POST(req: NextRequest) {
       success: true,
       reordered: true,
       total_pages: totalPages,
-      page_names: reorderedNames,
       file_size_bytes: modifiedBytes.byteLength,
     });
   } catch (err) {
