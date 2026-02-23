@@ -135,11 +135,40 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       if (!mergeRes.ok) throw new Error('Failed to merge pages');
       const mergeData = await mergeRes.json();
 
-      // 4. Build page_names from template labels + indent
-      const pageNames = pages.map((p) => ({
+      // 4. Build page_names from template labels + indent + section headers
+      const basePageNames = pages.map((p) => ({
         name: p.label,
         indent: p.indent ?? 0,
       }));
+
+      // Fetch section headers from template and merge as group entries
+      const { data: templateData } = await supabase
+        .from('proposal_templates')
+        .select('section_headers')
+        .eq('id', selectedTemplate.id)
+        .single();
+
+      const sectionHeaders: { id: string; name: string; position: number }[] =
+        Array.isArray(templateData?.section_headers) ? templateData.section_headers : [];
+
+      // Insert section headers at their positions (sorted by position descending to avoid index shift)
+      const pageNames: { name: string; indent: number; type?: 'group' }[] = [...basePageNames];
+      const sortedHeaders = [...sectionHeaders].sort((a, b) => {
+        // -1 means end, put those last
+        if (a.position === -1 && b.position === -1) return 0;
+        if (a.position === -1) return 1;
+        if (b.position === -1) return -1;
+        return b.position - a.position; // descending so splices don't shift earlier indices
+      });
+
+      for (const header of sortedHeaders) {
+        const entry = { name: header.name, indent: 0, type: 'group' as const };
+        if (header.position === -1 || header.position >= pageNames.length) {
+          pageNames.push(entry);
+        } else {
+          pageNames.splice(header.position, 0, entry);
+        }
+      }
 
       // 5. Copy template cover image if present
       let coverImagePath: string | null = null;

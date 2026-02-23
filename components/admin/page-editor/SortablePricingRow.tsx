@@ -22,15 +22,16 @@ export default function SortablePricingRow({ id, title, isSelected, onSelect }: 
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} className="mb-2">
       <div
-        className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors border border-dashed ${
+        className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 cursor-pointer transition-colors border border-dashed ${
           isSelected
             ? 'bg-[#017C87]/10 border-[#017C87]/40 ring-1 ring-[#017C87]/30'
             : 'border-[#017C87]/20 hover:bg-[#017C87]/5'
         }`}
         onClick={onSelect}
       >
+        {/* Drag handle */}
         <button
           {...attributes}
           {...listeners}
@@ -38,10 +39,15 @@ export default function SortablePricingRow({ id, title, isSelected, onSelect }: 
         >
           <GripVertical size={14} />
         </button>
+        {/* Spacer to align with page number column */}
+        <span className="w-5 shrink-0" />
+        {/* Icon — aligns with indent button column */}
         <div className="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-[#017C87]/10">
           <DollarSign size={13} className="text-[#017C87]" />
         </div>
-        <span className="text-sm font-medium text-[#017C87] flex-1 truncate">{title || 'Pricing Page'}</span>
+        <span className="text-sm font-medium text-[#017C87] flex-1 truncate">
+          {title || 'Pricing Page'}
+        </span>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { supabase, PageNameEntry } from '@/lib/supabase';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -70,7 +70,16 @@ export default function PdfPreviewPanel({
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col min-h-0">
-      <Document file={pdfUrl} onLoadSuccess={onDocLoadSuccess} loading={null} key={pdfVersion}>
+      <Document
+        file={pdfUrl}
+        onLoadSuccess={onDocLoadSuccess}
+        loading={
+          <div className="flex-1 flex items-center justify-center py-20">
+            <Loader2 size={20} className="animate-spin text-gray-300" />
+          </div>
+        }
+        key={pdfVersion}
+      >
         {pageCount === 0 && <div className="hidden"><Page pageNumber={1} width={1} /></div>}
         {pageCount > 0 && (
           <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
@@ -99,6 +108,11 @@ export default function PdfPreviewPanel({
                 renderAnnotationLayer={false}
                 renderTextLayer={false}
                 className="max-h-full"
+                loading={
+                  <div className="flex flex-col items-center justify-center py-20">
+                    <Loader2 size={20} className="animate-spin text-gray-300" />
+                  </div>
+                }
               />
             </div>
           </div>

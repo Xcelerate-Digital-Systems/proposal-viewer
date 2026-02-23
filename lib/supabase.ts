@@ -170,6 +170,7 @@ export type ProposalTemplate = {
   cover_enabled: boolean;
   cover_subtitle: string | null;
   cover_button_text: string;
+  section_headers: PageNameEntry[] | null;
   company_id: string;
   created_at: string;
   updated_at: string;

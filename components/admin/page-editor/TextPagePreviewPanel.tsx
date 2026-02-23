@@ -18,6 +18,8 @@ interface TextPagePreviewPanelProps {
   onGoNext: () => void;
   canGoPrev: boolean;
   canGoNext: boolean;
+  /** When provided, fetches branding directly instead of looking up via proposals table */
+  companyId?: string;
 }
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -64,6 +66,7 @@ export default function TextPagePreviewPanel({
   onGoNext,
   canGoPrev,
   canGoNext,
+  companyId,
 }: TextPagePreviewPanelProps) {
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [proposal, setProposal] = useState<{ client_name?: string; title?: string } | null>(null);
@@ -72,10 +75,19 @@ export default function TextPagePreviewPanel({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Fetch branding + proposal info for preview context
-  // Fetch branding + proposal info for preview context
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // If companyId is provided directly (e.g. from templates), skip proposals lookup
+        if (companyId) {
+          const res = await fetch(`/api/company/branding?company_id=${companyId}`);
+          if (res.ok) {
+            const data = await res.json();
+            setBranding({ ...DEFAULT_BRANDING, ...data });
+          }
+          return;
+        }
+
         const { data: prop } = await supabase
           .from('proposals')
           .select('company_id, client_name, title')
@@ -99,7 +111,7 @@ export default function TextPagePreviewPanel({
     };
 
     fetchData();
-  }, [proposalId]);
+  }, [proposalId, companyId]);
 
   // Measure container and calculate scale
   useEffect(() => {
@@ -165,7 +177,7 @@ export default function TextPagePreviewPanel({
                 <Pencil size={12} />
                 Edit
               </button>
-              <span className="text-xs text-purple-600 font-medium flex items-center gap-1">
+              <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
                 <FileText size={11} />
                 {page.title || 'Text Page'}
               </span>

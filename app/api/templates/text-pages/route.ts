@@ -1,37 +1,23 @@
-// app/api/proposals/text-pages/route.ts
+// app/api/templates/text-pages/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-// GET — Fetch all text pages for a proposal (by proposal_id or share_token)
+// GET — Fetch all text pages for a template
 export async function GET(req: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const proposalId = req.nextUrl.searchParams.get('proposal_id');
-    const shareToken = req.nextUrl.searchParams.get('share_token');
+    const templateId = req.nextUrl.searchParams.get('template_id');
 
-    if (!proposalId && !shareToken) {
-      return NextResponse.json({ error: 'proposal_id or share_token required' }, { status: 400 });
-    }
-
-    let resolvedProposalId = proposalId;
-    if (shareToken && !proposalId) {
-      const { data: proposal } = await supabase
-        .from('proposals')
-        .select('id')
-        .eq('share_token', shareToken)
-        .single();
-      if (!proposal) {
-        return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
-      }
-      resolvedProposalId = proposal.id;
+    if (!templateId) {
+      return NextResponse.json({ error: 'template_id required' }, { status: 400 });
     }
 
     const { data, error } = await supabase
-      .from('proposal_text_pages')
+      .from('template_text_pages')
       .select('*')
-      .eq('proposal_id', resolvedProposalId)
+      .eq('template_id', templateId)
       .order('sort_order', { ascending: true });
 
     if (error) {
@@ -40,31 +26,31 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(data || []);
   } catch (err) {
-    console.error('Text pages GET error:', err);
+    console.error('Template text pages GET error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST — Create or update a text page
+// POST — Create or update a template text page
 export async function POST(req: NextRequest) {
   try {
     const supabase = createServiceClient();
     const body = await req.json();
-    const { proposal_id, id, ...pageData } = body;
+    const { template_id, id, ...pageData } = body;
 
-    if (!proposal_id) {
-      return NextResponse.json({ error: 'proposal_id is required' }, { status: 400 });
+    if (!template_id) {
+      return NextResponse.json({ error: 'template_id is required' }, { status: 400 });
     }
 
-    // Get the proposal's company_id
-    const { data: proposal, error: proposalError } = await supabase
-      .from('proposals')
+    // Get the template's company_id
+    const { data: template, error: templateError } = await supabase
+      .from('proposal_templates')
       .select('id, company_id')
-      .eq('id', proposal_id)
+      .eq('id', template_id)
       .single();
 
-    if (proposalError || !proposal) {
-      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+    if (templateError || !template) {
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
     const now = new Date().toISOString();
@@ -72,13 +58,13 @@ export async function POST(req: NextRequest) {
     if (id) {
       // Update existing text page
       const { data, error } = await supabase
-        .from('proposal_text_pages')
+        .from('template_text_pages')
         .update({
           ...pageData,
           updated_at: now,
         })
         .eq('id', id)
-        .eq('proposal_id', proposal_id)
+        .eq('template_id', template_id)
         .select()
         .single();
 
@@ -90,9 +76,9 @@ export async function POST(req: NextRequest) {
     } else {
       // Get next sort_order
       const { data: existing } = await supabase
-        .from('proposal_text_pages')
+        .from('template_text_pages')
         .select('sort_order')
-        .eq('proposal_id', proposal_id)
+        .eq('template_id', template_id)
         .order('sort_order', { ascending: false })
         .limit(1);
 
@@ -100,10 +86,10 @@ export async function POST(req: NextRequest) {
 
       // Insert new text page
       const { data, error } = await supabase
-        .from('proposal_text_pages')
+        .from('template_text_pages')
         .insert({
-          proposal_id,
-          company_id: proposal.company_id,
+          template_id,
+          company_id: template.company_id,
           ...pageData,
           sort_order: pageData.sort_order ?? nextSort,
           created_at: now,
@@ -119,12 +105,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(data);
     }
   } catch (err) {
-    console.error('Text pages POST error:', err);
+    console.error('Template text pages POST error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE — Remove a text page
+// DELETE — Remove a template text page
 export async function DELETE(req: NextRequest) {
   try {
     const supabase = createServiceClient();
@@ -135,7 +121,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const { error } = await supabase
-      .from('proposal_text_pages')
+      .from('template_text_pages')
       .delete()
       .eq('id', id);
 
@@ -145,7 +131,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Text pages DELETE error:', err);
+    console.error('Template text pages DELETE error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

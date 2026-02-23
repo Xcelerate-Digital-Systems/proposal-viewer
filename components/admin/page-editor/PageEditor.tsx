@@ -334,7 +334,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
           )}
           <button
             onClick={handleAddTextPage}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-600 border border-dashed border-purple-300 hover:bg-purple-50 hover:border-purple-400 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
           >
             <FileText size={12} />
             Add Text Page

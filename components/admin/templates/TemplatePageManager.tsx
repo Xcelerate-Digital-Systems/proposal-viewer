@@ -1,13 +1,13 @@
 // components/admin/templates/TemplatePageManager.tsx
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import {
-  Trash2, Plus, Loader2,
-  ChevronLeft, ChevronRight, DollarSign,
+  Plus, Loader2,
+  ChevronLeft, ChevronRight, DollarSign, FileText, FolderOpen,
 } from 'lucide-react';
 import {
   DndContext, closestCenter, DragEndEvent,
@@ -17,54 +17,30 @@ import {
   SortableContext, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import {
-  supabase, ProposalTemplate, TemplatePage, TemplatePricing,
-  PricingLineItem, PricingOptionalItem, PaymentSchedule, DEFAULT_PAYMENT_SCHEDULE,
-} from '@/lib/supabase';
+import { ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import SortableTemplateRow from './SortableTemplateRow';
 import SortableTemplatePricingRow from './SortableTemplatePricingRow';
 import TemplatePricingPreviewPanel from './TemplatePricingPreviewPanel';
+import { useTextPagesState } from '@/components/admin/page-editor/useTextPagesState';
+import SortableTextRow from '@/components/admin/page-editor/SortableTextRow';
+import SortableGroupRow from '@/components/admin/page-editor/SortableGroupRow';
+import TextPagePreviewPanel from '@/components/admin/page-editor/TextPagePreviewPanel';
+import { useTemplatePageState } from './useTemplatePageState';
+import { useTemplatePricingState } from './useTemplatePricingState';
+import { useTemplateSectionHeaders } from './useTemplateSectionHeaders';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
-const CUSTOM_VALUE = '__custom__';
-
-const DEFAULT_INTRO = 'The following costs are based on the agreed scope of works outlined within this proposal. All pricing has been carefully prepared to reflect the works required for successful project delivery.';
-
-export type TemplatePricingFormState = {
-  enabled: boolean;
-  title: string;
-  introText: string;
-  items: PricingLineItem[];
-  optionalItems: PricingOptionalItem[];
-  paymentSchedule: PaymentSchedule;
-  taxEnabled: boolean;
-  taxRate: number;
-  taxLabel: string;
-  validityDays: number | null;
-};
-
-const DEFAULT_PRICING: TemplatePricingFormState = {
-  enabled: true,
-  title: 'Project Investment',
-  introText: DEFAULT_INTRO,
-  items: [],
-  optionalItems: [],
-  paymentSchedule: DEFAULT_PAYMENT_SCHEDULE,
-  taxEnabled: true,
-  taxRate: 10,
-  taxLabel: 'GST (10%)',
-  validityDays: 30,
-};
 
 /* ─── Unified item type ──────────────────────────────────────────── */
 
 type UnifiedItem = {
   id: string;
-  type: 'pdf' | 'pricing';
-  pageIndex: number; // index into pages[] for pdf items, -1 for pricing
+  type: 'pdf' | 'pricing' | 'text' | 'group';
+  pageIndex: number;
+  textPageId?: string;
+  groupId?: string;
 };
 
 /* ─── Component ──────────────────────────────────────────────────── */
@@ -78,35 +54,38 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   const confirm = useConfirm();
   const toast = useToast();
 
-  // ─── Page state ──────────────────────────────────────────────────
-  const [pages, setPages] = useState<TemplatePage[]>([]);
-  const [pageUrls, setPageUrls] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  // ─── Hooks ───────────────────────────────────────────────────────
+  const {
+    pages, setPages, pageUrls, loading, localEdits, setLocalEdits,
+    saveStatus, fetchPages, flushPendingSaves,
+    getEdit, updateEdit, selectPreset, toggleIndent,
+  } = useTemplatePageState(template.id);
+
+  const {
+    pricingLoaded, pricingExists, pricingPosition, setPricingPosition,
+    pricingForm, pricingSaveStatus,
+    savePricing, addPricingPage, removePricingPage,
+  } = useTemplatePricingState(template.id, pages.length);
+
+  const {
+    textPagesLoaded, textPages, textPageSaveStatuses,
+    updateTextPage, updateTextPagePosition, flushTextPageSaves,
+    addTextPage, removeTextPage,
+  } = useTextPagesState({ entityId: template.id, entityType: 'template' });
+
+  const {
+    sectionHeaders, setSectionHeaders, sectionsLoaded,
+    saveSectionHeaders, addSectionHeader, removeSectionHeader, renameSectionHeader,
+  } = useTemplateSectionHeaders(template.id);
+
+  // ─── UI state ────────────────────────────────────────────────────
   const [processing, setProcessing] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
   const [previewWidth, setPreviewWidth] = useState(300);
 
-  // Local edits: label + indent keyed by page id
-  const [localEdits, setLocalEdits] = useState<Record<string, { label: string; indent: number }>>({});
-  const [saveStatus, setSaveStatus] = useState<Record<string, 'saving' | 'saved' | null>>({});
-
-  // ─── Pricing state ───────────────────────────────────────────────
-  const [pricingLoaded, setPricingLoaded] = useState(false);
-  const [pricingExists, setPricingExists] = useState(false);
-  const [pricingPosition, setPricingPosition] = useState(-1);
-  const [pricingForm, setPricingForm] = useState<TemplatePricingFormState>(DEFAULT_PRICING);
-  const [pricingSaveStatus, setPricingSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-
-  // ─── Refs ────────────────────────────────────────────────────────
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const savedTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const localEditsRef = useRef(localEdits);
-  localEditsRef.current = localEdits;
-  const pricingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── DnD sensors ─────────────────────────────────────────────────
   const sensors = useSensors(
@@ -125,75 +104,6 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     window.addEventListener('resize', measure);
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, [loading]);
-
-  // ─── Fetch pages ─────────────────────────────────────────────────
-  const fetchPages = useCallback(async () => {
-    const { data } = await supabase
-      .from('template_pages')
-      .select('*')
-      .eq('template_id', template.id)
-      .order('page_number', { ascending: true });
-
-    const templatePages = (data || []) as TemplatePage[];
-    setPages(templatePages);
-
-    const edits: Record<string, { label: string; indent: number }> = {};
-    for (const p of templatePages) {
-      edits[p.id] = { label: p.label, indent: p.indent ?? 0 };
-    }
-    setLocalEdits(edits);
-
-    const urls: Record<string, string> = {};
-    for (const page of templatePages) {
-      const { data: urlData } = await supabase.storage
-        .from('proposals')
-        .createSignedUrl(page.file_path, 3600);
-      if (urlData?.signedUrl) urls[page.id] = urlData.signedUrl;
-    }
-    setPageUrls(urls);
-    setLoading(false);
-  }, [template.id]);
-
-  useEffect(() => { fetchPages(); }, [fetchPages]);
-
-  // ─── Fetch pricing ───────────────────────────────────────────────
-  useEffect(() => {
-    const fetchPricing = async () => {
-      try {
-        const res = await fetch(`/api/templates/pricing?template_id=${template.id}`);
-        if (res.ok) {
-          const data: TemplatePricing | null = await res.json();
-          if (data) {
-            setPricingExists(true);
-            setPricingPosition(data.position);
-            setPricingForm({
-              enabled: data.enabled,
-              title: data.title,
-              introText: data.intro_text || DEFAULT_INTRO,
-              items: data.items || [],
-              optionalItems: data.optional_items || [],
-              paymentSchedule: data.payment_schedule || DEFAULT_PAYMENT_SCHEDULE,
-              taxEnabled: data.tax_enabled,
-              taxRate: data.tax_rate,
-              taxLabel: data.tax_label,
-              validityDays: data.validity_days,
-            });
-          }
-        }
-      } catch { /* no pricing yet */ }
-      setPricingLoaded(true);
-    };
-    fetchPricing();
-  }, [template.id]);
-
-  // ─── Cleanup timers ──────────────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      Object.values(debounceTimers.current).forEach(clearTimeout);
-      Object.values(savedTimers.current).forEach(clearTimeout);
-      if (pricingDebounce.current) clearTimeout(pricingDebounce.current);
-    };
-  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -214,128 +124,94 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       pageIndex: i,
     }));
 
+    for (const header of sectionHeaders) {
+      const groupItem: UnifiedItem = {
+        id: `group-${header.id}`, type: 'group', pageIndex: -1, groupId: header.id,
+      };
+      if (header.position === -1 || header.position >= items.length) {
+        items.push(groupItem);
+      } else {
+        let pdfCount = 0;
+        let insertAt = items.length;
+        for (let i = 0; i < items.length; i++) {
+          if (pdfCount >= header.position) { insertAt = i; break; }
+          if (items[i].type === 'pdf') pdfCount++;
+          insertAt = i + 1;
+        }
+        items.splice(insertAt, 0, groupItem);
+      }
+    }
+
     if (pricingExists && pricingForm.enabled) {
-      const insertIdx =
-        pricingPosition === -1 || pricingPosition >= items.length
-          ? items.length
-          : pricingPosition;
+      let pdfCount = 0;
+      let insertIdx = items.length;
+      if (pricingPosition >= 0) {
+        for (let i = 0; i < items.length; i++) {
+          if (pdfCount >= pricingPosition) { insertIdx = i; break; }
+          if (items[i].type === 'pdf') pdfCount++;
+          insertIdx = i + 1;
+        }
+      }
       items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pageIndex: -1 });
     }
 
+    for (const tp of textPages) {
+      if (!tp.enabled) continue;
+      const textItem: UnifiedItem = {
+        id: `text-${tp.id}`, type: 'text', pageIndex: -1, textPageId: tp.id,
+      };
+      if (tp.position === -1 || tp.position >= items.length) {
+        items.push(textItem);
+      } else {
+        let pdfCount = 0;
+        let insertAt = items.length;
+        for (let i = 0; i < items.length; i++) {
+          if (pdfCount >= tp.position) { insertAt = i; break; }
+          if (items[i].type === 'pdf') pdfCount++;
+          insertAt = i + 1;
+        }
+        items.splice(insertAt, 0, textItem);
+      }
+    }
+
     return items;
-  }, [pages, pricingExists, pricingForm.enabled, pricingPosition]);
+  }, [pages, sectionHeaders, pricingExists, pricingForm.enabled, pricingPosition, textPages]);
 
   const selectedIsPricing = selectedId === 'pricing';
+  const selectedIsGroup = selectedId.startsWith('group-');
+  const selectedTextPage = selectedId.startsWith('text-')
+    ? textPages.find((tp) => tp.id === selectedId.replace('text-', ''))
+    : null;
 
-  // ─── Page label autosave ─────────────────────────────────────────
-  const savePageEdit = useCallback(async (pageId: string, label: string, indent: number) => {
-    setSaveStatus((prev) => ({ ...prev, [pageId]: 'saving' }));
-    try {
-      await supabase.from('template_pages').update({ label, indent }).eq('id', pageId);
-      setSaveStatus((prev) => ({ ...prev, [pageId]: 'saved' }));
-      if (savedTimers.current[pageId]) clearTimeout(savedTimers.current[pageId]);
-      savedTimers.current[pageId] = setTimeout(() => {
-        setSaveStatus((prev) => ({ ...prev, [pageId]: null }));
-      }, 2000);
-    } catch {
-      toast.error('Failed to save');
-      setSaveStatus((prev) => ({ ...prev, [pageId]: null }));
-    }
-  }, [toast]);
-
-  const flushPendingSaves = useCallback(async () => {
-    const promises: Promise<void>[] = [];
-    for (const [pageId, timer] of Object.entries(debounceTimers.current)) {
-      clearTimeout(timer);
-      const edit = localEditsRef.current[pageId];
-      if (edit) promises.push(savePageEdit(pageId, edit.label, edit.indent));
-    }
-    debounceTimers.current = {};
-    if (promises.length > 0) await Promise.all(promises);
-  }, [savePageEdit]);
-
-  const getEdit = (pageId: string) =>
-    localEdits[pageId] ?? { label: '', indent: 0 };
-
-  const updateEdit = (pageId: string, changes: Partial<{ label: string; indent: number }>) => {
-    const updated = { ...getEdit(pageId), ...changes };
-    setLocalEdits((prev) => ({ ...prev, [pageId]: updated }));
-
-    if (debounceTimers.current[pageId]) clearTimeout(debounceTimers.current[pageId]);
-    const delay = changes.indent !== undefined ? 0 : 800;
-    debounceTimers.current[pageId] = setTimeout(() => {
-      savePageEdit(pageId, updated.label, updated.indent);
-      delete debounceTimers.current[pageId];
-    }, delay);
-  };
-
-  const selectPreset = (pageId: string, label: string) => {
-    if (label !== CUSTOM_VALUE) updateEdit(pageId, { label });
-    setOpenDropdown(null);
-  };
-
-  const toggleIndent = (pageId: string, pageIndex: number) => {
-    if (pageIndex === 0) return;
-    const current = getEdit(pageId);
-    updateEdit(pageId, { indent: current.indent === 0 ? 1 : 0 });
-  };
-
-  // ─── Pricing autosave ───────────────────────────────────────────
-  const savePricing = useCallback(async (form: TemplatePricingFormState, pos: number) => {
-    setPricingSaveStatus('saving');
-    try {
-      await fetch('/api/templates/pricing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          template_id: template.id,
-          enabled: form.enabled,
-          position: pos,
-          title: form.title,
-          intro_text: form.introText,
-          items: form.items,
-          optional_items: form.optionalItems,
-          payment_schedule: form.paymentSchedule,
-          tax_enabled: form.taxEnabled,
-          tax_rate: form.taxRate,
-          tax_label: form.taxLabel,
-          validity_days: form.validityDays,
-        }),
-      });
-      setPricingSaveStatus('saved');
-      setTimeout(() => setPricingSaveStatus('idle'), 2000);
-    } catch {
-      toast.error('Failed to save pricing');
-      setPricingSaveStatus('idle');
-    }
-  }, [template.id, toast]);
-
-  // ─── Add / Remove pricing ───────────────────────────────────────
+  // ─── Add/remove handlers ─────────────────────────────────────────
   const handleAddPricing = async () => {
-    const pos = pages.length; // default: at end
-    const form = { ...DEFAULT_PRICING, enabled: true };
-    setPricingForm(form);
-    setPricingExists(true);
-    setPricingPosition(pos);
+    await addPricingPage();
     setSelectedId('pricing');
-    await savePricing(form, pos);
-    toast.success('Pricing page added');
   };
 
   const handleRemovePricing = async () => {
-    const ok = await confirm({
-      title: 'Remove Pricing Page',
-      message: 'Remove the pricing page from this template?',
-      confirmLabel: 'Remove',
-      destructive: true,
-    });
-    if (!ok) return;
+    const removed = await removePricingPage();
+    if (removed) setSelectedId('pdf-0');
+  };
 
-    const updated = { ...pricingForm, enabled: false };
-    setPricingForm(updated);
-    await savePricing(updated, pricingPosition);
-    setSelectedId('pdf-0');
-    toast.success('Pricing page removed');
+  const handleAddTextPage = async () => {
+    const newPage = await addTextPage();
+    if (newPage) setSelectedId(`text-${newPage.id}`);
+  };
+
+  const handleRemoveTextPage = async (pageId: string) => {
+    const removed = await removeTextPage(pageId);
+    if (removed) setSelectedId('pdf-0');
+  };
+
+  const handleAddSectionHeader = () => {
+    const id = addSectionHeader();
+    setSelectedId(`group-${id}`);
+  };
+
+  const handleRemoveSectionHeader = async (headerId: string) => {
+    const removed = await removeSectionHeader(headerId);
+    if (removed) setSelectedId('pdf-0');
   };
 
   // ─── Page CRUD ───────────────────────────────────────────────────
@@ -354,20 +230,17 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
     await flushPendingSaves();
     setProcessing(true);
-
     await fetch('/api/templates/pages', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ template_id: template.id, page_number: pageNumber }),
     });
-
     setProcessing(false);
     toast.success('Page deleted');
 
     if (parseInt(selectedId.replace('pdf-', '')) >= pages.length - 1) {
       setSelectedId(`pdf-${Math.max(0, pages.length - 2)}`);
     }
-
     onRefresh();
     fetchPages();
   };
@@ -383,9 +256,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     formData.append('company_id', template.company_id);
     formData.append('file', file);
     formData.append('mode', 'replace');
-
     await fetch('/api/templates/pages', { method: 'POST', body: formData });
-
     setProcessing(false);
     toast.success(`Page ${pageNumber} replaced`);
     onRefresh();
@@ -403,12 +274,9 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     formData.append('company_id', template.company_id);
     formData.append('file', file);
     formData.append('mode', 'insert');
-
     await fetch('/api/templates/pages', { method: 'POST', body: formData });
-
     setProcessing(false);
     toast.success('Page inserted');
-    // Find what index the new page will be at
     setSelectedId(`pdf-${newPageNumber - 1}`);
     onRefresh();
     fetchPages();
@@ -424,40 +292,63 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     if (oldIdx === -1 || newIdx === -1) return;
 
     const reordered = arrayMove(unifiedItems, oldIdx, newIdx);
+    const countPdfBefore = (idx: number) =>
+      reordered.slice(0, idx).filter((i) => i.type === 'pdf').length;
 
-    // Extract new PDF page order (maps new position → original index)
     const pdfItems = reordered.filter((i) => i.type === 'pdf');
     const newPageOrder = pdfItems.map((i) => i.pageIndex);
 
-    // Compute new pricing position
+    // Update pricing position
     if (pricingExists && pricingForm.enabled) {
       const pricingIdx = reordered.findIndex((i) => i.type === 'pricing');
-      const pdfBeforePricing = reordered
-        .slice(0, pricingIdx)
-        .filter((i) => i.type === 'pdf').length;
       const isLast = pricingIdx === reordered.length - 1;
-      const newPos = isLast ? -1 : pdfBeforePricing;
+      const newPos = isLast ? -1 : countPdfBefore(pricingIdx);
       if (newPos !== pricingPosition) {
         setPricingPosition(newPos);
         savePricing(pricingForm, newPos);
       }
     }
 
-    // Check if PDF order actually changed
+    // Update text page positions
+    for (const tp of textPages) {
+      if (!tp.enabled) continue;
+      const textIdx = reordered.findIndex((i) => i.id === `text-${tp.id}`);
+      if (textIdx === -1) continue;
+      const isLast = textIdx === reordered.length - 1;
+      const newPos = isLast ? -1 : countPdfBefore(textIdx);
+      if (newPos !== tp.position) updateTextPagePosition(tp.id, newPos);
+    }
+
+    // Update section header positions
+    let sectionsChanged = false;
+    const updatedHeaders = sectionHeaders.map((header) => {
+      const groupIdx = reordered.findIndex((i) => i.id === `group-${header.id}`);
+      if (groupIdx === -1) return header;
+      const isLast = groupIdx === reordered.length - 1;
+      const newPos = isLast ? -1 : countPdfBefore(groupIdx);
+      if (newPos !== header.position) {
+        sectionsChanged = true;
+        return { ...header, position: newPos };
+      }
+      return header;
+    });
+    if (sectionsChanged) {
+      setSectionHeaders(updatedHeaders);
+      saveSectionHeaders(updatedHeaders);
+    }
+
+    // Reorder PDF pages if order changed
     const orderChanged = newPageOrder.some((v, i) => v !== i);
     if (orderChanged) {
-      // Optimistic local reorder
       const reorderedPages = newPageOrder.map((origIdx) => pages[origIdx]);
       setPages(reorderedPages);
 
-      // Rebuild localEdits to match new order
       const newEdits: Record<string, { label: string; indent: number }> = {};
       for (const p of reorderedPages) {
         newEdits[p.id] = localEdits[p.id] ?? { label: p.label, indent: p.indent ?? 0 };
       }
       setLocalEdits(newEdits);
 
-      // Update selected to follow the moved item
       if (selectedId.startsWith('pdf-')) {
         const oldPdfIdx = parseInt(selectedId.replace('pdf-', ''));
         const newPdfIdx = newPageOrder.indexOf(oldPdfIdx);
@@ -472,11 +363,10 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
           body: JSON.stringify({ template_id: template.id, page_order: newPageOrder }),
         });
         if (!res.ok) throw new Error('Reorder failed');
-        // Re-fetch to get correct page_numbers from DB
         fetchPages();
       } catch {
         toast.error('Failed to reorder pages');
-        fetchPages(); // revert
+        fetchPages();
       }
     }
   };
@@ -491,7 +381,6 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     if (idx < unifiedItems.length - 1) setSelectedId(unifiedItems[idx + 1].id);
   };
 
-  // ─── Selected page data ──────────────────────────────────────────
   const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
   const selectedPageData = selectedPdfIndex >= 0 ? pages[selectedPdfIndex] : null;
   const selectedPageUrl = selectedPageData ? pageUrls[selectedPageData.id] : null;
@@ -502,13 +391,15 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   // ─── Render ──────────────────────────────────────────────────────
   return (
     <div className="p-5">
-      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-semibold text-gray-900">Template Pages</h3>
           <span className="text-xs text-gray-400">
             {pages.length} page{pages.length !== 1 ? 's' : ''}
             {pricingExists && pricingForm.enabled ? ' + pricing' : ''}
+            {textPages.filter((tp) => tp.enabled).length > 0
+              ? ` + ${textPages.filter((tp) => tp.enabled).length} text`
+              : ''}
           </span>
         </div>
         {processing && (
@@ -518,6 +409,34 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
           </div>
         )}
       </div>
+
+      {(pricingLoaded && textPagesLoaded && sectionsLoaded) && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {(!pricingExists || !pricingForm.enabled) && (
+            <button
+              onClick={handleAddPricing}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+            >
+              <DollarSign size={12} />
+              Add Pricing Page
+            </button>
+          )}
+          <button
+            onClick={handleAddTextPage}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+          >
+            <FileText size={12} />
+            Add Text Page
+          </button>
+          <button
+            onClick={handleAddSectionHeader}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+          >
+            <FolderOpen size={12} />
+            Add Section Header
+          </button>
+        </div>
+      )}
 
       <p className="text-xs text-gray-400 mb-4">
         Drag to reorder pages. Choose a label from the dropdown or select &quot;Custom&quot; to type your own. Changes save automatically.
@@ -531,8 +450,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
         <div className="flex gap-5" style={{ height: 520 }}>
           {/* Left half: sortable page list */}
           <div className="w-1/2 min-w-0 overflow-hidden flex flex-col" ref={dropdownRef}>
-            <div ref={listRef} className="flex-1 space-y-0.5 p-1 overflow-y-auto pr-1">
-              {/* Insert-at-start button */}
+            <div className="flex-1 space-y-0.5 p-1 overflow-y-auto pr-1">
               <div className="flex justify-center py-1">
                 <label
                   className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] transition-colors ${
@@ -580,6 +498,36 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                       );
                     }
 
+                    if (item.type === 'text') {
+                      const tp = textPages.find((t) => t.id === item.textPageId);
+                      return (
+                        <SortableTextRow
+                          key={item.id}
+                          id={item.id}
+                          title={tp?.title || 'Text Page'}
+                          isSelected={selectedId === item.id}
+                          onSelect={() => setSelectedId(item.id)}
+                          onRemove={() => tp && handleRemoveTextPage(tp.id)}
+                        />
+                      );
+                    }
+
+                    if (item.type === 'group') {
+                      const header = sectionHeaders.find((h) => h.id === item.groupId);
+                      if (!header) return null;
+                      return (
+                        <SortableGroupRow
+                          key={item.id}
+                          id={item.id}
+                          name={header.name}
+                          isSelected={selectedId === item.id}
+                          onSelect={() => setSelectedId(item.id)}
+                          onRename={(name) => renameSectionHeader(header.id, name)}
+                          onRemove={() => handleRemoveSectionHeader(header.id)}
+                        />
+                      );
+                    }
+
                     const page = pages[item.pageIndex];
                     if (!page) return null;
                     const edit = getEdit(page.id);
@@ -600,7 +548,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                         onToggleIndent={() => toggleIndent(page.id, item.pageIndex)}
                         onLabelChange={(label: string) => updateEdit(page.id, { label })}
                         onOpenDropdown={(open: boolean) => setOpenDropdown(open ? page.id : null)}
-                        onSelectPreset={(label: string) => selectPreset(page.id, label)}
+                        onSelectPreset={(label: string) => selectPreset(page.id, label, setOpenDropdown)}
                         onReplacePage={(file: File) => handleReplacePage(page.page_number, file)}
                         onDeletePage={() => deletePage(page.page_number)}
                         onInsertAfter={(file: File) => handleAddPage(page.page_number, file)}
@@ -609,19 +557,6 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                   })}
                 </SortableContext>
               </DndContext>
-
-              {/* Add pricing page button */}
-              {pricingLoaded && (!pricingExists || !pricingForm.enabled) && (
-                <div className="flex justify-center pt-3 pb-2">
-                  <button
-                    onClick={handleAddPricing}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
-                  >
-                    <DollarSign size={12} />
-                    Add Pricing Page
-                  </button>
-                </div>
-              )}
 
               {pages.length === 0 && (
                 <p className="text-sm text-gray-400 text-center py-4">No pages yet</p>
@@ -640,9 +575,28 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                 canGoPrev={canGoPrev}
                 canGoNext={canGoNext}
               />
+            ) : selectedTextPage ? (
+              <TextPagePreviewPanel
+                proposalId={template.id}
+                companyId={template.company_id}
+                page={selectedTextPage}
+                saveStatus={textPageSaveStatuses[selectedTextPage.id] || 'idle'}
+                onUpdate={updateTextPage}
+                onGoPrev={goPrev}
+                onGoNext={goNext}
+                canGoPrev={canGoPrev}
+                canGoNext={canGoNext}
+              />
+            ) : selectedIsGroup ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+                <FolderOpen size={32} className="text-amber-400 mb-3" />
+                <p className="text-sm font-medium text-amber-700">Section Header</p>
+                <p className="text-xs text-amber-500 mt-1 max-w-[240px]">
+                  This is a non-navigable group header. Pages nested below it will appear as children in the sidebar.
+                </p>
+              </div>
             ) : selectedPageUrl ? (
               <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-                {/* Preview header with nav */}
                 <div className="shrink-0 px-3 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <button
@@ -667,12 +621,15 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                     {selectedPageData ? getEdit(selectedPageData.id).label : ''}
                   </span>
                 </div>
-
-                {/* PDF page */}
                 <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center">
                   <Document
+                    key={selectedPageUrl}
                     file={selectedPageUrl}
-                    loading={<Loader2 size={16} className="animate-spin text-gray-300" />}
+                    loading={
+                      <div className="flex items-center justify-center py-20">
+                        <Loader2 size={20} className="animate-spin text-gray-300" />
+                      </div>
+                    }
                   >
                     <Page
                       pageNumber={1}
@@ -680,6 +637,11 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                       renderAnnotationLayer={false}
                       renderTextLayer={false}
                       className="max-h-full"
+                      loading={
+                        <div className="flex items-center justify-center py-20">
+                          <Loader2 size={20} className="animate-spin text-gray-300" />
+                        </div>
+                      }
                     />
                   </Document>
                 </div>

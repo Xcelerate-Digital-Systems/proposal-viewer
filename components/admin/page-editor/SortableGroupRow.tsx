@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, FolderOpen, Trash2, Pencil, Check } from 'lucide-react';
+import { GripVertical, FolderOpen, Trash2, Pencil } from 'lucide-react';
 
 interface SortableGroupRowProps {
   id: string;
@@ -46,15 +46,16 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} className="mb-2">
       <div
-        className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors border border-dashed ${
+        className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 cursor-pointer transition-colors border border-dashed ${
           isSelected
             ? 'bg-[#017C87]/5 border-[#017C87]/40 ring-1 ring-[#017C87]/20'
             : 'border-[#017C87]/20 hover:bg-[#017C87]/5'
         }`}
         onClick={onSelect}
       >
+        {/* Drag handle */}
         <button
           {...attributes}
           {...listeners}
@@ -62,6 +63,9 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
         >
           <GripVertical size={14} />
         </button>
+        {/* Spacer to align with page number column */}
+        <span className="w-5 shrink-0" />
+        {/* Icon — aligns with indent button column */}
         <div className="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-[#017C87]/10">
           <FolderOpen size={13} className="text-[#017C87]" />
         </div>
@@ -89,6 +93,9 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
         <span className="text-[9px] font-medium text-[#017C87]/50 uppercase tracking-wider shrink-0">
           Section
         </span>
+
+        {/* Spacer to align with save-status column */}
+        <span className="w-5 shrink-0" />
 
         <button
           onClick={(e) => {
