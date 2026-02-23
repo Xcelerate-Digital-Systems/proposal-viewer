@@ -55,6 +55,17 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
         xhr.setRequestHeader('x-upsert', 'true');
         xhr.send(file);
       });
+      // Get current user's name from team_members
+      const { data: sessionData } = await supabase.auth.getSession();
+      let creatorName: string | null = null;
+      if (sessionData?.session?.user?.id) {
+        const { data: member } = await supabase
+          .from('team_members')
+          .select('name')
+          .eq('user_id', sessionData.session.user.id)
+          .single();
+        creatorName = member?.name || null;
+      }
 
       const { error: dbError } = await supabase.from('proposals').insert({
         title: form.title,
@@ -67,6 +78,7 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
         status: 'draft',
         page_names: [],
         company_id: companyId,
+        created_by_name: creatorName,
       });
 
       if (dbError) throw dbError;

@@ -64,6 +64,7 @@ export type Proposal = {
   post_accept_action: 'redirect' | 'message' | null;
   post_accept_redirect_url: string | null;
   post_accept_message: string | null;
+  created_by_name: string | null;
   company_id: string;
   created_at: string;
   updated_at: string;

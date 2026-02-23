@@ -92,6 +92,17 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
     setCreating(true);
 
     try {
+      // Get current user's name
+      const { data: sessionData } = await supabase.auth.getSession();
+      let creatorName: string | null = null;
+      if (sessionData?.session?.user?.id) {
+        const { data: member } = await supabase
+          .from('team_members')
+          .select('name')
+          .eq('user_id', sessionData.session.user.id)
+          .single();
+        creatorName = member?.name || null;
+      }
       // 1. Upload any replacement pages to temp storage
       setStatus('Uploading custom pages...');
       const replacementPaths: Record<number, string> = {};
@@ -162,6 +173,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         page_names: pageNames,
         cover_image_path: coverImagePath,
         company_id: companyId,
+        created_by_name: creatorName,
       }).select('id').single();
 
       if (insertError || !newProposal) throw new Error('Failed to create proposal');

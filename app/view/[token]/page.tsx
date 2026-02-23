@@ -18,6 +18,7 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
   const {
     proposal,
+    creatorName,
     pdfUrl,
     numPages,
     currentPage,
@@ -266,7 +267,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
               branding={branding}
               clientName={proposal?.client_name}
               companyName={branding.name}
-              userName={undefined}
+              userName={creatorName || undefined}
               proposalTitle={proposal?.title}
             />
           </div>

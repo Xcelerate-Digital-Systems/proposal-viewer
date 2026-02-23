@@ -544,6 +544,7 @@ export function useProposal(token: string) {
 
   return {
     proposal,
+    creatorName: proposal?.created_by_name || null,
     pdfUrl,
     numPages: pageMap.totalPages,
     pdfPageCount,
