@@ -1,10 +1,11 @@
+// app/api/notify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { sendNotifications } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { event_type, share_token, comment_id, comment_author, comment_content, resolved_by } = body;
+    const { event_type, share_token, comment_id, comment_author, comment_content, resolved_by, author_type } = body;
 
     if (!event_type || !share_token) {
       return NextResponse.json({ error: 'Missing event_type or share_token' }, { status: 400 });
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
       comment_author,
       comment_content,
       resolved_by,
+      author_type: author_type || 'client',
     });
 
     return NextResponse.json(result);

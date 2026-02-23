@@ -152,6 +152,7 @@ export function useProposal(token: string) {
   const [accepted, setAccepted] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [pricing, setPricing] = useState<ProposalPricing | null>(null);
+  const [isTeamPreview, setIsTeamPreview] = useState(false);
 
   const fetchProposal = useCallback(async () => {
     const { data, error } = await supabase
@@ -196,18 +197,19 @@ export function useProposal(token: string) {
 
     // Check if the viewer is a logged-in user (i.e. a team member previewing).
     // Clients never have auth sessions — they view via share token only.
-    let isTeamPreview = false;
+    let teamPreview = false;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session?.user?.id) {
-        isTeamPreview = true;
+        teamPreview = true;
       }
     } catch {
       // No session — treat as client view
     }
+    setIsTeamPreview(teamPreview);
 
     // Only track views and fire notifications for actual client views
-    if (!isTeamPreview) {
+    if (!teamPreview) {
       const isFirstView = !data.first_viewed_at;
 
       const now = new Date().toISOString();
@@ -302,9 +304,11 @@ export function useProposal(token: string) {
 
   const submitComment = async (authorName: string, content: string, pageNumber: number) => {
     if (!proposal) return;
+    const authorType = isTeamPreview ? 'team' : 'client';
     const { data: newComment } = await supabase.from('proposal_comments').insert({
       proposal_id: proposal.id,
       author_name: authorName,
+      author_type: authorType,
       content,
       page_number: pageNumber,
       is_internal: false,
@@ -318,15 +322,18 @@ export function useProposal(token: string) {
       comment_id: newComment?.id,
       comment_author: authorName,
       comment_content: content,
+      author_type: authorType,
     });
   };
 
   const replyToComment = async (parentId: string, authorName: string, content: string) => {
     if (!proposal) return;
+    const authorType = isTeamPreview ? 'team' : 'client';
     const parent = comments.find((c) => c.id === parentId);
     const { data: newReply } = await supabase.from('proposal_comments').insert({
       proposal_id: proposal.id,
       author_name: authorName,
+      author_type: authorType,
       content,
       page_number: parent?.page_number || null,
       is_internal: false,
@@ -341,10 +348,12 @@ export function useProposal(token: string) {
       comment_id: newReply?.id,
       comment_author: authorName,
       comment_content: content,
+      author_type: authorType,
     });
   };
 
   const resolveComment = async (commentId: string, resolvedBy: string) => {
+    const authorType = isTeamPreview ? 'team' : 'client';
     await supabase
       .from('proposal_comments')
       .update({
@@ -358,6 +367,7 @@ export function useProposal(token: string) {
       share_token: token,
       comment_id: commentId,
       resolved_by: resolvedBy,
+      author_type: authorType,
     });
   };
 

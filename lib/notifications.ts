@@ -5,6 +5,7 @@ import { buildProposalUrl } from './proposal-url';
 import crypto from 'crypto';
 
 type EventType = 'proposal_viewed' | 'proposal_accepted' | 'comment_added' | 'comment_resolved';
+type AuthorType = 'team' | 'client';
 
 // Maps event_type to the team_member column that controls it
 const PREF_MAP: Record<EventType, string> = {
@@ -21,16 +22,17 @@ interface NotifyPayload {
   comment_author?: string;       // who left the comment
   comment_content?: string;      // the comment text
   resolved_by?: string;          // who resolved the comment
+  author_type?: AuthorType;      // 'team' = notify client, 'client' = notify team
 }
 
 export async function sendNotifications(payload: NotifyPayload) {
   const supabase = createServiceClient();
-  const { event_type, share_token, comment_id, comment_author, comment_content, resolved_by } = payload;
+  const { event_type, share_token, comment_id, comment_author, comment_content, resolved_by, author_type = 'client' } = payload;
 
-  // 1. Look up the proposal by share_token (include company_id)
+  // 1. Look up the proposal by share_token
   const { data: proposal, error: proposalError } = await supabase
     .from('proposals')
-    .select('id, title, client_name, share_token, company_id')
+    .select('id, title, client_name, client_email, share_token, company_id')
     .eq('share_token', share_token)
     .single();
 
@@ -38,7 +40,87 @@ export async function sendNotifications(payload: NotifyPayload) {
     return { error: 'Proposal not found' };
   }
 
-  // 2. Find team members in the same company who have this notification enabled
+  // 2. Look up company info for branding and custom domain
+  const { data: company } = await supabase
+    .from('companies')
+    .select('name, custom_domain, domain_verified')
+    .eq('id', proposal.company_id)
+    .single();
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const verifiedDomain = company?.domain_verified ? company.custom_domain : null;
+  const viewerUrl = buildProposalUrl(proposal.share_token, verifiedDomain, appUrl);
+  const dashboardUrl = appUrl;
+  const companyName = company?.name || 'Your agency';
+
+  // 3. Route notifications based on who performed the action
+  let teamSent = 0;
+  let clientSent = 0;
+
+  if (author_type === 'team' && (event_type === 'comment_added' || event_type === 'comment_resolved')) {
+    // Team member acted → notify the client via email
+    clientSent = await notifyClient({
+      supabase,
+      proposal,
+      companyName,
+      viewerUrl,
+      event_type,
+      comment_author,
+      comment_content,
+      resolved_by,
+    });
+  } else {
+    // Client acted (or non-comment events like viewed/accepted) → notify team members
+    teamSent = await notifyTeamMembers({
+      supabase,
+      proposal,
+      viewerUrl,
+      dashboardUrl,
+      event_type,
+      comment_id,
+      comment_author,
+      comment_content,
+      resolved_by,
+    });
+  }
+
+  // 4. Fire webhooks (non-blocking) — always fire regardless of author_type
+  fireWebhooks({
+    event_type,
+    company_id: proposal.company_id,
+    custom_domain: verifiedDomain,
+    proposal: {
+      id: proposal.id,
+      title: proposal.title,
+      client_name: proposal.client_name,
+      share_token: proposal.share_token,
+    },
+    comment_id,
+    comment_author,
+    comment_content,
+    resolved_by,
+  }).catch((err) => console.error('Webhook dispatch error:', err));
+
+  return { sent: teamSent + clientSent, team_sent: teamSent, client_sent: clientSent };
+}
+
+// --- Notify team members (existing behavior) ---
+
+interface TeamNotifyParams {
+  supabase: ReturnType<typeof createServiceClient>;
+  proposal: { id: string; title: string; client_name: string; share_token: string; company_id: string };
+  viewerUrl: string;
+  dashboardUrl: string;
+  event_type: EventType;
+  comment_id?: string;
+  comment_author?: string;
+  comment_content?: string;
+  resolved_by?: string;
+}
+
+async function notifyTeamMembers(params: TeamNotifyParams): Promise<number> {
+  const { supabase, proposal, viewerUrl, dashboardUrl, event_type, comment_id, comment_author, comment_content, resolved_by } = params;
+
   const prefColumn = PREF_MAP[event_type];
   const { data: members } = await supabase
     .from('team_members')
@@ -47,16 +129,15 @@ export async function sendNotifications(payload: NotifyPayload) {
     .eq(prefColumn, true);
 
   if (!members || members.length === 0) {
-    return { sent: 0, reason: 'No team members with this notification enabled' };
+    return 0;
   }
 
-  // 3. Determine the event_ref for deduplication (always non-null)
+  // Deduplication
   let eventRef: string;
   if (event_type === 'proposal_viewed') eventRef = 'first_view';
   else if (event_type === 'proposal_accepted') eventRef = 'accepted';
   else eventRef = comment_id || `${event_type}_${Date.now()}`;
 
-  // 4. Check which members haven't been notified yet
   const { data: existingLogs } = await supabase
     .from('notification_log')
     .select('team_member_id')
@@ -67,23 +148,9 @@ export async function sendNotifications(payload: NotifyPayload) {
   const alreadyNotified = new Set((existingLogs || []).map((l) => l.team_member_id));
   const toNotify = members.filter((m) => !alreadyNotified.has(m.id));
 
-  if (toNotify.length === 0) {
-    return { sent: 0, reason: 'All eligible members already notified' };
-  }
+  if (toNotify.length === 0) return 0;
 
-  // 5. Build the email — look up company's custom domain for viewer URL
-  const { data: company } = await supabase
-    .from('companies')
-    .select('custom_domain, domain_verified')
-    .eq('id', proposal.company_id)
-    .single();
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const verifiedDomain = company?.domain_verified ? company.custom_domain : null;
-  const viewerUrl = buildProposalUrl(proposal.share_token, verifiedDomain, appUrl);
-  const dashboardUrl = appUrl;
-
-  const { subject, html } = buildEmail({
+  const { subject, html } = buildTeamEmail({
     event_type,
     proposalTitle: proposal.title,
     clientName: proposal.client_name,
@@ -94,7 +161,6 @@ export async function sendNotifications(payload: NotifyPayload) {
     resolvedBy: resolved_by,
   });
 
-  // 6. Send emails and log
   let sent = 0;
   for (const member of toNotify) {
     try {
@@ -119,24 +185,66 @@ export async function sendNotifications(payload: NotifyPayload) {
     }
   }
 
-  // 7. Fire webhooks (non-blocking) — pass custom domain info
-  fireWebhooks({
-    event_type,
-    company_id: proposal.company_id,
-    custom_domain: verifiedDomain,
-    proposal: {
-      id: proposal.id,
-      title: proposal.title,
-      client_name: proposal.client_name,
-      share_token: proposal.share_token,
-    },
-    comment_id,
-    comment_author,
-    comment_content,
-    resolved_by,
-  }).catch((err) => console.error('Webhook dispatch error:', err));
+  return sent;
+}
 
-  return { sent };
+// --- Notify client ---
+
+interface ClientNotifyParams {
+  supabase: ReturnType<typeof createServiceClient>;
+  proposal: { id: string; title: string; client_name: string; client_email: string | null; share_token: string; company_id: string };
+  companyName: string;
+  viewerUrl: string;
+  event_type: EventType;
+  comment_author?: string;
+  comment_content?: string;
+  resolved_by?: string;
+}
+
+async function notifyClient(params: ClientNotifyParams): Promise<number> {
+  const { supabase, proposal, companyName, viewerUrl, event_type, comment_author, comment_content, resolved_by } = params;
+
+  // No client email → can't notify
+  if (!proposal.client_email) {
+    return 0;
+  }
+
+  const { subject, html } = buildClientEmail({
+    event_type,
+    proposalTitle: proposal.title,
+    companyName,
+    viewerUrl,
+    commentAuthor: comment_author,
+    commentContent: comment_content,
+    resolvedBy: resolved_by,
+  });
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: proposal.client_email,
+      subject,
+      html,
+    });
+
+    // Log for dedup (non-critical)
+    try {
+      await supabase.from('notification_log').insert({
+        proposal_id: proposal.id,
+        team_member_id: null as unknown as string,
+        event_type: `client_${event_type}`,
+        event_ref: `${event_type}_${Date.now()}`,
+        company_id: proposal.company_id,
+      });
+    } catch {
+      // Non-critical
+    }
+
+    return 1;
+  } catch (err) {
+    console.error(`Failed to notify client ${proposal.client_email}:`, err);
+    return 0;
+  }
 }
 
 // --- Webhook dispatch ---
@@ -220,9 +328,9 @@ async function fireWebhooks(payload: WebhookPayload) {
   }
 }
 
-// --- Email templates ---
+// --- Team email templates (existing) ---
 
-interface EmailParams {
+interface TeamEmailParams {
   event_type: EventType;
   proposalTitle: string;
   clientName: string;
@@ -233,7 +341,7 @@ interface EmailParams {
   resolvedBy?: string;
 }
 
-function buildEmail(params: EmailParams): { subject: string; html: string } {
+function buildTeamEmail(params: TeamEmailParams): { subject: string; html: string } {
   const { event_type, proposalTitle, clientName, viewerUrl, dashboardUrl, commentAuthor, commentContent, resolvedBy } = params;
 
   let subject = '';
@@ -271,7 +379,60 @@ function buildEmail(params: EmailParams): { subject: string; html: string } {
       break;
   }
 
-  const html = emailTemplate(headline, body, viewerUrl, dashboardUrl);
+  const html = teamEmailTemplate(headline, body, viewerUrl, dashboardUrl);
+  return { subject, html };
+}
+
+// --- Client email templates (new) ---
+
+interface ClientEmailParams {
+  event_type: EventType;
+  proposalTitle: string;
+  companyName: string;
+  viewerUrl: string;
+  commentAuthor?: string;
+  commentContent?: string;
+  resolvedBy?: string;
+}
+
+function buildClientEmail(params: ClientEmailParams): { subject: string; html: string } {
+  const { event_type, proposalTitle, companyName, viewerUrl, commentAuthor, commentContent, resolvedBy } = params;
+
+  let subject = '';
+  let headline = '';
+  let body = '';
+
+  switch (event_type) {
+    case 'comment_added':
+      subject = `💬 ${companyName} commented on your proposal`;
+      headline = 'New Comment on Your Proposal';
+      body = `
+        <p><strong>${commentAuthor || companyName}</strong> left a comment on <strong>"${proposalTitle}"</strong>:</p>
+        <div style="background:#f3fafa;border-left:3px solid #017C87;padding:12px 16px;margin:16px 0;border-radius:4px;">
+          <p style="margin:0;color:#374151;">${escapeHtml(commentContent || '')}</p>
+        </div>
+        <p style="color:#6b7280;">You can view the full conversation and reply directly on the proposal.</p>
+      `;
+      break;
+
+    case 'comment_resolved':
+      subject = `✔️ ${companyName} resolved a comment on your proposal`;
+      headline = 'Comment Resolved';
+      body = `
+        <p><strong>${resolvedBy || companyName}</strong> resolved a comment on <strong>"${proposalTitle}"</strong>.</p>
+        <p style="color:#6b7280;">Open your proposal to see the update.</p>
+      `;
+      break;
+
+    default:
+      // Shouldn't reach here for client notifications
+      subject = `Update on "${proposalTitle}"`;
+      headline = 'Proposal Update';
+      body = `<p>There's an update on your proposal <strong>"${proposalTitle}"</strong>.</p>`;
+      break;
+  }
+
+  const html = clientEmailTemplate(headline, body, viewerUrl, companyName);
   return { subject, html };
 }
 
@@ -283,7 +444,9 @@ function escapeHtml(str: string) {
     .replace(/"/g, '&quot;');
 }
 
-function emailTemplate(headline: string, body: string, viewerUrl: string, dashboardUrl: string) {
+// --- Email templates ---
+
+function teamEmailTemplate(headline: string, body: string, viewerUrl: string, dashboardUrl: string) {
   return `
 <!DOCTYPE html>
 <html>
@@ -323,6 +486,53 @@ function emailTemplate(headline: string, body: string, viewerUrl: string, dashbo
           <tr>
             <td style="padding:16px 32px;border-top:1px solid #e5e7eb;">
               <p style="margin:0;color:#9ca3af;font-size:12px;">You can manage notification preferences in your <a href="${dashboardUrl}/settings" style="color:#017C87;text-decoration:none;">settings</a>.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function clientEmailTemplate(headline: string, body: string, viewerUrl: string, companyName: string) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="background:#043946;padding:20px 32px;">
+              <span style="color:#ffffff;font-weight:700;font-size:16px;">${escapeHtml(companyName)}</span>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">${headline}</h1>
+              <div style="color:#6b7280;font-size:15px;line-height:1.6;">
+                ${body}
+              </div>
+              <div style="margin-top:28px;">
+                <a href="${viewerUrl}" style="display:inline-block;background:#017C87;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">
+                  View Proposal
+                </a>
+              </div>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:16px 32px;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#9ca3af;font-size:12px;">This email was sent by ${escapeHtml(companyName)} via AgencyViz.</p>
             </td>
           </tr>
         </table>

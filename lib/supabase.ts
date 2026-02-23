@@ -72,6 +72,7 @@ export type ProposalComment = {
   id: string;
   proposal_id: string;
   author_name: string;
+  author_type: 'team' | 'client';
   content: string;
   page_number: number | null;
   is_internal: boolean;
