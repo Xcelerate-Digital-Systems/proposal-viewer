@@ -84,22 +84,26 @@ export async function sendNotifications(payload: NotifyPayload) {
     });
   }
 
-  // 4. Fire webhooks (non-blocking) — always fire regardless of author_type
-  fireWebhooks({
-    event_type,
-    company_id: proposal.company_id,
-    custom_domain: verifiedDomain,
-    proposal: {
-      id: proposal.id,
-      title: proposal.title,
-      client_name: proposal.client_name,
-      share_token: proposal.share_token,
-    },
-    comment_id,
-    comment_author,
-    comment_content,
-    resolved_by,
-  }).catch((err) => console.error('Webhook dispatch error:', err));
+  // 4. Fire webhooks — await to ensure they complete before serverless function exits
+  try {
+    await fireWebhooks({
+      event_type,
+      company_id: proposal.company_id,
+      custom_domain: verifiedDomain,
+      proposal: {
+        id: proposal.id,
+        title: proposal.title,
+        client_name: proposal.client_name,
+        share_token: proposal.share_token,
+      },
+      comment_id,
+      comment_author,
+      comment_content,
+      resolved_by,
+    });
+  } catch (err) {
+    console.error('Webhook dispatch error:', err);
+  }
 
   return { sent: teamSent + clientSent, team_sent: teamSent, client_sent: clientSent };
 }
