@@ -45,6 +45,7 @@ export type CompanyBranding = {
   text_page_border_enabled: boolean;
   text_page_border_color: string | null;
   text_page_border_radius: string;
+  text_page_layout: 'contained' | 'full';
 };
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -79,6 +80,7 @@ const DEFAULT_BRANDING: CompanyBranding = {
   text_page_border_enabled: true,
   text_page_border_color: null,
   text_page_border_radius: '12',
+  text_page_layout: 'contained',
 };
 
 /**

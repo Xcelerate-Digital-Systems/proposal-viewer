@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     const { data: company, error } = await supabase
       .from('companies')
-      .select('id ,name, slug, logo_path, accent_color, website, bg_primary, bg_secondary, sidebar_text_color, accept_text_color, cover_bg_style, cover_bg_color_1, cover_bg_color_2, cover_text_color, cover_subtitle_color, cover_button_bg, cover_button_text, cover_overlay_opacity, cover_gradient_type, cover_gradient_angle, font_heading, font_body, font_sidebar, font_heading_weight, font_body_weight, font_sidebar_weight, text_page_bg_color, text_page_text_color, text_page_heading_color, text_page_font_size, text_page_border_enabled, text_page_border_color, text_page_border_radius')
+      .select('id ,name, slug, logo_path, accent_color, website, bg_primary, bg_secondary, sidebar_text_color, accept_text_color, cover_bg_style, cover_bg_color_1, cover_bg_color_2, cover_text_color, cover_subtitle_color, cover_button_bg, cover_button_text, cover_overlay_opacity, cover_gradient_type, cover_gradient_angle, font_heading, font_body, font_sidebar, font_heading_weight, font_body_weight, font_sidebar_weight, text_page_bg_color, text_page_text_color, text_page_heading_color, text_page_font_size, text_page_border_enabled, text_page_border_color, text_page_border_radius, text_page_layout')
       .eq('id', companyId)
       .single();
 
@@ -64,6 +64,7 @@ export async function GET(req: NextRequest) {
       text_page_border_enabled: company.text_page_border_enabled ?? true,
       text_page_border_color: company.text_page_border_color || null,
       text_page_border_radius: company.text_page_border_radius || '12',
+      text_page_layout: company.text_page_layout || 'contained',
     });
   } catch (err) {
     console.error('Branding fetch error:', err);

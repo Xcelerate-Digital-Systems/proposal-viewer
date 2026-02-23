@@ -109,7 +109,7 @@ function renderNode(
   if (node.type === 'dynamicField') {
     const resolved = resolveDynamicField(node.attrs?.field as string || '', context);
     return (
-      <span key={key} style={{ fontWeight: 600, color: accent }}>
+     <span key={key} style={{ color: textColor }}>
         {resolved}
       </span>
     );
@@ -134,7 +134,7 @@ function renderNode(
           style={{
             ...baseStyle,
             color: textColor,
-            fontSize: 14,
+            fontSize: 'inherit',
             lineHeight: 1.8,
             margin: '0.5em 0',
           }}
@@ -267,15 +267,46 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   const borderEnabled = branding.text_page_border_enabled ?? true;
   const borderColor = branding.text_page_border_color || border;
   const borderRadius = parseInt(branding.text_page_border_radius || '12', 10);
+  const layout = branding.text_page_layout || 'contained';
   const muted = `${textColor}99`;
 
   const context = { clientName, companyName, userName, proposalTitle };
   const doc = textPage.content as TipTapNode;
 
+  // Full-width layout — no card wrapper, content fills the area
+  if (layout === 'full') {
+    return (
+      <div
+        className="w-full min-h-full py-8 lg:py-12 px-6 sm:px-10 lg:px-16"
+        style={{ backgroundColor: bgColor }}
+      >
+        <div className="w-full">
+          {/* Title */}
+          {textPage.title && (
+            <div className="mb-6">
+              <h1
+                className="text-2xl sm:text-3xl font-bold tracking-tight font-[family-name:var(--font-display)]"
+                style={{ color: headingColor }}
+              >
+                {textPage.title}
+              </h1>
+            </div>
+          )}
+
+          {/* Content */}
+          <div style={{ fontSize: `${fontSize}px` }}>
+            {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Contained layout (default) — centered card with border + accent bar
   return (
     <div
       className="w-full min-h-full flex items-start justify-center py-8 lg:py-12 px-4 sm:px-6"
-        style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: bgColor }}
     >
       <div
         className="w-full max-w-[700px] overflow-hidden"

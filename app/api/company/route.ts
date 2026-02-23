@@ -133,6 +133,7 @@ export async function PATCH(req: NextRequest) {
       'text_page_border_enabled',
       'text_page_border_color',
       'text_page_border_radius',
+      'text_page_layout',
     ];
     const updates: Record<string, unknown> = {};
 
@@ -224,6 +225,13 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'cover_gradient_angle must be between 0 and 360' }, { status: 400 });
       }
       updates.cover_gradient_angle = angle;
+    }
+    
+    // Validate text_page_layout
+    if (updates.text_page_layout) {
+      if (!['contained', 'full'].includes(String(updates.text_page_layout))) {
+        return NextResponse.json({ error: 'text_page_layout must be "contained" or "full"' }, { status: 400 });
+      }
     }
 
     updates.updated_at = new Date().toISOString();

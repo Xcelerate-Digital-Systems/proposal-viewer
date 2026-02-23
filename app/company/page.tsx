@@ -65,6 +65,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [textPageBorderEnabled, setTextPageBorderEnabled] = useState(true);
   const [textPageBorderColor, setTextPageBorderColor] = useState('');
   const [textPageBorderRadius, setTextPageBorderRadius] = useState('12');
+  const [textPageLayout, setTextPageLayout] = useState<'contained' | 'full'>('contained');
   const [fontsSaved, setFontsSaved] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +114,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setTextPageFontSize(data.text_page_font_size || '14');
         setTextPageBorderEnabled(data.text_page_border_enabled ?? true);
         setTextPageBorderColor(data.text_page_border_color || '');
+        setTextPageLayout(data.text_page_layout || 'contained');
         setTextPageBorderRadius(data.text_page_border_radius || '12');
       }
     } finally {
@@ -250,6 +252,25 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     return () => clearTimeout(timer);
   }, [fontHeading, fontBody, fontSidebar, fontHeadingWeight, fontBodyWeight, fontSidebarWeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
+// Autosave text page layout immediately on change
+  useEffect(() => {
+    if (!isOwner || !company) return;
+    if (textPageLayout === (company.text_page_layout || 'contained')) return;
+    const timer = setTimeout(async () => {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/company?company_id=${companyId}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text_page_layout: textPageLayout }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCompany(prev => prev ? { ...prev, ...data } : prev);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [textPageLayout]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -296,6 +317,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         text_page_border_enabled: textPageBorderEnabled,
         text_page_border_color: textPageBorderColor || null,
         text_page_border_radius: textPageBorderRadius,
+        text_page_layout: textPageLayout,
       }),
     });
     const data = await res.json();
@@ -585,6 +607,31 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           <p className="text-xs text-gray-400 mb-4">
             Controls the background, text, and heading colors for text pages in your proposals.
           </p>
+          {/* Layout toggle */}
+          <div className="mb-4">
+            <label className="block text-xs text-gray-400 mb-2">Layout</label>
+            <div className="flex gap-2">
+              {(['contained', 'full'] as const).map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => isOwner && setTextPageLayout(opt)}
+                  disabled={!isOwner}
+                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                    textPageLayout === opt
+                      ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
+                      : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                  } disabled:opacity-50`}
+                >
+                  {opt === 'contained' ? 'Contained Card' : 'Full Width'}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">
+              {textPageLayout === 'contained'
+                ? 'Text content shown in a centered card with optional border and accent bar.'
+                : 'Text content fills the full page width, similar to PDF pages.'}
+            </p>
+          </div>
           <div className="space-y-3">
             <ColorRow label="Background" value={textPageBgColor} onChange={setTextPageBgColor} disabled={!isOwner} />
             <ColorRow label="Body Text" value={textPageTextColor} onChange={setTextPageTextColor} disabled={!isOwner} />
@@ -652,6 +699,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               borderEnabled={textPageBorderEnabled}
               borderColor={textPageBorderColor}
               borderRadius={textPageBorderRadius || '12'}
+              layout={textPageLayout}
             />
           </div>
         </div>
