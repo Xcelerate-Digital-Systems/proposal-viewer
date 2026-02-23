@@ -32,7 +32,7 @@ export async function sendNotifications(payload: NotifyPayload) {
   // 1. Look up the proposal by share_token
   const { data: proposal, error: proposalError } = await supabase
     .from('proposals')
-    .select('id, title, client_name, client_email, share_token, company_id')
+    .select('id, title, client_name, client_email, crm_identifier, share_token, company_id')
     .eq('share_token', share_token)
     .single();
 
@@ -94,6 +94,8 @@ export async function sendNotifications(payload: NotifyPayload) {
         id: proposal.id,
         title: proposal.title,
         client_name: proposal.client_name,
+        client_email: proposal.client_email || null,
+        crm_identifier: proposal.crm_identifier || null,
         share_token: proposal.share_token,
       },
       comment_id,
@@ -261,6 +263,8 @@ interface WebhookPayload {
     id: string;
     title: string;
     client_name: string;
+    client_email: string | null;
+    crm_identifier: string | null;
     share_token: string;
   };
   comment_id?: string;
@@ -292,6 +296,8 @@ async function fireWebhooks(payload: WebhookPayload) {
       id: payload.proposal.id,
       title: payload.proposal.title,
       client_name: payload.proposal.client_name,
+      client_email: payload.proposal.client_email,
+      crm_identifier: payload.proposal.crm_identifier,
       viewer_url: buildProposalUrl(payload.proposal.share_token, custom_domain, appUrl),
     },
     ...(payload.comment_id && {

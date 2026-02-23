@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FileText, Loader2, Menu, CheckCircle2, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Menu, CheckCircle2, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import ViewerLoader from '@/components/viewer/ViewerLoader';
 import { useProposal, deriveBorderColor } from '@/hooks/useProposal';
 import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
@@ -26,6 +27,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     comments,
     accepted,
     branding,
+    brandingLoaded,
     pricing,
     isPricingPage,
     toPdfPage,
@@ -58,6 +60,13 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const onPricingPage = isPricingPage(currentPage);
   // If not pricing, what PDF page should we show?
   const pdfPage = toPdfPage(currentPage);
+
+  // Dismiss cover state when cover isn't enabled so keyboard nav works
+  useEffect(() => {
+    if (proposal && !proposal.cover_enabled) {
+      setShowCover(false);
+    }
+  }, [proposal]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -95,18 +104,17 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const bgSecondary = branding.bg_secondary || '#141414';
   const accent = branding.accent_color || '#ff6700';
   const border = deriveBorderColor(bgSecondary);
+  const sidebarText = branding.sidebar_text_color || '#ffffff';
   const acceptLabel = proposal?.accept_button_text || undefined;
 
+  // ── Early returns AFTER all hooks ──────────────────────────────────
+
+  if (!brandingLoaded) {
+    return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
+  }
+
   if (loading) {
-    const loaderTextColor = branding.sidebar_text_color || '#ffffff';
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: bgSecondary }}>
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: loaderTextColor }} />
-          <p className="text-sm" style={{ color: loaderTextColor, opacity: 0.45 }}>Loading proposal...</p>
-        </div>
-      </div>
-    );
+    return <ViewerLoader branding={branding} loading={true} label="Loading proposal…" />;
   }
 
   if (notFound) {
@@ -132,8 +140,6 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       </>
     );
   }
-
-  const sidebarText = branding.sidebar_text_color || '#ffffff';
 
   return (
     <div

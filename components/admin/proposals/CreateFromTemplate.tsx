@@ -31,6 +31,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
   const [title, setTitle] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
+  const [crmIdentifier, setCrmIdentifier] = useState('');
   const [description, setDescription] = useState('');
 
   useEffect(() => {
@@ -152,6 +153,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         title: title.trim(),
         client_name: clientName.trim(),
         client_email: clientEmail.trim() || null,
+        crm_identifier: crmIdentifier.trim() || null,
         description: description.trim() || null,
         file_path: proposalFilePath,
         file_size_bytes: mergeData.file_size_bytes,
@@ -298,6 +300,18 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
               disabled={creating}
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">CRM Identifier <span className="text-gray-400 font-normal">(optional)</span></label>
+          <input
+            type="text"
+            value={crmIdentifier}
+            onChange={(e) => setCrmIdentifier(e.target.value)}
+            placeholder="e.g. GHL contact ID"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
+            disabled={creating}
+          />
         </div>
 
         {/* Page list */}

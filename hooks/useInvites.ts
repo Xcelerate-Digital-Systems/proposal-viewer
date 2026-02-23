@@ -1,13 +1,13 @@
 // hooks/useInvites.ts
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export type CompanyInvite = {
   id: string;
   email: string;
-  role: 'admin' | 'member';
+  role: 'owner' | 'admin' | 'member';
   token: string;
   expires_at: string;
   accepted_at: string | null;
@@ -18,6 +18,11 @@ export type CompanyInvite = {
 export function useInvites(companyId?: string) {
   const [invites, setInvites] = useState<CompanyInvite[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Clear invites when company changes to prevent showing wrong-account data
+  useEffect(() => {
+    setInvites([]);
+  }, [companyId]);
 
   const getAuthHeaders = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -50,7 +55,7 @@ export function useInvites(companyId?: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
-  const createInvite = async (email: string, role: 'admin' | 'member' = 'member') => {
+  const createInvite = async (email: string, role: 'owner' | 'admin' | 'member' = 'member') => {
     const headers = await getAuthHeaders();
     const res = await fetch(buildUrl('/api/invites'), {
       method: 'POST',

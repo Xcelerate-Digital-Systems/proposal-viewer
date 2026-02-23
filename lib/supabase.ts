@@ -43,6 +43,7 @@ export type Proposal = {
   title: string;
   client_name: string;
   client_email: string | null;
+  crm_identifier: string | null;
   description: string | null;
   file_path: string;
   file_size_bytes: number | null;
@@ -63,6 +64,23 @@ export type Proposal = {
   post_accept_action: 'redirect' | 'message' | null;
   post_accept_redirect_url: string | null;
   post_accept_message: string | null;
+  company_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Document = {
+  id: string;
+  title: string;
+  description: string | null;
+  file_path: string;
+  file_size_bytes: number | null;
+  share_token: string;
+  page_names: PageNameEntry[] | string[];
+  cover_enabled: boolean;
+  cover_image_path: string | null;
+  cover_subtitle: string | null;
+  cover_button_text: string;
   company_id: string;
   created_at: string;
   updated_at: string;

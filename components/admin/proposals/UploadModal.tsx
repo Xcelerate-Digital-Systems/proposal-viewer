@@ -21,7 +21,7 @@ const formatSize = (bytes: number | null) => {
 export default function UploadModal({ companyId, onClose, onSuccess }: UploadModalProps) {
   const toast = useToast();
   const [tab, setTab] = useState<'upload' | 'template'>('upload');
-  const [form, setForm] = useState({ title: '', client_name: '', client_email: '', description: '' });
+  const [form, setForm] = useState({ title: '', client_name: '', client_email: '', crm_identifier: '', description: '' });
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -60,6 +60,7 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
         title: form.title,
         client_name: form.client_name,
         client_email: form.client_email || null,
+        crm_identifier: form.crm_identifier || null,
         description: form.description || null,
         file_path: filePath,
         file_size_bytes: file.size,
@@ -153,6 +154,16 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
                   className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CRM Identifier <span className="text-gray-400 font-normal">(optional)</span></label>
+              <input
+                type="text"
+                value={form.crm_identifier}
+                onChange={(e) => setForm({ ...form, crm_identifier: e.target.value })}
+                placeholder="e.g. GHL contact ID"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>

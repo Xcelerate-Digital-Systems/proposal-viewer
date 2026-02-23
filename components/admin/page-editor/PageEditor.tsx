@@ -21,7 +21,7 @@ import SortablePricingRow from './SortablePricingRow';
 import PdfPreviewPanel from './PdfPreviewPanel';
 import PricingPreviewPanel from './PricingPreviewPanel';
 
-export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel }: PageEditorProps) {
+export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel, tableName = 'proposals' }: PageEditorProps) {
   // UI state
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
@@ -35,7 +35,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     entries, setEntries, pageCount, setPageCount,
     saveStatus, syncPageCount, updateEntry,
     flushPendingSaves, remapSaveStatus,
-  } = usePageEditorState(proposalId, initialPageNames);
+    } = usePageEditorState(proposalId, initialPageNames, tableName);
 
   const {
     pricingLoaded, pricingExists, pricingPosition, setPricingPosition,
@@ -305,7 +305,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
             </DndContext>
 
             {/* Add pricing page button */}
-            {pricingLoaded && (!pricingExists || !pricingForm.enabled) && (
+            {tableName !== 'documents' && pricingLoaded && (!pricingExists || !pricingForm.enabled) && (
               <div className="flex justify-center pt-3 pb-2">
                 <button
                   onClick={handleAddPricing}
@@ -316,7 +316,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                 </button>
               </div>
             )}
-
             {entries.length === 0 && <p className="text-sm text-gray-400">Loading pages...</p>}
           </div>
         </div>

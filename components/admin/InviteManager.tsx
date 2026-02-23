@@ -7,9 +7,11 @@ import { useInvites, CompanyInvite } from '@/hooks/useInvites';
 
 interface InviteManagerProps {
   companyId?: string;
+  currentRole?: string;
+  isSuperAdmin?: boolean;
 }
 
-export function InviteManager({ companyId }: InviteManagerProps) {
+export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteManagerProps) {
   const {
     pendingInvites,
     acceptedInvites,
@@ -21,11 +23,14 @@ export function InviteManager({ companyId }: InviteManagerProps) {
   } = useInvites(companyId);
 
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'admin' | 'member'>('member');
+  const [role, setRole] = useState<'owner' | 'admin' | 'member'>('member');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Can this user invite owners?
+  const canInviteOwner = isSuperAdmin || currentRole === 'owner';
 
   useEffect(() => {
     fetchInvites();
@@ -95,11 +100,12 @@ export function InviteManager({ companyId }: InviteManagerProps) {
             />
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as 'admin' | 'member')}
+              onChange={(e) => setRole(e.target.value as 'owner' | 'admin' | 'member')}
               className="px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
             >
-              <option value="member">Member</option>
+              {canInviteOwner && <option value="owner">Owner</option>}
               <option value="admin">Admin</option>
+              <option value="member">Member</option>
             </select>
           </div>
 

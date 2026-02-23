@@ -29,6 +29,7 @@ export interface PageEditorProps {
   initialPageNames: (PageNameEntry | string)[];
   onSave: () => void;
   onCancel: () => void;
+  tableName?: 'proposals' | 'documents';
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────── */

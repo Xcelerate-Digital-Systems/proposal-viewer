@@ -94,7 +94,7 @@ function TeamContent({
     fetchTeam();
   }, [fetchTeam]);
 
-  const handleChangeRole = async (memberId: string, newRole: 'admin' | 'member') => {
+  const handleChangeRole = async (memberId: string, newRole: 'owner' | 'admin' | 'member') => {
     setActionLoading(memberId);
     setActionMenuId(null);
     const headers = await getAuthHeaders();
@@ -185,7 +185,12 @@ function TeamContent({
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 shadow-sm">
               {members.map((m) => {
                 const isCurrentUser = m.id === currentMemberId;
-                const canEditThis = canManage && !isCurrentUser && m.role !== 'owner';
+                // Owners/super admins can edit anyone except themselves;
+                // admins can edit members (not owners or other admins)
+                const canEditThis =
+                  canManage &&
+                  !isCurrentUser &&
+                  ((isOwner || isSuperAdmin) || (isAdmin && m.role === 'member'));
                 const showMenu = actionMenuId === m.id;
 
                 return (
@@ -237,6 +242,15 @@ function TeamContent({
                               <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
                                 {(isOwner || isSuperAdmin) && (
                                   <>
+                                    {m.role !== 'owner' && (
+                                      <button
+                                        onClick={() => handleChangeRole(m.id, 'owner')}
+                                        className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"
+                                      >
+                                        <Crown size={14} />
+                                        Make Owner
+                                      </button>
+                                    )}
                                     {m.role !== 'admin' && (
                                       <button
                                         onClick={() => handleChangeRole(m.id, 'admin')}
@@ -283,7 +297,11 @@ function TeamContent({
           {canManage && (
             <div>
               <h2 className="text-sm font-medium text-gray-500 mb-3">Invites</h2>
-              <InviteManager companyId={companyId} />
+              <InviteManager
+                companyId={companyId}
+                currentRole={currentRole}
+                isSuperAdmin={isSuperAdmin}
+              />
             </div>
           )}
 

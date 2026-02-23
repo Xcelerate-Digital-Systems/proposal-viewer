@@ -24,8 +24,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    if (!['admin', 'member'].includes(role)) {
-      return NextResponse.json({ error: 'Role must be admin or member' }, { status: 400 });
+    if (!['owner', 'admin', 'member'].includes(role)) {
+      return NextResponse.json({ error: 'Role must be owner, admin, or member' }, { status: 400 });
+    }
+
+    // Only owners and super admins can invite as owner
+    if (role === 'owner' && !member.is_super_admin && member.role !== 'owner') {
+      return NextResponse.json({ error: 'Only owners can invite new owners' }, { status: 403 });
     }
 
     const supabase = createServiceClient();

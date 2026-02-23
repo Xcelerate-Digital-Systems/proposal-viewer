@@ -6,7 +6,8 @@ import { useToast } from '@/components/ui/Toast';
 
 export function usePageEditorState(
   proposalId: string,
-  initialPageNames: (PageNameEntry | string)[]
+  initialPageNames: (PageNameEntry | string)[],
+  tableName: 'proposals' | 'documents' = 'proposals'
 ) {
   const toast = useToast();
 
@@ -52,7 +53,7 @@ export function usePageEditorState(
     setSaveStatus((prev) => ({ ...prev, ...savingStatus }));
 
     try {
-      await supabase.from('proposals').update({ page_names: entriesToSave }).eq('id', proposalId);
+      await supabase.from(tableName).update({ page_names: entriesToSave }).eq('id', proposalId);
       const savedStatus: Record<number, 'saved'> = {};
       rowsToMark.forEach((idx) => { savedStatus[idx] = 'saved'; });
       setSaveStatus((prev) => ({ ...prev, ...savedStatus }));

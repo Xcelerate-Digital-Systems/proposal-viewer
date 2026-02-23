@@ -151,6 +151,7 @@ export function useProposal(token: string) {
   const [comments, setComments] = useState<ProposalComment[]>([]);
   const [accepted, setAccepted] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [pricing, setPricing] = useState<ProposalPricing | null>(null);
   const [isTeamPreview, setIsTeamPreview] = useState(false);
 
@@ -181,6 +182,7 @@ export function useProposal(token: string) {
     } catch {
       // Non-critical — fall back to defaults
     }
+    setBrandingLoaded(true);
 
     // Fetch pricing data
     try {
@@ -395,8 +397,8 @@ export function useProposal(token: string) {
     comments,
     accepted,
     branding,
+    brandingLoaded,
     pricing,
-    // Page map helpers
     isPricingPage: pageMap.isPricingPage,
     toPdfPage: pageMap.toPdfPage,
     onDocumentLoadSuccess,

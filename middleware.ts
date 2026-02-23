@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Routes that are allowed on custom domains
 const ALLOWED_PREFIXES = [
   '/view/',            // Proposal viewer pages
+  '/doc/',             // Document viewer pages
   '/api/company/branding', // Viewer fetches branding
   '/api/notify',       // Viewer fires notification events
   '/api/proposals/',   // Viewer needs proposal data (accept, comments)

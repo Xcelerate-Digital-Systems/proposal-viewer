@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FileText, LayoutTemplate, Users, Palette, Bell,
+  FileText, Files, LayoutTemplate, Users, Palette, Bell,
   LogOut, Menu, X, ChevronRight, Building2, ArrowLeft,
 } from 'lucide-react';
 
@@ -22,6 +22,7 @@ interface AdminSidebarProps {
 
 const NAV_ITEMS = [
   { href: '/', label: 'Proposals', icon: FileText },
+  { href: '/documents', label: 'Documents', icon: Files },
   { href: '/templates', label: 'Templates', icon: LayoutTemplate },
   { href: '/team', label: 'Team', icon: Users },
   { href: '/company', label: 'Branding', icon: Palette },
