@@ -300,7 +300,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   return (
     <div className="border-t border-gray-200 bg-gray-50 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <h4 className="text-sm font-semibold text-gray-900">Edit Pages</h4>
           {processing && (
@@ -319,6 +319,35 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
           Done
         </button>
       </div>
+
+      {/* Action buttons */}
+      {isProposalOrTemplate && (pricingLoaded && textPagesLoaded) && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {(!pricingExists || !pricingForm.enabled) && (
+            <button
+              onClick={handleAddPricing}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+            >
+              <DollarSign size={12} />
+              Add Pricing Page
+            </button>
+          )}
+          <button
+            onClick={handleAddTextPage}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-600 border border-dashed border-purple-300 hover:bg-purple-50 hover:border-purple-400 transition-colors"
+          >
+            <FileText size={12} />
+            Add Text Page
+          </button>
+          <button
+            onClick={() => addGroup('New Section')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+          >
+            <FolderOpen size={12} />
+            Add Section Header
+          </button>
+        </div>
+      )}
 
       <p className="text-xs text-gray-400 mb-4">
         Drag to reorder pages. Choose a label from the dropdown or select &quot;Custom&quot; to type your own. Changes save automatically.
@@ -440,40 +469,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                 })}
               </SortableContext>
             </DndContext>
-
-            {/* Action buttons at bottom */}
-            {isProposalOrTemplate && (pricingLoaded && textPagesLoaded) && (
-              <div className="flex flex-wrap justify-center gap-2 pt-3 pb-2">
-                {/* Add pricing page button */}
-                {(!pricingExists || !pricingForm.enabled) && (
-                  <button
-                    onClick={handleAddPricing}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
-                  >
-                    <DollarSign size={12} />
-                    Add Pricing Page
-                  </button>
-                )}
-
-                {/* Add text page button */}
-                <button
-                  onClick={handleAddTextPage}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-purple-600 border border-dashed border-purple-300 hover:bg-purple-50 hover:border-purple-400 transition-colors"
-                >
-                  <FileText size={12} />
-                  Add Text Page
-                </button>
-
-                {/* Add section header button */}
-                <button
-                  onClick={() => addGroup('New Section')}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-amber-600 border border-dashed border-amber-300 hover:bg-amber-50 hover:border-amber-400 transition-colors"
-                >
-                  <FolderOpen size={12} />
-                  Add Section Header
-                </button>
-              </div>
-            )}
 
             {entries.length === 0 && <p className="text-sm text-gray-400">Loading pages...</p>}
           </div>
