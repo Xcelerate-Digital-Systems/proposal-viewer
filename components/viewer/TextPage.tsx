@@ -88,6 +88,16 @@ function renderNode(
               </code>
             );
             break;
+            case 'textStyle': {
+            const style: React.CSSProperties = {};
+            if (mark.attrs?.fontSize) {
+              style.fontSize = mark.attrs.fontSize as string;
+            }
+            if (Object.keys(style).length > 0) {
+              element = <span key={`mark-${key}`} style={style}>{element}</span>;
+            }
+            break;
+          }
         }
       }
     }
@@ -248,11 +258,15 @@ function renderNode(
 }
 
 export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle }: TextPageProps) {
-  const bgPrimary = branding.bg_primary || '#0f0f0f';
-  const bgSecondary = branding.bg_secondary || '#141414';
+  const bgColor = branding.text_page_bg_color || branding.bg_secondary || '#141414';
+  const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
+  const headingColor = branding.text_page_heading_color || textColor;
+  const fontSize = parseInt(branding.text_page_font_size || '14', 10);
   const accent = branding.accent_color || '#ff6700';
-  const textColor = branding.sidebar_text_color || '#ffffff';
-  const border = deriveBorderColor(bgSecondary);
+  const border = deriveBorderColor(bgColor);
+  const borderEnabled = branding.text_page_border_enabled ?? true;
+  const borderColor = branding.text_page_border_color || border;
+  const borderRadius = parseInt(branding.text_page_border_radius || '12', 10);
   const muted = `${textColor}99`;
 
   const context = { clientName, companyName, userName, proposalTitle };
@@ -261,11 +275,15 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   return (
     <div
       className="w-full min-h-full flex items-start justify-center py-8 lg:py-12 px-4 sm:px-6"
-      style={{ backgroundColor: bgPrimary }}
+        style={{ backgroundColor: bgColor }}
     >
       <div
-        className="w-full max-w-[700px] rounded-xl overflow-hidden"
-        style={{ backgroundColor: bgSecondary, border: `1px solid ${border}` }}
+        className="w-full max-w-[700px] overflow-hidden"
+        style={{
+          backgroundColor: bgColor,
+          border: borderEnabled ? `1px solid ${borderColor}` : 'none',
+          borderRadius: `${borderRadius}px`,
+        }}
       >
         {/* Header accent bar */}
         <div className="h-1" style={{ backgroundColor: accent }} />
@@ -276,7 +294,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
             <div className="mb-6">
               <h1
                 className="text-2xl sm:text-3xl font-bold tracking-tight font-[family-name:var(--font-display)]"
-                style={{ color: textColor }}
+                style={{ color: headingColor }}
               >
                 {textPage.title}
               </h1>
@@ -284,7 +302,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
           )}
 
           {/* Content */}
-          <div>
+          <div style={{ fontSize: `${fontSize}px` }}>
             {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
           </div>
         </div>

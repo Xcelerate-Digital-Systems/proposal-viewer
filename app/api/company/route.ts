@@ -130,6 +130,9 @@ export async function PATCH(req: NextRequest) {
       'text_page_text_color', 
       'text_page_heading_color', 
       'text_page_font_size',
+      'text_page_border_enabled',
+      'text_page_border_color',
+      'text_page_border_radius',
     ];
     const updates: Record<string, unknown> = {};
 
@@ -180,6 +183,7 @@ export async function PATCH(req: NextRequest) {
       'text_page_bg_color', 
       'text_page_text_color', 
       'text_page_heading_color',
+      'text_page_border_color',
     ];
     for (const field of colorFields) {
       if (updates[field]) {

@@ -1,6 +1,7 @@
 // components/admin/company/ViewerColorsSection.tsx
 'use client';
 
+import { ReactNode } from 'react';
 import { Loader2, Palette } from 'lucide-react';
 import ColorRow from './ColorRow';
 import { deriveBorder, ACCENT_PRESETS, BG_PRESETS } from '@/lib/company-utils';
@@ -20,6 +21,7 @@ interface ViewerColorsSectionProps {
   acceptTextColor: string;
   setAcceptTextColor: (v: string) => void;
   onSave: () => void;
+  children?: ReactNode;
 }
 
 export default function ViewerColorsSection({
@@ -37,6 +39,7 @@ export default function ViewerColorsSection({
   acceptTextColor,
   setAcceptTextColor,
   onSave,
+  children,
 }: ViewerColorsSectionProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -119,6 +122,13 @@ export default function ViewerColorsSection({
           <ColorRow label="Accept button text" value={acceptTextColor} onChange={setAcceptTextColor} disabled={!isOwner} />
         </div>
       </div>
+
+      {/* Embedded preview */}
+      {children && (
+        <div className="mt-5 pt-5 border-t border-gray-100">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

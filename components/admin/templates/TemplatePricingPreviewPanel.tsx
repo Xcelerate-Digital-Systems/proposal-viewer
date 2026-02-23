@@ -48,6 +48,9 @@ const DEFAULT_BRANDING: CompanyBranding = {
   text_page_text_color: '#ffffff',
   text_page_heading_color: null,
   text_page_font_size: '14',
+  text_page_border_enabled: true,
+  text_page_border_color: null,
+  text_page_border_radius: '12',
 };
 
 export default function TemplatePricingPreviewPanel({

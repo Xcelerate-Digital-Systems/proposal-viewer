@@ -1,6 +1,7 @@
 // components/admin/company/CoverColorsSection.tsx
 'use client';
 
+import { ReactNode } from 'react';
 import { Loader2, Image as ImageIcon } from 'lucide-react';
 import ColorRow from './ColorRow';
 
@@ -29,6 +30,7 @@ interface CoverColorsSectionProps {
   setCoverButtonBg: (v: string) => void;
   coverButtonText: string;
   setCoverButtonText: (v: string) => void;
+  children?: ReactNode;
 }
 
 export default function CoverColorsSection({
@@ -56,6 +58,7 @@ export default function CoverColorsSection({
   setCoverButtonBg,
   coverButtonText,
   setCoverButtonText,
+  children,
 }: CoverColorsSectionProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -252,6 +255,13 @@ export default function CoverColorsSection({
           <ColorRow label="Button text" value={coverButtonText} onChange={setCoverButtonText} disabled={!isOwner} />
         </div>
       </div>
+
+      {/* Embedded preview */}
+      {children && (
+        <div className="mt-5 pt-5 border-t border-gray-100">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Building2, Upload, Trash2, Loader2,
-  Check, Globe, Link2, Image as ImageIcon,
+  Check, Globe, Link2, Image as ImageIcon, FileText,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { supabase } from '@/lib/supabase';
@@ -12,10 +12,12 @@ import CustomDomainManager from '@/components/admin/CustomDomainManager';
 import { CompanyData, isValidHex6, isValidHex6or8 } from '@/lib/company-utils';
 import ViewerPreview from '@/components/admin/company/ViewerPreview';
 import CoverPreview from '@/components/admin/company/CoverPreview';
+import TextPagePreview from '@/components/admin/company/TextPagePreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
 import CoverColorsSection from '@/components/admin/company/CoverColorsSection';
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
+import ColorRow from '@/components/admin/company/ColorRow';
 
 export default function CompanySettingsPage() {
   return (
@@ -31,8 +33,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  // Form state — viewer branding
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [accentColor, setAccentColor] = useState('#ff6700');
@@ -42,8 +42,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [acceptTextColor, setAcceptTextColor] = useState('#ffffff');
   const [website, setWebsite] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
-
-  // Form state — cover page branding
   const [coverBgStyle, setCoverBgStyle] = useState<'gradient' | 'solid'>('gradient');
   const [coverBgColor1, setCoverBgColor1] = useState('#0f0f0f');
   const [coverBgColor2, setCoverBgColor2] = useState('#141414');
@@ -60,6 +58,13 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [fontHeadingWeight, setFontHeadingWeight] = useState<string | null>(null);
   const [fontBodyWeight, setFontBodyWeight] = useState<string | null>(null);
   const [fontSidebarWeight, setFontSidebarWeight] = useState<string | null>(null);
+  const [textPageBgColor, setTextPageBgColor] = useState('#141414');
+  const [textPageTextColor, setTextPageTextColor] = useState('#ffffff');
+  const [textPageHeadingColor, setTextPageHeadingColor] = useState('');
+  const [textPageFontSize, setTextPageFontSize] = useState('14');
+  const [textPageBorderEnabled, setTextPageBorderEnabled] = useState(true);
+  const [textPageBorderColor, setTextPageBorderColor] = useState('');
+  const [textPageBorderRadius, setTextPageBorderRadius] = useState('12');
   const [fontsSaved, setFontsSaved] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,6 +107,13 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setFontHeadingWeight(data.font_heading_weight || null);
         setFontBodyWeight(data.font_body_weight || null);
         setFontSidebarWeight(data.font_sidebar_weight || null);
+        setTextPageBgColor(data.text_page_bg_color || '#141414');
+        setTextPageTextColor(data.text_page_text_color || '#ffffff');
+        setTextPageHeadingColor(data.text_page_heading_color || '');
+        setTextPageFontSize(data.text_page_font_size || '14');
+        setTextPageBorderEnabled(data.text_page_border_enabled ?? true);
+        setTextPageBorderColor(data.text_page_border_color || '');
+        setTextPageBorderRadius(data.text_page_border_radius || '12');
       }
     } finally {
       setLoading(false);
@@ -269,6 +281,33 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     setLogoUploading(false);
   };
 
+  const handleSaveTextPageColors = async () => {
+    if (!isOwner) return;
+    setSaving('textPageColors');
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/company?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text_page_bg_color: textPageBgColor,
+        text_page_text_color: textPageTextColor,
+        text_page_heading_color: textPageHeadingColor || null,
+        text_page_font_size: textPageFontSize,
+        text_page_border_enabled: textPageBorderEnabled,
+        text_page_border_color: textPageBorderColor || null,
+        text_page_border_radius: textPageBorderRadius,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showFeedback(data.error || 'Failed to save', true);
+    } else {
+      setCompany(prev => prev ? { ...prev, ...data } : prev);
+      showFeedback('Text page colors saved');
+    }
+    setSaving(null);
+  };
+
   const colorsChanged =
     accentColor !== (company?.accent_color || '#ff6700') ||
     bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
@@ -287,6 +326,15 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     coverOverlayOpacity !== (parseFloat(String(company?.cover_overlay_opacity)) || 0.65) ||
     coverGradientType !== (company?.cover_gradient_type || 'linear') ||
     coverGradientAngle !== (parseInt(String(company?.cover_gradient_angle)) || 135);
+
+  const textPageColorsChanged =
+    textPageBgColor !== (company?.text_page_bg_color || '#141414') ||
+    textPageTextColor !== (company?.text_page_text_color || '#ffffff') ||
+    textPageHeadingColor !== (company?.text_page_heading_color || '') ||
+    textPageFontSize !== (company?.text_page_font_size || '14') ||
+    textPageBorderEnabled !== (company?.text_page_border_enabled ?? true) ||
+    textPageBorderColor !== (company?.text_page_border_color || '') ||
+    textPageBorderRadius !== (company?.text_page_border_radius || '12');
 
   if (loading) {
     return (
@@ -324,221 +372,295 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* LEFT COLUMN — Settings */}
-        <div className="space-y-5">
-          {/* Logo */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <ImageIcon size={15} className="text-gray-400" />
-              <span className="text-sm font-medium text-gray-500">Company Logo</span>
+      {/* Single column layout */}
+      <div className="space-y-5">
+        {/* Logo */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <ImageIcon size={15} className="text-gray-400" />
+            <span className="text-sm font-medium text-gray-500">Company Logo</span>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
+              {company?.logo_url ? (
+                <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
+              ) : (
+                <Building2 size={28} className="text-gray-200" />
+              )}
             </div>
-            <div className="flex items-center gap-5">
-              <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
-                {company?.logo_url ? (
-                  <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
-                ) : (
-                  <Building2 size={28} className="text-gray-200" />
-                )}
-              </div>
-              {isOwner && (
-                <div className="space-y-2">
-                  <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={handleLogoUpload} className="hidden" />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={logoUploading}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 text-sm text-gray-600 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
-                  >
-                    {logoUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                    Upload Logo
+            {isOwner && (
+              <div className="space-y-2">
+                <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={handleLogoUpload} className="hidden" />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={logoUploading}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 text-sm text-gray-600 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                >
+                  {logoUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                  Upload Logo
+                </button>
+                {company?.logo_url && (
+                  <button onClick={handleLogoRemove} disabled={logoUploading} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:text-red-600 transition-colors">
+                    <Trash2 size={14} /> Remove
                   </button>
-                  {company?.logo_url && (
-                    <button onClick={handleLogoRemove} disabled={logoUploading} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:text-red-600 transition-colors">
-                      <Trash2 size={14} /> Remove
-                    </button>
-                  )}
-                  <p className="text-xs text-gray-400">PNG, JPEG, SVG, or WebP. Max 2MB.</p>
-                </div>
-              )}
-            </div>
+                )}
+                <p className="text-xs text-gray-400">PNG, JPEG, SVG, or WebP. Max 2MB.</p>
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Company Name */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <label className="block text-sm font-medium text-gray-500 mb-2">Company Name</label>
-            <div className="flex gap-2">
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={!isOwner}
-                className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-              {isOwner && name !== company?.name && (
-                <button onClick={() => handleSaveField('name', name)} disabled={saving === 'name' || !name.trim()}
-                  className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                  {saving === 'name' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-                </button>
-              )}
-            </div>
+        {/* Company Name */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <label className="block text-sm font-medium text-gray-500 mb-2">Company Name</label>
+          <div className="flex gap-2">
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={!isOwner}
+              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+            {isOwner && name !== company?.name && (
+              <button onClick={() => handleSaveField('name', name)} disabled={saving === 'name' || !name.trim()}
+                className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
+                {saving === 'name' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+              </button>
+            )}
           </div>
+        </div>
 
-          {/* Slug */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Link2 size={14} className="text-gray-400" />
-              <label className="text-sm font-medium text-gray-500">URL Slug</label>
-            </div>
-            <div className="flex gap-2">
-              <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} disabled={!isOwner}
-                className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 font-mono placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-              {isOwner && slug !== company?.slug && (
-                <button onClick={() => handleSaveField('slug', slug)} disabled={saving === 'slug' || slug.length < 2}
-                  className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                  {saving === 'slug' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-gray-400 mt-1.5">Lowercase letters, numbers, and hyphens only.</p>
+        {/* Slug */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Link2 size={14} className="text-gray-400" />
+            <label className="text-sm font-medium text-gray-500">URL Slug</label>
           </div>
-
-          {/* Website */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Globe size={14} className="text-gray-400" />
-              <label className="text-sm font-medium text-gray-500">Website</label>
-            </div>
-            <div className="flex gap-2">
-              <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://yourcompany.com" disabled={!isOwner}
-                className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-              {isOwner && website !== (company?.website || '') && (
-                <button onClick={() => handleSaveField('website', website)} disabled={saving === 'website'}
-                  className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                  {saving === 'website' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-                </button>
-              )}
-            </div>
+          <div className="flex gap-2">
+            <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} disabled={!isOwner}
+              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 font-mono placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+            {isOwner && slug !== company?.slug && (
+              <button onClick={() => handleSaveField('slug', slug)} disabled={saving === 'slug' || slug.length < 2}
+                className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
+                {saving === 'slug' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+              </button>
+            )}
           </div>
+          <p className="text-xs text-gray-400 mt-1.5">Lowercase letters, numbers, and hyphens only.</p>
+        </div>
 
-          {/* Custom Domain */}
-          <CustomDomainManager companyId={companyId} isOwner={isOwner} />
+        {/* Website */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe size={14} className="text-gray-400" />
+            <label className="text-sm font-medium text-gray-500">Website</label>
+          </div>
+          <div className="flex gap-2">
+            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://yourcompany.com" disabled={!isOwner}
+              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+            {isOwner && website !== (company?.website || '') && (
+              <button onClick={() => handleSaveField('website', website)} disabled={saving === 'website'}
+                className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
+                {saving === 'website' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+              </button>
+            )}
+          </div>
+        </div>
 
-          {/* Viewer Colors */}
-          <ViewerColorsSection
-            isOwner={isOwner}
-            saving={saving}
-            colorsChanged={colorsChanged}
-            accentColor={accentColor}
-            setAccentColor={setAccentColor}
-            bgPrimary={bgPrimary}
-            setBgPrimary={setBgPrimary}
-            bgSecondary={bgSecondary}
-            setBgSecondary={setBgSecondary}
-            sidebarTextColor={sidebarTextColor}
-            setSidebarTextColor={setSidebarTextColor}
-            acceptTextColor={acceptTextColor}
-            setAcceptTextColor={setAcceptTextColor}
-            onSave={handleSaveColors}
-          />
+        {/* Custom Domain */}
+        <CustomDomainManager companyId={companyId} isOwner={isOwner} />
 
-          {/* Cover Page Colors */}
-          <CoverColorsSection
-            isOwner={isOwner}
-            saving={saving}
-            coverColorsChanged={coverColorsChanged}
-            onSave={handleSaveCoverColors}
-            coverBgStyle={coverBgStyle}
-            setCoverBgStyle={setCoverBgStyle}
-            coverGradientType={coverGradientType}
-            setCoverGradientType={setCoverGradientType}
-            coverGradientAngle={coverGradientAngle}
-            setCoverGradientAngle={setCoverGradientAngle}
-            coverBgColor1={coverBgColor1}
-            setCoverBgColor1={setCoverBgColor1}
-            coverBgColor2={coverBgColor2}
-            setCoverBgColor2={setCoverBgColor2}
-            coverOverlayOpacity={coverOverlayOpacity}
-            setCoverOverlayOpacity={setCoverOverlayOpacity}
-            coverTextColor={coverTextColor}
-            setCoverTextColor={setCoverTextColor}
-            coverSubtitleColor={coverSubtitleColor}
-            setCoverSubtitleColor={setCoverSubtitleColor}
-            coverButtonBg={coverButtonBg}
-            setCoverButtonBg={setCoverButtonBg}
-            coverButtonText={coverButtonText}
-            setCoverButtonText={setCoverButtonText}
-          />
-
-          {/* Viewer Fonts */}
-          <ViewerFontsSection
-            isOwner={isOwner}
-            saving={saving}
-            fontsChanged={fontsChanged}
-            fontHeading={fontHeading}
-            setFontHeading={setFontHeading}
-            fontBody={fontBody}
-            setFontBody={setFontBody}
+        {/* Viewer Colors — with embedded preview */}
+        <ViewerColorsSection
+          isOwner={isOwner}
+          saving={saving}
+          colorsChanged={colorsChanged}
+          accentColor={accentColor}
+          setAccentColor={setAccentColor}
+          bgPrimary={bgPrimary}
+          setBgPrimary={setBgPrimary}
+          bgSecondary={bgSecondary}
+          setBgSecondary={setBgSecondary}
+          sidebarTextColor={sidebarTextColor}
+          setSidebarTextColor={setSidebarTextColor}
+          acceptTextColor={acceptTextColor}
+          setAcceptTextColor={setAcceptTextColor}
+          onSave={handleSaveColors}
+        >
+          <p className="text-xs text-gray-400 mb-3">This is how your proposals will appear to clients.</p>
+          <ViewerPreview
+            accent={isValidHex6(accentColor) ? accentColor : '#ff6700'}
+            bgPrimary={isValidHex6(bgPrimary) ? bgPrimary : '#0f0f0f'}
+            bgSecondary={isValidHex6(bgSecondary) ? bgSecondary : '#141414'}
+            sidebarTextColor={isValidHex6(sidebarTextColor) ? sidebarTextColor : '#ffffff'}
+            acceptTextColor={isValidHex6(acceptTextColor) ? acceptTextColor : '#ffffff'}
+            logoUrl={company?.logo_url || null}
+            companyName={name}
             fontSidebar={fontSidebar}
-            setFontSidebar={setFontSidebar}
-            fontHeadingWeight={fontHeadingWeight}
-            setFontHeadingWeight={setFontHeadingWeight}
-            fontBodyWeight={fontBodyWeight}
-            setFontBodyWeight={setFontBodyWeight}
             fontSidebarWeight={fontSidebarWeight}
-            setFontSidebarWeight={setFontSidebarWeight}
-            onSave={handleSaveFonts}
-            lastSaved={fontsSaved}
           />
+        </ViewerColorsSection>
 
-          {!isOwner && (
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-              <p className="text-sm text-gray-400">Only the company owner can edit these settings.</p>
+        {/* Cover Page Colors — with embedded preview */}
+        <CoverColorsSection
+          isOwner={isOwner}
+          saving={saving}
+          coverColorsChanged={coverColorsChanged}
+          onSave={handleSaveCoverColors}
+          coverBgStyle={coverBgStyle}
+          setCoverBgStyle={setCoverBgStyle}
+          coverGradientType={coverGradientType}
+          setCoverGradientType={setCoverGradientType}
+          coverGradientAngle={coverGradientAngle}
+          setCoverGradientAngle={setCoverGradientAngle}
+          coverBgColor1={coverBgColor1}
+          setCoverBgColor1={setCoverBgColor1}
+          coverBgColor2={coverBgColor2}
+          setCoverBgColor2={setCoverBgColor2}
+          coverOverlayOpacity={coverOverlayOpacity}
+          setCoverOverlayOpacity={setCoverOverlayOpacity}
+          coverTextColor={coverTextColor}
+          setCoverTextColor={setCoverTextColor}
+          coverSubtitleColor={coverSubtitleColor}
+          setCoverSubtitleColor={setCoverSubtitleColor}
+          coverButtonBg={coverButtonBg}
+          setCoverButtonBg={setCoverButtonBg}
+          coverButtonText={coverButtonText}
+          setCoverButtonText={setCoverButtonText}
+        >
+          <p className="text-xs text-gray-400 mb-3">Cover page shown before the proposal. Background image is set per-proposal.</p>
+          <CoverPreview
+            bgStyle={coverBgStyle}
+            bgColor1={isValidHex6(coverBgColor1) ? coverBgColor1 : '#0f0f0f'}
+            bgColor2={isValidHex6(coverBgColor2) ? coverBgColor2 : '#141414'}
+            textColor={isValidHex6or8(coverTextColor) ? coverTextColor : '#ffffff'}
+            subtitleColor={isValidHex6or8(coverSubtitleColor) ? coverSubtitleColor : '#ffffffb3'}
+            buttonBg={isValidHex6(coverButtonBg) ? coverButtonBg : '#ff6700'}
+            buttonText={isValidHex6(coverButtonText) ? coverButtonText : '#ffffff'}
+            overlayOpacity={coverOverlayOpacity}
+            gradientType={coverGradientType}
+            gradientAngle={coverGradientAngle}
+            logoUrl={company?.logo_url || null}
+            companyName={name}
+            fontHeading={fontHeading}
+            fontBody={fontBody}
+            fontHeadingWeight={fontHeadingWeight}
+            fontBodyWeight={fontBodyWeight}
+          />
+        </CoverColorsSection>
+
+        {/* Viewer Fonts — standalone (affects all previews) */}
+        <ViewerFontsSection
+          isOwner={isOwner}
+          saving={saving}
+          fontsChanged={fontsChanged}
+          fontHeading={fontHeading}
+          setFontHeading={setFontHeading}
+          fontBody={fontBody}
+          setFontBody={setFontBody}
+          fontSidebar={fontSidebar}
+          setFontSidebar={setFontSidebar}
+          fontHeadingWeight={fontHeadingWeight}
+          setFontHeadingWeight={setFontHeadingWeight}
+          fontBodyWeight={fontBodyWeight}
+          setFontBodyWeight={setFontBodyWeight}
+          fontSidebarWeight={fontSidebarWeight}
+          setFontSidebarWeight={setFontSidebarWeight}
+          onSave={handleSaveFonts}
+          lastSaved={fontsSaved}
+        />
+
+        {/* Text Page Colors — with embedded preview */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileText size={15} className="text-gray-400" />
+              <span className="text-sm font-medium text-gray-500">Text Page Colors</span>
             </div>
-          )}
-        </div>
-
-        {/* RIGHT COLUMN — Live Previews */}
-        <div className="lg:sticky lg:top-8 lg:self-start space-y-6">
-          {/* Viewer Preview */}
+            {isOwner && textPageColorsChanged && (
+              <button
+                onClick={handleSaveTextPageColors}
+                disabled={saving === 'textPageColors'}
+                className="px-4 py-1.5 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
+              >
+                {saving === 'textPageColors' ? <Loader2 size={14} className="animate-spin" /> : 'Save Text Page Colors'}
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 mb-4">
+            Controls the background, text, and heading colors for text pages in your proposals.
+          </p>
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-400">Live Preview — Proposal Viewer</h3>
-            <ViewerPreview
+            <ColorRow label="Background" value={textPageBgColor} onChange={setTextPageBgColor} disabled={!isOwner} />
+            <ColorRow label="Body Text" value={textPageTextColor} onChange={setTextPageTextColor} disabled={!isOwner} />
+            <ColorRow label="Heading Color (optional)" value={textPageHeadingColor} onChange={setTextPageHeadingColor} disabled={!isOwner} />
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Base Font Size (px)</label>
+              <select
+                value={textPageFontSize}
+                onChange={(e) => setTextPageFontSize(e.target.value)}
+                disabled={!isOwner}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
+              >
+                {['10', '12', '14', '16', '18', '20', '24'].map(size => (
+                  <option key={size} value={size}>{size}px</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Border toggle */}
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-gray-400">Show Border</label>
+              <button
+                onClick={() => isOwner && setTextPageBorderEnabled(!textPageBorderEnabled)}
+                disabled={!isOwner}
+                className={`w-10 h-5 rounded-full transition-colors relative ${
+                  textPageBorderEnabled ? 'bg-[#017C87]' : 'bg-gray-300'
+                } disabled:opacity-50`}
+              >
+                <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${
+                  textPageBorderEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                }`} />
+              </button>
+            </div>
+
+            {/* Border color - only show when border enabled */}
+            {textPageBorderEnabled && (
+              <ColorRow label="Border Color (optional)" value={textPageBorderColor} onChange={setTextPageBorderColor} disabled={!isOwner} />
+            )}
+
+            {/* Border radius */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Border Radius (px)</label>
+              <select
+                value={textPageBorderRadius}
+                onChange={(e) => setTextPageBorderRadius(e.target.value)}
+                disabled={!isOwner}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
+              >
+                {['0', '4', '8', '12', '16', '20', '24'].map(r => (
+                  <option key={r} value={r}>{r}px{r === '0' ? ' (square)' : r === '24' ? ' (very round)' : ''}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Embedded text page preview */}
+          <div className="mt-5 pt-5 border-t border-gray-100">
+            <p className="text-xs text-gray-400 mb-3">Preview of how text pages appear in the proposal viewer.</p>
+            <TextPagePreview
+              bgColor={textPageBgColor || '#141414'}
+              textColor={textPageTextColor || '#ffffff'}
+              headingColor={textPageHeadingColor}
+              fontSize={textPageFontSize || '14'}
               accent={isValidHex6(accentColor) ? accentColor : '#ff6700'}
-              bgPrimary={isValidHex6(bgPrimary) ? bgPrimary : '#0f0f0f'}
-              bgSecondary={isValidHex6(bgSecondary) ? bgSecondary : '#141414'}
-              sidebarTextColor={isValidHex6(sidebarTextColor) ? sidebarTextColor : '#ffffff'}
-              acceptTextColor={isValidHex6(acceptTextColor) ? acceptTextColor : '#ffffff'}
-              logoUrl={company?.logo_url || null}
-              companyName={name}
-              fontSidebar={fontSidebar}
-              fontSidebarWeight={fontSidebarWeight}
+              borderEnabled={textPageBorderEnabled}
+              borderColor={textPageBorderColor}
+              borderRadius={textPageBorderRadius || '12'}
             />
-            <p className="text-xs text-gray-400">
-              This is how your proposals will appear to clients.
-              </p>
-          </div>
-
-          {/* Cover Page Preview */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-400">Live Preview — Cover Page</h3>
-            <CoverPreview
-              bgStyle={coverBgStyle}
-              bgColor1={isValidHex6(coverBgColor1) ? coverBgColor1 : '#0f0f0f'}
-              bgColor2={isValidHex6(coverBgColor2) ? coverBgColor2 : '#141414'}
-              textColor={isValidHex6or8(coverTextColor) ? coverTextColor : '#ffffff'}
-              subtitleColor={isValidHex6or8(coverSubtitleColor) ? coverSubtitleColor : '#ffffffb3'}
-              buttonBg={isValidHex6(coverButtonBg) ? coverButtonBg : '#ff6700'}
-              buttonText={isValidHex6(coverButtonText) ? coverButtonText : '#ffffff'}
-              overlayOpacity={coverOverlayOpacity}
-              gradientType={coverGradientType}
-              gradientAngle={coverGradientAngle}
-              logoUrl={company?.logo_url || null}
-              companyName={name}
-              fontHeading={fontHeading}
-              fontBody={fontBody}
-              fontHeadingWeight={fontHeadingWeight}
-              fontBodyWeight={fontBodyWeight}
-            />
-            <p className="text-xs text-gray-400">
-              Cover page shown before the proposal. Background image is set per-proposal.
-            </p>
           </div>
         </div>
+
+        {!isOwner && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
+            <p className="text-sm text-gray-400">Only the company owner can edit these settings.</p>
+          </div>
+        )}
       </div>
     </div>
   );

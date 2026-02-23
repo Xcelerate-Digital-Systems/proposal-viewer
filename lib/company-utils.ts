@@ -30,6 +30,13 @@ export type CompanyData = {
   font_heading_weight: string | null;
   font_body_weight: string | null;
   font_sidebar_weight: string | null;
+  text_page_bg_color?: string;
+  text_page_text_color?: string;
+  text_page_heading_color?: string | null;
+  text_page_font_size?: string;
+  text_page_border_enabled?: boolean;
+  text_page_border_color?: string | null;
+  text_page_border_radius?: string;
 };
 /**
  * Derive a border color by lightening the secondary bg.

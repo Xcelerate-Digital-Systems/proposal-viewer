@@ -7,6 +7,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TiptapUnderline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import TiptapLink from '@tiptap/extension-link';
+import { TextStyle } from '@tiptap/extension-text-style';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import {
   Bold, Italic, Underline, Strikethrough,
@@ -15,6 +16,9 @@ import {
   Undo, Redo, Code2, ChevronDown, Minus,
 } from 'lucide-react';
 import { DynamicFieldExtension, DYNAMIC_FIELDS } from './DynamicFieldExtension';
+import { FontSizeExtension } from './FontSizeExtension';
+
+const FONT_SIZES = ['8', '10', '12', '14', '16', '18', '20', '24', '28', '32', '36'];
 
 interface RichTextEditorProps {
   content: unknown; // TipTap JSON
@@ -38,6 +42,8 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
         placeholder: placeholder || 'Start writing your content here...',
       }),
       TiptapUnderline,
+      TextStyle,
+      FontSizeExtension,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -101,6 +107,9 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
 
   if (!editor) return null;
 
+  // Get current font size from selection
+  const currentFontSize = editor.getAttributes('textStyle')?.fontSize?.replace('px', '') || '';
+
   const ToolbarButton = ({
     onClick,
     isActive = false,
@@ -142,6 +151,28 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
         <ToolbarButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
           <Redo size={14} />
         </ToolbarButton>
+
+        <Separator />
+
+        {/* Font size dropdown */}
+        <select
+          value={currentFontSize}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val) {
+              editor.chain().focus().setFontSize(`${val}px`).run();
+            } else {
+              editor.chain().focus().unsetFontSize().run();
+            }
+          }}
+          title="Font Size"
+          className="h-7 px-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-[#017C87]"
+        >
+          <option value="">Size</option>
+          {FONT_SIZES.map((size) => (
+            <option key={size} value={size}>{size}px</option>
+          ))}
+        </select>
 
         <Separator />
 
