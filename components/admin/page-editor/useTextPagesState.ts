@@ -12,6 +12,8 @@ export interface TextPageData {
   title: string;
   content: unknown; // TipTap JSON
   sort_order: number;
+  link_url?: string | null;
+  link_label?: string | null;
 }
 
 interface UseTextPagesStateOptions {
@@ -85,6 +87,8 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           title: page.title,
           content: page.content,
           sort_order: page.sort_order,
+          link_url: page.link_url || null,
+          link_label: page.link_label || null,
         }),
       });
       setTextPageSaveStatuses((prev) => ({ ...prev, [page.id]: 'saved' }));

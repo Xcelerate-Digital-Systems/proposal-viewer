@@ -4,6 +4,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ArrowLeft, CornerDownRight } from 'lucide-react';
+import PageLinkInput from '@/components/admin/page-editor/PageLinkInput';
 
 interface SortablePricingRowProps {
   id: string;
@@ -13,9 +14,12 @@ interface SortablePricingRowProps {
   isSelected: boolean;
   onSelect: () => void;
   onToggleIndent: () => void;
+  linkUrl: string;
+  linkLabel: string;
+  onLinkChange: (url: string, label: string) => void;
 }
 
-export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent }: SortablePricingRowProps) {
+export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, linkUrl, linkLabel, onLinkChange }: SortablePricingRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -65,6 +69,12 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
         <span className="text-sm font-medium text-[#017C87] flex-1 truncate">
           {title || 'Pricing Page'}
         </span>
+        <PageLinkInput
+          linkUrl={linkUrl}
+          linkLabel={linkLabel}
+          onChange={(url, label) => onLinkChange(url, label)}
+          variant="teal"
+        />
       </div>
     </div>
   );

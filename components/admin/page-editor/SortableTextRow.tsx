@@ -4,6 +4,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ArrowLeft, CornerDownRight, Trash2 } from 'lucide-react';
+import PageLinkInput from './PageLinkInput';
 
 interface SortableTextRowProps {
   id: string;
@@ -14,9 +15,12 @@ interface SortableTextRowProps {
   onSelect: () => void;
   onToggleIndent: () => void;
   onRemove: () => void;
+  linkUrl?: string;
+  linkLabel?: string;
+  onLinkChange?: (url: string, label: string) => void;
 }
 
-export default function SortableTextRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove }: SortableTextRowProps) {
+export default function SortableTextRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange }: SortableTextRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -66,6 +70,17 @@ export default function SortableTextRow({ id, title, indent, isFirst, isSelected
         <span className="text-sm font-medium text-[#017C87] flex-1 truncate">{title || 'Text Page'}</span>
         {/* Spacer to align with save-status column */}
         <span className="w-5 shrink-0" />
+        {/* Link button */}
+        {onLinkChange && (
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+            <PageLinkInput
+              linkUrl={linkUrl || ''}
+              linkLabel={linkLabel || ''}
+              onChange={onLinkChange}
+              variant="teal"
+            />
+          </div>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();

@@ -117,7 +117,9 @@ export interface ProposalTextPage {
   title: string;
   content: unknown; // TipTap JSON
   sort_order: number;
-  indent: number;    // ← ADD THIS
+  indent: number;
+  link_url?: string | null;    // NEW
+  link_label?: string | null;  // NEW
 }
 
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
@@ -440,10 +442,20 @@ export function useProposal(token: string) {
         // Emit the PDF page entry
         result.push(pdfEntries[pdfIndex] || { name: `Page ${seqEntry.pdfPage}`, indent: 0 });
       } else if (seqEntry.type === 'pricing') {
-        result.push({ name: pricing?.title || 'Your Investment', indent: pricing?.indent ?? 0 });
+        result.push({
+          name: pricing?.title || 'Your Investment',
+          indent: pricing?.indent ?? 0,
+          link_url: (pricing as Record<string, unknown>)?.link_url as string | undefined,
+          link_label: (pricing as Record<string, unknown>)?.link_label as string | undefined,
+        });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
-        result.push({ name: tp?.title || 'Text Page', indent: tp?.indent ?? 0 });
+        result.push({
+          name: tp?.title || 'Text Page',
+          indent: tp?.indent ?? 0,
+          link_url: tp?.link_url ?? undefined,
+          link_label: tp?.link_label ?? undefined,
+        });
       }
     }
 

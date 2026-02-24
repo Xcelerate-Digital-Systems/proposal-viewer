@@ -45,6 +45,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     pricingIndent, setPricingIndent,
     pricingForm, pricingSaveStatus, updatePricing, flushPricingSave,
     addPricingPage, removePricingPage, savePricing,
+    pricingLinkUrl, pricingLinkLabel, updatePricingLink,
   } = usePricingState(proposalId);
 
   const textPageEntityType = tableName === 'documents' ? 'document' as const : 'proposal' as const;
@@ -378,6 +379,9 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                           setPricingIndent(next);
                           savePricing(pricingForm, pricingPosition, next);
                         }}
+                        linkUrl={pricingLinkUrl}
+                        linkLabel={pricingLinkLabel}
+                        onLinkChange={(url: string, label: string) => updatePricingLink(url, label)}
                       />
                     );
                   }
@@ -397,6 +401,11 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                           if (tp) updateTextPage(tp.id, { indent: tp.indent ? 0 : 1 });
                         }}
                         onRemove={() => tp && handleRemoveTextPage(tp.id)}
+                        linkUrl={tp?.link_url || ''}
+                        linkLabel={tp?.link_label || ''}
+                        onLinkChange={(url: string, label: string) => {
+                          if (tp) updateTextPage(tp.id, { link_url: url, link_label: label });
+                        }}
                       />
                     );
                   }

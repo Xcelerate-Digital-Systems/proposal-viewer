@@ -10,6 +10,8 @@ export type PageNameEntry = {
   name: string;
   indent: number; // 0 = top level, 1 = nested child
   type?: 'page' | 'group'; // 'group' = section header only (no navigable page), default 'page'
+  link_url?: string;   // optional external link attached to this page
+  link_label?: string; // display label for the link button (defaults to 'View Resource')
 };
 
 /**

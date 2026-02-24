@@ -8,6 +8,7 @@ import {
   Upload, Loader2, Trash2, GripVertical,
 } from 'lucide-react';
 import { PageNameEntry } from '@/lib/supabase';
+import PageLinkInput from './PageLinkInput';
 
 interface SortablePdfRowProps {
   id: string;
@@ -96,6 +97,12 @@ export default function SortablePdfRow({
 
         {/* Actions */}
         <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <PageLinkInput
+            linkUrl={entry.link_url || ''}
+            linkLabel={entry.link_label || ''}
+            onChange={(url, label) => onUpdateEntry({ link_url: url || undefined, link_label: label || undefined })}
+            variant="teal"
+          />
           <label
             className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
               processing

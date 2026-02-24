@@ -14,14 +14,20 @@ export function usePricingState(proposalId: string) {
   const [pricingExists, setPricingExists] = useState(false);
   const [pricingPosition, setPricingPosition] = useState(-1);
   const [pricingIndent, setPricingIndent] = useState(0);
+  const [pricingLinkUrl, setPricingLinkUrl] = useState('');
+  const [pricingLinkLabel, setPricingLinkLabel] = useState('');
   const [pricingForm, setPricingForm] = useState<PricingFormState>(DEFAULT_PRICING);
   const [pricingSaveStatus, setPricingSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const pricingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const linkDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup
   useEffect(() => {
-    return () => { if (pricingDebounce.current) clearTimeout(pricingDebounce.current); };
+    return () => {
+      if (pricingDebounce.current) clearTimeout(pricingDebounce.current);
+      if (linkDebounce.current) clearTimeout(linkDebounce.current);
+    };
   }, []);
 
   // Load pricing data
@@ -35,6 +41,8 @@ export function usePricingState(proposalId: string) {
             setPricingExists(true);
             setPricingPosition(data.position);
             setPricingIndent(data.indent ?? 0);
+            setPricingLinkUrl((data as Record<string, unknown>).link_url as string || '');
+            setPricingLinkLabel((data as Record<string, unknown>).link_label as string || '');
             setPricingForm({
               enabled: data.enabled,
               title: data.title,
@@ -76,6 +84,8 @@ export function usePricingState(proposalId: string) {
           tax_label: form.taxLabel,
           validity_days: form.validityDays,
           proposal_date: form.proposalDate,
+          link_url: pricingLinkUrl || null,
+          link_label: pricingLinkLabel || null,
         }),
       });
       setPricingSaveStatus('saved');
@@ -84,7 +94,35 @@ export function usePricingState(proposalId: string) {
       toast.error('Failed to save pricing');
       setPricingSaveStatus('idle');
     }
-  }, [proposalId, pricingIndent, toast]);
+  }, [proposalId, pricingIndent, pricingLinkUrl, pricingLinkLabel, toast]);
+
+  // Save only link fields (debounced, lightweight)
+  const savePricingLink = useCallback(async (url: string, label: string) => {
+    try {
+      await fetch('/api/proposals/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          proposal_id: proposalId,
+          link_url: url || null,
+          link_label: label || null,
+        }),
+      });
+    } catch {
+      toast.error('Failed to save link');
+    }
+  }, [proposalId, toast]);
+
+  // Update link with debounce
+  const updatePricingLink = useCallback((url: string, label: string) => {
+    setPricingLinkUrl(url);
+    setPricingLinkLabel(label);
+    if (linkDebounce.current) clearTimeout(linkDebounce.current);
+    linkDebounce.current = setTimeout(() => {
+      savePricingLink(url, label);
+      linkDebounce.current = null;
+    }, 800);
+  }, [savePricingLink]);
 
   // Schedule debounced pricing save
   const schedulePricingSave = useCallback((form: PricingFormState, pos: number) => {
@@ -111,13 +149,20 @@ export function usePricingState(proposalId: string) {
       pricingDebounce.current = null;
       await savePricing(pricingForm, pricingPosition);
     }
-  }, [savePricing, pricingForm, pricingPosition]);
+    if (linkDebounce.current) {
+      clearTimeout(linkDebounce.current);
+      linkDebounce.current = null;
+      await savePricingLink(pricingLinkUrl, pricingLinkLabel);
+    }
+  }, [savePricing, pricingForm, pricingPosition, savePricingLink, pricingLinkUrl, pricingLinkLabel]);
 
   // Add a new pricing page
   const addPricingPage = useCallback(async () => {
     setPricingExists(true);
     setPricingForm(DEFAULT_PRICING);
     setPricingPosition(-1);
+    setPricingLinkUrl('');
+    setPricingLinkLabel('');
     await savePricing(DEFAULT_PRICING, -1);
     toast.success('Pricing page added');
   }, [savePricing, toast]);
@@ -146,6 +191,9 @@ export function usePricingState(proposalId: string) {
     setPricingPosition,
     pricingIndent,
     setPricingIndent,
+    pricingLinkUrl,
+    pricingLinkLabel,
+    updatePricingLink,
     pricingForm,
     pricingSaveStatus,
     updatePricing,

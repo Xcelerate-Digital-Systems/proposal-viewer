@@ -1,7 +1,7 @@
 // app/view/[token]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { FileText, Menu, CheckCircle2, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import { useProposal, deriveBorderColor } from '@/hooks/useProposal';
@@ -15,6 +15,7 @@ import CommentsPanel from '@/components/viewer/CommentsPanel';
 import AcceptModal from '@/components/viewer/AcceptModal';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { exportCompositePdf } from '@/lib/compositeExport';
+import PageLinkButton from '@/components/viewer/PageLinkButton';
 
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
   const {
@@ -71,6 +72,19 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
   // If not pricing or text, what PDF page should we show?
   const pdfPage = toPdfPage(currentPage);
+
+  // Get link for current page (skip group entries to find Nth actual page)
+  const currentPageLink = useMemo(() => {
+    let count = 0;
+    for (const entry of pageEntries) {
+      if (entry.type === 'group') continue;
+      count++;
+      if (count === currentPage) {
+        return entry.link_url ? { url: entry.link_url, label: entry.link_label } : null;
+      }
+    }
+    return null;
+  }, [pageEntries, currentPage]);
 
   // Dismiss cover state when cover isn't enabled so keyboard nav works
   useEffect(() => {
@@ -305,6 +319,14 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             bgColor={bgPrimary}
             accentColor={accent}
             branding={branding}
+          />
+        )}
+
+        {currentPageLink && (
+          <PageLinkButton
+            url={currentPageLink.url}
+            label={currentPageLink.label}
+            accentColor={accent}
           />
         )}
 
