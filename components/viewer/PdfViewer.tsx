@@ -5,7 +5,9 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { Loader2, ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
+import { CompanyBranding } from '@/hooks/useProposal';
+import ViewerLoader from '@/components/viewer/ViewerLoader';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -16,9 +18,10 @@ interface PdfViewerProps {
   scrollRef: React.RefObject<HTMLDivElement>;
   bgColor?: string;
   accentColor?: string;
+  branding?: CompanyBranding;
 }
 
-export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRef, bgColor = '#0f0f0f', accentColor = '#ff6700' }: PdfViewerProps) {
+export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRef, bgColor = '#0f0f0f', accentColor = '#ff6700', branding }: PdfViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -26,6 +29,7 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
   const [renderedPage, setRenderedPage] = useState(currentPage);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [scale, setScale] = useState(1);
+  const [documentLoading, setDocumentLoading] = useState(true);
 
   // Track pinch-to-zoom
   const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
@@ -50,6 +54,11 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
       setScale(1); // reset zoom on page change
     }
   }, [currentPage, renderedPage]);
+
+  const handleDocumentLoadSuccess = useCallback((data: { numPages: number }) => {
+    setDocumentLoading(false);
+    onLoadSuccess(data);
+  }, [onLoadSuccess]);
 
   const handlePageRenderSuccess = useCallback(() => {
     setRenderedPage(currentPage);
@@ -114,8 +123,31 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
 
   const showZoomControls = scale !== 1;
 
+  // Show branded loader while PDF document is loading (if branding available)
+  const showBrandedLoader = documentLoading && branding && pdfUrl;
+
   return (
     <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: bgColor }}>
+      {/* Branded loader overlay while PDF document loads */}
+      {showBrandedLoader && (
+        <ViewerLoader
+          branding={branding}
+          loading={documentLoading}
+          label="Loading proposal…"
+          minDisplayTime={600}
+        />
+      )}
+
+      {/* Branded loader when no PDF URL yet */}
+      {!pdfUrl && branding && (
+        <ViewerLoader
+          branding={branding}
+          loading={true}
+          label="Loading…"
+          minDisplayTime={600}
+        />
+      )}
+
       <div
         ref={scrollRef}
         className="absolute inset-0 overflow-auto"
@@ -137,13 +169,8 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
             {pdfUrl ? (
               <Document
                 file={pdfUrl}
-                onLoadSuccess={onLoadSuccess}
-                loading={
-                  <div className="flex items-center justify-center py-20 gap-3 text-[#666]">
-                    <Loader2 className="animate-spin" size={20} style={{ color: accentColor }} />
-                    <span>Loading proposal...</span>
-                  </div>
-                }
+                onLoadSuccess={handleDocumentLoadSuccess}
+                loading={<></>}
               >
                 {containerWidth > 0 && (
                   <div
@@ -164,9 +191,8 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
                 )}
               </Document>
             ) : (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="animate-spin" size={24} style={{ color: accentColor }} />
-              </div>
+              /* Fallback: empty space — ViewerLoader overlay handles the visual */
+              <div className="py-20" />
             )}
           </div>
         </div>

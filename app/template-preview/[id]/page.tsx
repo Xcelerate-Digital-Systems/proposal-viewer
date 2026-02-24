@@ -256,6 +256,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             scrollRef={mainRef}
             bgColor={bgPrimary}
             accentColor={accent}
+            branding={branding}
           />
         )}
 

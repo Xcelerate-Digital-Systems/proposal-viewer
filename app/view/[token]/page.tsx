@@ -304,6 +304,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             scrollRef={mainRef}
             bgColor={bgPrimary}
             accentColor={accent}
+            branding={branding}
           />
         )}
 

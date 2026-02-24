@@ -249,6 +249,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
             scrollRef={mainRef}
             bgColor={bgPrimary}
             accentColor={accent}
+            branding={branding}
           />
         )}
 

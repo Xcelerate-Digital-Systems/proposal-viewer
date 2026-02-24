@@ -117,6 +117,7 @@ export interface ProposalTextPage {
   title: string;
   content: unknown; // TipTap JSON
   sort_order: number;
+  indent: number;    // ← ADD THIS
 }
 
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
@@ -361,7 +362,7 @@ export function useProposal(token: string) {
       const now = new Date().toISOString();
       const updates: Record<string, string> = { last_viewed_at: now };
       if (isFirstView) updates.first_viewed_at = now;
-      if (data.status === 'sent' || data.status === 'draft') updates.status = 'viewed';
+      if (data.status === 'sent') updates.status = 'viewed';
 
       await supabase.from('proposals').update(updates).eq('id', data.id);
       await supabase.from('proposal_views').insert({
@@ -370,7 +371,7 @@ export function useProposal(token: string) {
         company_id: data.company_id,
       });
 
-      if (isFirstView) {
+      if (isFirstView && data.status === 'sent') {
         notify({ event_type: 'proposal_viewed', share_token: token });
       }
     }
@@ -439,10 +440,10 @@ export function useProposal(token: string) {
         // Emit the PDF page entry
         result.push(pdfEntries[pdfIndex] || { name: `Page ${seqEntry.pdfPage}`, indent: 0 });
       } else if (seqEntry.type === 'pricing') {
-        result.push({ name: pricing?.title || 'Your Investment', indent: 0 });
+        result.push({ name: pricing?.title || 'Your Investment', indent: pricing?.indent ?? 0 });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
-        result.push({ name: tp?.title || 'Text Page', indent: 0 });
+        result.push({ name: tp?.title || 'Text Page', indent: tp?.indent ?? 0 });
       }
     }
 

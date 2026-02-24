@@ -23,7 +23,7 @@ export default function ViewerLoader({ branding, loading, label, minDisplayTime 
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const bgPrimary = branding.bg_primary || '#0f0f0f';
+  const bgColor = branding.bg_secondary || branding.bg_primary || '#0f0f0f';
   const accent = branding.accent_color || '#ff6700';
   const textColor = branding.sidebar_text_color || '#ffffff';
 
@@ -72,7 +72,7 @@ export default function ViewerLoader({ branding, loading, label, minDisplayTime 
       className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
         progress >= 100 ? 'opacity-0' : 'opacity-100'
       }`}
-      style={{ backgroundColor: bgPrimary }}
+      style={{ backgroundColor: bgColor }}
     >
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body]} />
 
@@ -83,7 +83,7 @@ export default function ViewerLoader({ branding, loading, label, minDisplayTime 
             <img
               src={branding.logo_url}
               alt={branding.name}
-              className="max-h-10 max-w-[200px] object-contain"
+              className="h-10 w-auto max-w-[200px] object-contain"
             />
           ) : branding.name ? (
             <div className="flex items-center gap-2.5">

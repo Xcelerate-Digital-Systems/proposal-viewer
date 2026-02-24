@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, Document as DocType, PageNameEntry, normalizePageNames } from '@/lib/supabase';
+import { supabase, Document as DocType, PageNameEntry, normalizePageNamesWithGroups } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -232,7 +232,7 @@ export function useDocument(token: string) {
   // Normalize page names from document
   const pageEntries: PageNameEntry[] = useMemo(() => {
     if (!document) return [];
-    return normalizePageNames(document.page_names, pdfPageCount);
+    return normalizePageNamesWithGroups(document.page_names, pdfPageCount);
   }, [document, pdfPageCount]);
 
   // Build virtual page map

@@ -5,7 +5,9 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { Loader2, ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
+import { CompanyBranding } from '@/hooks/useProposal';
+import ViewerLoader from '@/components/viewer/ViewerLoader';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -17,6 +19,7 @@ interface TemplatePdfViewerProps {
   scrollRef: React.RefObject<HTMLDivElement>;
   bgColor?: string;
   accentColor?: string;
+  branding?: CompanyBranding;
 }
 
 export default function TemplatePdfViewer({
@@ -25,6 +28,7 @@ export default function TemplatePdfViewer({
   scrollRef,
   bgColor = '#0f0f0f',
   accentColor = '#ff6700',
+  branding,
 }: TemplatePdfViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const zoomContainerRef = useRef<HTMLDivElement>(null);
@@ -135,8 +139,31 @@ export default function TemplatePdfViewer({
     (p) => p > 0 && pageUrls[p]
   );
 
+  // Show branded loader while page is loading (if branding available)
+  const showBrandedLoader = loadingPage && branding && currentUrl;
+
   return (
     <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: bgColor }}>
+      {/* Branded loader overlay while PDF page loads */}
+      {showBrandedLoader && (
+        <ViewerLoader
+          branding={branding}
+          loading={loadingPage}
+          label="Loading page…"
+          minDisplayTime={600}
+        />
+      )}
+
+      {/* Branded loader when no URL yet */}
+      {!currentUrl && branding && (
+        <ViewerLoader
+          branding={branding}
+          loading={true}
+          label="Loading…"
+          minDisplayTime={600}
+        />
+      )}
+
       <div
         ref={scrollRef}
         className="absolute inset-0 overflow-auto"
@@ -159,12 +186,7 @@ export default function TemplatePdfViewer({
               <Document
                 key={currentUrl}
                 file={currentUrl}
-                loading={
-                  <div className="flex items-center justify-center py-20 gap-3 text-[#666]">
-                    <Loader2 className="animate-spin" size={20} style={{ color: accentColor }} />
-                    <span>Loading page...</span>
-                  </div>
-                }
+                loading={<></>}
               >
                 {containerWidth > 0 && (
                   <div
@@ -185,9 +207,8 @@ export default function TemplatePdfViewer({
                 )}
               </Document>
             ) : (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="animate-spin" size={24} style={{ color: accentColor }} />
-              </div>
+              /* Fallback: empty space — ViewerLoader overlay handles the visual */
+              <div className="py-20" />
             )}
           </div>
         </div>
