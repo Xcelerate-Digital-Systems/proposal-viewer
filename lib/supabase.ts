@@ -30,6 +30,8 @@ export function normalizePageNames(raw: unknown, count: number): PageNameEntry[]
           name: (obj.name as string) || `Page ${i + 1}`,
           indent: (obj.indent as number) || 0,
           ...(obj.type === 'group' ? { type: 'group' as const } : {}),
+          ...(obj.link_url ? { link_url: obj.link_url as string } : {}),
+          ...(obj.link_label ? { link_label: obj.link_label as string } : {}),
         });
       } else if (typeof item === 'string') {
         result.push({ name: item, indent: 0 });
