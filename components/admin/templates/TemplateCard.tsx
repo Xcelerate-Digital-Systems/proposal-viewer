@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import {
-  FileText, Trash2, Pencil, Image, DollarSign, Copy, Check, Plus,
+  FileText, Trash2, Pencil, Image, DollarSign, Copy, Check, Plus, ExternalLink,
 } from 'lucide-react';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -118,6 +118,15 @@ export default function TemplateCard({ template: t, onRefresh, onCreateProposal 
 
           {/* Action buttons */}
           <div className="flex items-center gap-1.5 pb-1.5">
+            <a
+              href={`/template-preview/${t.id}`}
+              target="_blank"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+            >
+              <ExternalLink size={13} />
+              Preview
+            </a>
+
             {onCreateProposal && (
               <button
                 onClick={() => onCreateProposal(t.id)}
