@@ -282,6 +282,13 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       />
 
       <div className="flex-1 flex flex-col min-w-0 relative">
+        {currentPageLink && (
+          <PageLinkButton
+            url={currentPageLink.url}
+            label={currentPageLink.label}
+            accentColor={accent}
+          />
+        )}
         {/* Conditionally render PDF, Pricing, or Text page */}
         {onPricingPage && pricing ? (
           <div
@@ -321,15 +328,6 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             branding={branding}
           />
         )}
-
-        {currentPageLink && (
-          <PageLinkButton
-            url={currentPageLink.url}
-            label={currentPageLink.label}
-            accentColor={accent}
-          />
-        )}
-
         <FloatingToolbar
           pdfUrl={pdfUrl}
           title={proposal?.title || ''}

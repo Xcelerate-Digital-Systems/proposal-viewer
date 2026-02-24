@@ -1,7 +1,7 @@
 // app/doc/[token]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import Sidebar from '@/components/viewer/Sidebar';
@@ -12,6 +12,7 @@ import TextPage from '@/components/viewer/TextPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { exportCompositePdf } from '@/lib/compositeExport';
+import PageLinkButton from '@/components/viewer/PageLinkButton';
 
 /* ─── Document Viewer Page ────────────────────────────────────────── */
 
@@ -46,6 +47,19 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
   // If not a text page, what PDF page should we show?
   const pdfPage = toPdfPage(currentPage);
+
+  // Get link for current page (skip group entries to find Nth actual page)
+  const currentPageLink = useMemo(() => {
+    let count = 0;
+    for (const entry of pageEntries) {
+      if (entry.type === 'group') continue;
+      count++;
+      if (count === currentPage) {
+        return entry.link_url ? { url: entry.link_url, label: entry.link_label } : null;
+      }
+    }
+    return null;
+  }, [pageEntries, currentPage]);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -226,6 +240,14 @@ export default function DocumentViewerPage({ params }: { params: { token: string
 
       {/* Main content — PDF viewer */}
       <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* Pop-down link bar */}
+        {currentPageLink && (
+          <PageLinkButton
+            url={currentPageLink.url}
+            label={currentPageLink.label}
+            accentColor={accent}
+          />
+        )}
         {/* Conditionally render Text page or PDF */}
         {onTextPage && currentTextPage ? (
           <div

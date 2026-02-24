@@ -84,6 +84,8 @@ export function normalizePageNamesWithGroups(raw: unknown, pdfCount: number): Pa
         name: (obj.name as string) || (isGroup ? 'Section' : `Page ${realPagesSeen + 1}`),
         indent: (obj.indent as number) || 0,
         ...(isGroup ? { type: 'group' as const } : {}),
+        ...(obj.link_url ? { link_url: obj.link_url as string } : {}),
+        ...(obj.link_label ? { link_label: obj.link_label as string } : {}),
       });
       if (!isGroup) realPagesSeen++;
     } else if (typeof item === 'string') {
