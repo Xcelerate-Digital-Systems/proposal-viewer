@@ -124,6 +124,14 @@ export function usePageEditorState(
     if (currentDirty.size > 0) { setDirtyRows(new Set()); await saveEntries(entriesRef.current, currentDirty); }
   }, [saveEntries]);
 
+  // Force-save a given entries array (used after drag reorder where no rows are "dirty")
+  const forceSaveEntries = useCallback(async (entriesToSave: PageNameEntry[]) => {
+    if (debounceTimer.current) { clearTimeout(debounceTimer.current); debounceTimer.current = null; }
+    setDirtyRows(new Set());
+    entriesRef.current = entriesToSave;
+    await saveEntries(entriesToSave, new Set([0]));
+  }, [saveEntries]);
+
   // Update a single entry and schedule save
   const updateEntry = useCallback((index: number, changes: Partial<PageNameEntry>) => {
     setEntries((prev) => {
@@ -182,6 +190,7 @@ export function usePageEditorState(
     syncPageCount,
     updateEntry,
     flushPendingSaves,
+    forceSaveEntries,
     remapSaveStatus,
     addGroup,
     removeGroup,

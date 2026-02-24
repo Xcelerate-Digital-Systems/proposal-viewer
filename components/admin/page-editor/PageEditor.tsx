@@ -36,7 +36,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const {
     entries, setEntries, pageCount, setPageCount,
     saveStatus, syncPageCount, updateEntry,
-    flushPendingSaves, remapSaveStatus,
+    flushPendingSaves, forceSaveEntries, remapSaveStatus,
     addGroup, removeGroup,
     } = usePageEditorState(proposalId, initialPageNames, tableName);
 
@@ -217,7 +217,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     const entriesOrderChanged = newEntries.length !== entries.length || newEntries.some((e, i) => e !== entries[i]);
     if (entriesOrderChanged) {
       setEntries(newEntries);
-      await flushPendingSaves();
+      await forceSaveEntries(newEntries);
     }
 
     // Check if physical PDF order actually changed
