@@ -20,8 +20,19 @@ import {
 } from 'lucide-react';
 import { DynamicFieldExtension, DYNAMIC_FIELDS } from './DynamicFieldExtension';
 import { FontSizeExtension } from './FontSizeExtension';
+import { FontWeightExtension } from './FontWeightExtension';
 
 const FONT_SIZES = ['8', '10', '12', '14', '16', '18', '20', '24', '28', '32', '36'];
+
+const FONT_WEIGHTS = [
+  { value: '300', label: 'Light' },
+  { value: '400', label: 'Regular' },
+  { value: '500', label: 'Medium' },
+  { value: '600', label: 'Semi' },
+  { value: '700', label: 'Bold' },
+  { value: '800', label: 'Extra Bold' },
+  { value: '900', label: 'Black' },
+];
 
 const TEXT_COLORS = [
   { label: 'Default', value: '' },
@@ -82,6 +93,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
       Color,
       Highlight.configure({ multicolor: true }),
       FontSizeExtension,
+      FontWeightExtension,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -153,6 +165,8 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
 
   // Get current font size from selection
   const currentFontSize = editor.getAttributes('textStyle')?.fontSize?.replace('px', '') || '';
+  // Get current font weight from selection
+  const currentFontWeight = editor.getAttributes('textStyle')?.fontWeight || '';
   // Get current text color from selection
   const currentTextColor = editor.getAttributes('textStyle')?.color || '';
   // Get current highlight color from selection
@@ -189,9 +203,9 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
   const Separator = () => <div className="w-px h-5 bg-gray-200 mx-0.5" />;
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-200">
+    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white flex flex-col max-h-[70vh]">
+      {/* Toolbar — stays fixed at top */}
+      <div className="shrink-0 flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-200 z-10">
         {/* Undo/Redo */}
         <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
           <Undo size={14} />
@@ -219,6 +233,29 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
           <option value="">Size</option>
           {FONT_SIZES.map((size) => (
             <option key={size} value={size}>{size}px</option>
+          ))}
+        </select>
+
+        {/* Font weight dropdown */}
+        <select
+          value={currentFontWeight}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val) {
+              editor.chain().focus().setFontWeight(val).run();
+            } else {
+              editor.chain().focus().unsetFontWeight().run();
+            }
+          }}
+          title="Font Weight"
+          className="h-7 px-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-[#017C87]"
+          style={{ fontWeight: currentFontWeight ? Number(currentFontWeight) : undefined }}
+        >
+          <option value="">Weight</option>
+          {FONT_WEIGHTS.map((w) => (
+            <option key={w.value} value={w.value} style={{ fontWeight: Number(w.value) }}>
+              {w.label}
+            </option>
           ))}
         </select>
 
@@ -509,8 +546,10 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
         </div>
       </div>
 
-      {/* Editor content */}
-      <EditorContent editor={editor} />
+      {/* Editor content — scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <EditorContent editor={editor} />
+      </div>
 
       {/* Styles for the editor */}
       <style jsx global>{`

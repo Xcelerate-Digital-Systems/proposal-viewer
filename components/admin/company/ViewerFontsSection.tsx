@@ -81,6 +81,7 @@ function FontSelect({
   previewText,
   weight,
   onWeightChange,
+  hideWeight,
 }: {
   label: string;
   description: string;
@@ -90,6 +91,7 @@ function FontSelect({
   previewText: string;
   weight: string | null;
   onWeightChange: (v: string | null) => void;
+  hideWeight?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -142,7 +144,7 @@ function FontSelect({
           <p className="text-xs text-gray-400">{description}</p>
         </div>
         <WeightPicker
-          font={value}
+          font={hideWeight ? null : value}
           value={weight}
           onChange={onWeightChange}
           disabled={disabled}
@@ -325,13 +327,14 @@ export default function ViewerFontsSection({
 
         <FontSelect
           label="Body Font"
-          description="Cover subtitle & general text"
+          description="Cover subtitle & text page content. Weight is set in the text editor."
           value={fontBody}
           onChange={setFontBody}
           disabled={!isOwner}
           previewText="Prepared for your client"
-          weight={fontBodyWeight}
-          onWeightChange={setFontBodyWeight}
+          weight={null}
+          onWeightChange={() => {}}
+          hideWeight
         />
 
         <FontSelect

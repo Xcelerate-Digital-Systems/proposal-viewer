@@ -97,6 +97,9 @@ function renderNode(
             if (mark.attrs?.color) {
               style.color = mark.attrs.color as string;
             }
+            if (mark.attrs?.fontWeight) {
+              style.fontWeight = Number(mark.attrs.fontWeight);
+            }
             if (Object.keys(style).length > 0) {
               element = <span key={`mark-${key}`} style={style}>{element}</span>;
             }
@@ -314,7 +317,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
           )}
 
           {/* Content */}
-          <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif'), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}>
+          <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
             {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
           </div>
         </div>
@@ -353,7 +356,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
           )}
 
           {/* Content */}
-          <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif'), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}>
+          <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
             {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
           </div>
         </div>
