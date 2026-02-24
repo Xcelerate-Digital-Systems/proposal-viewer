@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import {
-  Copy, Check, Trash2, Pencil, Image, ExternalLink, FileText,
+  Copy, Check, Trash2, Pencil, Image, ExternalLink, FileText, Settings,
 } from 'lucide-react';
 import { supabase, Document as DocType } from '@/lib/supabase';
 import { buildDocumentUrl } from '@/lib/proposal-url';
@@ -11,6 +11,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import { PageEditor } from '../page-editor';
 import DocumentCoverEditor from './DocumentCoverEditor';
+import EditDetailsPanel from '../shared/EditDetailsPanel';
 
 interface DocumentCardProps {
   document: DocType;
@@ -18,7 +19,7 @@ interface DocumentCardProps {
   customDomain?: string | null;
 }
 
-type ActiveTab = 'pages' | 'cover' | null;
+type ActiveTab = 'details' | 'pages' | 'cover' | null;
 
 const formatSize = (bytes: number | null) => {
   if (!bytes) return '\u2014';
@@ -32,6 +33,7 @@ const formatDate = (date: string | null) => {
 };
 
 const tabDefs: { key: ActiveTab; label: string; icon: React.ReactNode }[] = [
+  { key: 'details', label: 'Details', icon: <Settings size={14} /> },
   { key: 'pages', label: 'Edit Pages', icon: <Pencil size={14} /> },
   { key: 'cover', label: 'Cover', icon: <Image size={14} /> },
 ];
@@ -149,6 +151,19 @@ export default function DocumentCard({ document: doc, onRefresh, customDomain }:
       </div>
 
       {/* ─── Tab Content ───────────────────────────────────────────── */}
+      {activeTab === 'details' && (
+        <EditDetailsPanel
+          type="document"
+          id={doc.id}
+          initialValues={{
+            title: doc.title,
+            description: doc.description,
+          }}
+          onSave={() => { setActiveTab(null); onRefresh(); }}
+          onCancel={() => setActiveTab(null)}
+        />
+      )}
+
       {activeTab === 'pages' && (
         <PageEditor
           proposalId={doc.id}

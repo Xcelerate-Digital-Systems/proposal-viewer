@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import {
   Link2, Eye, CheckCircle2, Clock, FileText, Copy, Check,
-  Trash2, X, Pencil, Image, DollarSign, ExternalLink,
+  Trash2, X, Pencil, Image, DollarSign, ExternalLink, Settings,
 } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { PageEditor } from '../page-editor';
 import CoverEditor from './CoverEditor';
 import PricingTab from './PricingTab';
+import EditDetailsPanel from '../shared/EditDetailsPanel';
 
 interface ProposalCardProps {
   proposal: Proposal;
@@ -20,7 +21,7 @@ interface ProposalCardProps {
   customDomain?: string | null;
 }
 
-type ActiveTab = 'pages' | 'pricing' | 'cover' | null;
+type ActiveTab = 'details' | 'pages' | 'pricing' | 'cover' | null;
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   draft: { icon: <FileText size={14} />, color: 'bg-gray-100 text-gray-500', label: 'Draft' },
@@ -42,6 +43,7 @@ const formatDate = (date: string | null) => {
 };
 
 const tabDefs: { key: ActiveTab; label: string; icon: React.ReactNode }[] = [
+  { key: 'details', label: 'Details', icon: <Settings size={14} /> },
   { key: 'pages', label: 'Edit Pages', icon: <Pencil size={14} /> },
   { key: 'pricing', label: 'Pricing', icon: <DollarSign size={14} /> },
   { key: 'cover', label: 'Cover', icon: <Image size={14} /> },
@@ -180,6 +182,22 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
       </div>
 
       {/* ─── Tab Content ───────────────────────────────────────────── */}
+      {activeTab === 'details' && (
+        <EditDetailsPanel
+          type="proposal"
+          id={p.id}
+          initialValues={{
+            title: p.title,
+            client_name: p.client_name,
+            client_email: p.client_email,
+            crm_identifier: p.crm_identifier,
+            description: p.description,
+          }}
+          onSave={() => { setActiveTab(null); onRefresh(); }}
+          onCancel={() => setActiveTab(null)}
+        />
+      )}
+
       {activeTab === 'pages' && (
         <PageEditor
           proposalId={p.id}

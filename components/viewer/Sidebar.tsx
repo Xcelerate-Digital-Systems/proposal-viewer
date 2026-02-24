@@ -13,15 +13,16 @@ interface SidebarProps {
   pageEntries: PageNameEntry[];
   getPageName: (page: number) => string;
   onPageSelect: (page: number) => void;
-  accepted: boolean;
-  onAcceptClick: () => void;
-  showComments: boolean;
-  onToggleComments: () => void;
-  commentCount: number;
   branding: CompanyBranding;
-  acceptButtonText?: string;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  // Optional proposal-specific props — when omitted, bottom actions are hidden
+  accepted?: boolean;
+  onAcceptClick?: () => void;
+  showComments?: boolean;
+  onToggleComments?: () => void;
+  commentCount?: number;
+  acceptButtonText?: string;
 }
 
 interface NavItem {
@@ -64,15 +65,15 @@ export default function Sidebar({
   pageEntries,
   getPageName,
   onPageSelect,
+  branding,
+  mobileOpen = false,
+  onMobileClose,
   accepted,
   onAcceptClick,
   showComments,
   onToggleComments,
   commentCount,
-  branding,
   acceptButtonText,
-  mobileOpen = false,
-  onMobileClose,
 }: SidebarProps) {
   const navTree = buildNavTree(pageEntries, numPages);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
@@ -84,6 +85,9 @@ export default function Sidebar({
   const acceptText = branding.accept_text_color || '#ffffff';
 
   const label = acceptButtonText || 'Approve & Continue';
+
+  // Whether to show bottom action buttons (accept + comments)
+  const showActions = onAcceptClick !== undefined && onToggleComments !== undefined;
 
   // Auto-expand the group containing the current page, collapse when leaving
   useEffect(() => {
@@ -174,22 +178,18 @@ export default function Sidebar({
               <button
                 onClick={() => handleParentClick(item)}
                 className="w-full text-left flex items-center justify-between transition-colors truncate relative"
-                style={{ padding: item.isGroup ? '12px 20px 8px' : '10px 20px' }}
+                style={{ padding: '10px 20px' }}
               >
                 <span
                   className={`truncate text-sm ${
-                    item.isGroup
-                      ? 'uppercase tracking-wider text-xs font-semibold'
-                      : isParentActive
+                    isParentActive
                       ? 'font-semibold'
                       : childActive && !isExpanded
                       ? 'font-medium'
                       : ''
                   }`}
                   style={{
-                    color: item.isGroup
-                      ? (childActive ? `${sidebarText}cc` : `${sidebarText}66`)
-                      : isParentActive
+                    color: isParentActive
                       ? sidebarText
                       : childActive && !isExpanded
                       ? `${sidebarText}cc`
@@ -201,21 +201,8 @@ export default function Sidebar({
                   {item.name}
                 </span>
 
-                {/* Chevron for groups, dot for regular parents */}
-                {item.isGroup ? (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    className="shrink-0 ml-2 transition-transform"
-                    style={{
-                      transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                      color: childActive ? `${sidebarText}aa` : `${sidebarText}44`,
-                    }}
-                  >
-                    <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
-                ) : hasChildren ? (
+                {/* Dot indicator for items with children */}
+                {hasChildren ? (
                   <span
                     className="shrink-0 ml-2 w-1 h-1 rounded-full transition-opacity"
                     style={{
@@ -225,8 +212,8 @@ export default function Sidebar({
                   />
                 ) : null}
 
-                {/* Accent underline for parent items with children (not groups) */}
-                {hasChildren && !item.isGroup && (
+                {/* Accent underline for items with children */}
+                {hasChildren && (
                   <span
                     className="absolute bottom-0 left-5 right-5 h-px transition-opacity"
                     style={{
@@ -268,46 +255,48 @@ export default function Sidebar({
         })}
       </div>
 
-      {/* Bottom actions */}
-      <div className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
-        {accepted ? (
-          <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/30">
-            <CheckCircle2 size={15} />
-            Approved
-          </div>
-        ) : (
-          <button
-            onClick={onAcceptClick}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: accent, color: acceptText }}
-          >
-            <CheckCircle2 size={15} />
-            {label}
-          </button>
-        )}
-        <button
-          onClick={onToggleComments}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border"
-          style={showComments
-            ? { backgroundColor: accent, borderColor: accent, color: acceptText }
-            : { backgroundColor: 'transparent', borderColor: accent, color: accent }
-          }
-        >
-          <MessageSquare size={15} />
-          Comments
-          {commentCount > 0 && (
-            <span
-              className="text-xs w-5 h-5 rounded-full flex items-center justify-center"
-              style={showComments
-                ? { backgroundColor: `${acceptText}30`, color: acceptText }
-                : { backgroundColor: `${accent}25`, color: accent }
-              }
+      {/* Bottom actions — only shown for proposals with accept/comments */}
+      {showActions && (
+        <div className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
+          {accepted ? (
+            <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/30">
+              <CheckCircle2 size={15} />
+              Approved
+            </div>
+          ) : (
+            <button
+              onClick={onAcceptClick}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ backgroundColor: accent, color: acceptText }}
             >
-              {commentCount}
-            </span>
+              <CheckCircle2 size={15} />
+              {label}
+            </button>
           )}
-        </button>
-      </div>
+          <button
+            onClick={onToggleComments}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border"
+            style={showComments
+              ? { backgroundColor: accent, borderColor: accent, color: acceptText }
+              : { backgroundColor: 'transparent', borderColor: accent, color: accent }
+            }
+          >
+            <MessageSquare size={15} />
+            Comments
+            {(commentCount ?? 0) > 0 && (
+              <span
+                className="text-xs w-5 h-5 rounded-full flex items-center justify-center"
+                style={showComments
+                  ? { backgroundColor: `${acceptText}30`, color: acceptText }
+                  : { backgroundColor: `${accent}25`, color: accent }
+                }
+              >
+                {commentCount}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
     </>
   );
 

@@ -206,45 +206,20 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
         </div>
       </div>
 
-      {/* Sidebar — no accept button or comments for template preview */}
-      <div className="hidden lg:block mt-9">
+      {/* Sidebar — shared component, no accept/comments for template preview */}
+      {/* lg:mt-9 offsets below the preview banner on desktop */}
+      <div className="lg:mt-9">
         <Sidebar
           numPages={numPages}
           currentPage={currentPage}
           pageEntries={pageEntries}
           getPageName={getPageName}
           onPageSelect={goToPage}
-          accepted={false}
-          onAcceptClick={() => {}}
-          showComments={false}
-          onToggleComments={() => {}}
-          commentCount={0}
           branding={branding}
           mobileOpen={mobileSidebar}
           onMobileClose={() => setMobileSidebar(false)}
         />
       </div>
-
-      {/* Mobile sidebar drawer */}
-      {mobileSidebar && (
-        <div className="lg:hidden">
-          <Sidebar
-            numPages={numPages}
-            currentPage={currentPage}
-            pageEntries={pageEntries}
-            getPageName={getPageName}
-            onPageSelect={goToPage}
-            accepted={false}
-            onAcceptClick={() => {}}
-            showComments={false}
-            onToggleComments={() => {}}
-            commentCount={0}
-            branding={branding}
-            mobileOpen={mobileSidebar}
-            onMobileClose={() => setMobileSidebar(false)}
-          />
-        </div>
-      )}
 
       <div className="flex-1 flex flex-col min-w-0 relative lg:mt-9">
         {/* Conditionally render PDF, Pricing, or Text page */}

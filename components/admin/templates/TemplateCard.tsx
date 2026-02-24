@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import {
-  FileText, Trash2, Pencil, Image, DollarSign, Copy, Check, Plus, ExternalLink,
+  FileText, Trash2, Pencil, Image, DollarSign, Copy, Check, Plus, ExternalLink, Settings,
 } from 'lucide-react';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import TemplatePageManager from './TemplatePageManager';
 import TemplateCoverEditor from './TemplateCoverEditor';
 import TemplatePricingTab from './TemplatePricingTab';
+import EditDetailsPanel from '../shared/EditDetailsPanel';
 
 interface TemplateCardProps {
   template: ProposalTemplate;
@@ -18,7 +19,7 @@ interface TemplateCardProps {
   onCreateProposal?: (templateId: string) => void;
 }
 
-type ActiveTab = 'pages' | 'pricing' | 'cover' | null;
+type ActiveTab = 'details' | 'pages' | 'pricing' | 'cover' | null;
 
 const formatDate = (date: string | null) => {
   if (!date) return '\u2014';
@@ -26,6 +27,7 @@ const formatDate = (date: string | null) => {
 };
 
 const tabDefs: { key: ActiveTab; label: string; icon: React.ReactNode }[] = [
+  { key: 'details', label: 'Details', icon: <Settings size={14} /> },
   { key: 'pages', label: 'Edit Pages', icon: <Pencil size={14} /> },
   { key: 'pricing', label: 'Pricing', icon: <DollarSign size={14} /> },
   { key: 'cover', label: 'Cover', icon: <Image size={14} /> },
@@ -149,6 +151,19 @@ export default function TemplateCard({ template: t, onRefresh, onCreateProposal 
       </div>
 
       {/* ─── Tab Content ───────────────────────────────────────────── */}
+      {activeTab === 'details' && (
+        <EditDetailsPanel
+          type="template"
+          id={t.id}
+          initialValues={{
+            name: t.name,
+            description: t.description,
+          }}
+          onSave={() => { setActiveTab(null); onRefresh(); }}
+          onCancel={() => setActiveTab(null)}
+        />
+      )}
+
       {activeTab === 'pages' && (
         <TemplatePageManager
           template={t}
