@@ -14,6 +14,8 @@ interface FloatingToolbarProps {
   bgColor?: string;
   borderColor?: string;
   accentColor?: string;
+  /** When provided, download builds a composite PDF (includes text/pricing pages) */
+  onCompositeDownload?: () => Promise<Blob>;
 }
 
 export default function FloatingToolbar({
@@ -26,11 +28,35 @@ export default function FloatingToolbar({
   bgColor = '#1a1a1a',
   borderColor = '#2a2a2a',
   accentColor = '#ff6700',
+  onCompositeDownload,
 }: FloatingToolbarProps) {
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
-    if (!pdfUrl || downloading) return;
+    if (downloading) return;
+
+    // Use composite download if available, otherwise fall back to raw PDF
+    if (onCompositeDownload) {
+      setDownloading(true);
+      try {
+        const blob = await onCompositeDownload();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${title || 'document'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Composite download failed:', err);
+      } finally {
+        setDownloading(false);
+      }
+      return;
+    }
+
+    if (!pdfUrl) return;
     setDownloading(true);
     try {
       const response = await fetch(pdfUrl);

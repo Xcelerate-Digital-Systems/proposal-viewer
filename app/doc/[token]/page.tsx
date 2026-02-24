@@ -13,6 +13,7 @@ import TextPage from '@/components/viewer/TextPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
+import { exportCompositePdf } from '@/lib/compositeExport';
 
 /* ─── Inline Document Sidebar (no accept / comments) ─────────────── */
 
@@ -231,6 +232,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
     pageEntries,
     branding,
     brandingLoaded,
+    textPages,
     isTextPage,
     getTextPageId,
     getTextPage,
@@ -299,6 +301,28 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   const accent = branding.accent_color || '#ff6700';
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#ffffff';
+
+  // ── Composite PDF download (includes text pages) ───────────────────
+  const hasSpecialPages = textPages.length > 0;
+  const noPricing = useCallback(() => false, []);
+
+  const handleCompositeDownload = useCallback(async () => {
+    if (!pdfUrl) throw new Error('No PDF URL available');
+    return exportCompositePdf({
+      pdfUrl,
+      title: doc?.title || 'document',
+      numPages,
+      isPricingPage: noPricing,
+      isTextPage,
+      getTextPageId,
+      toPdfPage,
+      getTextPage,
+      pricing: null,
+      branding,
+      companyName: branding.name,
+      proposalTitle: doc?.title,
+    });
+  }, [pdfUrl, doc, numPages, noPricing, isTextPage, getTextPageId, toPdfPage, getTextPage, branding]);
 
   // ── Early returns AFTER all hooks ──────────────────────────────────
 
@@ -442,6 +466,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
           bgColor={bgSecondary}
           borderColor={border}
           accentColor={accent}
+          onCompositeDownload={hasSpecialPages && pdfUrl ? handleCompositeDownload : undefined}
         />
       </div>
     </div>

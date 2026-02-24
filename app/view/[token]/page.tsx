@@ -14,6 +14,7 @@ import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import CommentsPanel from '@/components/viewer/CommentsPanel';
 import AcceptModal from '@/components/viewer/AcceptModal';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
+import { exportCompositePdf } from '@/lib/compositeExport';
 
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
   const {
@@ -31,6 +32,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     branding,
     brandingLoaded,
     pricing,
+    textPages,
     isPricingPage,
     isTextPage,
     getTextPageId,
@@ -115,6 +117,29 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#ffffff';
   const acceptLabel = proposal?.accept_button_text || undefined;
+
+  // ── Composite PDF download (includes text pages + pricing) ─────────
+  const hasSpecialPages = !!(pricing?.enabled) || textPages.length > 0;
+
+  const handleCompositeDownload = useCallback(async () => {
+    if (!pdfUrl) throw new Error('No PDF URL available');
+    return exportCompositePdf({
+      pdfUrl,
+      title: proposal?.title || 'proposal',
+      numPages,
+      isPricingPage,
+      isTextPage,
+      getTextPageId,
+      toPdfPage,
+      getTextPage,
+      pricing,
+      branding,
+      clientName: proposal?.client_name,
+      companyName: branding.name,
+      userName: creatorName || undefined,
+      proposalTitle: proposal?.title,
+    });
+  }, [pdfUrl, proposal, numPages, isPricingPage, isTextPage, getTextPageId, toPdfPage, getTextPage, pricing, branding, creatorName]);
 
   // ── Early returns AFTER all hooks ──────────────────────────────────
 
@@ -292,6 +317,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           bgColor={bgSecondary}
           borderColor={border}
           accentColor={accent}
+          onCompositeDownload={hasSpecialPages && pdfUrl ? handleCompositeDownload : undefined}
         />
       </div>
 
