@@ -8,7 +8,7 @@ import { deriveBorderColor } from '@/hooks/useProposal';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
 import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
-import PdfViewer from '@/components/viewer/PdfViewer';
+import TemplatePdfViewer from '@/components/viewer/TemplatePdfViewer';
 import PricingPage from '@/components/viewer/PricingPage';
 import TextPage from '@/components/viewer/TextPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
@@ -17,7 +17,7 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 export default function TemplatePreviewPage({ params }: { params: { id: string } }) {
   const {
     template,
-    pdfUrl,
+    pageUrls,
     numPages,
     currentPage,
     setCurrentPage,
@@ -32,7 +32,6 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     getTextPageId,
     getTextPage,
     toPdfPage,
-    onDocumentLoadSuccess,
     getPageName,
   } = useTemplatePreview(params.id);
 
@@ -275,10 +274,9 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             />
           </div>
         ) : (
-          <PdfViewer
-            pdfUrl={pdfUrl}
-            currentPage={pdfPage}
-            onLoadSuccess={onDocumentLoadSuccess}
+          <TemplatePdfViewer
+            pageUrls={pageUrls}
+            currentPdfPage={pdfPage}
             scrollRef={mainRef}
             bgColor={bgPrimary}
             accentColor={accent}
@@ -286,7 +284,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
         )}
 
         <FloatingToolbar
-          pdfUrl={pdfUrl}
+          pdfUrl={pageUrls[pdfPage] || null}
           title={template?.name || ''}
           currentPage={currentPage}
           numPages={numPages}

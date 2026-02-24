@@ -80,7 +80,9 @@ function buildPageMap(
   if (specials.length === 0 || pdfPageCount === 0) {
     return {
       totalPages: pdfPageCount,
-      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'text'; textPageId: string }>,
+      pageSequence: [] as Array<
+        { type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'text'; textPageId: string }
+      >,
       isPricingPage: (_vp: number) => false,
       isTextPage: (_vp: number) => false,
       getTextPageId: (_vp: number): string | null => null,
@@ -117,7 +119,6 @@ function buildPageMap(
     sequence.push({ type: 'pdf', pdfPage });
   }
 
-  // Remaining positioned specials (position >= pdfPageCount)
   while (posIdx < positioned.length) {
     const sp = positioned[posIdx];
     if (sp.type === 'pricing') {
@@ -128,7 +129,6 @@ function buildPageMap(
     posIdx++;
   }
 
-  // Trailing specials
   trailing.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   for (const sp of trailing) {
     if (sp.type === 'pricing') {
@@ -190,7 +190,8 @@ interface TemplateData {
 
 export function useTemplatePreview(templateId: string) {
   const [template, setTemplate] = useState<TemplateData | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  /** Map of PDF page number (1-based) → signed URL */
+  const [pageUrls, setPageUrls] = useState<Record<number, string>>({});
   const [pdfPageCount, setPdfPageCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -218,7 +219,7 @@ export function useTemplatePreview(templateId: string) {
 
       setTemplate(tmpl);
 
-      // Build page entries from template's page_names + section_headers
+      // Build page entries from template_pages
       const { data: tPages } = await supabase
         .from('template_pages')
         .select('page_number, label, indent')
@@ -230,12 +231,10 @@ export function useTemplatePreview(templateId: string) {
       if (tPages && tPages.length > 0) {
         const entries: PageNameEntry[] = [];
 
-        // If template has page_names with groups, use those
         if (tmpl.page_names && Array.isArray(tmpl.page_names)) {
           const normalized = normalizePageNamesWithGroups(tmpl.page_names, pdfCount);
           entries.push(...normalized);
         } else {
-          // Fall back to labels from template_pages
           for (const p of tPages) {
             entries.push({
               name: p.label || `Page ${p.page_number}`,
@@ -259,16 +258,16 @@ export function useTemplatePreview(templateId: string) {
       }
       setBrandingLoaded(true);
 
-      // 3. Merge template pages into single PDF
+      // 3. Fetch individual page URLs (lightweight — no merging)
       try {
-        const mergeRes = await fetch(`/api/templates/merge-pdf?template_id=${templateId}`);
-        if (mergeRes.ok) {
-          const mergeData = await mergeRes.json();
-          setPdfUrl(mergeData.pdf_url);
-          setPdfPageCount(mergeData.page_count);
+        const urlsRes = await fetch(`/api/templates/page-urls?template_id=${templateId}`);
+        if (urlsRes.ok) {
+          const urlsData = await urlsRes.json();
+          setPageUrls(urlsData.page_urls || {});
+          setPdfPageCount(urlsData.page_count || 0);
         }
       } catch {
-        console.error('Failed to merge template PDF');
+        console.error('Failed to fetch template page URLs');
       }
 
       // 4. Fetch template pricing
@@ -289,7 +288,9 @@ export function useTemplatePreview(templateId: string) {
         const textRes = await fetch(`/api/templates/text-pages?template_id=${templateId}`);
         if (textRes.ok) {
           const textData = await textRes.json();
-          setTextPages(Array.isArray(textData) ? textData.filter((tp: ProposalTextPage) => tp.enabled) : []);
+          setTextPages(
+            Array.isArray(textData) ? textData.filter((tp: ProposalTextPage) => tp.enabled) : []
+          );
         }
       } catch {
         // Non-critical
@@ -360,10 +361,6 @@ export function useTemplatePreview(templateId: string) {
   // Total virtual pages
   const numPages = pageMap.totalPages > 0 ? pageMap.totalPages : pdfPageCount;
 
-  const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
-    setPdfPageCount(n);
-  };
-
   const getPageName = (pageNum: number) => {
     return allPageEntries[pageNum - 1]?.name || `Page ${pageNum}`;
   };
@@ -372,7 +369,7 @@ export function useTemplatePreview(templateId: string) {
 
   return {
     template,
-    pdfUrl,
+    pageUrls,
     numPages,
     currentPage,
     setCurrentPage,
@@ -387,7 +384,6 @@ export function useTemplatePreview(templateId: string) {
     getTextPageId: pageMap.getTextPageId,
     getTextPage,
     toPdfPage: pageMap.toPdfPage,
-    onDocumentLoadSuccess,
     getPageName,
   };
 }
