@@ -56,58 +56,63 @@ function DocumentsContent({ companyId }: { companyId: string }) {
   }, [fetchDocuments, fetchCustomDomain]);
 
   return (
-    <div className="px-6 lg:px-10 py-8">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)]">
-            Documents
-          </h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            {documents.length} document{documents.length !== 1 ? 's' : ''}
-          </p>
+    <div className="flex flex-col h-full">
+      {/* Sticky page header */}
+      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-8 pb-4 border-b border-gray-200 lg:border-b-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)]">
+              Documents
+            </h1>
+            <p className="text-sm text-gray-400 mt-0.5">
+              {documents.length} document{documents.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+          >
+            <Plus size={16} />
+            New Document
+          </button>
         </div>
-        <button
-          onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
-        >
-          <Plus size={16} />
-          New Document
-        </button>
       </div>
 
-      {showUpload && (
-        <DocumentUploadModal
-          companyId={companyId}
-          onClose={() => setShowUpload(false)}
-          onSuccess={fetchDocuments}
-        />
-      )}
+      {/* Scrollable content */}
+      <div className="flex-1 px-6 lg:px-10 pb-8 pt-4 lg:pt-0">
+        {showUpload && (
+          <DocumentUploadModal
+            companyId={companyId}
+            onClose={() => setShowUpload(false)}
+            onSuccess={fetchDocuments}
+          />
+        )}
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
-        </div>
-      ) : documents.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FileText size={28} className="text-gray-300" />
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-500 mb-1">No documents yet</h3>
-          <p className="text-sm text-gray-400">Upload a PDF to create a shareable document</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {documents.map((doc) => (
-            <DocumentCard
-              key={doc.id}
-              document={doc}
-              onRefresh={fetchDocuments}
-              customDomain={customDomain}
-            />
-          ))}
-        </div>
-      )}
+        ) : documents.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <FileText size={28} className="text-gray-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-500 mb-1">No documents yet</h3>
+            <p className="text-sm text-gray-400">Upload a PDF to create a shareable document</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {documents.map((doc) => (
+              <DocumentCard
+                key={doc.id}
+                document={doc}
+                onRefresh={fetchDocuments}
+                customDomain={customDomain}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

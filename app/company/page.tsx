@@ -252,7 +252,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     return () => clearTimeout(timer);
   }, [fontHeading, fontBody, fontSidebar, fontHeadingWeight, fontBodyWeight, fontSidebarWeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
-// Autosave text page layout immediately on change
+  // Autosave text page layout immediately on change
   useEffect(() => {
     if (!isOwner || !company) return;
     if (textPageLayout === (company.text_page_layout || 'contained')) return;
@@ -396,13 +396,16 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
 
       {/* Single column layout */}
       <div className="space-y-5">
-        {/* Logo */}
+
+        {/* ─── Company Profile (Logo + Name + Slug + Website) ─── */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <ImageIcon size={15} className="text-gray-400" />
-            <span className="text-sm font-medium text-gray-500">Company Logo</span>
+          <div className="flex items-center gap-2 mb-5">
+            <Building2 size={15} className="text-gray-400" />
+            <span className="text-sm font-medium text-gray-500">Company Profile</span>
           </div>
-          <div className="flex items-center gap-5">
+
+          <div className="flex items-start gap-6 mb-5">
+            {/* Logo */}
             <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
               {company?.logo_url ? (
                 <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
@@ -411,7 +414,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               )}
             </div>
             {isOwner && (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-1">
                 <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={handleLogoUpload} className="hidden" />
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -430,64 +433,66 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Company Name */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <label className="block text-sm font-medium text-gray-500 mb-2">Company Name</label>
-          <div className="flex gap-2">
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={!isOwner}
-              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-            {isOwner && name !== company?.name && (
-              <button onClick={() => handleSaveField('name', name)} disabled={saving === 'name' || !name.trim()}
-                className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                {saving === 'name' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-              </button>
-            )}
-          </div>
-        </div>
+          <div className="space-y-4">
+            {/* Company Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1.5">Company Name</label>
+              <div className="flex gap-2">
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={!isOwner}
+                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+                {isOwner && name !== company?.name && (
+                  <button onClick={() => handleSaveField('name', name)} disabled={saving === 'name' || !name.trim()}
+                    className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
+                    {saving === 'name' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+                  </button>
+                )}
+              </div>
+            </div>
 
-        {/* Slug */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <Link2 size={14} className="text-gray-400" />
-            <label className="text-sm font-medium text-gray-500">URL Slug</label>
-          </div>
-          <div className="flex gap-2">
-            <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} disabled={!isOwner}
-              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 font-mono placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-            {isOwner && slug !== company?.slug && (
-              <button onClick={() => handleSaveField('slug', slug)} disabled={saving === 'slug' || slug.length < 2}
-                className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                {saving === 'slug' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-gray-400 mt-1.5">Lowercase letters, numbers, and hyphens only.</p>
-        </div>
+            {/* URL Slug */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Link2 size={14} className="text-gray-400" />
+                <label className="text-sm font-medium text-gray-500">URL Slug</label>
+              </div>
+              <div className="flex gap-2">
+                <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} disabled={!isOwner}
+                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 font-mono placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+                {isOwner && slug !== company?.slug && (
+                  <button onClick={() => handleSaveField('slug', slug)} disabled={saving === 'slug' || slug.length < 2}
+                    className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
+                    {saving === 'slug' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Lowercase letters, numbers, and hyphens only.</p>
+            </div>
 
-        {/* Website */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <Globe size={14} className="text-gray-400" />
-            <label className="text-sm font-medium text-gray-500">Website</label>
-          </div>
-          <div className="flex gap-2">
-            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://yourcompany.com" disabled={!isOwner}
-              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-            {isOwner && website !== (company?.website || '') && (
-              <button onClick={() => handleSaveField('website', website)} disabled={saving === 'website'}
-                className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                {saving === 'website' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-              </button>
-            )}
+            {/* Website */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Globe size={14} className="text-gray-400" />
+                <label className="text-sm font-medium text-gray-500">Website</label>
+              </div>
+              <div className="flex gap-2">
+                <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://yourcompany.com" disabled={!isOwner}
+                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+                {isOwner && website !== (company?.website || '') && (
+                  <button onClick={() => handleSaveField('website', website)} disabled={saving === 'website'}
+                    className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
+                    {saving === 'website' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Custom Domain */}
         <CustomDomainManager companyId={companyId} isOwner={isOwner} />
 
-        {/* Viewer Colors — with embedded preview */}
+        {/* Viewer Colors — side-by-side with preview */}
         <ViewerColorsSection
           isOwner={isOwner}
           saving={saving}
@@ -518,7 +523,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           />
         </ViewerColorsSection>
 
-        {/* Cover Page Colors — with embedded preview */}
+        {/* Cover Page Colors — side-by-side with preview */}
         <CoverColorsSection
           isOwner={isOwner}
           saving={saving}
@@ -587,7 +592,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           lastSaved={fontsSaved}
         />
 
-        {/* Text Page Colors — with embedded preview */}
+        {/* Text Page Colors — side-by-side with preview */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -604,103 +609,111 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-400 mb-4">
-            Controls the background, text, and heading colors for text pages in your proposals.
-          </p>
-          {/* Layout toggle */}
-          <div className="mb-4">
-            <label className="block text-xs text-gray-400 mb-2">Layout</label>
-            <div className="flex gap-2">
-              {(['contained', 'full'] as const).map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => isOwner && setTextPageLayout(opt)}
-                  disabled={!isOwner}
-                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-                    textPageLayout === opt
-                      ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
-                      : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
-                  } disabled:opacity-50`}
-                >
-                  {opt === 'contained' ? 'Contained Card' : 'Full Width'}
-                </button>
-              ))}
-            </div>
-            <p className="text-[10px] text-gray-400 mt-1">
-              {textPageLayout === 'contained'
-                ? 'Text content shown in a centered card with optional border and accent bar.'
-                : 'Text content fills the full page width, similar to PDF pages.'}
-            </p>
-          </div>
-          <div className="space-y-3">
-            <ColorRow label="Background" value={textPageBgColor} onChange={setTextPageBgColor} disabled={!isOwner} />
-            <ColorRow label="Body Text" value={textPageTextColor} onChange={setTextPageTextColor} disabled={!isOwner} />
-            <ColorRow label="Heading Color (optional)" value={textPageHeadingColor} onChange={setTextPageHeadingColor} disabled={!isOwner} />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left: Controls */}
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Base Font Size (px)</label>
-              <select
-                value={textPageFontSize}
-                onChange={(e) => setTextPageFontSize(e.target.value)}
-                disabled={!isOwner}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
-              >
-                {['10', '12', '14', '16', '18', '20', '24'].map(size => (
-                  <option key={size} value={size}>{size}px</option>
-                ))}
-              </select>
+              <p className="text-xs text-gray-400 mb-4">
+                Controls the background, text, and heading colors for text pages in your proposals.
+              </p>
+
+              {/* Layout toggle */}
+              <div className="mb-4">
+                <label className="block text-xs text-gray-400 mb-2">Layout</label>
+                <div className="flex gap-2">
+                  {(['contained', 'full'] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => isOwner && setTextPageLayout(opt)}
+                      disabled={!isOwner}
+                      className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        textPageLayout === opt
+                          ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
+                          : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                      } disabled:opacity-50`}
+                    >
+                      {opt === 'contained' ? 'Contained Card' : 'Full Width'}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {textPageLayout === 'contained'
+                    ? 'Text content shown in a centered card with optional border and accent bar.'
+                    : 'Text content fills the full page width, similar to PDF pages.'}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <ColorRow label="Background" value={textPageBgColor} onChange={setTextPageBgColor} disabled={!isOwner} />
+                <ColorRow label="Body Text" value={textPageTextColor} onChange={setTextPageTextColor} disabled={!isOwner} />
+                <ColorRow label="Heading Color (optional)" value={textPageHeadingColor} onChange={setTextPageHeadingColor} disabled={!isOwner} />
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Base Font Size (px)</label>
+                  <select
+                    value={textPageFontSize}
+                    onChange={(e) => setTextPageFontSize(e.target.value)}
+                    disabled={!isOwner}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
+                  >
+                    {['10', '12', '14', '16', '18', '20', '24'].map(size => (
+                      <option key={size} value={size}>{size}px</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Border toggle */}
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-gray-400">Show Border</label>
+                  <button
+                    onClick={() => isOwner && setTextPageBorderEnabled(!textPageBorderEnabled)}
+                    disabled={!isOwner}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${
+                      textPageBorderEnabled ? 'bg-[#017C87]' : 'bg-gray-300'
+                    } disabled:opacity-50`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${
+                      textPageBorderEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+
+                {/* Border color - only show when border enabled */}
+                {textPageBorderEnabled && (
+                  <ColorRow label="Border Color (optional)" value={textPageBorderColor} onChange={setTextPageBorderColor} disabled={!isOwner} />
+                )}
+
+                {/* Border radius */}
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Border Radius (px)</label>
+                  <select
+                    value={textPageBorderRadius}
+                    onChange={(e) => setTextPageBorderRadius(e.target.value)}
+                    disabled={!isOwner}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
+                  >
+                    {['0', '4', '8', '12', '16', '20', '24'].map(r => (
+                      <option key={r} value={r}>{r}px{r === '0' ? ' (square)' : r === '24' ? ' (very round)' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
-            {/* Border toggle */}
-            <div className="flex items-center justify-between">
-              <label className="text-xs text-gray-400">Show Border</label>
-              <button
-                onClick={() => isOwner && setTextPageBorderEnabled(!textPageBorderEnabled)}
-                disabled={!isOwner}
-                className={`w-10 h-5 rounded-full transition-colors relative ${
-                  textPageBorderEnabled ? 'bg-[#017C87]' : 'bg-gray-300'
-                } disabled:opacity-50`}
-              >
-                <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${
-                  textPageBorderEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                }`} />
-              </button>
-            </div>
-
-            {/* Border color - only show when border enabled */}
-            {textPageBorderEnabled && (
-              <ColorRow label="Border Color (optional)" value={textPageBorderColor} onChange={setTextPageBorderColor} disabled={!isOwner} />
-            )}
-
-            {/* Border radius */}
+            {/* Right: Live preview */}
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Border Radius (px)</label>
-              <select
-                value={textPageBorderRadius}
-                onChange={(e) => setTextPageBorderRadius(e.target.value)}
-                disabled={!isOwner}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
-              >
-                {['0', '4', '8', '12', '16', '20', '24'].map(r => (
-                  <option key={r} value={r}>{r}px{r === '0' ? ' (square)' : r === '24' ? ' (very round)' : ''}</option>
-                ))}
-              </select>
+              <p className="text-xs text-gray-400 mb-3">Preview of how text pages appear in the proposal viewer.</p>
+              <TextPagePreview
+                bgColor={textPageBgColor || '#141414'}
+                textColor={textPageTextColor || '#ffffff'}
+                headingColor={textPageHeadingColor}
+                fontSize={textPageFontSize || '14'}
+                accent={isValidHex6(accentColor) ? accentColor : '#ff6700'}
+                borderEnabled={textPageBorderEnabled}
+                borderColor={textPageBorderColor}
+                borderRadius={textPageBorderRadius || '12'}
+                layout={textPageLayout}
+              />
             </div>
-          </div>
-
-          {/* Embedded text page preview */}
-          <div className="mt-5 pt-5 border-t border-gray-100">
-            <p className="text-xs text-gray-400 mb-3">Preview of how text pages appear in the proposal viewer.</p>
-            <TextPagePreview
-              bgColor={textPageBgColor || '#141414'}
-              textColor={textPageTextColor || '#ffffff'}
-              headingColor={textPageHeadingColor}
-              fontSize={textPageFontSize || '14'}
-              accent={isValidHex6(accentColor) ? accentColor : '#ff6700'}
-              borderEnabled={textPageBorderEnabled}
-              borderColor={textPageBorderColor}
-              borderRadius={textPageBorderRadius || '12'}
-              layout={textPageLayout}
-            />
           </div>
         </div>
 

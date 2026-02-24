@@ -198,18 +198,22 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
         </div>
       </div>
 
-      {/* Zoom controls — appear when zoomed */}
-      {showZoomControls && (
+      {/* Zoom controls — always visible on mobile (vertical), only when zoomed on desktop (horizontal) */}
+      <div
+        className={`absolute z-10 transition-opacity duration-200 ${
+          showZoomControls ? 'opacity-100' : 'opacity-100 lg:opacity-0 lg:pointer-events-none'
+        } top-14 right-2 flex flex-col items-center gap-1 lg:top-3 lg:right-3 lg:flex-row`}
+      >
         <div
-          className="absolute top-3 right-3 flex items-center gap-1 backdrop-blur-sm rounded-lg px-1 py-1 border shadow-lg shadow-black/20 z-10"
+          className="flex flex-col lg:flex-row items-center gap-1 backdrop-blur-sm rounded-lg px-1 py-1 border shadow-lg shadow-black/20"
           style={{ backgroundColor: `${bgColor}e6`, borderColor: `${accentColor}40` }}
         >
           <button
-            onClick={zoomOut}
+            onClick={zoomIn}
             className="p-1.5 rounded-md transition-colors"
             style={{ color: accentColor }}
           >
-            <ZoomOut size={16} />
+            <ZoomIn size={16} />
           </button>
           <button
             onClick={resetZoom}
@@ -219,14 +223,14 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
             {Math.round(scale * 100)}%
           </button>
           <button
-            onClick={zoomIn}
+            onClick={zoomOut}
             className="p-1.5 rounded-md transition-colors"
             style={{ color: accentColor }}
           >
-            <ZoomIn size={16} />
+            <ZoomOut size={16} />
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

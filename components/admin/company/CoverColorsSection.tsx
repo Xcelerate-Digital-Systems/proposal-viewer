@@ -78,190 +78,195 @@ export default function CoverColorsSection({
         )}
       </div>
 
-      {/* Background style toggle */}
-      <div className="mb-4">
-        <label className="block text-xs text-gray-400 mb-2">Background Style</label>
-        <div className="flex gap-2">
-          <button
-            onClick={() => isOwner && setCoverBgStyle('gradient')}
-            disabled={!isOwner}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all disabled:cursor-not-allowed ${
-              coverBgStyle === 'gradient'
-                ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
-                : 'border-gray-200 text-gray-500 hover:border-gray-300'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-5 h-5 rounded" style={{ background: coverGradientType === 'radial'
-                ? `radial-gradient(circle, ${coverBgColor1}, ${coverBgColor2})`
-                : coverGradientType === 'conic'
-                ? `conic-gradient(from ${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`
-                : `linear-gradient(${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})` }} />
-              Gradient
-            </div>
-          </button>
-          <button
-            onClick={() => isOwner && setCoverBgStyle('solid')}
-            disabled={!isOwner}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all disabled:cursor-not-allowed ${
-              coverBgStyle === 'solid'
-                ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
-                : 'border-gray-200 text-gray-500 hover:border-gray-300'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-5 h-5 rounded" style={{ backgroundColor: coverBgColor1 }} />
-              Solid
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Gradient Type — only when gradient style is selected */}
-      {coverBgStyle === 'gradient' && (
-        <div className="mb-4">
-          <label className="block text-xs text-gray-400 mb-2">Gradient Type</label>
-          <div className="flex gap-2">
-            {(['linear', 'radial', 'conic'] as const).map((type) => (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Color controls */}
+        <div>
+          {/* Background style toggle */}
+          <div className="mb-4">
+            <label className="block text-xs text-gray-400 mb-2">Background Style</label>
+            <div className="flex gap-2">
               <button
-                key={type}
-                onClick={() => isOwner && setCoverGradientType(type)}
+                onClick={() => isOwner && setCoverBgStyle('gradient')}
                 disabled={!isOwner}
                 className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all disabled:cursor-not-allowed ${
-                  coverGradientType === type
+                  coverBgStyle === 'gradient'
                     ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
                     : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}
               >
                 <div className="flex items-center justify-center gap-2">
-                  <div
-                    className="w-5 h-5 rounded"
-                    style={{
-                      background: type === 'linear'
-                        ? `linear-gradient(${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`
-                        : type === 'radial'
-                        ? `radial-gradient(circle, ${coverBgColor1}, ${coverBgColor2})`
-                        : `conic-gradient(from ${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`,
-                    }}
-                  />
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                  <div className="w-5 h-5 rounded" style={{ background: coverGradientType === 'radial'
+                    ? `radial-gradient(circle, ${coverBgColor1}, ${coverBgColor2})`
+                    : coverGradientType === 'conic'
+                    ? `conic-gradient(from ${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`
+                    : `linear-gradient(${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})` }} />
+                  Gradient
                 </div>
               </button>
-            ))}
+              <button
+                onClick={() => isOwner && setCoverBgStyle('solid')}
+                disabled={!isOwner}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all disabled:cursor-not-allowed ${
+                  coverBgStyle === 'solid'
+                    ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 rounded" style={{ backgroundColor: coverBgColor1 }} />
+                  Solid
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Gradient Angle — for linear and conic only */}
-      {coverBgStyle === 'gradient' && coverGradientType !== 'radial' && (
-        <div className="mb-4">
-          <label className="block text-xs text-gray-400 mb-2">
-            Gradient Angle — {coverGradientAngle}°
-          </label>
-          <div className="flex items-center gap-3">
+          {/* Gradient Type — only when gradient style is selected */}
+          {coverBgStyle === 'gradient' && (
+            <div className="mb-4">
+              <label className="block text-xs text-gray-400 mb-2">Gradient Type</label>
+              <div className="flex gap-2">
+                {(['linear', 'radial', 'conic'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => isOwner && setCoverGradientType(type)}
+                    disabled={!isOwner}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all disabled:cursor-not-allowed ${
+                      coverGradientType === type
+                        ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <div
+                        className="w-5 h-5 rounded"
+                        style={{
+                          background: type === 'linear'
+                            ? `linear-gradient(${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`
+                            : type === 'radial'
+                            ? `radial-gradient(circle, ${coverBgColor1}, ${coverBgColor2})`
+                            : `conic-gradient(from ${coverGradientAngle}deg, ${coverBgColor1}, ${coverBgColor2})`,
+                        }}
+                      />
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Gradient Angle — for linear and conic only */}
+          {coverBgStyle === 'gradient' && coverGradientType !== 'radial' && (
+            <div className="mb-4">
+              <label className="block text-xs text-gray-400 mb-2">
+                Gradient Angle — {coverGradientAngle}°
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  value={coverGradientAngle}
+                  onChange={(e) => isOwner && setCoverGradientAngle(parseInt(e.target.value))}
+                  disabled={!isOwner}
+                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87] disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="360"
+                  value={coverGradientAngle}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value);
+                    if (!isNaN(v) && v >= 0 && v <= 360) setCoverGradientAngle(v);
+                  }}
+                  disabled={!isOwner}
+                  className="w-16 px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-900 font-mono text-center focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div className="flex justify-between mt-1.5">
+                {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+                  <button
+                    key={deg}
+                    onClick={() => isOwner && setCoverGradientAngle(deg)}
+                    disabled={!isOwner}
+                    className={`text-[10px] px-1.5 py-0.5 rounded transition-colors disabled:cursor-not-allowed ${
+                      coverGradientAngle === deg
+                        ? 'text-[#017C87] bg-[#017C87]/10 font-medium'
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {deg}°
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Background colors */}
+          <div className="mb-4">
+            <label className="block text-xs text-gray-400 mb-2">Background Colors</label>
+            <div className="space-y-2">
+              <ColorRow
+                label={coverBgStyle === 'gradient' ? 'Gradient start' : 'Background color'}
+                value={coverBgColor1}
+                onChange={setCoverBgColor1}
+                disabled={!isOwner}
+              />
+              {coverBgStyle === 'gradient' && (
+                <ColorRow
+                  label="Gradient end"
+                  value={coverBgColor2}
+                  onChange={setCoverBgColor2}
+                  disabled={!isOwner}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Overlay opacity */}
+          <div className="mb-4">
+            <label className="block text-xs text-gray-400 mb-2">
+              Image Overlay Opacity — {Math.round(coverOverlayOpacity * 100)}%
+            </label>
             <input
               type="range"
               min="0"
-              max="360"
-              value={coverGradientAngle}
-              onChange={(e) => isOwner && setCoverGradientAngle(parseInt(e.target.value))}
+              max="100"
+              value={Math.round(coverOverlayOpacity * 100)}
+              onChange={(e) => isOwner && setCoverOverlayOpacity(parseInt(e.target.value) / 100)}
               disabled={!isOwner}
-              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87] disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <input
-              type="number"
-              min="0"
-              max="360"
-              value={coverGradientAngle}
-              onChange={(e) => {
-                const v = parseInt(e.target.value);
-                if (!isNaN(v) && v >= 0 && v <= 360) setCoverGradientAngle(v);
-              }}
-              disabled={!isOwner}
-              className="w-16 px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-900 font-mono text-center focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed"
-            />
+            <p className="text-xs text-gray-400 mt-1">Controls how much the background color shows over uploaded cover images.</p>
           </div>
-          <div className="flex justify-between mt-1.5">
-            {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
-              <button
-                key={deg}
-                onClick={() => isOwner && setCoverGradientAngle(deg)}
-                disabled={!isOwner}
-                className={`text-[10px] px-1.5 py-0.5 rounded transition-colors disabled:cursor-not-allowed ${
-                  coverGradientAngle === deg
-                    ? 'text-[#017C87] bg-[#017C87]/10 font-medium'
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {deg}°
-              </button>
-            ))}
+
+          {/* Text colors */}
+          <div className="mb-4 pt-4 border-t border-gray-100">
+            <label className="block text-xs text-gray-400 mb-2">Text Colors</label>
+            <div className="space-y-2">
+              <ColorRow label="Title text" value={coverTextColor} onChange={setCoverTextColor} disabled={!isOwner} />
+              <ColorRow label="Subtitle text" value={coverSubtitleColor} onChange={setCoverSubtitleColor} disabled={!isOwner} />
+            </div>
+          </div>
+
+          {/* Button colors */}
+          <div className="pt-4 border-t border-gray-100">
+            <label className="block text-xs text-gray-400 mb-2">Button Colors</label>
+            <div className="space-y-2">
+              <ColorRow label="Button background" value={coverButtonBg} onChange={setCoverButtonBg} disabled={!isOwner} />
+              <ColorRow label="Button text" value={coverButtonText} onChange={setCoverButtonText} disabled={!isOwner} />
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Background colors */}
-      <div className="mb-4">
-        <label className="block text-xs text-gray-400 mb-2">Background Colors</label>
-        <div className="space-y-2">
-          <ColorRow
-            label={coverBgStyle === 'gradient' ? 'Gradient start' : 'Background color'}
-            value={coverBgColor1}
-            onChange={setCoverBgColor1}
-            disabled={!isOwner}
-          />
-          {coverBgStyle === 'gradient' && (
-            <ColorRow
-              label="Gradient end"
-              value={coverBgColor2}
-              onChange={setCoverBgColor2}
-              disabled={!isOwner}
-            />
-          )}
-        </div>
+        {/* Right: Live preview */}
+        {children && (
+          <div>
+            {children}
+          </div>
+        )}
       </div>
-
-      {/* Overlay opacity */}
-      <div className="mb-4">
-        <label className="block text-xs text-gray-400 mb-2">
-          Image Overlay Opacity — {Math.round(coverOverlayOpacity * 100)}%
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={Math.round(coverOverlayOpacity * 100)}
-          onChange={(e) => isOwner && setCoverOverlayOpacity(parseInt(e.target.value) / 100)}
-          disabled={!isOwner}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87] disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <p className="text-xs text-gray-400 mt-1">Controls how much the background color shows over uploaded cover images.</p>
-      </div>
-
-      {/* Text colors */}
-      <div className="mb-4 pt-4 border-t border-gray-100">
-        <label className="block text-xs text-gray-400 mb-2">Text Colors</label>
-        <div className="space-y-2">
-          <ColorRow label="Title text" value={coverTextColor} onChange={setCoverTextColor} disabled={!isOwner} />
-          <ColorRow label="Subtitle text" value={coverSubtitleColor} onChange={setCoverSubtitleColor} disabled={!isOwner} />
-        </div>
-      </div>
-
-      {/* Button colors */}
-      <div className="pt-4 border-t border-gray-100">
-        <label className="block text-xs text-gray-400 mb-2">Button Colors</label>
-        <div className="space-y-2">
-          <ColorRow label="Button background" value={coverButtonBg} onChange={setCoverButtonBg} disabled={!isOwner} />
-          <ColorRow label="Button text" value={coverButtonText} onChange={setCoverButtonText} disabled={!isOwner} />
-        </div>
-      </div>
-
-      {/* Embedded preview */}
-      {children && (
-        <div className="mt-5 pt-5 border-t border-gray-100">
-          {children}
-        </div>
-      )}
     </div>
   );
 }

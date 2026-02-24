@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <AuthGuard>
       {(auth) => (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex h-dvh bg-gray-50 overflow-hidden">
           <AdminSidebar
             memberName={auth.teamMember?.name}
             memberEmail={auth.teamMember?.email}
@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             onClearOverride={auth.clearCompanyOverride}
             onSignOut={auth.signOut}
           />
-          <main className="flex-1 min-w-0 lg:h-screen lg:overflow-y-auto">
+          <main className="flex-1 min-w-0 h-full overflow-y-auto">
             {children(auth)}
           </main>
         </div>
