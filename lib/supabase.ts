@@ -348,6 +348,7 @@ export type ProposalPricing = {
   tax_rate: number;
   tax_label: string;
   validity_days: number | null;
+  indent: number;
   proposal_date: string | null;
   created_at: string;
   updated_at: string;

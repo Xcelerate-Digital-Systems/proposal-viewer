@@ -13,6 +13,7 @@ export function usePricingState(proposalId: string) {
   const [pricingLoaded, setPricingLoaded] = useState(false);
   const [pricingExists, setPricingExists] = useState(false);
   const [pricingPosition, setPricingPosition] = useState(-1);
+  const [pricingIndent, setPricingIndent] = useState(0);
   const [pricingForm, setPricingForm] = useState<PricingFormState>(DEFAULT_PRICING);
   const [pricingSaveStatus, setPricingSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -33,6 +34,7 @@ export function usePricingState(proposalId: string) {
           if (data) {
             setPricingExists(true);
             setPricingPosition(data.position);
+            setPricingIndent(data.indent ?? 0);
             setPricingForm({
               enabled: data.enabled,
               title: data.title,
@@ -54,7 +56,7 @@ export function usePricingState(proposalId: string) {
   }, [proposalId]);
 
   // Save pricing to API
-  const savePricing = useCallback(async (form: PricingFormState, pos: number) => {
+  const savePricing = useCallback(async (form: PricingFormState, pos: number, indent?: number) => {
     setPricingSaveStatus('saving');
     try {
       await fetch('/api/proposals/pricing', {
@@ -64,6 +66,7 @@ export function usePricingState(proposalId: string) {
           proposal_id: proposalId,
           enabled: form.enabled,
           position: pos,
+          indent: indent ?? pricingIndent,
           title: form.title,
           intro_text: form.introText,
           items: form.items,
@@ -81,7 +84,7 @@ export function usePricingState(proposalId: string) {
       toast.error('Failed to save pricing');
       setPricingSaveStatus('idle');
     }
-  }, [proposalId, toast]);
+  }, [proposalId, pricingIndent, toast]);
 
   // Schedule debounced pricing save
   const schedulePricingSave = useCallback((form: PricingFormState, pos: number) => {
@@ -141,6 +144,8 @@ export function usePricingState(proposalId: string) {
     pricingExists,
     pricingPosition,
     setPricingPosition,
+    pricingIndent,
+    setPricingIndent,
     pricingForm,
     pricingSaveStatus,
     updatePricing,

@@ -8,6 +8,7 @@ export interface TextPageData {
   id: string;
   enabled: boolean;
   position: number;
+  indent: number;
   title: string;
   content: unknown; // TipTap JSON
   sort_order: number;
@@ -74,6 +75,7 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           id: page.id,
           enabled: page.enabled,
           position: page.position,
+          indent: page.indent ?? 0,
           title: page.title,
           content: page.content,
           sort_order: page.sort_order,
@@ -148,6 +150,7 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           [idParam]: entityId,
           enabled: true,
           position: -1,
+          indent: 0,
           title: 'Executive Summary',
           content: DEFAULT_CONTENT,
         }),

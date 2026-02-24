@@ -211,7 +211,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       setStatus('Copying pricing...');
       const { data: templatePricing } = await supabase
         .from('template_pricing')
-        .select('enabled, position, title, intro_text, items, optional_items, tax_enabled, tax_rate, tax_label, validity_days, payment_schedule')
+        .select('enabled, position, indent, title, intro_text, items, optional_items, tax_enabled, tax_rate, tax_label, validity_days, payment_schedule')
         .eq('template_id', selectedTemplate.id)
         .order('position', { ascending: true });
 
@@ -221,6 +221,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           company_id: companyId,
           enabled: tp.enabled,
           position: tp.position,
+          indent: tp.indent ?? 0,
           title: tp.title,
           intro_text: tp.intro_text,
           items: tp.items,
@@ -245,7 +246,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       setStatus('Copying text pages...');
       const { data: templateTextPages } = await supabase
         .from('template_text_pages')
-        .select('enabled, position, title, content, sort_order')
+        .select('enabled, position, indent, title, content, sort_order')
         .eq('template_id', selectedTemplate.id)
         .order('sort_order', { ascending: true });
 
@@ -255,6 +256,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           company_id: companyId,
           enabled: tp.enabled,
           position: tp.position,
+          indent: tp.indent ?? 0,
           title: tp.title,
           content: tp.content,
           sort_order: tp.sort_order,

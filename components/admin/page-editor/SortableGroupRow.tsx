@@ -46,7 +46,7 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="mb-2">
+    <div ref={setNodeRef} style={style} className="mb-5">
       <div
         className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 cursor-pointer transition-colors border border-dashed ${
           isSelected

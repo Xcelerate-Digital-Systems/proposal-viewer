@@ -63,6 +63,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
   const {
     pricingLoaded, pricingExists, pricingPosition, setPricingPosition,
+    pricingIndent, setPricingIndent,
     pricingForm, pricingSaveStatus,
     savePricing, addPricingPage, removePricingPage,
   } = useTemplatePricingState(template.id, pages.length);
@@ -492,8 +493,15 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                           key={item.id}
                           id={item.id}
                           title={pricingForm.title}
+                          indent={pricingIndent}
+                          isFirst={visualIdx === 0}
                           isSelected={selectedIsPricing}
                           onSelect={() => setSelectedId('pricing')}
+                          onToggleIndent={() => {
+                            const next = pricingIndent ? 0 : 1;
+                            setPricingIndent(next);
+                            savePricing(pricingForm, pricingPosition, next);
+                          }}
                         />
                       );
                     }
@@ -505,8 +513,13 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                           key={item.id}
                           id={item.id}
                           title={tp?.title || 'Text Page'}
+                          indent={tp?.indent ?? 0}
+                          isFirst={visualIdx === 0}
                           isSelected={selectedId === item.id}
                           onSelect={() => setSelectedId(item.id)}
+                          onToggleIndent={() => {
+                            if (tp) updateTextPage(tp.id, { indent: tp.indent ? 0 : 1 });
+                          }}
                           onRemove={() => tp && handleRemoveTextPage(tp.id)}
                         />
                       );

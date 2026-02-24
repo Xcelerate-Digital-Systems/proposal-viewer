@@ -44,6 +44,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
   const {
     pricingLoaded, pricingExists, pricingPosition, setPricingPosition,
+    pricingIndent, setPricingIndent,
     pricingForm, pricingSaveStatus, updatePricing, flushPricingSave,
     addPricingPage, removePricingPage, savePricing,
   } = usePricingState(proposalId);
@@ -387,8 +388,15 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         key={item.id}
                         id={item.id}
                         title={pricingForm.title}
+                        indent={pricingIndent}
+                        isFirst={visualIdx === 0}
                         isSelected={selectedIsPricing}
                         onSelect={() => setSelectedId('pricing')}
+                        onToggleIndent={() => {
+                          const next = pricingIndent ? 0 : 1;
+                          setPricingIndent(next);
+                          savePricing(pricingForm, pricingPosition, next);
+                        }}
                       />
                     );
                   }
@@ -400,8 +408,13 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         key={item.id}
                         id={item.id}
                         title={tp?.title || 'Text Page'}
+                        indent={tp?.indent ?? 0}
+                        isFirst={visualIdx === 0}
                         isSelected={selectedId === item.id}
                         onSelect={() => setSelectedId(item.id)}
+                        onToggleIndent={() => {
+                          if (tp) updateTextPage(tp.id, { indent: tp.indent ? 0 : 1 });
+                        }}
                         onRemove={() => tp && handleRemoveTextPage(tp.id)}
                       />
                     );

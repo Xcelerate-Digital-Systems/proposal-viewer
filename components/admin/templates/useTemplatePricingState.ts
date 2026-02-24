@@ -42,6 +42,7 @@ export function useTemplatePricingState(templateId: string, pageCount: number) {
   const [pricingLoaded, setPricingLoaded] = useState(false);
   const [pricingExists, setPricingExists] = useState(false);
   const [pricingPosition, setPricingPosition] = useState(-1);
+  const [pricingIndent, setPricingIndent] = useState(0);
   const [pricingForm, setPricingForm] = useState<TemplatePricingFormState>(DEFAULT_PRICING);
   const [pricingSaveStatus, setPricingSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const pricingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,6 +64,7 @@ export function useTemplatePricingState(templateId: string, pageCount: number) {
           if (data) {
             setPricingExists(true);
             setPricingPosition(data.position);
+            setPricingIndent(data.indent ?? 0);
             setPricingForm({
               enabled: data.enabled,
               title: data.title,
@@ -84,7 +86,7 @@ export function useTemplatePricingState(templateId: string, pageCount: number) {
   }, [templateId]);
 
   // Save pricing
-  const savePricing = useCallback(async (form: TemplatePricingFormState, pos: number) => {
+  const savePricing = useCallback(async (form: TemplatePricingFormState, pos: number, indent?: number) => {
     setPricingSaveStatus('saving');
     try {
       await fetch('/api/templates/pricing', {
@@ -94,6 +96,7 @@ export function useTemplatePricingState(templateId: string, pageCount: number) {
           template_id: templateId,
           enabled: form.enabled,
           position: pos,
+          indent: indent ?? pricingIndent,
           title: form.title,
           intro_text: form.introText,
           items: form.items,
@@ -111,7 +114,7 @@ export function useTemplatePricingState(templateId: string, pageCount: number) {
       toast.error('Failed to save pricing');
       setPricingSaveStatus('idle');
     }
-  }, [templateId, toast]);
+  }, [templateId, pricingIndent, toast]);
 
   // Add pricing page
   const addPricingPage = useCallback(async () => {
@@ -143,6 +146,7 @@ export function useTemplatePricingState(templateId: string, pageCount: number) {
 
   return {
     pricingLoaded, pricingExists, pricingPosition, setPricingPosition,
+    pricingIndent, setPricingIndent,
     pricingForm, setPricingForm, pricingSaveStatus,
     savePricing, addPricingPage, removePricingPage,
   };
