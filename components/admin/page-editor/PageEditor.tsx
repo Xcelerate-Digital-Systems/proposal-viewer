@@ -168,6 +168,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+    if (processing) return; // Block reorder while a previous operation is in flight
 
     const oldIdx = unifiedItems.findIndex((i) => i.id === active.id);
     const newIdx = unifiedItems.findIndex((i) => i.id === over.id);
@@ -339,7 +340,16 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       {/* 50/50 split */}
       <div ref={panelRef} className="flex gap-6" style={{ height: panelHeight }}>
         {/* Left half: sortable page list */}
-        <div className="w-1/2 min-w-0 overflow-hidden flex flex-col">
+        <div className="w-1/2 min-w-0 overflow-hidden flex flex-col relative">
+          {/* Processing overlay — blocks interaction during PDF operations */}
+          {processing && (
+            <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
+                <Loader2 size={14} className="animate-spin text-[#017C87]" />
+                <span className="text-xs font-medium text-gray-600">Processing…</span>
+              </div>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto pr-1 space-y-0.5">
             {/* Insert-at-start button */}
             <div className="flex justify-center py-1">
