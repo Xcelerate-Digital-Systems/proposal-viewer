@@ -16,7 +16,7 @@ export interface TextPageData {
 
 interface UseTextPagesStateOptions {
   entityId: string;
-  entityType: 'proposal' | 'template';
+  entityType: 'proposal' | 'template' | 'document';
 }
 
 const DEFAULT_CONTENT = {
@@ -36,8 +36,14 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
 
   const apiBase = entityType === 'proposal'
     ? '/api/proposals/text-pages'
-    : '/api/templates/text-pages';
-  const idParam = entityType === 'proposal' ? 'proposal_id' : 'template_id';
+    : entityType === 'template'
+    ? '/api/templates/text-pages'
+    : '/api/documents/text-pages';
+  const idParam = entityType === 'proposal'
+    ? 'proposal_id'
+    : entityType === 'template'
+    ? 'template_id'
+    : 'document_id';
 
   // Cleanup
   useEffect(() => {

@@ -9,6 +9,7 @@ import { PageNameEntry } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import CoverPage from '@/components/viewer/CoverPage';
 import PdfViewer from '@/components/viewer/PdfViewer';
+import TextPage from '@/components/viewer/TextPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
@@ -230,6 +231,10 @@ export default function DocumentViewerPage({ params }: { params: { token: string
     pageEntries,
     branding,
     brandingLoaded,
+    isTextPage,
+    getTextPageId,
+    getTextPage,
+    toPdfPage,
     onDocumentLoadSuccess,
     getPageName,
   } = useDocument(params.token);
@@ -237,6 +242,13 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   const [showCover, setShowCover] = useState(true);
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
+
+  // Is the current virtual page a text page?
+  const onTextPage = isTextPage(currentPage);
+  const currentTextPageId = getTextPageId(currentPage);
+  const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
+  // If not a text page, what PDF page should we show?
+  const pdfPage = toPdfPage(currentPage);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -394,14 +406,31 @@ export default function DocumentViewerPage({ params }: { params: { token: string
 
       {/* Main content — PDF viewer */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <PdfViewer
-          pdfUrl={pdfUrl}
-          currentPage={currentPage}
-          onLoadSuccess={onDocumentLoadSuccess}
-          scrollRef={mainRef}
-          bgColor={bgPrimary}
-          accentColor={accent}
-        />
+        {/* Conditionally render Text page or PDF */}
+        {onTextPage && currentTextPage ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <TextPage
+              textPage={currentTextPage as any}
+              branding={branding}
+              companyName={branding.name}
+              proposalTitle={doc?.title}
+            />
+          </div>
+        ) : (
+          <PdfViewer
+            pdfUrl={pdfUrl}
+            currentPage={pdfPage}
+            onLoadSuccess={onDocumentLoadSuccess}
+            scrollRef={mainRef}
+            bgColor={bgPrimary}
+            accentColor={accent}
+          />
+        )}
 
         <FloatingToolbar
           pdfUrl={pdfUrl}

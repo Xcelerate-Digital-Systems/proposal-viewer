@@ -49,7 +49,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     addPricingPage, removePricingPage, savePricing,
   } = usePricingState(proposalId);
 
-  const isProposalOrTemplate = tableName !== 'documents';
+  const textPageEntityType = tableName === 'documents' ? 'document' as const : 'proposal' as const;
 
   const {
     textPagesLoaded, textPages, textPageSaveStatuses,
@@ -57,7 +57,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     addTextPage, removeTextPage,
   } = useTextPagesState({
     entityId: proposalId,
-    entityType: isProposalOrTemplate ? 'proposal' : 'proposal',
+    entityType: textPageEntityType,
   });
 
   const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
@@ -322,9 +322,9 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       </div>
 
       {/* Action buttons */}
-      {isProposalOrTemplate && (pricingLoaded && textPagesLoaded) && (
+      {(pricingLoaded && textPagesLoaded) && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {(!pricingExists || !pricingForm.enabled) && (
+          {tableName !== 'documents' && (!pricingExists || !pricingForm.enabled) && (
             <button
               onClick={handleAddPricing}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
