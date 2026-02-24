@@ -180,6 +180,7 @@ interface TemplateData {
   cover_image_path: string | null;
   cover_subtitle: string | null;
   cover_button_text: string | null;
+  prepared_by: string | null;
   page_names: unknown;
   section_headers: unknown;
   created_at: string;

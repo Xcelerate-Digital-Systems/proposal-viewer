@@ -167,11 +167,20 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
             {proposal.title}
           </h1>
           <p
-            className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8"
+            className="text-base sm:text-lg md:text-xl mb-2"
             style={{ color: subtitleColor, fontFamily: fontFamily(branding.font_body), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}
           >
             {subtitle}
           </p>
+          {proposal.prepared_by && (
+            <p
+              className="text-sm sm:text-base md:text-lg mb-6 sm:mb-8 opacity-80"
+              style={{ color: subtitleColor, fontFamily: fontFamily(branding.font_body), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}
+            >
+              Prepared by {proposal.prepared_by}
+            </p>
+          )}
+          {!proposal.prepared_by && <div className="mb-6 sm:mb-8" />}
           <button
             onClick={onStart}
             className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded-sm transition-opacity"

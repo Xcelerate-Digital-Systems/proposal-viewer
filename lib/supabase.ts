@@ -124,6 +124,7 @@ export type Proposal = {
   post_accept_redirect_url: string | null;
   post_accept_message: string | null;
   created_by_name: string | null;
+  prepared_by: string | null;
   company_id: string;
   created_at: string;
   updated_at: string;
@@ -170,6 +171,7 @@ export type ProposalTemplate = {
   cover_enabled: boolean;
   cover_subtitle: string | null;
   cover_button_text: string;
+  prepared_by: string | null;
   section_headers: PageNameEntry[] | null;
   company_id: string;
   created_at: string;

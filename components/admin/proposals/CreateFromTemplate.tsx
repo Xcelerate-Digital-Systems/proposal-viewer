@@ -203,6 +203,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         cover_image_path: coverImagePath,
         company_id: companyId,
         created_by_name: creatorName,
+        prepared_by: selectedTemplate.prepared_by || creatorName,
       }).select('id').single();
 
       if (insertError || !newProposal) throw new Error('Failed to create proposal');

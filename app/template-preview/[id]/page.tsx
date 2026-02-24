@@ -129,6 +129,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
       client_name: '[Client Name]',
       cover_subtitle: template.cover_subtitle || 'Prepared for [Client Name]',
       cover_button_text: template.cover_button_text || 'START READING PROPOSAL',
+      prepared_by: template.prepared_by || null,
       accept_button_text: null,
       status: 'sent' as const,
       share_token: '',

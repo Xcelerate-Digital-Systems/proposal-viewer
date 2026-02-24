@@ -81,6 +81,7 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
         page_names: [],
         company_id: companyId,
         created_by_name: creatorName,
+        prepared_by: creatorName,
       });
 
       if (dbError) throw dbError;

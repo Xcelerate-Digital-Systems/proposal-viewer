@@ -26,6 +26,7 @@ export default function TemplateCoverEditor({ template, onSave, onCancel }: Temp
   const [coverEnabled, setCoverEnabled] = useState(template.cover_enabled ?? true);
   const [subtitle, setSubtitle] = useState(template.cover_subtitle || '');
   const [buttonText, setButtonText] = useState(template.cover_button_text || 'START READING PROPOSAL');
+  const [preparedBy, setPreparedBy] = useState(template.prepared_by || '');
   const [imagePath, setImagePath] = useState(template.cover_image_path || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -116,6 +117,7 @@ export default function TemplateCoverEditor({ template, onSave, onCancel }: Temp
       cover_image_path: imagePath || null,
       cover_subtitle: subtitle || null,
       cover_button_text: buttonText || 'START READING PROPOSAL',
+      prepared_by: preparedBy.trim() || null,
     }).eq('id', template.id);
     setSaving(false);
     onSave();
@@ -194,6 +196,19 @@ export default function TemplateCoverEditor({ template, onSave, onCancel }: Temp
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
             />
             <p className="text-xs text-gray-400 mt-1">This will be the default subtitle when creating proposals from this template. Can be overridden per proposal.</p>
+          </div>
+
+          {/* Prepared By */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Default Prepared By</label>
+            <input
+              type="text"
+              value={preparedBy}
+              onChange={(e) => setPreparedBy(e.target.value)}
+              placeholder="Your name or company"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
+            />
+            <p className="text-xs text-gray-400 mt-1">Shown on the cover page. Can be overridden per proposal.</p>
           </div>
 
           {/* Button text */}
@@ -312,6 +327,12 @@ export default function TemplateCoverEditor({ template, onSave, onCancel }: Temp
               </h2>
               <p className="text-xs mb-3" style={{ color: branding.cover_subtitle_color }}>
                 {subtitle || 'Prepared for [Client Name]'}
+                {preparedBy && (
+                  <>
+                    <br />
+                    <span className="opacity-80">Prepared by {preparedBy}</span>
+                  </>
+                )}
               </p>
               <div
                 className="inline-block px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase rounded-sm"

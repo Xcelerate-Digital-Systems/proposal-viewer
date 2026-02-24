@@ -27,6 +27,7 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
   const [subtitle, setSubtitle] = useState(proposal.cover_subtitle || '');
   const [buttonText, setButtonText] = useState(proposal.cover_button_text || 'START READING PROPOSAL');
   const [acceptButtonText, setAcceptButtonText] = useState(proposal.accept_button_text || '');
+  const [preparedBy, setPreparedBy] = useState(proposal.prepared_by || proposal.created_by_name || '');
   const [imagePath, setImagePath] = useState(proposal.cover_image_path || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -118,6 +119,7 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
       cover_subtitle: subtitle || null,
       cover_button_text: buttonText || 'START READING PROPOSAL',
       accept_button_text: acceptButtonText.trim() || null,
+      prepared_by: preparedBy.trim() || null,
     }).eq('id', proposal.id);
     setSaving(false);
     onSave();
@@ -196,6 +198,19 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
             />
             <p className="text-xs text-gray-400 mt-1">Leave blank for &quot;Prepared for {proposal.client_name}&quot;</p>
+          </div>
+
+          {/* Prepared By */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prepared By</label>
+            <input
+              type="text"
+              value={preparedBy}
+              onChange={(e) => setPreparedBy(e.target.value)}
+              placeholder="Your name or company"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
+            />
+            <p className="text-xs text-gray-400 mt-1">Shown on the cover page below the subtitle</p>
           </div>
 
           {/* Button text */}
@@ -327,6 +342,12 @@ export default function CoverEditor({ proposal, onSave, onCancel }: CoverEditorP
               </h2>
               <p className="text-xs mb-3" style={{ color: branding.cover_subtitle_color }}>
                 {subtitle || `Prepared for ${proposal.client_name}`}
+                {preparedBy && (
+                  <>
+                    <br />
+                    <span className="opacity-80">Prepared by {preparedBy}</span>
+                  </>
+                )}
               </p>
               <div
                 className="inline-block px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase rounded-sm"
