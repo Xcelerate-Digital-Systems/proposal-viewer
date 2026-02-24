@@ -20,17 +20,32 @@ import { exportCompositePdf } from '@/lib/compositeExport';
 interface NavItem {
   pageNum: number;
   name: string;
+  isGroup: boolean; // true = section header only, no navigable page
   children: { pageNum: number; name: string }[];
 }
 
-function buildNavTree(entries: PageNameEntry[]): NavItem[] {
+function buildNavTree(entries: PageNameEntry[], numPages: number): NavItem[] {
   const tree: NavItem[] = [];
+  let virtualPage = 0; // increments only for non-group entries
+
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
+    const isGroup = entry.type === 'group';
+
+    if (!isGroup) {
+      virtualPage++;
+      if (virtualPage > numPages) break; // don't exceed total virtual pages
+    }
+
     if (entry.indent > 0 && tree.length > 0) {
-      tree[tree.length - 1].children.push({ pageNum: i + 1, name: entry.name });
+      // Nested child — attach to the last parent/group
+      if (!isGroup) {
+        tree[tree.length - 1].children.push({ pageNum: virtualPage, name: entry.name });
+      }
     } else {
-      tree.push({ pageNum: i + 1, name: entry.name, children: [] });
+      // Top-level item: groups get a stable negative ID (for expandedGroup key)
+      const pageNum = isGroup ? -(i + 1) : virtualPage;
+      tree.push({ pageNum, name: entry.name, isGroup, children: [] });
     }
   }
   return tree;
@@ -53,7 +68,7 @@ function DocumentSidebar({
   mobileOpen: boolean;
   onMobileClose: () => void;
 }) {
-  const navTree = buildNavTree(pageEntries.slice(0, numPages));
+  const navTree = buildNavTree(pageEntries, numPages);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
 
   const accent = branding.accent_color || '#ff6700';
@@ -64,16 +79,40 @@ function DocumentSidebar({
   useEffect(() => {
     for (const item of navTree) {
       if (item.children.length > 0) {
-        if (item.pageNum === currentPage || item.children.some((c) => c.pageNum === currentPage)) {
-          setExpandedGroup(item.pageNum);
-          return;
+        if (item.isGroup) {
+          // Group headers: expand only when a child is active
+          if (item.children.some((c) => c.pageNum === currentPage)) {
+            setExpandedGroup(item.pageNum);
+            return;
+          }
+        } else {
+          // Regular parents: expand when parent or child is active
+          if (item.pageNum === currentPage || item.children.some((c) => c.pageNum === currentPage)) {
+            setExpandedGroup(item.pageNum);
+            return;
+          }
         }
       }
     }
     setExpandedGroup(null);
   }, [currentPage, numPages, pageEntries.length]);
 
-  const handleClick = (pageNum: number) => {
+  const handleParentClick = (item: NavItem) => {
+    if (item.isGroup) {
+      // Group headers: toggle expand/collapse, navigate to first child if expanding
+      const willExpand = expandedGroup !== item.pageNum;
+      setExpandedGroup(willExpand ? item.pageNum : null);
+      if (willExpand && item.children.length > 0) {
+        onPageSelect(item.children[0].pageNum);
+      }
+      onMobileClose();
+    } else {
+      onPageSelect(item.pageNum);
+      onMobileClose();
+    }
+  };
+
+  const handleChildClick = (pageNum: number) => {
     onPageSelect(pageNum);
     onMobileClose();
   };
@@ -116,27 +155,32 @@ function DocumentSidebar({
         {navTree.map((item) => {
           const hasChildren = item.children.length > 0;
           const isExpanded = expandedGroup === item.pageNum;
-          const isParentActive = currentPage === item.pageNum;
+          // Groups never have an "active" state themselves — only their children do
+          const isParentActive = !item.isGroup && currentPage === item.pageNum;
           const childActive = isChildActive(item);
           const groupActive = isParentActive || childActive;
 
           return (
-            <div key={item.pageNum}>
+            <div key={`${item.pageNum}-${item.isGroup ? 'g' : 'p'}`}>
               <button
-                onClick={() => handleClick(item.pageNum)}
+                onClick={() => handleParentClick(item)}
                 className="w-full text-left flex items-center justify-between transition-colors truncate relative"
-                style={{ padding: '10px 20px' }}
+                style={{ padding: item.isGroup ? '12px 20px 8px' : '10px 20px' }}
               >
                 <span
                   className={`truncate text-sm ${
-                    isParentActive
+                    item.isGroup
+                      ? 'uppercase tracking-wider text-xs font-semibold'
+                      : isParentActive
                       ? 'font-semibold'
                       : childActive && !isExpanded
                       ? 'font-medium'
                       : ''
                   }`}
                   style={{
-                    color: isParentActive
+                    color: item.isGroup
+                      ? (childActive ? `${sidebarText}cc` : `${sidebarText}66`)
+                      : isParentActive
                       ? sidebarText
                       : childActive && !isExpanded
                       ? `${sidebarText}cc`
@@ -147,7 +191,22 @@ function DocumentSidebar({
                 >
                   {item.name}
                 </span>
-                {hasChildren && (
+
+                {/* Chevron for groups, dot for regular parents */}
+                {item.isGroup ? (
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    className="shrink-0 ml-2 transition-transform"
+                    style={{
+                      transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                      color: childActive ? `${sidebarText}aa` : `${sidebarText}44`,
+                    }}
+                  >
+                    <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                ) : hasChildren ? (
                   <span
                     className="shrink-0 ml-2 w-1 h-1 rounded-full transition-opacity"
                     style={{
@@ -155,8 +214,10 @@ function DocumentSidebar({
                       opacity: isExpanded ? 1 : 0.7,
                     }}
                   />
-                )}
-                {hasChildren && (
+                ) : null}
+
+                {/* Accent underline for parent items with children (not groups) */}
+                {hasChildren && !item.isGroup && (
                   <span
                     className="absolute bottom-0 left-5 right-5 h-px transition-opacity"
                     style={{
@@ -172,7 +233,7 @@ function DocumentSidebar({
                   {item.children.map((child) => (
                     <button
                       key={child.pageNum}
-                      onClick={() => handleClick(child.pageNum)}
+                      onClick={() => handleChildClick(child.pageNum)}
                       className={`w-full text-left pl-4 pr-3 py-2 text-sm transition-colors truncate ${
                         currentPage === child.pageNum ? 'font-semibold' : ''
                       }`}

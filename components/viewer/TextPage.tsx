@@ -3,6 +3,7 @@
 
 import { CompanyBranding, deriveBorderColor, ProposalTextPage } from '@/hooks/useProposal';
 import { resolveDynamicField } from '@/components/admin/text-editor/DynamicFieldExtension';
+import { fontFamily } from '@/lib/google-fonts';
 
 interface TextPageProps {
   textPage: ProposalTextPage;
@@ -178,7 +179,7 @@ function renderNode(
             fontWeight: weights[level as number] || 600,
             margin: margins[level as number] || '0.8em 0 0.4em',
             lineHeight: 1.3,
-            fontFamily: 'var(--font-display), system-ui, sans-serif',
+            fontFamily: fontFamily(branding.font_heading, 'system-ui, sans-serif'),
           }}
         >
           {children}
@@ -304,8 +305,8 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
           {textPage.title && (
             <div className="mb-6">
               <h1
-                className="text-2xl sm:text-3xl font-bold tracking-tight font-[family-name:var(--font-display)]"
-                style={{ color: headingColor }}
+                className="text-2xl sm:text-3xl font-bold tracking-tight"
+                style={{ color: headingColor, fontFamily: fontFamily(branding.font_heading, 'system-ui, sans-serif'), fontWeight: branding.font_heading_weight ? Number(branding.font_heading_weight) : undefined }}
               >
                 {textPage.title}
               </h1>
@@ -313,7 +314,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
           )}
 
           {/* Content */}
-          <div style={{ fontSize: `${fontSize}px` }}>
+          <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif'), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}>
             {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
           </div>
         </div>
@@ -343,8 +344,8 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
           {textPage.title && (
             <div className="mb-6">
               <h1
-                className="text-2xl sm:text-3xl font-bold tracking-tight font-[family-name:var(--font-display)]"
-                style={{ color: headingColor }}
+                className="text-2xl sm:text-3xl font-bold tracking-tight"
+                style={{ color: headingColor, fontFamily: fontFamily(branding.font_heading, 'system-ui, sans-serif'), fontWeight: branding.font_heading_weight ? Number(branding.font_heading_weight) : undefined }}
               >
                 {textPage.title}
               </h1>
@@ -352,7 +353,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
           )}
 
           {/* Content */}
-          <div style={{ fontSize: `${fontSize}px` }}>
+          <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif'), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}>
             {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
           </div>
         </div>
