@@ -35,7 +35,9 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
     const { supabase } = await import('@/lib/supabase');
 
     try {
-      const filePath = `${Date.now()}-${file.name}`;
+      // Sanitize filename: remove special chars that Supabase storage rejects (|, #, ?, etc.)
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `${Date.now()}-${safeName}`;
 
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
