@@ -203,6 +203,7 @@ export default function TextPagePreviewPanel({
                   position: page.position,
                   enabled: page.enabled,
                   sort_order: page.sort_order,
+                  indent: 0,
                 }}
                 branding={branding}
                 clientName={proposal?.client_name}
