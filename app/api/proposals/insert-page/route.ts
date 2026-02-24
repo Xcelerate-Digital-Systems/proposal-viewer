@@ -8,6 +8,8 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const proposalId = formData.get('proposal_id') as string;
+    const tableNameRaw = formData.get('table_name') as string;
+    const tableName = tableNameRaw === 'documents' ? 'documents' : 'proposals';
     const afterPage = parseInt(formData.get('after_page') as string); // 1-indexed, 0 = insert at start
     const file = formData.get('file') as File;
 
@@ -20,9 +22,9 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Get proposal to find file_path and current page_names
+    // Get record to find file_path and current page_names
     const { data: proposal, error: proposalError } = await supabase
-      .from('proposals')
+      .from(tableName)
       .select('id, file_path, page_names')
       .eq('id', proposalId)
       .single();
@@ -106,9 +108,9 @@ export async function POST(req: NextRequest) {
 
     const newTotalPages = existingDoc.getPageCount();
 
-    // Update proposal record
+    // Update record
     await supabase
-      .from('proposals')
+      .from(tableName)
       .update({
         file_size_bytes: modifiedBytes.byteLength,
         page_names: currentNames,

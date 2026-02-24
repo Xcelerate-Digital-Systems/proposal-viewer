@@ -4,18 +4,16 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Check, ChevronDown, CornerDownRight, ArrowLeft,
+  Check, CornerDownRight, ArrowLeft,
   Upload, Loader2, Trash2, GripVertical,
 } from 'lucide-react';
 import { PageNameEntry } from '@/lib/supabase';
-import { PRESET_LABELS, CUSTOM_VALUE, isPreset } from './pageEditorTypes';
 
 interface SortablePdfRowProps {
   id: string;
   entry: PageNameEntry;
   visualNum: number;
   isSelected: boolean;
-  isDropdownOpen: boolean;
   status: 'saving' | 'saved' | null;
   processing: boolean;
   pageCount: number;
@@ -23,17 +21,15 @@ interface SortablePdfRowProps {
   onSelect: () => void;
   onToggleIndent: () => void;
   onUpdateEntry: (changes: Partial<PageNameEntry>) => void;
-  onOpenDropdown: (open: boolean) => void;
-  onSelectPreset: (label: string) => void;
   onReplacePage: (file: File) => void;
   onDeletePage: () => void;
 }
 
 export default function SortablePdfRow({
-  id, entry, visualNum, isSelected, isDropdownOpen,
+  id, entry, visualNum, isSelected,
   status, processing, pageCount, index,
-  onSelect, onToggleIndent, onUpdateEntry, onOpenDropdown,
-  onSelectPreset, onReplacePage, onDeletePage,
+  onSelect, onToggleIndent, onUpdateEntry,
+  onReplacePage, onDeletePage,
 }: SortablePdfRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -42,8 +38,6 @@ export default function SortablePdfRow({
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
-
-  const isCustom = !isPreset(entry.name);
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -82,58 +76,16 @@ export default function SortablePdfRow({
 
         {entry.indent > 0 && <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>}
 
-        {/* Label selector */}
-        <div className="flex-1 relative min-w-0" onClick={(e) => e.stopPropagation()}>
-          {isCustom ? (
-            <div className="flex items-center gap-0">
-              <input
-                type="text"
-                value={entry.name}
-                onChange={(e) => onUpdateEntry({ name: e.target.value })}
-                onFocus={onSelect}
-                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
-                placeholder="Custom label..."
-              />
-              <button
-                onClick={() => onOpenDropdown(!isDropdownOpen)}
-                className="px-2 py-1.5 rounded-r-md border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <ChevronDown size={13} className={isDropdownOpen ? 'rotate-180' : ''} />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => onOpenDropdown(!isDropdownOpen)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm hover:border-gray-300 transition-colors"
-            >
-              <span className="truncate">{entry.name}</span>
-              <ChevronDown size={13} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-          )}
-
-          {isDropdownOpen && (
-            <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-              {PRESET_LABELS.map((label) => (
-                <button
-                  key={label}
-                  onClick={() => onSelectPreset(label)}
-                  className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-gray-100 last:border-0 ${
-                    entry.name === label
-                      ? 'text-[#017C87] bg-[#017C87]/5'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-              <button
-                onClick={() => onSelectPreset(CUSTOM_VALUE)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors italic"
-              >
-                Custom...
-              </button>
-            </div>
-          )}
+        {/* Label */}
+        <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="text"
+            value={entry.name}
+            onChange={(e) => onUpdateEntry({ name: e.target.value })}
+            onFocus={onSelect}
+            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+            placeholder={`Page ${visualNum}`}
+          />
         </div>
 
         {/* Autosave status */}

@@ -4,19 +4,9 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  GripVertical, ArrowLeft, CornerDownRight, ChevronDown,
+  GripVertical, ArrowLeft, CornerDownRight,
   Upload, Trash2, Plus, Loader2, Check,
 } from 'lucide-react';
-
-const PRESET_LABELS = [
-  'INTRODUCTION', 'TABLE OF CONTENTS', 'EXECUTIVE SUMMARY', 'WHO ARE WE',
-  'ABOUT US', 'OUR APPROACH', 'YOUR SOLUTION', 'SERVICES', 'SCOPE OF WORK',
-  'HOW WE GET RESULTS', 'METHODOLOGY', 'DELIVERABLES', 'CASE STUDIES',
-  'CASE STUDY', 'TESTIMONIALS', 'YOUR INVESTMENT', 'PRICING', 'TIMELINE',
-  'FAQ', 'TERMS & CONDITIONS', 'NEXT STEPS', 'CONTACT', 'APPENDIX',
-];
-
-const CUSTOM_VALUE = '__custom__';
 
 interface SortableTemplateRowProps {
   id: string;
@@ -24,15 +14,12 @@ interface SortableTemplateRowProps {
   indent: number;
   visualNum: number;
   isSelected: boolean;
-  isDropdownOpen: boolean;
   status: 'saving' | 'saved' | null;
   processing: boolean;
   index: number;
   onSelect: () => void;
   onToggleIndent: () => void;
   onLabelChange: (label: string) => void;
-  onOpenDropdown: (open: boolean) => void;
-  onSelectPreset: (label: string) => void;
   onReplacePage: (file: File) => void;
   onDeletePage: () => void;
   onInsertAfter: (file: File) => void;
@@ -44,15 +31,12 @@ export default function SortableTemplateRow({
   indent,
   visualNum,
   isSelected,
-  isDropdownOpen,
   status,
   processing,
   index,
   onSelect,
   onToggleIndent,
   onLabelChange,
-  onOpenDropdown,
-  onSelectPreset,
   onReplacePage,
   onDeletePage,
   onInsertAfter,
@@ -66,8 +50,6 @@ export default function SortableTemplateRow({
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
-
-  const isCustom = !PRESET_LABELS.includes(label.toUpperCase());
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -113,57 +95,16 @@ export default function SortableTemplateRow({
           <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
         )}
 
-        {/* Label: dropdown or custom input */}
-        <div className="flex-1 relative min-w-0" onClick={(e) => e.stopPropagation()}>
-          {isCustom ? (
-            <div className="flex items-center gap-0">
-              <input
-                type="text"
-                value={label}
-                onChange={(e) => onLabelChange(e.target.value)}
-                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
-                placeholder="Custom label..."
-              />
-              <button
-                onClick={() => onOpenDropdown(!isDropdownOpen)}
-                className="px-2 py-1.5 rounded-r-md border border-gray-200 bg-white text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <ChevronDown size={13} className={isDropdownOpen ? 'rotate-180' : ''} />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => onOpenDropdown(!isDropdownOpen)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm hover:border-gray-300 transition-colors"
-            >
-              <span className="truncate">{label}</span>
-              <ChevronDown size={13} className={`text-gray-400 shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-          )}
-
-          {isDropdownOpen && (
-            <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-              {PRESET_LABELS.map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => onSelectPreset(preset)}
-                  className={`w-full text-left px-3 py-2 text-sm transition-colors border-b border-gray-100 last:border-0 ${
-                    label === preset
-                      ? 'text-[#017C87] bg-[#017C87]/5'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  {preset}
-                </button>
-              ))}
-              <button
-                onClick={() => onSelectPreset(CUSTOM_VALUE)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors italic"
-              >
-                Custom...
-              </button>
-            </div>
-          )}
+        {/* Label */}
+        <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => onLabelChange(e.target.value)}
+            onFocus={onSelect}
+            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+            placeholder={`Page ${visualNum}`}
+          />
         </div>
 
         {/* Autosave status */}

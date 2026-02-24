@@ -3,8 +3,6 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase, TemplatePage } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 
-const CUSTOM_VALUE = '__custom__';
-
 export function useTemplatePageState(templateId: string) {
   const toast = useToast();
 
@@ -100,11 +98,6 @@ export function useTemplatePageState(templateId: string) {
     }, delay);
   };
 
-  const selectPreset = (pageId: string, label: string, setOpenDropdown: (v: string | null) => void) => {
-    if (label !== CUSTOM_VALUE) updateEdit(pageId, { label });
-    setOpenDropdown(null);
-  };
-
   const toggleIndent = (pageId: string, pageIndex: number) => {
     if (pageIndex === 0) return;
     const current = getEdit(pageId);
@@ -114,6 +107,6 @@ export function useTemplatePageState(templateId: string) {
   return {
     pages, setPages, pageUrls, loading, localEdits, setLocalEdits,
     saveStatus, fetchPages, flushPendingSaves,
-    getEdit, updateEdit, selectPreset, toggleIndent,
+    getEdit, updateEdit, toggleIndent,
   };
 }

@@ -5,7 +5,8 @@ import { createServiceClient } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { proposal_id, page_order } = await req.json();
+    const { proposal_id, page_order, table_name } = await req.json();
+    const tableName = table_name === 'documents' ? 'documents' : 'proposals';
 
     if (!proposal_id || !Array.isArray(page_order)) {
       return NextResponse.json(
@@ -16,9 +17,9 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Get proposal to find file_path
+    // Get record to find file_path
     const { data: proposal, error: proposalError } = await supabase
-      .from('proposals')
+      .from(tableName)
       .select('id, file_path')
       .eq('id', proposal_id)
       .single();
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
     // before calling this API. The client's handleDragEnd rebuilds the entries array
     // with groups in correct positions and saves it. We only update file metadata here.
     await supabase
-      .from('proposals')
+      .from(tableName)
       .update({
         file_size_bytes: modifiedBytes.byteLength,
         updated_at: new Date().toISOString(),

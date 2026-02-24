@@ -58,7 +58,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   const {
     pages, setPages, pageUrls, loading, localEdits, setLocalEdits,
     saveStatus, fetchPages, flushPendingSaves,
-    getEdit, updateEdit, selectPreset, toggleIndent,
+    getEdit, updateEdit, toggleIndent,
   } = useTemplatePageState(template.id);
 
   const {
@@ -81,11 +81,9 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
   // ─── UI state ────────────────────────────────────────────────────
   const [processing, setProcessing] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
   const [previewWidth, setPreviewWidth] = useState(300);
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   // ─── DnD sensors ─────────────────────────────────────────────────
@@ -105,17 +103,6 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     window.addEventListener('resize', measure);
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, [loading]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
 
   // ─── Computed unified items ──────────────────────────────────────
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
@@ -440,7 +427,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       )}
 
       <p className="text-xs text-gray-400 mb-4">
-        Drag to reorder pages. Choose a label from the dropdown or select &quot;Custom&quot; to type your own. Changes save automatically.
+        Drag to reorder pages. Type a name for each page or leave blank for default numbering. Changes save automatically.
       </p>
 
       {loading ? (
@@ -450,7 +437,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       ) : (
         <div className="flex gap-5" style={{ height: 520 }}>
           {/* Left half: sortable page list */}
-          <div className="w-1/2 min-w-0 overflow-hidden flex flex-col" ref={dropdownRef}>
+          <div className="w-1/2 min-w-0 overflow-hidden flex flex-col">
             <div className="flex-1 space-y-0.5 p-1 overflow-y-auto pr-1">
               <div className="flex justify-center py-1">
                 <label
@@ -553,15 +540,12 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                         indent={edit.indent}
                         visualNum={visualIdx + 1}
                         isSelected={selectedId === item.id}
-                        isDropdownOpen={openDropdown === page.id}
                         status={saveStatus[page.id] || null}
                         processing={processing}
                         index={item.pageIndex}
                         onSelect={() => setSelectedId(item.id)}
                         onToggleIndent={() => toggleIndent(page.id, item.pageIndex)}
                         onLabelChange={(label: string) => updateEdit(page.id, { label })}
-                        onOpenDropdown={(open: boolean) => setOpenDropdown(open ? page.id : null)}
-                        onSelectPreset={(label: string) => selectPreset(page.id, label, setOpenDropdown)}
                         onReplacePage={(file: File) => handleReplacePage(page.page_number, file)}
                         onDeletePage={() => deletePage(page.page_number)}
                         onInsertAfter={(file: File) => handleAddPage(page.page_number, file)}

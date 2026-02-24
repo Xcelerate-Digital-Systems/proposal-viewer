@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 
 interface UsePdfOperationsOptions {
   proposalId: string;
+  tableName: 'proposals' | 'documents';
   initialPageNames: (PageNameEntry | string)[];
   entries: PageNameEntry[];
   setEntries: React.Dispatch<React.SetStateAction<PageNameEntry[]>>;
@@ -20,6 +21,7 @@ interface UsePdfOperationsOptions {
 
 export function usePdfOperations({
   proposalId,
+  tableName,
   initialPageNames,
   entries,
   setEntries,
@@ -42,6 +44,7 @@ export function usePdfOperations({
     try {
       const formData = new FormData();
       formData.append('proposal_id', proposalId);
+      formData.append('table_name', tableName);
       formData.append('page_number', (pageIndex + 1).toString());
       formData.append('file', file);
       const res = await fetch('/api/proposals/replace-page', { method: 'POST', body: formData });
@@ -49,7 +52,7 @@ export function usePdfOperations({
       else { toast.success(`Page ${pageIndex + 1} replaced`); setPdfVersion((v) => v + 1); }
     } catch { toast.error('Failed to replace page'); }
     setProcessing(false);
-  }, [proposalId, flushPendingSaves, toast]);
+  }, [proposalId, tableName, flushPendingSaves, toast]);
 
   const handleInsertPage = useCallback(async (afterPage: number, file: File) => {
     await flushPendingSaves();
@@ -57,6 +60,7 @@ export function usePdfOperations({
     try {
       const formData = new FormData();
       formData.append('proposal_id', proposalId);
+      formData.append('table_name', tableName);
       formData.append('after_page', afterPage.toString());
       formData.append('file', file);
       const res = await fetch('/api/proposals/insert-page', { method: 'POST', body: formData });
@@ -82,7 +86,7 @@ export function usePdfOperations({
       setPdfVersion((v) => v + 1);
     } catch { toast.error('Failed to insert page'); }
     setProcessing(false);
-  }, [proposalId, flushPendingSaves, setEntries, setPageCount, setSelectedId, toast]);
+  }, [proposalId, tableName, flushPendingSaves, setEntries, setPageCount, setSelectedId, toast]);
 
   const handleDeletePage = useCallback(async (pageIndex: number) => {
     if (pageCount <= 1) { toast.error('Cannot delete the only remaining page'); return; }
@@ -97,7 +101,7 @@ export function usePdfOperations({
     try {
       const res = await fetch('/api/proposals/delete-page', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposal_id: proposalId, page_number: pageIndex + 1 }),
+        body: JSON.stringify({ proposal_id: proposalId, table_name: tableName, page_number: pageIndex + 1 }),
       });
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed to delete page'); setProcessing(false); return; }
       const result = await res.json();
@@ -114,7 +118,7 @@ export function usePdfOperations({
       setPdfVersion((v) => v + 1);
     } catch { toast.error('Failed to delete page'); }
     setProcessing(false);
-  }, [proposalId, pageCount, selectedPdfIndex, flushPendingSaves, setEntries, setPageCount, setSelectedId, confirm, toast]);
+  }, [proposalId, tableName, pageCount, selectedPdfIndex, flushPendingSaves, setEntries, setPageCount, setSelectedId, confirm, toast]);
 
   const handleReorder = useCallback(async (newPageOrder: number[]) => {
     // NOTE: entries are already reordered by handleDragEnd in PageEditor.tsx
@@ -126,7 +130,7 @@ export function usePdfOperations({
       const res = await fetch('/api/proposals/reorder-pages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposal_id: proposalId, page_order: newPageOrder }),
+        body: JSON.stringify({ proposal_id: proposalId, table_name: tableName, page_order: newPageOrder }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -139,7 +143,7 @@ export function usePdfOperations({
       toast.error('Failed to reorder pages');
     }
     setProcessing(false);
-  }, [proposalId, initialPageNames, setEntries, remapSaveStatus, toast]);
+  }, [proposalId, tableName, initialPageNames, setEntries, remapSaveStatus, toast]);
 
   return {
     processing,

@@ -12,7 +12,7 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { Check, Loader2, Plus, DollarSign, FileText, FolderOpen } from 'lucide-react';
 
-import { PageEditorProps, UnifiedItem, CUSTOM_VALUE } from './pageEditorTypes';
+import { PageEditorProps, UnifiedItem } from './pageEditorTypes';
 import { usePageEditorState } from './usePageEditorState';
 import { usePricingState } from './usePricingState';
 import { useTextPagesState } from './useTextPagesState';
@@ -27,11 +27,9 @@ import TextPagePreviewPanel from './TextPagePreviewPanel';
 
 export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel, tableName = 'proposals' }: PageEditorProps) {
   // UI state
-  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
   const [panelHeight, setPanelHeight] = useState(520);
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Hooks
@@ -66,7 +64,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     processing, pdfVersion,
     handleReplacePage, handleInsertPage, handleDeletePage, handleReorder,
   } = usePdfOperations({
-    proposalId, initialPageNames, entries, setEntries,
+    proposalId, tableName, initialPageNames, entries, setEntries,
     pageCount, setPageCount, selectedPdfIndex,
     setSelectedId, flushPendingSaves, remapSaveStatus,
   });
@@ -156,24 +154,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, []);
 
-  /* ——— Close dropdown on outside click —————————————————————————— */
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
   /* ——— Label helpers ———————————————————————————————————————————— */
-
-  const selectPreset = (index: number, label: string) => {
-    if (label !== CUSTOM_VALUE) updateEntry(index, { name: label });
-    setOpenDropdown(null);
-  };
 
   const toggleIndent = (index: number) => {
     if (index === 0) return;
@@ -351,13 +332,13 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       )}
 
       <p className="text-xs text-gray-400 mb-4">
-        Drag to reorder pages. Choose a label from the dropdown or select &quot;Custom&quot; to type your own. Changes save automatically.
+        Drag to reorder pages. Type a name for each page or leave blank for default numbering. Changes save automatically.
       </p>
 
       {/* 50/50 split */}
       <div ref={panelRef} className="flex gap-6" style={{ height: panelHeight }}>
         {/* Left half: sortable page list */}
-        <div className="w-1/2 min-w-0 overflow-hidden flex flex-col" ref={dropdownRef}>
+        <div className="w-1/2 min-w-0 overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto pr-1 space-y-0.5">
             {/* Insert-at-start button */}
             <div className="flex justify-center py-1">
@@ -449,7 +430,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         entry={entry}
                         visualNum={visualIdx + 1}
                         isSelected={selectedId === item.id}
-                        isDropdownOpen={openDropdown === entryIdx}
                         status={saveStatus[entryIdx] || null}
                         processing={processing}
                         pageCount={pageCount}
@@ -457,8 +437,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         onSelect={() => setSelectedId(item.id)}
                         onToggleIndent={() => toggleIndent(entryIdx)}
                         onUpdateEntry={(changes) => updateEntry(entryIdx, changes)}
-                        onOpenDropdown={(open) => setOpenDropdown(open ? entryIdx : null)}
-                        onSelectPreset={(label) => selectPreset(entryIdx, label)}
                         onReplacePage={(file) => handleReplacePage(i, file)}
                         onDeletePage={() => handleDeletePage(i)}
                       />

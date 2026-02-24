@@ -7,6 +7,8 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const proposalId = formData.get('proposal_id') as string;
+    const tableNameRaw = formData.get('table_name') as string;
+    const tableName = tableNameRaw === 'documents' ? 'documents' : 'proposals';
     const pageNumber = parseInt(formData.get('page_number') as string); // 1-indexed
     const file = formData.get('file') as File;
 
@@ -16,9 +18,9 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Get proposal to find file_path
+    // Get record to find file_path
     const { data: proposal, error: proposalError } = await supabase
-      .from('proposals')
+      .from(tableName)
       .select('id, file_path')
       .eq('id', proposalId)
       .single();
@@ -74,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     // Update file size
     await supabase
-      .from('proposals')
+      .from(tableName)
       .update({
         file_size_bytes: modifiedBytes.byteLength,
         updated_at: new Date().toISOString(),

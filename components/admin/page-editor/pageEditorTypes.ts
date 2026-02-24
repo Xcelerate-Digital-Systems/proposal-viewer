@@ -36,16 +36,6 @@ export interface PageEditorProps {
 
 /* ——— Constants ——————————————————————————————————————————————— */
 
-export const PRESET_LABELS = [
-  'INTRODUCTION', 'TABLE OF CONTENTS', 'EXECUTIVE SUMMARY', 'WHO ARE WE',
-  'ABOUT US', 'OUR APPROACH', 'YOUR SOLUTION', 'SERVICES', 'SCOPE OF WORK',
-  'HOW WE GET RESULTS', 'METHODOLOGY', 'DELIVERABLES', 'CASE STUDIES',
-  'CASE STUDY', 'TESTIMONIALS', 'YOUR INVESTMENT', 'PRICING', 'TIMELINE',
-  'FAQ', 'TERMS & CONDITIONS', 'NEXT STEPS', 'CONTACT', 'APPENDIX',
-];
-
-export const CUSTOM_VALUE = '__custom__';
-
 export const DEFAULT_INTRO = 'The following costs are based on the agreed scope of works outlined within this proposal. All pricing has been carefully prepared to reflect the works required for successful project delivery.';
 
 export const DEFAULT_PRICING: PricingFormState = {
@@ -60,7 +50,3 @@ export const DEFAULT_PRICING: PricingFormState = {
   validityDays: 30,
   proposalDate: new Date().toISOString().split('T')[0],
 };
-
-/* ——— Helpers ——————————————————————————————————————————————————— */
-
-export const isPreset = (name: string) => PRESET_LABELS.includes(name.toUpperCase());

@@ -6,7 +6,8 @@ import { normalizePageNamesWithGroups, pdfIndexToEntryIndex, PageNameEntry } fro
 
 export async function POST(req: NextRequest) {
   try {
-    const { proposal_id, page_number } = await req.json();
+    const { proposal_id, page_number, table_name } = await req.json();
+    const tableName = table_name === 'documents' ? 'documents' : 'proposals';
 
     if (!proposal_id || !page_number) {
       return NextResponse.json(
@@ -17,9 +18,9 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Get proposal to find file_path and current page_names
+    // Get record to find file_path and current page_names
     const { data: proposal, error: proposalError } = await supabase
-      .from('proposals')
+      .from(tableName)
       .select('id, file_path, page_names')
       .eq('id', proposal_id)
       .single();
@@ -85,9 +86,9 @@ export async function POST(req: NextRequest) {
 
     const newTotalPages = existingDoc.getPageCount();
 
-    // Update proposal record
+    // Update record
     await supabase
-      .from('proposals')
+      .from(tableName)
       .update({
         file_size_bytes: modifiedBytes.byteLength,
         page_names: currentNames,
