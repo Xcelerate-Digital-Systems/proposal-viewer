@@ -1,7 +1,7 @@
 // app/reviews/[id]/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -13,6 +13,7 @@ import { buildReviewUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddReviewItemModal from '@/components/admin/reviews/AddReviewItemModal';
 import ReviewItemCard from '@/components/admin/reviews/ReviewItemCard';
+import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
 
 export default function ReviewProjectDetailPage({ params }: { params: { id: string } }) {
   return (
@@ -116,6 +117,18 @@ function ProjectDetailContent({
   const [showAddItem, setShowAddItem] = useState(false);
   const [copied, setCopied] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+
+  // Unique types + filtered items
+  const availableTypes = useMemo(() => {
+    const types = Array.from(new Set(items.map((i) => i.type)));
+    return types.sort();
+  }, [items]);
+
+  const filteredItems = useMemo(
+    () => (typeFilter ? items.filter((i) => i.type === typeFilter) : items),
+    [items, typeFilter]
+  );
 
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
@@ -169,7 +182,8 @@ function ProjectDetailContent({
   };
 
   const handleOpenViewer = (itemId: string) => {
-    router.push(`/reviews/${projectId}/items/${itemId}`);
+    const typeParam = typeFilter ? `?type=${typeFilter}` : '';
+    router.push(`/reviews/${projectId}/items/${itemId}${typeParam}`);
   };
 
   // Compute status summary
@@ -257,7 +271,12 @@ function ProjectDetailContent({
             userId={userId}
             nextSortOrder={items.length}
             onClose={() => setShowAddItem(false)}
-            onSuccess={fetchItems}
+            onSuccess={(newItemId) => {
+              fetchItems();
+              if (newItemId) {
+                router.push(`/reviews/${projectId}/items/${newItemId}`);
+              }
+            }}
           />
         )}
 
@@ -287,9 +306,17 @@ function ProjectDetailContent({
             {/* Status summary */}
             <StatusBar summary={statusSummary} />
 
+            {/* Type filter tabs */}
+            <TypeFilterTabs
+              items={items}
+              availableTypes={availableTypes}
+              typeFilter={typeFilter}
+              onFilterChange={setTypeFilter}
+            />
+
             {/* Items list */}
             <div className="space-y-3">
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <ReviewItemCard
                   key={item.id}
                   item={item}

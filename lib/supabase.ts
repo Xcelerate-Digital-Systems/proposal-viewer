@@ -265,6 +265,7 @@ export type ReviewItem = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  widget_installed_at: string | null;
 };
 
 export type ReviewCommentType = 'pin' | 'text_highlight' | 'general';

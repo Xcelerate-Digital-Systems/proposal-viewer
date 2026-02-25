@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Trash2, MessageSquareText, CheckCircle2, AlertCircle,
-  Clock, GripVertical, Pencil, MoreHorizontal, Eye,
+  Clock, GripVertical, Pencil, MoreHorizontal, Eye, Globe, Check,
 } from 'lucide-react';
 import { supabase, type ReviewItem, type ReviewItemStatus } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -149,7 +149,21 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: Review
           onClick={() => onOpenViewer(item.id)}
           className="w-[180px] shrink-0 bg-gray-50 border-r border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          {thumbnailUrl ? (
+          {item.type === 'webpage' ? (
+            <div className="p-6 text-center w-full">
+              <div className="w-10 h-10 rounded-lg bg-[#017C87]/10 flex items-center justify-center mx-auto">
+                <Globe size={18} className="text-[#017C87]" />
+              </div>
+              {item.widget_installed_at ? (
+                <div className="flex items-center gap-1 justify-center mt-2">
+                  <Check size={10} className="text-emerald-500" />
+                  <p className="text-[10px] text-emerald-600 font-medium">Connected</p>
+                </div>
+              ) : (
+                <p className="text-[10px] text-amber-600 mt-2">Awaiting install</p>
+              )}
+            </div>
+          ) : thumbnailUrl ? (
             <img
               src={thumbnailUrl}
               alt={item.title}
@@ -219,6 +233,8 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: Review
                 <span className="text-xs text-gray-400 capitalize">
                   {item.type === 'ad'
                     ? (item.ad_platform === 'instagram_feed' ? 'Instagram Ad' : 'Facebook Ad')
+                    : item.type === 'webpage'
+                    ? 'Web Page'
                     : item.type}
                 </span>
                 {item.version > 1 && (

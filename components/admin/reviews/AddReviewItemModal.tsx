@@ -13,13 +13,13 @@ interface AddReviewItemModalProps {
   userId: string | null;
   nextSortOrder: number;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newItemId?: string) => void;
 }
 
 const typeOptions: { value: ReviewItemType; label: string; icon: LucideIcon; description: string; enabled: boolean }[] = [
   { value: 'image', label: 'Image', icon: Image, description: 'Upload a design, screenshot, or photo', enabled: true },
   { value: 'ad', label: 'Ad Creative', icon: Megaphone, description: 'Facebook / Instagram ad mockup', enabled: true },
-  { value: 'webpage', label: 'Web Page', icon: Globe, description: 'Add a URL to review a live page', enabled: false },
+  { value: 'webpage', label: 'Web Page', icon: Globe, description: 'Add a URL and embed a feedback widget', enabled: true },
   { value: 'email', label: 'Email', icon: Mail, description: 'Paste email HTML', enabled: false },
 ];
 
@@ -53,6 +53,9 @@ export default function AddReviewItemModal({
   const [adCta, setAdCta] = useState('Learn More');
   const [adPlatform, setAdPlatform] = useState<AdPlatform>('facebook_feed');
   const [showPreview, setShowPreview] = useState(false);
+
+  // Webpage-specific fields
+  const [webpageUrl, setWebpageUrl] = useState('');
 
   const handleTypeSelect = (type: ReviewItemType, enabled: boolean) => {
     if (!enabled) {
@@ -96,6 +99,40 @@ export default function AddReviewItemModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Webpage type: no file needed
+    if (itemType === 'webpage') {
+      if (!title.trim() || !webpageUrl.trim()) return;
+      setUploading(true);
+      try {
+        const { data: newItem, error: insertError } = await supabase.from('review_items').insert({
+          review_project_id: reviewProjectId,
+          company_id: companyId,
+          title: title.trim(),
+          type: 'webpage',
+          url: webpageUrl.trim(),
+          sort_order: nextSortOrder,
+          status: 'in_review',
+          created_by: userId,
+        }).select('id').single();
+
+        if (insertError || !newItem) {
+          toast.error('Failed to create item');
+          setUploading(false);
+          return;
+        }
+
+        toast.success('Web page added');
+        onSuccess(newItem.id);
+        onClose();
+      } catch {
+        toast.error('Something went wrong');
+        setUploading(false);
+      }
+      return;
+    }
+
+    // Image / Ad types: require file
     if (!file || !title.trim()) return;
 
     setUploading(true);
@@ -169,9 +206,12 @@ export default function AddReviewItemModal({
     setAdCta('Learn More');
     setAdPlatform('facebook_feed');
     setShowPreview(false);
+    setWebpageUrl('');
   };
 
-  const isValid = !!file && !!title.trim();
+  const isValid = itemType === 'webpage'
+    ? !!title.trim() && !!webpageUrl.trim()
+    : !!file && !!title.trim();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -378,6 +418,55 @@ export default function AddReviewItemModal({
             )}
           </form>
         )}
+
+        {/* Step 2: Webpage details */}
+        {step === 'details' && itemType === 'webpage' && (
+          <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Title <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Staging Site Homepage"
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                URL <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="url" value={webpageUrl} onChange={(e) => setWebpageUrl(e.target.value)}
+                placeholder="https://staging.example.com"
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                The page where you&apos;ll embed the feedback widget
+              </p>
+            </div>
+
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#017C87]/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <Globe size={16} className="text-[#017C87]" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-700">How it works</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    After adding this item, you&apos;ll get a script tag to paste into your page&apos;s {`<head>`}. 
+                    This adds a feedback widget so your client can pin comments directly on the live page.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <FormActions onBack={resetToTypeSelection} onCancel={onClose} disabled={!isValid || uploading} uploading={uploading} />
+          </form>
+        )}
+
       </div>
     </div>
   );
