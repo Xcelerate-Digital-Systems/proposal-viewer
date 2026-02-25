@@ -5,9 +5,15 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FileText, Files, LayoutTemplate, Users, Palette, Bell,
+  LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
+  Palette, Bell, Users,
   LogOut, Menu, X, ChevronRight, Building2, ArrowLeft,
+  type LucideIcon,
 } from 'lucide-react';
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
 
 interface AdminSidebarProps {
   memberName?: string;
@@ -20,14 +26,78 @@ interface AdminSidebarProps {
   onSignOut: () => Promise<void>;
 }
 
-const NAV_ITEMS = [
-  { href: '/', label: 'Proposals', icon: FileText },
-  { href: '/documents', label: 'Documents', icon: Files },
-  { href: '/templates', label: 'Templates', icon: LayoutTemplate },
-  { href: '/team', label: 'Team', icon: Users },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Section definitions                                                */
+/* ------------------------------------------------------------------ */
+
+/** Sections that expand into their own sub-navigation */
+interface SectionDef {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  defaultHref: string;       // Where clicking the section goes
+  matchPaths: string[];      // Paths that belong to this section
+  items: NavItem[];          // Sub-nav items shown when inside the section
+}
+
+const SECTIONS: SectionDef[] = [
+  {
+    key: 'proposals',
+    label: 'Proposals',
+    icon: FileText,
+    defaultHref: '/',
+    matchPaths: ['/', '/documents', '/templates', '/template-preview'],
+    items: [
+      { href: '/', label: 'Proposals', icon: FileText },
+      { href: '/documents', label: 'Documents', icon: Files },
+      { href: '/templates', label: 'Templates', icon: LayoutTemplate },
+    ],
+  },
+  {
+    key: 'reviews',
+    label: 'Creative Review',
+    icon: MessageSquareText,
+    defaultHref: '/reviews',
+    matchPaths: ['/reviews'],
+    items: [
+      { href: '/reviews', label: 'Projects', icon: MessageSquareText },
+    ],
+  },
+];
+
+/** Top-level standalone items (no sub-navigation) */
+const STANDALONE_ITEMS: NavItem[] = [
   { href: '/company', label: 'Branding', icon: Palette },
   { href: '/settings', label: 'Notifications', icon: Bell },
+  { href: '/team', label: 'Team', icon: Users },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function getActiveSection(pathname: string): SectionDef | null {
+  for (const section of SECTIONS) {
+    for (const matchPath of section.matchPaths) {
+      if (matchPath === '/') {
+        if (pathname === '/') return section;
+      } else {
+        if (pathname.startsWith(matchPath)) return section;
+      }
+    }
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 
 export default function AdminSidebar({
   memberName,
@@ -41,6 +111,20 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const activeSection = getActiveSection(pathname);
+
+  // Only show Creative Review section to super admins
+  const visibleSections = SECTIONS.filter(
+    (s) => s.key !== 'reviews' || isSuperAdmin
+  );
+
+  // Dashboard, accounts, and standalone pages show top-level nav.
+  // Also fall back to top-level if a non-super-admin somehow lands on /reviews.
+  const isTopLevel = !activeSection
+    || pathname === '/dashboard'
+    || pathname === '/accounts'
+    || (!isSuperAdmin && activeSection.key === 'reviews');
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -61,6 +145,106 @@ export default function AdminSidebar({
     window.location.href = '/accounts';
   };
 
+  /* ---- Render a single nav link ---- */
+  const renderNavLink = (item: NavItem) => {
+    const Icon = item.icon;
+    const active = isActive(item.href);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => setMobileOpen(false)}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
+          active
+            ? 'bg-white/10 text-white'
+            : 'text-white/60 hover:text-white hover:bg-[#013036]'
+        }`}
+      >
+        <Icon
+          size={18}
+          className={active ? 'text-[#8AD9D1]' : 'text-white/40 group-hover:text-white/60'}
+        />
+        <span className="flex-1">{item.label}</span>
+        {active && (
+          <ChevronRight size={14} className="text-[#8AD9D1]/50" />
+        )}
+      </Link>
+    );
+  };
+
+  /* ---- Render a section entry on the top-level menu ---- */
+  const renderSectionEntry = (section: SectionDef) => {
+    const Icon = section.icon;
+    return (
+      <Link
+        key={section.key}
+        href={section.defaultHref}
+        onClick={() => setMobileOpen(false)}
+        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group text-white/60 hover:text-white hover:bg-[#013036]"
+      >
+        <Icon
+          size={18}
+          className="text-white/40 group-hover:text-white/60"
+        />
+        <span className="flex-1">{section.label}</span>
+        <ChevronRight
+          size={14}
+          className="text-white/20 group-hover:text-white/40"
+        />
+      </Link>
+    );
+  };
+
+  /* ---- Top-level navigation ---- */
+  const renderTopLevelNav = () => (
+    <>
+      {/* Dashboard */}
+      <div className="space-y-0.5">
+        {renderNavLink({ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard })}
+      </div>
+
+      {/* Sections */}
+      <div className="my-2 mx-3 border-t border-[#01434A]" />
+      <div className="space-y-0.5">
+        {visibleSections.map(renderSectionEntry)}
+      </div>
+
+      {/* Standalone items */}
+      <div className="my-2 mx-3 border-t border-[#01434A]" />
+      <div className="space-y-0.5">
+        {STANDALONE_ITEMS.map((item) => renderNavLink(item))}
+      </div>
+    </>
+  );
+
+  /* ---- Section sub-navigation ---- */
+  const renderSectionNav = (section: SectionDef) => (
+    <>
+      {/* Back button */}
+      <Link
+        href="/dashboard"
+        onClick={() => setMobileOpen(false)}
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors mb-1"
+      >
+        <ArrowLeft size={14} />
+        <span>Back</span>
+      </Link>
+
+      {/* Section header */}
+      <div className="px-3 pt-1 pb-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+          {section.label}
+        </span>
+      </div>
+
+      {/* Section items */}
+      <div className="space-y-0.5">
+        {section.items.map((item) => renderNavLink(item))}
+      </div>
+    </>
+  );
+
+  /* ---- Sidebar content ---- */
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Company override banner */}
@@ -88,59 +272,37 @@ export default function AdminSidebar({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-2 py-3 overflow-y-auto">
         {/* Super admin: Accounts link */}
         {isSuperAdmin && !companyOverride && (
-          <Link
-            href="/accounts"
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
-              pathname === '/accounts'
-                ? 'bg-white/10 text-white'
-                : 'text-white/60 hover:text-white hover:bg-[#013036]'
-            }`}
-          >
-            <Building2
-              size={18}
-              className={pathname === '/accounts' ? 'text-[#8AD9D1]' : 'text-white/40 group-hover:text-white/60'}
-            />
-            <span className="flex-1">Accounts</span>
-            {pathname === '/accounts' && (
-              <ChevronRight size={14} className="text-[#8AD9D1]/50" />
-            )}
-          </Link>
-        )}
-
-        {/* Divider between Accounts and regular nav */}
-        {isSuperAdmin && !companyOverride && (
-          <div className="!my-2 border-t border-[#01434A]" />
-        )}
-
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.href);
-          return (
+          <>
             <Link
-              key={item.href}
-              href={item.href}
+              href="/accounts"
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
-                active
+                pathname === '/accounts'
                   ? 'bg-white/10 text-white'
                   : 'text-white/60 hover:text-white hover:bg-[#013036]'
               }`}
             >
-              <Icon
+              <Building2
                 size={18}
-                className={active ? 'text-[#8AD9D1]' : 'text-white/40 group-hover:text-white/60'}
+                className={pathname === '/accounts' ? 'text-[#8AD9D1]' : 'text-white/40 group-hover:text-white/60'}
               />
-              <span className="flex-1">{item.label}</span>
-              {active && (
+              <span className="flex-1">Accounts</span>
+              {pathname === '/accounts' && (
                 <ChevronRight size={14} className="text-[#8AD9D1]/50" />
               )}
             </Link>
-          );
-        })}
+            <div className="my-2 mx-3 border-t border-[#01434A]" />
+          </>
+        )}
+
+        {/* Contextual navigation */}
+        {isTopLevel
+          ? renderTopLevelNav()
+          : activeSection && renderSectionNav(activeSection)
+        }
       </nav>
 
       {/* User section */}

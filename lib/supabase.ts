@@ -207,6 +207,8 @@ export type TeamMember = {
   notify_proposal_accepted: boolean;
   notify_comment_added: boolean;
   notify_comment_resolved: boolean;
+  notify_review_comment_added: boolean;
+  notify_review_item_status: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -214,10 +216,80 @@ export type TeamMember = {
 export type WebhookEndpoint = {
   id: string;
   company_id: string;
-  event_type: 'proposal_viewed' | 'proposal_accepted' | 'comment_added' | 'comment_resolved';
+  event_type: 'proposal_viewed' | 'proposal_accepted' | 'comment_added' | 'comment_resolved'
+    | 'review_comment_added' | 'review_comment_resolved' | 'review_item_approved' | 'review_item_revision_needed';
   url: string;
   secret: string | null;
   enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+// ─── Creative Review types ───────────────────────────────────────────────────
+
+export type ReviewProject = {
+  id: string;
+  company_id: string;
+  title: string;
+  description: string | null;
+  client_name: string | null;
+  client_email: string | null;
+  status: 'active' | 'archived' | 'completed';
+  share_token: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReviewItemType = 'webpage' | 'email' | 'ad' | 'image' | 'video';
+export type ReviewItemStatus = 'draft' | 'in_review' | 'approved' | 'revision_needed';
+
+export type ReviewItem = {
+  id: string;
+  review_project_id: string;
+  company_id: string;
+  title: string;
+  type: ReviewItemType;
+  sort_order: number;
+  url: string | null;
+  screenshot_url: string | null;
+  html_content: string | null;
+  ad_headline: string | null;
+  ad_copy: string | null;
+  ad_cta: string | null;
+  ad_creative_url: string | null;
+  ad_platform: string | null;
+  image_url: string | null;
+  status: ReviewItemStatus;
+  version: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReviewCommentType = 'pin' | 'text_highlight' | 'general';
+
+export type ReviewComment = {
+  id: string;
+  review_item_id: string;
+  company_id: string;
+  parent_comment_id: string | null;
+  thread_number: number | null;
+  author_name: string;
+  author_email: string | null;
+  author_user_id: string | null;
+  author_type: 'team' | 'client';
+  content: string;
+  comment_type: ReviewCommentType;
+  pin_x: number | null;
+  pin_y: number | null;
+  highlight_start: number | null;
+  highlight_end: number | null;
+  highlight_text: string | null;
+  highlight_element_path: string | null;
+  resolved: boolean;
+  resolved_by: string | null;
+  resolved_at: string | null;
   created_at: string;
   updated_at: string;
 };

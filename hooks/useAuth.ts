@@ -102,7 +102,8 @@ export function useAuth() {
   };
 
   const updatePreferences = async (prefs: Partial<Pick<TeamMember,
-    'notify_proposal_viewed' | 'notify_proposal_accepted' | 'notify_comment_added' | 'notify_comment_resolved' | 'name'
+    'notify_proposal_viewed' | 'notify_proposal_accepted' | 'notify_comment_added' | 'notify_comment_resolved'
+    | 'notify_review_comment_added' | 'notify_review_item_status' | 'name'
   >>) => {
     if (!teamMember) return;
     const { error } = await supabase

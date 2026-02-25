@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
  * Middleware to handle custom domain routing.
  *
  * When a request comes from a custom domain (e.g. proposals.clientco.com),
- * only allow access to the proposal viewer routes (/view/...) and the
+ * only allow access to the proposal viewer routes (/view/...), document
+ * viewer routes (/doc/...), creative review routes (/review/...), and the
  * supporting API/asset routes they need. Everything else (admin dashboard,
  * login, settings, etc.) gets redirected to the main app domain.
  */
@@ -14,9 +15,13 @@ import { NextRequest, NextResponse } from 'next/server';
 const ALLOWED_PREFIXES = [
   '/view/',            // Proposal viewer pages
   '/doc/',             // Document viewer pages
+  '/review/',          // Creative Review viewer pages
   '/api/company/branding', // Viewer fetches branding
   '/api/notify',       // Viewer fires notification events
   '/api/proposals/',   // Viewer needs proposal data (accept, comments)
+  '/api/review/',      // Review viewer API routes (load review, post comments)
+  '/api/review-comments/', // Review comment actions (resolve/unresolve)
+  '/api/review-notify',    // Review notification endpoint (server-to-server)
   '/_next/',           // Next.js assets (JS, CSS, images)
   '/favicon',          // Favicon files
 ];

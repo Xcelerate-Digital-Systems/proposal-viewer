@@ -5,12 +5,14 @@ import { useState, useEffect } from 'react';
 import {
   Bell, Eye, CheckCircle2, MessageSquare, CheckCheck,
   Loader2, Settings, Webhook, Trash2, Copy, Check,
-  EyeOff, RefreshCw,
+  EyeOff, RefreshCw, Palette, AlertCircle,
   type LucideIcon,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { supabase, TeamMember, WebhookEndpoint } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+
+/* ─── Proposal notification options ───────────────────────────────────────── */
 
 const NOTIFICATION_OPTIONS = [
   {
@@ -39,6 +41,25 @@ const NOTIFICATION_OPTIONS = [
   },
 ];
 
+/* ─── Review notification options (super admin only) ──────────────────────── */
+
+const REVIEW_NOTIFICATION_OPTIONS = [
+  {
+    key: 'notify_review_comment_added' as const,
+    label: 'Review Comment Added',
+    description: 'When a client or team member comments on a review item',
+    icon: MessageSquare,
+  },
+  {
+    key: 'notify_review_item_status' as const,
+    label: 'Review Item Status Changed',
+    description: 'When a review item is approved or needs revision',
+    icon: AlertCircle,
+  },
+];
+
+/* ─── Proposal webhook events ─────────────────────────────────────────────── */
+
 const WEBHOOK_EVENTS = [
   {
     key: 'proposal_viewed' as const,
@@ -66,6 +87,35 @@ const WEBHOOK_EVENTS = [
   },
 ];
 
+/* ─── Review webhook events (super admin only) ────────────────────────────── */
+
+const REVIEW_WEBHOOK_EVENTS = [
+  {
+    key: 'review_comment_added' as const,
+    label: 'Review Comment Added',
+    description: 'Fires when someone comments on a review item',
+    icon: MessageSquare,
+  },
+  {
+    key: 'review_comment_resolved' as const,
+    label: 'Review Comment Resolved',
+    description: 'Fires when a review comment is resolved',
+    icon: CheckCheck,
+  },
+  {
+    key: 'review_item_approved' as const,
+    label: 'Review Item Approved',
+    description: 'Fires when a review item is marked as approved',
+    icon: CheckCircle2,
+  },
+  {
+    key: 'review_item_revision_needed' as const,
+    label: 'Review Revision Needed',
+    description: 'Fires when a review item is marked as needing revision',
+    icon: AlertCircle,
+  },
+];
+
 export default function SettingsPage() {
   return (
     <AdminLayout>
@@ -74,15 +124,23 @@ export default function SettingsPage() {
   );
 }
 
-function SettingsContent({ auth }: { auth: { teamMember: TeamMember | null; companyId: string | null; signOut: () => Promise<void>; updatePreferences: (prefs: Partial<TeamMember>) => Promise<{ error: unknown } | undefined> } }) {
-  const { teamMember, companyId, updatePreferences } = auth;
+function SettingsContent({ auth }: {
+  auth: {
+    teamMember: TeamMember | null;
+    companyId: string | null;
+    isSuperAdmin: boolean;
+    signOut: () => Promise<void>;
+    updatePreferences: (prefs: Partial<TeamMember>) => Promise<{ error: unknown } | undefined>;
+  };
+}) {
+  const { teamMember, companyId, isSuperAdmin, updatePreferences } = auth;
   const [saving, setSaving] = useState<string | null>(null);
   const isAdminOrOwner = teamMember?.role === 'owner' || teamMember?.role === 'admin';
 
-  const handleToggle = async (key: (typeof NOTIFICATION_OPTIONS)[number]['key']) => {
+  const handleToggle = async (key: string) => {
     if (!teamMember) return;
     setSaving(key);
-    await updatePreferences({ [key]: !teamMember[key] });
+    await updatePreferences({ [key]: !(teamMember as Record<string, unknown>)[key] } as Partial<TeamMember>);
     setSaving(null);
   };
 
@@ -101,61 +159,115 @@ function SettingsContent({ auth }: { auth: { teamMember: TeamMember | null; comp
         </div>
       </div>
 
-      {/* Notification toggles */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-          <Bell size={15} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-500">Email Notifications</span>
+      {/* Proposal notification toggles */}
+      <NotificationSection
+        title="Proposal Notifications"
+        subtitle="Email alerts for proposal events"
+        options={NOTIFICATION_OPTIONS}
+        teamMember={teamMember}
+        saving={saving}
+        onToggle={handleToggle}
+      />
+
+      {/* Review notification toggles — super admin only */}
+      {isSuperAdmin && (
+        <div className="mt-6">
+          <NotificationSection
+            title="Creative Review Notifications"
+            subtitle="Email alerts for review feedback and status changes"
+            options={REVIEW_NOTIFICATION_OPTIONS}
+            teamMember={teamMember}
+            saving={saving}
+            onToggle={handleToggle}
+            accentLabel="Creative Review"
+          />
         </div>
-
-        <div className="divide-y divide-gray-100">
-          {NOTIFICATION_OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const enabled = teamMember?.[opt.key] ?? true;
-
-            return (
-              <div key={opt.key} className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <Icon size={18} className={enabled ? 'text-[#017C87]' : 'text-gray-300'} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{opt.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{opt.description}</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleToggle(opt.key)}
-                  disabled={saving === opt.key}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${
-                    enabled ? 'bg-[#017C87]' : 'bg-gray-200'
-                  }`}
-                >
-                  {saving === opt.key ? (
-                    <Loader2 size={14} className="animate-spin text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                  ) : (
-                    <div
-                      className={`w-5 h-5 bg-white rounded-full transition-transform absolute top-0.5 shadow-sm ${
-                        enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
-                      }`}
-                    />
-                  )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* Name update */}
       <NameEditor name={teamMember?.name || ''} onSave={(name) => updatePreferences({ name })} />
 
       {/* Webhooks — only for owners and admins */}
       {isAdminOrOwner && companyId && (
-        <WebhookManager companyId={companyId} />
+        <WebhookManager companyId={companyId} isSuperAdmin={isSuperAdmin} />
       )}
     </div>
   );
 }
+
+/* ─── Notification section (reusable) ─────────────────────────────────────── */
+
+function NotificationSection({
+  title,
+  subtitle,
+  options,
+  teamMember,
+  saving,
+  onToggle,
+  accentLabel,
+}: {
+  title: string;
+  subtitle: string;
+  options: { key: string; label: string; description: string; icon: LucideIcon }[];
+  teamMember: TeamMember | null;
+  saving: string | null;
+  onToggle: (key: string) => void;
+  accentLabel?: string;
+}) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+        <Bell size={15} className="text-gray-400" />
+        <span className="text-sm font-medium text-gray-500">{title}</span>
+        {accentLabel && (
+          <span className="text-[9px] font-semibold uppercase tracking-wider bg-[#017C87]/10 text-[#017C87] px-1.5 py-0.5 rounded">
+            {accentLabel}
+          </span>
+        )}
+      </div>
+      <p className="px-5 pt-2 pb-1 text-xs text-gray-400">{subtitle}</p>
+
+      <div className="divide-y divide-gray-100">
+        {options.map((opt) => {
+          const Icon = opt.icon;
+          const enabled = (teamMember as Record<string, unknown> | null)?.[opt.key] ?? true;
+
+          return (
+            <div key={opt.key} className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-3">
+                <Icon size={18} className={enabled ? 'text-[#017C87]' : 'text-gray-300'} />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{opt.label}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{opt.description}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onToggle(opt.key)}
+                disabled={saving === opt.key}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  enabled ? 'bg-[#017C87]' : 'bg-gray-200'
+                }`}
+              >
+                {saving === opt.key ? (
+                  <Loader2 size={14} className="animate-spin text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                ) : (
+                  <div
+                    className={`w-5 h-5 bg-white rounded-full transition-transform absolute top-0.5 shadow-sm ${
+                      enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                    }`}
+                  />
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Name editor ─────────────────────────────────────────────────────────── */
 
 function NameEditor({ name: initialName, onSave }: { name: string; onSave: (name: string) => Promise<unknown> }) {
   const [name, setName] = useState(initialName);
@@ -193,12 +305,16 @@ function NameEditor({ name: initialName, onSave }: { name: string; onSave: (name
   );
 }
 
-// --- Webhook Manager ---
+/* ─── Webhook Manager ─────────────────────────────────────────────────────── */
 
-function WebhookManager({ companyId }: { companyId: string }) {
+function WebhookManager({ companyId, isSuperAdmin }: { companyId: string; isSuperAdmin: boolean }) {
   const toast = useToast();
   const [endpoints, setEndpoints] = useState<Record<string, WebhookEndpoint | null>>({});
   const [loading, setLoading] = useState(true);
+
+  const allEvents = isSuperAdmin
+    ? [...WEBHOOK_EVENTS, ...REVIEW_WEBHOOK_EVENTS]
+    : WEBHOOK_EVENTS;
 
   const fetchEndpoints = async () => {
     const { data } = await supabase
@@ -206,9 +322,8 @@ function WebhookManager({ companyId }: { companyId: string }) {
       .select('*')
       .eq('company_id', companyId);
 
-    // Build a map keyed by event_type
     const map: Record<string, WebhookEndpoint | null> = {};
-    for (const evt of WEBHOOK_EVENTS) {
+    for (const evt of allEvents) {
       map[evt.key] = (data || []).find((d: WebhookEndpoint) => d.event_type === evt.key) || null;
     }
     setEndpoints(map);
@@ -225,7 +340,7 @@ function WebhookManager({ companyId }: { companyId: string }) {
         </div>
         <div>
           <h2 className="text-sm font-semibold text-gray-900">Webhooks</h2>
-          <p className="text-xs text-gray-400">Send HTTP POST requests when proposal events occur</p>
+          <p className="text-xs text-gray-400">Send HTTP POST requests when events occur</p>
         </div>
       </div>
 
@@ -235,6 +350,12 @@ function WebhookManager({ companyId }: { companyId: string }) {
         </div>
       ) : (
         <div className="space-y-3">
+          {/* Proposal webhooks */}
+          <div className="mb-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1">
+              Proposal Events
+            </span>
+          </div>
           {WEBHOOK_EVENTS.map((evt) => (
             <WebhookEventCard
               key={evt.key}
@@ -247,6 +368,32 @@ function WebhookManager({ companyId }: { companyId: string }) {
               onRefresh={fetchEndpoints}
             />
           ))}
+
+          {/* Review webhooks — super admin only */}
+          {isSuperAdmin && (
+            <>
+              <div className="mt-5 mb-1 flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1">
+                  Creative Review Events
+                </span>
+                <span className="text-[9px] font-semibold uppercase tracking-wider bg-[#017C87]/10 text-[#017C87] px-1.5 py-0.5 rounded">
+                  Creative Review
+                </span>
+              </div>
+              {REVIEW_WEBHOOK_EVENTS.map((evt) => (
+                <WebhookEventCard
+                  key={evt.key}
+                  eventKey={evt.key}
+                  label={evt.label}
+                  description={evt.description}
+                  icon={evt.icon}
+                  endpoint={endpoints[evt.key] || null}
+                  companyId={companyId}
+                  onRefresh={fetchEndpoints}
+                />
+              ))}
+            </>
+          )}
         </div>
       )}
 
@@ -257,7 +404,7 @@ function WebhookManager({ companyId }: { companyId: string }) {
   );
 }
 
-// --- Individual Webhook Event Card ---
+/* ─── Individual Webhook Event Card ───────────────────────────────────────── */
 
 function WebhookEventCard({
   eventKey,
@@ -284,7 +431,6 @@ function WebhookEventCard({
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Track whether anything changed from saved state
   const hasEndpoint = !!endpoint;
   const urlChanged = url.trim() !== (endpoint?.url || '');
   const secretChanged = secret.trim() !== (endpoint?.secret || '');
@@ -306,7 +452,6 @@ function WebhookEventCard({
 
   const handleSave = async () => {
     if (!url.trim()) {
-      // If URL is empty and endpoint exists, delete it
       if (hasEndpoint) {
         await handleRemove();
       }
@@ -323,7 +468,6 @@ function WebhookEventCard({
     setSaving(true);
 
     if (hasEndpoint) {
-      // Update existing
       const { error } = await supabase
         .from('webhook_endpoints')
         .update({
@@ -340,7 +484,6 @@ function WebhookEventCard({
         toast.success(`${label} webhook saved`);
       }
     } else {
-      // Insert new
       const { error } = await supabase
         .from('webhook_endpoints')
         .insert({
@@ -388,7 +531,6 @@ function WebhookEventCard({
 
   return (
     <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm transition-opacity ${hasEndpoint && !enabled ? 'opacity-60' : ''}`}>
-      {/* Header */}
       <div className="px-5 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Icon size={16} className={hasEndpoint && enabled ? 'text-[#017C87]' : 'text-gray-300'} />
@@ -427,7 +569,6 @@ function WebhookEventCard({
         </div>
       </div>
 
-      {/* URL + Secret fields */}
       <div className="px-5 pb-4 space-y-2.5">
         <div>
           <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Endpoint URL</label>
@@ -435,7 +576,7 @@ function WebhookEventCard({
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://your-server.com/webhooks/proposals"
+            placeholder="https://your-server.com/webhooks"
             className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
           />
         </div>
@@ -487,7 +628,6 @@ function WebhookEventCard({
           </div>
         </div>
 
-        {/* Save button — only when there are changes and a URL */}
         {hasChanges && hasUrl && (
           <div className="flex justify-end pt-1">
             <button

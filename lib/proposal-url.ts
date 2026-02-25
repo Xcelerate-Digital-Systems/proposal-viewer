@@ -40,3 +40,23 @@ export function buildDocumentUrl(
   const origin = fallbackOrigin.replace(/\/$/, '');
   return `${origin}/doc/${shareToken}`;
 }
+
+/**
+ * Build the public viewer URL for a creative review project.
+ * Uses the company's custom domain if verified, otherwise falls back to the app URL.
+ *
+ * @param shareToken - The review project's share token
+ * @param customDomain - The company's verified custom domain (e.g. "proposals.clientco.com"), or null
+ * @param fallbackOrigin - Fallback origin (e.g. window.location.origin or NEXT_PUBLIC_APP_URL)
+ */
+export function buildReviewUrl(
+  shareToken: string,
+  customDomain: string | null | undefined,
+  fallbackOrigin: string
+): string {
+  if (customDomain) {
+    return `https://${customDomain}/review/${shareToken}`;
+  }
+  const origin = fallbackOrigin.replace(/\/$/, '');
+  return `${origin}/review/${shareToken}`;
+}
