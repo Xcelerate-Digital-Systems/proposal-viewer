@@ -181,21 +181,16 @@ export default function Sidebar({
                 style={{ padding: '10px 20px' }}
               >
                 <span
-                  className={`truncate text-sm ${
-                    isParentActive
-                      ? 'font-semibold'
-                      : childActive && !isExpanded
-                      ? 'font-medium'
-                      : ''
-                  }`}
+                  className="truncate text-sm"
                   style={{
                     color: isParentActive
                       ? sidebarText
+                      : `${sidebarText}99`,
+                    fontWeight: isParentActive
+                      ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
                       : childActive && !isExpanded
-                      ? `${sidebarText}cc`
-                      : hasChildren
-                      ? `${sidebarText}aa`
-                      : `${sidebarText}88`,
+                      ? Math.min(Number(branding.font_sidebar_weight || 400) + 100, 900)
+                      : Number(branding.font_sidebar_weight || 400),
                   }}
                 >
                   {item.name}
@@ -234,15 +229,14 @@ export default function Sidebar({
                     <button
                       key={child.pageNum}
                       onClick={() => handleChildClick(child.pageNum)}
-                      className={`w-full text-left pl-4 pr-3 py-2 text-sm transition-colors truncate ${
-                        currentPage === child.pageNum
-                          ? 'font-semibold'
-                          : ''
-                      }`}
+                      className="w-full text-left pl-4 pr-3 py-2 text-sm transition-colors truncate"
                       style={{
                         color: currentPage === child.pageNum
                           ? sidebarText
-                          : `${sidebarText}66`,
+                          : `${sidebarText}99`,
+                        fontWeight: currentPage === child.pageNum
+                          ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
+                          : Number(branding.font_sidebar_weight || 400),
                       }}
                     >
                       {child.name}
