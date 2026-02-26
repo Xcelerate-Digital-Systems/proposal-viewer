@@ -2,10 +2,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Trash2, MessageSquareText, CheckCircle2, AlertCircle, Clock, GripVertical, Pencil, MoreHorizontal, Eye, Globe, Check, Mail, Smartphone } from 'lucide-react';
+import {
+  Trash2, MessageSquareText, CheckCircle2, AlertCircle, Clock,
+  Pencil, MoreHorizontal, Eye, Globe, Check, Mail, Smartphone,
+} from 'lucide-react';
 import { supabase, type ReviewItem, type ReviewItemStatus } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
 
 interface ReviewItemCardProps {
   item: ReviewItem;
@@ -13,38 +17,39 @@ interface ReviewItemCardProps {
   onOpenViewer: (itemId: string) => void;
 }
 
-const statusConfig: Record<ReviewItemStatus, { label: string; bg: string; text: string; icon: React.ReactNode }> = {
-  draft: {
+const itemStatusOptions: StatusOption<ReviewItemStatus>[] = [
+  {
+    value: 'draft',
     label: 'Draft',
     bg: 'bg-gray-100',
-    text: 'text-gray-500',
-    icon: <Clock size={12} />,
+    text: 'text-gray-600',
+    border: 'border-gray-200',
+    icon: <Clock size={13} />,
   },
-  in_review: {
+  {
+    value: 'in_review',
     label: 'In Review',
     bg: 'bg-blue-50',
     text: 'text-blue-700',
-    icon: <Eye size={12} />,
+    border: 'border-blue-200',
+    icon: <Eye size={13} />,
   },
-  approved: {
+  {
+    value: 'approved',
     label: 'Approved',
     bg: 'bg-emerald-50',
     text: 'text-emerald-700',
-    icon: <CheckCircle2 size={12} />,
+    border: 'border-emerald-200',
+    icon: <CheckCircle2 size={13} />,
   },
-  revision_needed: {
+  {
+    value: 'revision_needed',
     label: 'Revision Needed',
     bg: 'bg-amber-50',
     text: 'text-amber-700',
-    icon: <AlertCircle size={12} />,
+    border: 'border-amber-200',
+    icon: <AlertCircle size={13} />,
   },
-};
-
-const statusOptions: { value: ReviewItemStatus; label: string }[] = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'in_review', label: 'In Review' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'revision_needed', label: 'Revision Needed' },
 ];
 
 export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: ReviewItemCardProps) {
@@ -83,10 +88,10 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: Review
     if (error) {
       toast.error('Failed to update status');
     } else {
-      toast.success(`Status changed to ${statusConfig[newStatus].label}`);
+      const label = itemStatusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
+      toast.success(`Status changed to ${label}`);
       onRefresh();
     }
-    setShowMenu(false);
   };
 
   const handleSaveTitle = async () => {
@@ -133,211 +138,251 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: Review
     onRefresh();
   };
 
-  const status = statusConfig[item.status];
-
-  // Thumbnail URL
   const thumbnailUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:border-gray-300 transition-colors">
-      <div className="flex">
-        {/* Thumbnail */}
-        <button
-          onClick={() => onOpenViewer(item.id)}
-          className="w-[180px] shrink-0 bg-gray-50 border-r border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-        >
-          {item.type === 'webpage' ? (
-            <div className="p-6 text-center w-full">
-              <div className="w-10 h-10 rounded-lg bg-[#017C87]/10 flex items-center justify-center mx-auto">
-                <Globe size={18} className="text-[#017C87]" />
-              </div>
-              {item.widget_installed_at ? (
-                <div className="flex items-center gap-1 justify-center mt-2">
-                  <Check size={10} className="text-emerald-500" />
-                  <p className="text-[10px] text-emerald-600 font-medium">Connected</p>
-                </div>
-              ) : (
-                <p className="text-[10px] text-amber-600 mt-2">Awaiting install</p>
-              )}
-            </div>
-          ) : item.type === 'email' ? (
-            <div className="p-4 text-center w-full">
-              <div className="w-10 h-10 rounded-lg bg-[#017C87]/10 flex items-center justify-center mx-auto">
-                <Mail size={18} className="text-[#017C87]" />
-              </div>
-              <p className="text-[10px] text-gray-500 font-medium mt-2 truncate px-2">
-                {item.email_subject || 'Email'}
-              </p>
-            </div>
-          ) : item.type === 'sms' ? (
-            <div className="p-4 text-center w-full">
-              <div className="w-10 h-10 rounded-lg bg-[#017C87]/10 flex items-center justify-center mx-auto">
-                <Smartphone size={18} className="text-[#017C87]" />
-              </div>
-              <p className="text-[10px] text-gray-500 font-medium mt-2 truncate px-2">
-                {item.sms_body ? `${item.sms_body.slice(0, 30)}…` : 'SMS'}
-              </p>
-            </div>
-          ) : thumbnailUrl ? (
-            <img
-              src={thumbnailUrl}
-              alt={item.title}
-              className="w-full h-full object-cover"
-              style={{ minHeight: 120, maxHeight: 140 }}
-            />
-          ) : (
-            <div className="p-6 text-center">
-              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mx-auto">
-                <Eye size={18} className="text-gray-300" />
-              </div>
-              <p className="text-xs text-gray-400 mt-2">No preview</p>
-            </div>
-          )}
-        </button>
-
-        {/* Content */}
-        <div className="flex-1 p-4 min-w-0">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex-1 min-w-0">
-              {editing ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveTitle();
-                      if (e.key === 'Escape') { setEditing(false); setEditTitle(item.title); }
-                    }}
-                    className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSaveTitle}
-                    disabled={!editTitle.trim() || saving}
-                    className="px-3 py-1.5 bg-[#017C87] text-white text-xs font-medium rounded-lg hover:bg-[#01434A] disabled:opacity-50"
-                  >
-                    {saving ? '…' : 'Save'}
-                  </button>
-                  <button
-                    onClick={() => { setEditing(false); setEditTitle(item.title); }}
-                    className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h4
-                    className="text-sm font-semibold text-gray-900 truncate cursor-pointer hover:text-[#017C87] transition-colors"
-                    onClick={() => onOpenViewer(item.id)}
-                  >
-                    {item.title}
-                  </h4>
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="p-1 rounded text-gray-300 hover:text-gray-500 transition-colors"
-                  >
-                    <Pencil size={12} />
-                  </button>
-                </div>
-              )}
-
-              {/* Type + version */}
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-gray-400 capitalize">
-                  {item.type === 'ad'
-                    ? (item.ad_platform === 'instagram_feed' ? 'Instagram Ad' : 'Facebook Ad')
-                    : item.type === 'webpage'
-                    ? 'Web Page'
-                    : item.type}
-                </span>
-                {item.version > 1 && (
-                  <>
-                    <span className="text-gray-200">·</span>
-                    <span className="text-xs text-gray-400">v{item.version}</span>
-                  </>
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors flex flex-col">
+      {/* Thumbnail — click to open viewer */}
+      <button
+        onClick={() => onOpenViewer(item.id)}
+        className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-b border-gray-100 relative rounded-t-xl"
+      >
+        {item.type === 'webpage' ? (
+          // Webpage: screenshot if available, otherwise scaled iframe, fallback to icon
+          item.screenshot_url ? (
+            <div className="w-full h-full relative">
+              <img
+                src={item.screenshot_url}
+                alt={item.title}
+                className="w-full h-full object-cover object-top"
+              />
+              {/* Widget status pill */}
+              <div className="absolute bottom-2 left-2 z-20">
+                {item.widget_installed_at ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
+                    <Check size={9} /> Connected
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
+                    Awaiting install
+                  </span>
                 )}
               </div>
             </div>
-
-            {/* Status badge */}
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text} shrink-0`}>
-              {status.icon}
-              {status.label}
-            </span>
-          </div>
-
-          {/* Bottom row: stats + actions */}
-          <div className="flex items-center justify-between">
-            {/* Comment stats */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                <MessageSquareText size={13} />
-                <span>
-                  {commentCount} comment{commentCount !== 1 ? 's' : ''}
-                  {unresolvedCount > 0 && (
-                    <span className="text-amber-600 ml-1">({unresolvedCount} open)</span>
-                  )}
-                </span>
+          ) : item.url ? (
+            <div className="w-full h-full relative">
+              <iframe
+                src={item.url}
+                title={item.title}
+                className="absolute top-0 left-0 border-0 pointer-events-none"
+                style={{
+                  width: '500%',
+                  height: '500%',
+                  transform: 'scale(0.2)',
+                  transformOrigin: 'top left',
+                }}
+                sandbox="allow-same-origin"
+                loading="lazy"
+                tabIndex={-1}
+              />
+              {/* Overlay to ensure click passes through to button */}
+              <div className="absolute inset-0 z-10" />
+              {/* Widget status pill */}
+              <div className="absolute bottom-2 left-2 z-20">
+                {item.widget_installed_at ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
+                    <Check size={9} /> Connected
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
+                    Awaiting install
+                  </span>
+                )}
               </div>
             </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-1 relative">
-              <button
-                onClick={() => onOpenViewer(item.id)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
-              >
-                <Eye size={13} />
-                View & Comment
-              </button>
-
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <MoreHorizontal size={14} />
-              </button>
-
-              {showMenu && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[180px]">
-                    {/* Status options */}
-                    <div className="px-3 py-1.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                        Set Status
-                      </span>
-                    </div>
-                    {statusOptions.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => handleStatusChange(opt.value)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 ${
-                          item.status === opt.value ? 'text-[#017C87] font-medium' : 'text-gray-700'
-                        }`}
-                      >
-                        {statusConfig[opt.value].icon}
-                        {opt.label}
-                        {item.status === opt.value && (
-                          <CheckCircle2 size={12} className="ml-auto text-[#017C87]" />
-                        )}
-                      </button>
-                    ))}
-
-                    <div className="border-t border-gray-100 my-1" />
-                    <button
-                      onClick={() => { setShowMenu(false); handleDelete(); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 size={14} />
-                      Delete Item
-                    </button>
-                  </div>
-                </>
+          ) : (
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-xl bg-[#017C87]/10 flex items-center justify-center mx-auto">
+                <Globe size={22} className="text-[#017C87]" />
+              </div>
+              {item.widget_installed_at ? (
+                <div className="flex items-center gap-1 justify-center mt-2.5">
+                  <Check size={11} className="text-emerald-500" />
+                  <p className="text-xs text-emerald-600 font-medium">Connected</p>
+                </div>
+              ) : (
+                <p className="text-xs text-amber-600 mt-2.5">Awaiting install</p>
               )}
             </div>
+          )
+        ) : item.type === 'email' ? (
+          // Email: mini preview of subject + body
+          <div className="w-full h-full flex flex-col text-left overflow-hidden bg-white">
+            {/* Mini email header bar */}
+            <div className="px-3 pt-3 pb-2 border-b border-gray-100 shrink-0">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-5 h-5 rounded-full bg-[#017C87]/15 flex items-center justify-center shrink-0">
+                  <Mail size={10} className="text-[#017C87]" />
+                </div>
+                <span className="text-[10px] text-gray-400 truncate">Your Brand</span>
+              </div>
+              <p className="text-xs font-semibold text-gray-800 truncate leading-snug">
+                {item.email_subject || 'No subject'}
+              </p>
+              {item.email_preheader && (
+                <p className="text-[10px] text-gray-400 truncate mt-0.5">
+                  {item.email_preheader}
+                </p>
+              )}
+            </div>
+            {/* Body preview */}
+            <div className="flex-1 px-3 py-2 overflow-hidden">
+              <p className="text-[10px] leading-relaxed text-gray-500 line-clamp-6 whitespace-pre-line">
+                {item.email_body || item.html_content
+                  ? (item.email_body || item.html_content || '').replace(/<[^>]*>/g, '').slice(0, 300)
+                  : 'No content'}
+              </p>
+            </div>
+          </div>
+        ) : item.type === 'sms' ? (
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-xl bg-[#017C87]/10 flex items-center justify-center mx-auto">
+              <Smartphone size={22} className="text-[#017C87]" />
+            </div>
+            <p className="text-xs text-gray-500 font-medium mt-2.5 truncate px-4 max-w-full">
+              {item.sms_body ? `${item.sms_body.slice(0, 30)}…` : 'SMS'}
+            </p>
+          </div>
+        ) : thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt={item.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto">
+              <Eye size={22} className="text-gray-300" />
+            </div>
+            <p className="text-xs text-gray-400 mt-2.5">No preview</p>
+          </div>
+        )}
+
+        {/* Type badge overlay */}
+        <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-500 capitalize border border-gray-200/60">
+          {item.type === 'ad'
+            ? (item.ad_platform === 'instagram_feed' ? 'Instagram Ad' : 'Facebook Ad')
+            : item.type === 'webpage'
+            ? 'Web Page'
+            : item.type}
+        </span>
+
+        {/* Version badge */}
+        {item.version > 1 && (
+          <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-500 border border-gray-200/60">
+            v{item.version}
+          </span>
+        )}
+      </button>
+
+      {/* Card body */}
+      <div className="p-3.5 flex-1 flex flex-col min-w-0">
+        {/* Title */}
+        <div className="mb-2.5 min-w-0">
+          {editing ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveTitle();
+                  if (e.key === 'Escape') { setEditing(false); setEditTitle(item.title); }
+                }}
+                className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] min-w-0"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveTitle}
+                disabled={!editTitle.trim() || saving}
+                className="p-1 text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+              >
+                <Check size={14} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 min-w-0">
+              <h4
+                className="text-sm font-semibold text-gray-900 truncate cursor-pointer hover:text-[#017C87] transition-colors"
+                onClick={() => onOpenViewer(item.id)}
+              >
+                {item.title}
+              </h4>
+              <button
+                onClick={() => setEditing(true)}
+                className="p-0.5 rounded text-gray-300 hover:text-gray-500 transition-colors shrink-0"
+              >
+                <Pencil size={11} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Status dropdown */}
+        <div className="mb-3">
+          <StatusDropdown
+            value={item.status}
+            options={itemStatusOptions}
+            onChange={handleStatusChange}
+          />
+        </div>
+
+        {/* Comments stat */}
+        <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
+          <MessageSquareText size={12} />
+          <span>
+            {commentCount} comment{commentCount !== 1 ? 's' : ''}
+            {unresolvedCount > 0 && (
+              <span className="text-amber-600 ml-1">({unresolvedCount} open)</span>
+            )}
+          </span>
+        </div>
+
+        {/* Spacer to push actions to bottom */}
+        <div className="flex-1" />
+
+        {/* Actions */}
+        <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3.5 px-3.5">
+          <button
+            onClick={() => onOpenViewer(item.id)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+          >
+            <Eye size={13} />
+            View
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <MoreHorizontal size={14} />
+            </button>
+
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[140px]">
+                  <button
+                    onClick={() => { setShowMenu(false); handleDelete(); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 size={14} />
+                    Delete Item
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

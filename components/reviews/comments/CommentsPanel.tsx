@@ -44,6 +44,8 @@ interface CommentsPanelProps {
 
   /** Desktop: static panel. Mobile: full-screen overlay. Default classes handle both. */
   className?: string;
+  /** Whether the panel shows a close button. Defaults to true. */
+  closable?: boolean;
 }
 
 export default function CommentsPanel({
@@ -62,6 +64,7 @@ export default function CommentsPanel({
   guestName,
   onNameChange,
   className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col border-l border-gray-200 bg-white',
+  closable = true,
 }: CommentsPanelProps) {
   return (
     <div className={className}>
@@ -77,7 +80,7 @@ export default function CommentsPanel({
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded text-gray-400 hover:text-gray-600 transition-colors"
+          className={`p-1 rounded text-gray-400 hover:text-gray-600 transition-colors ${closable ? '' : 'lg:hidden'}`}
         >
           <X size={14} />
         </button>

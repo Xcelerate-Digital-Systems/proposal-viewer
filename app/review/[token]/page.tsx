@@ -518,24 +518,6 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
                 {placingPin ? 'Click to place pin' : 'Add Pin'}
               </button>
             )}
-
-            {/* Toggle comments */}
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                showComments
-                  ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
-                  : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              <MessageSquare size={13} />
-              Comments
-              {unresolvedComments.length > 0 && (
-                <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#017C87] text-white">
-                  {unresolvedComments.length}
-                </span>
-              )}
-            </button>
           </div>
         </div>
 
@@ -578,22 +560,25 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         )}
       </div>
 
-      {/* ── Comments panel ── */}
-      {showComments && (
-        <CommentsPanel
-          variant="client"
-          unresolvedComments={unresolvedComments}
-          resolvedComments={resolvedComments}
-          getReplies={getReplies}
-          hasComments={topLevelComments.length > 0}
-          pendingPin={pendingPin}
-          onSubmitComment={submitComment}
-          onCancelPin={handleCancelPin}
-          onClose={() => setShowComments(false)}
-          guestName={guestName}
-          onNameChange={setGuestName}
-        />
-      )}
+      {/* ── Comments panel — always visible on desktop, toggleable on mobile ── */}
+      <CommentsPanel
+        variant="client"
+        unresolvedComments={unresolvedComments}
+        resolvedComments={resolvedComments}
+        getReplies={getReplies}
+        hasComments={topLevelComments.length > 0}
+        pendingPin={pendingPin}
+        onSubmitComment={submitComment}
+        onCancelPin={handleCancelPin}
+        onClose={() => setShowComments(false)}
+        guestName={guestName}
+        onNameChange={setGuestName}
+        closable={false}
+        className={`
+          ${showComments ? 'fixed inset-0 z-40' : 'hidden'}
+          lg:flex lg:relative lg:inset-auto lg:z-auto lg:w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white
+        `}
+      />
     </div>
   );
 }
