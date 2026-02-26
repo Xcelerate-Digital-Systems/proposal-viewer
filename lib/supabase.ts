@@ -238,6 +238,7 @@ export type ReviewProject = {
   client_email: string | null;
   status: 'active' | 'archived' | 'completed';
   share_token: string;
+  board_share_token: string | null; 
   share_mode: ReviewShareMode;
   created_by: string | null;
   created_at: string;
@@ -275,6 +276,7 @@ export type ReviewItem = {
   widget_installed_at: string | null;
   board_x: number | null;
   board_y: number | null;
+  share_token: string | null;
 };
 
 export type ReviewCommentType = 'pin' | 'text_highlight' | 'general';

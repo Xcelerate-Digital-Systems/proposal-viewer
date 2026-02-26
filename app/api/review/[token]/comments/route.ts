@@ -2,6 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
+/**
+ * POST /api/review/[token]/comments
+ *
+ * Post a comment on a review item. Token can be either:
+ *   - A review_projects.share_token (project-level sharing)
+ *   - A review_items.share_token (item-level sharing)
+ *
+ * Both are validated to ensure the commenter has legitimate access.
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: { token: string } }
@@ -25,10 +34,10 @@ export async function POST(
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Verify the item belongs to this share token's project
+    // Load the item
     const { data: item, error: itemErr } = await supabase
       .from('review_items')
-      .select('id, company_id, review_project_id')
+      .select('id, company_id, review_project_id, share_token')
       .eq('id', review_item_id)
       .single();
 
@@ -36,14 +45,23 @@ export async function POST(
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
-    const { data: project, error: projErr } = await supabase
-      .from('review_projects')
-      .select('id, share_token')
-      .eq('id', item.review_project_id)
-      .eq('share_token', params.token)
-      .single();
+    // ── Validate token access ──────────────────────────────────
+    // Check 1: Does the token match this item's own share_token?
+    let authorized = item.share_token === params.token;
 
-    if (projErr || !project) {
+    // Check 2: Does the token match the parent project's share_token?
+    if (!authorized) {
+      const { data: project } = await supabase
+        .from('review_projects')
+        .select('id, share_token')
+        .eq('id', item.review_project_id)
+        .eq('share_token', params.token)
+        .single();
+
+      authorized = !!project;
+    }
+
+    if (!authorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

@@ -23,7 +23,11 @@ const ALLOWED_PREFIXES = [
   '/api/review-comments/', // Review comment actions (resolve/unresolve)
   '/api/review-notify',    // Review notification endpoint (server-to-server)
   '/_next/',           // Next.js assets (JS, CSS, images)
-  '/favicon',          // Favicon files
+  '/favicon',
+  '/project/',          // Creative Review: public card grid view
+  '/whiteboard/',       // Creative Review: public whiteboard/board view
+  '/api/project/',      // API: load project data for card grid
+  '/api/whiteboard/',   // API: load whiteboard data for board view          // Favicon files
 ];
 
 // Exact paths allowed on custom domains

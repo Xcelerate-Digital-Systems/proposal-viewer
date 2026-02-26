@@ -2,6 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
+/**
+ * GET /api/review/[token]
+ *
+ * Dual resolution: the token can be either:
+ *   1. A review_items.share_token   → returns { mode: 'item', project, item, comments }
+ *   2. A review_projects.share_token → returns { mode: 'project', project, items, comments, boardEdges, boardNotes }
+ *
+ * Item tokens are checked first (more specific), then project tokens (backward compat).
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: { token: string } }
@@ -9,7 +18,42 @@ export async function GET(
   try {
     const supabase = createServiceClient();
 
-    // Load project by share token
+    /* ── 1. Try item share_token first ────────────────────────── */
+    const { data: item } = await supabase
+      .from('review_items')
+      .select('*')
+      .eq('share_token', params.token)
+      .single();
+
+    if (item) {
+      // Load the parent project
+      const { data: project } = await supabase
+        .from('review_projects')
+        .select('*')
+        .eq('id', item.review_project_id)
+        .single();
+
+      if (!project || project.status === 'archived') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+
+      // Load comments for this single item
+      const { data: comments } = await supabase
+        .from('review_comments')
+        .select('*')
+        .eq('review_item_id', item.id)
+        .order('created_at', { ascending: true });
+
+      return NextResponse.json({
+        mode: 'item',
+        project,
+        item,
+        items: [item],        // Array for compatibility with existing page
+        comments: comments || [],
+      });
+    }
+
+    /* ── 2. Fall back to project share_token ───────────────────── */
     const { data: project, error: projErr } = await supabase
       .from('review_projects')
       .select('*')
@@ -17,6 +61,10 @@ export async function GET(
       .single();
 
     if (projErr || !project) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    if (project.status === 'archived') {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -62,6 +110,7 @@ export async function GET(
     }
 
     return NextResponse.json({
+      mode: 'project',
       project,
       items: items || [],
       comments,

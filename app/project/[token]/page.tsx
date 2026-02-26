@@ -1,10 +1,13 @@
-// app/review/[token]/page.tsx
+// app/project/[token]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon, MapPin, Globe, ExternalLink, Mail, Smartphone, ArrowLeft } from 'lucide-react';
-import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
+import {
+  MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon,
+  MapPin, Globe, ExternalLink, Mail, Smartphone, ArrowLeft,
+} from 'lucide-react';
+import { type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
 import { type CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
@@ -12,7 +15,6 @@ import { fontFamily } from '@/lib/google-fonts';
 import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
-import ReviewBoardViewer from '@/components/review/ReviewBoardViewer';
 
 const DEFAULT_BRANDING: CompanyBranding = {
   name: '', logo_url: null, accent_color: '#ff6700', website: null,
@@ -32,7 +34,14 @@ const DEFAULT_BRANDING: CompanyBranding = {
 
 const GUEST_STORAGE_KEY = 'review_guest_identity';
 
-export default function ReviewViewerPage({ params }: { params: { token: string } }) {
+/**
+ * Public project card grid view — /project/[token]
+ *
+ * Shows the same sidebar + detail layout as the original /review/[token],
+ * but is specifically for the "Items List" share mode.
+ * Accessed via review_projects.share_token.
+ */
+export default function PublicProjectPage({ params }: { params: { token: string } }) {
   const searchParams = useSearchParams();
   const [project, setProject] = useState<ReviewProject | null>(null);
   const [items, setItems] = useState<ReviewItem[]>([]);
@@ -44,25 +53,25 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [mobileSidebar, setMobileSidebar] = useState(false);
-  const [boardEdges, setBoardEdges] = useState<ReviewBoardEdge[]>([]);
-  const [boardNotes, setBoardNotes] = useState<ReviewBoardNote[]>([]);
-  const [showBoardView, setShowBoardView] = useState(true);
-  const [viewMode, setViewMode] = useState<'project' | 'item'>('project');
+
+  // Guest identity
   const [guestName, setGuestName] = useState('');
+
+  // Pin placement mode
   const [placingPin, setPlacingPin] = useState(false);
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+
+  // Type filter
   const urlType = searchParams.get('type');
   const urlItem = searchParams.get('item');
   const [typeFilter, setTypeFilter] = useState<string | null>(urlType);
 
-  // Unique types present in items (for filter tabs)
   const availableTypes = useMemo(() => {
     const types = Array.from(new Set(items.map((i) => i.type)));
     return types.sort();
   }, [items]);
 
-  // Filtered items
   const filteredItems = useMemo(
     () => (typeFilter ? items.filter((i) => i.type === typeFilter) : items),
     [items, typeFilter]
@@ -75,7 +84,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     }
   }, [filteredItems, selectedItemId]);
 
-  // Load guest identity from localStorage
+  // Load guest identity
   useEffect(() => {
     try {
       const stored = localStorage.getItem(GUEST_STORAGE_KEY);
@@ -86,18 +95,15 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     } catch {}
   }, []);
 
-  // Save guest identity
   const saveGuestIdentity = useCallback((name: string) => {
-    try {
-      localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({ name }));
-    } catch {}
+    try { localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({ name })); } catch {}
   }, []);
 
-  // Fetch review data
+  // Fetch data via the /api/project/[token] endpoint
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/review/${params.token}`);
+        const res = await fetch(`/api/project/${params.token}`);
         if (!res.ok) { setNotFound(true); setLoading(false); return; }
 
         const data = await res.json();
@@ -105,28 +111,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         setItems(data.items);
         setComments(data.comments);
 
-        // Set resolution mode
-        if (data.mode === 'item') {
-          setViewMode('item');
-          // Single item — select it directly, show comments
-          if (data.item) {
-            setSelectedItemId(data.item.id);
-            setShowComments(true);
-          }
-        }
-
-        // Board data
-        if (data.boardEdges) setBoardEdges(data.boardEdges);
-        if (data.boardNotes) setBoardNotes(data.boardNotes);
-
-        // If share_mode is board, start in board view
-        if (data.project.share_mode === 'board') {
-          setShowBoardView(true);
-        } else {
-          setShowBoardView(false);
-        }
-
-        // Select initial item based on URL params
+        // Select initial item
         const startItems = urlType
           ? data.items.filter((i: ReviewItem) => i.type === urlType)
           : data.items;
@@ -155,7 +140,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     load();
   }, [params.token]);
 
-  // Update tab title
+  // Tab title
   useEffect(() => {
     if (project) {
       document.title = project.client_name
@@ -178,7 +163,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#ffffff';
 
-  // ── Pin click handler — image/ad items ──
+  // Pin handlers
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!placingPin) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -189,20 +174,13 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     setShowComments(true);
   };
 
-  // ── Pin click handler ──
-  const handlePinClick = useCallback(() => {
-    setShowComments(true);
-  }, []);
+  const handlePinClick = useCallback(() => { setShowComments(true); }, []);
+  const handleCancelPin = useCallback(() => { setPendingPin(null); }, []);
 
-  // ── Cancel pin ──
-  const handleCancelPin = useCallback(() => {
-    setPendingPin(null);
-  }, []);
-
-  // ── Submit comment (image/ad items — general comments from panel) ──
+  // Submit comment — uses the existing /api/review/[token]/comments endpoint
+  // since the project share_token is the same token used on the old route
   const submitComment = async (content: string, pinX?: number, pinY?: number, parentId?: string) => {
     if (!selectedItemId || !guestName.trim()) return;
-
     saveGuestIdentity(guestName);
 
     const body: Record<string, unknown> = {
@@ -228,7 +206,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     }
   };
 
-  // ── Navigate items ──
+  // Navigation
   const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
   const goToItem = (idx: number) => {
     if (idx >= 0 && idx < filteredItems.length) {
@@ -238,46 +216,38 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     }
   };
 
-  // ── Board → item detail navigation ──
-  const handleBoardItemClick = useCallback((itemId: string) => {
-    setSelectedItemId(itemId);
-    setShowBoardView(false);
-    setShowComments(true);
-  }, []);
+  const handleFilterChange = (type: string | null) => {
+    setTypeFilter(type);
+    if (type) {
+      const first = items.find((i) => i.type === type);
+      if (first) setSelectedItemId(first.id);
+    }
+  };
 
-  // ── Render override for webpage items in client viewer ──
+  // Webpage render override for client viewer
   const renderWebpageClientView = useCallback((item: ReviewItem) => (
     <div className="flex items-center justify-center h-full p-6">
       <div className="text-center max-w-sm">
         <div className="w-14 h-14 rounded-2xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-4">
           <Globe size={24} className="text-[#017C87]" />
         </div>
-        <h3 className="text-base font-semibold text-gray-900 mb-2">
-          Leave feedback on the live page
-        </h3>
+        <h3 className="text-base font-semibold text-gray-900 mb-2">Leave feedback on the live page</h3>
         <p className="text-sm text-gray-500 leading-relaxed mb-5">
           This page has a feedback widget installed. Visit the page directly to
           leave pin comments, take screenshots, and record your screen.
         </p>
         {item.url && (
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#017C87] hover:bg-[#015c64] transition-colors"
-          >
-            <ExternalLink size={14} />
-            Visit Page
+          <a href={item.url} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#017C87] hover:bg-[#015c64] transition-colors">
+            <ExternalLink size={14} /> Visit Page
           </a>
         )}
-        {item.url && (
-          <p className="text-xs text-gray-400 mt-3 truncate px-4">{item.url}</p>
-        )}
+        {item.url && <p className="text-xs text-gray-400 mt-3 truncate px-4">{item.url}</p>}
       </div>
     </div>
   ), []);
 
-  // ── Early returns ──
+  // Early returns
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading review…" />;
 
@@ -299,144 +269,6 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     (c) => c.comment_type === 'pin' && c.pin_x != null && c.pin_y != null
   );
 
-  // Helper to handle filter change + auto-select first item
-  const handleFilterChange = (type: string | null) => {
-    setTypeFilter(type);
-    if (type) {
-      const first = items.find((i) => i.type === type);
-      if (first) setSelectedItemId(first.id);
-    }
-  };
-
-  // ── Board view (full screen) ──
-  const isBoardMode = project?.share_mode === 'board';
-// ── Single item view (item-level share token) ──
-  if (viewMode === 'item' && selectedItem) {
-    const isWebpage = selectedItem.type === 'webpage';
-    return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
-
-        {/* Simple header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            {branding.logo_url ? (
-              <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
-            ) : branding.name ? (
-              <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
-                {branding.name}
-              </span>
-            ) : null}
-            <span className="text-gray-200">·</span>
-            <span className="text-sm text-gray-600 truncate">{selectedItem.title}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {!isWebpage && (
-              <button
-                onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  placingPin
-                    ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
-                    : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                <MapPin size={13} />
-                {placingPin ? 'Click to place pin' : 'Add Pin'}
-              </button>
-            )}
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-500"
-            >
-              <MessageSquare size={13} />
-              {unresolvedComments.length > 0 && (
-                <span className="text-[10px] font-bold bg-[#017C87] text-white px-1.5 py-0.5 rounded-full">
-                  {unresolvedComments.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Content + comments */}
-        <div className="flex-1 flex min-h-0">
-          <div className={`flex-1 ${isWebpage ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-4 lg:p-8'} bg-gray-50`}>
-            <ItemContentView
-              item={selectedItem}
-              placingPin={placingPin}
-              pendingPin={pendingPin}
-              pinComments={pinComments}
-              onImageClick={handleImageClick}
-              onPinClick={handlePinClick}
-              containerRef={imageContainerRef}
-              shareToken={params.token}
-              renderWebpage={renderWebpageClientView}
-              emptyText="Item not available"
-            />
-          </div>
-
-          <CommentsPanel
-            variant="client"
-            unresolvedComments={unresolvedComments}
-            resolvedComments={resolvedComments}
-            getReplies={getReplies}
-            hasComments={topLevelComments.length > 0}
-            pendingPin={pendingPin}
-            onSubmitComment={submitComment}
-            onCancelPin={handleCancelPin}
-            onClose={() => setShowComments(false)}
-            guestName={guestName}
-            onNameChange={setGuestName}
-            closable={false}
-            className={`
-              ${showComments ? 'fixed inset-0 z-40' : 'hidden'}
-              lg:flex lg:relative lg:inset-auto lg:z-auto lg:w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white
-            `}
-          />
-        </div>
-      </div>
-    );
-  }
-  
-  if (isBoardMode && showBoardView) {
-    return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
-
-        {/* Board header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            {branding.logo_url ? (
-              <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
-            ) : branding.name ? (
-              <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
-                {branding.name}
-              </span>
-            ) : null}
-            <span className="text-sm text-gray-400 truncate">
-              {project.title}
-            </span>
-          </div>
-          <p className="text-xs text-gray-400">
-            Click any item to view details and leave feedback
-          </p>
-        </div>
-
-        {/* Board canvas */}
-        <div className="flex-1 min-h-0">
-          <ReviewBoardViewer
-            items={items}
-            boardEdges={boardEdges}
-            boardNotes={boardNotes}
-            comments={comments}
-            branding={branding}
-            onSelectItem={handleBoardItemClick}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50">
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
@@ -446,15 +278,9 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
         style={{ backgroundColor: bgSecondary, borderColor: border }}
       >
-        {isBoardMode ? (
-          <button onClick={() => setShowBoardView(true)} className="p-2" style={{ color: sidebarText }}>
-            <ArrowLeft size={20} />
-          </button>
-        ) : (
-          <button onClick={() => setMobileSidebar(true)} className="p-2" style={{ color: sidebarText }}>
-            <Menu size={20} />
-          </button>
-        )}
+        <button onClick={() => setMobileSidebar(true)} className="p-2" style={{ color: sidebarText }}>
+          <Menu size={20} />
+        </button>
         <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
           <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
             className="p-1.5 disabled:opacity-20" style={{ color: sidebarText }}>
@@ -468,11 +294,8 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
             <ChevronRight size={18} />
           </button>
         </div>
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="relative p-2"
-          style={{ color: showComments ? accent : sidebarText, opacity: showComments ? 1 : 0.55 }}
-        >
+        <button onClick={() => setShowComments(!showComments)} className="relative p-2"
+          style={{ color: showComments ? accent : sidebarText, opacity: showComments ? 1 : 0.55 }}>
           <MessageSquare size={18} />
           {unresolvedComments.length > 0 && (
             <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ backgroundColor: accent }} />
@@ -481,39 +304,26 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       </div>
 
       {/* ── Desktop sidebar ── */}
-      <aside
-        className="hidden lg:flex lg:flex-col lg:w-[220px] shrink-0 border-r overflow-hidden"
-        style={{ backgroundColor: bgSecondary, borderColor: border }}
-      >
-        {/* Logo / title */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-[220px] shrink-0 border-r overflow-hidden"
+        style={{ backgroundColor: bgSecondary, borderColor: border }}>
         <div className="px-4 py-4 border-b" style={{ borderColor: border }}>
           {branding.logo_url ? (
             <img src={branding.logo_url} alt={branding.name} className="h-7 w-auto max-w-[160px] object-contain" />
           ) : branding.name ? (
-            <span className="text-sm font-semibold" style={{
-              color: sidebarText,
-              fontFamily: fontFamily(branding.font_heading),
-            }}>{branding.name}</span>
+            <span className="text-sm font-semibold" style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}>
+              {branding.name}
+            </span>
           ) : null}
           <p className="text-xs mt-1.5 truncate" style={{ color: `${sidebarText}88` }}>
             {project?.title}
           </p>
         </div>
 
-        {/* Items list */}
         <nav className="flex-1 overflow-y-auto">
-          {/* Filter tabs */}
           <div className="px-2 pt-2 pb-1">
-            <TypeFilterTabs
-              items={items}
-              availableTypes={availableTypes}
-              typeFilter={typeFilter}
-              onFilterChange={handleFilterChange}
-              variant="branded"
-              sidebarTextColor={sidebarText}
-            />
+            <TypeFilterTabs items={items} availableTypes={availableTypes} typeFilter={typeFilter}
+              onFilterChange={handleFilterChange} variant="branded" sidebarTextColor={sidebarText} />
           </div>
-
           <div className="py-1 px-2 space-y-1">
             {filteredItems.map((item) => {
               const isActive = item.id === selectedItemId;
@@ -523,13 +333,10 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
               const thumbUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
 
               return (
-                <button
-                  key={item.id}
+                <button key={item.id}
                   onClick={() => { setSelectedItemId(item.id); setPendingPin(null); setPlacingPin(false); }}
                   className="w-full text-left rounded-lg p-2 transition-colors"
-                  style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}
-                >
-                  {/* Thumbnail */}
+                  style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}>
                   {item.type === 'webpage' ? (
                     <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
                       style={{ backgroundColor: `${sidebarText}08` }}>
@@ -558,10 +365,8 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
                     </div>
                   ) : null}
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-medium truncate" style={{
-                      color: isActive ? sidebarText : `${sidebarText}77`,
-                      fontFamily: fontFamily(branding.font_sidebar),
-                    }}>
+                    <span className="text-xs font-medium truncate"
+                      style={{ color: isActive ? sidebarText : `${sidebarText}77`, fontFamily: fontFamily(branding.font_sidebar) }}>
                       {item.title}
                     </span>
                     {itemThreads > 0 && (
@@ -588,17 +393,9 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
               <span className="text-sm font-medium" style={{ color: sidebarText }}>Items</span>
               <button onClick={() => setMobileSidebar(false)} style={{ color: `${sidebarText}55` }}><X size={18} /></button>
             </div>
-            {/* Filter tabs */}
             <div className="px-3 pt-2 pb-1">
-              <TypeFilterTabs
-                items={items}
-                availableTypes={availableTypes}
-                typeFilter={typeFilter}
-                onFilterChange={handleFilterChange}
-                variant="branded"
-                sidebarTextColor={sidebarText}
-                showCounts={false}
-              />
+              <TypeFilterTabs items={items} availableTypes={availableTypes} typeFilter={typeFilter}
+                onFilterChange={handleFilterChange} variant="branded" sidebarTextColor={sidebarText} showCounts={false} />
             </div>
             <nav className="p-2 space-y-1">
               {filteredItems.map((item) => {
@@ -613,29 +410,30 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
                       <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
                         style={{ backgroundColor: `${sidebarText}08` }}>
                         <Globe size={20} style={{ color: `${sidebarText}44` }} />
-                    </div>
-                  ) : item.type === 'email' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Mail size={16} style={{ color: `${sidebarText}44` }} />
-                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
-                        {item.email_subject || 'Email'}
-                      </span>
-                    </div>
-                  ) : item.type === 'sms' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
-                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
-                        {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
-                      </span>
-                    </div>
-                  ) : thumbUrl ? (
+                      </div>
+                    ) : item.type === 'email' ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <Mail size={16} style={{ color: `${sidebarText}44` }} />
+                        <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                          {item.email_subject || 'Email'}
+                        </span>
+                      </div>
+                    ) : item.type === 'sms' ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
+                        <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                          {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
+                        </span>
+                      </div>
+                    ) : thumbUrl ? (
                       <div className="w-full aspect-video rounded overflow-hidden mb-1.5" style={{ backgroundColor: `${sidebarText}08` }}>
                         <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
                       </div>
                     ) : null}
-                    <span className="text-xs font-medium truncate block" style={{ color: isActive ? sidebarText : `${sidebarText}77` }}>
+                    <span className="text-xs font-medium truncate block"
+                      style={{ color: isActive ? sidebarText : `${sidebarText}77` }}>
                       {item.title}
                     </span>
                   </button>
@@ -651,15 +449,6 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         {/* Desktop toolbar */}
         <div className="hidden lg:flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
           <div className="flex items-center gap-2">
-            {isBoardMode && (
-              <button
-                onClick={() => setShowBoardView(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors mr-2"
-              >
-                <ArrowLeft size={14} />
-                Back to Board
-              </button>
-            )}
             <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
               className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
               <ChevronLeft size={18} />
@@ -673,18 +462,13 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
               <ChevronRight size={18} />
             </button>
           </div>
-
           <div className="flex items-center gap-2">
-            {/* Place pin button — only for image/ad items */}
             {!isWebpageItem && (
-              <button
-                onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
+              <button onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  placingPin
-                    ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
+                  placingPin ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
                     : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
+                }`}>
                 <MapPin size={13} />
                 {placingPin ? 'Click to place pin' : 'Add Pin'}
               </button>
@@ -693,13 +477,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         </div>
 
         {/* Item viewer */}
-        <div
-          className={`flex-1 ${
-            isWebpageItem
-              ? 'overflow-auto'
-              : 'overflow-auto flex items-center justify-center p-4 lg:p-8'
-          } bg-gray-50`}
-        >
+        <div className={`flex-1 ${isWebpageItem ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-4 lg:p-8'} bg-gray-50`}>
           <ItemContentView
             item={selectedItem}
             placingPin={placingPin}
@@ -714,24 +492,20 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           />
         </div>
 
-        {/* Mobile: Add Pin FAB — only for image/ad items */}
+        {/* Mobile pin FAB */}
         {!isWebpageItem && (
           <div className="lg:hidden fixed bottom-4 right-4 z-30 flex gap-2">
-            <button
-              onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
+            <button onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
               className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border transition-colors ${
-                placingPin
-                  ? 'bg-[#017C87] text-white border-[#017C87]'
-                  : 'bg-white text-gray-500 border-gray-200'
-              }`}
-            >
+                placingPin ? 'bg-[#017C87] text-white border-[#017C87]' : 'bg-white text-gray-500 border-gray-200'
+              }`}>
               <MapPin size={20} />
             </button>
           </div>
         )}
       </div>
 
-      {/* ── Comments panel — always visible on desktop, toggleable on mobile ── */}
+      {/* ── Comments panel ── */}
       <CommentsPanel
         variant="client"
         unresolvedComments={unresolvedComments}

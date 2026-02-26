@@ -13,6 +13,8 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
+import ShareItemButton from '@/components/reviews/ShareItemButton';
+
 
 export default function ReviewItemViewerPage({
   params,
@@ -333,6 +335,21 @@ function ItemViewerContent({
               <ExternalLink size={13} />
               Open Page
             </a>
+          )}
+          
+          {/* Share this item */}
+          {currentItem && (
+            <ShareItemButton
+              projectId={projectId}
+              itemId={currentItem.id}
+              shareToken={currentItem.share_token}
+              onTokenChange={(token) => {
+                setItems((prev) => prev.map((i) =>
+                  i.id === currentItem.id ? { ...i, share_token: token } : i
+                ));
+              }}
+              size="md"
+            />
           )}
 
           {/* Place pin button — only for image/ad items, not webpage */}
