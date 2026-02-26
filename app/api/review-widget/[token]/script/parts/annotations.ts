@@ -9,7 +9,7 @@ function renderAnnotations(){
   annotations.forEach(function(a){if(a.el)a.el.remove();});annotations=[];
   comments.forEach(function(c){
     if(c.parent_comment_id)return;
-    if(c.comment_type==="pin"&&c.pin_x!=null&&c.pin_y!=null){
+    if((c.comment_type==="pin"||(c.comment_type==="text"&&!c.annotation_data))&&c.pin_x!=null&&c.pin_y!=null){
       var el=document.createElement("div");el.className="aviz-pin"+(c.resolved?" resolved":"");
       el.style.left=pctToPxX(c.pin_x)+"px";el.style.top=pctToPxY(c.pin_y)+"px";
       el.textContent=c.thread_number||"";

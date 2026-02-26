@@ -10,7 +10,6 @@ import { annotationFormJS } from './parts/annotation-form';
 import { pinModeJS } from './parts/pin-mode';
 import { boxModeJS } from './parts/box-mode';
 import { textModeJS } from './parts/text-mode';
-import { screenshotModeJS } from './parts/screenshot-mode';
 import { annotationsJS } from './parts/annotations';
 import { initJS } from './parts/init';
 
@@ -94,7 +93,6 @@ function buildWidgetScript(c: {
     pinModeJS(),
     boxModeJS(),
     textModeJS(),
-    screenshotModeJS(),
     annotationsJS(),
     initJS(),
     '\n})();',

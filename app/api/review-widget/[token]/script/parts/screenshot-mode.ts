@@ -193,7 +193,7 @@ ssOverlay.querySelector("#aviz-ss-cancel").addEventListener("click",function(){s
 ssOverlay.querySelector("#aviz-ss-submit").addEventListener("click",function(){
   var n=ssNameInp.style.display==="none"?guestName:ssNameInp.value.trim();
   var t=ssTextInp.value.trim();if(!n||!t)return;
-  guestName=n;saveGuest();if(nameInp)nameInp.value=n;
+  guestName=n;saveGuest();
   var btn=ssOverlay.querySelector("#aviz-ss-submit");btn.disabled=true;btn.textContent="Uploading\\u2026";
   if(ssTextInput)commitSSText();
   var dataUrl=ssCanvas.toDataURL("image/png");

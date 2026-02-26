@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -156,7 +156,7 @@ export async function POST(
   }
 }
 
-/* ── PATCH — resolve/unresolve a comment ────────────────── */
+/* ── PATCH — resolve/unresolve OR edit comment content ─── */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { token: string } }
@@ -164,10 +164,10 @@ export async function PATCH(
   try {
     const supabase = createServiceClient();
     const commentId = req.nextUrl.searchParams.get('comment_id');
-    const resolve = req.nextUrl.searchParams.get('resolve');
     const itemId = req.nextUrl.searchParams.get('item');
+    const resolve = req.nextUrl.searchParams.get('resolve');
 
-    if (!commentId || !itemId || !resolve) {
+    if (!commentId || !itemId) {
       return corsJson({ error: 'Missing params' }, 400);
     }
 
@@ -176,25 +176,124 @@ export async function PATCH(
       return corsJson({ error: 'Unauthorized' }, 403);
     }
 
-    const resolved = resolve === 'true';
-    const { error } = await supabase
+    /* ── Resolve/unresolve (query param mode) ──────────── */
+    if (resolve !== null) {
+      const resolved = resolve === 'true';
+      const { error } = await supabase
+        .from('review_comments')
+        .update({
+          resolved,
+          resolved_at: resolved ? new Date().toISOString() : null,
+        })
+        .eq('id', commentId)
+        .eq('review_item_id', itemId)
+        .is('parent_comment_id', null);
+
+      if (error) {
+        console.error('Resolve error:', error);
+        return corsJson({ error: 'Failed to update' }, 500);
+      }
+
+      return corsJson({ success: true, resolved });
+    }
+
+    /* ── Edit content (body mode) ──────────────────────── */
+    const body = await req.json();
+    const { content } = body;
+
+    if (!content || !content.trim()) {
+      return corsJson({ error: 'Content is required' }, 400);
+    }
+
+    // Verify the comment exists and belongs to this item
+    const { data: existing, error: fetchErr } = await supabase
+      .from('review_comments')
+      .select('id, author_name, author_type')
+      .eq('id', commentId)
+      .eq('review_item_id', itemId)
+      .single();
+
+    if (fetchErr || !existing) {
+      return corsJson({ error: 'Comment not found' }, 404);
+    }
+
+    const { data: updated, error: updateErr } = await supabase
       .from('review_comments')
       .update({
-        resolved,
-        resolved_at: resolved ? new Date().toISOString() : null,
+        content: content.trim(),
       })
       .eq('id', commentId)
       .eq('review_item_id', itemId)
-      .is('parent_comment_id', null);
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Resolve error:', error);
-      return corsJson({ error: 'Failed to update' }, 500);
+    if (updateErr) {
+      console.error('Edit error:', updateErr);
+      return corsJson({ error: 'Failed to edit comment' }, 500);
     }
 
-    return corsJson({ success: true, resolved });
+    return corsJson(updated);
   } catch (err) {
     console.error('PATCH error:', err);
+    return corsJson({ error: 'Internal server error' }, 500);
+  }
+}
+
+/* ── DELETE — delete a comment (and its replies) ────────── */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { token: string } }
+) {
+  try {
+    const supabase = createServiceClient();
+    const commentId = req.nextUrl.searchParams.get('comment_id');
+    const itemId = req.nextUrl.searchParams.get('item');
+
+    if (!commentId || !itemId) {
+      return corsJson({ error: 'Missing params' }, 400);
+    }
+
+    const item = await verifyProjectAccess(supabase, params.token, itemId);
+    if (!item) {
+      return corsJson({ error: 'Unauthorized' }, 403);
+    }
+
+    // Verify comment exists and belongs to this item
+    const { data: existing, error: fetchErr } = await supabase
+      .from('review_comments')
+      .select('id, author_name, author_type, parent_comment_id')
+      .eq('id', commentId)
+      .eq('review_item_id', itemId)
+      .single();
+
+    if (fetchErr || !existing) {
+      return corsJson({ error: 'Comment not found' }, 404);
+    }
+
+    // If this is a top-level comment, delete its replies first
+    if (!existing.parent_comment_id) {
+      await supabase
+        .from('review_comments')
+        .delete()
+        .eq('parent_comment_id', commentId)
+        .eq('review_item_id', itemId);
+    }
+
+    // Delete the comment itself
+    const { error: deleteErr } = await supabase
+      .from('review_comments')
+      .delete()
+      .eq('id', commentId)
+      .eq('review_item_id', itemId);
+
+    if (deleteErr) {
+      console.error('Delete error:', deleteErr);
+      return corsJson({ error: 'Failed to delete comment' }, 500);
+    }
+
+    return corsJson({ success: true, deleted: commentId });
+  } catch (err) {
+    console.error('DELETE error:', err);
     return corsJson({ error: 'Internal server error' }, 500);
   }
 }

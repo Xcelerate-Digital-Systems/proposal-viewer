@@ -3,7 +3,7 @@
 export function annotationFormJS(): string {
   return `
 /* ══════════════════════════════════════════════════════════
-   SHARED ANNOTATION FORM (pin, box, text)
+   SHARED ANNOTATION FORM (pin, box)
    ══════════════════════════════════════════════════════════ */
 function showAnnotationForm(type,px,py,extra){
   removePendingAnnotation();
@@ -22,7 +22,7 @@ function showAnnotationForm(type,px,py,extra){
 
   var f=document.createElement("div");f.className="aviz-pin-form";
   f.style.left=fx+"px";f.style.top=fy+"px";
-  var typeLabel=type==="pin"?"Pin Comment":type==="box"?"Box Comment":"Text Comment";
+  var typeLabel=type==="pin"?"Pin Comment":"Box Comment";
   f.innerHTML='<h4>'+typeLabel+'</h4>'
     +(guestName?'':'<input class="aviz-inp aviz-pf-name" placeholder="Your name" style="margin-bottom:6px"/>')
     +'<textarea class="aviz-ta aviz-pf-text" placeholder="Describe your feedback\\u2026" style="min-height:48px"></textarea>'
@@ -42,13 +42,16 @@ function showAnnotationForm(type,px,py,extra){
     var n=pfName?pfName.value.trim():guestName;
     var t=pfText.value.trim();
     if(!n||!t)return;
-    guestName=n;saveGuest();if(nameInp)nameInp.value=n;
+    guestName=n;saveGuest();
     pfSend.disabled=true;pfSend.textContent="Capturing\\u2026";
 
-    /* Hide form, capture screenshot, then post */
+    /* Hide form + existing annotations, keep only pending marker/box visible */
     f.style.display="none";
+    annotations.forEach(function(a){if(a.el)a.el.style.display="none";});
 
     captureAutoScreenshot(function(dataUrl){
+      /* Restore existing annotations */
+      annotations.forEach(function(a){if(a.el)a.el.style.display="";});
       pfSend.textContent="Uploading\\u2026";
 
       function doPost(ssUrl){
@@ -63,10 +66,6 @@ function showAnnotationForm(type,px,py,extra){
         if(type==="box"&&extra){
           payload.pin_x=extra.x;payload.pin_y=extra.y;
           payload.annotation_data={type:"box",width:extra.w,height:extra.h};
-        }
-        if(type==="text"&&extra){
-          payload.pin_x=extra.x;payload.pin_y=extra.y;
-          payload.annotation_data={type:"text",overlay_text:extra.overlay_text};
         }
         postComment(payload,function(d){
           removePendingAnnotation();refresh();

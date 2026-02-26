@@ -11,7 +11,6 @@ var tools=[
   {id:"pin",icon:ICON.pin,label:"Pin Comment"},
   {id:"box",icon:ICON.box,label:"Draw Box"},
   {id:"text",icon:ICON.text,label:"Add Text"},
-  {id:"screenshot",icon:ICON.camera,label:"Screenshot"},
   {id:"sep1",sep:true},
   {id:"video",icon:ICON.video,label:"Record Video",soon:true},
   {id:"comments",icon:ICON.chat,label:"Comments"},
@@ -70,9 +69,6 @@ toolBtns.box.addEventListener("click",function(){
 toolBtns.text.addEventListener("click",function(){
   if(mode==="text"){exitMode();setActiveTool(null);return;}
   closePanel();setActiveTool("text");setMode("text","Click anywhere to add text");
-});
-toolBtns.screenshot.addEventListener("click",function(){
-  exitMode();setActiveTool("screenshot");captureScreenshot();
 });
 toolBtns.video.addEventListener("click",function(){/* soon */});
 toolBtns.comments.addEventListener("click",function(){
