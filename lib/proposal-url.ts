@@ -34,60 +34,52 @@ export function buildDocumentUrl(
 
 /**
  * Build the public URL for a creative review PROJECT (card grid of all items).
- * Uses the project's share_token → /project/[token]
+ * Always uses the main app domain — custom domains are only for proposals/documents.
+ *
+ * Signature keeps customDomain param for backward compat but ignores it.
  */
 export function buildReviewProjectUrl(
   shareToken: string,
-  customDomain: string | null | undefined,
-  fallbackOrigin: string
+  _customDomain?: string | null,
+  fallbackOrigin?: string
 ): string {
-  if (customDomain) {
-    return `https://${customDomain}/project/${shareToken}`;
-  }
-  const origin = fallbackOrigin.replace(/\/$/, '');
+  const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
   return `${origin}/project/${shareToken}`;
 }
 
 /**
  * Build the public URL for a single review ITEM (detail view with comments).
- * Uses the item's share_token → /review/[token]
+ * Always uses the main app domain.
  */
 export function buildReviewItemUrl(
   shareToken: string,
-  customDomain: string | null | undefined,
-  fallbackOrigin: string
+  _customDomain?: string | null,
+  fallbackOrigin?: string
 ): string {
-  if (customDomain) {
-    return `https://${customDomain}/review/${shareToken}`;
-  }
-  const origin = fallbackOrigin.replace(/\/$/, '');
+  const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
   return `${origin}/review/${shareToken}`;
 }
 
 /**
  * Build the public URL for a review WHITEBOARD (React Flow canvas).
- * Uses the project's board_share_token → /whiteboard/[token]
+ * Always uses the main app domain.
  */
 export function buildReviewWhiteboardUrl(
   shareToken: string,
-  customDomain: string | null | undefined,
-  fallbackOrigin: string
+  _customDomain?: string | null,
+  fallbackOrigin?: string
 ): string {
-  if (customDomain) {
-    return `https://${customDomain}/whiteboard/${shareToken}`;
-  }
-  const origin = fallbackOrigin.replace(/\/$/, '');
+  const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
   return `${origin}/whiteboard/${shareToken}`;
 }
 
 /**
  * @deprecated Use buildReviewProjectUrl, buildReviewItemUrl, or buildReviewWhiteboardUrl instead.
- * Kept for backward compatibility during migration.
  */
 export function buildReviewUrl(
   shareToken: string,
-  customDomain: string | null | undefined,
-  fallbackOrigin: string
+  _customDomain?: string | null,
+  fallbackOrigin?: string
 ): string {
-  return buildReviewProjectUrl(shareToken, customDomain, fallbackOrigin);
+  return buildReviewProjectUrl(shareToken, null, fallbackOrigin);
 }

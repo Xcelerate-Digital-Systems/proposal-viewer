@@ -103,7 +103,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   if (notFound) return <ReviewNotFound type="not_found" />;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="h-dvh flex flex-col bg-gray-50 overflow-hidden">
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
       {/* Board header */}
@@ -126,7 +126,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
         </p>
       </div>
 
-      {/* Board canvas */}
+      {/* Board canvas — needs explicit height for ReactFlow */}
       <div className="flex-1 min-h-0">
         <ReviewBoardViewer
           items={items}
