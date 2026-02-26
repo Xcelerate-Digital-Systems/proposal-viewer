@@ -3,8 +3,8 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon, MapPin, Globe, ExternalLink, Mail, Smartphone } from 'lucide-react';
-import { type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
+import { MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon, MapPin, Globe, ExternalLink, Mail, Smartphone, ArrowLeft } from 'lucide-react';
+import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
 import { type CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
@@ -12,6 +12,7 @@ import { fontFamily } from '@/lib/google-fonts';
 import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
+import ReviewBoardViewer from '@/components/review/ReviewBoardViewer';
 
 const DEFAULT_BRANDING: CompanyBranding = {
   name: '', logo_url: null, accent_color: '#ff6700', website: null,
@@ -43,6 +44,11 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [mobileSidebar, setMobileSidebar] = useState(false);
+
+  // Board data (loaded when share_mode is 'board')
+  const [boardEdges, setBoardEdges] = useState<ReviewBoardEdge[]>([]);
+  const [boardNotes, setBoardNotes] = useState<ReviewBoardNote[]>([]);
+  const [showBoardView, setShowBoardView] = useState(true); // starts on board if share_mode is board
 
   // Guest identity
   const [guestName, setGuestName] = useState('');
@@ -105,6 +111,17 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         setProject(data.project);
         setItems(data.items);
         setComments(data.comments);
+
+        // Board data
+        if (data.boardEdges) setBoardEdges(data.boardEdges);
+        if (data.boardNotes) setBoardNotes(data.boardNotes);
+
+        // If share_mode is board, start in board view
+        if (data.project.share_mode === 'board') {
+          setShowBoardView(true);
+        } else {
+          setShowBoardView(false);
+        }
 
         // Select initial item based on URL params
         const startItems = urlType
@@ -218,6 +235,13 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     }
   };
 
+  // ── Board → item detail navigation ──
+  const handleBoardItemClick = useCallback((itemId: string) => {
+    setSelectedItemId(itemId);
+    setShowBoardView(false);
+    setShowComments(true);
+  }, []);
+
   // ── Render override for webpage items in client viewer ──
   const renderWebpageClientView = useCallback((item: ReviewItem) => (
     <div className="flex items-center justify-center h-full p-6">
@@ -281,6 +305,48 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     }
   };
 
+  // ── Board view (full screen) ──
+  const isBoardMode = project?.share_mode === 'board';
+
+  if (isBoardMode && showBoardView) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+
+        {/* Board header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
+            ) : branding.name ? (
+              <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
+                {branding.name}
+              </span>
+            ) : null}
+            <span className="text-sm text-gray-400 truncate">
+              {project.title}
+            </span>
+          </div>
+          <p className="text-xs text-gray-400">
+            Click any item to view details and leave feedback
+          </p>
+        </div>
+
+        {/* Board canvas */}
+        <div className="flex-1 min-h-0">
+          <ReviewBoardViewer
+            items={items}
+            boardEdges={boardEdges}
+            boardNotes={boardNotes}
+            comments={comments}
+            branding={branding}
+            onSelectItem={handleBoardItemClick}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50">
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
@@ -290,9 +356,15 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
         style={{ backgroundColor: bgSecondary, borderColor: border }}
       >
-        <button onClick={() => setMobileSidebar(true)} className="p-2" style={{ color: sidebarText }}>
-          <Menu size={20} />
-        </button>
+        {isBoardMode ? (
+          <button onClick={() => setShowBoardView(true)} className="p-2" style={{ color: sidebarText }}>
+            <ArrowLeft size={20} />
+          </button>
+        ) : (
+          <button onClick={() => setMobileSidebar(true)} className="p-2" style={{ color: sidebarText }}>
+            <Menu size={20} />
+          </button>
+        )}
         <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
           <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
             className="p-1.5 disabled:opacity-20" style={{ color: sidebarText }}>
@@ -489,6 +561,15 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         {/* Desktop toolbar */}
         <div className="hidden lg:flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
           <div className="flex items-center gap-2">
+            {isBoardMode && (
+              <button
+                onClick={() => setShowBoardView(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors mr-2"
+              >
+                <ArrowLeft size={14} />
+                Back to Board
+              </button>
+            )}
             <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
               className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
               <ChevronLeft size={18} />

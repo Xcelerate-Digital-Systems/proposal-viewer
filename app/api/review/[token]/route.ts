@@ -41,10 +41,32 @@ export async function GET(
       comments = commentData || [];
     }
 
+    // Load board data if share_mode is 'board'
+    let boardEdges: unknown[] = [];
+    let boardNotes: unknown[] = [];
+
+    if (project.share_mode === 'board') {
+      const [edgesRes, notesRes] = await Promise.all([
+        supabase
+          .from('review_board_edges')
+          .select('*')
+          .eq('review_project_id', project.id),
+        supabase
+          .from('review_board_notes')
+          .select('*')
+          .eq('review_project_id', project.id),
+      ]);
+
+      boardEdges = edgesRes.data || [];
+      boardNotes = notesRes.data || [];
+    }
+
     return NextResponse.json({
       project,
       items: items || [],
       comments,
+      boardEdges,
+      boardNotes,
     });
   } catch (err) {
     console.error('Review fetch error:', err);

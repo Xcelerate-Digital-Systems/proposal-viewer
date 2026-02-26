@@ -227,6 +227,8 @@ export type WebhookEndpoint = {
 
 // ─── Creative Review types ───────────────────────────────────────────────────
 
+export type ReviewShareMode = 'list' | 'board';
+
 export type ReviewProject = {
   id: string;
   company_id: string;
@@ -236,6 +238,7 @@ export type ReviewProject = {
   client_email: string | null;
   status: 'active' | 'archived' | 'completed';
   share_token: string;
+  share_mode: ReviewShareMode;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -270,6 +273,8 @@ export type ReviewItem = {
   created_at: string;
   updated_at: string;
   widget_installed_at: string | null;
+  board_x: number | null;
+  board_y: number | null;
 };
 
 export type ReviewCommentType = 'pin' | 'text_highlight' | 'general';
@@ -295,6 +300,39 @@ export type ReviewComment = {
   resolved: boolean;
   resolved_by: string | null;
   resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// ─── Board / Whiteboard types ────────────────────────────────────────────────
+
+export type ReviewBoardEdge = {
+  id: string;
+  review_project_id: string;
+  company_id: string;
+  source_item_id: string;
+  target_item_id: string;
+  source_handle: string;
+  target_handle: string;
+  label: string | null;
+  edge_type: string;
+  animated: boolean;
+  style: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReviewBoardNote = {
+  id: string;
+  review_project_id: string;
+  company_id: string;
+  content: string;
+  color: string;
+  board_x: number;
+  board_y: number;
+  width: number | null;
+  height: number | null;
+  font_size: number | null;
   created_at: string;
   updated_at: string;
 };

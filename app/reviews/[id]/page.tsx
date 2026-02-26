@@ -6,14 +6,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, ArrowLeft, Copy, Check, ExternalLink, MessageSquareText,
-  Image, CheckCircle2, AlertCircle, Clock, Eye,
+  Image, CheckCircle2, AlertCircle, Clock, Eye, LayoutGrid, List,
 } from 'lucide-react';
-import { supabase, type ReviewProject, type ReviewItem } from '@/lib/supabase';
+import { supabase, type ReviewProject, type ReviewItem, type ReviewShareMode } from '@/lib/supabase';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddReviewItemModal from '@/components/admin/reviews/AddReviewItemModal';
 import ReviewItemCard from '@/components/admin/reviews/ReviewItemCard';
 import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
+import { ReviewBoard } from '@/components/admin/reviews/board';
 
 export default function ReviewProjectDetailPage({ params }: { params: { id: string } }) {
   return (
@@ -118,6 +119,7 @@ function ProjectDetailContent({
   const [copied, setCopied] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'items' | 'board'>('items');
 
   // Unique types + filtered items
   const availableTypes = useMemo(() => {
@@ -166,6 +168,15 @@ function ProjectDetailContent({
       setCustomDomain(data.custom_domain);
     }
   }, [companyId]);
+
+  const toggleShareMode = useCallback(async (mode: ReviewShareMode) => {
+    if (!project) return;
+    await supabase
+      .from('review_projects')
+      .update({ share_mode: mode, updated_at: new Date().toISOString() })
+      .eq('id', project.id);
+    setProject((prev) => prev ? { ...prev, share_mode: mode } : prev);
+  }, [project]);
 
   useEffect(() => {
     fetchProject();
@@ -232,6 +243,47 @@ function ProjectDetailContent({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              {/* View mode toggle */}
+              <div className="flex items-center bg-gray-100 rounded-lg p-0.5 mr-1">
+                <button
+                  onClick={() => setViewMode('items')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    viewMode === 'items'
+                      ? 'bg-white text-gray-800 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <List size={13} />
+                  Items
+                </button>
+                <button
+                  onClick={() => setViewMode('board')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    viewMode === 'board'
+                      ? 'bg-white text-gray-800 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <LayoutGrid size={13} />
+                  Board
+                </button>
+              </div>
+
+              {/* Share mode selector */}
+              {project.share_mode !== undefined && (
+                <div className="flex items-center gap-1.5 mr-1">
+                  <span className="text-[10px] text-gray-400 font-medium">Share as:</span>
+                  <select
+                    value={project.share_mode || 'list'}
+                    onChange={(e) => toggleShareMode(e.target.value as ReviewShareMode)}
+                    className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+                  >
+                    <option value="list">List</option>
+                    <option value="board">Board</option>
+                  </select>
+                </div>
+              )}
+
               <button
                 onClick={copyLink}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
@@ -262,7 +314,7 @@ function ProjectDetailContent({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 px-6 lg:px-10 pb-8 pt-4 lg:pt-0">
+      <div className={`flex-1 ${viewMode === 'board' ? 'px-2 pb-2 pt-2' : 'px-6 lg:px-10 pb-8 pt-4 lg:pt-0'}`}>
         {/* Add Item Modal */}
         {showAddItem && project && (
           <AddReviewItemModal
@@ -301,7 +353,17 @@ function ProjectDetailContent({
               Add First Item
             </button>
           </div>
+        ) : viewMode === 'board' ? (
+          /* ── Board view ── */
+          <ReviewBoard
+            projectId={projectId}
+            companyId={companyId}
+            items={items}
+            onRefreshItems={fetchItems}
+            onNavigateToItem={handleOpenViewer}
+          />
         ) : (
+          /* ── List view ── */
           <div className="space-y-4 mt-4">
             {/* Status summary */}
             <StatusBar summary={statusSummary} />
