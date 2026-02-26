@@ -12,7 +12,7 @@ import { supabase, type ReviewProject, type ReviewItem, type ReviewComment } fro
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import { CommentsPanel } from '@/components/reviews/comments';
-import ItemContentView, { type WebpagePinPlacement } from '@/components/reviews/ItemContentView';
+import ItemContentView from '@/components/reviews/ItemContentView';
 
 export default function ReviewItemViewerPage({
   params,
@@ -82,11 +82,9 @@ function ItemViewerContent({
   const [loading, setLoading] = useState(true);
   const [showComments, setShowComments] = useState(true);
 
-  // Pin placement
+  // Pin placement (image/ad items only — webpage pins come via the widget)
   const [placingPin, setPlacingPin] = useState(false);
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
-  // Webpage pin element path — stored separately so we can include it on submit
-  const pendingElementPathRef = useRef<string>('');
 
   // Type filter from URL
   const typeFilter = searchParams.get('type');
@@ -156,31 +154,20 @@ function ItemViewerContent({
     }
   };
 
-  // ── Pin placement — image/ad items ──
+  // ── Pin placement — image/ad items only ──
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!placingPin) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setPendingPin({ x, y });
-    pendingElementPathRef.current = '';
     setPlacingPin(false);
     setShowComments(true);
   };
 
-  // ── Pin placement — webpage items (from iframe postMessage) ──
-  const handleWebpagePinPlaced = useCallback((placement: WebpagePinPlacement) => {
-    setPendingPin({ x: placement.pin_x, y: placement.pin_y });
-    pendingElementPathRef.current = placement.element_path;
-    setPlacingPin(false);
+  // ── Pin click handler ──
+  const handlePinClick = useCallback(() => {
     setShowComments(true);
-  }, []);
-
-  // ── Pin click handler (supports commentId from iframe) ──
-  const handlePinClick = useCallback((commentId?: string) => {
-    setShowComments(true);
-    // If commentId provided, could scroll to that comment in panel
-    // For now just open the panel
   }, []);
 
   // ── Submit comment ──
@@ -210,11 +197,6 @@ function ItemViewerContent({
       pin_y: pinY ?? null,
     };
 
-    // Include element path for webpage pin comments
-    if (pinX != null && pendingElementPathRef.current) {
-      insertData.pin_element_path = pendingElementPathRef.current;
-    }
-
     const { data, error } = await supabase
       .from('review_comments')
       .insert(insertData)
@@ -226,7 +208,6 @@ function ItemViewerContent({
     } else if (data) {
       setComments((prev) => [...prev, data]);
       setPendingPin(null);
-      pendingElementPathRef.current = '';
 
       // Notify webhook
       if (project?.share_token) {
@@ -286,10 +267,9 @@ function ItemViewerContent({
     }
   };
 
-  // ── Cancel pin (also tell iframe to cancel) ──
+  // ── Cancel pin ──
   const handleCancelPin = useCallback(() => {
     setPendingPin(null);
-    pendingElementPathRef.current = '';
   }, []);
 
   // ── Loading ──
@@ -355,18 +335,20 @@ function ItemViewerContent({
             </a>
           )}
 
-          {/* Place pin button */}
-          <button
-            onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); pendingElementPathRef.current = ''; }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              placingPin
-                ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
-                : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            <MapPin size={13} />
-            {placingPin ? 'Click to place pin' : 'Add Pin'}
-          </button>
+          {/* Place pin button — only for image/ad items, not webpage */}
+          {!isWebpageItem && (
+            <button
+              onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                placingPin
+                  ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
+                  : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+              }`}
+            >
+              <MapPin size={13} />
+              {placingPin ? 'Click to place pin' : 'Add Pin'}
+            </button>
+          )}
 
           {/* Toggle comments */}
           <button
@@ -390,11 +372,11 @@ function ItemViewerContent({
 
       {/* Content area */}
       <div className="flex-1 flex min-h-0">
-        {/* Item viewer — full size for webpage, centered for images/ads */}
+        {/* Item viewer */}
         <div
           className={`flex-1 ${
             isWebpageItem
-              ? 'overflow-hidden'
+              ? 'overflow-auto'
               : 'overflow-auto flex items-center justify-center p-6'
           } bg-gray-50`}
         >
@@ -406,8 +388,6 @@ function ItemViewerContent({
             onImageClick={handleImageClick}
             onPinClick={handlePinClick}
             shareToken={project?.share_token || ''}
-            onWebpagePinPlaced={handleWebpagePinPlaced}
-            allComments={comments}
           />
         </div>
 

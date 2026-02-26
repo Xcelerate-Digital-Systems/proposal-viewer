@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   MessageSquare, ChevronLeft, ChevronRight, Menu, X,
-  Image as ImageIcon, MapPin, Globe,
+  Image as ImageIcon, MapPin, Globe, ExternalLink,
 } from 'lucide-react';
 import { type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
 import { type CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
@@ -13,7 +13,7 @@ import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import { CommentsPanel } from '@/components/reviews/comments';
-import ItemContentView, { type WebpagePinPlacement } from '@/components/reviews/ItemContentView';
+import ItemContentView from '@/components/reviews/ItemContentView';
 import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -50,12 +50,10 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   // Guest identity
   const [guestName, setGuestName] = useState('');
 
-  // Pin placement mode
+  // Pin placement mode (image/ad items only — webpage pins come via the widget)
   const [placingPin, setPlacingPin] = useState(false);
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
-  // Webpage pin element path — stored separately so we can include it on submit
-  const pendingElementPathRef = useRef<string>('');
 
   // Type filter — from URL or user interaction
   const urlType = searchParams.get('type');
@@ -170,31 +168,21 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setPendingPin({ x, y });
-    pendingElementPathRef.current = '';
     setPlacingPin(false);
     setShowComments(true);
   };
 
-  // ── Pin placement — webpage items (from iframe postMessage) ──
-  const handleWebpagePinPlaced = useCallback((placement: WebpagePinPlacement) => {
-    setPendingPin({ x: placement.pin_x, y: placement.pin_y });
-    pendingElementPathRef.current = placement.element_path;
-    setPlacingPin(false);
-    setShowComments(true);
-  }, []);
-
-  // ── Pin click handler (supports commentId from iframe) ──
-  const handlePinClick = useCallback((commentId?: string) => {
+  // ── Pin click handler ──
+  const handlePinClick = useCallback(() => {
     setShowComments(true);
   }, []);
 
   // ── Cancel pin ──
   const handleCancelPin = useCallback(() => {
     setPendingPin(null);
-    pendingElementPathRef.current = '';
   }, []);
 
-  // ── Submit comment ──
+  // ── Submit comment (image/ad items — general comments from panel) ──
   const submitComment = async (content: string, pinX?: number, pinY?: number, parentId?: string) => {
     if (!selectedItemId || !guestName.trim()) return;
 
@@ -210,11 +198,6 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       parent_comment_id: parentId || null,
     };
 
-    // Include element path for webpage pin comments
-    if (pinX != null && pendingElementPathRef.current) {
-      body.pin_element_path = pendingElementPathRef.current;
-    }
-
     const res = await fetch(`/api/review/${params.token}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -225,7 +208,6 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       const newComment = await res.json();
       setComments((prev) => [...prev, newComment]);
       setPendingPin(null);
-      pendingElementPathRef.current = '';
     }
   };
 
@@ -235,10 +217,41 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     if (idx >= 0 && idx < filteredItems.length) {
       setSelectedItemId(filteredItems[idx].id);
       setPendingPin(null);
-      pendingElementPathRef.current = '';
       setPlacingPin(false);
     }
   };
+
+  // ── Render override for webpage items in client viewer ──
+  const renderWebpageClientView = useCallback((item: ReviewItem) => (
+    <div className="flex items-center justify-center h-full p-6">
+      <div className="text-center max-w-sm">
+        <div className="w-14 h-14 rounded-2xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-4">
+          <Globe size={24} className="text-[#017C87]" />
+        </div>
+        <h3 className="text-base font-semibold text-gray-900 mb-2">
+          Leave feedback on the live page
+        </h3>
+        <p className="text-sm text-gray-500 leading-relaxed mb-5">
+          This page has a feedback widget installed. Visit the page directly to
+          leave pin comments, take screenshots, and record your screen.
+        </p>
+        {item.url && (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#017C87] hover:bg-[#015c64] transition-colors"
+          >
+            <ExternalLink size={14} />
+            Visit Page
+          </a>
+        )}
+        {item.url && (
+          <p className="text-xs text-gray-400 mt-3 truncate px-4">{item.url}</p>
+        )}
+      </div>
+    </div>
+  ), []);
 
   // ── Early returns ──
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
@@ -353,7 +366,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
               return (
                 <button
                   key={item.id}
-                  onClick={() => { setSelectedItemId(item.id); setPendingPin(null); pendingElementPathRef.current = ''; setPlacingPin(false); }}
+                  onClick={() => { setSelectedItemId(item.id); setPendingPin(null); setPlacingPin(false); }}
                   className="w-full text-left rounded-lg p-2 transition-colors"
                   style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}
                 >
@@ -418,7 +431,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
                 const thumbUrl = item.image_url || item.screenshot_url;
                 return (
                   <button key={item.id}
-                    onClick={() => { setSelectedItemId(item.id); setMobileSidebar(false); setPendingPin(null); pendingElementPathRef.current = ''; }}
+                    onClick={() => { setSelectedItemId(item.id); setMobileSidebar(false); setPendingPin(null); }}
                     className="w-full text-left rounded-lg p-2 transition-colors"
                     style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}>
                     {item.type === 'webpage' ? (
@@ -462,18 +475,20 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Place pin button */}
-            <button
-              onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); pendingElementPathRef.current = ''; }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                placingPin
-                  ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
-                  : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              <MapPin size={13} />
-              {placingPin ? 'Click to place pin' : 'Add Pin'}
-            </button>
+            {/* Place pin button — only for image/ad items */}
+            {!isWebpageItem && (
+              <button
+                onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  placingPin
+                    ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
+                    : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                <MapPin size={13} />
+                {placingPin ? 'Click to place pin' : 'Add Pin'}
+              </button>
+            )}
 
             {/* Toggle comments */}
             <button
@@ -495,11 +510,11 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           </div>
         </div>
 
-        {/* Item viewer — full size for webpage, centered for images/ads */}
+        {/* Item viewer */}
         <div
           className={`flex-1 ${
             isWebpageItem
-              ? 'overflow-hidden'
+              ? 'overflow-auto'
               : 'overflow-auto flex items-center justify-center p-4 lg:p-8'
           } bg-gray-50`}
         >
@@ -512,25 +527,26 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
             onPinClick={handlePinClick}
             containerRef={imageContainerRef}
             shareToken={params.token}
-            onWebpagePinPlaced={handleWebpagePinPlaced}
-            allComments={itemComments}
+            renderWebpage={renderWebpageClientView}
             emptyText="No items to review"
           />
         </div>
 
-        {/* Mobile: Add Pin FAB */}
-        <div className="lg:hidden fixed bottom-4 right-4 z-30 flex gap-2">
-          <button
-            onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); pendingElementPathRef.current = ''; }}
-            className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border transition-colors ${
-              placingPin
-                ? 'bg-[#017C87] text-white border-[#017C87]'
-                : 'bg-white text-gray-500 border-gray-200'
-            }`}
-          >
-            <MapPin size={20} />
-          </button>
-        </div>
+        {/* Mobile: Add Pin FAB — only for image/ad items */}
+        {!isWebpageItem && (
+          <div className="lg:hidden fixed bottom-4 right-4 z-30 flex gap-2">
+            <button
+              onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
+              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border transition-colors ${
+                placingPin
+                  ? 'bg-[#017C87] text-white border-[#017C87]'
+                  : 'bg-white text-gray-500 border-gray-200'
+              }`}
+            >
+              <MapPin size={20} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Comments panel ── */}

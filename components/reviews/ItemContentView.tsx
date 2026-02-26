@@ -1,8 +1,17 @@
 // components/reviews/ItemContentView.tsx
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Image as ImageIcon, Globe, ExternalLink, AlertTriangle, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Image as ImageIcon,
+  Globe,
+  ExternalLink,
+  Copy,
+  Check,
+  CheckCircle2,
+  Clock,
+  Code2,
+} from 'lucide-react';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/reviews/AdMockupPreview';
 import PinOverlay from './PinOverlay';
 import type { ReviewItem, ReviewComment } from '@/lib/supabase';
@@ -10,12 +19,6 @@ import type { ReviewItem, ReviewComment } from '@/lib/supabase';
 /* ================================================================== */
 /*  Types                                                              */
 /* ================================================================== */
-
-export interface WebpagePinPlacement {
-  pin_x: number;
-  pin_y: number;
-  element_path: string;
-}
 
 interface ItemContentViewProps {
   item: ReviewItem | null;
@@ -31,14 +34,10 @@ interface ItemContentViewProps {
   onPinClick: (commentId?: string) => void;
   /** Optional ref for the container */
   containerRef?: React.RefObject<HTMLDivElement>;
-  /** Render prop for webpage items — optional override (e.g. admin embed-code view) */
+  /** Render prop for webpage items — optional override */
   renderWebpage?: (item: ReviewItem) => React.ReactNode;
-  /** Share token for proxy access (webpage items) */
+  /** Share token for building embed script URL */
   shareToken?: string;
-  /** Callback when a pin is placed on a webpage (via in-iframe click) */
-  onWebpagePinPlaced?: (placement: WebpagePinPlacement) => void;
-  /** All comments for this item (sent to iframe for rendering) */
-  allComments?: ReviewComment[];
   /** Empty state text */
   emptyText?: string;
 }
@@ -57,8 +56,6 @@ export default function ItemContentView({
   containerRef,
   renderWebpage,
   shareToken,
-  onWebpagePinPlaced,
-  allComments,
   emptyText = 'No preview available',
 }: ItemContentViewProps) {
   if (!item) {
@@ -74,19 +71,13 @@ export default function ItemContentView({
   const isWebpage = item.type === 'webpage';
   const imageUrl = item.image_url || item.screenshot_url;
 
-  // Webpage items — render proxied iframe with in-iframe pins
+  // Webpage items — show embed code & status
   if (isWebpage) {
     if (renderWebpage) return <>{renderWebpage(item)}</>;
     return (
-      <WebpageProxyView
+      <WebpageEmbedView
         item={item}
         shareToken={shareToken || ''}
-        placingPin={placingPin}
-        pinComments={pinComments}
-        allComments={allComments || pinComments}
-        onPinPlaced={onWebpagePinPlaced}
-        onPinClick={onPinClick}
-        containerRef={containerRef}
       />
     );
   }
@@ -145,205 +136,154 @@ export default function ItemContentView({
 }
 
 /* ================================================================== */
-/*  Webpage proxy view — pins render inside iframe via injected script */
+/*  Webpage embed view — shows embed code, install status, open link   */
 /* ================================================================== */
 
-function WebpageProxyView({
+function WebpageEmbedView({
   item,
   shareToken,
-  placingPin,
-  pinComments,
-  allComments,
-  onPinPlaced,
-  onPinClick,
-  containerRef,
 }: {
   item: ReviewItem;
   shareToken: string;
-  placingPin: boolean;
-  pinComments: ReviewComment[];
-  allComments: ReviewComment[];
-  onPinPlaced?: (placement: WebpagePinPlacement) => void;
-  onPinClick: (commentId?: string) => void;
-  containerRef?: React.RefObject<HTMLDivElement>;
 }) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
-  const [iframeReady, setIframeReady] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // Build proxy URL
-  const proxyUrl = item.url && shareToken
-    ? `/api/review-proxy?url=${encodeURIComponent(item.url)}&token=${encodeURIComponent(shareToken)}&item=${encodeURIComponent(item.id)}`
+  const apiBase = typeof window !== 'undefined'
+    ? window.location.origin
+    : process.env.NEXT_PUBLIC_APP_URL || '';
+
+  const scriptTag = shareToken && item.id
+    ? `<script src="${apiBase}/api/review-widget/${shareToken}/script?item=${item.id}" defer><\/script>`
     : '';
 
-  // ── Post message helper ──
-  const postToIframe = useCallback(
-    (msg: Record<string, unknown>) => {
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(msg, '*');
-      }
-    },
-    []
-  );
+  const isInstalled = !!item.widget_installed_at;
 
-  // ── Listen for messages from iframe ──
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      const d = e.data;
-      if (!d || !d.type) return;
-
-      switch (d.type) {
-        case 'aviz-proxy-ready':
-          setIframeReady(true);
-          setStatus('loaded');
-          break;
-
-        case 'aviz-frame-info':
-          // Could track scroll position if needed later
-          if (status === 'loading') setStatus('loaded');
-          break;
-
-        case 'aviz-pin-placed':
-          onPinPlaced?.({
-            pin_x: d.pin_x,
-            pin_y: d.pin_y,
-            element_path: d.element_path || '',
-          });
-          break;
-
-        case 'aviz-pin-clicked':
-          onPinClick(d.commentId);
-          break;
-
-        case 'aviz-nav-blocked':
-          // User clicked a link — could show a toast or ignore
-          break;
-      }
-    };
-
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, [status, onPinPlaced, onPinClick]);
-
-  // ── Send mode changes to iframe ──
-  useEffect(() => {
-    if (!iframeReady) return;
-    postToIframe({
-      type: 'aviz-set-mode',
-      mode: placingPin ? 'comment' : 'browse',
-    });
-  }, [placingPin, iframeReady, postToIframe]);
-
-  // ── Send comments to iframe when they change ──
-  useEffect(() => {
-    if (!iframeReady) return;
-    postToIframe({
-      type: 'aviz-load-comments',
-      comments: allComments.map((c) => ({
-        id: c.id,
-        comment_type: c.comment_type,
-        pin_x: c.pin_x,
-        pin_y: c.pin_y,
-        thread_number: c.thread_number,
-        resolved: c.resolved,
-        parent_comment_id: c.parent_comment_id,
-      })),
-    });
-  }, [allComments, iframeReady, postToIframe]);
-
-  // ── Fallback: mark as loaded if no postMessage after a while ──
-  const handleIframeLoad = useCallback(() => {
-    setTimeout(() => {
-      setStatus((prev) => (prev === 'loading' ? 'loaded' : prev));
-    }, 3000);
-  }, []);
-
-  // ── No proxy URL ──
-  if (!proxyUrl) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center max-w-sm px-6">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle size={24} className="text-amber-500" />
-          </div>
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Missing configuration</h3>
-          <p className="text-sm text-gray-500">
-            This webpage item needs a URL and share token to load the review proxy.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const handleCopy = async () => {
+    if (!scriptTag) return;
+    try {
+      await navigator.clipboard.writeText(scriptTag);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = scriptTag;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full h-full"
-    >
-      {/* Loading state */}
-      {status === 'loading' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-[1]">
-          <div className="text-center">
-            <Loader2 size={24} className="text-[#017C87] animate-spin mx-auto mb-3" />
-            <p className="text-sm text-gray-400">Loading page…</p>
+    <div className="flex items-center justify-center h-full p-6">
+      <div className="w-full max-w-lg space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-2xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-4">
+            <Globe size={24} className="text-[#017C87]" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            Feedback Widget
+          </h3>
+          <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
+            Embed this script on your page to enable the feedback widget.
+            Visitors can leave comments, take screenshots, and record their screen.
+          </p>
+        </div>
+
+        {/* Installation status */}
+        <div
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+            isInstalled
+              ? 'bg-emerald-50 border-emerald-200'
+              : 'bg-amber-50 border-amber-200'
+          }`}
+        >
+          {isInstalled ? (
+            <>
+              <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-emerald-800">Widget installed</p>
+                <p className="text-xs text-emerald-600 mt-0.5">
+                  Detected on {new Date(item.widget_installed_at!).toLocaleDateString('en-AU', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                  })}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <Clock size={18} className="text-amber-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-800">Awaiting installation</p>
+                <p className="text-xs text-amber-600 mt-0.5">
+                  Add the script below to your page&apos;s <code className="font-mono">&lt;head&gt;</code> tag
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Embed code */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+              <Code2 size={13} />
+              Embed Code
+            </label>
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+            >
+              {copied ? (
+                <>
+                  <Check size={12} className="text-emerald-500" />
+                  <span className="text-emerald-600">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={12} />
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+          <div
+            onClick={handleCopy}
+            className="relative bg-gray-900 rounded-xl p-4 cursor-pointer group"
+          >
+            <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
+              {scriptTag || '/* Missing share token or item ID */'}
+            </pre>
+            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-[#017C87]/30 transition-colors" />
           </div>
         </div>
-      )}
 
-      {/* Error state */}
-      {status === 'error' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-[1]">
-          <div className="text-center max-w-sm px-6">
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle size={24} className="text-amber-500" />
-            </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-2">
-              Failed to load page
-            </h3>
-            <p className="text-sm text-gray-500 leading-relaxed mb-5">
-              The page couldn&apos;t be loaded through the proxy. You can still
-              open it directly and leave general comments.
-            </p>
+        {/* Open page button */}
+        {item.url && (
+          <div className="flex items-center justify-center gap-3">
             <a
-              href={item.url || '#'}
+              href={item.url}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#017C87] hover:bg-[#015c64] transition-colors"
             >
               <ExternalLink size={14} />
-              Open in New Tab
+              Open Page
             </a>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Proxied iframe — pins render INSIDE via injected script */}
-      <iframe
-        ref={iframeRef}
-        src={proxyUrl}
-        title={item.title}
-        className="w-full h-full border-0"
-        onLoad={handleIframeLoad}
-        onError={() => setStatus('error')}
-        style={{ opacity: status === 'loaded' ? 1 : 0 }}
-      />
-
-      {/* URL bar at bottom */}
-      {status === 'loaded' && !placingPin && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/90 border border-gray-200/60 shadow-sm backdrop-blur-sm max-w-[400px]">
-          <Globe size={12} className="text-gray-400 shrink-0" />
-          <span className="text-[11px] text-gray-500 truncate">{item.url}</span>
-          <a
-            href={item.url || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#017C87] hover:text-[#015c64] shrink-0"
-            title="Open in new tab"
-          >
-            <ExternalLink size={11} />
-          </a>
-        </div>
-      )}
+        {/* URL display */}
+        {item.url && (
+          <p className="text-center text-xs text-gray-400 truncate px-4">
+            {item.url}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
