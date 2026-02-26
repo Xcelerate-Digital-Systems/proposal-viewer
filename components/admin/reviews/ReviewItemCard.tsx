@@ -2,10 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Trash2, MessageSquareText, CheckCircle2, AlertCircle,
-  Clock, GripVertical, Pencil, MoreHorizontal, Eye, Globe, Check,
-} from 'lucide-react';
+import { Trash2, MessageSquareText, CheckCircle2, AlertCircle, Clock, GripVertical, Pencil, MoreHorizontal, Eye, Globe, Check, Mail, Smartphone } from 'lucide-react';
 import { supabase, type ReviewItem, type ReviewItemStatus } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
@@ -162,6 +159,24 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: Review
               ) : (
                 <p className="text-[10px] text-amber-600 mt-2">Awaiting install</p>
               )}
+            </div>
+          ) : item.type === 'email' ? (
+            <div className="p-4 text-center w-full">
+              <div className="w-10 h-10 rounded-lg bg-[#017C87]/10 flex items-center justify-center mx-auto">
+                <Mail size={18} className="text-[#017C87]" />
+              </div>
+              <p className="text-[10px] text-gray-500 font-medium mt-2 truncate px-2">
+                {item.email_subject || 'Email'}
+              </p>
+            </div>
+          ) : item.type === 'sms' ? (
+            <div className="p-4 text-center w-full">
+              <div className="w-10 h-10 rounded-lg bg-[#017C87]/10 flex items-center justify-center mx-auto">
+                <Smartphone size={18} className="text-[#017C87]" />
+              </div>
+              <p className="text-[10px] text-gray-500 font-medium mt-2 truncate px-2">
+                {item.sms_body ? `${item.sms_body.slice(0, 30)}…` : 'SMS'}
+              </p>
             </div>
           ) : thumbnailUrl ? (
             <img

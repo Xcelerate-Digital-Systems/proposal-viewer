@@ -241,7 +241,7 @@ export type ReviewProject = {
   updated_at: string;
 };
 
-export type ReviewItemType = 'webpage' | 'email' | 'ad' | 'image' | 'video';
+export type ReviewItemType = 'webpage' | 'email' | 'ad' | 'image' | 'video' | 'sms';
 export type ReviewItemStatus = 'draft' | 'in_review' | 'approved' | 'revision_needed';
 
 export type ReviewItem = {
@@ -259,6 +259,10 @@ export type ReviewItem = {
   ad_cta: string | null;
   ad_creative_url: string | null;
   ad_platform: string | null;
+  email_subject: string | null;
+  email_preheader: string | null;
+  email_body: string | null;
+  sms_body: string | null;
   image_url: string | null;
   status: ReviewItemStatus;
   version: number;

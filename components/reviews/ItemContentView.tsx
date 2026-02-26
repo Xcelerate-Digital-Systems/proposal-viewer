@@ -13,6 +13,8 @@ import {
   Code2,
 } from 'lucide-react';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/reviews/AdMockupPreview';
+import EmailMockupPreview from '@/components/admin/reviews/EmailMockupPreview';
+import SmsMockupPreview from '@/components/admin/reviews/SmsMockupPreview';
 import PinOverlay from './PinOverlay';
 import type { ReviewItem, ReviewComment } from '@/lib/supabase';
 
@@ -68,8 +70,31 @@ export default function ItemContentView({
   }
 
   const isAd = item.type === 'ad' && item.ad_creative_url;
+  const isEmail = item.type === 'email';
   const isWebpage = item.type === 'webpage';
   const imageUrl = item.image_url || item.screenshot_url;
+
+  // Email items — render the email mockup preview
+  if (isEmail) {
+    return (
+      <EmailContentView
+        item={item}
+      />
+    );
+  }
+  // SMS items — render the SMS mockup preview
+  if (item.type === 'sms') {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <SmsMockupPreview
+          body={item.sms_body || ''}
+          senderName="Your Brand"
+          client="imessage"
+          showClientToggle
+        />
+      </div>
+    );
+  }
 
   // Webpage items — show embed code & status
   if (isWebpage) {
@@ -131,6 +156,29 @@ export default function ItemContentView({
     <div className="text-center">
       <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
       <p className="text-sm text-gray-400">{emptyText}</p>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Email content view — renders the email mockup with client toggle   */
+/* ================================================================== */
+
+function EmailContentView({
+  item,
+}: {
+  item: ReviewItem;
+}) {
+  return (
+    <div className="w-full max-w-2xl mx-auto">
+      <EmailMockupPreview
+        subject={item.email_subject || ''}
+        preheader={item.email_preheader || ''}
+        body={item.email_body || ''}
+        senderName="Your Brand"
+        client="inbox_preview"
+        showClientToggle
+      />
     </div>
   );
 }

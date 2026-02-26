@@ -2,10 +2,12 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { X, Upload, Image, Globe, Mail, Megaphone, ChevronLeft, type LucideIcon } from 'lucide-react';
+import { X, Upload, Image, Globe, Mail, Megaphone, Smartphone, ChevronLeft, type LucideIcon } from 'lucide-react';
 import { supabase, type ReviewItemType } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/reviews/AdMockupPreview';
+import EmailMockupPreview from '@/components/admin/reviews/EmailMockupPreview';
+import SmsMockupPreview from '@/components/admin/reviews/SmsMockupPreview';
 
 interface AddReviewItemModalProps {
   reviewProjectId: string;
@@ -19,8 +21,9 @@ interface AddReviewItemModalProps {
 const typeOptions: { value: ReviewItemType; label: string; icon: LucideIcon; description: string; enabled: boolean }[] = [
   { value: 'image', label: 'Image', icon: Image, description: 'Upload a design, screenshot, or photo', enabled: true },
   { value: 'ad', label: 'Ad Creative', icon: Megaphone, description: 'Facebook / Instagram ad mockup', enabled: true },
+  { value: 'email', label: 'Email', icon: Mail, description: 'Subject line, preheader & body text', enabled: true },
+  { value: 'sms', label: 'SMS', icon: Smartphone, description: 'Text message preview with character count', enabled: true },
   { value: 'webpage', label: 'Web Page', icon: Globe, description: 'Add a URL and embed a feedback widget', enabled: true },
-  { value: 'email', label: 'Email', icon: Mail, description: 'Paste email HTML', enabled: false },
 ];
 
 const CTA_OPTIONS = [
@@ -53,6 +56,16 @@ export default function AddReviewItemModal({
   const [adCta, setAdCta] = useState('Learn More');
   const [adPlatform, setAdPlatform] = useState<AdPlatform>('facebook_feed');
   const [showPreview, setShowPreview] = useState(false);
+
+  // Email-specific fields
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailPreheader, setEmailPreheader] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
+
+  // SMS-specific fields
+  const [smsBody, setSmsBody] = useState('');
+  const [showSmsPreview, setShowSmsPreview] = useState(false);
 
   // Webpage-specific fields
   const [webpageUrl, setWebpageUrl] = useState('');
@@ -99,6 +112,72 @@ export default function AddReviewItemModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // SMS type: no file needed
+    if (itemType === 'sms') {
+      if (!title.trim() || !smsBody.trim()) return;
+      setUploading(true);
+      try {
+        const { data: newItem, error: insertError } = await supabase.from('review_items').insert({
+          review_project_id: reviewProjectId,
+          company_id: companyId,
+          title: title.trim(),
+          type: 'sms',
+          sms_body: smsBody.trim(),
+          sort_order: nextSortOrder,
+          status: 'in_review',
+          created_by: userId,
+        }).select('id').single();
+
+        if (insertError || !newItem) {
+          toast.error('Failed to create item');
+          setUploading(false);
+          return;
+        }
+
+        toast.success('SMS added');
+        onSuccess(newItem.id);
+        onClose();
+      } catch {
+        toast.error('Something went wrong');
+        setUploading(false);
+      }
+      return;
+    }
+
+    // Email type: no file needed
+    if (itemType === 'email') {
+      if (!title.trim() || !emailSubject.trim()) return;
+      setUploading(true);
+      try {
+        const { data: newItem, error: insertError } = await supabase.from('review_items').insert({
+          review_project_id: reviewProjectId,
+          company_id: companyId,
+          title: title.trim(),
+          type: 'email',
+          email_subject: emailSubject.trim(),
+          email_preheader: emailPreheader.trim() || null,
+          email_body: emailBody.trim() || null,
+          sort_order: nextSortOrder,
+          status: 'in_review',
+          created_by: userId,
+        }).select('id').single();
+
+        if (insertError || !newItem) {
+          toast.error('Failed to create item');
+          setUploading(false);
+          return;
+        }
+
+        toast.success('Email added');
+        onSuccess(newItem.id);
+        onClose();
+      } catch {
+        toast.error('Something went wrong');
+        setUploading(false);
+      }
+      return;
+    }
 
     // Webpage type: no file needed
     if (itemType === 'webpage') {
@@ -206,24 +285,51 @@ export default function AddReviewItemModal({
     setAdCta('Learn More');
     setAdPlatform('facebook_feed');
     setShowPreview(false);
+    setEmailSubject('');
+    setEmailPreheader('');
+    setEmailBody('');
+    setShowEmailPreview(false);
+    setSmsBody('');
+    setShowSmsPreview(false);
     setWebpageUrl('');
   };
 
-  const isValid = itemType === 'webpage'
-    ? !!title.trim() && !!webpageUrl.trim()
-    : !!file && !!title.trim();
+  const isValid =
+    itemType === 'webpage'
+      ? !!title.trim() && !!webpageUrl.trim()
+      : itemType === 'email'
+      ? !!title.trim() && !!emailSubject.trim()
+      : itemType === 'sms'
+      ? !!title.trim() && !!smsBody.trim()
+      : !!file && !!title.trim();
+
+  // Determine if modal should be wide (preview panel visible)
+  const isWide =
+    (step === 'details' && itemType === 'ad' && showPreview) ||
+    (step === 'details' && itemType === 'email' && showEmailPreview) ||
+    (step === 'details' && itemType === 'sms' && showSmsPreview);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       <div className={`relative bg-white rounded-xl shadow-2xl mx-4 ${
-        step === 'details' && itemType === 'ad' && showPreview ? 'w-full max-w-4xl' : 'w-full max-w-lg'
+        isWide ? 'w-full max-w-4xl' : 'w-full max-w-lg'
       } max-h-[90vh] flex flex-col`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <h2 className="text-lg font-semibold text-gray-900 font-[family-name:var(--font-display)]">
-            {step === 'type' ? 'Add Item' : itemType === 'ad' ? 'New Ad Mockup' : 'Upload Image'}
+            {step === 'type'
+              ? 'Add Item'
+              : itemType === 'ad'
+              ? 'New Ad Mockup'
+              : itemType === 'email'
+              ? 'New Email Review'
+              : itemType === 'sms'
+              ? 'New SMS Review'
+              : itemType === 'webpage'
+              ? 'New Web Page'
+              : 'Upload Image'}
           </h2>
           <button onClick={onClose}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
@@ -310,7 +416,6 @@ export default function AddReviewItemModal({
         {/* Step 2: Ad details */}
         {step === 'details' && itemType === 'ad' && (
           <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex">
-            {/* Form side */}
             <div className={`${showPreview ? 'w-1/2 border-r border-gray-200' : 'w-full'} p-6 space-y-4 overflow-y-auto`}>
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
@@ -401,7 +506,6 @@ export default function AddReviewItemModal({
               </div>
             </div>
 
-            {/* Preview side */}
             {showPreview && preview && (
               <div className="w-1/2 p-6 overflow-y-auto bg-gray-50 flex items-start justify-center">
                 <AdMockupPreview
@@ -413,6 +517,173 @@ export default function AddReviewItemModal({
                   pageName="Your Brand"
                   showPlatformToggle
                   onPlatformChange={setAdPlatform}
+                />
+              </div>
+            )}
+          </form>
+        )}
+
+        {/* Step 2: Email details */}
+        {step === 'details' && itemType === 'email' && (
+          <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex">
+            <div className={`${showEmailPreview ? 'w-1/2 border-r border-gray-200' : 'w-full'} p-6 space-y-4 overflow-y-auto`}>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                  Item Title <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. March Newsletter – Subject Test"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                  Subject Line <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text" value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="Your email subject line…"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                  Preheader
+                </label>
+                <input
+                  type="text" value={emailPreheader} onChange={(e) => setEmailPreheader(e.target.value)}
+                  placeholder="Preview text shown after subject in inbox…"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">
+                  The short text visible in the inbox beside the subject line
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                  Body Text
+                </label>
+                <textarea
+                  value={emailBody} onChange={(e) => setEmailBody(e.target.value)} rows={5}
+                  placeholder="The main email body copy…"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-y min-h-[100px]"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={resetToTypeSelection}
+                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                    <ChevronLeft size={14} /> Change type
+                  </button>
+                  <button type="button" onClick={() => setShowEmailPreview(!showEmailPreview)}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                      showEmailPreview
+                        ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
+                        : 'text-gray-500 border-gray-200 hover:border-gray-300'
+                    }`}>
+                    {showEmailPreview ? 'Hide Preview' : 'Show Preview'}
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={onClose}
+                    className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={!isValid || uploading}
+                    className="px-5 py-2.5 bg-[#017C87] text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    {uploading ? 'Adding…' : 'Add Item'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {showEmailPreview && (
+              <div className="w-1/2 p-6 overflow-y-auto bg-gray-50 flex items-start justify-center">
+                <EmailMockupPreview
+                  subject={emailSubject || 'Your subject line'}
+                  preheader={emailPreheader || 'Preheader text goes here…'}
+                  body={emailBody || 'Email body text will appear here…'}
+                  senderName="Your Brand"
+                  client="inbox_preview"
+                  showClientToggle
+                />
+              </div>
+            )}
+          </form>
+        )}
+
+        {/* Step 2: SMS details */}
+        {step === 'details' && itemType === 'sms' && (
+          <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex">
+            <div className={`${showSmsPreview ? 'w-1/2 border-r border-gray-200' : 'w-full'} p-6 space-y-4 overflow-y-auto`}>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                  Item Title <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Appointment Reminder SMS"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                  Message <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  value={smsBody} onChange={(e) => setSmsBody(e.target.value)} rows={5}
+                  placeholder="Your SMS message text…"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-y min-h-[100px]"
+                />
+                <p className="text-[10px] mt-1" style={{ color: smsBody.length > 160 ? '#f59e0b' : '#9ca3af' }}>
+                  {smsBody.length} / 160 characters
+                  {smsBody.length > 160 && ` · ${Math.ceil(smsBody.length / 160)} segments`}
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={resetToTypeSelection}
+                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                    <ChevronLeft size={14} /> Change type
+                  </button>
+                  <button type="button" onClick={() => setShowSmsPreview(!showSmsPreview)}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                      showSmsPreview
+                        ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
+                        : 'text-gray-500 border-gray-200 hover:border-gray-300'
+                    }`}>
+                    {showSmsPreview ? 'Hide Preview' : 'Show Preview'}
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={onClose}
+                    className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={!isValid || uploading}
+                    className="px-5 py-2.5 bg-[#017C87] text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    {uploading ? 'Adding…' : 'Add Item'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {showSmsPreview && (
+              <div className="w-1/2 p-6 overflow-y-auto bg-gray-50 flex items-start justify-center">
+                <SmsMockupPreview
+                  body={smsBody || 'Your SMS message will appear here…'}
+                  senderName="Your Brand"
+                  client="imessage"
+                  showClientToggle
                 />
               </div>
             )}

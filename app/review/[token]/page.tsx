@@ -3,10 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import {
-  MessageSquare, ChevronLeft, ChevronRight, Menu, X,
-  Image as ImageIcon, MapPin, Globe, ExternalLink,
-} from 'lucide-react';
+import { MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon, MapPin, Globe, ExternalLink, Mail, Smartphone } from 'lucide-react';
 import { type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
 import { type CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
@@ -376,6 +373,22 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
                       style={{ backgroundColor: `${sidebarText}08` }}>
                       <Globe size={20} style={{ color: `${sidebarText}44` }} />
                     </div>
+                  ) : item.type === 'email' ? (
+                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                      style={{ backgroundColor: `${sidebarText}08` }}>
+                      <Mail size={16} style={{ color: `${sidebarText}44` }} />
+                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                        {item.email_subject || 'Email'}
+                      </span>
+                    </div>
+                  ) : item.type === 'sms' ? (
+                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                      style={{ backgroundColor: `${sidebarText}08` }}>
+                      <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
+                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                        {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
+                      </span>
+                    </div>
                   ) : thumbUrl ? (
                     <div className="w-full aspect-video rounded overflow-hidden mb-1.5"
                       style={{ backgroundColor: `${sidebarText}08` }}>
@@ -438,8 +451,24 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
                       <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
                         style={{ backgroundColor: `${sidebarText}08` }}>
                         <Globe size={20} style={{ color: `${sidebarText}44` }} />
-                      </div>
-                    ) : thumbUrl ? (
+                    </div>
+                  ) : item.type === 'email' ? (
+                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                      style={{ backgroundColor: `${sidebarText}08` }}>
+                      <Mail size={16} style={{ color: `${sidebarText}44` }} />
+                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                        {item.email_subject || 'Email'}
+                      </span>
+                    </div>
+                  ) : item.type === 'sms' ? (
+                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                      style={{ backgroundColor: `${sidebarText}08` }}>
+                      <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
+                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                        {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
+                      </span>
+                    </div>
+                  ) : thumbUrl ? (
                       <div className="w-full aspect-video rounded overflow-hidden mb-1.5" style={{ backgroundColor: `${sidebarText}08` }}>
                         <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
                       </div>
