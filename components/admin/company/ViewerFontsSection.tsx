@@ -48,7 +48,7 @@ function WeightPicker({
   const options = WEIGHT_OPTIONS.filter((w) => available.includes(w.value));
 
   // If only 1 weight available or no font selected, don't show picker
-  if (!font || options.length <= 1) return null;
+    if (options.length <= 1) return null;
 
   const current = value || '400';
 
