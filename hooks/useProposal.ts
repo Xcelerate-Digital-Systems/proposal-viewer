@@ -382,7 +382,7 @@ export function useProposal(token: string) {
       .from('proposals')
       .createSignedUrl(data.file_path, 3600);
 
-    if (signedData?.signedUrl) setPdfUrl(signedData.signedUrl);
+    if (signedData?.signedUrl) setPdfUrl(signedData.signedUrl + '&v=' + Date.now());
 
     const { data: commentsData } = await supabase
       .from('proposal_comments')

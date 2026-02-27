@@ -42,12 +42,14 @@ export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
   return (
     <>
       <Handle
+        id="left"
         type="target"
         position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-gray-300 !border-2 !border-white hover:!bg-[#017C87] transition-colors !-left-1.5"
         isConnectable={!readOnly}
       />
       <Handle
+        id="right"
         type="source"
         position={Position.Right}
         className="!w-2.5 !h-2.5 !bg-gray-300 !border-2 !border-white hover:!bg-[#017C87] transition-colors !-right-1.5"

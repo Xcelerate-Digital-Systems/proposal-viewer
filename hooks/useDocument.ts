@@ -222,7 +222,7 @@ export function useDocument(token: string) {
         .createSignedUrl(doc.file_path, 3600);
 
       if (urlData?.signedUrl) {
-        setPdfUrl(urlData.signedUrl);
+        setPdfUrl(urlData.signedUrl + '&v=' + Date.now());
       }
 
       setLoading(false);

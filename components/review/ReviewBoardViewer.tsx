@@ -17,6 +17,8 @@ import { type ReviewItem, type ReviewBoardEdge, type ReviewBoardNote, type Revie
 import { type CompanyBranding } from '@/hooks/useProposal';
 import ReviewItemNode, { type ReviewItemNodeData } from '@/components/admin/reviews/board/nodes/ReviewItemNode';
 import StickyNoteNode, { type StickyNoteNodeData } from '@/components/admin/reviews/board/nodes/StickyNoteNode';
+import LabeledEdge from '@/components/admin/reviews/board/edges/LabeledEdge';
+import { type EdgeTypes } from '@xyflow/react';
 
 /* ─── Types ────────────────────────────────────────────────────── */
 
@@ -36,6 +38,9 @@ const nodeTypes: NodeTypes = {
   stickyNote: StickyNoteNode,
 };
 
+const edgeTypes: EdgeTypes = {
+  labeled: LabeledEdge,
+};
 /* ─── Component ────────────────────────────────────────────────── */
 
 export default function ReviewBoardViewer({
@@ -108,7 +113,7 @@ export default function ReviewBoardViewer({
         target: e.target_item_id,
         sourceHandle: e.source_handle || 'right',
         targetHandle: e.target_handle || 'left',
-        type: e.edge_type || 'default',
+        type: 'labeled',
         animated: e.animated || false,
         label: e.label || undefined,
         style: {
@@ -158,6 +163,7 @@ export default function ReviewBoardViewer({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodeClick={onNodeClick}
         fitView
         fitViewOptions={{ padding: 0.3 }}

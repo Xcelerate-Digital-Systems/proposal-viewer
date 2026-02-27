@@ -73,6 +73,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
     <>
       {/* Allow connections to/from sticky notes */}
       <Handle
+        id="left"
         type="target"
         position={Position.Left}
         className="!w-2 !h-2 !bg-transparent !border-0 hover:!bg-gray-400 transition-colors !-left-1"
@@ -167,6 +168,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
       </div>
 
       <Handle
+        id="right"
         type="source"
         position={Position.Right}
         className="!w-2 !h-2 !bg-transparent !border-0 hover:!bg-gray-400 transition-colors !-right-1"

@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon,
-  MapPin, Globe, ExternalLink, Mail, Smartphone, ArrowLeft,
+  Globe, ExternalLink, Mail, Smartphone, ArrowLeft,
 } from 'lucide-react';
 import { type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
 import { type CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
@@ -15,6 +15,7 @@ import { fontFamily } from '@/lib/google-fonts';
 import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
+import { FeedbackToolbar, FeedbackModeBar, type FeedbackMode } from '@/components/reviews/feedback';
 
 const DEFAULT_BRANDING: CompanyBranding = {
   name: '', logo_url: null, accent_color: '#ff6700', website: null,
@@ -62,8 +63,8 @@ export default function PublicProjectPage({ params }: { params: { token: string 
   // Guest identity
   const [guestName, setGuestName] = useState('');
 
-  // Pin placement mode
-  const [placingPin, setPlacingPin] = useState(false);
+  // Feedback mode (toolbar-driven)
+  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('idle');
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -176,13 +177,18 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
 
   // If urlItem changes (e.g. navigating from whiteboard to a different item),
   // update the selection after data is loaded
-  useEffect(() => {
+   useEffect(() => {
     if (!dataLoaded || !urlItem) return;
     urlItemRef.current = urlItem;
-    if (items.find((i) => i.id === urlItem)) {
-      setSelectedItemId(urlItem);
+    const targetItem = items.find((i) => i.id === urlItem);
+    if (targetItem) {
+      setSelectedItemId(targetItem.id);
+      // Auto-filter to this item's type when coming from whiteboard (no explicit ?type= param)
+      if (!urlType) {
+        setTypeFilter(targetItem.type);
+      }
     }
-  }, [urlItem, dataLoaded, items]);
+  }, [urlItem, dataLoaded, items, urlType]);
 
   // Tab title
   useEffect(() => {
@@ -212,12 +218,12 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
 
   // Pin handlers
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!placingPin) return;
+    if (feedbackMode !== 'pin') return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setPendingPin({ x, y });
-    setPlacingPin(false);
+    setFeedbackMode('idle');
     setShowComments(true);
   };
 
@@ -260,7 +266,7 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
       setSelectedItemId(filteredItems[idx].id);
       urlItemRef.current = null; // clear URL item on manual navigation
       setPendingPin(null);
-      setPlacingPin(false);
+      setFeedbackMode('idle');
     }
   };
 
@@ -408,7 +414,7 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
 
               return (
                 <button key={item.id}
-                  onClick={() => { setSelectedItemId(item.id); urlItemRef.current = null; setPendingPin(null); setPlacingPin(false); }}
+                  onClick={() => { setSelectedItemId(item.id); urlItemRef.current = null; setPendingPin(null); setFeedbackMode('idle'); }}
                   className="w-full text-left rounded-lg p-2 transition-colors"
                   style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}>
                   {item.type === 'webpage' ? (
@@ -477,7 +483,7 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
                 const thumbUrl = item.image_url || item.screenshot_url;
                 return (
                   <button key={item.id}
-                    onClick={() => { setSelectedItemId(item.id); setMobileSidebar(false); setPendingPin(null); }}
+                    onClick={() => { setSelectedItemId(item.id); setMobileSidebar(false); setPendingPin(null); setFeedbackMode('idle'); }}
                     className="w-full text-left rounded-lg p-2 transition-colors"
                     style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}>
                     {item.type === 'webpage' ? (
@@ -520,7 +526,7 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
 
       {/* ── Main content area ── */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Desktop toolbar */}
+        {/* Desktop nav bar (item title + prev/next) */}
         <div className="hidden lg:flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
           <div className="flex items-center gap-2">
             <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
@@ -536,25 +542,19 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
               <ChevronRight size={18} />
             </button>
           </div>
-          <div className="flex items-center gap-2">
-            {!isWebpageItem && (
-              <button onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  placingPin ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
-                    : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-                }`}>
-                <MapPin size={13} />
-                {placingPin ? 'Click to place pin' : 'Add Pin'}
-              </button>
-            )}
-          </div>
         </div>
 
+        {/* Mode bar — appears when pin mode is active */}
+        <FeedbackModeBar
+          mode={feedbackMode}
+          onCancel={() => { setFeedbackMode('idle'); setPendingPin(null); }}
+        />
+
         {/* Item viewer */}
-        <div className={`flex-1 ${isWebpageItem ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-4 lg:p-8'} bg-gray-50`}>
+        <div className={`flex-1 relative ${isWebpageItem ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-4 lg:p-8'} bg-gray-50`}>
           <ItemContentView
             item={selectedItem}
-            placingPin={placingPin}
+            placingPin={feedbackMode === 'pin'}
             pendingPin={pendingPin}
             pinComments={pinComments}
             onImageClick={handleImageClick}
@@ -564,19 +564,18 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
             renderWebpage={renderWebpageClientView}
             emptyText="No items to review"
           />
-        </div>
 
-        {/* Mobile pin FAB */}
-        {!isWebpageItem && (
-          <div className="lg:hidden fixed bottom-4 right-4 z-30 flex gap-2">
-            <button onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
-              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border transition-colors ${
-                placingPin ? 'bg-[#017C87] text-white border-[#017C87]' : 'bg-white text-gray-500 border-gray-200'
-              }`}>
-              <MapPin size={20} />
-            </button>
-          </div>
-        )}
+          {/* Floating feedback toolbar — right edge of content area */}
+          <FeedbackToolbar
+            mode={feedbackMode}
+            onModeChange={(m) => { setFeedbackMode(m); if (m !== 'pin') setPendingPin(null); }}
+            onToggleComments={() => setShowComments(!showComments)}
+            commentsOpen={showComments}
+            unresolvedCount={unresolvedComments.length}
+            hidePinTool={isWebpageItem}
+            className="fixed lg:absolute bottom-4 right-4 lg:bottom-auto lg:top-4 lg:right-4"
+          />
+        </div>
       </div>
 
       {/* ── Comments panel ── */}
