@@ -11,19 +11,19 @@ import {
 import { supabase, type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
+import { usePinFeedback } from '@/hooks/usePinFeedback';
+import { useCommentFilters } from '@/hooks/useCommentFilters';
 import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import ShareItemButton from '@/components/reviews/ShareItemButton';
 import ItemSidebar from '@/components/reviews/ItemSidebar';
-import { FeedbackToolbar, FeedbackModeBar, type FeedbackMode } from '@/components/reviews/feedback';
+import { FeedbackToolbar, FeedbackModeBar } from '@/components/reviews/feedback';
 
 
 export default function ReviewItemViewerPage({
   params,
-  searchParams,
 }: {
   params: { id: string; itemId: string };
-  searchParams: { type?: string };
 }) {
   return (
     <AdminLayout collapseSidebar>
@@ -35,7 +35,6 @@ export default function ReviewItemViewerPage({
           companyId={auth.companyId!}
           session={auth.session}
           teamMember={auth.teamMember}
-          initialTypeFilter={searchParams.type || null}
         />
       )}
     </AdminLayout>
@@ -49,7 +48,6 @@ function ItemViewerGate(props: {
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
   teamMember: { name?: string; email?: string } | null;
-  initialTypeFilter: string | null;
 }) {
   const router = useRouter();
 
@@ -72,7 +70,6 @@ function ItemViewerContent({
   companyId,
   session,
   teamMember,
-  initialTypeFilter,
 }: {
   isSuperAdmin?: boolean;
   projectId: string;
@@ -80,7 +77,6 @@ function ItemViewerContent({
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
   teamMember: { name?: string; email?: string } | null;
-  initialTypeFilter: string | null;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -92,12 +88,14 @@ function ItemViewerContent({
   const [loading, setLoading] = useState(true);
   const [showComments, setShowComments] = useState(true);
 
-  // Feedback mode (toolbar-driven)
-  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('idle');
-  const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
-
-  // Type filter — driven by state, initialized from page-level searchParams prop
-  const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter);
+  // Type filter — read directly from the URL so it works regardless of
+  // component nesting depth (useSearchParams can be unreliable inside
+  // render-prop wrappers like AdminLayout).
+  const getUrlType = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search).get('type');
+  }, []);
+  const [typeFilter, setTypeFilter] = useState<string | null>(getUrlType);
   const filteredItems = useMemo(
     () => (typeFilter ? items.filter((i) => i.type === typeFilter) : items),
     [items, typeFilter]
@@ -114,6 +112,21 @@ function ItemViewerContent({
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
   const isWebpageItem = currentItem?.type === 'webpage';
+
+  // ── Shared hooks ──
+  const {
+    feedbackMode, pendingPin, setPendingPin, imageContainerRef,
+    handleImageClick: baseHandleImageClick, handleCancelPin,
+    changeFeedbackMode, resetFeedback,
+  } = usePinFeedback();
+
+  // Comments are already fetched per-item via Supabase, but useCommentFilters
+  // still simplifies the derivation of top-level/replies/resolved/pin lists.
+  // Pass itemId so the hook's internal filter is a no-op (comments already scoped).
+  const {
+    topLevelComments: topLevel, getReplies,
+    unresolvedComments: unresolved, resolvedComments: resolved, pinComments,
+  } = useCommentFilters(comments, itemId);
 
   // ── Fetch data ──
   const fetchProject = useCallback(async () => {
@@ -175,13 +188,6 @@ function ItemViewerContent({
     fetchAllProjectComments();
   }, [fetchProject, fetchItems, fetchComments, fetchAllProjectComments]);
 
-  // ── Comment helpers ──
-  const topLevel = comments.filter((c) => !c.parent_comment_id);
-  const getReplies = (parentId: string) => comments.filter((c) => c.parent_comment_id === parentId);
-  const unresolved = topLevel.filter((c) => !c.resolved);
-  const resolved = topLevel.filter((c) => c.resolved);
-  const pinComments = topLevel.filter((c) => c.comment_type === 'pin' && c.pin_x != null && c.pin_y != null);
-
   // ── Navigate between items (header arrows) ──
   const goToItem = (idx: number) => {
     if (idx >= 0 && idx < filteredItems.length) {
@@ -193,10 +199,9 @@ function ItemViewerContent({
   // ── Sidebar: select item ──
   const handleSidebarSelect = useCallback((id: string) => {
     const typeParam = typeFilter ? `?type=${typeFilter}` : '';
-    setPendingPin(null);
-    setFeedbackMode('idle');
+    resetFeedback();
     router.push(`/reviews/${projectId}/items/${id}${typeParam}`);
-  }, [projectId, typeFilter, router]);
+  }, [projectId, typeFilter, router, resetFeedback]);
 
   // ── Sidebar: change type filter ──
   const handleFilterChange = useCallback((type: string | null) => {
@@ -211,18 +216,12 @@ function ItemViewerContent({
     }
   }, [items, itemId, projectId, router]);
 
-  // ── Pin placement — image/ad items only ──
-  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (feedbackMode !== 'pin') return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setPendingPin({ x, y });
-    setFeedbackMode('idle');
-    setShowComments(true);
-  };
+  // ── Pin click → also open comments ──
+  const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    baseHandleImageClick(e);
+    if (feedbackMode === 'pin') setShowComments(true);
+  }, [baseHandleImageClick, feedbackMode]);
 
-  // ── Pin click handler ──
   const handlePinClick = useCallback(() => {
     setShowComments(true);
   }, []);
@@ -330,11 +329,6 @@ function ItemViewerContent({
     }
   };
 
-  // ── Cancel pin ──
-  const handleCancelPin = useCallback(() => {
-    setPendingPin(null);
-  }, []);
-
   // ── Loading ──
   if (loading) {
     return (
@@ -347,44 +341,46 @@ function ItemViewerContent({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
+        {/* Left — back link */}
+        <div className="flex items-center min-w-[180px]">
           <Link
             href={`/reviews/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
           >
             <ArrowLeft size={14} />
             {project?.title || 'Back'}
           </Link>
-
-          <span className="text-gray-200">·</span>
-
-          {/* Item navigation */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => goToItem(currentIdx - 1)}
-              disabled={currentIdx <= 0}
-              className="p-1 rounded text-gray-400 hover:text-gray-600 disabled:opacity-20 transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm font-medium text-gray-700 truncate max-w-[200px]">
-              {currentItem?.title}
-            </span>
-            <span className="text-xs text-gray-400 shrink-0">
-              {currentIdx + 1}/{filteredItems.length}
-            </span>
-            <button
-              onClick={() => goToItem(currentIdx + 1)}
-              disabled={currentIdx >= filteredItems.length - 1}
-              className="p-1 rounded text-gray-400 hover:text-gray-600 disabled:opacity-20 transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Center — item nav */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => goToItem(currentIdx - 1)}
+            disabled={currentIdx <= 0}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+          >
+            <ChevronLeft size={20} strokeWidth={2} />
+          </button>
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-medium text-gray-800 truncate max-w-[280px]">
+              {currentItem?.title}
+            </span>
+            <span className="text-[11px] text-gray-400">
+              {currentIdx + 1} of {filteredItems.length}
+            </span>
+          </div>
+          <button
+            onClick={() => goToItem(currentIdx + 1)}
+            disabled={currentIdx >= filteredItems.length - 1}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+          >
+            <ChevronRight size={20} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Right — actions */}
+        <div className="flex items-center gap-2 min-w-[180px] justify-end">
           {/* Open in new tab — for webpage items */}
           {isWebpageItem && currentItem?.url && (
             <a
@@ -418,7 +414,7 @@ function ItemViewerContent({
       {/* Mode bar — appears when pin mode is active */}
       <FeedbackModeBar
         mode={feedbackMode}
-        onCancel={() => { setFeedbackMode('idle'); setPendingPin(null); }}
+        onCancel={() => changeFeedbackMode('idle')}
       />
 
       {/* Content area — sidebar + viewer + comments */}
@@ -427,7 +423,7 @@ function ItemViewerContent({
         <ItemSidebar
           items={items}
           filteredItems={filteredItems}
-          availableTypes={availableTypes}
+          availableTypes={typeFilter ? [] : availableTypes}
           typeFilter={typeFilter}
           onFilterChange={handleFilterChange}
           selectedItemId={itemId}
@@ -452,13 +448,14 @@ function ItemViewerContent({
             pinComments={pinComments}
             onImageClick={handleImageClick}
             onPinClick={handlePinClick}
+            containerRef={imageContainerRef}
             shareToken={project?.share_token || ''}
           />
 
           {/* Floating feedback toolbar — right edge of content area */}
           <FeedbackToolbar
             mode={feedbackMode}
-            onModeChange={(m) => { setFeedbackMode(m); if (m !== 'pin') setPendingPin(null); }}
+            onModeChange={changeFeedbackMode}
             onToggleComments={() => setShowComments(!showComments)}
             commentsOpen={showComments}
             unresolvedCount={unresolved.length}

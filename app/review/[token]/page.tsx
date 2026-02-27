@@ -1,11 +1,16 @@
 // app/review/[token]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon, Globe, ExternalLink, Mail, Smartphone, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Mail, Smartphone, ArrowLeft, Monitor } from 'lucide-react';
 import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
-import { type CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
+import { type CompanyBranding } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING } from '@/lib/review-defaults';
+import { useGuestIdentity } from '@/hooks/useGuestIdentity';
+import { useCommentFilters } from '@/hooks/useCommentFilters';
+import { usePinFeedback } from '@/hooks/usePinFeedback';
+import { useBrandingColors } from '@/hooks/useBrandingColors';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
@@ -13,25 +18,8 @@ import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
 import ReviewBoardViewer from '@/components/review/ReviewBoardViewer';
-import { FeedbackToolbar, FeedbackModeBar, type FeedbackMode } from '@/components/reviews/feedback';
-
-const DEFAULT_BRANDING: CompanyBranding = {
-  name: '', logo_url: null, accent_color: '#ff6700', website: null,
-  bg_primary: '#0f0f0f', bg_secondary: '#141414',
-  sidebar_text_color: '#ffffff', accept_text_color: '#ffffff',
-  cover_bg_style: 'gradient', cover_bg_color_1: '#0f0f0f', cover_bg_color_2: '#141414',
-  cover_text_color: '#ffffff', cover_subtitle_color: '#ffffffb3',
-  cover_button_bg: '#ff6700', cover_button_text: '#ffffff',
-  cover_overlay_opacity: 0.65, cover_gradient_type: 'linear', cover_gradient_angle: 135,
-  font_heading: null, font_body: null, font_sidebar: null,
-  font_heading_weight: null, font_body_weight: null, font_sidebar_weight: null,
-  text_page_bg_color: '#141414', text_page_text_color: '#ffffff',
-  text_page_heading_color: null, text_page_font_size: '14',
-  text_page_border_enabled: true, text_page_border_color: null,
-  text_page_border_radius: '12', text_page_layout: 'contained',
-};
-
-const GUEST_STORAGE_KEY = 'review_guest_identity';
+import WebpageClientPlaceholder from '@/components/reviews/WebpageClientPlaceholder';
+import { FeedbackToolbar, FeedbackModeBar } from '@/components/reviews/feedback';
 
 export default function ReviewViewerPage({ params }: { params: { token: string } }) {
   const searchParams = useSearchParams();
@@ -44,57 +32,49 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
-  const [mobileSidebar, setMobileSidebar] = useState(false);
   const [boardEdges, setBoardEdges] = useState<ReviewBoardEdge[]>([]);
   const [boardNotes, setBoardNotes] = useState<ReviewBoardNote[]>([]);
   const [showBoardView, setShowBoardView] = useState(true);
   const [viewMode, setViewMode] = useState<'project' | 'item'>('project');
-  const [guestName, setGuestName] = useState('');
-  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('idle');
-  const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
-  const imageContainerRef = useRef<HTMLDivElement>(null);
   const urlType = searchParams.get('type');
   const urlItem = searchParams.get('item');
   const [typeFilter, setTypeFilter] = useState<string | null>(urlType);
 
-  // Unique types present in items (for filter tabs)
+  // ── Shared hooks ──
+  const { guestName, setGuestName, saveGuestIdentity } = useGuestIdentity();
+  const { bgSecondary, accent, border, sidebarText } = useBrandingColors(branding);
+  const {
+    feedbackMode, pendingPin, setPendingPin, imageContainerRef,
+    handleImageClick: baseHandleImageClick, handleCancelPin,
+    changeFeedbackMode, resetFeedback,
+  } = usePinFeedback();
+  const {
+    topLevelComments, getReplies, unresolvedComments, resolvedComments, pinComments,
+  } = useCommentFilters(comments, selectedItemId);
+
+  // ── Derived state ──
   const availableTypes = useMemo(() => {
     const types = Array.from(new Set(items.map((i) => i.type)));
     return types.sort();
   }, [items]);
 
-  // Filtered items
   const filteredItems = useMemo(
     () => (typeFilter ? items.filter((i) => i.type === typeFilter) : items),
     [items, typeFilter]
   );
 
-  // Keep selection in sync with filter
+  const selectedItem = filteredItems.find((i) => i.id === selectedItemId) || null;
+  const isWebpageItem = selectedItem?.type === 'webpage';
+  const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
+
+  // ── Keep selection in sync with filter ──
   useEffect(() => {
     if (filteredItems.length > 0 && !filteredItems.find((i) => i.id === selectedItemId)) {
       setSelectedItemId(filteredItems[0].id);
     }
   }, [filteredItems, selectedItemId]);
 
-  // Load guest identity from localStorage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(GUEST_STORAGE_KEY);
-      if (stored) {
-        const { name } = JSON.parse(stored);
-        if (name) setGuestName(name);
-      }
-    } catch {}
-  }, []);
-
-  // Save guest identity
-  const saveGuestIdentity = useCallback((name: string) => {
-    try {
-      localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({ name }));
-    } catch {}
-  }, []);
-
-  // Fetch review data
+  // ── Fetch review data ──
   useEffect(() => {
     async function load() {
       try {
@@ -109,7 +89,6 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         // Set resolution mode
         if (data.mode === 'item') {
           setViewMode('item');
-          // Single item — select it directly, show comments
           if (data.item) {
             setSelectedItemId(data.item.id);
             setShowComments(true);
@@ -156,7 +135,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     load();
   }, [params.token]);
 
-  // Update tab title
+  // ── Tab title ──
   useEffect(() => {
     if (project) {
       document.title = project.client_name
@@ -166,44 +145,19 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     return () => { document.title = 'Creative Review'; };
   }, [project]);
 
-  const selectedItem = filteredItems.find((i) => i.id === selectedItemId) || null;
-  const isWebpageItem = selectedItem?.type === 'webpage';
-  const itemComments = comments.filter((c) => c.review_item_id === selectedItemId);
-  const topLevelComments = itemComments.filter((c) => !c.parent_comment_id);
-  const getReplies = (parentId: string) => itemComments.filter((c) => c.parent_comment_id === parentId);
-  const unresolvedComments = topLevelComments.filter((c) => !c.resolved);
-  const resolvedComments = topLevelComments.filter((c) => c.resolved);
+  // ── Pin click → also open comments ──
+  const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    baseHandleImageClick(e);
+    if (feedbackMode === 'pin') setShowComments(true);
+  }, [baseHandleImageClick, feedbackMode]);
 
-  const bgSecondary = branding.bg_secondary || '#141414';
-  const accent = branding.accent_color || '#ff6700';
-  const border = deriveBorderColor(bgSecondary);
-  const sidebarText = branding.sidebar_text_color || '#ffffff';
-
-  // ── Pin click handler — image/ad items ──
-  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (feedbackMode !== 'pin') return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setPendingPin({ x, y });
-    setFeedbackMode('idle');
-    setShowComments(true);
-  };
-
-  // ── Pin click handler ──
   const handlePinClick = useCallback(() => {
     setShowComments(true);
   }, []);
 
-  // ── Cancel pin ──
-  const handleCancelPin = useCallback(() => {
-    setPendingPin(null);
-  }, []);
-
-  // ── Submit comment (image/ad items — general comments from panel) ──
+  // ── Submit comment ──
   const submitComment = async (content: string, pinX?: number, pinY?: number, parentId?: string) => {
     if (!selectedItemId || !guestName.trim()) return;
-
     saveGuestIdentity(guestName);
 
     const body: Record<string, unknown> = {
@@ -230,18 +184,15 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   };
 
   // ── Navigate items ──
-  const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
   const goToItem = (idx: number) => {
     if (idx >= 0 && idx < filteredItems.length) {
       setSelectedItemId(filteredItems[idx].id);
-      setPendingPin(null);
-      setFeedbackMode('idle');
+      resetFeedback();
     }
   };
 
   // ── Board → item detail navigation ──
   const handleBoardItemClick = useCallback((itemId: string) => {
-    // Auto-filter to clicked item's type (same as whiteboard → project flow)
     const clickedItem = items.find((i) => i.id === itemId);
     if (clickedItem) setTypeFilter(clickedItem.type);
     setSelectedItemId(itemId);
@@ -249,37 +200,14 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     setShowComments(true);
   }, [items]);
 
-  // ── Render override for webpage items in client viewer ──
-  const renderWebpageClientView = useCallback((item: ReviewItem) => (
-    <div className="flex items-center justify-center h-full p-6">
-      <div className="text-center max-w-sm">
-        <div className="w-14 h-14 rounded-2xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-4">
-          <Globe size={24} className="text-[#017C87]" />
-        </div>
-        <h3 className="text-base font-semibold text-gray-900 mb-2">
-          Leave feedback on the live page
-        </h3>
-        <p className="text-sm text-gray-500 leading-relaxed mb-5">
-          This page has a feedback widget installed. Visit the page directly to
-          leave pin comments, take screenshots, and record your screen.
-        </p>
-        {item.url && (
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#017C87] hover:bg-[#015c64] transition-colors"
-          >
-            <ExternalLink size={14} />
-            Visit Page
-          </a>
-        )}
-        {item.url && (
-          <p className="text-xs text-gray-400 mt-3 truncate px-4">{item.url}</p>
-        )}
-      </div>
-    </div>
-  ), []);
+  // ── Filter change + auto-select first item ──
+  const handleFilterChange = (type: string | null) => {
+    setTypeFilter(type);
+    if (type) {
+      const first = items.find((i) => i.type === type);
+      if (first) setSelectedItemId(first.id);
+    }
+  };
 
   // ── Early returns ──
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
@@ -299,52 +227,310 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     );
   }
 
-  const pinComments = topLevelComments.filter(
-    (c) => c.comment_type === 'pin' && c.pin_x != null && c.pin_y != null
-  );
-
-  // Helper to handle filter change + auto-select first item
-  const handleFilterChange = (type: string | null) => {
-    setTypeFilter(type);
-    if (type) {
-      const first = items.find((i) => i.type === type);
-      if (first) setSelectedItemId(first.id);
-    }
-  };
-
-  // ── Board view (full screen) ──
   const isBoardMode = project?.share_mode === 'board';
-// ── Single item view (item-level share token) ──
+
+  // ── Single item view (item-level share token) ──
   if (viewMode === 'item' && selectedItem) {
     const isWebpage = selectedItem.type === 'webpage';
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <>
         <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
-        {/* Simple header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            {branding.logo_url ? (
-              <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
-            ) : branding.name ? (
-              <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
-                {branding.name}
-              </span>
-            ) : null}
-            <span className="text-gray-200">·</span>
-            <span className="text-sm text-gray-600 truncate">{selectedItem.title}</span>
+        {/* Mobile — desktop required message */}
+        <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Monitor size={24} className="text-gray-400" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              Please open this review on a desktop browser for the best experience.
+            </p>
           </div>
         </div>
 
-        {/* Mode bar — appears when pin mode is active */}
-        <FeedbackModeBar
-          mode={feedbackMode}
-          onCancel={() => { setFeedbackMode('idle'); setPendingPin(null); }}
-        />
+        {/* Desktop — single item view */}
+        <div className="hidden lg:flex min-h-screen flex-col bg-gray-50">
+          {/* Simple header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
+              ) : branding.name ? (
+                <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
+                  {branding.name}
+                </span>
+              ) : null}
+              <span className="text-gray-200">·</span>
+              <span className="text-sm text-gray-600 truncate">{selectedItem.title}</span>
+            </div>
+          </div>
 
-        {/* Content + comments */}
-        <div className="flex-1 flex min-h-0">
-          <div className={`flex-1 relative ${isWebpage ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-4 lg:p-8'} bg-gray-50`}>
+          {/* Mode bar */}
+          <FeedbackModeBar
+            mode={feedbackMode}
+            onCancel={() => { changeFeedbackMode('idle'); }}
+          />
+
+          {/* Content + comments */}
+          <div className="flex-1 flex min-h-0">
+            <div className={`flex-1 relative ${isWebpage ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-8'} bg-gray-50`}>
+              <ItemContentView
+                item={selectedItem}
+                placingPin={feedbackMode === 'pin'}
+                pendingPin={pendingPin}
+                pinComments={pinComments}
+                onImageClick={handleImageClick}
+                onPinClick={handlePinClick}
+                containerRef={imageContainerRef}
+                shareToken={params.token}
+                renderWebpage={(item) => <WebpageClientPlaceholder item={item} />}
+                emptyText="Item not available"
+              />
+
+              <FeedbackToolbar
+                mode={feedbackMode}
+                onModeChange={changeFeedbackMode}
+                onToggleComments={() => setShowComments(!showComments)}
+                commentsOpen={showComments}
+                unresolvedCount={unresolvedComments.length}
+                hidePinTool={isWebpage}
+                className="absolute top-4 right-4"
+              />
+            </div>
+
+            <CommentsPanel
+              unresolvedComments={unresolvedComments}
+              resolvedComments={resolvedComments}
+              getReplies={getReplies}
+              hasComments={topLevelComments.length > 0}
+              pendingPin={pendingPin}
+              onSubmitComment={submitComment}
+              onCancelPin={handleCancelPin}
+              onClose={() => setShowComments(false)}
+              guestName={guestName}
+              onNameChange={setGuestName}
+              closable={false}
+              className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white`}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Board view (full screen) ──
+  if (isBoardMode && showBoardView) {
+    return (
+      <>
+        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+
+        {/* Mobile — desktop required message */}
+        <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Monitor size={24} className="text-gray-400" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              Please open this review on a desktop browser for the best experience.
+            </p>
+          </div>
+        </div>
+
+        {/* Desktop — board view */}
+        <div className="hidden lg:flex min-h-screen flex-col bg-gray-50">
+          <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
+              ) : branding.name ? (
+                <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
+                  {branding.name}
+                </span>
+              ) : null}
+              <span className="text-sm text-gray-400 truncate">
+                {project?.title}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400">
+              Click any item to view details and leave feedback
+            </p>
+          </div>
+
+          <div className="flex-1 min-h-0">
+            <ReviewBoardViewer
+              items={items}
+              boardEdges={boardEdges}
+              boardNotes={boardNotes}
+              comments={comments}
+              branding={branding}
+              onSelectItem={handleBoardItemClick}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Default: sidebar + detail view ──
+  return (
+    <>
+      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+
+      {/* Mobile — desktop required message */}
+      <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+        <div className="text-center max-w-sm">
+          <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <Monitor size={24} className="text-gray-400" />
+          </div>
+          <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
+          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            Please open this review on a desktop browser for the best experience.
+          </p>
+        </div>
+      </div>
+
+      {/* Desktop — sidebar + detail layout */}
+      <div className="hidden lg:flex min-h-screen flex-row bg-gray-50">
+        {/* ── Sidebar ── */}
+        <aside
+          className="flex flex-col w-[220px] shrink-0 border-r overflow-hidden"
+          style={{ backgroundColor: bgSecondary, borderColor: border }}
+        >
+          {/* Logo / title */}
+          <div className="px-4 py-4 border-b" style={{ borderColor: border }}>
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt={branding.name} className="h-7 w-auto max-w-[160px] object-contain" />
+            ) : branding.name ? (
+              <span className="text-sm font-semibold" style={{
+                color: sidebarText,
+                fontFamily: fontFamily(branding.font_heading),
+              }}>{branding.name}</span>
+            ) : null}
+            <p className="text-xs mt-1.5 truncate" style={{ color: `${sidebarText}88` }}>
+              {project?.title}
+            </p>
+          </div>
+
+          {/* Items list */}
+          <nav className="flex-1 overflow-y-auto">
+            <div className="px-2 pt-2 pb-1">
+              <TypeFilterTabs
+                items={items}
+                availableTypes={availableTypes}
+                typeFilter={typeFilter}
+                onFilterChange={handleFilterChange}
+                variant="branded"
+                sidebarTextColor={sidebarText}
+              />
+            </div>
+
+            <div className="py-1 px-2 space-y-1">
+              {filteredItems.map((item) => {
+                const isActive = item.id === selectedItemId;
+                const itemThreads = comments.filter(
+                  (c) => c.review_item_id === item.id && !c.parent_comment_id && !c.resolved
+                ).length;
+                const thumbUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setSelectedItemId(item.id); resetFeedback(); }}
+                    className="w-full text-left rounded-lg p-2 transition-colors"
+                    style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}
+                  >
+                    {/* Thumbnail */}
+                    {item.type === 'webpage' ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <Globe size={20} style={{ color: `${sidebarText}44` }} />
+                      </div>
+                    ) : item.type === 'email' ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <Mail size={16} style={{ color: `${sidebarText}44` }} />
+                        <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                          {item.email_subject || 'Email'}
+                        </span>
+                      </div>
+                    ) : item.type === 'sms' ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
+                        <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                          {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
+                        </span>
+                      </div>
+                    ) : thumbUrl ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ) : null}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-medium truncate" style={{
+                        color: isActive ? sidebarText : `${sidebarText}77`,
+                        fontFamily: fontFamily(branding.font_sidebar),
+                      }}>
+                        {item.title}
+                      </span>
+                      {itemThreads > 0 && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                          style={{ backgroundColor: `${accent}22`, color: accent }}>
+                          {itemThreads}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </aside>
+
+        {/* ── Main content area ── */}
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          {/* Desktop nav bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
+            <div className="flex items-center gap-2">
+              {isBoardMode && (
+                <button
+                  onClick={() => setShowBoardView(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors mr-2"
+                >
+                  <ArrowLeft size={14} />
+                  Back to Board
+                </button>
+              )}
+              <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
+                className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
+                <ChevronLeft size={18} />
+              </button>
+              <span className="text-sm text-gray-600">
+                {selectedItem?.title}
+                <span className="text-gray-400"> · {currentIdx + 1} of {filteredItems.length}</span>
+              </span>
+              <button onClick={() => goToItem(currentIdx + 1)} disabled={currentIdx >= filteredItems.length - 1}
+                className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Mode bar */}
+          <FeedbackModeBar
+            mode={feedbackMode}
+            onCancel={() => changeFeedbackMode('idle')}
+          />
+
+          {/* Item viewer */}
+          <div
+            className={`flex-1 relative ${
+              isWebpageItem ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-8'
+            } bg-gray-50`}
+          >
             <ItemContentView
               item={selectedItem}
               placingPin={feedbackMode === 'pin'}
@@ -354,379 +540,38 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
               onPinClick={handlePinClick}
               containerRef={imageContainerRef}
               shareToken={params.token}
-              renderWebpage={renderWebpageClientView}
-              emptyText="Item not available"
+              renderWebpage={(item) => <WebpageClientPlaceholder item={item} />}
+              emptyText="No items to review"
             />
 
-            {/* Floating feedback toolbar */}
             <FeedbackToolbar
               mode={feedbackMode}
-              onModeChange={(m) => { setFeedbackMode(m); if (m !== 'pin') setPendingPin(null); }}
+              onModeChange={changeFeedbackMode}
               onToggleComments={() => setShowComments(!showComments)}
               commentsOpen={showComments}
               unresolvedCount={unresolvedComments.length}
-              hidePinTool={isWebpage}
-              className="fixed lg:absolute bottom-4 right-4 lg:bottom-auto lg:top-4 lg:right-4"
+              hidePinTool={isWebpageItem}
+              className="absolute top-4 right-4"
             />
           </div>
-
-          <CommentsPanel
-            unresolvedComments={unresolvedComments}
-            resolvedComments={resolvedComments}
-            getReplies={getReplies}
-            hasComments={topLevelComments.length > 0}
-            pendingPin={pendingPin}
-            onSubmitComment={submitComment}
-            onCancelPin={handleCancelPin}
-            onClose={() => setShowComments(false)}
-            guestName={guestName}
-            onNameChange={setGuestName}
-            closable={false}
-            className={`
-              ${showComments ? 'fixed inset-0 z-40' : 'hidden'}
-              lg:flex lg:relative lg:inset-auto lg:z-auto lg:w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white
-            `}
-          />
-        </div>
-      </div>
-    );
-  }
-  
-  if (isBoardMode && showBoardView) {
-    return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
-
-        {/* Board header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            {branding.logo_url ? (
-              <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
-            ) : branding.name ? (
-              <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
-                {branding.name}
-              </span>
-            ) : null}
-            <span className="text-sm text-gray-400 truncate">
-              {project.title}
-            </span>
-          </div>
-          <p className="text-xs text-gray-400">
-            Click any item to view details and leave feedback
-          </p>
         </div>
 
-        {/* Board canvas */}
-        <div className="flex-1 min-h-0">
-          <ReviewBoardViewer
-            items={items}
-            boardEdges={boardEdges}
-            boardNotes={boardNotes}
-            comments={comments}
-            branding={branding}
-            onSelectItem={handleBoardItemClick}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50">
-      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
-
-      {/* ── Mobile header ── */}
-      <div
-        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
-        style={{ backgroundColor: bgSecondary, borderColor: border }}
-      >
-        {isBoardMode ? (
-          <button onClick={() => setShowBoardView(true)} className="p-2" style={{ color: sidebarText }}>
-            <ArrowLeft size={20} />
-          </button>
-        ) : (
-          <button onClick={() => setMobileSidebar(true)} className="p-2" style={{ color: sidebarText }}>
-            <Menu size={20} />
-          </button>
-        )}
-        <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
-          <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
-            className="p-1.5 disabled:opacity-20" style={{ color: sidebarText }}>
-            <ChevronLeft size={18} />
-          </button>
-          <span className="text-xs truncate px-1" style={{ color: sidebarText, opacity: 0.55 }}>
-            {selectedItem?.title || 'No items'} · {currentIdx + 1}/{filteredItems.length}
-          </span>
-          <button onClick={() => goToItem(currentIdx + 1)} disabled={currentIdx >= filteredItems.length - 1}
-            className="p-1.5 disabled:opacity-20" style={{ color: sidebarText }}>
-            <ChevronRight size={18} />
-          </button>
-        </div>
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="relative p-2"
-          style={{ color: showComments ? accent : sidebarText, opacity: showComments ? 1 : 0.55 }}
-        >
-          <MessageSquare size={18} />
-          {unresolvedComments.length > 0 && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ backgroundColor: accent }} />
-          )}
-        </button>
-      </div>
-
-      {/* ── Desktop sidebar ── */}
-      <aside
-        className="hidden lg:flex lg:flex-col lg:w-[220px] shrink-0 border-r overflow-hidden"
-        style={{ backgroundColor: bgSecondary, borderColor: border }}
-      >
-        {/* Logo / title */}
-        <div className="px-4 py-4 border-b" style={{ borderColor: border }}>
-          {branding.logo_url ? (
-            <img src={branding.logo_url} alt={branding.name} className="h-7 w-auto max-w-[160px] object-contain" />
-          ) : branding.name ? (
-            <span className="text-sm font-semibold" style={{
-              color: sidebarText,
-              fontFamily: fontFamily(branding.font_heading),
-            }}>{branding.name}</span>
-          ) : null}
-          <p className="text-xs mt-1.5 truncate" style={{ color: `${sidebarText}88` }}>
-            {project?.title}
-          </p>
-        </div>
-
-        {/* Items list */}
-        <nav className="flex-1 overflow-y-auto">
-          {/* Filter tabs */}
-          <div className="px-2 pt-2 pb-1">
-            <TypeFilterTabs
-              items={items}
-              availableTypes={availableTypes}
-              typeFilter={typeFilter}
-              onFilterChange={handleFilterChange}
-              variant="branded"
-              sidebarTextColor={sidebarText}
-            />
-          </div>
-
-          <div className="py-1 px-2 space-y-1">
-            {filteredItems.map((item) => {
-              const isActive = item.id === selectedItemId;
-              const itemThreads = comments.filter(
-                (c) => c.review_item_id === item.id && !c.parent_comment_id && !c.resolved
-              ).length;
-              const thumbUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
-
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => { setSelectedItemId(item.id); setPendingPin(null); setFeedbackMode('idle'); }}
-                  className="w-full text-left rounded-lg p-2 transition-colors"
-                  style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}
-                >
-                  {/* Thumbnail */}
-                  {item.type === 'webpage' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Globe size={20} style={{ color: `${sidebarText}44` }} />
-                    </div>
-                  ) : item.type === 'email' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Mail size={16} style={{ color: `${sidebarText}44` }} />
-                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
-                        {item.email_subject || 'Email'}
-                      </span>
-                    </div>
-                  ) : item.type === 'sms' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
-                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
-                        {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
-                      </span>
-                    </div>
-                  ) : thumbUrl ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-medium truncate" style={{
-                      color: isActive ? sidebarText : `${sidebarText}77`,
-                      fontFamily: fontFamily(branding.font_sidebar),
-                    }}>
-                      {item.title}
-                    </span>
-                    {itemThreads > 0 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
-                        style={{ backgroundColor: `${accent}22`, color: accent }}>
-                        {itemThreads}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-      </aside>
-
-      {/* ── Mobile sidebar overlay ── */}
-      {mobileSidebar && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/40" onClick={() => setMobileSidebar(false)}>
-          <div className="w-[260px] h-full border-r overflow-y-auto"
-            style={{ backgroundColor: bgSecondary, borderColor: border }}
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: border }}>
-              <span className="text-sm font-medium" style={{ color: sidebarText }}>Items</span>
-              <button onClick={() => setMobileSidebar(false)} style={{ color: `${sidebarText}55` }}><X size={18} /></button>
-            </div>
-            {/* Filter tabs */}
-            <div className="px-3 pt-2 pb-1">
-              <TypeFilterTabs
-                items={items}
-                availableTypes={availableTypes}
-                typeFilter={typeFilter}
-                onFilterChange={handleFilterChange}
-                variant="branded"
-                sidebarTextColor={sidebarText}
-                showCounts={false}
-              />
-            </div>
-            <nav className="p-2 space-y-1">
-              {filteredItems.map((item) => {
-                const isActive = item.id === selectedItemId;
-                const thumbUrl = item.image_url || item.screenshot_url;
-                return (
-                  <button key={item.id}
-                    onClick={() => { setSelectedItemId(item.id); setMobileSidebar(false); setPendingPin(null); }}
-                    className="w-full text-left rounded-lg p-2 transition-colors"
-                    style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}>
-                    {item.type === 'webpage' ? (
-                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
-                        style={{ backgroundColor: `${sidebarText}08` }}>
-                        <Globe size={20} style={{ color: `${sidebarText}44` }} />
-                    </div>
-                  ) : item.type === 'email' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Mail size={16} style={{ color: `${sidebarText}44` }} />
-                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
-                        {item.email_subject || 'Email'}
-                      </span>
-                    </div>
-                  ) : item.type === 'sms' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
-                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
-                        {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
-                      </span>
-                    </div>
-                  ) : thumbUrl ? (
-                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5" style={{ backgroundColor: `${sidebarText}08` }}>
-                        <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
-                      </div>
-                    ) : null}
-                    <span className="text-xs font-medium truncate block" style={{ color: isActive ? sidebarText : `${sidebarText}77` }}>
-                      {item.title}
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-      )}
-
-      {/* ── Main content area ── */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Desktop nav bar (item title + prev/next) */}
-        <div className="hidden lg:flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
-          <div className="flex items-center gap-2">
-            {isBoardMode && (
-              <button
-                onClick={() => setShowBoardView(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors mr-2"
-              >
-                <ArrowLeft size={14} />
-                Back to Board
-              </button>
-            )}
-            <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
-              className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
-              <ChevronLeft size={18} />
-            </button>
-            <span className="text-sm text-gray-600">
-              {selectedItem?.title}
-              <span className="text-gray-400"> · {currentIdx + 1} of {filteredItems.length}</span>
-            </span>
-            <button onClick={() => goToItem(currentIdx + 1)} disabled={currentIdx >= filteredItems.length - 1}
-              className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Mode bar — appears when pin mode is active */}
-        <FeedbackModeBar
-          mode={feedbackMode}
-          onCancel={() => { setFeedbackMode('idle'); setPendingPin(null); }}
+        {/* ── Comments panel ── */}
+        <CommentsPanel
+          unresolvedComments={unresolvedComments}
+          resolvedComments={resolvedComments}
+          getReplies={getReplies}
+          hasComments={topLevelComments.length > 0}
+          pendingPin={pendingPin}
+          onSubmitComment={submitComment}
+          onCancelPin={handleCancelPin}
+          onClose={() => setShowComments(false)}
+          guestName={guestName}
+          onNameChange={setGuestName}
+          closable={false}
+          className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white`}
         />
-
-        {/* Item viewer */}
-        <div
-          className={`flex-1 relative ${
-            isWebpageItem
-              ? 'overflow-auto'
-              : 'overflow-auto flex items-center justify-center p-4 lg:p-8'
-          } bg-gray-50`}
-        >
-          <ItemContentView
-            item={selectedItem}
-            placingPin={feedbackMode === 'pin'}
-            pendingPin={pendingPin}
-            pinComments={pinComments}
-            onImageClick={handleImageClick}
-            onPinClick={handlePinClick}
-            containerRef={imageContainerRef}
-            shareToken={params.token}
-            renderWebpage={renderWebpageClientView}
-            emptyText="No items to review"
-          />
-
-          {/* Floating feedback toolbar — right edge of content area */}
-          <FeedbackToolbar
-            mode={feedbackMode}
-            onModeChange={(m) => { setFeedbackMode(m); if (m !== 'pin') setPendingPin(null); }}
-            onToggleComments={() => setShowComments(!showComments)}
-            commentsOpen={showComments}
-            unresolvedCount={unresolvedComments.length}
-            hidePinTool={isWebpageItem}
-            className="fixed lg:absolute bottom-4 right-4 lg:bottom-auto lg:top-4 lg:right-4"
-          />
-        </div>
       </div>
-
-      {/* ── Comments panel — always visible on desktop, toggleable on mobile ── */}
-      <CommentsPanel
-        unresolvedComments={unresolvedComments}
-        resolvedComments={resolvedComments}
-        getReplies={getReplies}
-        hasComments={topLevelComments.length > 0}
-        pendingPin={pendingPin}
-        onSubmitComment={submitComment}
-        onCancelPin={handleCancelPin}
-        onClose={() => setShowComments(false)}
-        guestName={guestName}
-        onNameChange={setGuestName}
-        closable={false}
-        className={`
-          ${showComments ? 'fixed inset-0 z-40' : 'hidden'}
-          lg:flex lg:relative lg:inset-auto lg:z-auto lg:w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white
-        `}
-      />
-    </div>
+    </>
   );
 }

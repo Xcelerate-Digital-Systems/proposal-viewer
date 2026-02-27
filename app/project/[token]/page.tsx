@@ -3,37 +3,22 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import {
-  MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon,
-  Globe, ExternalLink, Mail, Smartphone, ArrowLeft,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Mail, Smartphone, ArrowLeft, Monitor } from 'lucide-react';
 import { type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
-import { type CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
+import { type CompanyBranding } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING } from '@/lib/review-defaults';
+import { useGuestIdentity } from '@/hooks/useGuestIdentity';
+import { useCommentFilters } from '@/hooks/useCommentFilters';
+import { usePinFeedback } from '@/hooks/usePinFeedback';
+import { useBrandingColors } from '@/hooks/useBrandingColors';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
-import { FeedbackToolbar, FeedbackModeBar, type FeedbackMode } from '@/components/reviews/feedback';
-
-const DEFAULT_BRANDING: CompanyBranding = {
-  name: '', logo_url: null, accent_color: '#ff6700', website: null,
-  bg_primary: '#0f0f0f', bg_secondary: '#141414',
-  sidebar_text_color: '#ffffff', accept_text_color: '#ffffff',
-  cover_bg_style: 'gradient', cover_bg_color_1: '#0f0f0f', cover_bg_color_2: '#141414',
-  cover_text_color: '#ffffff', cover_subtitle_color: '#ffffffb3',
-  cover_button_bg: '#ff6700', cover_button_text: '#ffffff',
-  cover_overlay_opacity: 0.65, cover_gradient_type: 'linear', cover_gradient_angle: 135,
-  font_heading: null, font_body: null, font_sidebar: null,
-  font_heading_weight: null, font_body_weight: null, font_sidebar_weight: null,
-  text_page_bg_color: '#141414', text_page_text_color: '#ffffff',
-  text_page_heading_color: null, text_page_font_size: '14',
-  text_page_border_enabled: true, text_page_border_color: null,
-  text_page_border_radius: '12', text_page_layout: 'contained',
-};
-
-const GUEST_STORAGE_KEY = 'review_guest_identity';
+import WebpageClientPlaceholder from '@/components/reviews/WebpageClientPlaceholder';
+import { FeedbackToolbar, FeedbackModeBar } from '@/components/reviews/feedback';
 
 /**
  * Public project card grid view — /project/[token]
@@ -57,16 +42,7 @@ export default function PublicProjectPage({ params }: { params: { token: string 
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
-  const [mobileSidebar, setMobileSidebar] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
-
-  // Guest identity
-  const [guestName, setGuestName] = useState('');
-
-  // Feedback mode (toolbar-driven)
-  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('idle');
-  const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
-  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   // URL params
   const urlType = searchParams.get('type');
@@ -77,6 +53,19 @@ export default function PublicProjectPage({ params }: { params: { token: string 
   // Track the URL-specified item to prevent sync effect from overriding it
   const urlItemRef = useRef<string | null>(urlItem);
 
+  // ── Shared hooks ──
+  const { guestName, setGuestName, saveGuestIdentity } = useGuestIdentity();
+  const { bgSecondary, accent, border, sidebarText } = useBrandingColors(branding);
+  const {
+    feedbackMode, pendingPin, setPendingPin, imageContainerRef,
+    handleImageClick: baseHandleImageClick, handleCancelPin,
+    changeFeedbackMode, resetFeedback,
+  } = usePinFeedback();
+  const {
+    topLevelComments, getReplies, unresolvedComments, resolvedComments, pinComments,
+  } = useCommentFilters(comments, selectedItemId);
+
+  // ── Derived state ──
   const availableTypes = useMemo(() => {
     const types = Array.from(new Set(items.map((i) => i.type)));
     return types.sort();
@@ -87,8 +76,14 @@ export default function PublicProjectPage({ params }: { params: { token: string 
     [items, typeFilter]
   );
 
-  // Keep selection in sync with filter — only after initial data load,
-  // and never override a URL-specified item that exists in the list
+  const selectedItem = filteredItems.find((i) => i.id === selectedItemId)
+    // Also check full items list in case filter is hiding the URL-specified item
+    || items.find((i) => i.id === selectedItemId)
+    || null;
+  const isWebpageItem = selectedItem?.type === 'webpage';
+  const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
+
+  // ── Keep selection in sync with filter — only after initial data load ──
   useEffect(() => {
     if (!dataLoaded) return;
     if (filteredItems.length > 0 && !filteredItems.find((i) => i.id === selectedItemId)) {
@@ -103,24 +98,8 @@ export default function PublicProjectPage({ params }: { params: { token: string 
     }
   }, [filteredItems, selectedItemId, dataLoaded, items]);
 
-  // Load guest identity
+  // ── Fetch data via the /api/project/[token] endpoint ──
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(GUEST_STORAGE_KEY);
-      if (stored) {
-        const { name } = JSON.parse(stored);
-        if (name) setGuestName(name);
-      }
-    } catch {}
-  }, []);
-
-  const saveGuestIdentity = useCallback((name: string) => {
-    try { localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({ name })); } catch {}
-  }, []);
-
-  // Fetch data via the /api/project/[token] endpoint
-  useEffect(() => {
-    // Sync the ref immediately so the fetch reads the current URL param, not a stale one
     urlItemRef.current = urlItem;
     setLoading(true);
     setDataLoaded(false);
@@ -135,23 +114,15 @@ export default function PublicProjectPage({ params }: { params: { token: string 
         setItems(data.items);
         setComments(data.comments);
 
-        // Read item param directly from searchParams for reliability
         const targetItem = urlItemRef.current;
-        // DEBUG — trace item selection
-        console.log('[PROJECT DEBUG] urlItem from searchParams:', urlItem);
-        console.log('[PROJECT DEBUG] urlItemRef.current (targetItem):', targetItem);
-        console.log('[PROJECT DEBUG] API returned items:', data.items.map((i: ReviewItem) => ({ id: i.id, title: i.title, type: i.type })));
-console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: ReviewItem) => i.id === targetItem));
 
         // Select initial item — URL deep-link takes priority
         const startItems = urlType
           ? data.items.filter((i: ReviewItem) => i.type === urlType)
           : data.items;
         if (targetItem && data.items.find((i: ReviewItem) => i.id === targetItem)) {
-          console.log('[PROJECT DEBUG] ✅ Selecting URL target:', targetItem);
           setSelectedItemId(targetItem);
         } else if (startItems.length > 0) {
-          console.log('[PROJECT DEBUG] ⚠️ Target NOT found, falling back to:', startItems[0].id, startItems[0].title);
           setSelectedItemId(startItems[0].id);
         } else if (data.items.length > 0) {
           setSelectedItemId(data.items[0].id);
@@ -177,7 +148,7 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
 
   // If urlItem changes (e.g. navigating from whiteboard to a different item),
   // update the selection after data is loaded
-   useEffect(() => {
+  useEffect(() => {
     if (!dataLoaded || !urlItem) return;
     urlItemRef.current = urlItem;
     const targetItem = items.find((i) => i.id === urlItem);
@@ -190,7 +161,7 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
     }
   }, [urlItem, dataLoaded, items, urlType]);
 
-  // Tab title
+  // ── Tab title ──
   useEffect(() => {
     if (project) {
       document.title = project.client_name
@@ -200,38 +171,17 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
     return () => { document.title = 'Creative Review'; };
   }, [project]);
 
-  const selectedItem = filteredItems.find((i) => i.id === selectedItemId)
-    // Also check full items list in case filter is hiding the URL-specified item
-    || items.find((i) => i.id === selectedItemId)
-    || null;
-  const isWebpageItem = selectedItem?.type === 'webpage';
-  const itemComments = comments.filter((c) => c.review_item_id === selectedItemId);
-  const topLevelComments = itemComments.filter((c) => !c.parent_comment_id);
-  const getReplies = (parentId: string) => itemComments.filter((c) => c.parent_comment_id === parentId);
-  const unresolvedComments = topLevelComments.filter((c) => !c.resolved);
-  const resolvedComments = topLevelComments.filter((c) => c.resolved);
+  // ── Pin click → also open comments ──
+  const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    baseHandleImageClick(e);
+    if (feedbackMode === 'pin') setShowComments(true);
+  }, [baseHandleImageClick, feedbackMode]);
 
-  const bgSecondary = branding.bg_secondary || '#141414';
-  const accent = branding.accent_color || '#ff6700';
-  const border = deriveBorderColor(bgSecondary);
-  const sidebarText = branding.sidebar_text_color || '#ffffff';
-
-  // Pin handlers
-  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (feedbackMode !== 'pin') return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setPendingPin({ x, y });
-    setFeedbackMode('idle');
+  const handlePinClick = useCallback(() => {
     setShowComments(true);
-  };
+  }, []);
 
-  const handlePinClick = useCallback(() => { setShowComments(true); }, []);
-  const handleCancelPin = useCallback(() => { setPendingPin(null); }, []);
-
-  // Submit comment — uses the existing /api/review/[token]/comments endpoint
-  // since the project share_token is the same token used on the old route
+  // ── Submit comment ──
   const submitComment = async (content: string, pinX?: number, pinY?: number, parentId?: string) => {
     if (!selectedItemId || !guestName.trim()) return;
     saveGuestIdentity(guestName);
@@ -259,57 +209,31 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
     }
   };
 
-  // Navigation
-  const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
+  // ── Navigate items ──
   const goToItem = (idx: number) => {
     if (idx >= 0 && idx < filteredItems.length) {
       setSelectedItemId(filteredItems[idx].id);
-      urlItemRef.current = null; // clear URL item on manual navigation
-      setPendingPin(null);
-      setFeedbackMode('idle');
+      urlItemRef.current = null;
+      resetFeedback();
     }
   };
 
+  // ── Filter change + auto-select first item ──
   const handleFilterChange = (type: string | null) => {
     setTypeFilter(type);
-    urlItemRef.current = null; // clear URL item on filter change
+    urlItemRef.current = null;
     if (type) {
       const first = items.find((i) => i.type === type);
       if (first) setSelectedItemId(first.id);
     }
   };
 
-  // Back to whiteboard
+  // ── Back to whiteboard ──
   const handleBack = useCallback(() => {
-    if (backUrl) {
-      router.push(backUrl);
-    }
+    if (backUrl) router.push(backUrl);
   }, [backUrl, router]);
 
-  // Webpage render override for client viewer
-  const renderWebpageClientView = useCallback((item: ReviewItem) => (
-    <div className="flex items-center justify-center h-full p-6">
-      <div className="text-center max-w-sm">
-        <div className="w-14 h-14 rounded-2xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-4">
-          <Globe size={24} className="text-[#017C87]" />
-        </div>
-        <h3 className="text-base font-semibold text-gray-900 mb-2">Leave feedback on the live page</h3>
-        <p className="text-sm text-gray-500 leading-relaxed mb-5">
-          This page has a feedback widget installed. Visit the page directly to
-          leave pin comments, take screenshots, and record your screen.
-        </p>
-        {item.url && (
-          <a href={item.url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#017C87] hover:bg-[#015c64] transition-colors">
-            <ExternalLink size={14} /> Visit Page
-          </a>
-        )}
-        {item.url && <p className="text-xs text-gray-400 mt-3 truncate px-4">{item.url}</p>}
-      </div>
-    </div>
-  ), []);
-
-  // Early returns
+  // ── Early returns ──
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading review…" />;
 
@@ -327,165 +251,80 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
     );
   }
 
-  const pinComments = topLevelComments.filter(
-    (c) => c.comment_type === 'pin' && c.pin_x != null && c.pin_y != null
-  );
-
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50">
+    <>
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
-      {/* ── Mobile header ── */}
-      <div
-        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
-        style={{ backgroundColor: bgSecondary, borderColor: border }}
-      >
-        <div className="flex items-center gap-1">
-          {backUrl && (
-            <button onClick={handleBack} className="p-2" style={{ color: sidebarText }}>
-              <ArrowLeft size={20} />
-            </button>
-          )}
-          <button onClick={() => setMobileSidebar(true)} className="p-2" style={{ color: sidebarText }}>
-            <Menu size={20} />
-          </button>
-        </div>
-        <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
-          <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
-            className="p-1.5 disabled:opacity-20" style={{ color: sidebarText }}>
-            <ChevronLeft size={18} />
-          </button>
-          <span className="text-xs truncate px-1" style={{ color: sidebarText, opacity: 0.55 }}>
-            {selectedItem?.title || 'No items'} · {currentIdx + 1}/{filteredItems.length}
-          </span>
-          <button onClick={() => goToItem(currentIdx + 1)} disabled={currentIdx >= filteredItems.length - 1}
-            className="p-1.5 disabled:opacity-20" style={{ color: sidebarText }}>
-            <ChevronRight size={18} />
-          </button>
-        </div>
-        <button onClick={() => setShowComments(!showComments)} className="relative p-2"
-          style={{ color: showComments ? accent : sidebarText, opacity: showComments ? 1 : 0.55 }}>
-          <MessageSquare size={18} />
-          {unresolvedComments.length > 0 && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ backgroundColor: accent }} />
-          )}
-        </button>
-      </div>
-
-      {/* ── Desktop sidebar ── */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-[220px] shrink-0 border-r overflow-hidden"
-        style={{ backgroundColor: bgSecondary, borderColor: border }}>
-        <div className="px-4 py-4 border-b" style={{ borderColor: border }}>
-          {/* Back to board button */}
-          {backUrl && (
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-1.5 text-xs font-medium mb-3 transition-colors hover:opacity-80"
-              style={{ color: `${sidebarText}99` }}
-            >
-              <ArrowLeft size={14} />
-              Back to board
-            </button>
-          )}
-          {branding.logo_url ? (
-            <img src={branding.logo_url} alt={branding.name} className="h-7 w-auto max-w-[160px] object-contain" />
-          ) : branding.name ? (
-            <span className="text-sm font-semibold" style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}>
-              {branding.name}
-            </span>
-          ) : null}
-          <p className="text-xs mt-1.5 truncate" style={{ color: `${sidebarText}88` }}>
-            {project?.title}
+      {/* Mobile — desktop required message */}
+      <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+        <div className="text-center max-w-sm">
+          <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <Monitor size={24} className="text-gray-400" />
+          </div>
+          <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
+          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            Please open this review on a desktop browser for the best experience.
           </p>
         </div>
+      </div>
 
-        <nav className="flex-1 overflow-y-auto">
-          <div className="px-2 pt-2 pb-1">
-            <TypeFilterTabs items={items} availableTypes={availableTypes} typeFilter={typeFilter}
-              onFilterChange={handleFilterChange} variant="branded" sidebarTextColor={sidebarText} />
+      {/* Desktop — sidebar + detail layout */}
+      <div className="hidden lg:flex min-h-screen flex-row bg-gray-50">
+        {/* ── Sidebar ── */}
+        <aside
+          className="flex flex-col w-[220px] shrink-0 border-r overflow-hidden"
+          style={{ backgroundColor: bgSecondary, borderColor: border }}
+        >
+          <div className="px-4 py-4 border-b" style={{ borderColor: border }}>
+            {/* Back to board button */}
+            {backUrl && (
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-1.5 text-xs font-medium mb-3 transition-colors hover:opacity-80"
+                style={{ color: `${sidebarText}99` }}
+              >
+                <ArrowLeft size={14} />
+                Back to board
+              </button>
+            )}
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt={branding.name} className="h-7 w-auto max-w-[160px] object-contain" />
+            ) : branding.name ? (
+              <span className="text-sm font-semibold" style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}>
+                {branding.name}
+              </span>
+            ) : null}
+            <p className="text-xs mt-1.5 truncate" style={{ color: `${sidebarText}88` }}>
+              {project?.title}
+            </p>
           </div>
-          <div className="py-1 px-2 space-y-1">
-            {filteredItems.map((item) => {
-              const isActive = item.id === selectedItemId;
-              const itemThreads = comments.filter(
-                (c) => c.review_item_id === item.id && !c.parent_comment_id && !c.resolved
-              ).length;
-              const thumbUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
 
-              return (
-                <button key={item.id}
-                  onClick={() => { setSelectedItemId(item.id); urlItemRef.current = null; setPendingPin(null); setFeedbackMode('idle'); }}
-                  className="w-full text-left rounded-lg p-2 transition-colors"
-                  style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}>
-                  {item.type === 'webpage' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Globe size={20} style={{ color: `${sidebarText}44` }} />
-                    </div>
-                  ) : item.type === 'email' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Mail size={16} style={{ color: `${sidebarText}44` }} />
-                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
-                        {item.email_subject || 'Email'}
-                      </span>
-                    </div>
-                  ) : item.type === 'sms' ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
-                      <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
-                        {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
-                      </span>
-                    </div>
-                  ) : thumbUrl ? (
-                    <div className="w-full aspect-video rounded overflow-hidden mb-1.5"
-                      style={{ backgroundColor: `${sidebarText}08` }}>
-                      <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-medium truncate"
-                      style={{ color: isActive ? sidebarText : `${sidebarText}77`, fontFamily: fontFamily(branding.font_sidebar) }}>
-                      {item.title}
-                    </span>
-                    {itemThreads > 0 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
-                        style={{ backgroundColor: `${accent}22`, color: accent }}>
-                        {itemThreads}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-      </aside>
-
-      {/* ── Mobile sidebar overlay ── */}
-      {mobileSidebar && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/40" onClick={() => setMobileSidebar(false)}>
-          <div className="w-[260px] h-full border-r overflow-y-auto"
-            style={{ backgroundColor: bgSecondary, borderColor: border }}
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: border }}>
-              <span className="text-sm font-medium" style={{ color: sidebarText }}>Items</span>
-              <button onClick={() => setMobileSidebar(false)} style={{ color: `${sidebarText}55` }}><X size={18} /></button>
+          <nav className="flex-1 overflow-y-auto">
+            <div className="px-2 pt-2 pb-1">
+              <TypeFilterTabs
+                items={items}
+                availableTypes={availableTypes}
+                typeFilter={typeFilter}
+                onFilterChange={handleFilterChange}
+                variant="branded"
+                sidebarTextColor={sidebarText}
+              />
             </div>
-            <div className="px-3 pt-2 pb-1">
-              <TypeFilterTabs items={items} availableTypes={availableTypes} typeFilter={typeFilter}
-                onFilterChange={handleFilterChange} variant="branded" sidebarTextColor={sidebarText} showCounts={false} />
-            </div>
-            <nav className="p-2 space-y-1">
+            <div className="py-1 px-2 space-y-1">
               {filteredItems.map((item) => {
                 const isActive = item.id === selectedItemId;
-                const thumbUrl = item.image_url || item.screenshot_url;
+                const itemThreads = comments.filter(
+                  (c) => c.review_item_id === item.id && !c.parent_comment_id && !c.resolved
+                ).length;
+                const thumbUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
+
                 return (
-                  <button key={item.id}
-                    onClick={() => { setSelectedItemId(item.id); setMobileSidebar(false); setPendingPin(null); setFeedbackMode('idle'); }}
+                  <button
+                    key={item.id}
+                    onClick={() => { setSelectedItemId(item.id); urlItemRef.current = null; resetFeedback(); }}
                     className="w-full text-left rounded-lg p-2 transition-colors"
-                    style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}>
+                    style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}
+                  >
                     {item.type === 'webpage' ? (
                       <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
                         style={{ backgroundColor: `${sidebarText}08` }}>
@@ -508,94 +347,99 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
                         </span>
                       </div>
                     ) : thumbUrl ? (
-                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5" style={{ backgroundColor: `${sidebarText}08` }}>
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
                         <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
                       </div>
                     ) : null}
-                    <span className="text-xs font-medium truncate block"
-                      style={{ color: isActive ? sidebarText : `${sidebarText}77` }}>
-                      {item.title}
-                    </span>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-medium truncate"
+                        style={{ color: isActive ? sidebarText : `${sidebarText}77`, fontFamily: fontFamily(branding.font_sidebar) }}>
+                        {item.title}
+                      </span>
+                      {itemThreads > 0 && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                          style={{ backgroundColor: `${accent}22`, color: accent }}>
+                          {itemThreads}
+                        </span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
-            </nav>
+            </div>
+          </nav>
+        </aside>
+
+        {/* ── Main content area ── */}
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          {/* Desktop nav bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
+            <div className="flex items-center gap-2">
+              <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
+                className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
+                <ChevronLeft size={18} />
+              </button>
+              <span className="text-sm text-gray-600">
+                {selectedItem?.title}
+                <span className="text-gray-400"> · {currentIdx + 1} of {filteredItems.length}</span>
+              </span>
+              <button onClick={() => goToItem(currentIdx + 1)} disabled={currentIdx >= filteredItems.length - 1}
+                className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* ── Main content area ── */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Desktop nav bar (item title + prev/next) */}
-        <div className="hidden lg:flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
-          <div className="flex items-center gap-2">
-            <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
-              className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
-              <ChevronLeft size={18} />
-            </button>
-            <span className="text-sm text-gray-600">
-              {selectedItem?.title}
-              <span className="text-gray-400"> · {currentIdx + 1} of {filteredItems.length}</span>
-            </span>
-            <button onClick={() => goToItem(currentIdx + 1)} disabled={currentIdx >= filteredItems.length - 1}
-              className="p-1.5 rounded-lg disabled:opacity-20 transition-opacity text-gray-500">
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Mode bar — appears when pin mode is active */}
-        <FeedbackModeBar
-          mode={feedbackMode}
-          onCancel={() => { setFeedbackMode('idle'); setPendingPin(null); }}
-        />
-
-        {/* Item viewer */}
-        <div className={`flex-1 relative ${isWebpageItem ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-4 lg:p-8'} bg-gray-50`}>
-          <ItemContentView
-            item={selectedItem}
-            placingPin={feedbackMode === 'pin'}
-            pendingPin={pendingPin}
-            pinComments={pinComments}
-            onImageClick={handleImageClick}
-            onPinClick={handlePinClick}
-            containerRef={imageContainerRef}
-            shareToken={params.token}
-            renderWebpage={renderWebpageClientView}
-            emptyText="No items to review"
-          />
-
-          {/* Floating feedback toolbar — right edge of content area */}
-          <FeedbackToolbar
+          {/* Mode bar */}
+          <FeedbackModeBar
             mode={feedbackMode}
-            onModeChange={(m) => { setFeedbackMode(m); if (m !== 'pin') setPendingPin(null); }}
-            onToggleComments={() => setShowComments(!showComments)}
-            commentsOpen={showComments}
-            unresolvedCount={unresolvedComments.length}
-            hidePinTool={isWebpageItem}
-            className="fixed lg:absolute bottom-4 right-4 lg:bottom-auto lg:top-4 lg:right-4"
+            onCancel={() => changeFeedbackMode('idle')}
           />
-        </div>
-      </div>
 
-      {/* ── Comments panel ── */}
-      <CommentsPanel
-        unresolvedComments={unresolvedComments}
-        resolvedComments={resolvedComments}
-        getReplies={getReplies}
-        hasComments={topLevelComments.length > 0}
-        pendingPin={pendingPin}
-        onSubmitComment={submitComment}
-        onCancelPin={handleCancelPin}
-        onClose={() => setShowComments(false)}
-        guestName={guestName}
-        onNameChange={setGuestName}
-        closable={false}
-        className={`
-          ${showComments ? 'fixed inset-0 z-40' : 'hidden'}
-          lg:flex lg:relative lg:inset-auto lg:z-auto lg:w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white
-        `}
-      />
-    </div>
+          {/* Item viewer */}
+          <div className={`flex-1 relative ${isWebpageItem ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-8'} bg-gray-50`}>
+            <ItemContentView
+              item={selectedItem}
+              placingPin={feedbackMode === 'pin'}
+              pendingPin={pendingPin}
+              pinComments={pinComments}
+              onImageClick={handleImageClick}
+              onPinClick={handlePinClick}
+              containerRef={imageContainerRef}
+              shareToken={params.token}
+              renderWebpage={(item) => <WebpageClientPlaceholder item={item} />}
+              emptyText="No items to review"
+            />
+
+            <FeedbackToolbar
+              mode={feedbackMode}
+              onModeChange={changeFeedbackMode}
+              onToggleComments={() => setShowComments(!showComments)}
+              commentsOpen={showComments}
+              unresolvedCount={unresolvedComments.length}
+              hidePinTool={isWebpageItem}
+              className="absolute top-4 right-4"
+            />
+          </div>
+        </div>
+
+        {/* ── Comments panel ── */}
+        <CommentsPanel
+          unresolvedComments={unresolvedComments}
+          resolvedComments={resolvedComments}
+          getReplies={getReplies}
+          hasComments={topLevelComments.length > 0}
+          pendingPin={pendingPin}
+          onSubmitComment={submitComment}
+          onCancelPin={handleCancelPin}
+          onClose={() => setShowComments(false)}
+          guestName={guestName}
+          onNameChange={setGuestName}
+          closable={false}
+          className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white`}
+        />
+      </div>
+    </>
   );
 }

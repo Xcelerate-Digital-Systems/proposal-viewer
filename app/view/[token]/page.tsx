@@ -1,378 +1,595 @@
-// app/view/[token]/page.tsx
+// app/review/[token]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { FileText, Menu, CheckCircle2, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Mail, Smartphone, ArrowLeft, Monitor } from 'lucide-react';
+import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
+import { type CompanyBranding } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING } from '@/lib/review-defaults';
+import { useGuestIdentity } from '@/hooks/useGuestIdentity';
+import { useCommentFilters } from '@/hooks/useCommentFilters';
+import { usePinFeedback } from '@/hooks/usePinFeedback';
+import { useBrandingColors } from '@/hooks/useBrandingColors';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
-import { useProposal, deriveBorderColor } from '@/hooks/useProposal';
-import CoverPage from '@/components/viewer/CoverPage';
-import Sidebar from '@/components/viewer/Sidebar';
-import PdfViewer from '@/components/viewer/PdfViewer';
-import PricingPage from '@/components/viewer/PricingPage';
-import TextPage from '@/components/viewer/TextPage';
-import FloatingToolbar from '@/components/viewer/FloatingToolbar';
-import CommentsPanel from '@/components/viewer/CommentsPanel';
-import AcceptModal from '@/components/viewer/AcceptModal';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
-import { exportCompositePdf } from '@/lib/compositeExport';
-import PageLinkButton from '@/components/viewer/PageLinkButton';
+import { fontFamily } from '@/lib/google-fonts';
+import { CommentsPanel } from '@/components/reviews/comments';
+import ItemContentView from '@/components/reviews/ItemContentView';
+import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
+import ReviewBoardViewer from '@/components/review/ReviewBoardViewer';
+import WebpageClientPlaceholder from '@/components/reviews/WebpageClientPlaceholder';
+import { FeedbackToolbar, FeedbackModeBar } from '@/components/reviews/feedback';
 
-export default function ProposalViewerPage({ params }: { params: { token: string } }) {
-  const {
-    proposal,
-    creatorName,
-    pdfUrl,
-    numPages,
-    currentPage,
-    setCurrentPage,
-    loading,
-    notFound,
-    pageEntries,
-    comments,
-    accepted,
-    branding,
-    brandingLoaded,
-    pricing,
-    textPages,
-    isPricingPage,
-    isTextPage,
-    getTextPageId,
-    getTextPage,
-    toPdfPage,
-    onDocumentLoadSuccess,
-    getPageName,
-    acceptProposal,
-    submitComment,
-    replyToComment,
-    resolveComment,
-    unresolveComment,
-  } = useProposal(params.token);
-
+export default function ReviewViewerPage({ params }: { params: { token: string } }) {
+  const searchParams = useSearchParams();
+  const [project, setProject] = useState<ReviewProject | null>(null);
+  const [items, setItems] = useState<ReviewItem[]>([]);
+  const [comments, setComments] = useState<ReviewComment[]>([]);
+  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [brandingLoaded, setBrandingLoaded] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
-  const [showAccept, setShowAccept] = useState(false);
-  const [showCover, setShowCover] = useState(true);
-  const [mobileSidebar, setMobileSidebar] = useState(false);
-  const mainRef = useRef<HTMLDivElement>(null);
+  const [boardEdges, setBoardEdges] = useState<ReviewBoardEdge[]>([]);
+  const [boardNotes, setBoardNotes] = useState<ReviewBoardNote[]>([]);
+  const [showBoardView, setShowBoardView] = useState(true);
+  const [viewMode, setViewMode] = useState<'project' | 'item'>('project');
+  const urlType = searchParams.get('type');
+  const urlItem = searchParams.get('item');
+  const [typeFilter, setTypeFilter] = useState<string | null>(urlType);
 
-  const goToPage = useCallback((page: number) => {
-    setCurrentPage(page);
-    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setCurrentPage]);
+  // ── Shared hooks ──
+  const { guestName, setGuestName, saveGuestIdentity } = useGuestIdentity();
+  const { bgSecondary, accent, border, sidebarText } = useBrandingColors(branding);
+  const {
+    feedbackMode, pendingPin, setPendingPin, imageContainerRef,
+    handleImageClick: baseHandleImageClick, handleCancelPin,
+    changeFeedbackMode, resetFeedback,
+  } = usePinFeedback();
+  const {
+    topLevelComments, getReplies, unresolvedComments, resolvedComments, pinComments,
+  } = useCommentFilters(comments, selectedItemId);
 
-  const handleAccept = async (name: string) => {
-    await acceptProposal(name);
-    setShowAccept(false);
+  // ── Derived state ──
+  const availableTypes = useMemo(() => {
+    const types = Array.from(new Set(items.map((i) => i.type)));
+    return types.sort();
+  }, [items]);
+
+  const filteredItems = useMemo(
+    () => (typeFilter ? items.filter((i) => i.type === typeFilter) : items),
+    [items, typeFilter]
+  );
+
+  const selectedItem = filteredItems.find((i) => i.id === selectedItemId) || null;
+  const isWebpageItem = selectedItem?.type === 'webpage';
+  const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
+
+  // ── Keep selection in sync with filter ──
+  useEffect(() => {
+    if (filteredItems.length > 0 && !filteredItems.find((i) => i.id === selectedItemId)) {
+      setSelectedItemId(filteredItems[0].id);
+    }
+  }, [filteredItems, selectedItemId]);
+
+  // ── Fetch review data ──
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`/api/review/${params.token}`);
+        if (!res.ok) { setNotFound(true); setLoading(false); return; }
+
+        const data = await res.json();
+        setProject(data.project);
+        setItems(data.items);
+        setComments(data.comments);
+
+        // Set resolution mode
+        if (data.mode === 'item') {
+          setViewMode('item');
+          if (data.item) {
+            setSelectedItemId(data.item.id);
+            setShowComments(true);
+          }
+        }
+
+        // Board data
+        if (data.boardEdges) setBoardEdges(data.boardEdges);
+        if (data.boardNotes) setBoardNotes(data.boardNotes);
+
+        // If share_mode is board, start in board view
+        if (data.project.share_mode === 'board') {
+          setShowBoardView(true);
+        } else {
+          setShowBoardView(false);
+        }
+
+        // Select initial item based on URL params
+        const startItems = urlType
+          ? data.items.filter((i: ReviewItem) => i.type === urlType)
+          : data.items;
+        if (urlItem && data.items.find((i: ReviewItem) => i.id === urlItem)) {
+          setSelectedItemId(urlItem);
+        } else if (startItems.length > 0) {
+          setSelectedItemId(startItems[0].id);
+        } else if (data.items.length > 0) {
+          setSelectedItemId(data.items[0].id);
+        }
+
+        // Load branding
+        const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`);
+        if (brandRes.ok) {
+          const brandData = await brandRes.json();
+          setBranding(brandData);
+        }
+        setBrandingLoaded(true);
+        setLoading(false);
+      } catch {
+        setNotFound(true);
+        setLoading(false);
+        setBrandingLoaded(true);
+      }
+    }
+    load();
+  }, [params.token]);
+
+  // ── Tab title ──
+  useEffect(() => {
+    if (project) {
+      document.title = project.client_name
+        ? `Review for ${project.client_name}`
+        : project.title;
+    }
+    return () => { document.title = 'Creative Review'; };
+  }, [project]);
+
+  // ── Pin click → also open comments ──
+  const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    baseHandleImageClick(e);
+    if (feedbackMode === 'pin') setShowComments(true);
+  }, [baseHandleImageClick, feedbackMode]);
+
+  const handlePinClick = useCallback(() => {
+    setShowComments(true);
+  }, []);
+
+  // ── Submit comment ──
+  const submitComment = async (content: string, pinX?: number, pinY?: number, parentId?: string) => {
+    if (!selectedItemId || !guestName.trim()) return;
+    saveGuestIdentity(guestName);
+
+    const body: Record<string, unknown> = {
+      review_item_id: selectedItemId,
+      author_name: guestName.trim(),
+      content: content.trim(),
+      comment_type: pinX != null ? 'pin' : 'general',
+      pin_x: pinX ?? null,
+      pin_y: pinY ?? null,
+      parent_comment_id: parentId || null,
+    };
+
+    const res = await fetch(`/api/review/${params.token}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      const newComment = await res.json();
+      setComments((prev) => [...prev, newComment]);
+      setPendingPin(null);
+    }
   };
 
-  // Is the current virtual page the pricing page?
-  const onPricingPage = isPricingPage(currentPage);
-  // Is the current virtual page a text page?
-  const onTextPage = isTextPage(currentPage);
-  const currentTextPageId = getTextPageId(currentPage);
-  const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
-  // If not pricing or text, what PDF page should we show?
-  const pdfPage = toPdfPage(currentPage);
-
-  // Get link for current page (skip group entries to find Nth actual page)
-  const currentPageLink = useMemo(() => {
-    let count = 0;
-    for (const entry of pageEntries) {
-      if (entry.type === 'group') continue;
-      count++;
-      if (count === currentPage) {
-        return entry.link_url ? { url: entry.link_url, label: entry.link_label } : null;
-      }
+  // ── Navigate items ──
+  const goToItem = (idx: number) => {
+    if (idx >= 0 && idx < filteredItems.length) {
+      setSelectedItemId(filteredItems[idx].id);
+      resetFeedback();
     }
-    return null;
-  }, [pageEntries, currentPage]);
+  };
 
-  // Dismiss cover state when cover isn't enabled so keyboard nav works
-  useEffect(() => {
-    if (proposal && !proposal.cover_enabled) {
-      setShowCover(false);
+  // ── Board → item detail navigation ──
+  const handleBoardItemClick = useCallback((itemId: string) => {
+    const clickedItem = items.find((i) => i.id === itemId);
+    if (clickedItem) setTypeFilter(clickedItem.type);
+    setSelectedItemId(itemId);
+    setShowBoardView(false);
+    setShowComments(true);
+  }, [items]);
+
+  // ── Filter change + auto-select first item ──
+  const handleFilterChange = (type: string | null) => {
+    setTypeFilter(type);
+    if (type) {
+      const first = items.find((i) => i.type === type);
+      if (first) setSelectedItemId(first.id);
     }
-  }, [proposal]);
+  };
 
-  // Keyboard navigation
-  useEffect(() => {
-    if (showCover) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
-        e.preventDefault();
-        if (currentPage < numPages) goToPage(currentPage + 1);
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (currentPage > 1) goToPage(currentPage - 1);
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        goToPage(1);
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        goToPage(numPages);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, numPages, goToPage, showCover]);
-
-  // Update browser tab title
-  useEffect(() => {
-    if (proposal) {
-      document.title = `Proposal For ${proposal.client_name}`;
-    }
-    return () => { document.title = 'Proposal Viewer'; };
-  }, [proposal]);
-
-  const bgPrimary = branding.bg_primary || '#0f0f0f';
-  const bgSecondary = branding.bg_secondary || '#141414';
-  const accent = branding.accent_color || '#ff6700';
-  const border = deriveBorderColor(bgSecondary);
-  const sidebarText = branding.sidebar_text_color || '#ffffff';
-  const acceptLabel = proposal?.accept_button_text || undefined;
-
-  // ── Composite PDF download (includes text pages + pricing) ─────────
-  const hasSpecialPages = !!(pricing?.enabled) || textPages.length > 0;
-
-  const handleCompositeDownload = useCallback(async () => {
-    if (!pdfUrl) throw new Error('No PDF URL available');
-    return exportCompositePdf({
-      pdfUrl,
-      title: proposal?.title || 'proposal',
-      numPages,
-      isPricingPage,
-      isTextPage,
-      getTextPageId,
-      toPdfPage,
-      getTextPage,
-      pricing,
-      branding,
-      clientName: proposal?.client_name,
-      companyName: branding.name,
-      userName: creatorName || undefined,
-      proposalTitle: proposal?.title,
-    });
-  }, [pdfUrl, proposal, numPages, isPricingPage, isTextPage, getTextPageId, toPdfPage, getTextPage, pricing, branding, creatorName]);
-
-  // ── Early returns AFTER all hooks ──────────────────────────────────
-
-  if (!brandingLoaded) {
-    return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
-  }
-
-  if (loading) {
-    return <ViewerLoader branding={branding} loading={true} label="Loading proposal…" />;
-  }
+  // ── Early returns ──
+  if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
+  if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading review…" />;
 
   if (notFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: bgPrimary }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: bgSecondary }}>
-            <FileText size={28} className="text-[#444]" />
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <ImageIcon size={28} className="text-gray-300" />
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Proposal Not Found</h2>
-          <p className="text-[#666] text-sm">This link may have expired or been removed.</p>
+          <h2 className="text-lg font-semibold text-gray-500">Review not found</h2>
+          <p className="text-sm text-gray-400 mt-1">This link may be expired or invalid</p>
         </div>
       </div>
     );
   }
 
-  if (showCover && proposal?.cover_enabled) {
+  const isBoardMode = project?.share_mode === 'board';
+
+  // ── Single item view (item-level share token) ──
+  if (viewMode === 'item' && selectedItem) {
+    const isWebpage = selectedItem.type === 'webpage';
     return (
       <>
         <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
-        <CoverPage proposal={proposal} branding={branding} onStart={() => setShowCover(false)} />
+
+        {/* Mobile — desktop required message */}
+        <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Monitor size={24} className="text-gray-400" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              Please open this review on a desktop browser for the best experience.
+            </p>
+          </div>
+        </div>
+
+        {/* Desktop — single item view */}
+        <div className="hidden lg:flex min-h-screen flex-col bg-gray-50">
+          {/* Simple header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
+              ) : branding.name ? (
+                <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
+                  {branding.name}
+                </span>
+              ) : null}
+              <span className="text-gray-200">·</span>
+              <span className="text-sm text-gray-600 truncate">{selectedItem.title}</span>
+            </div>
+          </div>
+
+          {/* Mode bar */}
+          <FeedbackModeBar
+            mode={feedbackMode}
+            onCancel={() => { changeFeedbackMode('idle'); }}
+          />
+
+          {/* Content + comments */}
+          <div className="flex-1 flex min-h-0">
+            <div className={`flex-1 relative ${isWebpage ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-8'} bg-gray-50`}>
+              <ItemContentView
+                item={selectedItem}
+                placingPin={feedbackMode === 'pin'}
+                pendingPin={pendingPin}
+                pinComments={pinComments}
+                onImageClick={handleImageClick}
+                onPinClick={handlePinClick}
+                containerRef={imageContainerRef}
+                shareToken={params.token}
+                renderWebpage={(item) => <WebpageClientPlaceholder item={item} />}
+                emptyText="Item not available"
+              />
+
+              <FeedbackToolbar
+                mode={feedbackMode}
+                onModeChange={changeFeedbackMode}
+                onToggleComments={() => setShowComments(!showComments)}
+                commentsOpen={showComments}
+                unresolvedCount={unresolvedComments.length}
+                hidePinTool={isWebpage}
+                className="absolute top-4 right-4"
+              />
+            </div>
+
+            <CommentsPanel
+              unresolvedComments={unresolvedComments}
+              resolvedComments={resolvedComments}
+              getReplies={getReplies}
+              hasComments={topLevelComments.length > 0}
+              pendingPin={pendingPin}
+              onSubmitComment={submitComment}
+              onCancelPin={handleCancelPin}
+              onClose={() => setShowComments(false)}
+              guestName={guestName}
+              onNameChange={setGuestName}
+              closable={false}
+              className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white`}
+            />
+          </div>
+        </div>
       </>
     );
   }
 
+  // ── Board view (full screen) ──
+  if (isBoardMode && showBoardView) {
+    return (
+      <>
+        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+
+        {/* Mobile — desktop required message */}
+        <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Monitor size={24} className="text-gray-400" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              Please open this review on a desktop browser for the best experience.
+            </p>
+          </div>
+        </div>
+
+        {/* Desktop — board view */}
+        <div className="hidden lg:flex min-h-screen flex-col bg-gray-50">
+          <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
+              ) : branding.name ? (
+                <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
+                  {branding.name}
+                </span>
+              ) : null}
+              <span className="text-sm text-gray-400 truncate">
+                {project?.title}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400">
+              Click any item to view details and leave feedback
+            </p>
+          </div>
+
+          <div className="flex-1 min-h-0">
+            <ReviewBoardViewer
+              items={items}
+              boardEdges={boardEdges}
+              boardNotes={boardNotes}
+              comments={comments}
+              branding={branding}
+              onSelectItem={handleBoardItemClick}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Default: sidebar + detail view ──
   return (
-    <div
-      className="flex flex-col lg:flex-row overflow-hidden"
-      style={{ backgroundColor: bgPrimary, height: '100dvh' }}
-    >
+    <>
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
-      {/* Mobile header bar — fixed to top, branded */}
-      <div
-        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
-        style={{ backgroundColor: bgSecondary, borderColor: border }}
-      >
-        <button
-          onClick={() => setMobileSidebar(true)}
-          className="p-2 transition-opacity hover:opacity-70 rounded-lg"
-          style={{ color: sidebarText }}
+      {/* Mobile — desktop required message */}
+      <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+        <div className="text-center max-w-sm">
+          <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <Monitor size={24} className="text-gray-400" />
+          </div>
+          <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
+          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            Please open this review on a desktop browser for the best experience.
+          </p>
+        </div>
+      </div>
+
+      {/* Desktop — sidebar + detail layout */}
+      <div className="hidden lg:flex min-h-screen flex-row bg-gray-50">
+        {/* ── Sidebar ── */}
+        <aside
+          className="flex flex-col w-[220px] shrink-0 border-r overflow-hidden"
+          style={{ backgroundColor: bgSecondary, borderColor: border }}
         >
-          <Menu size={20} />
-        </button>
+          {/* Logo / title */}
+          <div className="px-4 py-4 border-b" style={{ borderColor: border }}>
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt={branding.name} className="h-7 w-auto max-w-[160px] object-contain" />
+            ) : branding.name ? (
+              <span className="text-sm font-semibold" style={{
+                color: sidebarText,
+                fontFamily: fontFamily(branding.font_heading),
+              }}>{branding.name}</span>
+            ) : null}
+            <p className="text-xs mt-1.5 truncate" style={{ color: `${sidebarText}88` }}>
+              {project?.title}
+            </p>
+          </div>
 
-        {/* Page navigation arrows + label */}
-        <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
-          <button
-            onClick={() => currentPage > 1 && goToPage(currentPage - 1)}
-            disabled={currentPage <= 1}
-            className="p-1.5 rounded-lg transition-opacity disabled:opacity-20"
-            style={{ color: sidebarText }}
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <span className="text-xs truncate px-1" style={{ color: sidebarText, opacity: 0.55 }}>
-            {getPageName(currentPage)}
-            {numPages > 0 && ` · ${currentPage}/${numPages}`}
-          </span>
-          <button
-            onClick={() => currentPage < numPages && goToPage(currentPage + 1)}
-            disabled={currentPage >= numPages}
-            className="p-1.5 rounded-lg transition-opacity disabled:opacity-20"
-            style={{ color: sidebarText }}
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowComments(!showComments)}
-            className="relative p-2 transition-colors rounded-lg"
-            style={{ color: showComments ? accent : sidebarText, opacity: showComments ? 1 : 0.55 }}
-          >
-            <MessageSquare size={18} />
-            {comments.filter(c => !c.parent_id && !c.resolved_at).length > 0 && (
-              <span
-                className="absolute top-1 right-1 w-2 h-2 rounded-full"
-                style={{ backgroundColor: accent }}
+          {/* Items list */}
+          <nav className="flex-1 overflow-y-auto">
+            <div className="px-2 pt-2 pb-1">
+              <TypeFilterTabs
+                items={items}
+                availableTypes={availableTypes}
+                typeFilter={typeFilter}
+                onFilterChange={handleFilterChange}
+                variant="branded"
+                sidebarTextColor={sidebarText}
               />
-            )}
-          </button>
-          {!accepted ? (
-            <button
-              onClick={() => setShowAccept(true)}
-              className="p-2 rounded-lg transition-opacity hover:opacity-90"
-              style={{ backgroundColor: accent, color: branding.accept_text_color || '#ffffff' }}
-            >
-              <CheckCircle2 size={18} />
-            </button>
-          ) : (
-            <div className="p-2 text-emerald-400">
-              <CheckCircle2 size={18} />
             </div>
-          )}
+
+            <div className="py-1 px-2 space-y-1">
+              {filteredItems.map((item) => {
+                const isActive = item.id === selectedItemId;
+                const itemThreads = comments.filter(
+                  (c) => c.review_item_id === item.id && !c.parent_comment_id && !c.resolved
+                ).length;
+                const thumbUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setSelectedItemId(item.id); resetFeedback(); }}
+                    className="w-full text-left rounded-lg p-2 transition-colors"
+                    style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}
+                  >
+                    {/* Thumbnail */}
+                    {item.type === 'webpage' ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex items-center justify-center"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <Globe size={20} style={{ color: `${sidebarText}44` }} />
+                      </div>
+                    ) : item.type === 'email' ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <Mail size={16} style={{ color: `${sidebarText}44` }} />
+                        <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                          {item.email_subject || 'Email'}
+                        </span>
+                      </div>
+                    ) : item.type === 'sms' ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5 flex flex-col items-center justify-center gap-1"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <Smartphone size={16} style={{ color: `${sidebarText}44` }} />
+                        <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${sidebarText}55` }}>
+                          {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
+                        </span>
+                      </div>
+                    ) : thumbUrl ? (
+                      <div className="w-full aspect-video rounded overflow-hidden mb-1.5"
+                        style={{ backgroundColor: `${sidebarText}08` }}>
+                        <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ) : null}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-medium truncate" style={{
+                        color: isActive ? sidebarText : `${sidebarText}77`,
+                        fontFamily: fontFamily(branding.font_sidebar),
+                      }}>
+                        {item.title}
+                      </span>
+                      {itemThreads > 0 && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                          style={{ backgroundColor: `${accent}22`, color: accent }}>
+                          {itemThreads}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </aside>
+
+        {/* ── Main content area ── */}
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          {/* Desktop nav bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
+            {/* Left — back to board (if applicable) */}
+            <div className="flex items-center min-w-[140px]">
+              {isBoardMode && (
+                <button
+                  onClick={() => setShowBoardView(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <ArrowLeft size={14} />
+                  Back to Board
+                </button>
+              )}
+            </div>
+
+            {/* Center — item nav */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => goToItem(currentIdx - 1)}
+                disabled={currentIdx <= 0}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+              >
+                <ChevronLeft size={20} strokeWidth={2} />
+              </button>
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-medium text-gray-800 truncate max-w-[280px]">
+                  {selectedItem?.title}
+                </span>
+                <span className="text-[11px] text-gray-400">
+                  {currentIdx + 1} of {filteredItems.length}
+                </span>
+              </div>
+              <button
+                onClick={() => goToItem(currentIdx + 1)}
+                disabled={currentIdx >= filteredItems.length - 1}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+              >
+                <ChevronRight size={20} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Right — spacer for balance */}
+            <div className="min-w-[140px]" />
+          </div>
+
+          {/* Mode bar */}
+          <FeedbackModeBar
+            mode={feedbackMode}
+            onCancel={() => changeFeedbackMode('idle')}
+          />
+
+          {/* Item viewer */}
+          <div
+            className={`flex-1 relative ${
+              isWebpageItem ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-8'
+            } bg-gray-50`}
+          >
+            <ItemContentView
+              item={selectedItem}
+              placingPin={feedbackMode === 'pin'}
+              pendingPin={pendingPin}
+              pinComments={pinComments}
+              onImageClick={handleImageClick}
+              onPinClick={handlePinClick}
+              containerRef={imageContainerRef}
+              shareToken={params.token}
+              renderWebpage={(item) => <WebpageClientPlaceholder item={item} />}
+              emptyText="No items to review"
+            />
+
+            <FeedbackToolbar
+              mode={feedbackMode}
+              onModeChange={changeFeedbackMode}
+              onToggleComments={() => setShowComments(!showComments)}
+              commentsOpen={showComments}
+              unresolvedCount={unresolvedComments.length}
+              hidePinTool={isWebpageItem}
+              className="absolute top-4 right-4"
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Sidebar (desktop persistent + mobile drawer) */}
-      <Sidebar
-        numPages={numPages}
-        currentPage={currentPage}
-        pageEntries={pageEntries}
-        getPageName={getPageName}
-        onPageSelect={goToPage}
-        accepted={accepted}
-        onAcceptClick={() => setShowAccept(true)}
-        showComments={showComments}
-        onToggleComments={() => setShowComments(!showComments)}
-        commentCount={comments.length}
-        branding={branding}
-        acceptButtonText={acceptLabel}
-        mobileOpen={mobileSidebar}
-        onMobileClose={() => setMobileSidebar(false)}
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        {currentPageLink && (
-          <PageLinkButton
-            url={currentPageLink.url}
-            label={currentPageLink.label}
-            accentColor={accent}
-          />
-        )}
-        {/* Conditionally render PDF, Pricing, or Text page */}
-        {onPricingPage && pricing ? (
-          <div
-            ref={mainRef}
-            className="flex-1 overflow-auto"
-            style={{ backgroundColor: bgPrimary }}
-          >
-            <PricingPage
-              pricing={pricing}
-              branding={branding}
-              clientName={proposal?.client_name}
-            />
-          </div>
-        ) : onTextPage && currentTextPage ? (
-          <div
-            ref={mainRef}
-            className="flex-1 overflow-auto"
-            style={{ backgroundColor: bgPrimary }}
-          >
-            <TextPage
-              textPage={currentTextPage}
-              branding={branding}
-              clientName={proposal?.client_name}
-              companyName={branding.name}
-              userName={creatorName || undefined}
-              proposalTitle={proposal?.title}
-            />
-          </div>
-        ) : (
-          <PdfViewer
-            pdfUrl={pdfUrl}
-            currentPage={pdfPage}
-            onLoadSuccess={onDocumentLoadSuccess}
-            scrollRef={mainRef}
-            bgColor={bgPrimary}
-            accentColor={accent}
-            branding={branding}
-          />
-        )}
-        <FloatingToolbar
-          pdfUrl={pdfUrl}
-          title={proposal?.title || ''}
-          currentPage={currentPage}
-          numPages={numPages}
-          onPrevPage={() => goToPage(Math.max(1, currentPage - 1))}
-          onNextPage={() => goToPage(Math.min(numPages, currentPage + 1))}
-          bgColor={bgSecondary}
-          borderColor={border}
-          accentColor={accent}
-          onCompositeDownload={hasSpecialPages && pdfUrl ? handleCompositeDownload : undefined}
-        />
-      </div>
-
-      {showComments && (
+        {/* ── Comments panel ── */}
         <CommentsPanel
-          comments={comments}
-          currentPage={currentPage}
-          getPageName={getPageName}
-          onGoToPage={goToPage}
-          onSubmit={submitComment}
-          onReply={replyToComment}
-          onResolve={resolveComment}
-          onUnresolve={unresolveComment}
+          unresolvedComments={unresolvedComments}
+          resolvedComments={resolvedComments}
+          getReplies={getReplies}
+          hasComments={topLevelComments.length > 0}
+          pendingPin={pendingPin}
+          onSubmitComment={submitComment}
+          onCancelPin={handleCancelPin}
           onClose={() => setShowComments(false)}
-          accentColor={accent}
-          acceptTextColor={branding.accept_text_color || '#ffffff'}
-          textColor={branding.sidebar_text_color || '#ffffff'}
-          bgPrimary={bgPrimary}
-          bgSecondary={bgSecondary}
+          guestName={guestName}
+          onNameChange={setGuestName}
+          closable={false}
+          className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white`}
         />
-      )}
-
-      {showAccept && (
-        <AcceptModal
-          title={proposal?.title || ''}
-          onAccept={handleAccept}
-          onClose={() => setShowAccept(false)}
-          accentColor={accent}
-          bgColor={bgSecondary}
-          textColor={branding.sidebar_text_color || '#ffffff'}
-          acceptTextColor={branding.accept_text_color || '#ffffff'}
-          buttonText={acceptLabel}
-        />
-      )}
-    </div>
+      </div>
+    </>
   );
 }
