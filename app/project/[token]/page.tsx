@@ -580,7 +580,6 @@ console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: 
 
       {/* ── Comments panel ── */}
       <CommentsPanel
-        variant="client"
         unresolvedComments={unresolvedComments}
         resolvedComments={resolvedComments}
         getReplies={getReplies}

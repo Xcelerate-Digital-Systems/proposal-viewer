@@ -19,7 +19,7 @@ import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
 /*  Entry point                                                        */
 /* ------------------------------------------------------------------ */
 
-export default function ReviewItemsPage({ params }: { params: { id: string } }) {
+export default function ReviewItemsPage({ params, searchParams }: { params: { id: string }; searchParams: { type?: string } }) {
   return (
     <AdminLayout>
       {(auth) => (
@@ -28,14 +28,15 @@ export default function ReviewItemsPage({ params }: { params: { id: string } }) 
           projectId={params.id}
           companyId={auth.companyId!}
           userId={auth.session?.user?.id ?? null}
+          initialTypeFilter={searchParams.type || null}
         />
       )}
     </AdminLayout>
   );
 }
 
-function ItemsGate({ isSuperAdmin, projectId, companyId, userId }: {
-  isSuperAdmin?: boolean; projectId: string; companyId: string; userId: string | null;
+function ItemsGate({ isSuperAdmin, projectId, companyId, userId, initialTypeFilter }: {
+  isSuperAdmin?: boolean; projectId: string; companyId: string; userId: string | null; initialTypeFilter: string | null;
 }) {
   const router = useRouter();
 
@@ -45,7 +46,7 @@ function ItemsGate({ isSuperAdmin, projectId, companyId, userId }: {
 
   if (!isSuperAdmin) return null;
 
-  return <ItemsContent projectId={projectId} companyId={companyId} userId={userId} />;
+  return <ItemsContent projectId={projectId} companyId={companyId} userId={userId} initialTypeFilter={initialTypeFilter} />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -109,10 +110,12 @@ function ItemsContent({
   projectId,
   companyId,
   userId,
+  initialTypeFilter,
 }: {
   projectId: string;
   companyId: string;
   userId: string | null;
+  initialTypeFilter: string | null;
 }) {
   const router = useRouter();
   const [project, setProject] = useState<ReviewProject | null>(null);
@@ -121,7 +124,7 @@ function ItemsContent({
   const [showAddItem, setShowAddItem] = useState(false);
   const [copied, setCopied] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter);
 
   // Unique types + filtered items
   const availableTypes = useMemo(() => {
@@ -195,7 +198,11 @@ function ItemsContent({
   };
 
   const handleOpenViewer = (itemId: string) => {
-    const typeParam = typeFilter ? `?type=${typeFilter}` : '';
+    // Always scope the viewer to the clicked item's type so prev/next
+    // navigation cycles through items of the same kind.
+    const item = items.find((i) => i.id === itemId);
+    const type = typeFilter || item?.type;
+    const typeParam = type ? `?type=${type}` : '';
     router.push(`/reviews/${projectId}/items/${itemId}${typeParam}`);
   };
 

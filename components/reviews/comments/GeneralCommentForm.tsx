@@ -6,19 +6,18 @@ import { Send } from 'lucide-react';
 
 interface GeneralCommentFormProps {
   onSubmit: (content: string) => Promise<void>;
-  /** 'admin' = authorName label, 'client' = guest name input */
-  variant: 'admin' | 'client';
-  /** Required for admin — displayed as "Posting as {authorName}" */
+
+  // Identity — provide authorName for team, or guestName+onNameChange for guests
+  /** Team: fixed author name — displayed as "Posting as {authorName}" */
   authorName?: string;
-  /** Required for client — editable guest name */
+  /** Guest: editable name */
   guestName?: string;
-  /** Required for client — callback when guest name changes */
+  /** Guest: callback when name changes */
   onNameChange?: (name: string) => void;
 }
 
 export default function GeneralCommentForm({
   onSubmit,
-  variant,
   authorName,
   guestName,
   onNameChange,
@@ -27,7 +26,8 @@ export default function GeneralCommentForm({
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const isDisabled = variant === 'client'
+  const isGuest = !authorName;
+  const isDisabled = isGuest
     ? !text.trim() || !(guestName?.trim()) || submitting
     : !text.trim() || submitting;
 
@@ -52,7 +52,7 @@ export default function GeneralCommentForm({
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2">
-          {variant === 'admin' ? (
+          {authorName ? (
             <p className="text-[10px] text-gray-400">Posting as {authorName}</p>
           ) : (
             <input

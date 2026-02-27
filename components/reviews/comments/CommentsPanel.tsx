@@ -9,8 +9,6 @@ import CommentThread from './CommentThread';
 import ResolvedSection from './ResolvedSection';
 
 interface CommentsPanelProps {
-  /** 'admin' = team context, 'client' = guest context */
-  variant: 'admin' | 'client';
   /** All unresolved top-level comments */
   unresolvedComments: ReviewComment[];
   /** All resolved top-level comments */
@@ -28,19 +26,19 @@ interface CommentsPanelProps {
   /** Callback to close the panel */
   onClose: () => void;
 
-  // Admin-specific
-  /** Admin: fixed author name */
+  // Identity — provide authorName for team members, or guestName+onNameChange for guests
+  /** Team: fixed author name (skips name input) */
   authorName?: string;
-  /** Admin: resolve callback */
-  onResolve?: (commentId: string) => Promise<void>;
-  /** Admin: unresolve callback */
-  onUnresolve?: (commentId: string) => Promise<void>;
-
-  // Client-specific
-  /** Client: editable guest name */
+  /** Guest: editable name */
   guestName?: string;
-  /** Client: callback when guest name changes */
+  /** Guest: callback when name changes */
   onNameChange?: (name: string) => void;
+
+  // Resolution — provide callbacks to enable resolve/reopen buttons
+  /** Resolve callback — if provided, resolve button appears on threads */
+  onResolve?: (commentId: string) => Promise<void>;
+  /** Unresolve callback — if provided, reopen button appears on resolved threads */
+  onUnresolve?: (commentId: string) => Promise<void>;
 
   /** Desktop: static panel. Mobile: full-screen overlay. Default classes handle both. */
   className?: string;
@@ -49,7 +47,6 @@ interface CommentsPanelProps {
 }
 
 export default function CommentsPanel({
-  variant,
   unresolvedComments,
   resolvedComments,
   getReplies,
@@ -91,7 +88,6 @@ export default function CommentsPanel({
         {/* Pending pin form */}
         {pendingPin && (
           <PendingPinForm
-            variant={variant}
             authorName={authorName}
             guestName={guestName}
             onNameChange={onNameChange}
@@ -108,7 +104,6 @@ export default function CommentsPanel({
             key={c.id}
             comment={c}
             replies={getReplies(c.id)}
-            variant={variant}
             authorName={authorName}
             guestName={guestName}
             onNameChange={onNameChange}
@@ -124,7 +119,6 @@ export default function CommentsPanel({
         <ResolvedSection
           comments={resolvedComments}
           getReplies={getReplies}
-          variant={variant}
           onUnresolve={onUnresolve}
         />
 
@@ -133,9 +127,7 @@ export default function CommentsPanel({
           <div className="text-center py-8">
             <MapPin size={24} className="mx-auto mb-2 text-gray-200" />
             <p className="text-xs text-gray-400">
-              {variant === 'admin'
-                ? 'Click "Add Pin" to place a comment on the image, or use the form below for a general comment.'
-                : 'Click "Add Pin" to place a comment on the image'}
+              Use the pin tool to place feedback on the content, or leave a general comment below.
             </p>
           </div>
         )}
@@ -143,7 +135,6 @@ export default function CommentsPanel({
 
       {/* General comment form */}
       <GeneralCommentForm
-        variant={variant}
         authorName={authorName}
         guestName={guestName}
         onNameChange={onNameChange}

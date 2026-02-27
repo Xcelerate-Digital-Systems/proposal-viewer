@@ -111,7 +111,9 @@ function BoardContent({
   }, [fetchProject, fetchItems, fetchCustomDomain]);
 
   const handleOpenViewer = (itemId: string) => {
-    router.push(`/reviews/${projectId}/items/${itemId}`);
+    const item = items.find((i) => i.id === itemId);
+    const typeParam = item ? `?type=${item.type}` : '';
+    router.push(`/reviews/${projectId}/items/${itemId}${typeParam}`);
   };
 
   if (!project && !loading) return null;

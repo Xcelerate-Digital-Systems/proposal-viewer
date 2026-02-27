@@ -10,17 +10,17 @@ interface CommentThreadProps {
   comment: ReviewComment;
   replies: ReviewComment[];
   onReply: (content: string) => Promise<void>;
-  /** 'admin' = resolve buttons + team badges, 'client' = guest name input */
-  variant: 'admin' | 'client';
-  /** Admin: fixed author name */
+
+  // Identity — provide authorName for team members, or guestName+onNameChange for guests
+  /** Team: fixed author name (skips name input in reply form) */
   authorName?: string;
-  /** Client: editable guest name */
+  /** Guest: editable name */
   guestName?: string;
-  /** Client: callback when guest name changes */
+  /** Guest: callback when name changes */
   onNameChange?: (name: string) => void;
-  /** Admin: resolve callback */
+
+  // Resolution — provide callbacks to enable resolve/reopen buttons
   onResolve?: () => Promise<void>;
-  /** Admin: unresolve callback */
   onUnresolve?: () => Promise<void>;
 }
 
@@ -28,7 +28,6 @@ export default function CommentThread({
   comment,
   replies,
   onReply,
-  variant,
   authorName,
   guestName,
   onNameChange,
@@ -39,7 +38,8 @@ export default function CommentThread({
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const replyDisabled = variant === 'client'
+  const isGuest = !authorName;
+  const replyDisabled = isGuest
     ? !replyText.trim() || !(guestName?.trim()) || submitting
     : !replyText.trim() || submitting;
 
@@ -56,7 +56,7 @@ export default function CommentThread({
   const isTeam = comment.author_type === 'team';
 
   return (
-    <div className={variant === 'admin' ? 'rounded-lg border border-gray-200 p-3' : 'rounded-lg bg-gray-50 p-3'}>
+    <div className="rounded-lg bg-gray-50 p-3">
       {/* Pin badge */}
       {comment.comment_type === 'pin' && comment.thread_number && (
         <div className="flex items-center gap-1.5 mb-2">
@@ -70,7 +70,7 @@ export default function CommentThread({
       {/* Author + content */}
       <div className="flex items-start gap-2">
         <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
-          variant === 'admin' && isTeam
+          isTeam
             ? 'bg-[#017C87]/10 text-[#017C87]'
             : 'bg-gray-100 text-gray-500'
         }`}>
@@ -79,7 +79,7 @@ export default function CommentThread({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-gray-900">{comment.author_name}</span>
-            {variant === 'admin' && isTeam && (
+            {isTeam && (
               <span className="text-[9px] font-medium uppercase bg-[#017C87]/10 text-[#017C87] px-1.5 py-0.5 rounded">
                 Team
               </span>
@@ -98,7 +98,7 @@ export default function CommentThread({
             return (
               <div key={r.id} className="flex items-start gap-2">
                 <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
-                  variant === 'admin' && rIsTeam
+                  rIsTeam
                     ? 'bg-[#017C87]/10 text-[#017C87]'
                     : 'bg-gray-100 text-gray-400'
                 }`}>
@@ -107,7 +107,7 @@ export default function CommentThread({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-medium text-gray-900">{r.author_name}</span>
-                    {variant === 'admin' && rIsTeam && (
+                    {rIsTeam && (
                       <span className="text-[8px] font-medium uppercase bg-[#017C87]/10 text-[#017C87] px-1 py-0.5 rounded">
                         Team
                       </span>
@@ -133,33 +133,30 @@ export default function CommentThread({
             Reply
           </button>
         )}
-        {variant === 'admin' && (
-          <>
-            {!comment.resolved ? (
-              <button
-                onClick={onResolve}
-                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-emerald-600 transition-colors"
-              >
-                <CheckCircle2 size={10} />
-                Resolve
-              </button>
-            ) : (
-              <button
-                onClick={onUnresolve}
-                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-amber-600 transition-colors"
-              >
-                <RotateCcw size={10} />
-                Reopen
-              </button>
-            )}
-          </>
+        {!comment.resolved && onResolve && (
+          <button
+            onClick={onResolve}
+            className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-emerald-600 transition-colors"
+          >
+            <CheckCircle2 size={10} />
+            Resolve
+          </button>
+        )}
+        {comment.resolved && onUnresolve && (
+          <button
+            onClick={onUnresolve}
+            className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-amber-600 transition-colors"
+          >
+            <RotateCcw size={10} />
+            Reopen
+          </button>
         )}
       </div>
 
       {/* Reply form */}
       {showReply && (
         <form onSubmit={handleReply} className="mt-2 ml-8 space-y-1.5">
-          {variant === 'client' && !guestName && (
+          {isGuest && !guestName && (
             <input
               type="text"
               value={guestName || ''}

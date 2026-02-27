@@ -7,20 +7,19 @@ import { MapPin, Send, X } from 'lucide-react';
 interface PendingPinFormProps {
   onSubmit: (content: string) => Promise<void>;
   onCancel: () => void;
-  /** 'admin' = authorName label, 'client' = guest name input */
-  variant: 'admin' | 'client';
-  /** Required for admin — displayed as "Posting as {authorName}" */
+
+  // Identity — provide authorName for team, or guestName+onNameChange for guests
+  /** Team: fixed author name — displayed as "Posting as {authorName}" */
   authorName?: string;
-  /** Required for client — editable guest name */
+  /** Guest: editable name */
   guestName?: string;
-  /** Required for client — callback when guest name changes */
+  /** Guest: callback when name changes */
   onNameChange?: (name: string) => void;
 }
 
 export default function PendingPinForm({
   onSubmit,
   onCancel,
-  variant,
   authorName,
   guestName,
   onNameChange,
@@ -28,7 +27,8 @@ export default function PendingPinForm({
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const isDisabled = variant === 'client'
+  const isGuest = !authorName;
+  const isDisabled = isGuest
     ? !text.trim() || !(guestName?.trim()) || submitting
     : !text.trim() || submitting;
 
@@ -53,7 +53,7 @@ export default function PendingPinForm({
         </button>
       </div>
 
-      {variant === 'admin' ? (
+      {authorName ? (
         <p className="text-[10px] text-gray-400">Posting as {authorName}</p>
       ) : (
         <input

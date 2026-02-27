@@ -8,16 +8,13 @@ import type { ReviewComment } from '@/lib/supabase';
 interface ResolvedSectionProps {
   comments: ReviewComment[];
   getReplies: (commentId: string) => ReviewComment[];
-  /** 'admin' = shows Reopen button, 'client' = read-only */
-  variant: 'admin' | 'client';
-  /** Admin: unresolve callback */
+  /** If provided, shows Reopen button on each resolved comment */
   onUnresolve?: (commentId: string) => Promise<void>;
 }
 
 export default function ResolvedSection({
   comments,
   getReplies,
-  variant,
   onUnresolve,
 }: ResolvedSectionProps) {
   const [expanded, setExpanded] = useState(false);
@@ -58,7 +55,7 @@ export default function ResolvedSection({
                         Resolved{c.resolved_by ? ` by ${c.resolved_by}` : ''}
                       </span>
                     </div>
-                    {variant === 'admin' && onUnresolve && (
+                    {onUnresolve && (
                       <button
                         onClick={() => onUnresolve(c.id)}
                         className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors"

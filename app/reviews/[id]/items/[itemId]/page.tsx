@@ -1,11 +1,11 @@
 // app/reviews/[id]/items/[itemId]/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, MapPin, MessageSquare,
+  ArrowLeft, ChevronLeft, ChevronRight,
   ExternalLink,
 } from 'lucide-react';
 import { supabase, type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
@@ -14,15 +14,19 @@ import { useToast } from '@/components/ui/Toast';
 import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import ShareItemButton from '@/components/reviews/ShareItemButton';
+import ItemSidebar from '@/components/reviews/ItemSidebar';
+import { FeedbackToolbar, FeedbackModeBar, type FeedbackMode } from '@/components/reviews/feedback';
 
 
 export default function ReviewItemViewerPage({
   params,
+  searchParams,
 }: {
   params: { id: string; itemId: string };
+  searchParams: { type?: string };
 }) {
   return (
-    <AdminLayout>
+    <AdminLayout collapseSidebar>
       {(auth) => (
         <ItemViewerGate
           isSuperAdmin={auth.isSuperAdmin}
@@ -31,6 +35,7 @@ export default function ReviewItemViewerPage({
           companyId={auth.companyId!}
           session={auth.session}
           teamMember={auth.teamMember}
+          initialTypeFilter={searchParams.type || null}
         />
       )}
     </AdminLayout>
@@ -44,6 +49,7 @@ function ItemViewerGate(props: {
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
   teamMember: { name?: string; email?: string } | null;
+  initialTypeFilter: string | null;
 }) {
   const router = useRouter();
 
@@ -66,6 +72,7 @@ function ItemViewerContent({
   companyId,
   session,
   teamMember,
+  initialTypeFilter,
 }: {
   isSuperAdmin?: boolean;
   projectId: string;
@@ -73,27 +80,34 @@ function ItemViewerContent({
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
   teamMember: { name?: string; email?: string } | null;
+  initialTypeFilter: string | null;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const toast = useToast();
 
   const [project, setProject] = useState<ReviewProject | null>(null);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [comments, setComments] = useState<ReviewComment[]>([]);
+  const [allProjectComments, setAllProjectComments] = useState<Pick<ReviewComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComments, setShowComments] = useState(true);
 
-  // Pin placement (image/ad items only — webpage pins come via the widget)
-  const [placingPin, setPlacingPin] = useState(false);
+  // Feedback mode (toolbar-driven)
+  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('idle');
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
 
-  // Type filter from URL
-  const typeFilter = searchParams.get('type');
+  // Type filter — driven by state, initialized from page-level searchParams prop
+  const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter);
   const filteredItems = useMemo(
     () => (typeFilter ? items.filter((i) => i.type === typeFilter) : items),
     [items, typeFilter]
   );
+
+  // Available types for sidebar filter tabs
+  const availableTypes = useMemo(() => {
+    const types = Array.from(new Set(items.map((i) => i.type)));
+    return types.sort();
+  }, [items]);
 
   const currentItem = filteredItems.find((i) => i.id === itemId) || items.find((i) => i.id === itemId) || null;
   const currentIdx = filteredItems.findIndex((i) => i.id === itemId);
@@ -124,6 +138,7 @@ function ItemViewerContent({
     setItems(data || []);
   }, [projectId]);
 
+  // Comments for the currently viewed item (detail view)
   const fetchComments = useCallback(async () => {
     const { data } = await supabase
       .from('review_comments')
@@ -135,11 +150,30 @@ function ItemViewerContent({
     setLoading(false);
   }, [itemId]);
 
+  // All comments for the project (sidebar badge counts)
+  const fetchAllProjectComments = useCallback(async () => {
+    const { data: projectItems } = await supabase
+      .from('review_items')
+      .select('id')
+      .eq('review_project_id', projectId);
+
+    if (!projectItems?.length) return;
+
+    const itemIds = projectItems.map((i) => i.id);
+    const { data } = await supabase
+      .from('review_comments')
+      .select('id, review_item_id, parent_comment_id, resolved')
+      .in('review_item_id', itemIds);
+
+    setAllProjectComments(data || []);
+  }, [projectId]);
+
   useEffect(() => {
     fetchProject();
     fetchItems();
     fetchComments();
-  }, [fetchProject, fetchItems, fetchComments]);
+    fetchAllProjectComments();
+  }, [fetchProject, fetchItems, fetchComments, fetchAllProjectComments]);
 
   // ── Comment helpers ──
   const topLevel = comments.filter((c) => !c.parent_comment_id);
@@ -148,7 +182,7 @@ function ItemViewerContent({
   const resolved = topLevel.filter((c) => c.resolved);
   const pinComments = topLevel.filter((c) => c.comment_type === 'pin' && c.pin_x != null && c.pin_y != null);
 
-  // ── Navigate between items ──
+  // ── Navigate between items (header arrows) ──
   const goToItem = (idx: number) => {
     if (idx >= 0 && idx < filteredItems.length) {
       const typeParam = typeFilter ? `?type=${typeFilter}` : '';
@@ -156,14 +190,35 @@ function ItemViewerContent({
     }
   };
 
+  // ── Sidebar: select item ──
+  const handleSidebarSelect = useCallback((id: string) => {
+    const typeParam = typeFilter ? `?type=${typeFilter}` : '';
+    setPendingPin(null);
+    setFeedbackMode('idle');
+    router.push(`/reviews/${projectId}/items/${id}${typeParam}`);
+  }, [projectId, typeFilter, router]);
+
+  // ── Sidebar: change type filter ──
+  const handleFilterChange = useCallback((type: string | null) => {
+    setTypeFilter(type);
+    const newFiltered = type ? items.filter((i) => i.type === type) : items;
+    const currentStillVisible = newFiltered.some((i) => i.id === itemId);
+    const targetId = currentStillVisible ? itemId : newFiltered[0]?.id;
+
+    if (targetId) {
+      const typeParam = type ? `?type=${type}` : '';
+      router.push(`/reviews/${projectId}/items/${targetId}${typeParam}`);
+    }
+  }, [items, itemId, projectId, router]);
+
   // ── Pin placement — image/ad items only ──
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!placingPin) return;
+    if (feedbackMode !== 'pin') return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setPendingPin({ x, y });
-    setPlacingPin(false);
+    setFeedbackMode('idle');
     setShowComments(true);
   };
 
@@ -209,6 +264,8 @@ function ItemViewerContent({
       toast.error('Failed to post comment');
     } else if (data) {
       setComments((prev) => [...prev, data]);
+      // Also update allProjectComments so sidebar badge updates immediately
+      setAllProjectComments((prev) => [...prev, data]);
       setPendingPin(null);
 
       // Notify webhook
@@ -244,6 +301,8 @@ function ItemViewerContent({
     if (res.ok) {
       const updated = await res.json();
       setComments((prev) => prev.map((c) => (c.id === commentId ? updated : c)));
+      // Update sidebar badge counts
+      setAllProjectComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, resolved: true } : c)));
       toast.success('Comment resolved');
     } else {
       toast.error('Failed to resolve');
@@ -263,6 +322,8 @@ function ItemViewerContent({
     if (res.ok) {
       const updated = await res.json();
       setComments((prev) => prev.map((c) => (c.id === commentId ? updated : c)));
+      // Update sidebar badge counts
+      setAllProjectComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, resolved: false } : c)));
       toast.info('Comment reopened');
     } else {
       toast.error('Failed to reopen');
@@ -289,7 +350,7 @@ function ItemViewerContent({
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <Link
-            href={`/reviews/${projectId}`}
+            href={`/reviews/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`}
             className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors shrink-0"
           >
             <ArrowLeft size={14} />
@@ -351,47 +412,34 @@ function ItemViewerContent({
               size="md"
             />
           )}
-
-          {/* Place pin button — only for image/ad items, not webpage */}
-          {!isWebpageItem && (
-            <button
-              onClick={() => { setPlacingPin(!placingPin); setPendingPin(null); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                placingPin
-                  ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
-                  : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              <MapPin size={13} />
-              {placingPin ? 'Click to place pin' : 'Add Pin'}
-            </button>
-          )}
-
-          {/* Toggle comments */}
-          <button
-            onClick={() => setShowComments(!showComments)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              showComments
-                ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
-                : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            <MessageSquare size={13} />
-            Comments
-            {unresolved.length > 0 && (
-              <span className="ml-0.5 text-[10px] font-bold bg-[#017C87] text-white px-1.5 py-0.5 rounded-full">
-                {unresolved.length}
-              </span>
-            )}
-          </button>
         </div>
       </div>
 
-      {/* Content area */}
+      {/* Mode bar — appears when pin mode is active */}
+      <FeedbackModeBar
+        mode={feedbackMode}
+        onCancel={() => { setFeedbackMode('idle'); setPendingPin(null); }}
+      />
+
+      {/* Content area — sidebar + viewer + comments */}
       <div className="flex-1 flex min-h-0">
+        {/* Left sidebar — item list with thumbnails & type filter */}
+        <ItemSidebar
+          items={items}
+          filteredItems={filteredItems}
+          availableTypes={availableTypes}
+          typeFilter={typeFilter}
+          onFilterChange={handleFilterChange}
+          selectedItemId={itemId}
+          onSelectItem={handleSidebarSelect}
+          comments={allProjectComments}
+          variant="admin"
+          projectTitle={project?.title}
+        />
+
         {/* Item viewer */}
         <div
-          className={`flex-1 ${
+          className={`flex-1 relative ${
             isWebpageItem
               ? 'overflow-auto'
               : 'overflow-auto flex items-center justify-center p-6'
@@ -399,19 +447,29 @@ function ItemViewerContent({
         >
           <ItemContentView
             item={currentItem}
-            placingPin={placingPin}
+            placingPin={feedbackMode === 'pin'}
             pendingPin={pendingPin}
             pinComments={pinComments}
             onImageClick={handleImageClick}
             onPinClick={handlePinClick}
             shareToken={project?.share_token || ''}
           />
+
+          {/* Floating feedback toolbar — right edge of content area */}
+          <FeedbackToolbar
+            mode={feedbackMode}
+            onModeChange={(m) => { setFeedbackMode(m); if (m !== 'pin') setPendingPin(null); }}
+            onToggleComments={() => setShowComments(!showComments)}
+            commentsOpen={showComments}
+            unresolvedCount={unresolved.length}
+            hidePinTool={isWebpageItem}
+            className="absolute top-4 right-4"
+          />
         </div>
 
         {/* Comments panel */}
         {showComments && (
           <CommentsPanel
-            variant="admin"
             unresolvedComments={unresolved}
             resolvedComments={resolved}
             getReplies={getReplies}
