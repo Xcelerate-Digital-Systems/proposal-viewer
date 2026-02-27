@@ -60,6 +60,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
         const data = await res.json();
         setProject(data.project);
         setItems(data.items);
+        console.log('[BOARD DEBUG] Loaded items from API:', data.items.map((i: any) => ({ id: i.id, title: i.title, type: i.type })));
         setComments(data.comments);
         setBoardEdges(data.boardEdges || []);
         setBoardNotes(data.boardNotes || []);
@@ -94,6 +95,8 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   // Clicking a board node — navigate (same tab) to item detail view.
   // Includes a back param so the project page shows a "Back to board" button.
   const handleSelectItem = useCallback((itemId: string) => {
+    console.log('[BOARD DEBUG] handleSelectItem called with itemId:', itemId);
+    console.log('[BOARD DEBUG] items in state:', items.map(i => ({ id: i.id, title: i.title })));
     const boardBackUrl = `/whiteboard/${params.token}`;
 
     // Prefer item's own share token for a focused single-item view

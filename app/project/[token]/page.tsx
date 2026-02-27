@@ -136,14 +136,21 @@ export default function PublicProjectPage({ params }: { params: { token: string 
 
         // Read item param directly from searchParams for reliability
         const targetItem = urlItemRef.current;
+        // DEBUG — trace item selection
+        console.log('[PROJECT DEBUG] urlItem from searchParams:', urlItem);
+        console.log('[PROJECT DEBUG] urlItemRef.current (targetItem):', targetItem);
+        console.log('[PROJECT DEBUG] API returned items:', data.items.map((i: ReviewItem) => ({ id: i.id, title: i.title, type: i.type })));
+console.log('[PROJECT DEBUG] targetItem found in items?', !!data.items.find((i: ReviewItem) => i.id === targetItem));
 
         // Select initial item — URL deep-link takes priority
         const startItems = urlType
           ? data.items.filter((i: ReviewItem) => i.type === urlType)
           : data.items;
         if (targetItem && data.items.find((i: ReviewItem) => i.id === targetItem)) {
+          console.log('[PROJECT DEBUG] ✅ Selecting URL target:', targetItem);
           setSelectedItemId(targetItem);
         } else if (startItems.length > 0) {
+          console.log('[PROJECT DEBUG] ⚠️ Target NOT found, falling back to:', startItems[0].id, startItems[0].title);
           setSelectedItemId(startItems[0].id);
         } else if (data.items.length > 0) {
           setSelectedItemId(data.items[0].id);
