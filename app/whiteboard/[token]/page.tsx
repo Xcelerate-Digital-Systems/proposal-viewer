@@ -21,9 +21,9 @@ import ReviewNotFound from '@/components/reviews/ReviewNotFound';
  * with edges, sticky notes, and comment badges.
  * Accessed via review_projects.board_share_token.
  *
- * Clicking a node navigates (same tab) to the /project/[token]?item=[itemId] view
+ * Clicking a node navigates (same tab) to the /review/[token]?item=[itemId] view
  * where the client can see the item details and leave comments.
- * A back param is included so the project page can show a "Back to board" button.
+ * A back param is included so the review page can show a "Back to board" button.
  */
 export default function PublicWhiteboardPage({ params }: { params: { token: string } }) {
   const router = useRouter();
@@ -81,7 +81,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   }, [project]);
 
   // Clicking a board node — navigate (same tab) to item detail view.
-  // Includes a back param so the project page shows a "Back to board" button.
+  // Includes a back param so the review page shows a "Back to board" button.
   const handleSelectItem = useCallback((itemId: string) => {
     const boardBackUrl = `/whiteboard/${params.token}`;
 
@@ -92,9 +92,9 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
       return;
     }
 
-    // Fall back to project card grid with deep-link to this item
+    // Fall back to project share token with deep-link to this item
     if (project?.share_token) {
-      router.push(`/project/${project.share_token}?item=${itemId}&back=${encodeURIComponent(boardBackUrl)}`);
+      router.push(`/review/${project.share_token}?item=${itemId}&back=${encodeURIComponent(boardBackUrl)}`);
     }
   }, [items, project, params.token, router]);
 
