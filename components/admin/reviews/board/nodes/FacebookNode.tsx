@@ -61,7 +61,7 @@ export default function FacebookNode({
           <span className="text-[9px] font-medium text-[#1877F2] mt-0.5 block">Meta Ad</span>
         </div>
 
-        {!readOnly && <div className="mt-1.5"><ViewButton id={item.id} onNavigate={onNavigate} /></div>}
+        <div className="mt-1.5"><ViewButton id={item.id} onNavigate={onNavigate} /></div>
       </div>
     </>
   );

@@ -42,7 +42,7 @@ export default function SMSNode({
           <span className="text-[9px] font-medium text-green-600 mt-0.5 block">SMS</span>
         </div>
 
-        {!readOnly && <div className="mt-1.5"><ViewButton id={item.id} onNavigate={onNavigate} /></div>}
+        <div className="mt-1.5"><ViewButton id={item.id} onNavigate={onNavigate} /></div>
       </div>
     </>
   );

@@ -3,6 +3,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
+// Prevent Next.js from caching this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/whiteboard/[token]
  *
@@ -34,13 +37,18 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       project: data.project,
       items: data.items || [],
       comments: data.comments || [],
       boardEdges: data.boardEdges || [],
       boardNotes: data.boardNotes || [],
     });
+
+    // Prevent browser and CDN caching — always return fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+
+    return response;
   } catch (err) {
     console.error('Whiteboard fetch error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

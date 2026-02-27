@@ -3,6 +3,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
+// Prevent Next.js from caching this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/project/[token]
  *
@@ -53,11 +56,16 @@ export async function GET(
       comments = commentData || [];
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       project,
       items: items || [],
       comments,
     });
+
+    // Prevent browser and CDN caching — always return fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+
+    return response;
   } catch (err) {
     console.error('Project grid fetch error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

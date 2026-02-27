@@ -166,7 +166,7 @@ export function CardShell({
                 {unresolvedCount > 0 && <span className="text-amber-500 ml-0.5">({unresolvedCount})</span>}
               </span>
             </div>
-            {!readOnly && <ViewButton id={item.id} onNavigate={onNavigate} />}
+            <ViewButton id={item.id} onNavigate={onNavigate} />
           </div>
         </div>
       </div>

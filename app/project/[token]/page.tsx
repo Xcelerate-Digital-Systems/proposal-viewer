@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   MessageSquare, ChevronLeft, ChevronRight, Menu, X, Image as ImageIcon,
   MapPin, Globe, ExternalLink, Mail, Smartphone, ArrowLeft,
@@ -40,9 +40,13 @@ const GUEST_STORAGE_KEY = 'review_guest_identity';
  * Shows the same sidebar + detail layout as the original /review/[token],
  * but is specifically for the "Items List" share mode.
  * Accessed via review_projects.share_token.
+ *
+ * Supports ?item=<id> for deep-linking to a specific item,
+ * and ?back=<url> for showing a back button (e.g. back to whiteboard).
  */
 export default function PublicProjectPage({ params }: { params: { token: string } }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [project, setProject] = useState<ReviewProject | null>(null);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [comments, setComments] = useState<ReviewComment[]>([]);
@@ -53,6 +57,7 @@ export default function PublicProjectPage({ params }: { params: { token: string 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [mobileSidebar, setMobileSidebar] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Guest identity
   const [guestName, setGuestName] = useState('');
@@ -62,10 +67,14 @@ export default function PublicProjectPage({ params }: { params: { token: string 
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
-  // Type filter
+  // URL params
   const urlType = searchParams.get('type');
   const urlItem = searchParams.get('item');
+  const backUrl = searchParams.get('back');
   const [typeFilter, setTypeFilter] = useState<string | null>(urlType);
+
+  // Track the URL-specified item to prevent sync effect from overriding it
+  const urlItemRef = useRef<string | null>(urlItem);
 
   const availableTypes = useMemo(() => {
     const types = Array.from(new Set(items.map((i) => i.type)));
@@ -77,12 +86,21 @@ export default function PublicProjectPage({ params }: { params: { token: string 
     [items, typeFilter]
   );
 
-  // Keep selection in sync with filter
+  // Keep selection in sync with filter — only after initial data load,
+  // and never override a URL-specified item that exists in the list
   useEffect(() => {
+    if (!dataLoaded) return;
     if (filteredItems.length > 0 && !filteredItems.find((i) => i.id === selectedItemId)) {
-      setSelectedItemId(filteredItems[0].id);
+      // If we have a URL item that's valid in the full item list (just not in current filter),
+      // clear the filter instead of overriding the selection
+      if (urlItemRef.current && items.find((i) => i.id === urlItemRef.current)) {
+        setTypeFilter(null);
+        setSelectedItemId(urlItemRef.current);
+      } else {
+        setSelectedItemId(filteredItems[0].id);
+      }
     }
-  }, [filteredItems, selectedItemId]);
+  }, [filteredItems, selectedItemId, dataLoaded, items]);
 
   // Load guest identity
   useEffect(() => {
@@ -101,9 +119,14 @@ export default function PublicProjectPage({ params }: { params: { token: string 
 
   // Fetch data via the /api/project/[token] endpoint
   useEffect(() => {
+    // Sync the ref immediately so the fetch reads the current URL param, not a stale one
+    urlItemRef.current = urlItem;
+    setLoading(true);
+    setDataLoaded(false);
+
     async function load() {
       try {
-        const res = await fetch(`/api/project/${params.token}`);
+        const res = await fetch(`/api/project/${params.token}`, { cache: 'no-store' });
         if (!res.ok) { setNotFound(true); setLoading(false); return; }
 
         const data = await res.json();
@@ -111,12 +134,15 @@ export default function PublicProjectPage({ params }: { params: { token: string 
         setItems(data.items);
         setComments(data.comments);
 
-        // Select initial item
+        // Read item param directly from searchParams for reliability
+        const targetItem = urlItemRef.current;
+
+        // Select initial item — URL deep-link takes priority
         const startItems = urlType
           ? data.items.filter((i: ReviewItem) => i.type === urlType)
           : data.items;
-        if (urlItem && data.items.find((i: ReviewItem) => i.id === urlItem)) {
-          setSelectedItemId(urlItem);
+        if (targetItem && data.items.find((i: ReviewItem) => i.id === targetItem)) {
+          setSelectedItemId(targetItem);
         } else if (startItems.length > 0) {
           setSelectedItemId(startItems[0].id);
         } else if (data.items.length > 0) {
@@ -124,13 +150,14 @@ export default function PublicProjectPage({ params }: { params: { token: string 
         }
 
         // Load branding
-        const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`);
+        const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`, { cache: 'no-store' });
         if (brandRes.ok) {
           const brandData = await brandRes.json();
           setBranding(brandData);
         }
         setBrandingLoaded(true);
         setLoading(false);
+        setDataLoaded(true);
       } catch {
         setNotFound(true);
         setLoading(false);
@@ -138,7 +165,17 @@ export default function PublicProjectPage({ params }: { params: { token: string 
       }
     }
     load();
-  }, [params.token]);
+  }, [params.token, urlItem]);
+
+  // If urlItem changes (e.g. navigating from whiteboard to a different item),
+  // update the selection after data is loaded
+  useEffect(() => {
+    if (!dataLoaded || !urlItem) return;
+    urlItemRef.current = urlItem;
+    if (items.find((i) => i.id === urlItem)) {
+      setSelectedItemId(urlItem);
+    }
+  }, [urlItem, dataLoaded, items]);
 
   // Tab title
   useEffect(() => {
@@ -150,7 +187,10 @@ export default function PublicProjectPage({ params }: { params: { token: string 
     return () => { document.title = 'Creative Review'; };
   }, [project]);
 
-  const selectedItem = filteredItems.find((i) => i.id === selectedItemId) || null;
+  const selectedItem = filteredItems.find((i) => i.id === selectedItemId)
+    // Also check full items list in case filter is hiding the URL-specified item
+    || items.find((i) => i.id === selectedItemId)
+    || null;
   const isWebpageItem = selectedItem?.type === 'webpage';
   const itemComments = comments.filter((c) => c.review_item_id === selectedItemId);
   const topLevelComments = itemComments.filter((c) => !c.parent_comment_id);
@@ -211,6 +251,7 @@ export default function PublicProjectPage({ params }: { params: { token: string 
   const goToItem = (idx: number) => {
     if (idx >= 0 && idx < filteredItems.length) {
       setSelectedItemId(filteredItems[idx].id);
+      urlItemRef.current = null; // clear URL item on manual navigation
       setPendingPin(null);
       setPlacingPin(false);
     }
@@ -218,11 +259,19 @@ export default function PublicProjectPage({ params }: { params: { token: string 
 
   const handleFilterChange = (type: string | null) => {
     setTypeFilter(type);
+    urlItemRef.current = null; // clear URL item on filter change
     if (type) {
       const first = items.find((i) => i.type === type);
       if (first) setSelectedItemId(first.id);
     }
   };
+
+  // Back to whiteboard
+  const handleBack = useCallback(() => {
+    if (backUrl) {
+      router.push(backUrl);
+    }
+  }, [backUrl, router]);
 
   // Webpage render override for client viewer
   const renderWebpageClientView = useCallback((item: ReviewItem) => (
@@ -278,9 +327,16 @@ export default function PublicProjectPage({ params }: { params: { token: string 
         className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
         style={{ backgroundColor: bgSecondary, borderColor: border }}
       >
-        <button onClick={() => setMobileSidebar(true)} className="p-2" style={{ color: sidebarText }}>
-          <Menu size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          {backUrl && (
+            <button onClick={handleBack} className="p-2" style={{ color: sidebarText }}>
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          <button onClick={() => setMobileSidebar(true)} className="p-2" style={{ color: sidebarText }}>
+            <Menu size={20} />
+          </button>
+        </div>
         <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
           <button onClick={() => goToItem(currentIdx - 1)} disabled={currentIdx <= 0}
             className="p-1.5 disabled:opacity-20" style={{ color: sidebarText }}>
@@ -307,6 +363,17 @@ export default function PublicProjectPage({ params }: { params: { token: string 
       <aside className="hidden lg:flex lg:flex-col lg:w-[220px] shrink-0 border-r overflow-hidden"
         style={{ backgroundColor: bgSecondary, borderColor: border }}>
         <div className="px-4 py-4 border-b" style={{ borderColor: border }}>
+          {/* Back to board button */}
+          {backUrl && (
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-1.5 text-xs font-medium mb-3 transition-colors hover:opacity-80"
+              style={{ color: `${sidebarText}99` }}
+            >
+              <ArrowLeft size={14} />
+              Back to board
+            </button>
+          )}
           {branding.logo_url ? (
             <img src={branding.logo_url} alt={branding.name} className="h-7 w-auto max-w-[160px] object-contain" />
           ) : branding.name ? (
@@ -334,7 +401,7 @@ export default function PublicProjectPage({ params }: { params: { token: string 
 
               return (
                 <button key={item.id}
-                  onClick={() => { setSelectedItemId(item.id); setPendingPin(null); setPlacingPin(false); }}
+                  onClick={() => { setSelectedItemId(item.id); urlItemRef.current = null; setPendingPin(null); setPlacingPin(false); }}
                   className="w-full text-left rounded-lg p-2 transition-colors"
                   style={{ backgroundColor: isActive ? `${sidebarText}12` : 'transparent' }}>
                   {item.type === 'webpage' ? (

@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
@@ -33,10 +34,12 @@ const DEFAULT_BRANDING: CompanyBranding = {
  * with edges, sticky notes, and comment badges.
  * Accessed via review_projects.board_share_token.
  *
- * Clicking a node opens the item in the /review/[itemToken] view
- * if the item has its own share token, otherwise it's view-only.
+ * Clicking a node navigates (same tab) to the /project/[token]?item=[itemId] view
+ * where the client can see the item details and leave comments.
+ * A back param is included so the project page can show a "Back to board" button.
  */
 export default function PublicWhiteboardPage({ params }: { params: { token: string } }) {
+  const router = useRouter();
   const [project, setProject] = useState<ReviewProject | null>(null);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [comments, setComments] = useState<ReviewComment[]>([]);
@@ -51,7 +54,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/whiteboard/${params.token}`);
+        const res = await fetch(`/api/whiteboard/${params.token}`, { cache: 'no-store' });
         if (!res.ok) { setNotFound(true); setLoading(false); setBrandingLoaded(true); return; }
 
         const data = await res.json();
@@ -62,7 +65,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
         setBoardNotes(data.boardNotes || []);
 
         // Load branding
-        const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`);
+        const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`, { cache: 'no-store' });
         if (brandRes.ok) {
           const brandData = await brandRes.json();
           setBranding(brandData);
@@ -88,14 +91,27 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
     return () => { document.title = 'Creative Review'; };
   }, [project]);
 
-  // Clicking a board node — open item in its own shared view if it has a token
+  // Clicking a board node — navigate (same tab) to item detail view.
+  // Includes a back param so the project page shows a "Back to board" button.
   const handleSelectItem = useCallback((itemId: string) => {
+    const boardBackUrl = `/whiteboard/${params.token}`;
+
+    // Prefer item's own share token for a focused single-item view
     const item = items.find((i) => i.id === itemId);
     if (item?.share_token) {
-      window.open(`/review/${item.share_token}`, '_blank');
+      router.push(`/review/${item.share_token}?back=${encodeURIComponent(boardBackUrl)}`);
+      return;
     }
-    // If no item share token, do nothing (view-only on board)
-  }, [items]);
+
+    // Fall back to project card grid with deep-link to this item
+    if (project?.share_token) {
+      router.push(`/project/${project.share_token}?item=${itemId}&back=${encodeURIComponent(boardBackUrl)}`);
+    }
+  }, [items, project, params.token, router]);
+
+  // Branding-derived colors
+  const bgSecondary = branding.bg_secondary || '#141414';
+  const sidebarText = branding.sidebar_text_color || '#ffffff';
 
   // ── Early returns ──
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
@@ -106,22 +122,32 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
     <div className="h-dvh flex flex-col bg-gray-50 overflow-hidden">
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
-      {/* Board header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+      {/* Board header — branded with sidebar colors */}
+      <div
+        className="flex items-center justify-between px-4 py-3 shrink-0"
+        style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` }}
+      >
         <div className="flex items-center gap-3 min-w-0">
           {branding.logo_url ? (
             <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
           ) : branding.name ? (
-            <span className="text-sm font-semibold text-gray-800"
-              style={{ fontFamily: fontFamily(branding.font_heading) }}>
+            <span className="text-sm font-semibold"
+              style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}>
               {branding.name}
             </span>
           ) : null}
-          <span className="text-sm text-gray-400 truncate">
+          <span
+            className="text-sm truncate"
+            style={{
+              color: `${sidebarText}99`,
+              fontFamily: fontFamily(branding.font_sidebar),
+              fontWeight: branding.font_sidebar_weight || undefined,
+            }}
+          >
             {project?.title}
           </span>
         </div>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs hidden sm:block" style={{ color: `${sidebarText}55` }}>
           Click any item to view details and leave feedback
         </p>
       </div>
