@@ -3,11 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ExternalLink } from 'lucide-react';
 import { supabase, type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
-import ShareItemButton from '@/components/reviews/ShareItemButton';
 import ReviewDetailView from '@/components/reviews/ReviewDetailView';
 
 
@@ -289,34 +287,6 @@ function ItemViewerContent({
         label: project.title || 'Back',
         onClick: () => router.push(`/reviews/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`),
       }}
-      renderHeaderActions={(currentItem: ReviewItem | null) => (
-        <>
-          {currentItem?.type === 'webpage' && currentItem.url && (
-            <a
-              href={currentItem.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700 transition-colors"
-            >
-              <ExternalLink size={13} />
-              Open Page
-            </a>
-          )}
-          {currentItem && (
-            <ShareItemButton
-              projectId={projectId}
-              itemId={currentItem.id}
-              shareToken={currentItem.share_token}
-              onTokenChange={(token) => {
-                setItems((prev) => prev.map((i) =>
-                  i.id === currentItem.id ? { ...i, share_token: token } : i
-                ));
-              }}
-              size="md"
-            />
-          )}
-        </>
-      )}
     />
   );
 }

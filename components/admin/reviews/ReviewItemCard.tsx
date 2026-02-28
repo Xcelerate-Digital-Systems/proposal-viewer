@@ -5,16 +5,19 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Trash2, MessageSquareText, CheckCircle2, AlertCircle, Clock,
   Pencil, MoreHorizontal, Eye, Globe, Check, Mail, Smartphone,
+  Share2, Loader2, ExternalLink,
 } from 'lucide-react';
 import { supabase, type ReviewItem, type ReviewItemStatus } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
+import { buildReviewItemUrl } from '@/lib/proposal-url';
 
 interface ReviewItemCardProps {
   item: ReviewItem;
   onRefresh: () => void;
   onOpenViewer: (itemId: string) => void;
+  customDomain?: string | null;
 }
 
 const itemStatusOptions: StatusOption<ReviewItemStatus>[] = [
@@ -52,7 +55,7 @@ const itemStatusOptions: StatusOption<ReviewItemStatus>[] = [
   },
 ];
 
-export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: ReviewItemCardProps) {
+export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDomain }: ReviewItemCardProps) {
   const confirm = useConfirm();
   const toast = useToast();
   const [showMenu, setShowMenu] = useState(false);
@@ -61,6 +64,7 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: Review
   const [saving, setSaving] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [unresolvedCount, setUnresolvedCount] = useState(0);
+  const [sharing, setSharing] = useState(false);
 
   const fetchCommentStats = useCallback(async () => {
     const { data } = await supabase
@@ -109,6 +113,35 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: Review
       onRefresh();
     }
     setSaving(false);
+  };
+
+  const handleShare = async () => {
+    setSharing(true);
+    setShowMenu(false);
+
+    let token = item.share_token;
+
+    // Generate token if none exists
+    if (!token) {
+      const generated = crypto.randomUUID().replace(/-/g, '');
+      const { error } = await supabase
+        .from('review_items')
+        .update({ share_token: generated, updated_at: new Date().toISOString() })
+        .eq('id', item.id);
+
+      if (error) {
+        toast.error('Failed to generate share link');
+        setSharing(false);
+        return;
+      }
+      token = generated;
+      onRefresh();
+    }
+
+    const url = buildReviewItemUrl(token, customDomain, window.location.origin);
+    await navigator.clipboard.writeText(url);
+    toast.success('Share link copied to clipboard');
+    setSharing(false);
   };
 
   const handleDelete = async () => {
@@ -372,7 +405,28 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer }: Review
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[140px]">
+                <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[160px]">
+                  <button
+                    onClick={handleShare}
+                    disabled={sharing}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    {sharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                    Copy Share Link
+                  </button>
+                  {item.type === 'webpage' && item.url && (
+                    
+                     <a href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setShowMenu(false)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      <ExternalLink size={14} />
+                      Open Page
+                    </a>
+                  )}
+                  <div className="border-t border-gray-100 my-1" />
                   <button
                     onClick={() => { setShowMenu(false); handleDelete(); }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"

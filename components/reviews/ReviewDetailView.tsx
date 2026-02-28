@@ -251,7 +251,7 @@ export default function ReviewDetailView({
 
         {MobileGate}
 
-        <div className={`hidden lg:flex ${isAdmin ? '' : 'min-h-screen'} flex-col bg-gray-50 ${isAdmin ? 'h-full' : ''}`}>
+        <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-gray-50`}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
@@ -334,7 +334,7 @@ export default function ReviewDetailView({
 
       {MobileGate}
 
-      <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'min-h-screen'} flex-row bg-gray-50`}>
+      <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-row bg-gray-50`}>
         {/* ── Sidebar ── */}
         <ItemSidebar
           items={items}

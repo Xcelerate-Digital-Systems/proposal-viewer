@@ -4,10 +4,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  Plus, ArrowLeft, Copy, Check, ExternalLink,
-  Image, LayoutGrid, GitBranch,
-} from 'lucide-react';
+import { Plus, ArrowLeft, Copy, Check, Image } from 'lucide-react';
+import ProjectTabs from '@/components/admin/reviews/ProjectTabs';
 import { supabase, type ReviewProject, type ReviewItem, type ReviewShareMode } from '@/lib/supabase';
 import { buildReviewProjectUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -198,9 +196,16 @@ function ItemsContent({
   };
 
   const handleOpenViewer = (itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+
+    // Connected webpage items → open the live URL directly
+    if (item?.type === 'webpage' && item.widget_installed_at && item.url) {
+      window.open(item.url, '_blank');
+      return;
+    }
+
     // Always scope the viewer to the clicked item's type so prev/next
     // navigation cycles through items of the same kind.
-    const item = items.find((i) => i.id === itemId);
     const type = typeFilter || item?.type;
     const typeParam = type ? `?type=${type}` : '';
     router.push(`/reviews/${projectId}/items/${itemId}${typeParam}`);
@@ -253,38 +258,6 @@ function ItemsContent({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {/* Share mode selector */}
-                {project.share_mode !== undefined && (
-                  <div className="flex items-center gap-1.5 mr-1">
-                    <span className="text-[10px] text-gray-400 font-medium">Share as:</span>
-                    <select
-                      value={project.share_mode || 'list'}
-                      onChange={(e) => toggleShareMode(e.target.value as ReviewShareMode)}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
-                    >
-                      <option value="list">List</option>
-                      <option value="board">Board</option>
-                    </select>
-                  </div>
-                )}
-
-                <button
-                  onClick={copyLink}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
-                >
-                  {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                  {copied ? 'Copied!' : 'Share Link'}
-                </button>
-
-                <a
-                  href={`/review/${project.share_token}`}
-                  target="_blank"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-[#017C87] hover:bg-[#017C87]/5 border border-gray-200 transition-colors"
-                >
-                  <ExternalLink size={14} />
-                  Preview
-                </a>
-
                 <button
                   onClick={() => setShowAddItem(true)}
                   className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
@@ -294,24 +267,7 @@ function ItemsContent({
                 </button>
               </div>
             </div>
-
-            {/* Tabs */}
-            <div className="flex items-center gap-1 -mb-px">
-              <Link
-                href={`/reviews/${projectId}/items`}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-[#017C87] text-[#017C87] transition-colors"
-              >
-                <LayoutGrid size={16} />
-                Items
-              </Link>
-              <Link
-                href={`/reviews/${projectId}/board`}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
-              >
-                <GitBranch size={16} />
-                Board
-              </Link>
-            </div>
+            <ProjectTabs projectId={projectId} activeTab="items" hasWebpages={items.some((i) => i.type === 'webpage')} />
           </>
         )}
       </div>
@@ -377,6 +333,7 @@ function ItemsContent({
                   item={item}
                   onRefresh={fetchItems}
                   onOpenViewer={handleOpenViewer}
+                  customDomain={customDomain}
                 />
               ))}
             </div>

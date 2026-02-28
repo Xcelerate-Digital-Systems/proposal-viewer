@@ -13,6 +13,7 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import ReviewBoardViewer from '@/components/review/ReviewBoardViewer';
 import ReviewNotFound from '@/components/reviews/ReviewNotFound';
+import WhiteboardSidebar from '@/components/review/WhiteboardSidebar';
 
 /**
  * Public whiteboard view — /whiteboard/[token]
@@ -83,10 +84,15 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   // Clicking a board node — navigate (same tab) to item detail view.
   // Includes a back param so the review page shows a "Back to board" button.
   const handleSelectItem = useCallback((itemId: string) => {
-    const boardBackUrl = `/whiteboard/${params.token}`;
-
-    // Prefer item's own share token for a focused single-item view
     const item = items.find((i) => i.id === itemId);
+
+    // Connected webpage items → open the live URL directly
+    if (item?.type === 'webpage' && item.widget_installed_at && item.url) {
+      window.open(item.url, '_blank');
+      return;
+    }
+
+    const boardBackUrl = `/whiteboard/${params.token}`;
     if (item?.share_token) {
       router.push(`/review/${item.share_token}?back=${encodeURIComponent(boardBackUrl)}`);
       return;
@@ -152,16 +158,26 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
           </p>
         </div>
 
-        {/* Board canvas */}
-        <div className="flex-1 min-h-0">
-          <ReviewBoardViewer
+        {/* Sidebar + Board canvas */}
+        <div className="flex-1 min-h-0 flex">
+          <WhiteboardSidebar
             items={items}
-            boardEdges={boardEdges}
-            boardNotes={boardNotes}
             comments={comments}
             branding={branding}
+            bgSecondary={bgSecondary}
+            sidebarText={sidebarText}
             onSelectItem={handleSelectItem}
           />
+          <div className="flex-1 min-h-0">
+            <ReviewBoardViewer
+              items={items}
+              boardEdges={boardEdges}
+              boardNotes={boardNotes}
+              comments={comments}
+              branding={branding}
+              onSelectItem={handleSelectItem}
+            />
+          </div>
         </div>
       </div>
     </>

@@ -4,9 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  ArrowLeft, Plus, LayoutGrid, GitBranch,
-} from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
+import ProjectTabs from '@/components/admin/reviews/ProjectTabs';
 import { supabase, type ReviewProject, type ReviewItem } from '@/lib/supabase';
 import { buildReviewWhiteboardUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -112,6 +111,13 @@ function BoardContent({
 
   const handleOpenViewer = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
+
+    // Connected webpage items → open the live URL directly
+    if (item?.type === 'webpage' && item.widget_installed_at && item.url) {
+      window.open(item.url, '_blank');
+      return;
+    }
+
     const typeParam = item ? `?type=${item.type}` : '';
     router.push(`/reviews/${projectId}/items/${itemId}${typeParam}`);
   };
@@ -173,24 +179,7 @@ function BoardContent({
                 </button>
               </div>
             </div>
-
-            {/* Tabs */}
-            <div className="flex items-center gap-1 -mb-px">
-              <Link
-                href={`/reviews/${projectId}/items`}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
-              >
-                <LayoutGrid size={16} />
-                Items
-              </Link>
-              <Link
-                href={`/reviews/${projectId}/board`}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-[#017C87] text-[#017C87] transition-colors"
-              >
-                <GitBranch size={16} />
-                Board
-              </Link>
-            </div>
+            <ProjectTabs projectId={projectId} activeTab="board" hasWebpages={items.some((i) => i.type === 'webpage')} />
           </>
         )}
       </div>
