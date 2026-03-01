@@ -1,6 +1,7 @@
 // app/api/review-widget/[token]/script/parts/styles.ts
 
 const ACCENT = '#017C87';
+const PIN_COLOR = '#22c55e'; // green-500 — consistent with in-app PinOverlay
 const FONT = `'Clash Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
 
 export function stylesJS(apiBase: string): string {
@@ -20,13 +21,13 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 
 /* ── Pin marker ────────────────────────────────────────── */
 .aviz-pin{position:absolute;z-index:2147483639;width:28px;height:28px;border-radius:50%;
-  background:${ACCENT};color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;
+  background:${PIN_COLOR};color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;
   justify-content:center;cursor:pointer;transform:translate(-50%,-50%);
   box-shadow:0 2px 8px rgba(0,0,0,.25);border:2px solid #fff;
   transition:transform .1s,box-shadow .1s;}
 .aviz-pin:hover{transform:translate(-50%,-50%) scale(1.15);box-shadow:0 4px 12px rgba(0,0,0,.3);}
 .aviz-pin.pending{animation:aviz-pinPulse .8s ease-in-out infinite alternate;}
-@keyframes aviz-pinPulse{from{box-shadow:0 2px 8px rgba(0,0,0,.25);}to{box-shadow:0 2px 16px ${ACCENT}60;}}
+@keyframes aviz-pinPulse{from{box-shadow:0 2px 8px rgba(0,0,0,.25);}to{box-shadow:0 2px 16px ${PIN_COLOR}60;}}
 
 /* ── Box drawing ───────────────────────────────────────── */
 .aviz-draw-box{position:absolute;z-index:2147483639;border:2px dashed ${ACCENT};background:${ACCENT}10;pointer-events:none;}

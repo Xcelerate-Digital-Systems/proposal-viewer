@@ -239,7 +239,6 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       project={project!}
       items={items}
       comments={comments}
-      branding={branding}
       initialItemId={initialItemId}
       initialTypeFilter={urlType || autoTypeFilter}
       singleItemOnly={viewMode === 'item'}

@@ -23,10 +23,10 @@ export default function PinOverlay({
       {pinComments.map((c) => (
         <button
           key={c.id}
-          className={`absolute w-6 h-6 -ml-3 -mt-3 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg z-10 transition-transform hover:scale-110 ${
+          className={`absolute w-7 h-7 -ml-3.5 -mt-3.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg z-10 border-2 border-white transition-transform hover:scale-110 ${
             c.resolved
               ? 'bg-gray-400 opacity-50'
-              : 'bg-[#017C87] text-white'
+              : 'bg-green-500 text-white'
           }`}
           style={{ left: `${c.pin_x}%`, top: `${c.pin_y}%` }}
           onClick={(e) => {
@@ -42,7 +42,7 @@ export default function PinOverlay({
       {/* Pending pin (not yet submitted) */}
       {pendingPin && (
         <div
-          className="absolute w-6 h-6 -ml-3 -mt-3 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg animate-pulse z-10 bg-[#017C87] text-white"
+          className="absolute w-7 h-7 -ml-3.5 -mt-3.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg animate-pulse z-10 border-2 border-white bg-green-500 text-white"
           style={{ left: `${pendingPin.x}%`, top: `${pendingPin.y}%` }}
         >
           +

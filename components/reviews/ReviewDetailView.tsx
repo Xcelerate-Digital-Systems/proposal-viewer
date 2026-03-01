@@ -112,11 +112,14 @@ export default function ReviewDetailView({
     initialItemId || items[0]?.id || null
   );
   const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter || null);
-  const [showComments, setShowComments] = useState(isAdmin);
+  const [showComments, setShowComments] = useState(true);
 
   // ── Branding colors (client mode) ──
   const brandingColors = useBrandingColors(branding ?? {} as CompanyBranding);
   const { bgSecondary, accent, border, sidebarText } = brandingColors;
+
+  // Use admin-style sidebar when no branding is provided (unbranded client mode)
+  const hasBranding = isClient && branding?.logo_url || branding?.name;
 
   // ── Feedback hooks ──
   const {
@@ -255,15 +258,15 @@ export default function ReviewDetailView({
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
-              {isClient && branding?.logo_url ? (
+              {hasBranding && branding?.logo_url ? (
                 <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
-              ) : isClient && branding?.name ? (
+              ) : hasBranding && branding?.name ? (
                 <span className="text-sm font-semibold text-gray-800"
                   style={{ fontFamily: fontFamily(branding.font_heading) }}>
                   {branding.name}
                 </span>
               ) : null}
-              {isClient && <span className="text-gray-200">·</span>}
+              {hasBranding && <span className="text-gray-200">·</span>}
               <span className="text-sm text-gray-600 truncate">{selectedItem.title}</span>
             </div>
             {renderHeaderActions?.(selectedItem)}
@@ -326,6 +329,8 @@ export default function ReviewDetailView({
   // Determine which types to show in sidebar filter — hide when hideFilterBar is set
   const sidebarTypes = hideFilterBar ? [] : (isAdmin && typeFilter ? [] : availableTypes);
 
+  const sidebarVariant = isAdmin || !hasBranding ? 'admin' : 'branded';
+
   return (
     <>
       {isClient && branding && (
@@ -345,16 +350,16 @@ export default function ReviewDetailView({
           selectedItemId={selectedItemId}
           onSelectItem={handleSidebarSelect}
           comments={isAdmin ? allProjectComments : comments as Pick<ReviewComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]}
-          variant={isAdmin ? 'admin' : 'branded'}
+          variant={sidebarVariant as 'admin' | 'branded'}
           projectTitle={project.title}
-          logoUrl={isClient ? branding?.logo_url : undefined}
-          companyName={isClient ? branding?.name : undefined}
-          bgColor={isClient ? bgSecondary : undefined}
-          borderColor={isClient ? border : undefined}
-          textColor={isClient ? sidebarText : undefined}
-          accentColor={isClient ? accent : undefined}
-          fontHeading={isClient && branding ? fontFamily(branding.font_heading) : undefined}
-          fontSidebar={isClient && branding ? fontFamily(branding.font_sidebar) : undefined}
+          logoUrl={hasBranding ? branding?.logo_url : undefined}
+          companyName={hasBranding ? branding?.name : undefined}
+          bgColor={hasBranding ? bgSecondary : undefined}
+          borderColor={hasBranding ? border : undefined}
+          textColor={hasBranding ? sidebarText : undefined}
+          accentColor={hasBranding ? accent : undefined}
+          fontHeading={hasBranding && branding ? fontFamily(branding.font_heading) : undefined}
+          fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
         />
 
         {/* ── Main content area ── */}
