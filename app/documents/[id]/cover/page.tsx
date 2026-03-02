@@ -7,7 +7,6 @@ import { supabase, type Document as DocType } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import DocumentDetailHeader from '@/components/admin/documents/DocumentDetailHeader';
 import DocumentCoverEditor from '@/components/admin/documents/DocumentCoverEditor';
-import { useToast } from '@/components/ui/Toast';
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -38,7 +37,6 @@ function CoverContent({
   companyId: string;
 }) {
   const router = useRouter();
-  const toast = useToast();
   const [doc, setDoc] = useState<DocType | null>(null);
   const [loading, setLoading] = useState(true);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
@@ -92,14 +90,7 @@ function CoverContent({
       />
 
       <div className="flex-1 px-6 lg:px-10 py-6">
-        <DocumentCoverEditor
-          document={doc}
-          onSave={() => {
-            toast.success('Cover saved');
-            fetchDocument();
-          }}
-          onCancel={() => {}}
-        />
+        <DocumentCoverEditor document={doc} />
       </div>
     </div>
   );

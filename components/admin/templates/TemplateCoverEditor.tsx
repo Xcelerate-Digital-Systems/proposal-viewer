@@ -6,8 +6,8 @@ import CoverEditor from '@/components/admin/shared/CoverEditor';
 
 interface TemplateCoverEditorProps {
   template: ProposalTemplate;
-  onSave: () => void;
-  onCancel: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
 export default function TemplateCoverEditor({ template, onSave, onCancel }: TemplateCoverEditorProps) {

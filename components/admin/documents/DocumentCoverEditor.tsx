@@ -6,8 +6,8 @@ import CoverEditor from '@/components/admin/shared/CoverEditor';
 
 interface DocumentCoverEditorProps {
   document: Document;
-  onSave: () => void;
-  onCancel: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
 export default function DocumentCoverEditor({ document: doc, onSave, onCancel }: DocumentCoverEditorProps) {

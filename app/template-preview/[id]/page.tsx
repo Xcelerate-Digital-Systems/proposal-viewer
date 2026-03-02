@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FileText, Menu, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import { deriveBorderColor } from '@/hooks/useProposal';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
@@ -160,27 +160,9 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     >
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
-      {/* Template Preview Banner */}
-      <div
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 text-xs font-medium"
-        style={{ backgroundColor: '#017C87', color: '#ffffff' }}
-      >
-        <div className="flex items-center gap-2">
-          <a
-            href="/templates"
-            className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/15 hover:bg-white/25 transition-colors"
-          >
-            <ArrowLeft size={12} />
-            Back
-          </a>
-          <span>Template Preview: <strong>{template?.name}</strong></span>
-        </div>
-        <span className="opacity-70">This is a preview — placeholder data is shown for client fields</span>
-      </div>
-
       {/* Mobile header bar */}
       <div
-        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20 mt-9"
+        className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
         style={{ backgroundColor: bgSecondary, borderColor: border }}
       >
         <button
@@ -212,24 +194,24 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             <ChevronRight size={16} />
           </button>
         </div>
+
+        <div className="w-10" />
       </div>
 
-      {/* Sidebar — shared component, no accept/comments for template preview */}
-      {/* lg:mt-9 offsets below the preview banner on desktop */}
-      <div className="lg:mt-9 lg:h-[calc(100dvh-2.25rem)] flex flex-col overflow-hidden">
-        <Sidebar
-          numPages={numPages}
-          currentPage={currentPage}
-          pageEntries={pageEntries}
-          getPageName={getPageName}
-          onPageSelect={goToPage}
-          branding={branding}
-          mobileOpen={mobileSidebar}
-          onMobileClose={() => setMobileSidebar(false)}
-        />
-      </div>
+      {/* Sidebar — direct flex child, identical to proposal viewer */}
+      <Sidebar
+        numPages={numPages}
+        currentPage={currentPage}
+        pageEntries={pageEntries}
+        getPageName={getPageName}
+        onPageSelect={goToPage}
+        branding={branding}
+        mobileOpen={mobileSidebar}
+        onMobileClose={() => setMobileSidebar(false)}
+      />
 
-      <div className="flex-1 flex flex-col min-w-0 relative lg:mt-9">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Conditionally render PDF, Pricing, or Text page */}
         {onPricingPage && pricing ? (
           <div

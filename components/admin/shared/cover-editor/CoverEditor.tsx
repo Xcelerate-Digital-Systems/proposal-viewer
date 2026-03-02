@@ -1,8 +1,8 @@
 // components/admin/shared/cover-editor/CoverEditor.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import {
@@ -21,15 +21,16 @@ import CoverPreview from './CoverPreview';
 interface CoverEditorProps {
   type: EntityType;
   entity: CoverEditorEntity;
-  onSave: () => void;
-  onCancel: () => void;
+  onSave?: () => void;
+  /** @deprecated No longer used — autosave handles persistence */
+  onCancel?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEditorProps) {
+export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) {
   const cfg = configs[type];
   const displayTitle = entity.title || entity.name || 'Untitled';
 
@@ -41,7 +42,11 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
   const [imagePath, setImagePath] = useState(entity.cover_image_path || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
+
+  /* ── Autosave state ────────────────────────────────────────── */
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initializedRef = useRef(false);
 
   /* ── Company logo state (for preview) ──────────────────────── */
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
@@ -161,6 +166,86 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
     resolve();
   }, [preparedByMemberId]);
 
+  /* ── Cleanup debounce on unmount ───────────────────────────── */
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  /* ══════════════════════════════════════════════════════════════ */
+  /*  Save logic                                                    */
+  /* ══════════════════════════════════════════════════════════════ */
+
+  const save = useCallback(async () => {
+    setSaveStatus('saving');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: Record<string, any> = {
+      cover_enabled: coverEnabled,
+      cover_image_path: imagePath || null,
+      cover_subtitle: subtitle || null,
+      cover_button_text: buttonText || cfg.defaultButtonText,
+      cover_bg_style: colors.coverBgStyle,
+      cover_bg_color_1: colors.coverBgColor1,
+      cover_bg_color_2: colors.coverBgColor2,
+      cover_gradient_type: colors.coverGradientType,
+      cover_gradient_angle: colors.coverGradientAngle,
+      cover_overlay_opacity: colors.coverOverlayOpacity,
+      cover_text_color: colors.coverTextColor,
+      cover_subtitle_color: colors.coverSubtitleColor,
+      cover_button_bg: colors.coverButtonBg,
+      cover_button_text_color: colors.coverButtonTextColor,
+      cover_date: coverDate.trim() || null,
+      cover_show_date: showDate,
+    };
+
+    if (cfg.fields.preparedBy) {
+      payload.prepared_by_member_id = preparedByMemberId || null;
+      payload.cover_show_prepared_by = showPreparedBy;
+      payload.cover_show_avatar = showAvatar;
+    }
+    if (cfg.fields.acceptButtonText) {
+      payload.accept_button_text = acceptButtonText.trim() || null;
+    }
+    if (cfg.fields.clientLogo) {
+      payload.cover_client_logo_path = clientLogoPath || null;
+      payload.cover_show_client_logo = showClientLogo;
+    }
+
+    await supabase.from(cfg.table).update(payload).eq('id', entity.id);
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2000);
+    onSave?.();
+  }, [
+    cfg, entity.id, coverEnabled, imagePath, subtitle, buttonText,
+    acceptButtonText, colors, coverDate, showDate, preparedByMemberId,
+    showPreparedBy, showAvatar, clientLogoPath, showClientLogo, onSave,
+  ]);
+
+  const scheduleSave = useCallback((delay = 800) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      save();
+      debounceRef.current = null;
+    }, delay);
+  }, [save]);
+
+  /* ── Autosave: watch all saveable state ────────────────────── */
+  useEffect(() => {
+    // Skip the initial render — don't save on mount
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      return;
+    }
+    scheduleSave(800);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    coverEnabled, subtitle, buttonText, acceptButtonText, imagePath,
+    colors, coverDate, showDate, preparedByMemberId, showPreparedBy,
+    showAvatar, clientLogoPath, showClientLogo,
+  ]);
+
   /* ══════════════════════════════════════════════════════════════ */
   /*  Handlers                                                      */
   /* ══════════════════════════════════════════════════════════════ */
@@ -225,48 +310,6 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
     setShowClientLogo(false);
   };
 
-  /* ── Save ──────────────────────────────────────────────────── */
-  const handleSave = async () => {
-    setSaving(true);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload: Record<string, any> = {
-      cover_enabled: coverEnabled,
-      cover_image_path: imagePath || null,
-      cover_subtitle: subtitle || null,
-      cover_button_text: buttonText || cfg.defaultButtonText,
-      cover_bg_style: colors.coverBgStyle,
-      cover_bg_color_1: colors.coverBgColor1,
-      cover_bg_color_2: colors.coverBgColor2,
-      cover_gradient_type: colors.coverGradientType,
-      cover_gradient_angle: colors.coverGradientAngle,
-      cover_overlay_opacity: colors.coverOverlayOpacity,
-      cover_text_color: colors.coverTextColor,
-      cover_subtitle_color: colors.coverSubtitleColor,
-      cover_button_bg: colors.coverButtonBg,
-      cover_button_text_color: colors.coverButtonTextColor,
-      cover_date: coverDate.trim() || null,
-      cover_show_date: showDate,
-    };
-
-    if (cfg.fields.preparedBy) {
-      payload.prepared_by_member_id = preparedByMemberId || null;
-      payload.cover_show_prepared_by = showPreparedBy;
-      payload.cover_show_avatar = showAvatar;
-    }
-    if (cfg.fields.acceptButtonText) {
-      payload.accept_button_text = acceptButtonText.trim() || null;
-    }
-    if (cfg.fields.clientLogo) {
-      payload.cover_client_logo_path = clientLogoPath || null;
-      payload.cover_show_client_logo = showClientLogo;
-    }
-
-    await supabase.from(cfg.table).update(payload).eq('id', entity.id);
-    setSaving(false);
-    onSave();
-  };
-
   /* ══════════════════════════════════════════════════════════════ */
   /*  Derived values                                                */
   /* ══════════════════════════════════════════════════════════════ */
@@ -290,14 +333,16 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
     <div className="bg-gray-50 p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900">Cover Page Settings</h4>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
-        >
-          <Save size={14} />
-          {saving ? 'Saving...' : 'Save'}
-        </button>
+        {saveStatus === 'saving' && (
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <Loader2 size={12} className="animate-spin" /> Saving…
+          </span>
+        )}
+        {saveStatus === 'saved' && (
+          <span className="flex items-center gap-1.5 text-xs text-emerald-500">
+            <Check size={12} /> Saved
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:max-h-[calc(100vh-200px)]">

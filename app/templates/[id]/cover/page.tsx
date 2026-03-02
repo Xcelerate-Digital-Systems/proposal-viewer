@@ -7,7 +7,6 @@ import { supabase, type ProposalTemplate } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import TemplateDetailHeader from '@/components/admin/templates/TemplateDetailHeader';
 import TemplateCoverEditor from '@/components/admin/templates/TemplateCoverEditor';
-import { useToast } from '@/components/ui/Toast';
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -38,7 +37,6 @@ function CoverContent({
   companyId: string;
 }) {
   const router = useRouter();
-  const toast = useToast();
   const [template, setTemplate] = useState<ProposalTemplate | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -78,14 +76,7 @@ function CoverContent({
       />
 
       <div className="flex-1 px-6 lg:px-10 py-6">
-        <TemplateCoverEditor
-            template={template}
-            onSave={() => {
-                toast.success('Cover saved');
-                fetchTemplate();
-            }}
-            onCancel={() => {}}
-            />
+        <TemplateCoverEditor template={template} />
       </div>
     </div>
   );

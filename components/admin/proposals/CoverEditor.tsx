@@ -6,8 +6,8 @@ import CoverEditor from '@/components/admin/shared/CoverEditor';
 
 interface ProposalCoverEditorProps {
   proposal: Proposal;
-  onSave: () => void;
-  onCancel: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
 export default function ProposalCoverEditor({ proposal, onSave, onCancel }: ProposalCoverEditorProps) {

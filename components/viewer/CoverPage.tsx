@@ -30,6 +30,9 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  // Resolved member data (from prepared_by_member_id when direct fields are absent)
+  const [resolvedName, setResolvedName] = useState<string | null>(null);
+
   // Fetch signed URL for cover image
   useEffect(() => {
     if (proposal.cover_image_path) {
@@ -54,7 +57,7 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
     }
   }, [proposal.cover_client_logo_path, proposal.cover_show_client_logo]);
 
-  // Fetch signed URL for avatar
+  // Fetch signed URL for avatar (direct path)
   useEffect(() => {
     if (proposal.cover_avatar_path && proposal.cover_show_avatar) {
       supabase.storage
@@ -65,6 +68,43 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         });
     }
   }, [proposal.cover_avatar_path, proposal.cover_show_avatar]);
+
+  // Resolve prepared_by_member_id → name + avatar when direct fields are absent
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const memberId = (proposal as any).prepared_by_member_id;
+    if (!memberId) return;
+
+    // Only resolve if we're missing the name or the avatar
+    const needsName = !proposal.prepared_by;
+    const needsAvatar = !proposal.cover_avatar_path && proposal.cover_show_avatar;
+    if (!needsName && !needsAvatar) return;
+
+    const resolve = async () => {
+      const { data } = await supabase
+        .from('team_members')
+        .select('name, avatar_path')
+        .eq('id', memberId)
+        .single();
+
+      if (!data) return;
+
+      if (needsName && data.name) {
+        setResolvedName(data.name);
+      }
+
+      if (needsAvatar && data.avatar_path) {
+        const { data: urlData } = await supabase.storage
+          .from('proposals')
+          .createSignedUrl(data.avatar_path, 3600);
+        if (urlData?.signedUrl) {
+          setAvatarUrl(urlData.signedUrl);
+        }
+      }
+    };
+    resolve();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(proposal as any).prepared_by_member_id, proposal.prepared_by, proposal.cover_avatar_path, proposal.cover_show_avatar]);
 
   // Wait for cover image to fully load before revealing
   useEffect(() => {
@@ -96,11 +136,14 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
   const gradientType = proposal.cover_gradient_type || branding.cover_gradient_type || 'linear';
   const gradientAngle = proposal.cover_gradient_angle ?? branding.cover_gradient_angle ?? 135;
 
-  // New: visibility flags (default true for prepared_by for backward compat)
+  // Visibility flags (default true for prepared_by for backward compat)
   const showPreparedBy = proposal.cover_show_prepared_by ?? true;
   const showDate = proposal.cover_show_date ?? false;
   const showClientLogo = proposal.cover_show_client_logo ?? false;
   const showAvatar = proposal.cover_show_avatar ?? false;
+
+  // Use resolved name as fallback when proposal.prepared_by is not set
+  const preparedByName = proposal.prepared_by || resolvedName;
 
   // Build background: solid or gradient (linear / radial / conic)
   const baseBg = bgStyle === 'solid'
@@ -131,8 +174,8 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         hexToRgba(bgColor2, overlayEnd)
       );
 
-  // Has prepared-by meta row?
-  const hasPreparedByRow = showPreparedBy && proposal.prepared_by;
+  // Has prepared-by meta row? Use resolved name as fallback
+  const hasPreparedByRow = showPreparedBy && preparedByName;
   // Has date row?
   const hasDateRow = showDate && proposal.cover_date;
 
@@ -239,7 +282,7 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
               {showAvatar && avatarUrl && (
                 <img
                   src={avatarUrl}
-                  alt={proposal.prepared_by || ''}
+                  alt={preparedByName || ''}
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2"
                   style={{ borderColor: `${subtitleColor}40` }}
                 />
@@ -248,7 +291,7 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
                 className="text-xs sm:text-sm"
                 style={{ color: subtitleColor, opacity: 0.8, fontFamily: fontFamily(branding.font_body) }}
               >
-                Prepared by {proposal.prepared_by}
+                Prepared by {preparedByName}
               </p>
             </div>
           )}
@@ -258,18 +301,16 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
 
           <button
             onClick={onStart}
-            className="px-6 py-3 sm:px-8 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded-md transition-transform hover:scale-105 active:scale-100"
+            className="px-8 py-3.5 text-sm font-semibold tracking-wider uppercase rounded-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
             style={{
               backgroundColor: btnBg,
               color: btnText,
-              fontFamily: fontFamily(branding.font_body),
+              fontFamily: fontFamily(branding.font_heading),
             }}
           >
             {buttonText}
           </button>
         </div>
-        {/* Footer spacer */}
-        <div />
       </div>
     </div>
   );

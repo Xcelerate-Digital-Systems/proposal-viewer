@@ -7,7 +7,6 @@ import { supabase, type Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProposalDetailHeader from '@/components/admin/proposals/ProposalDetailHeader';
 import CoverEditor from '@/components/admin/proposals/CoverEditor';
-import { useToast } from '@/components/ui/Toast';
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -38,7 +37,6 @@ function CoverContent({
   companyId: string;
 }) {
   const router = useRouter();
-  const toast = useToast();
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
@@ -92,14 +90,7 @@ function CoverContent({
       />
 
       <div className="flex-1 px-6 lg:px-10 py-6">
-        <CoverEditor
-            proposal={proposal}
-            onSave={() => {
-                toast.success('Cover saved');
-                fetchProposal();
-            }}
-            onCancel={() => {}}
-            />
+        <CoverEditor proposal={proposal} />
       </div>
     </div>
   );
