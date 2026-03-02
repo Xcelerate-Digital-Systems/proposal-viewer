@@ -14,6 +14,7 @@ export interface TextPageData {
   sort_order: number;
   link_url?: string | null;
   link_label?: string | null;
+  orientation?: 'auto' | 'portrait' | 'landscape';
 }
 
 interface UseTextPagesStateOptions {
@@ -89,6 +90,7 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           sort_order: page.sort_order,
           link_url: page.link_url || null,
           link_label: page.link_label || null,
+          orientation: page.orientation || 'auto',
         }),
       });
       setTextPageSaveStatuses((prev) => ({ ...prev, [page.id]: 'saved' }));
@@ -163,6 +165,7 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           indent: 0,
           title: 'New Blank Page',
           content: DEFAULT_CONTENT,
+          orientation: 'auto',
         }),
       });
 
@@ -194,21 +197,14 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
     try {
       const res = await fetch(`${apiBase}?id=${pageId}`, { method: 'DELETE' });
       if (!res.ok) {
-        toast.error('Failed to delete text page');
+        toast.error('Failed to remove text page');
         return false;
       }
-
-      // Clear any pending debounce timer
-      if (debounceTimers.current[pageId]) {
-        clearTimeout(debounceTimers.current[pageId]);
-        delete debounceTimers.current[pageId];
-      }
-
       setTextPages((prev) => prev.filter((tp) => tp.id !== pageId));
       toast.success('Text page removed');
       return true;
     } catch {
-      toast.error('Failed to delete text page');
+      toast.error('Failed to remove text page');
       return false;
     }
   }, [apiBase, confirm, toast]);
@@ -216,13 +212,11 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
   return {
     textPagesLoaded,
     textPages,
-    setTextPages,
     textPageSaveStatuses,
     updateTextPage,
     updateTextPagePosition,
     flushTextPageSaves,
     addTextPage,
     removeTextPage,
-    saveTextPage,
   };
 }

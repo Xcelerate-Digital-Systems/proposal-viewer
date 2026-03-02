@@ -38,8 +38,12 @@ export interface CompositeExportOptions {
   userName?: string;
   proposalTitle?: string;
   onProgress?: (current: number, total: number) => void;
-  /** Page entries for per-page orientation overrides */
+  /** Page entries for per-page orientation overrides (PDF pages) */
   pageEntries?: PageNameEntry[];
+  /** Direct orientation override for the pricing page */
+  pricingOrientation?: 'auto' | 'portrait' | 'landscape';
+  /** Per-text-page orientation overrides keyed by text page ID */
+  textPageOrientations?: Record<string, 'auto' | 'portrait' | 'landscape'>;
 }
 
 /* ——— Helpers ———————————————————————————————————————————— */
@@ -120,6 +124,20 @@ function resolvePageOrientation(
 }
 
 /**
+ * Resolve orientation from a direct override value.
+ * Returns the override if set (and not 'auto'), otherwise the dominant orientation.
+ */
+function resolveDirectOrientation(
+  override: 'auto' | 'portrait' | 'landscape' | undefined,
+  dominantOrientation: 'portrait' | 'landscape',
+): 'portrait' | 'landscape' {
+  if (override && override !== 'auto') {
+    return override;
+  }
+  return dominantOrientation;
+}
+
+/**
  * Render a React element into an offscreen container, capture it with
  * html2canvas, then clean up. Returns a PNG data URL.
  *
@@ -194,6 +212,8 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     proposalTitle,
     onProgress,
     pageEntries,
+    pricingOrientation,
+    textPageOrientations,
   } = opts;
 
   // Load the source PDF
@@ -213,7 +233,10 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
 
     if (isPricingPage(vp) && pricing) {
       // —— Capture pricing page ——————————————————————————————————
-      const orientation = resolvePageOrientation(vp, pageEntries, dominant.orientation);
+      // Use direct pricing orientation if available, otherwise fall back to pageEntries
+      const orientation = pricingOrientation
+        ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
+        : resolvePageOrientation(vp, pageEntries, dominant.orientation);
 
       // Use actual source PDF dimensions, swapping if orientation differs
       let pageWidth: number;
@@ -254,7 +277,15 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
 
     } else if (isTextPage(vp)) {
       // —— Capture text page —————————————————————————————————————
-      const orientation = resolvePageOrientation(vp, pageEntries, dominant.orientation);
+      const textPageId = getTextPageId(vp);
+
+      // Use direct text page orientation if available, otherwise fall back to pageEntries
+      let orientation: 'portrait' | 'landscape';
+      if (textPageId && textPageOrientations?.[textPageId]) {
+        orientation = resolveDirectOrientation(textPageOrientations[textPageId], dominant.orientation);
+      } else {
+        orientation = resolvePageOrientation(vp, pageEntries, dominant.orientation);
+      }
 
       let pageWidth: number;
       let pageHeight: number;
@@ -268,7 +299,6 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
 
       const targetAspect = pageWidth / pageHeight;
 
-      const textPageId = getTextPageId(vp);
       const textPage = textPageId ? getTextPage(textPageId) : undefined;
 
       if (textPage) {
