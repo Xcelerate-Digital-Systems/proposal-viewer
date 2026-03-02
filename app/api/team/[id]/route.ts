@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 
-// PATCH - Update a team member's role
+// PATCH - Update a team member's role, name, or avatar
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -15,23 +15,8 @@ export async function PATCH(
     }
 
     const { member, companyId } = auth;
-
-    // Only owners or super admins can change roles
-    if (!member.is_super_admin && member.role !== 'owner') {
-      return NextResponse.json({ error: 'Only owners can change roles' }, { status: 403 });
-    }
-
     const { id } = await params;
-    const { role } = await req.json();
-
-    if (!['admin', 'member'].includes(role)) {
-      return NextResponse.json({ error: 'Role must be admin or member' }, { status: 400 });
-    }
-
-    // Can't change own role
-    if (id === member.id) {
-      return NextResponse.json({ error: 'Cannot change your own role' }, { status: 400 });
-    }
+    const body = await req.json();
 
     const supabase = createServiceClient();
 
@@ -46,20 +31,104 @@ export async function PATCH(
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
     }
 
-    if (target.role === 'owner') {
-      return NextResponse.json({ error: 'Cannot change owner role' }, { status: 400 });
+    // ── Role update ──────────────────────────────────────────
+    if ('role' in body) {
+      // Only owners or super admins can change roles
+      if (!member.is_super_admin && member.role !== 'owner') {
+        return NextResponse.json({ error: 'Only owners can change roles' }, { status: 403 });
+      }
+
+      if (id === member.id) {
+        return NextResponse.json({ error: 'Cannot change your own role' }, { status: 400 });
+      }
+
+      const { role } = body;
+
+      if (!['owner', 'admin', 'member'].includes(role)) {
+        return NextResponse.json({ error: 'Role must be owner, admin, or member' }, { status: 400 });
+      }
+
+      // Only super admins can demote existing owners
+      if (target.role === 'owner' && !member.is_super_admin) {
+        return NextResponse.json({ error: 'Cannot change owner role' }, { status: 400 });
+      }
+
+      const { error } = await supabase
+        .from('team_members')
+        .update({ role, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true });
     }
 
-    const { error } = await supabase
-      .from('team_members')
-      .update({ role, updated_at: new Date().toISOString() })
-      .eq('id', id);
+    // ── Profile update (name / avatar_path) ──────────────────
+    const hasProfileUpdate = 'name' in body || 'avatar_path' in body;
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (hasProfileUpdate) {
+      // Self-update: any authenticated user can update their own profile
+      const isSelfUpdate = id === member.id;
+
+      if (!isSelfUpdate) {
+        // Other-member update: only super admins, owners, or admins
+        const canEditOthers =
+          member.is_super_admin ||
+          member.role === 'owner' ||
+          member.role === 'admin';
+
+        if (!canEditOthers) {
+          return NextResponse.json(
+            { error: 'Only admins, owners, or super admins can edit other members' },
+            { status: 403 }
+          );
+        }
+
+        // Admins can only edit members, not owners or other admins
+        if (
+          member.role === 'admin' &&
+          !member.is_super_admin &&
+          (target.role === 'owner' || target.role === 'admin')
+        ) {
+          return NextResponse.json(
+            { error: 'Admins can only edit members' },
+            { status: 403 }
+          );
+        }
+      }
+
+      const updates: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if ('name' in body) {
+        const name = String(body.name).trim();
+        if (!name) {
+          return NextResponse.json({ error: 'Name cannot be empty' }, { status: 400 });
+        }
+        updates.name = name;
+      }
+
+      if ('avatar_path' in body) {
+        // avatar_path can be null (to remove) or a string path
+        updates.avatar_path = body.avatar_path;
+      }
+
+      const { error } = await supabase
+        .from('team_members')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   } catch (err) {
     console.error('Update member error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

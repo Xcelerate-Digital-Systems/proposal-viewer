@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProfileEditor from '@/components/admin/settings/ProfileEditor';
+import TeamMemberManager from '@/components/admin/settings/TeamMemberManager';
 import { supabase, TeamMember, WebhookEndpoint } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 
@@ -137,6 +138,7 @@ function SettingsContent({ auth }: {
   const { teamMember, companyId, isSuperAdmin, updatePreferences } = auth;
   const [saving, setSaving] = useState<string | null>(null);
   const isAdminOrOwner = teamMember?.role === 'owner' || teamMember?.role === 'admin';
+  const canManageTeam = isSuperAdmin || isAdminOrOwner;
 
   const handleToggle = async (key: string) => {
     if (!teamMember) return;
@@ -168,6 +170,16 @@ function SettingsContent({ auth }: {
         avatarPath={(teamMember as Record<string, unknown>)?.avatar_path as string || ''}
         onSave={(updates) => updatePreferences(updates as Partial<TeamMember>)}
       />
+
+      {/* ── Team Profiles (admin/owner/super admin only) ──── */}
+      {canManageTeam && companyId && teamMember && (
+        <TeamMemberManager
+          companyId={companyId}
+          currentMemberId={teamMember.id}
+          currentRole={teamMember.role}
+          isSuperAdmin={isSuperAdmin}
+        />
+      )}
 
       {/* ── Notifications ─────────────────────────────────────── */}
       <div className="mt-8">
