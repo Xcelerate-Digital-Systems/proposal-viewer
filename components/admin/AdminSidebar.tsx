@@ -52,7 +52,7 @@ const SECTIONS: SectionDef[] = [
     label: 'Proposals',
     icon: FileText,
     defaultHref: '/',
-    matchPaths: ['/', '/documents', '/templates', '/template-preview'],
+    matchPaths: ['/', '/proposals', '/documents', '/templates', '/template-preview'],
     items: [
       { href: '/', label: 'Proposals', icon: FileText },
       { href: '/documents', label: 'Documents', icon: Files },

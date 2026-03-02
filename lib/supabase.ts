@@ -12,6 +12,7 @@ export type PageNameEntry = {
   type?: 'page' | 'group'; // 'group' = section header only (no navigable page), default 'page'
   link_url?: string;   // optional external link attached to this page
   link_label?: string; // display label for the link button (defaults to 'View Resource')
+  orientation?: 'portrait' | 'landscape' | 'auto';
 };
 
 /**
@@ -32,6 +33,7 @@ export function normalizePageNames(raw: unknown, count: number): PageNameEntry[]
           ...(obj.type === 'group' ? { type: 'group' as const } : {}),
           ...(obj.link_url ? { link_url: obj.link_url as string } : {}),
           ...(obj.link_label ? { link_label: obj.link_label as string } : {}),
+          ...(obj.orientation ? { orientation: obj.orientation as 'portrait' | 'landscape' | 'auto' } : {}),
         });
       } else if (typeof item === 'string') {
         result.push({ name: item, indent: 0 });
@@ -86,6 +88,7 @@ export function normalizePageNamesWithGroups(raw: unknown, pdfCount: number): Pa
         ...(isGroup ? { type: 'group' as const } : {}),
         ...(obj.link_url ? { link_url: obj.link_url as string } : {}),
         ...(obj.link_label ? { link_label: obj.link_label as string } : {}),
+        ...(obj.orientation ? { orientation: obj.orientation as 'portrait' | 'landscape' | 'auto' } : {}),
       });
       if (!isGroup) realPagesSeen++;
     } else if (typeof item === 'string') {
@@ -125,6 +128,16 @@ export type Proposal = {
   cover_image_path: string | null;
   cover_subtitle: string | null;
   cover_button_text: string;
+  cover_bg_style: string | null;
+  cover_bg_color_1: string | null;
+  cover_bg_color_2: string | null;
+  cover_gradient_type: string | null;
+  cover_gradient_angle: number | null;
+  cover_overlay_opacity: number | null;
+  cover_text_color: string | null;
+  cover_subtitle_color: string | null;
+  cover_button_bg: string | null;
+  cover_button_text_color: string | null;
   accept_button_text: string | null;
   post_accept_action: 'redirect' | 'message' | null;
   post_accept_redirect_url: string | null;
@@ -148,6 +161,16 @@ export type Document = {
   cover_image_path: string | null;
   cover_subtitle: string | null;
   cover_button_text: string;
+  cover_bg_style: string | null;
+  cover_bg_color_1: string | null;
+  cover_bg_color_2: string | null;
+  cover_gradient_type: string | null;
+  cover_gradient_angle: number | null;
+  cover_overlay_opacity: number | null;
+  cover_text_color: string | null;
+  cover_subtitle_color: string | null;
+  cover_button_bg: string | null;
+  cover_button_text_color: string | null;
   company_id: string;
   created_at: string;
   updated_at: string;
@@ -177,6 +200,16 @@ export type ProposalTemplate = {
   cover_enabled: boolean;
   cover_subtitle: string | null;
   cover_button_text: string;
+  cover_bg_style: string | null;
+  cover_bg_color_1: string | null;
+  cover_bg_color_2: string | null;
+  cover_gradient_type: string | null;
+  cover_gradient_angle: number | null;
+  cover_overlay_opacity: number | null;
+  cover_text_color: string | null;
+  cover_subtitle_color: string | null;
+  cover_button_bg: string | null;
+  cover_button_text_color: string | null;
   prepared_by: string | null;
   section_headers: PageNameEntry[] | null;
   company_id: string;

@@ -47,7 +47,7 @@ interface EditDetailsPanelProps {
   id: string;
   initialValues: Record<string, string | null>;
   onSave: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 export default function EditDetailsPanel({ type, id, initialValues, onSave, onCancel }: EditDetailsPanelProps) {
@@ -160,12 +160,14 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, onCa
       {renderFields()}
 
       <div className="flex items-center justify-end gap-2 pt-2">
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          Cancel
-        </button>
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+        )}
         <button
           onClick={handleSave}
           disabled={saving || !hasChanges}

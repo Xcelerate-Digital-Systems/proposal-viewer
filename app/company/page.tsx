@@ -11,10 +11,8 @@ import { supabase } from '@/lib/supabase';
 import CustomDomainManager from '@/components/admin/CustomDomainManager';
 import { CompanyData, isValidHex6, isValidHex6or8 } from '@/lib/company-utils';
 import ViewerPreview from '@/components/admin/company/ViewerPreview';
-import CoverPreview from '@/components/admin/company/CoverPreview';
 import TextPagePreview from '@/components/admin/company/TextPagePreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
-import CoverColorsSection from '@/components/admin/company/CoverColorsSection';
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import ColorRow from '@/components/admin/company/ColorRow';
@@ -42,16 +40,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [acceptTextColor, setAcceptTextColor] = useState('#ffffff');
   const [website, setWebsite] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
-  const [coverBgStyle, setCoverBgStyle] = useState<'gradient' | 'solid'>('gradient');
-  const [coverBgColor1, setCoverBgColor1] = useState('#0f0f0f');
-  const [coverBgColor2, setCoverBgColor2] = useState('#141414');
-  const [coverTextColor, setCoverTextColor] = useState('#ffffff');
-  const [coverSubtitleColor, setCoverSubtitleColor] = useState('#ffffffb3');
-  const [coverButtonBg, setCoverButtonBg] = useState('#ff6700');
-  const [coverButtonText, setCoverButtonText] = useState('#ffffff');
-  const [coverOverlayOpacity, setCoverOverlayOpacity] = useState(0.65);
-  const [coverGradientType, setCoverGradientType] = useState<'linear' | 'radial' | 'conic'>('linear');
-  const [coverGradientAngle, setCoverGradientAngle] = useState(135);
   const [fontHeading, setFontHeading] = useState<string | null>(null);
   const [fontBody, setFontBody] = useState<string | null>(null);
   const [fontSidebar, setFontSidebar] = useState<string | null>(null);
@@ -92,16 +80,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setSidebarTextColor(data.sidebar_text_color || '#ffffff');
         setAcceptTextColor(data.accept_text_color || '#ffffff');
         setWebsite(data.website || '');
-        setCoverBgStyle(data.cover_bg_style || 'gradient');
-        setCoverBgColor1(data.cover_bg_color_1 || '#0f0f0f');
-        setCoverBgColor2(data.cover_bg_color_2 || '#141414');
-        setCoverTextColor(data.cover_text_color || '#ffffff');
-        setCoverSubtitleColor(data.cover_subtitle_color || '#ffffffb3');
-        setCoverButtonBg(data.cover_button_bg || '#ff6700');
-        setCoverButtonText(data.cover_button_text || '#ffffff');
-        setCoverOverlayOpacity(parseFloat(data.cover_overlay_opacity) || 0.65);
-        setCoverGradientType(data.cover_gradient_type || 'linear');
-        setCoverGradientAngle(parseInt(data.cover_gradient_angle) || 135);
         setFontHeading(data.font_heading || null);
         setFontBody(data.font_body || null);
         setFontSidebar(data.font_sidebar || null);
@@ -177,35 +155,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     setSaving(null);
   };
 
-  const handleSaveCoverColors = async () => {
-    if (!isOwner) return;
-    setSaving('coverColors');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        cover_bg_style: coverBgStyle,
-        cover_bg_color_1: coverBgColor1,
-        cover_bg_color_2: coverBgColor2,
-        cover_text_color: coverTextColor,
-        cover_subtitle_color: coverSubtitleColor,
-        cover_button_bg: coverButtonBg,
-        cover_button_text: coverButtonText,
-        cover_overlay_opacity: coverOverlayOpacity,
-        cover_gradient_type: coverGradientType,
-        cover_gradient_angle: coverGradientAngle,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      showFeedback('Cover page colors saved');
-    }
-    setSaving(null);
-  };
 
   const handleSaveFonts = async () => {
     if (!isOwner) return;
@@ -336,18 +285,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     bgSecondary !== (company?.bg_secondary || '#141414') ||
     sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
     acceptTextColor !== (company?.accept_text_color || '#ffffff');
-
-  const coverColorsChanged =
-    coverBgStyle !== (company?.cover_bg_style || 'gradient') ||
-    coverBgColor1 !== (company?.cover_bg_color_1 || '#0f0f0f') ||
-    coverBgColor2 !== (company?.cover_bg_color_2 || '#141414') ||
-    coverTextColor !== (company?.cover_text_color || '#ffffff') ||
-    coverSubtitleColor !== (company?.cover_subtitle_color || '#ffffffb3') ||
-    coverButtonBg !== (company?.cover_button_bg || '#ff6700') ||
-    coverButtonText !== (company?.cover_button_text || '#ffffff') ||
-    coverOverlayOpacity !== (parseFloat(String(company?.cover_overlay_opacity)) || 0.65) ||
-    coverGradientType !== (company?.cover_gradient_type || 'linear') ||
-    coverGradientAngle !== (parseInt(String(company?.cover_gradient_angle)) || 135);
 
   const textPageColorsChanged =
     textPageBgColor !== (company?.text_page_bg_color || '#141414') ||
@@ -522,54 +459,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             fontSidebarWeight={fontSidebarWeight}
           />
         </ViewerColorsSection>
-
-        {/* Cover Page Colors — side-by-side with preview */}
-        <CoverColorsSection
-          isOwner={isOwner}
-          saving={saving}
-          coverColorsChanged={coverColorsChanged}
-          onSave={handleSaveCoverColors}
-          coverBgStyle={coverBgStyle}
-          setCoverBgStyle={setCoverBgStyle}
-          coverGradientType={coverGradientType}
-          setCoverGradientType={setCoverGradientType}
-          coverGradientAngle={coverGradientAngle}
-          setCoverGradientAngle={setCoverGradientAngle}
-          coverBgColor1={coverBgColor1}
-          setCoverBgColor1={setCoverBgColor1}
-          coverBgColor2={coverBgColor2}
-          setCoverBgColor2={setCoverBgColor2}
-          coverOverlayOpacity={coverOverlayOpacity}
-          setCoverOverlayOpacity={setCoverOverlayOpacity}
-          coverTextColor={coverTextColor}
-          setCoverTextColor={setCoverTextColor}
-          coverSubtitleColor={coverSubtitleColor}
-          setCoverSubtitleColor={setCoverSubtitleColor}
-          coverButtonBg={coverButtonBg}
-          setCoverButtonBg={setCoverButtonBg}
-          coverButtonText={coverButtonText}
-          setCoverButtonText={setCoverButtonText}
-        >
-          <p className="text-xs text-gray-400 mb-3">Cover page shown before the proposal. Background image is set per-proposal.</p>
-          <CoverPreview
-            bgStyle={coverBgStyle}
-            bgColor1={isValidHex6(coverBgColor1) ? coverBgColor1 : '#0f0f0f'}
-            bgColor2={isValidHex6(coverBgColor2) ? coverBgColor2 : '#141414'}
-            textColor={isValidHex6or8(coverTextColor) ? coverTextColor : '#ffffff'}
-            subtitleColor={isValidHex6or8(coverSubtitleColor) ? coverSubtitleColor : '#ffffffb3'}
-            buttonBg={isValidHex6(coverButtonBg) ? coverButtonBg : '#ff6700'}
-            buttonText={isValidHex6(coverButtonText) ? coverButtonText : '#ffffff'}
-            overlayOpacity={coverOverlayOpacity}
-            gradientType={coverGradientType}
-            gradientAngle={coverGradientAngle}
-            logoUrl={company?.logo_url || null}
-            companyName={name}
-            fontHeading={fontHeading}
-            fontBody={fontBody}
-            fontHeadingWeight={fontHeadingWeight}
-            fontBodyWeight={fontBodyWeight}
-          />
-        </CoverColorsSection>
 
         {/* Viewer Fonts — standalone (affects all previews) */}
         <ViewerFontsSection

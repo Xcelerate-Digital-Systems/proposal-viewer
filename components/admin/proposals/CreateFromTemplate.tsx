@@ -204,6 +204,16 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         company_id: companyId,
         created_by_name: creatorName,
         prepared_by: selectedTemplate.prepared_by || creatorName,
+        cover_bg_style: selectedTemplate.cover_bg_style,
+        cover_bg_color_1: selectedTemplate.cover_bg_color_1,
+        cover_bg_color_2: selectedTemplate.cover_bg_color_2,
+        cover_gradient_type: selectedTemplate.cover_gradient_type,
+        cover_gradient_angle: selectedTemplate.cover_gradient_angle,
+        cover_overlay_opacity: selectedTemplate.cover_overlay_opacity,
+        cover_text_color: selectedTemplate.cover_text_color,
+        cover_subtitle_color: selectedTemplate.cover_subtitle_color,
+        cover_button_bg: selectedTemplate.cover_button_bg,
+        cover_button_text_color: selectedTemplate.cover_button_text_color,
       }).select('id').single();
 
       if (insertError || !newProposal) throw new Error('Failed to create proposal');

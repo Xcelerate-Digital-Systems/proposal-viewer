@@ -40,9 +40,9 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
     }
   }, [proposal.cover_image_path]);
 
-  // Wait for cover image to fully load before revealing, or fade in immediately if no image
+  // Wait for cover image to fully load before revealing
   useEffect(() => {
-    if (proposal.cover_image_path && !bgUrl) return; // Still fetching signed URL
+    if (proposal.cover_image_path && !bgUrl) return;
 
     if (bgUrl) {
       const img = new Image();
@@ -50,7 +50,6 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
       img.onerror = () => setTimeout(() => setLoaded(true), 50);
       img.src = bgUrl;
     } else {
-      // No cover image — fade in after brief delay
       const timer = setTimeout(() => setLoaded(true), 100);
       return () => clearTimeout(timer);
     }
@@ -59,17 +58,17 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
   const subtitle = proposal.cover_subtitle || `Prepared for ${proposal.client_name}`;
   const buttonText = proposal.cover_button_text || 'START READING PROPOSAL';
 
-  // Cover branding from company settings
-  const bgStyle = branding.cover_bg_style || 'gradient';
-  const bgColor1 = branding.cover_bg_color_1 || '#0f0f0f';
-  const bgColor2 = branding.cover_bg_color_2 || '#141414';
-  const textColor = branding.cover_text_color || '#ffffff';
-  const subtitleColor = branding.cover_subtitle_color || '#ffffffb3';
-  const btnBg = branding.cover_button_bg || '#ff6700';
-  const btnText = branding.cover_button_text || '#ffffff';
-  const overlayOpacity = branding.cover_overlay_opacity ?? 0.65;
-  const gradientType = branding.cover_gradient_type || 'linear';
-  const gradientAngle = branding.cover_gradient_angle ?? 135;
+  // Cover colors: read from proposal first, fall back to company branding
+  const bgStyle = proposal.cover_bg_style || branding.cover_bg_style || 'gradient';
+  const bgColor1 = proposal.cover_bg_color_1 || branding.cover_bg_color_1 || '#0f0f0f';
+  const bgColor2 = proposal.cover_bg_color_2 || branding.cover_bg_color_2 || '#141414';
+  const textColor = proposal.cover_text_color || branding.cover_text_color || '#ffffff';
+  const subtitleColor = proposal.cover_subtitle_color || branding.cover_subtitle_color || '#ffffffb3';
+  const btnBg = proposal.cover_button_bg || branding.cover_button_bg || '#ff6700';
+  const btnText = proposal.cover_button_text_color || branding.cover_button_text || '#ffffff';
+  const overlayOpacity = proposal.cover_overlay_opacity ?? branding.cover_overlay_opacity ?? 0.65;
+  const gradientType = proposal.cover_gradient_type || branding.cover_gradient_type || 'linear';
+  const gradientAngle = proposal.cover_gradient_angle ?? branding.cover_gradient_angle ?? 135;
 
   // Build background: solid or gradient (linear / radial / conic)
   const baseBg = bgStyle === 'solid'
@@ -148,51 +147,59 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
             />
           ) : branding.name ? (
             <div className="flex items-center gap-2">
-              <Building2 size={20} style={{ color: subtitleColor }} />
-              <span className="text-sm md:text-base font-medium" style={{ color: textColor, opacity: 0.9 }}>
+              <Building2 size={18} style={{ color: subtitleColor }} />
+              <span
+                className="text-sm font-medium tracking-wide"
+                style={{ color: textColor, opacity: 0.9, fontFamily: fontFamily(branding.font_heading) }}
+              >
                 {branding.name}
               </span>
             </div>
-          ) : (
-            <img src="/logo-white.svg" alt="Logo" className="h-6 sm:h-7 md:h-8 opacity-90" />
-          )}
+          ) : null}
         </div>
 
-        {/* Title area */}
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Title + CTA */}
         <div className="max-w-2xl">
           <h1
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight mb-3 sm:mb-4 font-[family-name:var(--font-display)]"
-            style={{ color: textColor, fontFamily: fontFamily(branding.font_heading), fontWeight: branding.font_heading_weight ? Number(branding.font_heading_weight) : undefined }}
+            className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight mb-3"
+            style={{ color: textColor, fontFamily: fontFamily(branding.font_heading), fontWeight: branding.font_heading_weight || undefined }}
           >
             {proposal.title}
           </h1>
+
           <p
-            className="text-base sm:text-lg md:text-xl mb-2"
-            style={{ color: subtitleColor, fontFamily: fontFamily(branding.font_body), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}
+            className="text-sm sm:text-base md:text-lg mb-1"
+            style={{ color: subtitleColor, fontFamily: fontFamily(branding.font_body), fontWeight: branding.font_body_weight || undefined }}
           >
             {subtitle}
           </p>
+
           {proposal.prepared_by && (
             <p
-              className="text-sm sm:text-base md:text-lg mb-6 sm:mb-8 opacity-80"
-              style={{ color: subtitleColor, fontFamily: fontFamily(branding.font_body), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}
+              className="text-xs sm:text-sm mb-6"
+              style={{ color: subtitleColor, opacity: 0.8, fontFamily: fontFamily(branding.font_body) }}
             >
               Prepared by {proposal.prepared_by}
             </p>
           )}
-          {!proposal.prepared_by && <div className="mb-6 sm:mb-8" />}
+
           <button
             onClick={onStart}
-            className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded-sm transition-opacity"
-            style={{ backgroundColor: btnBg, color: btnText, fontFamily: fontFamily(branding.font_body), fontWeight: branding.font_body_weight ? Number(branding.font_body_weight) : undefined }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            className="px-6 py-3 sm:px-8 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded-md transition-transform hover:scale-105 active:scale-100"
+            style={{
+              backgroundColor: btnBg,
+              color: btnText,
+              fontFamily: fontFamily(branding.font_body),
+            }}
           >
             {buttonText}
           </button>
         </div>
 
-        {/* Bottom spacer */}
+        {/* Footer spacer */}
         <div />
       </div>
     </div>

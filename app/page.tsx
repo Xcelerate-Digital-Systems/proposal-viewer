@@ -2,12 +2,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, LayoutGrid, List } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
-import ProposalCard from '@/components/admin/proposals/ProposalCard';
-import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
+import ProposalListCard from '@/components/admin/proposals/ProposalListCard';
+import ProposalListRow from '@/components/admin/proposals/ProposalListRow';
+
+type ViewMode = 'grid' | 'list';
+
+const VIEW_MODE_KEY = 'agencyviz_proposal_view';
+
 export default function AdminDashboard() {
   return (
     <AdminLayout>
@@ -23,10 +28,20 @@ function DashboardContent({ companyId }: { companyId: string }) {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
-  const [coverGradientAngle, setCoverGradientAngle] = useState(135);
-  const [fontHeading, setFontHeading] = useState<string | null>(null);
-  const [fontBody, setFontBody] = useState<string | null>(null);
-  const [fontSidebar, setFontSidebar] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+
+  // Restore view preference
+  useEffect(() => {
+    const stored = localStorage.getItem(VIEW_MODE_KEY);
+    if (stored === 'grid' || stored === 'list') {
+      setViewMode(stored);
+    }
+  }, []);
+
+  const toggleViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+  };
 
   const fetchProposals = useCallback(async () => {
     if (!companyId) return;
@@ -39,7 +54,6 @@ function DashboardContent({ companyId }: { companyId: string }) {
     setLoading(false);
   }, [companyId]);
 
-  // Fetch the company's verified custom domain (if any)
   const fetchCustomDomain = useCallback(async () => {
     if (!companyId) return;
     const { data } = await supabase
@@ -73,13 +87,41 @@ function DashboardContent({ companyId }: { companyId: string }) {
               {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
-          >
-            <Plus size={16} />
-            New Proposal
-          </button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
+              <button
+                onClick={() => toggleViewMode('grid')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-gray-100 text-gray-700'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title="Grid view"
+              >
+                <LayoutGrid size={16} />
+              </button>
+              <button
+                onClick={() => toggleViewMode('list')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-gray-100 text-gray-700'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title="List view"
+              >
+                <List size={16} />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowUpload(true)}
+              className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+            >
+              <Plus size={16} />
+              New Proposal
+            </button>
+          </div>
         </div>
       </div>
 
@@ -105,10 +147,21 @@ function DashboardContent({ companyId }: { companyId: string }) {
             <h3 className="text-lg font-semibold text-gray-500 mb-1">No proposals yet</h3>
             <p className="text-sm text-gray-400">Upload your first proposal to get started</p>
           </div>
-        ) : (
-          <div className="space-y-3">
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
             {proposals.map((p) => (
-              <ProposalCard
+              <ProposalListCard
+                key={p.id}
+                proposal={p}
+                onRefresh={fetchProposals}
+                customDomain={customDomain}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2 mt-4">
+            {proposals.map((p) => (
+              <ProposalListRow
                 key={p.id}
                 proposal={p}
                 onRefresh={fetchProposals}

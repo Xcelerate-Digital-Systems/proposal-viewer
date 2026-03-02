@@ -5,6 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ArrowLeft, CornerDownRight } from 'lucide-react';
 import PageLinkInput from '@/components/admin/page-editor/PageLinkInput';
+import OrientationToggle from '@/components/admin/page-editor/OrientationToggle';
 
 interface SortablePricingRowProps {
   id: string;
@@ -17,9 +18,11 @@ interface SortablePricingRowProps {
   linkUrl: string;
   linkLabel: string;
   onLinkChange: (url: string, label: string) => void;
+  orientation?: 'auto' | 'portrait' | 'landscape';
+  onOrientationChange?: (orientation: 'auto' | 'portrait' | 'landscape') => void;
 }
 
-export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, linkUrl, linkLabel, onLinkChange }: SortablePricingRowProps) {
+export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, linkUrl, linkLabel, onLinkChange, orientation, onOrientationChange }: SortablePricingRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -69,6 +72,16 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
         <span className="text-sm font-medium text-[#017C87] flex-1 truncate">
           {title || 'Pricing Page'}
         </span>
+        {/* Orientation toggle */}
+        {onOrientationChange && (
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+            <OrientationToggle
+              value={orientation || 'auto'}
+              onChange={onOrientationChange}
+              variant="teal"
+            />
+          </div>
+        )}
         <PageLinkInput
           linkUrl={linkUrl}
           linkLabel={linkLabel}

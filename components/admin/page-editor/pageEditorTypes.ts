@@ -30,7 +30,7 @@ export interface PageEditorProps {
   filePath: string;
   initialPageNames: (PageNameEntry | string)[];
   onSave: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
   tableName?: 'proposals' | 'documents';
 }
 
