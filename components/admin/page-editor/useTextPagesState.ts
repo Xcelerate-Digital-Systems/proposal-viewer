@@ -161,7 +161,7 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           enabled: true,
           position: -1,
           indent: 0,
-          title: 'Executive Summary',
+          title: 'New Blank Page',
           content: DEFAULT_CONTENT,
         }),
       });

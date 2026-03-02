@@ -144,6 +144,13 @@ export type Proposal = {
   post_accept_message: string | null;
   created_by_name: string | null;
   prepared_by: string | null;
+  cover_client_logo_path: string | null;
+  cover_avatar_path: string | null;
+  cover_date: string | null;
+  cover_show_client_logo: boolean;
+  cover_show_avatar: boolean;
+  cover_show_date: boolean;
+  cover_show_prepared_by: boolean;
   company_id: string;
   created_at: string;
   updated_at: string;
@@ -171,6 +178,8 @@ export type Document = {
   cover_subtitle_color: string | null;
   cover_button_bg: string | null;
   cover_button_text_color: string | null;
+  cover_date: string | null;
+  cover_show_date: boolean;
   company_id: string;
   created_at: string;
   updated_at: string;
@@ -211,6 +220,13 @@ export type ProposalTemplate = {
   cover_button_bg: string | null;
   cover_button_text_color: string | null;
   prepared_by: string | null;
+  cover_client_logo_path: string | null;
+  cover_avatar_path: string | null;
+  cover_date: string | null;
+  cover_show_client_logo: boolean;
+  cover_show_avatar: boolean;
+  cover_show_date: boolean;
+  cover_show_prepared_by: boolean;
   section_headers: PageNameEntry[] | null;
   company_id: string;
   created_at: string;

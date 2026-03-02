@@ -185,6 +185,34 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         }
       }
 
+      // 5b. Copy template client logo if present
+      let clientLogoPath: string | null = null;
+      if (selectedTemplate.cover_client_logo_path) {
+        const ext = selectedTemplate.cover_client_logo_path.split('.').pop() || 'png';
+        clientLogoPath = `covers/client-logo-${Date.now()}-${title.trim().replace(/\s+/g, '-').toLowerCase()}.${ext}`;
+        const { error: copyErr } = await supabase.storage
+          .from('proposals')
+          .copy(selectedTemplate.cover_client_logo_path, clientLogoPath);
+        if (copyErr) {
+          console.warn('Client logo copy failed:', copyErr);
+          clientLogoPath = null;
+        }
+      }
+
+      // 5c. Copy template avatar if present
+      let avatarPath: string | null = null;
+      if (selectedTemplate.cover_avatar_path) {
+        const ext = selectedTemplate.cover_avatar_path.split('.').pop() || 'png';
+        avatarPath = `covers/avatar-${Date.now()}-${title.trim().replace(/\s+/g, '-').toLowerCase()}.${ext}`;
+        const { error: copyErr } = await supabase.storage
+          .from('proposals')
+          .copy(selectedTemplate.cover_avatar_path, avatarPath);
+        if (copyErr) {
+          console.warn('Avatar copy failed:', copyErr);
+          avatarPath = null;
+        }
+      }
+
       // 6. Create the proposal record
       setStatus('Creating proposal...');
       const shareToken = crypto.randomUUID();
@@ -214,6 +242,13 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         cover_subtitle_color: selectedTemplate.cover_subtitle_color,
         cover_button_bg: selectedTemplate.cover_button_bg,
         cover_button_text_color: selectedTemplate.cover_button_text_color,
+        cover_client_logo_path: clientLogoPath,
+        cover_avatar_path: avatarPath,
+        cover_date: selectedTemplate.cover_date,
+        cover_show_client_logo: selectedTemplate.cover_show_client_logo ?? false,
+        cover_show_avatar: selectedTemplate.cover_show_avatar ?? false,
+        cover_show_date: selectedTemplate.cover_show_date ?? false,
+        cover_show_prepared_by: selectedTemplate.cover_show_prepared_by ?? true,
       }).select('id').single();
 
       if (insertError || !newProposal) throw new Error('Failed to create proposal');

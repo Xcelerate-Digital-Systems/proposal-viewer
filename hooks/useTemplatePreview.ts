@@ -181,6 +181,13 @@ interface TemplateData {
   cover_subtitle: string | null;
   cover_button_text: string | null;
   prepared_by: string | null;
+  cover_client_logo_path: string | null;
+  cover_avatar_path: string | null;
+  cover_date: string | null;
+  cover_show_client_logo: boolean;
+  cover_show_avatar: boolean;
+  cover_show_date: boolean;
+  cover_show_prepared_by: boolean;
   page_names: unknown;
   section_headers: unknown;
   created_at: string;

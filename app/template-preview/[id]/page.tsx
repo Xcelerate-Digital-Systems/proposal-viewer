@@ -134,6 +134,13 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
       status: 'sent' as const,
       share_token: '',
       file_path: '',
+      cover_client_logo_path: template.cover_client_logo_path || null,
+      cover_avatar_path: template.cover_avatar_path || null,
+      cover_date: template.cover_date || null,
+      cover_show_client_logo: template.cover_show_client_logo ?? false,
+      cover_show_avatar: template.cover_show_avatar ?? false,
+      cover_show_date: template.cover_show_date ?? false,
+      cover_show_prepared_by: template.cover_show_prepared_by ?? true,
     };
 
     return (

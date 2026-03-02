@@ -26,6 +26,8 @@ function hexToRgba(hex: string, alpha: number): string {
 
 export default function CoverPage({ proposal, branding, onStart }: CoverPageProps) {
   const [bgUrl, setBgUrl] = useState<string | null>(null);
+  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   // Fetch signed URL for cover image
@@ -39,6 +41,30 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         });
     }
   }, [proposal.cover_image_path]);
+
+  // Fetch signed URL for client logo
+  useEffect(() => {
+    if (proposal.cover_client_logo_path && proposal.cover_show_client_logo) {
+      supabase.storage
+        .from('proposals')
+        .createSignedUrl(proposal.cover_client_logo_path, 3600)
+        .then(({ data }) => {
+          if (data?.signedUrl) setClientLogoUrl(data.signedUrl);
+        });
+    }
+  }, [proposal.cover_client_logo_path, proposal.cover_show_client_logo]);
+
+  // Fetch signed URL for avatar
+  useEffect(() => {
+    if (proposal.cover_avatar_path && proposal.cover_show_avatar) {
+      supabase.storage
+        .from('proposals')
+        .createSignedUrl(proposal.cover_avatar_path, 3600)
+        .then(({ data }) => {
+          if (data?.signedUrl) setAvatarUrl(data.signedUrl);
+        });
+    }
+  }, [proposal.cover_avatar_path, proposal.cover_show_avatar]);
 
   // Wait for cover image to fully load before revealing
   useEffect(() => {
@@ -70,6 +96,12 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
   const gradientType = proposal.cover_gradient_type || branding.cover_gradient_type || 'linear';
   const gradientAngle = proposal.cover_gradient_angle ?? branding.cover_gradient_angle ?? 135;
 
+  // New: visibility flags (default true for prepared_by for backward compat)
+  const showPreparedBy = proposal.cover_show_prepared_by ?? true;
+  const showDate = proposal.cover_show_date ?? false;
+  const showClientLogo = proposal.cover_show_client_logo ?? false;
+  const showAvatar = proposal.cover_show_avatar ?? false;
+
   // Build background: solid or gradient (linear / radial / conic)
   const baseBg = bgStyle === 'solid'
     ? bgColor1
@@ -98,6 +130,11 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         hexToRgba(bgColor1, overlayOpacity),
         hexToRgba(bgColor2, overlayEnd)
       );
+
+  // Has prepared-by meta row?
+  const hasPreparedByRow = showPreparedBy && proposal.prepared_by;
+  // Has date row?
+  const hasDateRow = showDate && proposal.cover_date;
 
   return (
     <div
@@ -161,7 +198,7 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Title + CTA */}
+        {/* Title + meta + CTA */}
         <div className="max-w-2xl">
           <h1
             className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight mb-3"
@@ -177,14 +214,38 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
             {subtitle}
           </p>
 
-          {proposal.prepared_by && (
+          {/* Prepared-by row with optional avatar */}
+          {hasPreparedByRow && (
+            <div className="flex items-center gap-2.5 mb-1">
+              {showAvatar && avatarUrl && (
+                <img
+                  src={avatarUrl}
+                  alt={proposal.prepared_by || ''}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2"
+                  style={{ borderColor: `${subtitleColor}40` }}
+                />
+              )}
+              <p
+                className="text-xs sm:text-sm"
+                style={{ color: subtitleColor, opacity: 0.8, fontFamily: fontFamily(branding.font_body) }}
+              >
+                Prepared by {proposal.prepared_by}
+              </p>
+            </div>
+          )}
+
+          {/* Date row */}
+          {hasDateRow && (
             <p
-              className="text-xs sm:text-sm mb-6"
-              style={{ color: subtitleColor, opacity: 0.8, fontFamily: fontFamily(branding.font_body) }}
+              className="text-xs sm:text-sm mb-1"
+              style={{ color: subtitleColor, opacity: 0.7, fontFamily: fontFamily(branding.font_body) }}
             >
-              Prepared by {proposal.prepared_by}
+              {proposal.cover_date}
             </p>
           )}
+
+          {/* Spacing before button */}
+          <div className={hasPreparedByRow || hasDateRow ? 'mt-5' : 'mt-6'} />
 
           <button
             onClick={onStart}
@@ -199,8 +260,16 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
           </button>
         </div>
 
-        {/* Footer spacer */}
-        <div />
+        {/* Footer: client logo (bottom-right) */}
+        <div className="flex items-end justify-end">
+          {showClientLogo && clientLogoUrl && (
+            <img
+              src={clientLogoUrl}
+              alt="Client"
+              className="h-6 sm:h-7 md:h-8 max-w-[160px] object-contain opacity-80"
+            />
+          )}
+        </div>
       </div>
     </div>
   );

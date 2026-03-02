@@ -169,6 +169,13 @@ export default function DocumentViewerPage({ params }: { params: { token: string
       cover_button_text: doc.cover_button_text || 'START READING',
       accept_button_text: null,
       status: 'sent' as const,
+      cover_date: doc.cover_date || null,
+      cover_show_date: doc.cover_show_date ?? false,
+      cover_show_prepared_by: false,
+      cover_show_client_logo: false,
+      cover_show_avatar: false,
+      cover_client_logo_path: null,
+      cover_avatar_path: null,
     };
 
     return (
