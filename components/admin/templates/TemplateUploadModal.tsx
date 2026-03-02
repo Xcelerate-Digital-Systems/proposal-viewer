@@ -1,9 +1,10 @@
-// components/admin/TemplateUploadModal.tsx
+// components/admin/templates/TemplateUploadModal.tsx
 'use client';
 
 import { useState } from 'react';
 import { X, Upload, FileText, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { FormFields, fieldsByType } from '@/components/ui/FormField';
 
 interface TemplateUploadModalProps {
   companyId: string;
@@ -104,30 +105,15 @@ export default function TemplateUploadModal({ companyId, onClose, onSuccess }: T
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Template Name</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Standard Proposal Template"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-              disabled={uploading}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description of this template"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-              disabled={uploading}
-            />
-          </div>
+          <FormFields
+            fields={fieldsByType.template}
+            values={{ name, description }}
+            onChange={(key, value) => {
+              if (key === 'name') setName(value);
+              if (key === 'description') setDescription(value);
+            }}
+            disabled={uploading}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>

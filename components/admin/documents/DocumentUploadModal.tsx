@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Upload, FileText, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { FormFields, fieldsByType } from '@/components/ui/FormField';
 
 interface DocumentUploadModalProps {
   companyId: string;
@@ -88,29 +89,12 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
         </div>
 
         <form onSubmit={handleUpload} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-            <input
-              type="text"
-              required
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="e.g. Capabilities Statement"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={2}
-              placeholder="Brief note about this document..."
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 resize-none placeholder:text-gray-400"
-            />
-          </div>
+          <FormFields
+            fields={fieldsByType.document}
+            values={form}
+            onChange={(key, value) => setForm({ ...form, [key]: value })}
+          />
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-colors">

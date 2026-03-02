@@ -1,9 +1,10 @@
-// components/admin/UploadModal.tsx
+// components/admin/proposals/UploadModal.tsx
 'use client';
 
 import { useState } from 'react';
 import { Upload, FileText, X, LayoutTemplate } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { FormFields, fieldsByType } from '@/components/ui/FormField';
 import CreateFromTemplate from './CreateFromTemplate';
 
 interface UploadModalProps {
@@ -136,60 +137,12 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
 
         {tab === 'upload' ? (
           <form onSubmit={handleUpload} className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <input
-                type="text"
-                required
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="e.g. Website Redesign Proposal"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
-                <input
-                  type="text"
-                  required
-                  value={form.client_name}
-                  onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-                  placeholder="John Smith"
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Client Email</label>
-                <input
-                  type="email"
-                  value={form.client_email}
-                  onChange={(e) => setForm({ ...form, client_email: e.target.value })}
-                  placeholder="john@example.com"
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">CRM Identifier <span className="text-gray-400 font-normal">(optional)</span></label>
-              <input
-                type="text"
-                value={form.crm_identifier}
-                onChange={(e) => setForm({ ...form, crm_identifier: e.target.value })}
-                placeholder="e.g. GHL contact ID"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={2}
-                placeholder="Brief note about this proposal..."
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 resize-none placeholder:text-gray-400"
-              />
-            </div>
+            <FormFields
+              fields={fieldsByType.proposal}
+              values={form}
+              onChange={(key, value) => setForm({ ...form, [key]: value })}
+            />
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-colors">

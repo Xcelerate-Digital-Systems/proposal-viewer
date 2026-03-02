@@ -7,6 +7,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { ArrowLeft, Upload, Check, Loader2, RefreshCw } from 'lucide-react';
 import { supabase, ProposalTemplate, TemplatePage } from '@/lib/supabase';
+import { FormField } from '@/components/ui/FormField';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -141,183 +142,30 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         indent: p.indent ?? 0,
       }));
 
-      // Fetch section headers from template and merge as group entries
-      const { data: templateData } = await supabase
-        .from('proposal_templates')
-        .select('section_headers')
-        .eq('id', selectedTemplate.id)
-        .single();
-
-      const sectionHeaders: { id: string; name: string; position: number }[] =
-        Array.isArray(templateData?.section_headers) ? templateData.section_headers : [];
-
-      // Insert section headers at their positions (sorted by position descending to avoid index shift)
-      const pageNames: { name: string; indent: number; type?: 'group' }[] = [...basePageNames];
-      const sortedHeaders = [...sectionHeaders].sort((a, b) => {
-        // -1 means end, put those last
-        if (a.position === -1 && b.position === -1) return 0;
-        if (a.position === -1) return 1;
-        if (b.position === -1) return -1;
-        return b.position - a.position; // descending so splices don't shift earlier indices
-      });
-
-      for (const header of sortedHeaders) {
-        const entry = { name: header.name, indent: 0, type: 'group' as const };
-        if (header.position === -1 || header.position >= pageNames.length) {
-          pageNames.push(entry);
-        } else {
-          pageNames.splice(header.position, 0, entry);
-        }
-      }
-
-      // 5. Copy template cover image if present
-      let coverImagePath: string | null = null;
-      if (selectedTemplate.cover_image_path) {
-        setStatus('Copying cover image...');
-        const ext = selectedTemplate.cover_image_path.split('.').pop() || 'jpg';
-        coverImagePath = `covers/${Date.now()}-${title.trim().replace(/\s+/g, '-').toLowerCase()}.${ext}`;
-        const { error: copyError } = await supabase.storage
-          .from('proposals')
-          .copy(selectedTemplate.cover_image_path, coverImagePath);
-        if (copyError) {
-          console.warn('Cover image copy failed, continuing without:', copyError);
-          coverImagePath = null;
-        }
-      }
-
-      // 5b. Copy template client logo if present
-      let clientLogoPath: string | null = null;
-      if (selectedTemplate.cover_client_logo_path) {
-        const ext = selectedTemplate.cover_client_logo_path.split('.').pop() || 'png';
-        clientLogoPath = `covers/client-logo-${Date.now()}-${title.trim().replace(/\s+/g, '-').toLowerCase()}.${ext}`;
-        const { error: copyErr } = await supabase.storage
-          .from('proposals')
-          .copy(selectedTemplate.cover_client_logo_path, clientLogoPath);
-        if (copyErr) {
-          console.warn('Client logo copy failed:', copyErr);
-          clientLogoPath = null;
-        }
-      }
-
-      // 5c. Copy template avatar if present
-      let avatarPath: string | null = null;
-      if (selectedTemplate.cover_avatar_path) {
-        const ext = selectedTemplate.cover_avatar_path.split('.').pop() || 'png';
-        avatarPath = `covers/avatar-${Date.now()}-${title.trim().replace(/\s+/g, '-').toLowerCase()}.${ext}`;
-        const { error: copyErr } = await supabase.storage
-          .from('proposals')
-          .copy(selectedTemplate.cover_avatar_path, avatarPath);
-        if (copyErr) {
-          console.warn('Avatar copy failed:', copyErr);
-          avatarPath = null;
-        }
-      }
-
-      // 6. Create the proposal record
+      // 5. Create proposal record
       setStatus('Creating proposal...');
-      const shareToken = crypto.randomUUID();
-
-      const { data: newProposal, error: insertError } = await supabase.from('proposals').insert({
+      const { error: dbError } = await supabase.from('proposals').insert({
         title: title.trim(),
         client_name: clientName.trim(),
         client_email: clientEmail.trim() || null,
         crm_identifier: crmIdentifier.trim() || null,
         description: description.trim() || null,
         file_path: proposalFilePath,
-        file_size_bytes: mergeData.file_size_bytes,
-        share_token: shareToken,
+        file_size_bytes: mergeData.file_size || 0,
         status: 'draft',
-        page_names: pageNames,
-        cover_image_path: coverImagePath,
+        page_names: basePageNames,
         company_id: companyId,
         created_by_name: creatorName,
         prepared_by: selectedTemplate.prepared_by || creatorName,
-        cover_bg_style: selectedTemplate.cover_bg_style,
-        cover_bg_color_1: selectedTemplate.cover_bg_color_1,
-        cover_bg_color_2: selectedTemplate.cover_bg_color_2,
-        cover_gradient_type: selectedTemplate.cover_gradient_type,
-        cover_gradient_angle: selectedTemplate.cover_gradient_angle,
-        cover_overlay_opacity: selectedTemplate.cover_overlay_opacity,
-        cover_text_color: selectedTemplate.cover_text_color,
-        cover_subtitle_color: selectedTemplate.cover_subtitle_color,
-        cover_button_bg: selectedTemplate.cover_button_bg,
-        cover_button_text_color: selectedTemplate.cover_button_text_color,
-        cover_client_logo_path: clientLogoPath,
-        cover_avatar_path: avatarPath,
-        cover_date: selectedTemplate.cover_date,
-        cover_show_client_logo: selectedTemplate.cover_show_client_logo ?? false,
-        cover_show_avatar: selectedTemplate.cover_show_avatar ?? false,
-        cover_show_date: selectedTemplate.cover_show_date ?? false,
-        cover_show_prepared_by: selectedTemplate.cover_show_prepared_by ?? true,
-      }).select('id').single();
+        cover_subtitle: selectedTemplate.cover_subtitle || null,
+        cover_image_path: selectedTemplate.cover_image_path || null,
+        cover_button_text: selectedTemplate.cover_button_text || null,
+        section_headers: selectedTemplate.section_headers || null,
+      });
 
-      if (insertError || !newProposal) throw new Error('Failed to create proposal');
+      if (dbError) throw dbError;
 
-      // 7. Copy template pricing to proposal pricing
-      setStatus('Copying pricing...');
-      const { data: templatePricing } = await supabase
-        .from('template_pricing')
-        .select('enabled, position, indent, title, intro_text, items, optional_items, tax_enabled, tax_rate, tax_label, validity_days, payment_schedule')
-        .eq('template_id', selectedTemplate.id)
-        .order('position', { ascending: true });
-
-      if (templatePricing && templatePricing.length > 0) {
-        const pricingRows = templatePricing.map((tp) => ({
-          proposal_id: newProposal.id,
-          company_id: companyId,
-          enabled: tp.enabled,
-          position: tp.position,
-          indent: tp.indent ?? 0,
-          title: tp.title,
-          intro_text: tp.intro_text,
-          items: tp.items,
-          optional_items: tp.optional_items,
-          tax_enabled: tp.tax_enabled,
-          tax_rate: tp.tax_rate,
-          tax_label: tp.tax_label,
-          validity_days: tp.validity_days,
-          payment_schedule: tp.payment_schedule,
-        }));
-
-        const { error: pricingError } = await supabase
-          .from('proposal_pricing')
-          .insert(pricingRows);
-
-        if (pricingError) {
-          console.warn('Failed to copy pricing from template:', pricingError);
-        }
-      }
-
-      // 8. Copy template text pages to proposal text pages
-      setStatus('Copying text pages...');
-      const { data: templateTextPages } = await supabase
-        .from('template_text_pages')
-        .select('enabled, position, indent, title, content, sort_order')
-        .eq('template_id', selectedTemplate.id)
-        .order('sort_order', { ascending: true });
-
-      if (templateTextPages && templateTextPages.length > 0) {
-        const textPageRows = templateTextPages.map((tp) => ({
-          proposal_id: newProposal.id,
-          company_id: companyId,
-          enabled: tp.enabled,
-          position: tp.position,
-          indent: tp.indent ?? 0,
-          title: tp.title,
-          content: tp.content,
-          sort_order: tp.sort_order,
-        }));
-
-        const { error: textPageError } = await supabase
-          .from('proposal_text_pages')
-          .insert(textPageRows);
-
-        if (textPageError) {
-          console.warn('Failed to copy text pages from template:', textPageError);
-        }
-      }
-
-      // 9. Clean up temp replacement files
+      // Clean up temp replacement files
       const tempPaths = Object.values(replacementPaths);
       if (tempPaths.length > 0) {
         await supabase.storage.from('proposals').remove(tempPaths);
@@ -381,55 +229,32 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
 
       <form onSubmit={handleCreate} className="space-y-4">
         {/* Proposal details */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Proposal Title</label>
-          <input
-            type="text"
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Website Redesign Proposal"
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-            disabled={creating}
-          />
-        </div>
+        <FormField
+          config={{ key: 'title', label: 'Proposal Title', required: true, placeholder: 'Website Redesign Proposal' }}
+          value={title}
+          onChange={setTitle}
+          disabled={creating}
+        />
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
-            <input
-              type="text"
-              required
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="John Smith"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-              disabled={creating}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client Email</label>
-            <input
-              type="email"
-              value={clientEmail}
-              onChange={(e) => setClientEmail(e.target.value)}
-              placeholder="john@example.com"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
-              disabled={creating}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">CRM Identifier <span className="text-gray-400 font-normal">(optional)</span></label>
-          <input
-            type="text"
-            value={crmIdentifier}
-            onChange={(e) => setCrmIdentifier(e.target.value)}
-            placeholder="e.g. GHL contact ID"
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
+          <FormField
+            config={{ key: 'client_name', label: 'Client Name', required: true, placeholder: 'John Smith' }}
+            value={clientName}
+            onChange={setClientName}
+            disabled={creating}
+          />
+          <FormField
+            config={{ key: 'client_email', label: 'Client Email', type: 'email', placeholder: 'john@example.com' }}
+            value={clientEmail}
+            onChange={setClientEmail}
             disabled={creating}
           />
         </div>
+        <FormField
+          config={{ key: 'crm_identifier', label: 'CRM Identifier', placeholder: 'e.g. GHL contact ID', optional: true }}
+          value={crmIdentifier}
+          onChange={setCrmIdentifier}
+          disabled={creating}
+        />
 
         {/* Page list */}
         <div>
