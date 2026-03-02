@@ -144,6 +144,7 @@ export type Proposal = {
   post_accept_message: string | null;
   created_by_name: string | null;
   prepared_by: string | null;
+  prepared_by_member_id: string | null;
   cover_client_logo_path: string | null;
   cover_avatar_path: string | null;
   cover_date: string | null;
@@ -220,6 +221,7 @@ export type ProposalTemplate = {
   cover_button_bg: string | null;
   cover_button_text_color: string | null;
   prepared_by: string | null;
+  prepared_by_member_id: string | null;
   cover_client_logo_path: string | null;
   cover_avatar_path: string | null;
   cover_date: string | null;
@@ -252,6 +254,7 @@ export type TeamMember = {
   email: string;
   role: 'owner' | 'admin' | 'member';
   is_super_admin: boolean;
+  avatar_path: string | null;
   notify_proposal_viewed: boolean;
   notify_proposal_accepted: boolean;
   notify_comment_added: boolean;

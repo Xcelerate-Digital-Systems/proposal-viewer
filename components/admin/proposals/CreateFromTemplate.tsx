@@ -157,6 +157,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         company_id: companyId,
         created_by_name: creatorName,
         prepared_by: selectedTemplate.prepared_by || creatorName,
+        prepared_by_member_id: selectedTemplate.prepared_by_member_id || null,
         cover_subtitle: selectedTemplate.cover_subtitle || null,
         cover_image_path: selectedTemplate.cover_image_path || null,
         cover_button_text: selectedTemplate.cover_button_text || null,

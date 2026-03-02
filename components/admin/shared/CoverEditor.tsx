@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Save, Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Building2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import CoverColorControls, { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
+import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -93,6 +94,7 @@ export interface CoverEditorEntity {
   cover_button_text: string | null;
   accept_button_text?: string | null;
   prepared_by?: string | null;
+  prepared_by_member_id?: string | null;
   cover_bg_style: string | null;
   cover_bg_color_1: string | null;
   cover_bg_color_2: string | null;
@@ -103,7 +105,7 @@ export interface CoverEditorEntity {
   cover_subtitle_color: string | null;
   cover_button_bg: string | null;
   cover_button_text_color: string | null;
-  // New cover enhancement fields
+  // Cover enhancement fields
   cover_client_logo_path?: string | null;
   cover_avatar_path?: string | null;
   cover_date?: string | null;
@@ -192,24 +194,28 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
   const [subtitle, setSubtitle] = useState(entity.cover_subtitle || '');
   const [buttonText, setButtonText] = useState(entity.cover_button_text || cfg.defaultButtonText);
   const [acceptButtonText, setAcceptButtonText] = useState(entity.accept_button_text || '');
-  const [preparedBy, setPreparedBy] = useState(entity.prepared_by || entity.created_by_name || '');
   const [imagePath, setImagePath] = useState(entity.cover_image_path || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  /* ── New: client logo, avatar, date state ──────────────────── */
+  /* ── Client logo state ─────────────────────────────────────── */
   const [clientLogoPath, setClientLogoPath] = useState(entity.cover_client_logo_path || '');
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
   const [uploadingClientLogo, setUploadingClientLogo] = useState(false);
   const clientLogoRef = useRef<HTMLInputElement>(null);
 
-  const [avatarPath, setAvatarPath] = useState(entity.cover_avatar_path || '');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const avatarRef = useRef<HTMLInputElement>(null);
+  /* ── Prepared By (member selector) ─────────────────────────── */
+  const [preparedByMemberId, setPreparedByMemberId] = useState<string | null>(
+    entity.prepared_by_member_id || null
+  );
+  const [resolvedMember, setResolvedMember] = useState<{
+    name: string;
+    avatar_url: string | null;
+  } | null>(null);
 
+  /* ── Date & toggle state ───────────────────────────────────── */
   const [coverDate, setCoverDate] = useState(entity.cover_date || '');
   const [showClientLogo, setShowClientLogo] = useState(entity.cover_show_client_logo ?? false);
   const [showAvatar, setShowAvatar] = useState(entity.cover_show_avatar ?? false);
@@ -258,17 +264,31 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
     }
   }, [clientLogoPath]);
 
-  /* ── Load existing avatar ──────────────────────────────────── */
+  /* ── Resolve selected member for preview ───────────────────── */
   useEffect(() => {
-    if (avatarPath) {
-      supabase.storage
-        .from('proposals')
-        .createSignedUrl(avatarPath, 3600)
-        .then(({ data }) => {
-          if (data?.signedUrl) setAvatarUrl(data.signedUrl);
-        });
+    if (!preparedByMemberId) {
+      setResolvedMember(null);
+      return;
     }
-  }, [avatarPath]);
+    const resolve = async () => {
+      const { data } = await supabase
+        .from('team_members')
+        .select('name, avatar_path')
+        .eq('id', preparedByMemberId)
+        .single();
+      if (data) {
+        let avatar_url: string | null = null;
+        if (data.avatar_path) {
+          const { data: urlData } = await supabase.storage
+            .from('proposals')
+            .createSignedUrl(data.avatar_path, 3600);
+          avatar_url = urlData?.signedUrl || null;
+        }
+        setResolvedMember({ name: data.name, avatar_url });
+      }
+    };
+    resolve();
+  }, [preparedByMemberId]);
 
   /* ── Image upload / remove (background) ────────────────────── */
   const handleImageUpload = async (file: File) => {
@@ -332,38 +352,6 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
     setShowClientLogo(false);
   };
 
-  /* ── Avatar upload / remove ────────────────────────────────── */
-  const handleAvatarUpload = async (file: File) => {
-    setUploadingAvatar(true);
-    const filePath = `covers/avatar-${cfg.coverPrefix}${entity.id}-${Date.now()}.${file.name.split('.').pop()}`;
-
-    if (avatarPath) {
-      await supabase.storage.from('proposals').remove([avatarPath]);
-    }
-
-    const { error } = await supabase.storage.from('proposals').upload(filePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
-
-    if (!error) {
-      setAvatarPath(filePath);
-      setShowAvatar(true);
-      const { data } = await supabase.storage.from('proposals').createSignedUrl(filePath, 3600);
-      if (data?.signedUrl) setAvatarUrl(data.signedUrl);
-    }
-    setUploadingAvatar(false);
-  };
-
-  const removeAvatar = async () => {
-    if (avatarPath) {
-      await supabase.storage.from('proposals').remove([avatarPath]);
-    }
-    setAvatarPath('');
-    setAvatarUrl(null);
-    setShowAvatar(false);
-  };
-
   /* ── Save ──────────────────────────────────────────────────── */
   const handleSave = async () => {
     setSaving(true);
@@ -391,8 +379,9 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
     };
 
     if (cfg.fields.preparedBy) {
-      payload.prepared_by = preparedBy.trim() || null;
+      payload.prepared_by_member_id = preparedByMemberId || null;
       payload.cover_show_prepared_by = showPreparedBy;
+      payload.cover_show_avatar = showAvatar;
     }
     if (cfg.fields.acceptButtonText) {
       payload.accept_button_text = acceptButtonText.trim() || null;
@@ -400,10 +389,6 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
     if (cfg.fields.clientLogo) {
       payload.cover_client_logo_path = clientLogoPath || null;
       payload.cover_show_client_logo = showClientLogo;
-    }
-    if (cfg.fields.avatar) {
-      payload.cover_avatar_path = avatarPath || null;
-      payload.cover_show_avatar = showAvatar;
     }
 
     await supabase.from(cfg.table).update(payload).eq('id', entity.id);
@@ -501,7 +486,7 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
             </div>
           )}
 
-          {/* ── Prepared By + Avatar section ─────────────────── */}
+          {/* ── Prepared By section ─────────────────────────── */}
           {cfg.fields.preparedBy && (
             <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
@@ -509,69 +494,35 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
                 <span className="text-sm font-medium text-gray-700">Prepared By</span>
               </div>
 
-              {/* Prepared by text input */}
+              {/* Team member selector */}
               <div>
-                <input
-                  type="text"
-                  value={preparedBy}
-                  onChange={(e) => setPreparedBy(e.target.value)}
-                  placeholder="Your name or company"
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
+                <PreparedBySelector
+                  companyId={entity.company_id}
+                  selectedMemberId={preparedByMemberId}
+                  onSelect={(id) => setPreparedByMemberId(id)}
                 />
-                {cfg.labels.preparedByHint && (
-                  <p className="text-xs text-gray-400 mt-1">{cfg.labels.preparedByHint}</p>
-                )}
+                <p className="text-xs text-gray-400 mt-1.5">
+                  {type === 'template'
+                    ? 'Default author for proposals created from this template.'
+                    : 'Select who prepared this proposal. Their name and photo come from their profile.'}
+                </p>
               </div>
 
-              {/* Toggles */}
-              <ToggleRow
-                icon={<Eye size={14} className="text-gray-400" />}
-                label="Show prepared by"
-                enabled={showPreparedBy}
-                onToggle={() => setShowPreparedBy(!showPreparedBy)}
-              />
-
-              {/* Avatar upload */}
-              {cfg.fields.avatar && (
+              {/* Toggles — only show when a member is selected */}
+              {preparedByMemberId && (
                 <>
+                  <ToggleRow
+                    icon={<Eye size={14} className="text-gray-400" />}
+                    label="Show prepared by"
+                    enabled={showPreparedBy}
+                    onToggle={() => setShowPreparedBy(!showPreparedBy)}
+                  />
                   <ToggleRow
                     icon={<User size={14} className="text-gray-400" />}
                     label="Show avatar"
                     enabled={showAvatar}
                     onToggle={() => setShowAvatar(!showAvatar)}
                   />
-                  {showAvatar && (
-                    <div>
-                      {avatarUrl ? (
-                        <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                          <img src={avatarUrl} alt="" className="w-10 h-10 object-cover rounded-full" />
-                          <span className="text-xs text-gray-500 flex-1 truncate">{avatarPath.split('/').pop()}</span>
-                          <button onClick={removeAvatar} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => avatarRef.current?.click()}
-                          disabled={uploadingAvatar}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-[#017C87]/30 hover:text-[#017C87] transition-colors disabled:opacity-50"
-                        >
-                          <User size={16} />
-                          {uploadingAvatar ? 'Uploading...' : 'Upload avatar'}
-                        </button>
-                      )}
-                      <input
-                        ref={avatarRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleAvatarUpload(f);
-                        }}
-                      />
-                    </div>
-                  )}
                 </>
               )}
             </div>
@@ -780,14 +731,14 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
                   </p>
                 )}
 
-                {/* Prepared-by + avatar */}
-                {cfg.fields.preparedBy && showPreparedBy && preparedBy && (
+                {/* Prepared-by + avatar (from resolved member) */}
+                {cfg.fields.preparedBy && showPreparedBy && resolvedMember && (
                   <div className="flex items-center gap-1.5 mb-2">
-                    {showAvatar && avatarUrl && (
-                      <img src={avatarUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                    {showAvatar && resolvedMember.avatar_url && (
+                      <img src={resolvedMember.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
                     )}
                     <span className="text-[10px] opacity-80" style={{ color: colors.coverSubtitleColor }}>
-                      Prepared by {preparedBy}
+                      Prepared by {resolvedMember.name}
                     </span>
                   </div>
                 )}

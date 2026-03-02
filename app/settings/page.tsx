@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import { supabase, TeamMember, WebhookEndpoint } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 
@@ -41,7 +42,7 @@ const NOTIFICATION_OPTIONS = [
   },
 ];
 
-/* ─── Review notification options (super admin only) ──────────────────────── */
+/* ─── Review notification options ─────────────────────────────────────────── */
 
 const REVIEW_NOTIFICATION_OPTIONS = [
   {
@@ -87,7 +88,7 @@ const WEBHOOK_EVENTS = [
   },
 ];
 
-/* ─── Review webhook events (super admin only) ────────────────────────────── */
+/* ─── Review webhook events ───────────────────────────────────────────────── */
 
 const REVIEW_WEBHOOK_EVENTS = [
   {
@@ -145,7 +146,7 @@ function SettingsContent({ auth }: {
   };
 
   return (
-    <div className="px-6 lg:px-10 py-8 max-w-2xl">
+    <div className="px-6 lg:px-10 py-8 max-w-5xl">
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 bg-[#017C87]/10 rounded-xl flex items-center justify-center">
@@ -159,35 +160,49 @@ function SettingsContent({ auth }: {
         </div>
       </div>
 
-      {/* Proposal notification toggles */}
-      <NotificationSection
-        title="Proposal Notifications"
-        subtitle="Email alerts for proposal events"
-        options={NOTIFICATION_OPTIONS}
-        teamMember={teamMember}
-        saving={saving}
-        onToggle={handleToggle}
+      {/* Profile */}
+      <ProfileEditor
+        memberId={teamMember?.id || ''}
+        companyId={companyId || ''}
+        name={teamMember?.name || ''}
+        avatarPath={(teamMember as Record<string, unknown>)?.avatar_path as string || ''}
+        onSave={(updates) => updatePreferences(updates as Partial<TeamMember>)}
       />
 
-      {/* Review notification toggles — super admin only */}
-      {isSuperAdmin && (
-        <div className="mt-6">
+      {/* ── Notifications ─────────────────────────────────────── */}
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-[#017C87]/10 rounded-lg flex items-center justify-center">
+            <Bell size={16} className="text-[#017C87]" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
+            <p className="text-xs text-gray-400">Email alerts for events across your workspace</p>
+          </div>
+        </div>
+
+        <div className={`grid gap-4 ${isSuperAdmin ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
           <NotificationSection
-            title="Creative Review Notifications"
-            subtitle="Email alerts for review feedback and status changes"
-            options={REVIEW_NOTIFICATION_OPTIONS}
+            title="Proposals"
+            options={NOTIFICATION_OPTIONS}
             teamMember={teamMember}
             saving={saving}
             onToggle={handleToggle}
-            accentLabel="Creative Review"
           />
+          {isSuperAdmin && (
+            <NotificationSection
+              title="Creative Review"
+              options={REVIEW_NOTIFICATION_OPTIONS}
+              teamMember={teamMember}
+              saving={saving}
+              onToggle={handleToggle}
+              accentLabel="Creative Review"
+            />
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Name update */}
-      <NameEditor name={teamMember?.name || ''} onSave={(name) => updatePreferences({ name })} />
-
-      {/* Webhooks — only for owners and admins */}
+      {/* ── Webhooks ──────────────────────────────────────────── */}
       {isAdminOrOwner && companyId && (
         <WebhookManager companyId={companyId} isSuperAdmin={isSuperAdmin} />
       )}
@@ -195,11 +210,10 @@ function SettingsContent({ auth }: {
   );
 }
 
-/* ─── Notification section (reusable) ─────────────────────────────────────── */
+/* ─── Notification section (reusable column) ──────────────────────────────── */
 
 function NotificationSection({
   title,
-  subtitle,
   options,
   teamMember,
   saving,
@@ -207,7 +221,6 @@ function NotificationSection({
   accentLabel,
 }: {
   title: string;
-  subtitle: string;
   options: { key: string; label: string; description: string; icon: LucideIcon }[];
   teamMember: TeamMember | null;
   saving: string | null;
@@ -215,37 +228,31 @@ function NotificationSection({
   accentLabel?: string;
 }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-      <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-        <Bell size={15} className="text-gray-400" />
-        <span className="text-sm font-medium text-gray-500">{title}</span>
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+        <span className="text-sm font-semibold text-gray-900">{title}</span>
         {accentLabel && (
           <span className="text-[9px] font-semibold uppercase tracking-wider bg-[#017C87]/10 text-[#017C87] px-1.5 py-0.5 rounded">
             {accentLabel}
           </span>
         )}
       </div>
-      <p className="px-5 pt-2 pb-1 text-xs text-gray-400">{subtitle}</p>
-
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-gray-50">
         {options.map((opt) => {
-          const Icon = opt.icon;
-          const enabled = (teamMember as Record<string, unknown> | null)?.[opt.key] ?? true;
-
+          const enabled = !!(teamMember as Record<string, unknown>)?.[opt.key];
           return (
-            <div key={opt.key} className="flex items-center justify-between px-5 py-4">
-              <div className="flex items-center gap-3">
-                <Icon size={18} className={enabled ? 'text-[#017C87]' : 'text-gray-300'} />
-                <div>
+            <div key={opt.key} className="px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <opt.icon size={15} className={enabled ? 'text-[#017C87] shrink-0' : 'text-gray-300 shrink-0'} />
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900">{opt.label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{opt.description}</p>
+                  <p className="text-xs text-gray-400 truncate">{opt.description}</p>
                 </div>
               </div>
-
               <button
                 onClick={() => onToggle(opt.key)}
                 disabled={saving === opt.key}
-                className={`relative w-11 h-6 rounded-full transition-colors ${
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
                   enabled ? 'bg-[#017C87]' : 'bg-gray-200'
                 }`}
               >
@@ -262,44 +269,6 @@ function NotificationSection({
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Name editor ─────────────────────────────────────────────────────────── */
-
-function NameEditor({ name: initialName, onSave }: { name: string; onSave: (name: string) => Promise<unknown> }) {
-  const [name, setName] = useState(initialName);
-  const [saving, setSaving] = useState(false);
-  const changed = name !== initialName;
-
-  const handleSave = async () => {
-    if (!name.trim() || !changed) return;
-    setSaving(true);
-    await onSave(name.trim());
-    setSaving(false);
-  };
-
-  return (
-    <div className="mt-6 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-      <label className="block text-sm font-medium text-gray-500 mb-2">Display Name</label>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
-        />
-        {changed && (
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
-          >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-          </button>
-        )}
       </div>
     </div>
   );
@@ -349,30 +318,32 @@ function WebhookManager({ companyId, isSuperAdmin }: { companyId: string; isSupe
           <Loader2 size={16} className="animate-spin text-gray-300" />
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className={`grid gap-4 ${isSuperAdmin ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
           {/* Proposal webhooks */}
-          <div className="mb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1">
-              Proposal Events
-            </span>
+          <div className="space-y-3">
+            <div className="mb-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1">
+                Proposal Events
+              </span>
+            </div>
+            {WEBHOOK_EVENTS.map((evt) => (
+              <WebhookEventCard
+                key={evt.key}
+                eventKey={evt.key}
+                label={evt.label}
+                description={evt.description}
+                icon={evt.icon}
+                endpoint={endpoints[evt.key] || null}
+                companyId={companyId}
+                onRefresh={fetchEndpoints}
+              />
+            ))}
           </div>
-          {WEBHOOK_EVENTS.map((evt) => (
-            <WebhookEventCard
-              key={evt.key}
-              eventKey={evt.key}
-              label={evt.label}
-              description={evt.description}
-              icon={evt.icon}
-              endpoint={endpoints[evt.key] || null}
-              companyId={companyId}
-              onRefresh={fetchEndpoints}
-            />
-          ))}
 
           {/* Review webhooks — super admin only */}
           {isSuperAdmin && (
-            <>
-              <div className="mt-5 mb-1 flex items-center gap-2">
+            <div className="space-y-3">
+              <div className="mb-1 flex items-center gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1">
                   Creative Review Events
                 </span>
@@ -392,7 +363,7 @@ function WebhookManager({ companyId, isSuperAdmin }: { companyId: string; isSupe
                   onRefresh={fetchEndpoints}
                 />
               ))}
-            </>
+            </div>
           )}
         </div>
       )}

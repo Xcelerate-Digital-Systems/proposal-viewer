@@ -66,10 +66,8 @@ function AccountsContent() {
   }, [fetchCompanies]);
 
   const handleEnter = (company: CompanyWithStats) => {
-    // Store override in localStorage — useAuth picks it up
     const override = JSON.stringify({ companyId: company.id, companyName: company.name });
     localStorage.setItem('super_admin_company_override', override);
-    // Navigate to proposals dashboard — forces re-render with new company context
     window.location.href = '/';
   };
 
@@ -128,57 +126,62 @@ function AccountsContent() {
           </button>
         </div>
       ) : (
-        /* Company cards */
-        <div className="grid gap-3">
+        /* Company card grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {companies.map((company) => (
             <div
               key={company.id}
-              className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-5 hover:border-gray-300 shadow-sm transition-colors group"
+              className="bg-white border border-gray-200 rounded-xl shadow-sm hover:border-gray-300 hover:shadow-md transition-all group flex flex-col"
             >
-              {/* Logo / initial */}
-              <div
-                className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold"
-                style={{
-                  backgroundColor: (company.accent_color || '#017C87') + '18',
-                  color: company.accent_color || '#017C87',
-                }}
-              >
-                {company.name.charAt(0).toUpperCase()}
+              {/* Card header */}
+              <div className="p-5 flex-1">
+                <div className="flex items-start gap-3.5 mb-4">
+                  {/* Logo / initial */}
+                  <div
+                    className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold"
+                    style={{
+                      backgroundColor: (company.accent_color || '#017C87') + '18',
+                      color: company.accent_color || '#017C87',
+                    }}
+                  >
+                    {company.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold text-gray-900 truncate">{company.name}</h3>
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{company.slug}</p>
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="flex items-center gap-4 text-xs text-gray-400">
+                  <div className="flex items-center gap-1.5" title="Proposals">
+                    <FileText size={13} className="text-gray-300" />
+                    <span>{company.stats.proposals}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5" title="Team members">
+                    <Users size={13} className="text-gray-300" />
+                    <span>{company.stats.members}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5" title="Last activity">
+                    <Clock size={13} className="text-gray-300" />
+                    <span>{formatDate(company.stats.lastActivity)}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-gray-900 truncate">{company.name}</h3>
-                <p className="text-xs text-gray-400 mt-0.5 truncate">{company.slug}</p>
+              {/* Card footer */}
+              <div className="px-5 py-3 border-t border-gray-100">
+                <button
+                  onClick={() => handleEnter(company)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                    bg-gray-50 text-gray-500 border border-gray-200
+                    hover:bg-[#017C87]/10 hover:text-[#017C87] hover:border-[#017C87]/30
+                    transition-all"
+                >
+                  <LogIn size={14} />
+                  Enter Account
+                </button>
               </div>
-
-              {/* Stats */}
-              <div className="hidden sm:flex items-center gap-6 text-xs text-gray-400">
-                <div className="flex items-center gap-1.5" title="Proposals">
-                  <FileText size={13} className="text-gray-300" />
-                  <span>{company.stats.proposals}</span>
-                </div>
-                <div className="flex items-center gap-1.5" title="Team members">
-                  <Users size={13} className="text-gray-300" />
-                  <span>{company.stats.members}</span>
-                </div>
-                <div className="flex items-center gap-1.5 min-w-[80px]" title="Last activity">
-                  <Clock size={13} className="text-gray-300" />
-                  <span>{formatDate(company.stats.lastActivity)}</span>
-                </div>
-              </div>
-
-              {/* Enter button */}
-              <button
-                onClick={() => handleEnter(company)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                  bg-gray-50 text-gray-500 border border-gray-200
-                  hover:bg-[#017C87]/10 hover:text-[#017C87] hover:border-[#017C87]/30
-                  transition-all"
-              >
-                <LogIn size={14} />
-                Enter
-              </button>
             </div>
           ))}
         </div>
@@ -210,7 +213,6 @@ function CreateAccountModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-generate slug from name
   const handleNameChange = (val: string) => {
     setName(val);
     setSlug(

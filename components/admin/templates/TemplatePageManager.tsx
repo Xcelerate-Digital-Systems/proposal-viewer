@@ -437,7 +437,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       ) : (
         <div className="flex gap-5" style={{ height: 520 }}>
           {/* Left half: sortable page list */}
-          <div className="w-1/2 min-w-0 overflow-hidden flex flex-col">
+          <div className="w-1/2 min-w-0 overflow-hidden flex flex-col relative">
+            {/* Processing overlay — blocks interaction during page operations */}
+            {processing && (
+              <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
+                  <Loader2 size={14} className="animate-spin text-[#017C87]" />
+                  <span className="text-xs font-medium text-gray-600">Processing…</span>
+                </div>
+              </div>
+            )}
             <div className="flex-1 space-y-0.5 p-1 overflow-y-auto pr-1">
               <div className="flex justify-center py-1">
                 <label

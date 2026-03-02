@@ -181,6 +181,7 @@ interface TemplateData {
   cover_subtitle: string | null;
   cover_button_text: string | null;
   prepared_by: string | null;
+  prepared_by_member_id: string | null;   // ← THIS LINE
   cover_client_logo_path: string | null;
   cover_avatar_path: string | null;
   cover_date: string | null;

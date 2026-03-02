@@ -74,7 +74,7 @@ const SECTIONS: SectionDef[] = [
 /** Top-level standalone items (no sub-navigation) */
 const STANDALONE_ITEMS: NavItem[] = [
   { href: '/company', label: 'Branding', icon: Palette },
-  { href: '/settings', label: 'Notifications', icon: Bell },
+  { href: '/settings', label: 'Settings', icon: Bell },
   { href: '/team', label: 'Team', icon: Users },
 ];
 
