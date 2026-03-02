@@ -215,7 +215,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
 
       {/* Sidebar — shared component, no accept/comments for template preview */}
       {/* lg:mt-9 offsets below the preview banner on desktop */}
-      <div className="lg:mt-9">
+      <div className="lg:mt-9 lg:h-[calc(100dvh-2.25rem)] flex flex-col overflow-hidden">
         <Sidebar
           numPages={numPages}
           currentPage={currentPage}

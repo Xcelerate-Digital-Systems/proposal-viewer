@@ -239,15 +239,27 @@ export function useTemplatePreview(templateId: string) {
       if (tPages && tPages.length > 0) {
         const entries: PageNameEntry[] = [];
 
+        // Always build from template_pages records (source of truth after page CRUD).
+        // page_names JSON on the template record can be stale after insert/delete.
+        for (const p of tPages) {
+          entries.push({
+            name: p.label || `Page ${p.page_number}`,
+            indent: p.indent || 0,
+          });
+        }
+
+        // Re-insert section headers (groups) from page_names if present,
+        // since groups aren't stored in template_pages.
         if (tmpl.page_names && Array.isArray(tmpl.page_names)) {
           const normalized = normalizePageNamesWithGroups(tmpl.page_names, pdfCount);
-          entries.push(...normalized);
-        } else {
-          for (const p of tPages) {
-            entries.push({
-              name: p.label || `Page ${p.page_number}`,
-              indent: p.indent || 0,
-            });
+          // Extract only group entries and their positions
+          let groupOffset = 0;
+          for (let i = 0; i < normalized.length; i++) {
+            if (normalized[i].type === 'group') {
+              const insertIdx = Math.min(i + groupOffset, entries.length);
+              entries.splice(insertIdx, 0, normalized[i]);
+              // Don't increment groupOffset — the normalized array already accounts for groups
+            }
           }
         }
 
