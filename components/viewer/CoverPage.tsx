@@ -198,6 +198,15 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
         {/* Spacer */}
         <div className="flex-1" />
 
+        {/* Client logo (above title) */}
+        {showClientLogo && clientLogoUrl && (
+          <img
+            src={clientLogoUrl}
+            alt="Client"
+            className="h-8 sm:h-9 md:h-10 max-w-[180px] object-contain mb-5 opacity-90"
+          />
+        )}
+
         {/* Title + meta + CTA */}
         <div className="max-w-2xl">
           <h1
@@ -206,6 +215,16 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
           >
             {proposal.title}
           </h1>
+
+          {/* Date (directly under title) */}
+          {hasDateRow && (
+            <p
+              className="text-xs sm:text-sm mb-2"
+              style={{ color: subtitleColor, opacity: 0.7, fontFamily: fontFamily(branding.font_body) }}
+            >
+              {proposal.cover_date}
+            </p>
+          )}
 
           <p
             className="text-sm sm:text-base md:text-lg mb-1"
@@ -234,16 +253,6 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
             </div>
           )}
 
-          {/* Date row */}
-          {hasDateRow && (
-            <p
-              className="text-xs sm:text-sm mb-1"
-              style={{ color: subtitleColor, opacity: 0.7, fontFamily: fontFamily(branding.font_body) }}
-            >
-              {proposal.cover_date}
-            </p>
-          )}
-
           {/* Spacing before button */}
           <div className={hasPreparedByRow || hasDateRow ? 'mt-5' : 'mt-6'} />
 
@@ -259,17 +268,8 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
             {buttonText}
           </button>
         </div>
-
-        {/* Footer: client logo (bottom-right) */}
-        <div className="flex items-end justify-end">
-          {showClientLogo && clientLogoUrl && (
-            <img
-              src={clientLogoUrl}
-              alt="Client"
-              className="h-6 sm:h-7 md:h-8 max-w-[160px] object-contain opacity-80"
-            />
-          )}
-        </div>
+        {/* Footer spacer */}
+        <div />
       </div>
     </div>
   );

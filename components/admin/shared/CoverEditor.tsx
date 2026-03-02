@@ -747,50 +747,49 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
             )}
 
             <div className="relative z-10 flex flex-col justify-between h-full p-5">
-              {/* Top: company logo placeholder */}
+              {/* Top: company logo */}
               <div>
                 <img src="/logo-white.svg" alt="Logo" className="h-4 opacity-90" />
               </div>
 
-              {/* Middle: title, subtitle, meta, button */}
+              {/* Middle: content */}
               <div>
+                {/* Client logo (above title) */}
+                {showClientLogo && clientLogoUrl && (
+                  <img src={clientLogoUrl} alt="" className="h-5 max-w-[100px] object-contain mb-2 opacity-90" />
+                )}
+
                 <h2
-                  className="text-lg font-semibold leading-tight mb-1 font-[family-name:var(--font-display)]"
+                  className="text-lg font-semibold leading-tight mb-0.5 font-[family-name:var(--font-display)]"
                   style={{ color: colors.coverTextColor }}
                 >
                   {displayTitle}
                 </h2>
+
+                {/* Date (under title) */}
+                {showDate && coverDate && (
+                  <p className="text-[10px] opacity-70 mb-1" style={{ color: colors.coverSubtitleColor }}>
+                    {coverDate}
+                  </p>
+                )}
+
+                {/* Subtitle */}
                 {previewSubtitle && (
                   <p className="text-xs mb-1" style={{ color: colors.coverSubtitleColor }}>
                     {previewSubtitle}
                   </p>
                 )}
 
-                {/* Prepared-by + avatar row */}
+                {/* Prepared-by + avatar */}
                 {cfg.fields.preparedBy && showPreparedBy && preparedBy && (
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-1.5 mb-2">
                     {showAvatar && avatarUrl && (
-                      <img src={avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                      <img src={avatarUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
                     )}
                     <span className="text-[10px] opacity-80" style={{ color: colors.coverSubtitleColor }}>
                       Prepared by {preparedBy}
                     </span>
                   </div>
-                )}
-
-                {/* Date */}
-                {showDate && coverDate && (
-                  <p className="text-[10px] opacity-70 mb-2" style={{ color: colors.coverSubtitleColor }}>
-                    {coverDate}
-                  </p>
-                )}
-
-                {/* If no prepared by shown but date, add spacing */}
-                {!(cfg.fields.preparedBy && showPreparedBy && preparedBy) && !(showDate && coverDate) && (
-                  <div className="mb-3" />
-                )}
-                {((cfg.fields.preparedBy && showPreparedBy && preparedBy) || (showDate && coverDate)) && (
-                  <div className="mb-1" />
                 )}
 
                 <div
@@ -801,12 +800,8 @@ export default function CoverEditor({ type, entity, onSave, onCancel }: CoverEdi
                 </div>
               </div>
 
-              {/* Bottom: client logo */}
-              <div className="flex justify-end">
-                {showClientLogo && clientLogoUrl && (
-                  <img src={clientLogoUrl} alt="" className="h-4 max-w-[100px] object-contain opacity-80" />
-                )}
-              </div>
+              {/* Bottom spacer */}
+              <div />
             </div>
 
             {!coverEnabled && (
