@@ -104,6 +104,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           .single();
         creatorName = member?.name || null;
       }
+
       // 1. Upload any replacement pages to temp storage
       setStatus('Uploading custom pages...');
       const replacementPaths: Record<number, string> = {};
@@ -133,7 +134,11 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         body: JSON.stringify({ pages: mergePages, proposal_file_path: proposalFilePath }),
       });
 
-      if (!mergeRes.ok) throw new Error('Failed to merge pages');
+      if (!mergeRes.ok) {
+        const errorBody = await mergeRes.text();
+        console.error('Merge API failed:', mergeRes.status, errorBody);
+        throw new Error(`Merge failed (${mergeRes.status}): ${errorBody}`);
+      }
       const mergeData = await mergeRes.json();
 
       // 4. Build page_names from template labels + indent + section headers
@@ -151,7 +156,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         crm_identifier: crmIdentifier.trim() || null,
         description: description.trim() || null,
         file_path: proposalFilePath,
-        file_size_bytes: mergeData.file_size || 0,
+        file_size_bytes: mergeData.file_size_bytes || 0,
         status: 'draft',
         page_names: basePageNames,
         company_id: companyId,
@@ -161,7 +166,6 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         cover_subtitle: selectedTemplate.cover_subtitle || null,
         cover_image_path: selectedTemplate.cover_image_path || null,
         cover_button_text: selectedTemplate.cover_button_text || null,
-        section_headers: selectedTemplate.section_headers || null,
       });
 
       if (dbError) throw dbError;
@@ -174,9 +178,12 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
 
       setStatus('Done!');
       setTimeout(() => onSuccess(), 300);
-    } catch (err) {
-      console.error(err);
-      setStatus('Something went wrong. Please try again.');
+    } catch (err: any) {
+      console.error('Create from template failed:', err);
+      console.error('Error message:', err?.message);
+      console.error('Error details:', err?.details || err?.hint);
+      const msg = err?.message || 'Unknown error';
+      setStatus(`Failed: ${msg}`);
       setCreating(false);
     }
   };
