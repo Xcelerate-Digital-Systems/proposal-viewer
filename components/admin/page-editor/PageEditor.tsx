@@ -41,7 +41,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const {
     pricingLoaded, pricingExists, pricingPosition, setPricingPosition,
     pricingIndent, setPricingIndent,
-    pricingOrientation, updatePricingOrientation,
     pricingForm, pricingSaveStatus, updatePricing, flushPricingSave,
     addPricingPage, removePricingPage, savePricing,
     pricingLinkUrl, pricingLinkLabel, updatePricingLink,
@@ -474,8 +473,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         linkUrl={pricingLinkUrl}
                         linkLabel={pricingLinkLabel}
                         onLinkChange={(url: string, label: string) => updatePricingLink(url, label)}
-                        orientation={pricingOrientation}
-                        onOrientationChange={updatePricingOrientation}
                         renderInsertAfter={
                           <InsertPageMenu
                             disabled={processing}
@@ -524,10 +521,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                           if (tp) updateTextPage(tp.id, { indent: tp.indent ? 0 : 1 });
                         }}
                         onRemove={() => tp && handleRemoveTextPage(tp.id)}
-                        orientation={tp?.orientation || 'auto'}
-                        onOrientationChange={(o: 'auto' | 'portrait' | 'landscape') => {
-                          if (tp) updateTextPage(tp.id, { orientation: o });
-                        }}
                         linkUrl={tp?.link_url || ''}
                         linkLabel={tp?.link_label || ''}
                         onLinkChange={(url: string, label: string) => {

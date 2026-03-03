@@ -119,13 +119,10 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   const handleCompositeDownload = useCallback(async () => {
     if (!pdfUrl) throw new Error('No PDF URL available');
     // Build text page orientation map
-    const textPageOrientations: Record<string, 'auto' | 'portrait' | 'landscape'> = {};
-    for (const tp of textPages) {
-      const orient = (tp as unknown as Record<string, unknown>).orientation as string | undefined;
-      if (orient && orient !== 'auto') {
-        textPageOrientations[tp.id] = orient as 'portrait' | 'landscape';
-      }
-    }
+    const entityOrientation = doc?.page_orientation || 'auto';
+    const textPageOrientations: Record<string, 'auto' | 'portrait' | 'landscape'> = Object.fromEntries(
+      textPages.map(tp => [tp.id, entityOrientation])
+    );
     return exportCompositePdf({
       pdfUrl,
       title: doc?.title || 'document',
@@ -140,6 +137,8 @@ export default function DocumentViewerPage({ params }: { params: { token: string
       companyName: branding.name,
       proposalTitle: doc?.title,
       textPageOrientations,
+      isPackagesPage: () => false,
+      packages: null,
     });
   }, [pdfUrl, doc, numPages, noPricing, isTextPage, getTextPageId, toPdfPage, getTextPage, branding, textPages]);
 

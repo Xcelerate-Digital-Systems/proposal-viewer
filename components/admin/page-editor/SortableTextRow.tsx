@@ -5,7 +5,6 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ArrowLeft, CornerDownRight, Trash2 } from 'lucide-react';
 import PageLinkInput from './PageLinkInput';
-import OrientationToggle from './OrientationToggle';
 
 interface SortableTextRowProps {
   id: string;
@@ -19,13 +18,11 @@ interface SortableTextRowProps {
   linkUrl?: string;
   linkLabel?: string;
   onLinkChange?: (url: string, label: string) => void;
-  orientation?: 'auto' | 'portrait' | 'landscape';
-  onOrientationChange?: (orientation: 'auto' | 'portrait' | 'landscape') => void;
   /** Slot for rendering insert menu after this row */
   renderInsertAfter?: React.ReactNode;
 }
 
-export default function SortableTextRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, orientation, onOrientationChange, renderInsertAfter }: SortableTextRowProps) {
+export default function SortableTextRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, renderInsertAfter }: SortableTextRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -78,15 +75,6 @@ export default function SortableTextRow({ id, title, indent, isFirst, isSelected
 
         {/* Actions */}
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {/* Orientation toggle */}
-          {onOrientationChange && (
-            <OrientationToggle
-              value={orientation || 'auto'}
-              onChange={onOrientationChange}
-              variant="teal"
-            />
-          )}
-
           {/* Page link */}
           {onLinkChange && (
             <PageLinkInput

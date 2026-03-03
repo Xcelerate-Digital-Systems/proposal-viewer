@@ -178,7 +178,6 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         cover_subtitle_color: selectedTemplate.cover_subtitle_color || null,
         cover_button_bg: selectedTemplate.cover_button_bg || null,
         cover_button_text_color: selectedTemplate.cover_button_text_color || null,
-        // ── Cover visibility toggles ──
         cover_show_date: selectedTemplate.cover_show_date ?? false,
         cover_date: selectedTemplate.cover_date || null,
         cover_show_prepared_by: selectedTemplate.cover_show_prepared_by ?? true,
@@ -188,6 +187,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         cover_avatar_path: selectedTemplate.cover_avatar_path || null,
         bg_image_path: selectedTemplate.bg_image_path || null,
         bg_image_overlay_opacity: selectedTemplate.bg_image_overlay_opacity ?? null,
+        page_orientation: selectedTemplate.page_orientation || 'auto',
       }).select('id').single();
 
       if (dbError || !newProposal) throw dbError || new Error('Failed to create proposal');

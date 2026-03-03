@@ -52,6 +52,8 @@ const DEFAULT_BRANDING: CompanyBranding = {
   text_page_border_color: null,
   text_page_border_radius: '12',
   text_page_layout: 'contained',
+  bg_image_url: null,
+  bg_image_overlay_opacity: 0.85,
 };
 
 export default function TemplatePricingPreviewPanel({

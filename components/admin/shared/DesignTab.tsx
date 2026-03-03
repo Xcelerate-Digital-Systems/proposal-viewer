@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 /* ------------------------------------------------------------------ */
 
 type EntityType = 'proposal' | 'template' | 'document';
+type PageOrientation = 'auto' | 'portrait' | 'landscape';
 
 const tableByType: Record<EntityType, string> = {
   proposal: 'proposals',
@@ -31,11 +32,48 @@ interface DesignTabProps {
   initialBgImagePath: string | null;
   /** Current bg_image_overlay_opacity from the entity (null = company default) */
   initialBgImageOverlayOpacity: number | null;
+  /** Current page_orientation from the entity */
+  initialPageOrientation?: PageOrientation;
   /** Company-level bg_primary for the preview overlay */
   companyBgPrimary?: string;
   /** Called after a successful save so parent can refresh data if needed */
   onSave?: () => void;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Orientation icons                                                   */
+/* ------------------------------------------------------------------ */
+
+const orientationOptions: { key: PageOrientation; label: string; icon: React.ReactNode }[] = [
+  {
+    key: 'auto',
+    label: 'Auto (match PDF)',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2" width="12" height="12" rx="1.5" />
+        <path d="M8 5v6M5.5 7.5L8 5l2.5 2.5" />
+      </svg>
+    ),
+  },
+  {
+    key: 'portrait',
+    label: 'Portrait',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3.5" y="1.5" width="9" height="13" rx="1.5" />
+      </svg>
+    ),
+  },
+  {
+    key: 'landscape',
+    label: 'Landscape',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1.5" y="3.5" width="13" height="9" rx="1.5" />
+      </svg>
+    ),
+  },
+];
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -47,6 +85,7 @@ export default function DesignTab({
   companyId,
   initialBgImagePath,
   initialBgImageOverlayOpacity,
+  initialPageOrientation = 'auto',
   companyBgPrimary = '#0f0f0f',
   onSave,
 }: DesignTabProps) {
@@ -62,6 +101,7 @@ export default function DesignTab({
   const [overlayOpacity, setOverlayOpacity] = useState<number>(
     initialBgImageOverlayOpacity ?? 0.85
   );
+  const [pageOrientation, setPageOrientation] = useState<PageOrientation>(initialPageOrientation);
   const [uploading, setUploading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -120,7 +160,9 @@ export default function DesignTab({
   const save = useCallback(async () => {
     setSaveStatus('saving');
 
-    const payload: Record<string, string | number | null> = {};
+    const payload: Record<string, string | number | null> = {
+      page_orientation: pageOrientation,
+    };
 
     if (mode === 'company') {
       // Reset to company defaults
@@ -135,7 +177,7 @@ export default function DesignTab({
     setSaveStatus('saved');
     setTimeout(() => setSaveStatus('idle'), 2000);
     onSave?.();
-  }, [mode, bgImagePath, overlayOpacity, table, entityId, onSave]);
+  }, [mode, bgImagePath, overlayOpacity, pageOrientation, table, entityId, onSave]);
 
   const scheduleSave = useCallback((delay = 800) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -153,7 +195,7 @@ export default function DesignTab({
     }
     scheduleSave(800);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, bgImagePath, overlayOpacity]);
+  }, [mode, bgImagePath, overlayOpacity, pageOrientation]);
 
   /* ── Upload / Remove handlers ──────────────────────────────── */
 
@@ -225,6 +267,32 @@ export default function DesignTab({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Controls */}
         <div className="space-y-5">
+          {/* ── Page Orientation Section ───────────────────────── */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-2">Page Orientation</label>
+            <p className="text-[10px] text-gray-400 mb-3">
+              Controls the orientation of text pages, pricing, and packages when exported as PDF.
+            </p>
+            <div className="flex gap-2">
+              {orientationOptions.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setPageOrientation(opt.key)}
+                  className={`flex items-center gap-2 px-3 py-2 text-xs rounded-lg border transition-colors ${
+                    pageOrientation === opt.key
+                      ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
+                      : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={pageOrientation === opt.key ? 'text-[#017C87]' : 'text-gray-400'}>
+                    {opt.icon}
+                  </span>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* ── Background Image Section ───────────────────────── */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-3">Viewer Background Image</label>
@@ -373,7 +441,13 @@ export default function DesignTab({
             )}
             {/* Content placeholder */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-24 h-32 bg-white/10 border border-white/20 rounded shadow-lg flex items-center justify-center">
+              <div
+                className="bg-white/10 border border-white/20 rounded shadow-lg flex items-center justify-center transition-all duration-300"
+                style={{
+                  width: pageOrientation === 'landscape' ? '8rem' : '6rem',
+                  height: pageOrientation === 'landscape' ? '6rem' : '8rem',
+                }}
+              >
                 <span className="text-[10px] text-white/40 font-medium">PDF Page</span>
               </div>
             </div>

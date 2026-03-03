@@ -7,8 +7,9 @@ import { createRoot } from 'react-dom/client';
 import { createElement } from 'react';
 import TextPage from '@/components/viewer/TextPage';
 import PricingPage from '@/components/viewer/PricingPage';
+import PackagesPage from '@/components/viewer/PackagesPage';
 import type { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
-import type { ProposalPricing, PageNameEntry } from '@/lib/supabase';
+import type { ProposalPricing, ProposalPackages, PageNameEntry } from '@/lib/supabase';
 
 /* ——— Types ———————————————————————————————————————————————— */
 
@@ -27,11 +28,13 @@ export interface CompositeExportOptions {
   title: string;
   numPages: number;
   isPricingPage: (vp: number) => boolean;
+  isPackagesPage: (vp: number) => boolean;
   isTextPage: (vp: number) => boolean;
   getTextPageId: (vp: number) => string | null;
   toPdfPage: (vp: number) => number;
   getTextPage: (id: string) => BaseTextPage | undefined;
   pricing: ProposalPricing | null;
+  packages: ProposalPackages | null;
   branding: CompanyBranding;
   clientName?: string;
   companyName?: string;
@@ -40,7 +43,7 @@ export interface CompositeExportOptions {
   onProgress?: (current: number, total: number) => void;
   /** Page entries for per-page orientation overrides (PDF pages) */
   pageEntries?: PageNameEntry[];
-  /** Direct orientation override for the pricing page */
+  /** Entity-level orientation override for special pages (pricing, packages, text) */
   pricingOrientation?: 'auto' | 'portrait' | 'landscape';
   /** Per-text-page orientation overrides keyed by text page ID */
   textPageOrientations?: Record<string, 'auto' | 'portrait' | 'landscape'>;
@@ -138,11 +141,26 @@ function resolveDirectOrientation(
 }
 
 /**
+ * Resolve page dimensions based on orientation relative to the dominant PDF size.
+ * Returns [pageWidth, pageHeight].
+ */
+function resolvePageDimensions(
+  orientation: 'portrait' | 'landscape',
+  dominant: { width: number; height: number; orientation: 'portrait' | 'landscape' },
+): [number, number] {
+  if (orientation === dominant.orientation) {
+    return [dominant.width, dominant.height];
+  }
+  // Orientation flipped — swap dimensions
+  return [dominant.height, dominant.width];
+}
+
+/**
  * Render a React element into an offscreen container, capture it with
  * html2canvas, then clean up. Returns a PNG data URL.
  *
- * The capture width is scaled to match the target page aspect ratio
- * so the rendered content fills the full page width.
+ * The container is sized to match the target page aspect ratio so
+ * components using min-h-full / flex centering render correctly.
  */
 async function captureComponent(
   element: React.ReactElement,
@@ -152,6 +170,7 @@ async function captureComponent(
   // Use a wide capture; the aspect ratio of the target page determines
   // how the content is laid out — wider pages get wider containers.
   const captureWidth = Math.max(BASE_CAPTURE_WIDTH, Math.round(BASE_CAPTURE_WIDTH * (targetAspect / 1.0)));
+  const captureHeight = Math.round(captureWidth / targetAspect);
 
   // Create offscreen container
   const container = document.createElement('div');
@@ -159,7 +178,7 @@ async function captureComponent(
   container.style.left = '-9999px';
   container.style.top = '0';
   container.style.width = `${captureWidth}px`;
-  container.style.minHeight = '100px';
+  container.style.height = `${captureHeight}px`;
   container.style.overflow = 'hidden';
   container.style.backgroundColor = bgColor;
   document.body.appendChild(container);
@@ -192,6 +211,36 @@ async function captureComponent(
   return dataUrl;
 }
 
+/**
+ * Capture a React element, embed into the output PDF, and add the page.
+ * Shared logic for pricing, packages, and text pages.
+ */
+async function captureAndAddPage(
+  outDoc: PDFDocument,
+  element: React.ReactElement,
+  bgColor: string,
+  pageWidth: number,
+  pageHeight: number,
+): Promise<void> {
+  const targetAspect = pageWidth / pageHeight;
+  const dataUrl = await captureComponent(element, bgColor, targetAspect);
+  const pngBytes = await fetch(dataUrl).then((r) => r.arrayBuffer());
+  const pngImage = await outDoc.embedPng(pngBytes);
+
+  // Scale image to fill page width, preserving aspect ratio
+  const imgAspect = pngImage.width / pngImage.height;
+  const fitWidth = pageWidth;
+  const fitHeight = fitWidth / imgAspect;
+
+  const page = outDoc.addPage([pageWidth, Math.max(fitHeight, pageHeight)]);
+  page.drawImage(pngImage, {
+    x: 0,
+    y: page.getHeight() - fitHeight,
+    width: fitWidth,
+    height: fitHeight,
+  });
+}
+
 /* ——— Main export function ——————————————————————————————— */
 
 export async function exportCompositePdf(opts: CompositeExportOptions): Promise<Blob> {
@@ -200,11 +249,13 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     title,
     numPages,
     isPricingPage,
+    isPackagesPage,
     isTextPage,
     getTextPageId,
     toPdfPage,
     getTextPage,
     pricing,
+    packages,
     branding,
     clientName,
     companyName,
@@ -233,24 +284,11 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
 
     if (isPricingPage(vp) && pricing) {
       // —— Capture pricing page ——————————————————————————————————
-      // Use direct pricing orientation if available, otherwise fall back to pageEntries
       const orientation = pricingOrientation
         ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
         : resolvePageOrientation(vp, pageEntries, dominant.orientation);
 
-      // Use actual source PDF dimensions, swapping if orientation differs
-      let pageWidth: number;
-      let pageHeight: number;
-      if (orientation === dominant.orientation) {
-        pageWidth = dominant.width;
-        pageHeight = dominant.height;
-      } else {
-        // Manual override flipped the orientation — swap dimensions
-        pageWidth = dominant.height;
-        pageHeight = dominant.width;
-      }
-
-      const targetAspect = pageWidth / pageHeight;
+      const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
 
       const element = createElement(PricingPage, {
         pricing,
@@ -258,28 +296,29 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         clientName,
       });
 
-      const dataUrl = await captureComponent(element, bgPrimary, targetAspect);
-      const pngBytes = await fetch(dataUrl).then((r) => r.arrayBuffer());
-      const pngImage = await outDoc.embedPng(pngBytes);
+      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight);
 
-      // Scale image to fill page width, preserving aspect ratio
-      const imgAspect = pngImage.width / pngImage.height;
-      const fitWidth = pageWidth;
-      const fitHeight = fitWidth / imgAspect;
+    } else if (isPackagesPage(vp) && packages) {
+      // —— Capture packages page —————————————————————————————————
+      // Packages use the same entity-level orientation as pricing
+      const orientation = pricingOrientation
+        ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
+        : resolvePageOrientation(vp, pageEntries, dominant.orientation);
 
-      const page = outDoc.addPage([pageWidth, Math.max(fitHeight, pageHeight)]);
-      page.drawImage(pngImage, {
-        x: 0,
-        y: page.getHeight() - fitHeight,
-        width: fitWidth,
-        height: fitHeight,
+      const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
+
+      const element = createElement(PackagesPage, {
+        packages,
+        branding,
+        clientName,
       });
+
+      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight);
 
     } else if (isTextPage(vp)) {
       // —— Capture text page —————————————————————————————————————
       const textPageId = getTextPageId(vp);
 
-      // Use direct text page orientation if available, otherwise fall back to pageEntries
       let orientation: 'portrait' | 'landscape';
       if (textPageId && textPageOrientations?.[textPageId]) {
         orientation = resolveDirectOrientation(textPageOrientations[textPageId], dominant.orientation);
@@ -287,17 +326,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         orientation = resolvePageOrientation(vp, pageEntries, dominant.orientation);
       }
 
-      let pageWidth: number;
-      let pageHeight: number;
-      if (orientation === dominant.orientation) {
-        pageWidth = dominant.width;
-        pageHeight = dominant.height;
-      } else {
-        pageWidth = dominant.height;
-        pageHeight = dominant.width;
-      }
-
-      const targetAspect = pageWidth / pageHeight;
+      const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
 
       const textPage = textPageId ? getTextPage(textPageId) : undefined;
 
@@ -312,21 +341,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         });
 
         const textBg = branding.text_page_bg_color || branding.bg_secondary || '#141414';
-        const dataUrl = await captureComponent(element, textBg, targetAspect);
-        const pngBytes = await fetch(dataUrl).then((r) => r.arrayBuffer());
-        const pngImage = await outDoc.embedPng(pngBytes);
-
-        const imgAspect = pngImage.width / pngImage.height;
-        const fitWidth = pageWidth;
-        const fitHeight = fitWidth / imgAspect;
-
-        const page = outDoc.addPage([pageWidth, Math.max(fitHeight, pageHeight)]);
-        page.drawImage(pngImage, {
-          x: 0,
-          y: page.getHeight() - fitHeight,
-          width: fitWidth,
-          height: fitHeight,
-        });
+        await captureAndAddPage(outDoc, element, textBg, pageWidth, pageHeight);
       } else {
         // Fallback: empty page matching dominant size
         outDoc.addPage([pageWidth, pageHeight]);

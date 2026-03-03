@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ArrowLeft, CornerDownRight } from 'lucide-react';
 import PageLinkInput from '@/components/admin/page-editor/PageLinkInput';
-import OrientationToggle from '@/components/admin/page-editor/OrientationToggle';
+
 
 interface SortablePricingRowProps {
   id: string;
@@ -18,13 +18,11 @@ interface SortablePricingRowProps {
   linkUrl: string;
   linkLabel: string;
   onLinkChange: (url: string, label: string) => void;
-  orientation?: 'auto' | 'portrait' | 'landscape';
-  onOrientationChange?: (orientation: 'auto' | 'portrait' | 'landscape') => void;
   /** Slot for rendering insert menu after this row */
   renderInsertAfter?: React.ReactNode;
 }
 
-export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, linkUrl, linkLabel, onLinkChange, orientation, onOrientationChange, renderInsertAfter }: SortablePricingRowProps) {
+export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, linkUrl, linkLabel, onLinkChange, renderInsertAfter }: SortablePricingRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -77,15 +75,6 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
 
         {/* Actions */}
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {/* Orientation toggle */}
-          {onOrientationChange && (
-            <OrientationToggle
-              value={orientation || 'auto'}
-              onChange={onOrientationChange}
-              variant="teal"
-            />
-          )}
-
           {/* Page link */}
           <PageLinkInput
             linkUrl={linkUrl}

@@ -157,6 +157,7 @@ export type Proposal = {
   company_id: string;
   created_at: string;
   updated_at: string;
+  page_orientation: 'auto' | 'portrait' | 'landscape';
 };
 
 export type Document = {
@@ -188,6 +189,7 @@ export type Document = {
   company_id: string;
   created_at: string;
   updated_at: string;
+  page_orientation: 'auto' | 'portrait' | 'landscape';
 };
 
 export type ProposalComment = {
@@ -239,6 +241,7 @@ export type ProposalTemplate = {
   company_id: string;
   created_at: string;
   updated_at: string;
+  page_orientation: 'auto' | 'portrait' | 'landscape';
 };
 
 export type TemplatePage = {

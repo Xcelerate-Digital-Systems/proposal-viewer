@@ -14,7 +14,6 @@ export interface TextPageData {
   sort_order: number;
   link_url?: string | null;
   link_label?: string | null;
-  orientation?: 'auto' | 'portrait' | 'landscape';
 }
 
 interface UseTextPagesStateOptions {
@@ -90,7 +89,6 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           sort_order: page.sort_order,
           link_url: page.link_url ?? null,
           link_label: page.link_label ?? null,
-          orientation: page.orientation ?? 'auto',
         }),
       });
       setTextPageSaveStatuses((prev) => ({ ...prev, [page.id]: 'saved' }));
@@ -166,7 +164,6 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           indent: 0,
           title: 'New Blank Page',
           content: DEFAULT_CONTENT,
-          orientation: 'auto',
         }),
       });
 
