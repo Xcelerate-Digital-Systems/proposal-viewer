@@ -32,6 +32,14 @@ function getExpiryDate(dateStr: string, days: number): string {
   });
 }
 
+function isQuoteExpired(dateStr: string, days: number): boolean {
+  const expiry = new Date(dateStr + 'T00:00:00');
+  expiry.setDate(expiry.getDate() + days);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today > expiry;
+}
+
 const FREQ_LABELS: Record<string, string> = {
   weekly: 'week',
   fortnightly: 'fortnight',
@@ -364,19 +372,75 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
           )}
 
           {/* Quote validity */}
-          {pricing.validity_days && pricing.proposal_date && (
-            <div
-              className="rounded-lg px-4 py-3 text-xs flex items-center justify-between"
-              style={{ backgroundColor: surface, color: muted }}
-            >
-              <span>
-                Quote valid for {pricing.validity_days} days from {formatDate(pricing.proposal_date)}
-              </span>
-              <span className="font-medium" style={{ color: textColor }}>
-                Expires {getExpiryDate(pricing.proposal_date, pricing.validity_days)}
-              </span>
-            </div>
-          )}
+          {pricing.validity_days && pricing.proposal_date && (() => {
+            const expired = isQuoteExpired(pricing.proposal_date, pricing.validity_days);
+
+            return (
+              <div className="space-y-2">
+                {/* Validity bar — changes tone when expired */}
+                <div
+                  className="rounded-lg px-4 py-3 text-xs flex items-center justify-between"
+                  style={{
+                    backgroundColor: expired ? `${accent}15` : surface,
+                    border: expired ? `1px solid ${accent}40` : 'none',
+                    color: muted,
+                  }}
+                >
+                  <span>
+                    Quote valid for {pricing.validity_days} days from {formatDate(pricing.proposal_date)}
+                  </span>
+                  <span
+                    className="font-medium"
+                    style={{ color: expired ? accent : textColor }}
+                  >
+                    {expired ? 'Expired' : 'Expires'} {getExpiryDate(pricing.proposal_date, pricing.validity_days)}
+                  </span>
+                </div>
+
+                {/* Expired notice */}
+                {expired && (
+                  <div
+                    className="rounded-lg px-4 py-3 text-xs"
+                    style={{
+                      backgroundColor: `${accent}10`,
+                      border: `1px solid ${accent}30`,
+                      color: textColor,
+                    }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <svg
+                        className="w-4 h-4 shrink-0 mt-0.5"
+                        style={{ color: accent }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+                        />
+                      </svg>
+                      <div>
+                        <p className="font-medium" style={{ color: accent }}>
+                          This quote has passed its valid date
+                        </p>
+                        <p className="mt-1 leading-relaxed" style={{ color: muted }}>
+                          The pricing in this proposal may no longer be current. Please reach out
+                          to{' '}
+                          <span className="font-medium" style={{ color: textColor }}>
+                            {branding.name || 'the team'}
+                          </span>{' '}
+                          to confirm if this quote is still valid.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
