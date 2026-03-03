@@ -88,31 +88,32 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           title: page.title,
           content: page.content,
           sort_order: page.sort_order,
-          link_url: page.link_url || null,
-          link_label: page.link_label || null,
-          orientation: page.orientation || 'auto',
+          link_url: page.link_url ?? null,
+          link_label: page.link_label ?? null,
+          orientation: page.orientation ?? 'auto',
         }),
       });
       setTextPageSaveStatuses((prev) => ({ ...prev, [page.id]: 'saved' }));
       setTimeout(() => {
         setTextPageSaveStatuses((prev) => ({ ...prev, [page.id]: 'idle' }));
-      }, 2000);
+      }, 1500);
     } catch {
-      toast.error('Failed to save text page');
       setTextPageSaveStatuses((prev) => ({ ...prev, [page.id]: 'idle' }));
     }
-  }, [apiBase, idParam, entityId, toast]);
+  }, [apiBase, idParam, entityId]);
 
-  // Schedule debounced save for a specific text page
+  // Schedule a debounced save
   const scheduleSave = useCallback((pageId: string, page: TextPageData) => {
-    if (debounceTimers.current[pageId]) clearTimeout(debounceTimers.current[pageId]);
+    if (debounceTimers.current[pageId]) {
+      clearTimeout(debounceTimers.current[pageId]);
+    }
     debounceTimers.current[pageId] = setTimeout(() => {
-      saveTextPage(page);
       delete debounceTimers.current[pageId];
+      saveTextPage(page);
     }, 800);
   }, [saveTextPage]);
 
-  // Update a text page and schedule save
+  // Update a text page's fields (debounced save)
   const updateTextPage = useCallback((pageId: string, changes: Partial<TextPageData>) => {
     setTextPages((prev) => {
       const updated = prev.map((tp) =>
@@ -152,8 +153,8 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
     }
   }, [textPages, saveTextPage]);
 
-  // Add a new text page
-  const addTextPage = useCallback(async (): Promise<TextPageData | null> => {
+  // Add a new text page (optionally at a specific position)
+  const addTextPage = useCallback(async (atPosition?: number): Promise<TextPageData | null> => {
     try {
       const res = await fetch(apiBase, {
         method: 'POST',
@@ -161,7 +162,7 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
         body: JSON.stringify({
           [idParam]: entityId,
           enabled: true,
-          position: -1,
+          position: atPosition ?? -1,
           indent: 0,
           title: 'New Blank Page',
           content: DEFAULT_CONTENT,

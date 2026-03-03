@@ -24,6 +24,7 @@ import SortableGroupRow from './SortableGroupRow';
 import PdfPreviewPanel from './PdfPreviewPanel';
 import PricingPreviewPanel from './PricingPreviewPanel';
 import TextPagePreviewPanel from './TextPagePreviewPanel';
+import InsertPageMenu from './InsertPageMenu';
 
 export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel, tableName = 'proposals' }: PageEditorProps) {
   // UI state
@@ -164,6 +165,39 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     updateEntry(index, { indent: entries[index].indent === 0 ? 1 : 0 });
   };
 
+  /* ——— Position calculation helpers ———————————————————————————— */
+
+  /** Count PDF pages up to and including the given visual index in unifiedItems */
+  const countPdfPagesUpTo = useCallback((afterVisualIdx: number): number => {
+    let count = 0;
+    for (let i = 0; i <= afterVisualIdx && i < unifiedItems.length; i++) {
+      if (unifiedItems[i].type === 'pdf') count++;
+    }
+    return count;
+  }, [unifiedItems]);
+
+  /* ——— Insert-at-position handlers ———————————————————————————— */
+
+  /** Insert a PDF page at a specific position in the unified list */
+  const handleInsertPdfAtPosition = useCallback((afterVisualIdx: number, file: File) => {
+    const afterPdfPage = afterVisualIdx === -1 ? 0 : countPdfPagesUpTo(afterVisualIdx);
+    handleInsertPage(afterPdfPage, file);
+  }, [countPdfPagesUpTo, handleInsertPage]);
+
+  /** Insert a text page at a specific position in the unified list */
+  const handleInsertTextPageAtPosition = useCallback(async (afterVisualIdx: number) => {
+    const position = afterVisualIdx === -1 ? 0 : countPdfPagesUpTo(afterVisualIdx);
+    const newPage = await addTextPage(position);
+    if (newPage) setSelectedId(`text-${newPage.id}`);
+  }, [countPdfPagesUpTo, addTextPage, setSelectedId]);
+
+  /** Insert a pricing page (created at end, user can drag to position) */
+  const handleInsertPricingAtPosition = useCallback(async () => {
+    if (pricingExists && pricingForm.enabled) return;
+    await addPricingPage();
+    setSelectedId('pricing');
+  }, [pricingExists, pricingForm.enabled, addPricingPage, setSelectedId]);
+
   /* ——— Drag and drop ——————————————————————————————————————————— */
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -255,23 +289,15 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     if (removed) setSelectedId('pdf-0');
   };
 
-  /* ——— Navigation ————————————————————————————————————————————— */
+  /* ——— Prev / Next navigation for preview panels ——————————————— */
 
-  const goPrev = () => {
-    const idx = unifiedItems.findIndex((i) => i.id === selectedId);
-    if (idx > 0) setSelectedId(unifiedItems[idx - 1].id);
-  };
-  const goNext = () => {
-    const idx = unifiedItems.findIndex((i) => i.id === selectedId);
-    if (idx < unifiedItems.length - 1) setSelectedId(unifiedItems[idx + 1].id);
-  };
-
-  // Compute nav availability
   const selectedUnifiedIdx = unifiedItems.findIndex((i) => i.id === selectedId);
   const canGoPrev = selectedUnifiedIdx > 0;
   const canGoNext = selectedUnifiedIdx < unifiedItems.length - 1;
+  const goPrev = () => { if (canGoPrev) setSelectedId(unifiedItems[selectedUnifiedIdx - 1].id); };
+  const goNext = () => { if (canGoNext) setSelectedId(unifiedItems[selectedUnifiedIdx + 1].id); };
 
-  /* ——— Done —————————————————————————————————————————————————— */
+  /* ——— Done button: flush all pending saves ———————————————————— */
 
   const handleDone = async () => {
     await flushPendingSaves();
@@ -280,25 +306,30 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     onSave();
   };
 
-  /* ——— Render ———————————————————————————————————————————————— */
+  /* ——— Shared insert menu props ——————————————————————————————— */
+
+  const isDocuments = tableName === 'documents';
+  const pricingAlreadyActive = pricingExists && pricingForm.enabled;
+
+  /* ——— Render ————————————————————————————————————————————————— */
 
   return (
-    <div className="border-t border-gray-200 bg-gray-50 p-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-3">
-          <h4 className="text-sm font-semibold text-gray-900">Edit Pages</h4>
-          {processing && (
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <Loader2 size={12} className="animate-spin text-[#017C87]" />
-              Processing...
-            </div>
-          )}
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">Page Editor</h3>
+          <span className="text-xs text-gray-400">
+            {pageCount} PDF page{pageCount !== 1 ? 's' : ''}
+            {pricingExists && pricingForm.enabled ? ' + pricing' : ''}
+            {textPages.filter((tp) => tp.enabled).length > 0
+              ? ` + ${textPages.filter((tp) => tp.enabled).length} text`
+              : ''}
+          </span>
         </div>
         <button
           onClick={handleDone}
-          disabled={processing}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
         >
           <Check size={14} />
           Done
@@ -308,7 +339,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       {/* Action buttons */}
       {(pricingLoaded && textPagesLoaded) && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {tableName !== 'documents' && (!pricingExists || !pricingForm.enabled) && (
+          {!isDocuments && (!pricingExists || !pricingForm.enabled) && (
             <button
               onClick={handleAddPricing}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
@@ -352,20 +383,17 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
             </div>
           )}
           <div className="flex-1 overflow-y-auto pr-1 space-y-0.5">
-            {/* Insert-at-start button */}
-            <div className="flex justify-center py-1">
-              <label
-                className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] transition-colors ${
-                  processing ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
-                }`}
-                title="Insert page at start"
-              >
-                <Plus size={10} /> Insert
-                <input type="file" accept=".pdf" className="hidden" disabled={processing}
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleInsertPage(0, f); e.target.value = ''; }}
-                />
-              </label>
-            </div>
+            {/* Insert-at-start menu */}
+            <InsertPageMenu
+              label="Insert"
+              isStart
+              disabled={processing}
+              showPricing={!isDocuments}
+              pricingAlreadyExists={pricingAlreadyActive}
+              onInsertPdf={(file) => handleInsertPage(0, file)}
+              onInsertTextPage={() => handleInsertTextPageAtPosition(-1)}
+              onInsertPricingPage={handleInsertPricingAtPosition}
+            />
 
             <DndContext
               sensors={sensors}
@@ -395,6 +423,16 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         onLinkChange={(url: string, label: string) => updatePricingLink(url, label)}
                         orientation={pricingOrientation}
                         onOrientationChange={updatePricingOrientation}
+                        renderInsertAfter={
+                          <InsertPageMenu
+                            disabled={processing}
+                            showPricing={!isDocuments}
+                            pricingAlreadyExists={pricingAlreadyActive}
+                            onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
+                            onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
+                            onInsertPricingPage={handleInsertPricingAtPosition}
+                          />
+                        }
                       />
                     );
                   }
@@ -423,6 +461,16 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                         onLinkChange={(url: string, label: string) => {
                           if (tp) updateTextPage(tp.id, { link_url: url, link_label: label });
                         }}
+                        renderInsertAfter={
+                          <InsertPageMenu
+                            disabled={processing}
+                            showPricing={!isDocuments}
+                            pricingAlreadyExists={pricingAlreadyActive}
+                            onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
+                            onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
+                            onInsertPricingPage={handleInsertPricingAtPosition}
+                          />
+                        }
                       />
                     );
                   }
@@ -450,38 +498,32 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                   const i = item.pdfIndex;
 
                   return (
-                    <div key={item.id}>
-                      <SortablePdfRow
-                        id={item.id}
-                        entry={entry}
-                        visualNum={visualIdx + 1}
-                        isSelected={selectedId === item.id}
-                        status={saveStatus[entryIdx] || null}
-                        processing={processing}
-                        pageCount={pageCount}
-                        index={i}
-                        onSelect={() => setSelectedId(item.id)}
-                        onToggleIndent={() => toggleIndent(entryIdx)}
-                        onUpdateEntry={(changes) => updateEntry(entryIdx, changes)}
-                        onReplacePage={(file) => handleReplacePage(i, file)}
-                        onDeletePage={() => handleDeletePage(i)}
-                      />
-
-                      {/* Insert-after button */}
-                      <div className="flex justify-center py-1">
-                        <label
-                          className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] transition-colors ${
-                            processing ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
-                          }`}
-                          title={`Insert page after page ${i + 1}`}
-                        >
-                          <Plus size={10} /> Insert
-                          <input type="file" accept=".pdf" className="hidden" disabled={processing}
-                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleInsertPage(i + 1, f); e.target.value = ''; }}
-                          />
-                        </label>
-                      </div>
-                    </div>
+                    <SortablePdfRow
+                      key={item.id}
+                      id={item.id}
+                      entry={entry}
+                      visualNum={visualIdx + 1}
+                      isSelected={selectedId === item.id}
+                      status={saveStatus[entryIdx] || null}
+                      processing={processing}
+                      pageCount={pageCount}
+                      index={i}
+                      onSelect={() => setSelectedId(item.id)}
+                      onToggleIndent={() => toggleIndent(entryIdx)}
+                      onUpdateEntry={(changes) => updateEntry(entryIdx, changes)}
+                      onReplacePage={(file) => handleReplacePage(i, file)}
+                      onDeletePage={() => handleDeletePage(i)}
+                      renderInsertAfter={
+                        <InsertPageMenu
+                          disabled={processing}
+                          showPricing={!isDocuments}
+                          pricingAlreadyExists={pricingAlreadyActive}
+                          onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
+                          onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
+                          onInsertPricingPage={handleInsertPricingAtPosition}
+                        />
+                      }
+                    />
                   );
                 })}
               </SortableContext>
@@ -506,19 +548,15 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               proposalId={proposalId}
               page={selectedTextPage}
               saveStatus={textPageSaveStatuses[selectedTextPage.id] || 'idle'}
-              onUpdate={updateTextPage}
+              onUpdate={(pageId: string, changes) => updateTextPage(pageId, changes)}
               onGoPrev={goPrev}
               onGoNext={goNext}
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
             />
           ) : selectedIsGroup ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
-              <FolderOpen size={32} className="text-amber-400 mb-3" />
-              <p className="text-sm font-medium text-amber-700">Section Header</p>
-              <p className="text-xs text-amber-500 mt-1 max-w-[240px]">
-                This is a non-navigable group header. Pages nested below it will appear as children in the sidebar.
-              </p>
+            <div className="flex-1 flex items-center justify-center text-xs text-gray-400">
+              Section headers are visual dividers in the sidebar navigation.
             </div>
           ) : (
             <PdfPreviewPanel
@@ -527,7 +565,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               selectedPdfIndex={selectedPdfIndex}
               pageCount={pageCount}
               entries={entries}
-              onDocLoadSuccess={({ numPages }) => syncPageCount(numPages)}
+              onDocLoadSuccess={(data) => syncPageCount(data.numPages)}
               onGoPrev={goPrev}
               onGoNext={goNext}
             />

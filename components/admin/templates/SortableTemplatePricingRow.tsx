@@ -13,6 +13,8 @@ interface SortableTemplatePricingRowProps {
   isSelected: boolean;
   onSelect: () => void;
   onToggleIndent: () => void;
+  /** Slot for rendering insert menu after this row */
+  renderInsertAfter?: React.ReactNode;
 }
 
 export default function SortableTemplatePricingRow({
@@ -23,6 +25,7 @@ export default function SortableTemplatePricingRow({
   isSelected,
   onSelect,
   onToggleIndent,
+  renderInsertAfter,
 }: SortableTemplatePricingRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
@@ -76,6 +79,9 @@ export default function SortableTemplatePricingRow({
           {title || 'Pricing Page'}
         </span>
       </div>
+
+      {/* Insert-after slot */}
+      {renderInsertAfter}
     </div>
   );
 }

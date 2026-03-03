@@ -20,9 +20,11 @@ interface SortablePricingRowProps {
   onLinkChange: (url: string, label: string) => void;
   orientation?: 'auto' | 'portrait' | 'landscape';
   onOrientationChange?: (orientation: 'auto' | 'portrait' | 'landscape') => void;
+  /** Slot for rendering insert menu after this row */
+  renderInsertAfter?: React.ReactNode;
 }
 
-export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, linkUrl, linkLabel, onLinkChange, orientation, onOrientationChange }: SortablePricingRowProps) {
+export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, linkUrl, linkLabel, onLinkChange, orientation, onOrientationChange, renderInsertAfter }: SortablePricingRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -72,23 +74,30 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
         <span className="text-sm font-medium text-[#017C87] flex-1 truncate">
           {title || 'Pricing Page'}
         </span>
-        {/* Orientation toggle */}
-        {onOrientationChange && (
-          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {/* Orientation toggle */}
+          {onOrientationChange && (
             <OrientationToggle
               value={orientation || 'auto'}
               onChange={onOrientationChange}
               variant="teal"
             />
-          </div>
-        )}
-        <PageLinkInput
-          linkUrl={linkUrl}
-          linkLabel={linkLabel}
-          onChange={(url, label) => onLinkChange(url, label)}
-          variant="teal"
-        />
+          )}
+
+          {/* Page link */}
+          <PageLinkInput
+            linkUrl={linkUrl}
+            linkLabel={linkLabel}
+            onChange={onLinkChange}
+            variant="teal"
+          />
+        </div>
       </div>
+
+      {/* Insert-after slot */}
+      {renderInsertAfter}
     </div>
   );
 }

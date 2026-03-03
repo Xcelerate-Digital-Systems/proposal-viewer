@@ -24,13 +24,15 @@ interface SortablePdfRowProps {
   onUpdateEntry: (changes: Partial<PageNameEntry>) => void;
   onReplacePage: (file: File) => void;
   onDeletePage: () => void;
+  /** Slot for rendering insert menu after this row */
+  renderInsertAfter?: React.ReactNode;
 }
 
 export default function SortablePdfRow({
   id, entry, visualNum, isSelected,
   status, processing, pageCount, index,
   onSelect, onToggleIndent, onUpdateEntry,
-  onReplacePage, onDeletePage,
+  onReplacePage, onDeletePage, renderInsertAfter,
 }: SortablePdfRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -43,8 +45,8 @@ export default function SortablePdfRow({
   return (
     <div ref={setNodeRef} style={style}>
       <div
-        className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors ${
-          isSelected ? 'bg-[#017C87]/10 ring-1 ring-[#017C87]/30' : 'hover:bg-gray-100'
+        className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors border border-dashed ${
+          isSelected ? 'bg-[#017C87]/10 border-[#017C87]/40 ring-1 ring-[#017C87]/30' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
         }`}
         onClick={onSelect}
       >
@@ -75,7 +77,9 @@ export default function SortablePdfRow({
           {entry.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
         </button>
 
-        {entry.indent > 0 && <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>}
+        {entry.indent > 0 && (
+          <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
+        )}
 
         {/* Label */}
         <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
@@ -122,14 +126,17 @@ export default function SortablePdfRow({
             className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
               processing || pageCount <= 1
                 ? 'text-gray-200 border-gray-100 cursor-not-allowed'
-                : 'text-[#017C87] border-[#017C87]/25 hover:text-red-500 hover:bg-red-50 hover:border-red-200'
+                : 'text-gray-300 border-gray-100 hover:text-red-500 hover:border-red-200 hover:bg-red-50'
             }`}
-            title="Delete page"
+            title={pageCount <= 1 ? 'Cannot delete last page' : 'Delete page'}
           >
             <Trash2 size={13} />
           </button>
         </div>
       </div>
+
+      {/* Insert-after slot */}
+      {renderInsertAfter}
     </div>
   );
 }

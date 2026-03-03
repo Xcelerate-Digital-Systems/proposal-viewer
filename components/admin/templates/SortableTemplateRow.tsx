@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, ArrowLeft, CornerDownRight,
-  Upload, Trash2, Plus, Loader2, Check,
+  Upload, Trash2, Loader2, Check,
 } from 'lucide-react';
 
 interface SortableTemplateRowProps {
@@ -22,7 +22,8 @@ interface SortableTemplateRowProps {
   onLabelChange: (label: string) => void;
   onReplacePage: (file: File) => void;
   onDeletePage: () => void;
-  onInsertAfter: (file: File) => void;
+  /** Slot for rendering insert menu after this row */
+  renderInsertAfter?: React.ReactNode;
 }
 
 export default function SortableTemplateRow({
@@ -39,7 +40,7 @@ export default function SortableTemplateRow({
   onLabelChange,
   onReplacePage,
   onDeletePage,
-  onInsertAfter,
+  renderInsertAfter,
 }: SortableTemplateRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
@@ -54,10 +55,10 @@ export default function SortableTemplateRow({
   return (
     <div ref={setNodeRef} style={style}>
       <div
-        className={`flex items-center gap-2 rounded-lg px-1.5 py-1 cursor-pointer transition-colors ${
+        className={`flex items-center gap-2 rounded-lg px-1.5 py-1 cursor-pointer transition-colors border border-dashed ${
           isSelected
-            ? 'bg-[#017C87]/10 ring-1 ring-[#017C87]/30'
-            : 'hover:bg-gray-100'
+            ? 'bg-[#017C87]/10 border-[#017C87]/40 ring-1 ring-[#017C87]/30'
+            : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
         }`}
         onClick={onSelect}
       >
@@ -141,30 +142,8 @@ export default function SortableTemplateRow({
         </div>
       </div>
 
-      {/* Insert after */}
-      <div className="flex items-center justify-center py-0.5">
-        <label
-          className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${
-            processing
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-gray-300 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
-          }`}
-        >
-          <Plus size={10} />
-          Insert after
-          <input
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            disabled={processing}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onInsertAfter(f);
-              e.target.value = '';
-            }}
-          />
-        </label>
-      </div>
+      {/* Insert-after slot */}
+      {renderInsertAfter}
     </div>
   );
 }

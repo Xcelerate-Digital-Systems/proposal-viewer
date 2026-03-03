@@ -21,9 +21,11 @@ interface SortableTextRowProps {
   onLinkChange?: (url: string, label: string) => void;
   orientation?: 'auto' | 'portrait' | 'landscape';
   onOrientationChange?: (orientation: 'auto' | 'portrait' | 'landscape') => void;
+  /** Slot for rendering insert menu after this row */
+  renderInsertAfter?: React.ReactNode;
 }
 
-export default function SortableTextRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, orientation, onOrientationChange }: SortableTextRowProps) {
+export default function SortableTextRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, orientation, onOrientationChange, renderInsertAfter }: SortableTextRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -70,41 +72,44 @@ export default function SortableTextRow({ id, title, indent, isFirst, isSelected
         {indent > 0 && (
           <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
         )}
-        <span className="text-sm font-medium text-[#017C87] flex-1 truncate">{title || 'Text Page'}</span>
-        {/* Spacer to align with save-status column */}
-        <span className="w-5 shrink-0" />
-        {/* Orientation toggle */}
-        {onOrientationChange && (
-          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+        <span className="text-sm font-medium text-[#017C87]/70 flex-1 truncate">
+          {title || 'Text Page'}
+        </span>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {/* Orientation toggle */}
+          {onOrientationChange && (
             <OrientationToggle
               value={orientation || 'auto'}
               onChange={onOrientationChange}
               variant="teal"
             />
-          </div>
-        )}
-        {/* Link button */}
-        {onLinkChange && (
-          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          )}
+
+          {/* Page link */}
+          {onLinkChange && (
             <PageLinkInput
               linkUrl={linkUrl || ''}
               linkLabel={linkLabel || ''}
               onChange={onLinkChange}
               variant="teal"
             />
-          </div>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          className="shrink-0 p-1 text-gray-300 hover:text-red-500 transition-colors rounded"
-          title="Remove text page"
-        >
-          <Trash2 size={12} />
-        </button>
+          )}
+
+          {/* Remove button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            title="Remove text page"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
       </div>
+
+      {/* Insert-after slot */}
+      {renderInsertAfter}
     </div>
   );
 }

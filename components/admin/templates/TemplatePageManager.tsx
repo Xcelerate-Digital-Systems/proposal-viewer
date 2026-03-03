@@ -27,6 +27,7 @@ import { useTextPagesState } from '@/components/admin/page-editor/useTextPagesSt
 import SortableTextRow from '@/components/admin/page-editor/SortableTextRow';
 import SortableGroupRow from '@/components/admin/page-editor/SortableGroupRow';
 import TextPagePreviewPanel from '@/components/admin/page-editor/TextPagePreviewPanel';
+import InsertPageMenu from '@/components/admin/page-editor/InsertPageMenu';
 import { useTemplatePageState } from './useTemplatePageState';
 import { useTemplatePricingState } from './useTemplatePricingState';
 import { useTemplateSectionHeaders } from './useTemplateSectionHeaders';
@@ -376,6 +377,9 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   const canGoPrev = currentVisualIdx > 0;
   const canGoNext = currentVisualIdx < unifiedItems.length - 1;
 
+  // ─── Shared insert menu props ────────────────────────────────────
+  const pricingAlreadyActive = pricingExists && pricingForm.enabled;
+
   // ─── Render ──────────────────────────────────────────────────────
   return (
     <div className="p-5">
@@ -431,14 +435,13 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       </p>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={24} className="animate-spin text-gray-300" />
         </div>
       ) : (
-        <div className="flex gap-5" style={{ height: 520 }}>
+        <div className="flex gap-6" style={{ height: 520 }}>
           {/* Left half: sortable page list */}
           <div className="w-1/2 min-w-0 overflow-hidden flex flex-col relative">
-            {/* Processing overlay — blocks interaction during page operations */}
             {processing && (
               <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
@@ -447,30 +450,18 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                 </div>
               </div>
             )}
-            <div className="flex-1 space-y-0.5 p-1 overflow-y-auto pr-1">
-              <div className="flex justify-center py-1">
-                <label
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] transition-colors ${
-                    processing
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-400 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
-                  }`}
-                  title="Insert page at start"
-                >
-                  <Plus size={10} /> Insert
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    className="hidden"
-                    disabled={processing}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleAddPage(0, f);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-              </div>
+            <div className="flex-1 overflow-y-auto pr-1 space-y-0.5">
+              {/* Insert-at-start menu */}
+              <InsertPageMenu
+                label="Insert"
+                isStart
+                disabled={processing}
+                showPricing={true}
+                pricingAlreadyExists={pricingAlreadyActive}
+                onInsertPdf={(file) => handleAddPage(0, file)}
+                onInsertTextPage={handleAddTextPage}
+                onInsertPricingPage={handleAddPricing}
+              />
 
               <DndContext
                 sensors={sensors}
@@ -498,6 +489,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                             setPricingIndent(next);
                             savePricing(pricingForm, pricingPosition, next);
                           }}
+                          renderInsertAfter={
+                            <InsertPageMenu
+                              disabled={processing}
+                              showPricing={true}
+                              pricingAlreadyExists={pricingAlreadyActive}
+                              onInsertPdf={(file) => handleAddPage(0, file)}
+                              onInsertTextPage={handleAddTextPage}
+                              onInsertPricingPage={handleAddPricing}
+                            />
+                          }
                         />
                       );
                     }
@@ -517,6 +518,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                             if (tp) updateTextPage(tp.id, { indent: tp.indent ? 0 : 1 });
                           }}
                           onRemove={() => tp && handleRemoveTextPage(tp.id)}
+                          renderInsertAfter={
+                            <InsertPageMenu
+                              disabled={processing}
+                              showPricing={true}
+                              pricingAlreadyExists={pricingAlreadyActive}
+                              onInsertPdf={(file) => handleAddPage(0, file)}
+                              onInsertTextPage={handleAddTextPage}
+                              onInsertPricingPage={handleAddPricing}
+                            />
+                          }
                         />
                       );
                     }
@@ -557,7 +568,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                         onLabelChange={(label: string) => updateEdit(page.id, { label })}
                         onReplacePage={(file: File) => handleReplacePage(page.page_number, file)}
                         onDeletePage={() => deletePage(page.page_number)}
-                        onInsertAfter={(file: File) => handleAddPage(page.page_number, file)}
+                        renderInsertAfter={
+                          <InsertPageMenu
+                            disabled={processing}
+                            showPricing={true}
+                            pricingAlreadyExists={pricingAlreadyActive}
+                            onInsertPdf={(file) => handleAddPage(page.page_number, file)}
+                            onInsertTextPage={handleAddTextPage}
+                            onInsertPricingPage={handleAddPricing}
+                          />
+                        }
                       />
                     );
                   })}
