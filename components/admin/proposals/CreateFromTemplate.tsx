@@ -148,25 +148,45 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       }));
 
       // 5. Create proposal record
-      setStatus('Creating proposal...');
-      const { error: dbError } = await supabase.from('proposals').insert({
-        title: title.trim(),
-        client_name: clientName.trim(),
-        client_email: clientEmail.trim() || null,
-        crm_identifier: crmIdentifier.trim() || null,
-        description: description.trim() || null,
-        file_path: proposalFilePath,
-        file_size_bytes: mergeData.file_size_bytes || 0,
-        status: 'draft',
-        page_names: basePageNames,
-        company_id: companyId,
-        created_by_name: creatorName,
-        prepared_by: selectedTemplate.prepared_by || creatorName,
-        prepared_by_member_id: selectedTemplate.prepared_by_member_id || null,
-        cover_subtitle: selectedTemplate.cover_subtitle || null,
-        cover_image_path: selectedTemplate.cover_image_path || null,
-        cover_button_text: selectedTemplate.cover_button_text || null,
-      });
+setStatus('Creating proposal...');
+const { error: dbError } = await supabase.from('proposals').insert({
+  title: title.trim(),
+  client_name: clientName.trim(),
+  client_email: clientEmail.trim() || null,
+  crm_identifier: crmIdentifier.trim() || null,
+  description: description.trim() || null,
+  file_path: proposalFilePath,
+  file_size_bytes: mergeData.file_size_bytes || 0,
+  status: 'draft',
+  page_names: basePageNames,
+  company_id: companyId,
+  created_by_name: creatorName,
+  prepared_by: selectedTemplate.prepared_by || creatorName,
+  prepared_by_member_id: selectedTemplate.prepared_by_member_id || null,
+  cover_subtitle: selectedTemplate.cover_subtitle || null,
+  cover_image_path: selectedTemplate.cover_image_path || null,
+  cover_button_text: selectedTemplate.cover_button_text || null,
+  // ── Cover page styling (from template) ──
+  cover_enabled: selectedTemplate.cover_enabled ?? true,
+  cover_bg_style: selectedTemplate.cover_bg_style || null,
+  cover_bg_color_1: selectedTemplate.cover_bg_color_1 || null,
+  cover_bg_color_2: selectedTemplate.cover_bg_color_2 || null,
+  cover_gradient_type: selectedTemplate.cover_gradient_type || null,
+  cover_gradient_angle: selectedTemplate.cover_gradient_angle ?? null,
+  cover_overlay_opacity: selectedTemplate.cover_overlay_opacity ?? null,
+  cover_text_color: selectedTemplate.cover_text_color || null,
+  cover_subtitle_color: selectedTemplate.cover_subtitle_color || null,
+  cover_button_bg: selectedTemplate.cover_button_bg || null,
+  cover_button_text_color: selectedTemplate.cover_button_text_color || null,
+  // ── Cover visibility toggles ──
+  cover_show_date: selectedTemplate.cover_show_date ?? false,
+  cover_date: selectedTemplate.cover_date || null,
+  cover_show_prepared_by: selectedTemplate.cover_show_prepared_by ?? true,
+  cover_show_client_logo: selectedTemplate.cover_show_client_logo ?? false,
+  cover_show_avatar: selectedTemplate.cover_show_avatar ?? false,
+  cover_client_logo_path: selectedTemplate.cover_client_logo_path || null,
+  cover_avatar_path: selectedTemplate.cover_avatar_path || null,
+});
 
       if (dbError) throw dbError;
 
