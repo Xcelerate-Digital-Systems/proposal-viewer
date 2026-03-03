@@ -260,9 +260,29 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       }
 
       // 8. Clean up temp replacement files
+      // Clean up temp replacement files
       const tempPaths = Object.values(replacementPaths);
       if (tempPaths.length > 0) {
         await supabase.storage.from('proposals').remove(tempPaths);
+      }
+
+      // 6. Copy template data (pricing, text pages, packages) to proposal
+      if (newProposal?.id) {
+        setStatus('Copying template data...');
+        try {
+          await fetch('/api/templates/copy-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              template_id: selectedTemplate.id,
+              proposal_id: newProposal.id,
+              company_id: companyId,
+            }),
+          });
+        } catch (err) {
+          console.error('Copy template data warning:', err);
+          // Non-fatal — proposal was already created successfully
+        }
       }
 
       setStatus('Done!');

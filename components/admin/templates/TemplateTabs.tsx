@@ -2,18 +2,19 @@
 'use client';
 
 import Link from 'next/link';
-import { Pencil, DollarSign, Image, Settings } from 'lucide-react';
+import { Pencil, DollarSign, Package, Image, Settings } from 'lucide-react';
 
 interface TemplateTabsProps {
   templateId: string;
-  activeTab: 'pages' | 'pricing' | 'cover' | 'details';
+  activeTab: 'pages' | 'pricing' | 'packages' | 'cover' | 'details';
 }
 
 const tabs: { key: string; label: string; icon: typeof Pencil; path: string }[] = [
-  { key: 'pages',   label: 'Pages',   icon: Pencil,     path: 'pages'   },
-  { key: 'pricing', label: 'Pricing', icon: DollarSign, path: 'pricing' },
-  { key: 'cover',   label: 'Cover',   icon: Image,      path: 'cover'   },
-  { key: 'details', label: 'Details', icon: Settings,    path: 'details' },
+  { key: 'pages',    label: 'Pages',    icon: Pencil,     path: 'pages'    },
+  { key: 'pricing',  label: 'Pricing',  icon: DollarSign, path: 'pricing'  },
+  { key: 'packages', label: 'Packages', icon: Package,    path: 'packages' },
+  { key: 'cover',    label: 'Cover',    icon: Image,      path: 'cover'    },
+  { key: 'details',  label: 'Details',  icon: Settings,   path: 'details'  },
 ];
 
 export default function TemplateTabs({ templateId, activeTab }: TemplateTabsProps) {

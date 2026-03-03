@@ -2,7 +2,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, Proposal, ProposalComment, ProposalPricing, PageNameEntry, normalizePageNames } from '@/lib/supabase';
+import { supabase, Proposal, ProposalComment, ProposalPricing, ProposalPackages, normalizePageNamesWithGroups,
+  normalizePaymentSchedule, PageNameEntry, normalizePageNames } from '@/lib/supabase';
+
 
 // Fire-and-forget notification — doesn't block UI
 function notify(payload: Record<string, string | undefined>) {
@@ -118,23 +120,23 @@ export interface ProposalTextPage {
   content: unknown; // TipTap JSON
   sort_order: number;
   indent: number;
-  link_url?: string | null;    // NEW
-  link_label?: string | null;  // NEW
+  link_url?: string | null;
+  link_label?: string | null;
 }
 
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
 
 interface SpecialPage {
-  type: 'pricing' | 'text';
-  position: number;      // -1 = end, N = after PDF page N
+  type: 'pricing' | 'text' | 'packages';
+  position: number;
   title: string;
-  textPageId?: string;   // for text pages
-  sortOrder?: number;     // for ordering among equal-position text pages
+  textPageId?: string;
+  sortOrder?: number;
 }
 
 /**
  * Virtual page mapping:
- * PDF pages and special pages (pricing, text pages) are interleaved.
+ * PDF pages and special pages (pricing, packages, text pages) are interleaved.
  * Each special page has a position:
  *  - position = -1  → appears at the end (after all PDF pages)
  *  - position = 0   → appears first (before first PDF page)
@@ -145,8 +147,10 @@ interface SpecialPage {
 function buildPageMap(
   pdfPageCount: number,
   pricing: ProposalPricing | null,
-  textPages: ProposalTextPage[]
+  textPages: ProposalTextPage[],
+  packages: ProposalPackages | null
 ) {
+
   // Collect all special pages
   const specials: SpecialPage[] = [];
 
@@ -155,6 +159,14 @@ function buildPageMap(
       type: 'pricing',
       position: pricing.position,
       title: pricing.title || 'Your Investment',
+    });
+  }
+
+  if (packages?.enabled) {
+    specials.push({
+      type: 'packages',
+      position: packages.position,
+      title: packages.title || 'Packages',
     });
   }
 
@@ -173,8 +185,9 @@ function buildPageMap(
   if (specials.length === 0 || pdfPageCount === 0) {
     return {
       totalPages: pdfPageCount,
-      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'text'; textPageId: string }>,
+      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages' } | { type: 'text'; textPageId: string }>,
       isPricingPage: (_vp: number) => false,
+      isPackagesPage: (_vp: number) => false,
       isTextPage: (_vp: number) => false,
       getTextPageId: (_vp: number): string | null => null,
       toPdfPage: (vp: number) => vp,
@@ -185,6 +198,7 @@ function buildPageMap(
   type VirtualPage =
     | { type: 'pdf'; pdfPage: number }
     | { type: 'pricing' }
+    | { type: 'packages' }
     | { type: 'text'; textPageId: string };
 
   const sequence: VirtualPage[] = [];
@@ -208,6 +222,8 @@ function buildPageMap(
       const sp = positioned[posIdx];
       if (sp.type === 'pricing') {
         sequence.push({ type: 'pricing' });
+      } else if (sp.type === 'packages') {
+        sequence.push({ type: 'packages' });
       } else {
         sequence.push({ type: 'text', textPageId: sp.textPageId! });
       }
@@ -222,6 +238,8 @@ function buildPageMap(
     const sp = positioned[posIdx];
     if (sp.type === 'pricing') {
       sequence.push({ type: 'pricing' });
+    } else if (sp.type === 'packages') {
+      sequence.push({ type: 'packages' });
     } else {
       sequence.push({ type: 'text', textPageId: sp.textPageId! });
     }
@@ -233,6 +251,8 @@ function buildPageMap(
   for (const sp of trailing) {
     if (sp.type === 'pricing') {
       sequence.push({ type: 'pricing' });
+    } else if (sp.type === 'packages') {
+      sequence.push({ type: 'packages' });
     } else {
       sequence.push({ type: 'text', textPageId: sp.textPageId! });
     }
@@ -243,6 +263,11 @@ function buildPageMap(
   const isPricingPage = (vp: number) => {
     const idx = vp - 1;
     return idx >= 0 && idx < sequence.length && sequence[idx].type === 'pricing';
+  };
+
+  const isPackagesPage = (vp: number) => {
+    const idx = vp - 1;
+    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'packages';
   };
 
   const isTextPage = (vp: number) => {
@@ -270,6 +295,7 @@ function buildPageMap(
     totalPages,
     pageSequence: sequence,
     isPricingPage,
+    isPackagesPage,
     isTextPage,
     getTextPageId,
     toPdfPage,
@@ -289,6 +315,7 @@ export function useProposal(token: string) {
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [pricing, setPricing] = useState<ProposalPricing | null>(null);
+  const [packages, setPackages] = useState<ProposalPackages | null>(null);
   const [textPages, setTextPages] = useState<ProposalTextPage[]>([]);
   const [isTeamPreview, setIsTeamPreview] = useState(false);
 
@@ -328,6 +355,19 @@ export function useProposal(token: string) {
         const pricingData = await pricingRes.json();
         if (pricingData && pricingData.enabled) {
           setPricing(pricingData);
+        }
+      }
+    } catch {
+      // Non-critical
+    }
+
+    // Fetch packages data
+    try {
+      const packagesRes = await fetch(`/api/proposals/packages?share_token=${token}`);
+      if (packagesRes.ok) {
+        const packagesData = await packagesRes.json();
+        if (packagesData && packagesData.enabled) {
+          setPackages(packagesData);
         }
       }
     } catch {
@@ -399,8 +439,8 @@ export function useProposal(token: string) {
 
   // Build virtual page map
   const pageMap = useMemo(
-    () => buildPageMap(pdfPageCount, pricing, textPages),
-    [pdfPageCount, pricing, textPages]
+    () => buildPageMap(pdfPageCount, pricing, textPages, packages),
+    [pdfPageCount, pricing, textPages, packages]
   );
 
   // Build page entries with special pages inserted for sidebar
@@ -448,6 +488,11 @@ export function useProposal(token: string) {
           link_url: (pricing as Record<string, unknown>)?.link_url as string | undefined,
           link_label: (pricing as Record<string, unknown>)?.link_label as string | undefined,
         });
+      } else if (seqEntry.type === 'packages') {
+        result.push({
+          name: packages?.title || 'Packages',
+          indent: packages?.indent ?? 0,
+        });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
         result.push({
@@ -463,7 +508,7 @@ export function useProposal(token: string) {
     result.push(...trailingGroups);
 
     return result;
-  }, [pageEntries, pdfPageCount, pricing, textPages, pageMap.pageSequence]);
+  }, [pageEntries, pdfPageCount, pricing, packages, textPages, pageMap.pageSequence]);
 
   const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
     setPdfPageCount(n);
@@ -635,8 +680,10 @@ export function useProposal(token: string) {
     branding,
     brandingLoaded,
     pricing,
+    packages,
     textPages,
     isPricingPage: pageMap.isPricingPage,
+    isPackagesPage: pageMap.isPackagesPage,
     isTextPage: pageMap.isTextPage,
     getTextPageId: pageMap.getTextPageId,
     toPdfPage: pageMap.toPdfPage,

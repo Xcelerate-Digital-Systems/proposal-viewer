@@ -578,3 +578,61 @@ export function milestoneTotalFixed(payments: MilestonePayment[]): number {
     .filter((p) => p.type === 'fixed')
     .reduce((sum, p) => sum + p.value, 0);
 }
+
+// Individual feature within a package
+export type PackageFeature = {
+  text: string;             // Main feature text e.g. "Funnel management to optimise..."
+  bold_prefix: string | null; // Optional bold lead-in e.g. "Funnel management" (null = no bold)
+  children: string[];       // Nested sub-features e.g. under "Local SEO"
+};
+
+// A single package/tier
+export type PackageTier = {
+  id: string;                    // Unique ID (use generateItemId())
+  name: string;                  // e.g. "XDS Essentials"
+  price: number;                 // e.g. 1500
+  price_prefix: string;          // e.g. "FROM" (shown above price)
+  price_suffix: string;          // e.g. "/month*" (shown after price)
+  is_recommended: boolean;       // Shows "Recommended" badge
+  highlight_color: string | null; // Override accent color for this tier (null = use default accent)
+  conditions: string[];          // e.g. ["+ 15% Ad Spend Value if over $4,000 AUD", "Excludes Ad Spend*"]
+  features: PackageFeature[];    // Feature list
+  sort_order: number;            // Display order (0, 1, 2...)
+};
+
+// Full packages record for a proposal
+export type ProposalPackages = {
+  id: string;
+  proposal_id: string;
+  company_id: string;
+  enabled: boolean;
+  position: number;          // Page position in sidebar (same as pricing)
+  indent: number;            // Sidebar indent level (same as pricing)
+  title: string;             // Page heading e.g. "Your Investment – Monthly"
+  intro_text: string | null; // Optional intro paragraph
+  packages: PackageTier[];   // The package tiers
+  footer_text: string | null; // Optional footer text/disclaimers
+  created_at: string;
+  updated_at: string;
+};
+
+// Template variant (same shape minus proposal-specific fields)
+export type TemplatePackages = Omit<ProposalPackages, 'proposal_id'> & {
+  template_id: string;
+};
+
+// Default empty package for the admin editor "Add Package" action
+export const DEFAULT_PACKAGE_TIER: Omit<PackageTier, 'id' | 'sort_order'> = {
+  name: 'Package Name',
+  price: 0,
+  price_prefix: 'FROM',
+  price_suffix: '/month',
+  is_recommended: false,
+  highlight_color: null,
+  conditions: [],
+  features: [],
+};
+
+
+
+

@@ -5,17 +5,9 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import {
-  Plus, Loader2,
-  ChevronLeft, ChevronRight, DollarSign, FileText, FolderOpen,
-} from 'lucide-react';
-import {
-  DndContext, closestCenter, DragEndEvent,
-  PointerSensor, useSensor, useSensors,
-} from '@dnd-kit/core';
-import {
-  SortableContext, verticalListSortingStrategy, arrayMove,
-} from '@dnd-kit/sortable';
+import { Plus, Loader2, ChevronLeft, ChevronRight, DollarSign, Package, FileText, FolderOpen, } from 'lucide-react';
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors, } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove, } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -31,6 +23,9 @@ import InsertPageMenu from '@/components/admin/page-editor/InsertPageMenu';
 import { useTemplatePageState } from './useTemplatePageState';
 import { useTemplatePricingState } from './useTemplatePricingState';
 import { useTemplateSectionHeaders } from './useTemplateSectionHeaders';
+import { useTemplatePackagesState } from './useTemplatePackagesState';
+import SortablePackagesRow from '@/components/admin/page-editor/SortablePackagesRow';
+import PackagesPreviewPanel from '@/components/admin/page-editor/PackagesPreviewPanel';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -38,7 +33,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 type UnifiedItem = {
   id: string;
-  type: 'pdf' | 'pricing' | 'text' | 'group';
+  type: 'pdf' | 'pricing' | 'packages' | 'text' | 'group';
   pageIndex: number;
   textPageId?: string;
   groupId?: string;
@@ -68,6 +63,13 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     pricingForm, pricingSaveStatus,
     savePricing, addPricingPage, removePricingPage,
   } = useTemplatePricingState(template.id, pages.length);
+
+  const {
+    packagesLoaded, packagesExists, packagesPosition, setPackagesPosition,
+    packagesIndent, setPackagesIndent,
+    packagesForm, packagesSaveStatus,
+    savePackages, addPackagesPage, removePackagesPage,
+  } = useTemplatePackagesState(template.id, pages.length);
 
   const {
     textPagesLoaded, textPages, textPageSaveStatuses,
@@ -144,6 +146,20 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pageIndex: -1 });
     }
 
+    // Insert packages page at its position
+    if (packagesExists && packagesForm.enabled) {
+      let pdfCount = 0;
+      let insertIdx = items.length;
+      if (packagesPosition >= 0) {
+        for (let i = 0; i < items.length; i++) {
+          if (pdfCount >= packagesPosition) { insertIdx = i; break; }
+          if (items[i].type === 'pdf') pdfCount++;
+          insertIdx = i + 1;
+        }
+      }
+      items.splice(insertIdx, 0, { id: 'packages', type: 'packages', pageIndex: -1 });
+    }
+
     for (const tp of textPages) {
       if (!tp.enabled) continue;
       const textItem: UnifiedItem = {
@@ -164,9 +180,10 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     }
 
     return items;
-  }, [pages, sectionHeaders, pricingExists, pricingForm.enabled, pricingPosition, textPages]);
+  }, [pages, sectionHeaders, pricingExists, pricingForm.enabled, pricingPosition, packagesExists, packagesForm.enabled, packagesPosition, textPages]);
 
   const selectedIsPricing = selectedId === 'pricing';
+  const selectedIsPackages = selectedId === 'packages';
   const selectedIsGroup = selectedId.startsWith('group-');
   const selectedTextPage = selectedId.startsWith('text-')
     ? textPages.find((tp) => tp.id === selectedId.replace('text-', ''))
@@ -180,6 +197,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
   const handleRemovePricing = async () => {
     const removed = await removePricingPage();
+    if (removed) setSelectedId('pdf-0');
+  };
+
+  const handleAddPackages = async () => {
+    await addPackagesPage();
+    setSelectedId('packages');
+  };
+
+  const handleRemovePackages = async () => {
+    const removed = await removePackagesPage();
     if (removed) setSelectedId('pdf-0');
   };
 
@@ -298,6 +325,21 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       }
     }
 
+    // Update packages position
+    if (packagesExists && packagesForm.enabled) {
+      const packagesIdx = reordered.findIndex((i) => i.type === 'packages');
+      if (packagesIdx !== -1) {
+        const isLast = packagesIdx === reordered.length - 1;
+        const newPos = isLast ? -1 : countPdfBefore(packagesIdx);
+        if (newPos !== packagesPosition) {
+          setPackagesPosition(newPos);
+          savePackages(packagesForm, newPos);
+        }
+      }
+    }
+
+    // Update text page positions
+
     // Update text page positions
     for (const tp of textPages) {
       if (!tp.enabled) continue;
@@ -389,6 +431,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
           <span className="text-xs text-gray-400">
             {pages.length} page{pages.length !== 1 ? 's' : ''}
             {pricingExists && pricingForm.enabled ? ' + pricing' : ''}
+            {packagesExists && packagesForm.enabled ? ' + packages' : ''}
             {textPages.filter((tp) => tp.enabled).length > 0
               ? ` + ${textPages.filter((tp) => tp.enabled).length} text`
               : ''}
@@ -402,7 +445,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
         )}
       </div>
 
-      {(pricingLoaded && textPagesLoaded && sectionsLoaded) && (
+      {(pricingLoaded && packagesLoaded && textPagesLoaded && sectionsLoaded) && (
         <div className="flex flex-wrap gap-2 mb-3">
           {(!pricingExists || !pricingForm.enabled) && (
             <button
@@ -411,6 +454,15 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
             >
               <DollarSign size={12} />
               Add Pricing Page
+            </button>
+          )}
+          {(!packagesExists || !packagesForm.enabled) && (
+            <button
+              onClick={handleAddPackages}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+            >
+              <Package size={12} />
+              Add Packages Page
             </button>
           )}
           <button
@@ -499,6 +551,25 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                               onInsertPricingPage={handleAddPricing}
                             />
                           }
+                        />
+                      );
+                    }
+
+                    if (item.type === 'packages') {
+                      return (
+                        <SortablePackagesRow
+                          key={item.id}
+                          id={item.id}
+                          title={packagesForm.title}
+                          indent={packagesIndent}
+                          isFirst={visualIdx === 0}
+                          isSelected={selectedIsPackages}
+                          onSelect={() => setSelectedId('packages')}
+                          onToggleIndent={() => {
+                            const next = packagesIndent ? 0 : 1;
+                            setPackagesIndent(next);
+                            savePackages(packagesForm, packagesPosition, next);
+                          }}
                         />
                       );
                     }
@@ -595,6 +666,15 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
             {selectedIsPricing && pricingExists ? (
               <TemplatePricingPreviewPanel
                 templateId={template.id}
+                companyId={template.company_id}
+                onGoPrev={goPrev}
+                onGoNext={goNext}
+                canGoPrev={canGoPrev}
+                canGoNext={canGoNext}
+              />
+            ) : selectedIsPackages && packagesExists ? (
+              <PackagesPreviewPanel
+                proposalId={template.id}
                 companyId={template.company_id}
                 onGoPrev={goPrev}
                 onGoNext={goNext}

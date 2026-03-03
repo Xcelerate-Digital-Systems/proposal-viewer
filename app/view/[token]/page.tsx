@@ -9,6 +9,7 @@ import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
 import PdfViewer from '@/components/viewer/PdfViewer';
 import PricingPage from '@/components/viewer/PricingPage';
+import PackagesPage from '@/components/viewer/PackagesPage';
 import TextPage from '@/components/viewer/TextPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import CommentsPanel from '@/components/viewer/CommentsPanel';
@@ -33,8 +34,10 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     branding,
     brandingLoaded,
     pricing,
+    packages,
     textPages,
     isPricingPage,
+    isPackagesPage,
     isTextPage,
     getTextPageId,
     getTextPage,
@@ -66,11 +69,13 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
   // Is the current virtual page the pricing page?
   const onPricingPage = isPricingPage(currentPage);
+  // Is the current virtual page the packages page?
+  const onPackagesPage = isPackagesPage(currentPage);
   // Is the current virtual page a text page?
   const onTextPage = isTextPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
-  // If not pricing or text, what PDF page should we show?
+  // If not pricing, packages, or text, what PDF page should we show?
   const pdfPage = toPdfPage(currentPage);
 
   // Get link for current page (skip group entries to find Nth actual page)
@@ -132,8 +137,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const sidebarText = branding.sidebar_text_color || '#ffffff';
   const acceptLabel = proposal?.accept_button_text || undefined;
 
-  // ── Composite PDF download (includes text pages + pricing) ─────────
-  const hasSpecialPages = !!(pricing?.enabled) || textPages.length > 0;
+  // ── Composite PDF download (includes text pages + pricing + packages) ──
+  const hasSpecialPages = !!(pricing?.enabled) || !!(packages?.enabled) || textPages.length > 0;
 
   const handleCompositeDownload = useCallback(async () => {
     if (!pdfUrl) throw new Error('No PDF URL available');
@@ -301,7 +306,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             accentColor={accent}
           />
         )}
-        {/* Conditionally render PDF, Pricing, or Text page */}
+        {/* Conditionally render PDF, Pricing, Packages, or Text page */}
         {onPricingPage && pricing ? (
           <div
             ref={mainRef}
@@ -310,6 +315,18 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           >
             <PricingPage
               pricing={pricing}
+              branding={branding}
+              clientName={proposal?.client_name}
+            />
+          </div>
+        ) : onPackagesPage && packages ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <PackagesPage
+              packages={packages}
               branding={branding}
               clientName={proposal?.client_name}
             />

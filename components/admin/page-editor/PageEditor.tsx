@@ -2,16 +2,10 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import {
-  DndContext, closestCenter, DragEndEvent,
-  PointerSensor, useSensor, useSensors,
-} from '@dnd-kit/core';
-import {
-  SortableContext, verticalListSortingStrategy, arrayMove,
-} from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors, } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove, } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Check, Loader2, Plus, DollarSign, FileText, FolderOpen } from 'lucide-react';
-
+import { Check, Loader2, Plus, DollarSign, Package, FileText, FolderOpen } from 'lucide-react';
 import { PageEditorProps, UnifiedItem } from './pageEditorTypes';
 import { usePageEditorState } from './usePageEditorState';
 import { usePricingState } from './usePricingState';
@@ -24,6 +18,9 @@ import SortableGroupRow from './SortableGroupRow';
 import PdfPreviewPanel from './PdfPreviewPanel';
 import PricingPreviewPanel from './PricingPreviewPanel';
 import TextPagePreviewPanel from './TextPagePreviewPanel';
+import { usePackagesState } from './usePackagesState';
+import SortablePackagesRow from './SortablePackagesRow';
+import PackagesPreviewPanel from './PackagesPreviewPanel';
 import InsertPageMenu from './InsertPageMenu';
 
 export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel, tableName = 'proposals' }: PageEditorProps) {
@@ -60,6 +57,15 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     entityId: proposalId,
     entityType: textPageEntityType,
   });
+
+  const {
+    packagesLoaded, packagesExists, packagesPosition, setPackagesPosition,
+    packagesIndent, setPackagesIndent,
+    packagesForm, packagesSaveStatus,
+    updatePackages, flushPackagesSave,
+    addPackagesPage, removePackagesPage, savePackages,
+  } = usePackagesState(proposalId);
+
 
   const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
 
@@ -107,6 +113,20 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pdfIndex: -1 });
     }
 
+    // Insert packages page at its position
+    if (packagesExists && packagesForm.enabled) {
+      let pdfCount = 0;
+      let insertIdx = items.length;
+      if (packagesPosition >= 0) {
+        for (let i = 0; i < items.length; i++) {
+          if (pdfCount >= packagesPosition) { insertIdx = i; break; }
+          if (items[i].type === 'pdf') pdfCount++;
+          insertIdx = i + 1;
+        }
+      }
+      items.splice(insertIdx, 0, { id: 'packages', type: 'packages', pdfIndex: -1 });
+    }
+
     // Insert text pages at their positions
     for (const tp of textPages) {
       if (!tp.enabled) continue;
@@ -134,9 +154,10 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     }
 
     return items;
-  }, [entries, pricingExists, pricingForm.enabled, pricingPosition, textPages]);
+  }, [entries, pricingExists, pricingForm.enabled, pricingPosition, packagesExists, packagesForm.enabled, packagesPosition, textPages]);
 
   const selectedIsPricing = selectedId === 'pricing';
+  const selectedIsPackages = selectedId === 'packages';
   const selectedIsGroup = selectedId.startsWith('group-');
   const selectedTextPage = selectedId.startsWith('text-')
     ? textPages.find((tp) => tp.id === selectedId.replace('text-', ''))
@@ -230,6 +251,19 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       }
     }
 
+    // Update packages position
+    if (packagesExists && packagesForm.enabled) {
+      const packagesIdx = reordered.findIndex((i) => i.type === 'packages');
+      if (packagesIdx !== -1) {
+        const isLast = packagesIdx === reordered.length - 1;
+        const newPos = isLast ? -1 : countPdfBefore(packagesIdx);
+        if (newPos !== packagesPosition) {
+          setPackagesPosition(newPos);
+          savePackages(packagesForm, newPos);
+        }
+      }
+    }
+
     // Update text page positions
     for (const tp of textPages) {
       if (!tp.enabled) continue;
@@ -275,7 +309,17 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     if (removed) setSelectedId('pdf-0');
   };
 
-  /* ——— Add/remove text pages ————————————————————————————————— */
+  /* ——— Add/remove packages ————————————————————————————————————— */
+
+  const handleAddPackages = async () => {
+    await addPackagesPage();
+    setSelectedId('packages');
+  };
+
+  const handleRemovePackages = async () => {
+    const removed = await removePackagesPage();
+    if (removed) setSelectedId('pdf-0');
+  };
 
   const handleAddTextPage = async () => {
     const newPage = await addTextPage();
@@ -337,7 +381,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       </div>
 
       {/* Action buttons */}
-      {(pricingLoaded && textPagesLoaded) && (
+      {(pricingLoaded && packagesLoaded && textPagesLoaded) && (
         <div className="flex flex-wrap gap-2 mb-3">
           {!isDocuments && (!pricingExists || !pricingForm.enabled) && (
             <button
@@ -346,6 +390,15 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
             >
               <DollarSign size={12} />
               Add Pricing Page
+            </button>
+          )}
+          {tableName !== 'documents' && (!packagesExists || !packagesForm.enabled) && (
+            <button
+              onClick={handleAddPackages}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+            >
+              <Package size={12} />
+              Add Packages Page
             </button>
           )}
           <button
@@ -433,6 +486,25 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                             onInsertPricingPage={handleInsertPricingAtPosition}
                           />
                         }
+                      />
+                    );
+                  }
+
+                  if (item.type === 'packages') {
+                    return (
+                      <SortablePackagesRow
+                        key={item.id}
+                        id={item.id}
+                        title={packagesForm.title}
+                        indent={packagesIndent}
+                        isFirst={visualIdx === 0}
+                        isSelected={selectedIsPackages}
+                        onSelect={() => setSelectedId('packages')}
+                        onToggleIndent={() => {
+                          const next = packagesIndent ? 0 : 1;
+                          setPackagesIndent(next);
+                          savePackages(packagesForm, packagesPosition, next);
+                        }}
                       />
                     );
                   }
@@ -537,6 +609,14 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         <div className="w-1/2 min-w-0 flex flex-col">
           {selectedIsPricing && pricingExists ? (
             <PricingPreviewPanel
+              proposalId={proposalId}
+              onGoPrev={goPrev}
+              onGoNext={goNext}
+              canGoPrev={canGoPrev}
+              canGoNext={canGoNext}
+            />
+          ) : selectedIsPackages && packagesExists ? (
+            <PackagesPreviewPanel
               proposalId={proposalId}
               onGoPrev={goPrev}
               onGoNext={goNext}
