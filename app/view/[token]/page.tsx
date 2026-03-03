@@ -139,7 +139,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const acceptLabel = proposal?.accept_button_text || undefined;
 
   // ── Composite PDF download (includes text pages + pricing + packages) ──
-  const hasSpecialPages = !!(pricing?.enabled) || !!(packages?.enabled) || textPages.length > 0;
+  const hasSpecialPages = true;
 
   const handleCompositeDownload = useCallback(async () => {
     if (!pdfUrl) throw new Error('No PDF URL available');
@@ -160,12 +160,14 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       companyName: branding.name,
       userName: creatorName || undefined,
       proposalTitle: proposal?.title,
-      pricingOrientation: entityOrientation,
       isPackagesPage,
       packages,
+      pricingOrientation: entityOrientation,
       textPageOrientations: Object.fromEntries(
         textPages.map(tp => [tp.id, entityOrientation])
       ),
+      proposal,
+      includeCover: true,
     });
   }, [pdfUrl, proposal, numPages, isPricingPage, isTextPage, getTextPageId, toPdfPage, getTextPage, pricing, branding, creatorName, textPages]);
 

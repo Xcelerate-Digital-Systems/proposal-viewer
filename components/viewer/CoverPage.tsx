@@ -11,6 +11,16 @@ interface CoverPageProps {
   proposal: Proposal;
   branding: CompanyBranding;
   onStart: () => void;
+  /** Hide the CTA button (used for PDF export capture) */
+  hideButton?: boolean;
+  /** Pre-resolved cover image URL (bypasses async fetch for export) */
+  resolvedBgUrl?: string | null;
+  /** Pre-resolved client logo URL (bypasses async fetch for export) */
+  resolvedClientLogoUrl?: string | null;
+  /** Pre-resolved avatar URL (bypasses async fetch for export) */
+  resolvedAvatarUrl?: string | null;
+  /** Pre-resolved prepared-by name (bypasses async member lookup for export) */
+  resolvedPreparedByName?: string | null;
 }
 
 /**
@@ -24,17 +34,27 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export default function CoverPage({ proposal, branding, onStart }: CoverPageProps) {
-  const [bgUrl, setBgUrl] = useState<string | null>(null);
-  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
+export default function CoverPage({
+  proposal,
+  branding,
+  onStart,
+  hideButton,
+  resolvedBgUrl,
+  resolvedClientLogoUrl,
+  resolvedAvatarUrl,
+  resolvedPreparedByName,
+}: CoverPageProps) {
+  const [bgUrl, setBgUrl] = useState<string | null>(resolvedBgUrl ?? null);
+  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(resolvedClientLogoUrl ?? null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(resolvedAvatarUrl ?? null);
+  const [loaded, setLoaded] = useState(!!hideButton); // Skip fade-in for export
 
   // Resolved member data (from prepared_by_member_id when direct fields are absent)
-  const [resolvedName, setResolvedName] = useState<string | null>(null);
+  const [resolvedName, setResolvedName] = useState<string | null>(resolvedPreparedByName ?? null);
 
-  // Fetch signed URL for cover image
+  // Fetch signed URL for cover image (skip if pre-resolved)
   useEffect(() => {
+    if (resolvedBgUrl !== undefined) return;
     if (proposal.cover_image_path) {
       supabase.storage
         .from('proposals')
@@ -43,10 +63,11 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
           if (data?.signedUrl) setBgUrl(data.signedUrl);
         });
     }
-  }, [proposal.cover_image_path]);
+  }, [proposal.cover_image_path, resolvedBgUrl]);
 
-  // Fetch signed URL for client logo
+  // Fetch signed URL for client logo (skip if pre-resolved)
   useEffect(() => {
+    if (resolvedClientLogoUrl !== undefined) return;
     if (proposal.cover_client_logo_path && proposal.cover_show_client_logo) {
       supabase.storage
         .from('proposals')
@@ -55,10 +76,11 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
           if (data?.signedUrl) setClientLogoUrl(data.signedUrl);
         });
     }
-  }, [proposal.cover_client_logo_path, proposal.cover_show_client_logo]);
+  }, [proposal.cover_client_logo_path, proposal.cover_show_client_logo, resolvedClientLogoUrl]);
 
-  // Fetch signed URL for avatar (direct path)
+  // Fetch signed URL for avatar (skip if pre-resolved)
   useEffect(() => {
+    if (resolvedAvatarUrl !== undefined) return;
     if (proposal.cover_avatar_path && proposal.cover_show_avatar) {
       supabase.storage
         .from('proposals')
@@ -67,10 +89,13 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
           if (data?.signedUrl) setAvatarUrl(data.signedUrl);
         });
     }
-  }, [proposal.cover_avatar_path, proposal.cover_show_avatar]);
+  }, [proposal.cover_avatar_path, proposal.cover_show_avatar, resolvedAvatarUrl]);
 
   // Resolve prepared_by_member_id → name + avatar when direct fields are absent
+  // (skip if pre-resolved)
   useEffect(() => {
+    if (resolvedPreparedByName !== undefined) return;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const memberId = (proposal as any).prepared_by_member_id;
     if (!memberId) return;
@@ -104,10 +129,11 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
     };
     resolve();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [(proposal as any).prepared_by_member_id, proposal.prepared_by, proposal.cover_avatar_path, proposal.cover_show_avatar]);
+  }, [(proposal as any).prepared_by_member_id, proposal.prepared_by, proposal.cover_avatar_path, proposal.cover_show_avatar, resolvedPreparedByName]);
 
   // Wait for cover image to fully load before revealing
   useEffect(() => {
+    if (hideButton) return; // Export mode — already visible
     if (proposal.cover_image_path && !bgUrl) return;
 
     if (bgUrl) {
@@ -119,7 +145,7 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
       const timer = setTimeout(() => setLoaded(true), 100);
       return () => clearTimeout(timer);
     }
-  }, [bgUrl, proposal.cover_image_path]);
+  }, [bgUrl, proposal.cover_image_path, hideButton]);
 
   const subtitle = proposal.cover_subtitle || `Prepared for ${proposal.client_name}`;
   const buttonText = proposal.cover_button_text || 'START READING PROPOSAL';
@@ -181,7 +207,7 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
 
   return (
     <div
-      className={`h-screen w-screen flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      className={`${hideButton ? 'w-full h-full' : 'h-screen w-screen'} flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
       style={{ backgroundColor: bgColor1 }}
     >
       {/* Background: either uploaded image or the branding bg */}
@@ -296,20 +322,25 @@ export default function CoverPage({ proposal, branding, onStart }: CoverPageProp
             </div>
           )}
 
-          {/* Spacing before button */}
-          <div className={hasPreparedByRow || hasDateRow ? 'mt-5' : 'mt-6'} />
+          {/* CTA button — hidden in export mode */}
+          {!hideButton && (
+            <>
+              {/* Spacing before button */}
+              <div className={hasPreparedByRow || hasDateRow ? 'mt-5' : 'mt-6'} />
 
-          <button
-            onClick={onStart}
-            className="px-8 py-3.5 text-sm font-semibold tracking-wider uppercase rounded-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
-            style={{
-              backgroundColor: btnBg,
-              color: btnText,
-              fontFamily: fontFamily(branding.font_heading),
-            }}
-          >
-            {buttonText}
-          </button>
+              <button
+                onClick={onStart}
+                className="px-8 py-3.5 text-sm font-semibold tracking-wider uppercase rounded-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
+                style={{
+                  backgroundColor: btnBg,
+                  color: btnText,
+                  fontFamily: fontFamily(branding.font_heading),
+                }}
+              >
+                {buttonText}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

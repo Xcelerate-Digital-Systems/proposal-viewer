@@ -8,8 +8,10 @@ import { createElement } from 'react';
 import TextPage from '@/components/viewer/TextPage';
 import PricingPage from '@/components/viewer/PricingPage';
 import PackagesPage from '@/components/viewer/PackagesPage';
+import CoverPage from '@/components/viewer/CoverPage';
 import type { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
-import type { ProposalPricing, ProposalPackages, PageNameEntry } from '@/lib/supabase';
+import type { Proposal, ProposalPricing, ProposalPackages, PageNameEntry } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 /* ——— Types ———————————————————————————————————————————————— */
 
@@ -47,6 +49,10 @@ export interface CompositeExportOptions {
   pricingOrientation?: 'auto' | 'portrait' | 'landscape';
   /** Per-text-page orientation overrides keyed by text page ID */
   textPageOrientations?: Record<string, 'auto' | 'portrait' | 'landscape'>;
+  /** Proposal object for cover page rendering (omit to skip cover) */
+  proposal?: Proposal | null;
+  /** Whether to include the cover page as page 1 */
+  includeCover?: boolean;
 }
 
 /* ——— Helpers ———————————————————————————————————————————— */
@@ -166,10 +172,12 @@ async function captureComponent(
   element: React.ReactElement,
   bgColor: string,
   targetAspect: number, // width / height of the target PDF page
+  overrideCaptureWidth?: number,
 ): Promise<string> {
   // Use a wide capture; the aspect ratio of the target page determines
   // how the content is laid out — wider pages get wider containers.
-  const captureWidth = Math.max(BASE_CAPTURE_WIDTH, Math.round(BASE_CAPTURE_WIDTH * (targetAspect / 1.0)));
+  const baseWidth = overrideCaptureWidth || BASE_CAPTURE_WIDTH;
+  const captureWidth = Math.max(baseWidth, Math.round(baseWidth * (targetAspect / 1.0)));
   const captureHeight = Math.round(captureWidth / targetAspect);
 
   // Create offscreen container
@@ -187,7 +195,7 @@ async function captureComponent(
   const root = createRoot(container);
 
   await new Promise<void>((resolve) => {
-    root.render(createElement('div', { ref: () => resolve() }, element));
+    root.render(createElement('div', { ref: () => resolve(), style: { width: '100%', height: '100%' } }, element));
   });
 
   // Extra tick for styles/layout to settle
@@ -213,7 +221,7 @@ async function captureComponent(
 
 /**
  * Capture a React element, embed into the output PDF, and add the page.
- * Shared logic for pricing, packages, and text pages.
+ * Shared logic for cover, pricing, packages, and text pages.
  */
 async function captureAndAddPage(
   outDoc: PDFDocument,
@@ -221,9 +229,10 @@ async function captureAndAddPage(
   bgColor: string,
   pageWidth: number,
   pageHeight: number,
+  captureWidth?: number,
 ): Promise<void> {
   const targetAspect = pageWidth / pageHeight;
-  const dataUrl = await captureComponent(element, bgColor, targetAspect);
+  const dataUrl = await captureComponent(element, bgColor, targetAspect, captureWidth);
   const pngBytes = await fetch(dataUrl).then((r) => r.arrayBuffer());
   const pngImage = await outDoc.embedPng(pngBytes);
 
@@ -239,6 +248,82 @@ async function captureAndAddPage(
     width: fitWidth,
     height: fitHeight,
   });
+}
+
+/* ——— Cover page helpers ————————————————————————————————— */
+
+/**
+ * Get a signed URL from Supabase storage. Returns null on failure.
+ */
+async function getSignedUrl(bucket: string, path: string): Promise<string | null> {
+  try {
+    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+    return data?.signedUrl || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pre-fetch all signed URLs and resolved member data needed for
+ * the cover page so they're available synchronously during render.
+ */
+async function resolveCoverData(proposal: Proposal): Promise<{
+  bgUrl: string | null;
+  clientLogoUrl: string | null;
+  avatarUrl: string | null;
+  preparedByName: string | null;
+}> {
+  let bgUrl: string | null = null;
+  let clientLogoUrl: string | null = null;
+  let avatarUrl: string | null = null;
+  let preparedByName: string | null = proposal.prepared_by || null;
+
+  // Fetch cover image
+  if (proposal.cover_image_path) {
+    bgUrl = await getSignedUrl('proposals', proposal.cover_image_path);
+  }
+
+  // Fetch client logo
+  if (proposal.cover_client_logo_path && (proposal.cover_show_client_logo ?? false)) {
+    clientLogoUrl = await getSignedUrl('proposals', proposal.cover_client_logo_path);
+  }
+
+  // Fetch avatar (direct path first)
+  if (proposal.cover_avatar_path && (proposal.cover_show_avatar ?? false)) {
+    avatarUrl = await getSignedUrl('proposals', proposal.cover_avatar_path);
+  }
+
+  // Resolve member data if needed
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const memberId = (proposal as any).prepared_by_member_id;
+  if (memberId) {
+    const needsName = !proposal.prepared_by;
+    const needsAvatar = !proposal.cover_avatar_path && (proposal.cover_show_avatar ?? false);
+
+    if (needsName || needsAvatar) {
+      try {
+        const { data } = await supabase
+          .from('team_members')
+          .select('name, avatar_path')
+          .eq('id', memberId)
+          .single();
+
+        if (data) {
+          if (needsName && data.name) {
+            preparedByName = data.name;
+          }
+          if (needsAvatar && data.avatar_path) {
+            avatarUrl = await getSignedUrl('proposals', data.avatar_path);
+          }
+        }
+      } catch {
+        // Member not found — continue without
+      }
+    }
+  }
+
+  return { bgUrl, clientLogoUrl, avatarUrl, preparedByName };
 }
 
 /* ——— Main export function ——————————————————————————————— */
@@ -265,6 +350,8 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     pageEntries,
     pricingOrientation,
     textPageOrientations,
+    proposal,
+    includeCover,
   } = opts;
 
   // Load the source PDF
@@ -279,6 +366,26 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
 
   const bgPrimary = branding.bg_primary || '#0f0f0f';
 
+  // ── Cover page (page 1) ────────────────────────────────────────
+  if (includeCover && proposal) {
+    const coverData = await resolveCoverData(proposal);
+
+    const coverElement = createElement(CoverPage, {
+      proposal,
+      branding,
+      onStart: () => {},
+      hideButton: true,
+      resolvedBgUrl: coverData.bgUrl,
+      resolvedClientLogoUrl: coverData.clientLogoUrl,
+      resolvedAvatarUrl: coverData.avatarUrl,
+      resolvedPreparedByName: coverData.preparedByName,
+    });
+
+    // Cover always uses the dominant page size (matches the PDF slides)
+      await captureAndAddPage(outDoc, coverElement, bgPrimary, dominant.width, dominant.height, 960);
+  }
+
+  // ── Content pages ──────────────────────────────────────────────
   for (let vp = 1; vp <= numPages; vp++) {
     onProgress?.(vp, numPages);
 
@@ -296,11 +403,10 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         clientName,
       });
 
-      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight);
+      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960);
 
     } else if (isPackagesPage(vp) && packages) {
       // —— Capture packages page —————————————————————————————————
-      // Packages use the same entity-level orientation as pricing
       const orientation = pricingOrientation
         ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
         : resolvePageOrientation(vp, pageEntries, dominant.orientation);
@@ -313,7 +419,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         clientName,
       });
 
-      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight);
+      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960);
 
     } else if (isTextPage(vp)) {
       // —— Capture text page —————————————————————————————————————

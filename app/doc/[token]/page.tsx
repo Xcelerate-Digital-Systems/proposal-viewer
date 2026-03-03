@@ -139,6 +139,8 @@ export default function DocumentViewerPage({ params }: { params: { token: string
       textPageOrientations,
       isPackagesPage: () => false,
       packages: null,
+      proposal: null,
+      includeCover: false,
     });
   }, [pdfUrl, doc, numPages, noPricing, isTextPage, getTextPageId, toPdfPage, getTextPage, branding, textPages]);
 
