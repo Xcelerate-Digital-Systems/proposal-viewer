@@ -13,6 +13,7 @@ import PricingPage from '@/components/viewer/PricingPage';
 import TextPage from '@/components/viewer/TextPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
+import ViewerBackground from '@/components/viewer/ViewerBackground';
 
 export default function TemplatePreviewPage({ params }: { params: { id: string } }) {
   const {
@@ -216,28 +217,34 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
         {onPricingPage && pricing ? (
           <div
             ref={mainRef}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto relative"
             style={{ backgroundColor: bgPrimary }}
           >
-            <PricingPage
-              pricing={pricing}
-              branding={branding}
-              clientName="[Client Name]"
-            />
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              <PricingPage
+                pricing={pricing}
+                branding={branding}
+                clientName="[Client Name]"
+              />
+            </div>
           </div>
         ) : onTextPage && currentTextPage ? (
           <div
             ref={mainRef}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto relative"
             style={{ backgroundColor: bgPrimary }}
           >
-            <TextPage
-              textPage={currentTextPage}
-              branding={branding}
-              clientName="[Client Name]"
-              companyName={branding.name}
-              proposalTitle={template?.name}
-            />
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              <TextPage
+                textPage={currentTextPage}
+                branding={branding}
+                clientName="[Client Name]"
+                companyName={branding.name}
+                proposalTitle={template?.name}
+              />
+            </div>
           </div>
         ) : (
           <TemplatePdfViewer

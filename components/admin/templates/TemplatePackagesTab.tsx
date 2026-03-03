@@ -61,6 +61,8 @@ const DEFAULT_BRANDING: CompanyBranding = {
   text_page_border_color: null,
   text_page_border_radius: '12',
   text_page_layout: 'contained',
+  bg_image_url: null,
+  bg_image_overlay_opacity: 0.85,
 };
 
 /* ------------------------------------------------------------------ */
@@ -109,6 +111,8 @@ export default function TemplatePackagesTab({ templateId, companyId }: TemplateP
   const [showPreview, setShowPreview] = useState(true);
   const [previewScale, setPreviewScale] = useState(0.4);
   const previewRef = useRef<HTMLDivElement>(null);
+  const [panelHeight, setPanelHeight] = useState(520);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -174,6 +178,21 @@ export default function TemplatePackagesTab({ templateId, companyId }: TemplateP
     window.addEventListener('resize', measure);
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, [showPreview]);
+
+  /* ── Measure panel height (same pattern as PageEditor) ──────── */
+
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setPanelHeight(Math.max(400, window.innerHeight - rect.top - 32));
+      }
+    };
+    measure();
+    const timer = setTimeout(measure, 100);
+    window.addEventListener('resize', measure);
+    return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
+  }, []);
 
   /* ── Save ───────────────────────────────────────────────────── */
 
@@ -345,159 +364,162 @@ export default function TemplatePackagesTab({ templateId, companyId }: TemplateP
   /* ── Render ─────────────────────────────────────────────────── */
 
   return (
-    <div className="flex gap-6 p-6 h-full">
-      {/* ── Left: Form ─────────────────────────────────────────── */}
-      <div className={`flex-1 min-w-0 overflow-y-auto ${showPreview ? 'max-w-[55%]' : ''}`}>
-        {/* Toggle header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#017C87]/10">
-              <Package size={18} className="text-[#017C87]" />
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900">Packages Page</h4>
-              <p className="text-xs text-gray-400">
-                {form.enabled ? 'Included in template' : 'Not included in template'}
-              </p>
-            </div>
+    <div className="p-6">
+      {/* Toggle header — sits above the measured panel */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#017C87]/10">
+            <Package size={18} className="text-[#017C87]" />
           </div>
-          <div className="flex items-center gap-3">
-            {saveStatus === 'saving' && <Loader2 size={14} className="animate-spin text-gray-300" />}
-            {saveStatus === 'saved' && (
-              <span className="flex items-center gap-1 text-xs text-emerald-500"><Check size={12} /> Saved</span>
-            )}
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                showPreview ? 'bg-[#017C87]/10 text-[#017C87]' : 'bg-gray-100 text-gray-400 hover:text-gray-600'
-              }`}
-              title={showPreview ? 'Hide preview' : 'Show preview'}
-            >
-              <Eye size={13} /> Preview
-            </button>
-            <button onClick={toggleEnabled} className="flex items-center gap-2 text-sm font-medium transition-colors">
-              {form.enabled ? (
-                <><ToggleRight size={28} className="text-[#017C87]" /><span className="text-[#017C87]">Enabled</span></>
-              ) : (
-                <><ToggleLeft size={28} className="text-gray-300" /><span className="text-gray-400">Disabled</span></>
-              )}
-            </button>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900">Packages Page</h4>
+            <p className="text-xs text-gray-400">
+              {form.enabled ? 'Included in template' : 'Not included in template'}
+            </p>
           </div>
         </div>
+        <div className="flex items-center gap-3">
+          {saveStatus === 'saving' && <Loader2 size={14} className="animate-spin text-gray-300" />}
+          {saveStatus === 'saved' && (
+            <span className="flex items-center gap-1 text-xs text-emerald-500"><Check size={12} /> Saved</span>
+          )}
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              showPreview ? 'bg-[#017C87]/10 text-[#017C87]' : 'bg-gray-100 text-gray-400 hover:text-gray-600'
+            }`}
+            title={showPreview ? 'Hide preview' : 'Show preview'}
+          >
+            <Eye size={13} /> Preview
+          </button>
+          <button onClick={toggleEnabled} className="flex items-center gap-2 text-sm font-medium transition-colors">
+            {form.enabled ? (
+              <><ToggleRight size={28} className="text-[#017C87]" /><span className="text-[#017C87]">Enabled</span></>
+            ) : (
+              <><ToggleLeft size={28} className="text-gray-300" /><span className="text-gray-400">Disabled</span></>
+            )}
+          </button>
+        </div>
+      </div>
 
-        {form.enabled ? (
-          <div className="space-y-6">
-            {/* Page settings */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Page Title</label>
-                <input type="text" value={form.title} onChange={e => updateForm({ title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
-                  placeholder="Your Investment – Monthly" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Intro Text (optional)</label>
-                <textarea value={form.intro_text || ''} onChange={e => updateForm({ intro_text: e.target.value || null })}
-                  rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
-                  placeholder="Choose the package that best suits your needs..." />
-              </div>
-            </div>
-
-            {/* Package tiers */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Package Tiers</label>
-                <button onClick={addTier}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#017C87] bg-[#017C87]/5 hover:bg-[#017C87]/10 transition-colors">
-                  <Plus size={12} /> Add Package
-                </button>
-              </div>
-
-              {form.packages.length === 0 && (
-                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-8 text-center">
-                  <Package size={20} className="mx-auto text-gray-300 mb-2" />
-                  <p className="text-sm text-gray-400 mb-1">No packages yet</p>
-                  <p className="text-xs text-gray-300">Add a package to get started</p>
+      {/* 50/50 split — fixed height like PageEditor */}
+      <div ref={containerRef} className="flex gap-6" style={{ height: panelHeight }}>
+        {/* ── Left: Form ─────────────────────────────────────────── */}
+        <div className={`flex-1 min-w-0 overflow-y-auto ${showPreview && form.enabled ? 'max-w-[55%]' : ''}`}>
+          {form.enabled ? (
+            <div className="space-y-6">
+              {/* Page settings */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Page Title</label>
+                  <input type="text" value={form.title} onChange={e => updateForm({ title: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+                    placeholder="Your Investment – Monthly" />
                 </div>
-              )}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Intro Text (optional)</label>
+                  <textarea value={form.intro_text || ''} onChange={e => updateForm({ intro_text: e.target.value || null })}
+                    rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
+                    placeholder="Choose the package that best suits your needs..." />
+                </div>
+              </div>
 
-              {form.packages.map((tier, tierIdx) => {
-                const isExpanded = expandedTiers.has(tier.id);
-                return (
-                  <TierEditor
-                    key={tier.id}
-                    tier={tier}
-                    tierIdx={tierIdx}
-                    totalTiers={form.packages.length}
-                    isExpanded={isExpanded}
-                    onToggleExpand={() => toggleExpand(tier.id)}
-                    onUpdate={(changes) => updateTier(tier.id, changes)}
-                    onMove={(dir) => moveTier(tier.id, dir)}
-                    onRemove={() => removeTier(tier.id)}
-                    onAddFeature={() => addFeature(tier.id)}
-                    onUpdateFeature={(fi, changes) => updateFeature(tier.id, fi, changes)}
-                    onRemoveFeature={(fi) => removeFeature(tier.id, fi)}
-                    onAddCondition={() => addCondition(tier.id)}
-                    onUpdateCondition={(ci, val) => updateCondition(tier.id, ci, val)}
-                    onRemoveCondition={(ci) => removeCondition(tier.id, ci)}
-                    onAddChild={(fi) => addChild(tier.id, fi)}
-                    onUpdateChild={(fi, ci, val) => updateChild(tier.id, fi, ci, val)}
-                    onRemoveChild={(fi, ci) => removeChild(tier.id, fi, ci)}
-                  />
-                );
-              })}
-            </div>
+              {/* Package tiers */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Package Tiers</label>
+                  <button onClick={addTier}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#017C87] bg-[#017C87]/5 hover:bg-[#017C87]/10 transition-colors">
+                    <Plus size={12} /> Add Package
+                  </button>
+                </div>
 
-            {/* Footer text */}
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Footer Text (optional)</label>
-              <textarea value={form.footer_text || ''} onChange={e => updateForm({ footer_text: e.target.value || null })}
-                rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
-                placeholder="* Terms and conditions apply..." />
+                {form.packages.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-8 text-center">
+                    <Package size={20} className="mx-auto text-gray-300 mb-2" />
+                    <p className="text-sm text-gray-400 mb-1">No packages yet</p>
+                    <p className="text-xs text-gray-300">Add a package to get started</p>
+                  </div>
+                )}
+
+                {form.packages.map((tier, tierIdx) => {
+                  const isExpanded = expandedTiers.has(tier.id);
+                  return (
+                    <TierEditor
+                      key={tier.id}
+                      tier={tier}
+                      tierIdx={tierIdx}
+                      totalTiers={form.packages.length}
+                      isExpanded={isExpanded}
+                      onToggleExpand={() => toggleExpand(tier.id)}
+                      onUpdate={(changes) => updateTier(tier.id, changes)}
+                      onMove={(dir) => moveTier(tier.id, dir)}
+                      onRemove={() => removeTier(tier.id)}
+                      onAddFeature={() => addFeature(tier.id)}
+                      onUpdateFeature={(fi, changes) => updateFeature(tier.id, fi, changes)}
+                      onRemoveFeature={(fi) => removeFeature(tier.id, fi)}
+                      onAddCondition={() => addCondition(tier.id)}
+                      onUpdateCondition={(ci, val) => updateCondition(tier.id, ci, val)}
+                      onRemoveCondition={(ci) => removeCondition(tier.id, ci)}
+                      onAddChild={(fi) => addChild(tier.id, fi)}
+                      onUpdateChild={(fi, ci, val) => updateChild(tier.id, fi, ci, val)}
+                      onRemoveChild={(fi, ci) => removeChild(tier.id, fi, ci)}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Footer text */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Footer Text (optional)</label>
+                <textarea value={form.footer_text || ''} onChange={e => updateForm({ footer_text: e.target.value || null })}
+                  rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
+                  placeholder="* Terms and conditions apply..." />
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
-            <Package size={24} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-sm text-gray-400 mb-1">Packages page is currently disabled</p>
-            <p className="text-xs text-gray-300">Toggle the switch above to add a packages page to this template</p>
+          ) : (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+              <Package size={24} className="mx-auto text-gray-300 mb-2" />
+              <p className="text-sm text-gray-400 mb-1">Packages page is currently disabled</p>
+              <p className="text-xs text-gray-300">Toggle the switch above to add a packages page to this template</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Right: Live Preview ────────────────────────────────── */}
+        {showPreview && form.enabled && (
+          <div ref={previewRef} className="w-[45%] shrink-0 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
+              <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
+                <span className="text-xs text-gray-500 font-medium">Live Preview</span>
+                <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
+                  <Package size={11} /> {form.title}
+                </span>
+              </div>
+              <div className="flex-1 min-h-0 overflow-hidden relative">
+                <div className="absolute inset-0 overflow-y-auto"
+                  style={{ transformOrigin: 'top left', transform: `scale(${previewScale})`, width: `${100 / previewScale}%`, height: `${100 / previewScale}%` }}>
+                  {form.packages.length > 0 ? (
+                    <PackagesPage packages={previewPackages} branding={branding} />
+                  ) : (
+                    <div className="w-full min-h-full flex items-center justify-center" style={{ backgroundColor: branding.bg_primary || '#0f0f0f' }}>
+                      <div className="text-center">
+                        <Package size={32} className="mx-auto mb-3" style={{ color: `${branding.sidebar_text_color || '#ffffff'}55` }} />
+                        <p className="text-sm" style={{ color: `${branding.sidebar_text_color || '#ffffff'}88` }}>Add packages to see a preview</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
+                <span className="text-[10px] text-gray-400">
+                  {form.packages.length} package{form.packages.length !== 1 ? 's' : ''} · Scales to fit
+                </span>
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* ── Right: Live Preview ────────────────────────────────── */}
-      {showPreview && form.enabled && (
-        <div ref={previewRef} className="w-[45%] shrink-0 flex flex-col min-h-0 sticky top-0 self-start" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-          <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-            <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
-              <span className="text-xs text-gray-500 font-medium">Live Preview</span>
-              <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
-                <Package size={11} /> {form.title}
-              </span>
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden relative">
-              <div className="absolute inset-0 overflow-y-auto"
-                style={{ transformOrigin: 'top left', transform: `scale(${previewScale})`, width: `${100 / previewScale}%`, height: `${100 / previewScale}%` }}>
-                {form.packages.length > 0 ? (
-                  <PackagesPage packages={previewPackages} branding={branding} />
-                ) : (
-                  <div className="w-full min-h-full flex items-center justify-center" style={{ backgroundColor: branding.bg_primary || '#0f0f0f' }}>
-                    <div className="text-center">
-                      <Package size={32} className="mx-auto mb-3" style={{ color: `${branding.sidebar_text_color || '#ffffff'}55` }} />
-                      <p className="text-sm" style={{ color: `${branding.sidebar_text_color || '#ffffff'}88` }}>Add packages to see a preview</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
-              <span className="text-[10px] text-gray-400">
-                {form.packages.length} package{form.packages.length !== 1 ? 's' : ''} · Scales to fit
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

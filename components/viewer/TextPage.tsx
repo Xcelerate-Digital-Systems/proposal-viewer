@@ -300,8 +300,8 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   if (layout === 'full') {
     return (
       <div
-        className="w-full min-h-full py-8 lg:py-12 px-6 sm:px-10 lg:px-16"
-        style={{ backgroundColor: bgColor }}
+       className="w-full min-h-full py-8 lg:py-12 px-6 sm:px-10 lg:px-16"
+        style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgColor }}
       >
         <div className="w-full">
           {/* Title */}
@@ -329,7 +329,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   return (
     <div
       className="w-full min-h-full flex items-start justify-center py-8 lg:py-12 px-4 sm:px-6"
-      style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgColor }}
     >
       <div
         className="w-full max-w-[700px] overflow-hidden"

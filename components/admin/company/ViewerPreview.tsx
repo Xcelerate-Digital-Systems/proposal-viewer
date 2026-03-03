@@ -15,6 +15,8 @@ interface ViewerPreviewProps {
   acceptTextColor: string;
   fontSidebar?: string | null;
   fontSidebarWeight?: string | null;
+  bgImageUrl?: string | null;
+  bgImageOverlayOpacity?: number;
 }
 
 export default function ViewerPreview({
@@ -27,6 +29,8 @@ export default function ViewerPreview({
   acceptTextColor,
   fontSidebar,
   fontSidebarWeight,
+  bgImageUrl,
+  bgImageOverlayOpacity = 0.85,
 }: ViewerPreviewProps) {
   const border = deriveBorder(bgSecondary);
   const surface = deriveSurface(bgPrimary, bgSecondary);
@@ -99,8 +103,20 @@ export default function ViewerPreview({
         </div>
 
         {/* Main content area */}
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-[260px] space-y-3">
+        <div className="flex-1 flex items-center justify-center p-6 relative overflow-hidden">
+          {bgImageUrl && (
+            <>
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${bgImageUrl})` }}
+              />
+              <div
+                className="absolute inset-0"
+                style={{ backgroundColor: bgPrimary, opacity: bgImageOverlayOpacity }}
+              />
+            </>
+          )}
+          <div className="relative w-full max-w-[260px] space-y-3">
             <div
               className="rounded-lg p-4 border"
               style={{ backgroundColor: surface, borderColor: border }}

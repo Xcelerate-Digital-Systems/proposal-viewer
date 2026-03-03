@@ -13,6 +13,7 @@ import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { exportCompositePdf } from '@/lib/compositeExport';
 import PageLinkButton from '@/components/viewer/PageLinkButton';
+import ViewerBackground from '@/components/viewer/ViewerBackground';
 
 /* ─── Document Viewer Page ────────────────────────────────────────── */
 
@@ -268,16 +269,19 @@ export default function DocumentViewerPage({ params }: { params: { token: string
         {onTextPage && currentTextPage ? (
           <div
             ref={mainRef}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto relative"
             style={{ backgroundColor: bgPrimary }}
           >
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <TextPage
-              textPage={currentTextPage as any}
-              branding={branding}
-              companyName={branding.name}
-              proposalTitle={doc?.title}
-            />
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              <TextPage
+                textPage={currentTextPage as any}
+                branding={branding}
+                companyName={branding.name}
+                proposalTitle={doc?.title}
+              />
+            </div>
           </div>
         ) : (
           <PdfViewer

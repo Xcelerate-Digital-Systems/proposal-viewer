@@ -2,17 +2,18 @@
 'use client';
 
 import Link from 'next/link';
-import { Pencil, Image, Settings } from 'lucide-react';
+import { Pencil, Image, Settings, Paintbrush } from 'lucide-react';
 
 interface DocumentTabsProps {
   documentId: string;
-  activeTab: 'pages' | 'cover' | 'details';
+  activeTab: 'pages' | 'cover' | 'design' | 'details';
 }
 
 const tabs: { key: string; label: string; icon: typeof Pencil; path: string }[] = [
-  { key: 'pages',   label: 'Pages',   icon: Pencil,  path: 'pages'   },
-  { key: 'cover',   label: 'Cover',   icon: Image,   path: 'cover'   },
-  { key: 'details', label: 'Details', icon: Settings, path: 'details' },
+  { key: 'pages',   label: 'Pages',   icon: Pencil,      path: 'pages'   },
+  { key: 'cover',   label: 'Cover',   icon: Image,       path: 'cover'   },
+  { key: 'design',  label: 'Design',  icon: Paintbrush,  path: 'design'  },
+  { key: 'details', label: 'Details', icon: Settings,     path: 'details' },
 ];
 
 export default function DocumentTabs({ documentId, activeTab }: DocumentTabsProps) {

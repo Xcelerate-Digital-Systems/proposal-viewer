@@ -40,6 +40,12 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [acceptTextColor, setAcceptTextColor] = useState('#ffffff');
   const [website, setWebsite] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
+  // ── Background image state ──
+  const [bgImagePath, setBgImagePath] = useState<string | null>(null);
+  const [bgImageUrl, setBgImageUrl] = useState<string | null>(null);
+  const [bgImageUploading, setBgImageUploading] = useState(false);
+  const [bgImageOverlayOpacity, setBgImageOverlayOpacity] = useState(0.85);
+  // ── Font state ──
   const [fontHeading, setFontHeading] = useState<string | null>(null);
   const [fontBody, setFontBody] = useState<string | null>(null);
   const [fontSidebar, setFontSidebar] = useState<string | null>(null);
@@ -94,6 +100,17 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setTextPageBorderColor(data.text_page_border_color || '');
         setTextPageLayout(data.text_page_layout || 'contained');
         setTextPageBorderRadius(data.text_page_border_radius || '12');
+        // ── Background image ──
+        setBgImagePath(data.bg_image_path || null);
+        setBgImageOverlayOpacity(data.bg_image_overlay_opacity ?? 0.85);
+        if (data.bg_image_path) {
+          const { data: bgUrl } = supabase.storage
+            .from('company-assets')
+            .getPublicUrl(data.bg_image_path);
+          setBgImageUrl(bgUrl?.publicUrl || null);
+        } else {
+          setBgImageUrl(null);
+        }
       }
     } finally {
       setLoading(false);
@@ -143,6 +160,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         bg_secondary: bgSecondary,
         sidebar_text_color: sidebarTextColor,
         accept_text_color: acceptTextColor,
+        bg_image_overlay_opacity: bgImageOverlayOpacity,
       }),
     });
     const data = await res.json();
@@ -251,6 +269,74 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     setLogoUploading(false);
   };
 
+  // ── Background image handlers ──
+
+  const handleBgImageUpload = async (file: File) => {
+    if (!isOwner) return;
+    setBgImageUploading(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+      const safeName = `bg-image.${ext}`.replace(/[^a-zA-Z0-9._-]/g, '');
+      const storagePath = `${companyId}/bg-image/${safeName}`;
+
+      // Remove old image if exists
+      if (bgImagePath) {
+        await supabase.storage.from('company-assets').remove([bgImagePath]);
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-assets')
+        .upload(storagePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Save path to DB
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/company?company_id=${companyId}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bg_image_path: storagePath }),
+      });
+
+      if (!res.ok) throw new Error('Failed to save');
+
+      setBgImagePath(storagePath);
+      const { data: urlData } = supabase.storage
+        .from('company-assets')
+        .getPublicUrl(storagePath);
+      setBgImageUrl(urlData?.publicUrl || null);
+      setCompany(prev => prev ? { ...prev, bg_image_path: storagePath } : prev);
+      showFeedback('Background image uploaded');
+    } catch (err) {
+      console.error(err);
+      showFeedback('Failed to upload background image', true);
+    } finally {
+      setBgImageUploading(false);
+    }
+  };
+
+  const handleBgImageRemove = async () => {
+    if (!isOwner || !bgImagePath) return;
+    try {
+      await supabase.storage.from('company-assets').remove([bgImagePath]);
+
+      const headers = await getAuthHeaders();
+      await fetch(`/api/company?company_id=${companyId}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bg_image_path: null }),
+      });
+
+      setBgImagePath(null);
+      setBgImageUrl(null);
+      setCompany(prev => prev ? { ...prev, bg_image_path: null } : prev);
+      showFeedback('Background image removed');
+    } catch (err) {
+      console.error(err);
+      showFeedback('Failed to remove background image', true);
+    }
+  };
+
   const handleSaveTextPageColors = async () => {
     if (!isOwner) return;
     setSaving('textPageColors');
@@ -284,7 +370,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
     bgSecondary !== (company?.bg_secondary || '#141414') ||
     sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
-    acceptTextColor !== (company?.accept_text_color || '#ffffff');
+    acceptTextColor !== (company?.accept_text_color || '#ffffff') ||
+    bgImageOverlayOpacity !== (company?.bg_image_overlay_opacity ?? 0.85);
 
   const textPageColorsChanged =
     textPageBgColor !== (company?.text_page_bg_color || '#141414') ||
@@ -445,6 +532,12 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           acceptTextColor={acceptTextColor}
           setAcceptTextColor={setAcceptTextColor}
           onSave={handleSaveColors}
+          bgImageUrl={bgImageUrl}
+          bgImageUploading={bgImageUploading}
+          bgImageOverlayOpacity={bgImageOverlayOpacity}
+          setBgImageOverlayOpacity={setBgImageOverlayOpacity}
+          onBgImageUpload={handleBgImageUpload}
+          onBgImageRemove={handleBgImageRemove}
         >
           <p className="text-xs text-gray-400 mb-3">This is how your proposals will appear to clients.</p>
           <ViewerPreview
@@ -457,6 +550,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             companyName={name}
             fontSidebar={fontSidebar}
             fontSidebarWeight={fontSidebarWeight}
+            bgImageUrl={bgImageUrl}
+            bgImageOverlayOpacity={bgImageOverlayOpacity}
           />
         </ViewerColorsSection>
 

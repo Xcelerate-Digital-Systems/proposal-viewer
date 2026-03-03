@@ -38,6 +38,8 @@ const DEFAULT_BRANDING: CompanyBranding = {
   text_page_border_color: null,
   text_page_border_radius: '12',
   text_page_layout: 'contained',
+  bg_image_url: null,
+  bg_image_overlay_opacity: 0.85,
 };
 
 /* ─── Text page type ───────────────────────────────────────────────── */
@@ -198,6 +200,18 @@ export function useDocument(token: string) {
         const res = await fetch(`/api/company/branding?domain=${hostname}&company_id=${doc.company_id}`);
         if (res.ok) {
           const data = await res.json();
+
+          // Entity-level bg image override (document → company fallback)
+          if (doc.bg_image_path) {
+            const { data: bgUrlData } = supabase.storage
+              .from('company-assets')
+              .getPublicUrl(doc.bg_image_path);
+            if (bgUrlData?.publicUrl) {
+              data.bg_image_url = bgUrlData.publicUrl;
+            }
+            data.bg_image_overlay_opacity = doc.bg_image_overlay_opacity ?? data.bg_image_overlay_opacity ?? 0.85;
+          }
+
           setBranding({ ...DEFAULT_BRANDING, ...data });
         }
       } catch {

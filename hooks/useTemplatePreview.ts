@@ -38,6 +38,8 @@ const DEFAULT_BRANDING: CompanyBranding = {
   text_page_border_color: null,
   text_page_border_radius: '12',
   text_page_layout: 'contained',
+  bg_image_url: null,
+  bg_image_overlay_opacity: 0.85,
 };
 
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
@@ -294,6 +296,18 @@ export function useTemplatePreview(templateId: string) {
         const brandingRes = await fetch(`/api/company/branding?company_id=${tmpl.company_id}`);
         if (brandingRes.ok) {
           const brandingData = await brandingRes.json();
+
+          // Entity-level bg image override (template → company fallback)
+          if (tmpl.bg_image_path) {
+            const { data: bgUrlData } = supabase.storage
+              .from('company-assets')
+              .getPublicUrl(tmpl.bg_image_path);
+            if (bgUrlData?.publicUrl) {
+              brandingData.bg_image_url = bgUrlData.publicUrl;
+            }
+            brandingData.bg_image_overlay_opacity = tmpl.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
+          }
+
           setBranding(brandingData);
         }
       } catch {

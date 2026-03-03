@@ -48,6 +48,8 @@ export type CompanyBranding = {
   text_page_border_color: string | null;
   text_page_border_radius: string;
   text_page_layout: 'contained' | 'full';
+  bg_image_url: string | null;
+  bg_image_overlay_opacity: number;
 };
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -83,6 +85,8 @@ const DEFAULT_BRANDING: CompanyBranding = {
   text_page_border_color: null,
   text_page_border_radius: '12',
   text_page_layout: 'contained',
+  bg_image_url: null,
+  bg_image_overlay_opacity: 0.85,
 };
 
 /**
@@ -341,6 +345,18 @@ export function useProposal(token: string) {
       const brandingRes = await fetch(`/api/company/branding?company_id=${data.company_id}`);
       if (brandingRes.ok) {
         const brandingData = await brandingRes.json();
+
+        // Entity-level bg image override (proposal → company fallback)
+        if (data.bg_image_path) {
+          const { data: bgUrlData } = supabase.storage
+            .from('company-assets')
+            .getPublicUrl(data.bg_image_path);
+          if (bgUrlData?.publicUrl) {
+            brandingData.bg_image_url = bgUrlData.publicUrl;
+          }
+          brandingData.bg_image_overlay_opacity = data.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
+        }
+
         setBranding(brandingData);
       }
     } catch {

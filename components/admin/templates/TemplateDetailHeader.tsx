@@ -16,7 +16,7 @@ import TemplateTabs from './TemplateTabs';
 
 interface TemplateDetailHeaderProps {
   templateId: string;
-  activeTab: 'pages' | 'pricing' | 'packages' | 'cover' | 'details';
+  activeTab: 'pages' | 'pricing' | 'packages' | 'cover' | 'design' | 'details';
 }
 
 /* ------------------------------------------------------------------ */

@@ -38,6 +38,8 @@ export type CompanyData = {
   text_page_border_color?: string | null;
   text_page_border_radius?: string;
   text_page_layout?: 'contained' | 'full';
+  bg_image_path: string | null;
+  bg_image_overlay_opacity: number | null;
 };
 /**
  * Derive a border color by lightening the secondary bg.

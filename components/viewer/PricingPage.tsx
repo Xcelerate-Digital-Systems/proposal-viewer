@@ -76,10 +76,10 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
   return (
     <div
       className="w-full min-h-full flex items-start justify-center py-8 lg:py-12 px-4 sm:px-6"
-      style={{ backgroundColor: bgPrimary }}
+      style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
     >
       <div
-        className="w-full max-w-[700px] rounded-xl overflow-hidden"
+        className="w-full max-w-[900px] rounded-xl overflow-hidden"
         style={{ backgroundColor: bgSecondary, border: `1px solid ${border}` }}
       >
         {/* Header accent bar */}

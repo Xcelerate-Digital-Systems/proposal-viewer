@@ -186,6 +186,8 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         cover_show_avatar: selectedTemplate.cover_show_avatar ?? false,
         cover_client_logo_path: selectedTemplate.cover_client_logo_path || null,
         cover_avatar_path: selectedTemplate.cover_avatar_path || null,
+        bg_image_path: selectedTemplate.bg_image_path || null,
+        bg_image_overlay_opacity: selectedTemplate.bg_image_overlay_opacity ?? null,
       }).select('id').single();
 
       if (dbError || !newProposal) throw dbError || new Error('Failed to create proposal');

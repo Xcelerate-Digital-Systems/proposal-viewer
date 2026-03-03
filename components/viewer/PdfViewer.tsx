@@ -8,6 +8,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { CompanyBranding } from '@/hooks/useProposal';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
+import ViewerBackground from '@/components/viewer/ViewerBackground';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -128,6 +129,7 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
 
   return (
     <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: bgColor }}>
+      {branding && <ViewerBackground branding={branding} />}
       {/* Branded loader overlay while PDF document loads */}
       {showBrandedLoader && (
         <ViewerLoader

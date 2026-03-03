@@ -17,6 +17,7 @@ import AcceptModal from '@/components/viewer/AcceptModal';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { exportCompositePdf } from '@/lib/compositeExport';
 import PageLinkButton from '@/components/viewer/PageLinkButton';
+import ViewerBackground from '@/components/viewer/ViewerBackground';
 
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
   const {
@@ -310,41 +311,50 @@ export default function ProposalViewerPage({ params }: { params: { token: string
         {onPricingPage && pricing ? (
           <div
             ref={mainRef}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto relative"
             style={{ backgroundColor: bgPrimary }}
           >
-            <PricingPage
-              pricing={pricing}
-              branding={branding}
-              clientName={proposal?.client_name}
-            />
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              <PricingPage
+                pricing={pricing}
+                branding={branding}
+                clientName={proposal?.client_name}
+              />
+            </div>
           </div>
         ) : onPackagesPage && packages ? (
           <div
             ref={mainRef}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto relative"
             style={{ backgroundColor: bgPrimary }}
           >
-            <PackagesPage
-              packages={packages}
-              branding={branding}
-              clientName={proposal?.client_name}
-            />
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              <PackagesPage
+                packages={packages}
+                branding={branding}
+                clientName={proposal?.client_name}
+              />
+            </div>
           </div>
         ) : onTextPage && currentTextPage ? (
           <div
             ref={mainRef}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto relative"
             style={{ backgroundColor: bgPrimary }}
           >
-            <TextPage
-              textPage={currentTextPage}
-              branding={branding}
-              clientName={proposal?.client_name}
-              companyName={branding.name}
-              userName={creatorName || undefined}
-              proposalTitle={proposal?.title}
-            />
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              <TextPage
+                textPage={currentTextPage}
+                branding={branding}
+                clientName={proposal?.client_name}
+                companyName={branding.name}
+                userName={creatorName || undefined}
+                proposalTitle={proposal?.title}
+              />
+            </div>
           </div>
         ) : (
           <PdfViewer

@@ -35,8 +35,8 @@ export default function PackagesPage({ packages, branding, clientName }: Package
 
   return (
     <div
-      className="w-full min-h-full flex items-start justify-center py-8 lg:py-12 px-4 sm:px-6"
-      style={{ backgroundColor: bgPrimary }}
+      className="w-full min-h-full flex items-center justify-center py-8 lg:py-12 px-4 sm:px-6"
+      style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
     >
       <div className="w-full max-w-[1200px]">
         {/* Title section */}
@@ -61,8 +61,13 @@ export default function PackagesPage({ packages, branding, clientName }: Package
 
         {/* Package cards grid */}
         <div
-          className="grid gap-4 sm:gap-5"
+          className="grid gap-4 sm:gap-5 mx-auto"
           style={{
+            maxWidth: tiers.length === 1
+              ? '400px'
+              : tiers.length === 2
+                ? '800px'
+                : '1200px',
             gridTemplateColumns: tiers.length === 1
               ? '1fr'
               : tiers.length === 2
