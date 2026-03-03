@@ -74,7 +74,7 @@ function PackagesContent({
       />
 
       <div className="flex-1 px-6 lg:px-10 py-6">
-        <TemplatePackagesTab templateId={templateId} />
+        <TemplatePackagesTab templateId={templateId} companyId={companyId} />
       </div>
     </div>
   );
