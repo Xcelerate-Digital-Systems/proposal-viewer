@@ -38,7 +38,7 @@ export default function PackagesPage({ packages, branding, clientName }: Package
       className="w-full min-h-full flex items-start justify-center py-8 lg:py-12 px-4 sm:px-6"
       style={{ backgroundColor: bgPrimary }}
     >
-      <div className="w-full max-w-[960px]">
+      <div className="w-full max-w-[1200px]">
         {/* Title section */}
         <div className="mb-8 text-center">
           <h1
@@ -123,7 +123,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
 
   return (
     <div
-      className="rounded-xl overflow-hidden flex flex-col"
+      className="overflow-hidden flex flex-col"
       style={{
         backgroundColor: bgSecondary,
         border: tier.is_recommended ? `2px solid ${tierAccent}` : `1px solid ${border}`,
