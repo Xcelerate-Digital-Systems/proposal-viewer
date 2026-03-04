@@ -18,6 +18,7 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { exportCompositePdf } from '@/lib/compositeExport';
 import PageLinkButton from '@/components/viewer/PageLinkButton';
 import ViewerBackground from '@/components/viewer/ViewerBackground';
+import PageNumberBadge from '@/components/viewer/PageNumberBadge';
 
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
   const {
@@ -365,6 +366,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             branding={branding}
           />
         )}
+        <PageNumberBadge
+          currentPage={currentPage}
+          totalPages={numPages}
+          accentColor={accent}
+        />
         <FloatingToolbar
           pdfUrl={pdfUrl}
           title={proposal?.title || ''}

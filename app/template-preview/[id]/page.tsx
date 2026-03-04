@@ -14,6 +14,8 @@ import TextPage from '@/components/viewer/TextPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import ViewerBackground from '@/components/viewer/ViewerBackground';
+import PageNumberBadge from '@/components/viewer/PageNumberBadge';
+
 
 export default function TemplatePreviewPage({ params }: { params: { id: string } }) {
   const {
@@ -256,7 +258,11 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             branding={branding}
           />
         )}
-
+        <PageNumberBadge
+          currentPage={currentPage}
+          totalPages={numPages}
+          accentColor={accent}
+        />
         <FloatingToolbar
           pdfUrl={pageUrls[pdfPage] || null}
           title={template?.name || ''}
