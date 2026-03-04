@@ -141,13 +141,39 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       }
       const mergeData = await mergeRes.json();
 
-      // 4. Build page_names from template labels + indent + section headers
-      const basePageNames = pages.map((p) => ({
-        name: p.label,
-        indent: p.indent ?? 0,
-      }));
+      // 4. Build page_names from template pages + section header groups
+      //    Start with PDF page entries from template_pages
+      const pageNames: Array<{ name: string; indent: number; type?: 'group' }> =
+        pages.map((p) => ({ name: p.label, indent: p.indent ?? 0 }));
 
-      // 5. Create proposal record (return id for text page / pricing copy)
+      //    Interleave section header groups from the template
+      //    section_headers are stored as { id, name, position } where
+      //    position is relative to PDF pages (0 = before first, N = after Nth, -1 = end)
+      const rawHeaders = selectedTemplate.section_headers;
+      if (Array.isArray(rawHeaders) && rawHeaders.length > 0) {
+        for (const header of rawHeaders as Array<{ id?: string; name: string; position?: number }>) {
+          const groupEntry = { name: header.name || 'Section', indent: 0, type: 'group' as const };
+          const pos = header.position ?? -1;
+
+          if (pos === -1) {
+            pageNames.push(groupEntry);
+          } else {
+            // Count non-group (PDF) entries to find the correct insert index
+            let pdfCount = 0;
+            let insertAt = pageNames.length;
+            for (let i = 0; i < pageNames.length; i++) {
+              if (pageNames[i].type !== 'group') {
+                if (pdfCount >= pos) { insertAt = i; break; }
+                pdfCount++;
+              }
+              insertAt = i + 1;
+            }
+            pageNames.splice(insertAt, 0, groupEntry);
+          }
+        }
+      }
+
+      // 5. Create proposal record
       setStatus('Creating proposal...');
       const { data: newProposal, error: dbError } = await supabase.from('proposals').insert({
         title: title.trim(),
@@ -158,7 +184,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         file_path: proposalFilePath,
         file_size_bytes: mergeData.file_size_bytes || 0,
         status: 'draft',
-        page_names: basePageNames,
+        page_names: pageNames,
         company_id: companyId,
         created_by_name: creatorName,
         prepared_by: selectedTemplate.prepared_by || creatorName,
@@ -188,103 +214,33 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         bg_image_path: selectedTemplate.bg_image_path || null,
         bg_image_overlay_opacity: selectedTemplate.bg_image_overlay_opacity ?? null,
         page_orientation: selectedTemplate.page_orientation || 'auto',
+        // ── Table of Contents (from template) ──
+        toc_settings: selectedTemplate.toc_settings || null,
       }).select('id').single();
 
       if (dbError || !newProposal) throw dbError || new Error('Failed to create proposal');
 
-      const proposalId = newProposal.id;
-
-      // 6. Copy template text pages → proposal_text_pages
-      setStatus('Copying text pages...');
-      try {
-        const textRes = await fetch(`/api/templates/text-pages?template_id=${selectedTemplate.id}`);
-        if (textRes.ok) {
-          const templateTextPages = await textRes.json();
-          if (Array.isArray(templateTextPages) && templateTextPages.length > 0) {
-            const now = new Date().toISOString();
-            const textPageInserts = templateTextPages.map((tp: any) => ({
-              proposal_id: proposalId,
-              company_id: companyId,
-              title: tp.title,
-              content: tp.content,
-              position: tp.position,
-              sort_order: tp.sort_order,
-              enabled: tp.enabled,
-              indent: tp.indent ?? 0,
-              link_url: tp.link_url || null,
-              link_label: tp.link_label || null,
-              created_at: now,
-              updated_at: now,
-            }));
-            const { error: textError } = await supabase
-              .from('proposal_text_pages')
-              .insert(textPageInserts);
-            if (textError) console.error('Failed to copy text pages:', textError);
-          }
-        }
-      } catch (err) {
-        console.error('Error copying template text pages:', err);
-      }
-
-      // 7. Copy template pricing → proposal_pricing
-      setStatus('Copying pricing...');
-      try {
-        const pricingRes = await fetch(`/api/templates/pricing?template_id=${selectedTemplate.id}`);
-        if (pricingRes.ok) {
-          const templatePricing = await pricingRes.json();
-          if (templatePricing && templatePricing.enabled) {
-            const now = new Date().toISOString();
-            const { error: pricingError } = await supabase
-              .from('proposal_pricing')
-              .insert({
-                proposal_id: proposalId,
-                company_id: companyId,
-                enabled: templatePricing.enabled,
-                position: templatePricing.position,
-                indent: templatePricing.indent ?? 0,
-                title: templatePricing.title,
-                intro_text: templatePricing.intro_text,
-                items: templatePricing.items,
-                optional_items: templatePricing.optional_items,
-                payment_schedule: templatePricing.payment_schedule,
-                tax_enabled: templatePricing.tax_enabled,
-                tax_rate: templatePricing.tax_rate,
-                tax_label: templatePricing.tax_label,
-                validity_days: templatePricing.validity_days,
-                created_at: now,
-                updated_at: now,
-              });
-            if (pricingError) console.error('Failed to copy pricing:', pricingError);
-          }
-        }
-      } catch (err) {
-        console.error('Error copying template pricing:', err);
-      }
-
-      // 8. Clean up temp replacement files
-      // Clean up temp replacement files
+      // 6. Clean up temp replacement files
       const tempPaths = Object.values(replacementPaths);
       if (tempPaths.length > 0) {
         await supabase.storage.from('proposals').remove(tempPaths);
       }
 
-      // 6. Copy template data (pricing, text pages, packages) to proposal
-      if (newProposal?.id) {
-        setStatus('Copying template data...');
-        try {
-          await fetch('/api/templates/copy-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              template_id: selectedTemplate.id,
-              proposal_id: newProposal.id,
-              company_id: companyId,
-            }),
-          });
-        } catch (err) {
-          console.error('Copy template data warning:', err);
-          // Non-fatal — proposal was already created successfully
-        }
+      // 7. Copy template data (pricing, text pages, packages) to proposal
+      setStatus('Copying template data...');
+      try {
+        await fetch('/api/templates/copy-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            template_id: selectedTemplate.id,
+            proposal_id: newProposal.id,
+            company_id: companyId,
+          }),
+        });
+      } catch (err) {
+        console.error('Copy template data warning:', err);
+        // Non-fatal — proposal was already created successfully
       }
 
       setStatus('Done!');

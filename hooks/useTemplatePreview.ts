@@ -337,35 +337,38 @@ export function useTemplatePreview(templateId: string) {
       }
       setBrandingLoaded(true);
 
-      // 3. Fetch individual page URLs (lightweight — no merging)
-      try {
-        const urlsRes = await fetch(`/api/templates/page-urls?template_id=${templateId}`);
-        if (urlsRes.ok) {
+      // 3–6. Fetch page URLs, pricing, packages, text pages in parallel
+      const [urlsRes, pricingRes, pkgRes, textRes] = await Promise.all([
+        fetch(`/api/templates/page-urls?template_id=${templateId}`).catch(() => null),
+        fetch(`/api/templates/pricing?template_id=${templateId}`).catch(() => null),
+        fetch(`/api/templates/packages?template_id=${templateId}`).catch(() => null),
+        fetch(`/api/templates/text-pages?template_id=${templateId}`).catch(() => null),
+      ]);
+
+      // 3. Page URLs
+      if (urlsRes?.ok) {
+        try {
           const urlsData = await urlsRes.json();
           setPageUrls(urlsData.page_urls || {});
           setPdfPageCount(urlsData.page_count || 0);
+        } catch {
+          console.error('Failed to parse template page URLs');
         }
-      } catch {
-        console.error('Failed to fetch template page URLs');
       }
 
-      // 4. Fetch template pricing
-      try {
-        const pricingRes = await fetch(`/api/templates/pricing?template_id=${templateId}`);
-        if (pricingRes.ok) {
+      // 4. Pricing
+      if (pricingRes?.ok) {
+        try {
           const pricingData = await pricingRes.json();
           if (pricingData && pricingData.enabled) {
             setPricing(pricingData);
           }
-        }
-      } catch {
-        // Non-critical
+        } catch { /* Non-critical */ }
       }
 
-      // 5. Fetch template packages
-      try {
-        const pkgRes = await fetch(`/api/templates/packages?template_id=${templateId}`);
-        if (pkgRes.ok) {
+      // 5. Packages
+      if (pkgRes?.ok) {
+        try {
           const pkgData = await pkgRes.json();
           if (pkgData && pkgData.enabled) {
             setPackages({
@@ -373,22 +376,17 @@ export function useTemplatePreview(templateId: string) {
               proposal_id: templateId, // Map template_id → proposal_id for component compat
             });
           }
-        }
-      } catch {
-        // Non-critical
+        } catch { /* Non-critical */ }
       }
 
-      // 6. Fetch template text pages
-      try {
-        const textRes = await fetch(`/api/templates/text-pages?template_id=${templateId}`);
-        if (textRes.ok) {
+      // 6. Text pages
+      if (textRes?.ok) {
+        try {
           const textData = await textRes.json();
           setTextPages(
             Array.isArray(textData) ? textData.filter((tp: ProposalTextPage) => tp.enabled) : []
           );
-        }
-      } catch {
-        // Non-critical
+        } catch { /* Non-critical */ }
       }
 
       setLoading(false);

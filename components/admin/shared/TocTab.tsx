@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { List, Check, Eye, EyeOff, GripVertical } from 'lucide-react';
+import { List, Check, Eye, EyeOff, GripVertical, CornerDownRight } from 'lucide-react';
 import { supabase, parseTocSettings, TocSettings, PageNameEntry, normalizePageNamesWithGroups } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 
@@ -20,6 +20,16 @@ type TocItem = {
   indent: number;
 };
 
+/** Intermediate type for special (non-PDF) pages with position info */
+type SpecialPageInfo = {
+  id: string;
+  label: string;
+  type: 'text' | 'pricing' | 'packages';
+  indent: number;
+  position: number;     // -1 = end, 0 = before first PDF, N = after PDF page N
+  sortOrder: number;
+};
+
 type SaveStatus = 'idle' | 'saving' | 'saved';
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
@@ -29,6 +39,92 @@ const tableName = (type: 'proposal' | 'template' | 'document') => {
   if (type === 'template') return 'proposal_templates';
   return 'documents';
 };
+
+/**
+ * Interleave special pages into the PDF + group item list based on their
+ * position field, mirroring the buildPageMap logic from useProposal.ts.
+ *
+ * Position semantics:
+ *   0  → before the first PDF page
+ *   N  → after PDF page N
+ *  -1  → after all PDF pages (trailing)
+ */
+function interleaveItems(
+  pdfAndGroupItems: TocItem[],
+  specials: SpecialPageInfo[]
+): TocItem[] {
+  if (specials.length === 0) return pdfAndGroupItems;
+
+  // Split specials into positioned and trailing
+  const positioned = specials.filter((s) => s.position >= 0);
+  const trailing = specials.filter((s) => s.position === -1);
+
+  // Sort positioned by position, then sortOrder
+  positioned.sort((a, b) => {
+    if (a.position !== b.position) return a.position - b.position;
+    return a.sortOrder - b.sortOrder;
+  });
+
+  // Sort trailing by sortOrder
+  trailing.sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // Build a map of groups that precede each PDF page index
+  // and extract just the PDF items in order
+  const pdfItems: TocItem[] = [];
+  const groupsBefore: Map<number, TocItem[]> = new Map();
+  let pendingGroups: TocItem[] = [];
+
+  for (const item of pdfAndGroupItems) {
+    if (item.type === 'group') {
+      pendingGroups.push(item);
+    } else {
+      if (pendingGroups.length > 0) {
+        groupsBefore.set(pdfItems.length, [...pendingGroups]);
+        pendingGroups = [];
+      }
+      pdfItems.push(item);
+    }
+  }
+  const trailingGroups = pendingGroups; // groups after the last PDF page
+
+  const pdfCount = pdfItems.length;
+  const result: TocItem[] = [];
+
+  // Interleave: walk through PDF pages 1..pdfCount, inserting specials before each
+  let posIdx = 0;
+  for (let pdfPage = 1; pdfPage <= pdfCount; pdfPage++) {
+    // Insert any positioned specials that belong before this PDF page
+    while (posIdx < positioned.length && positioned[posIdx].position < pdfPage) {
+      const sp = positioned[posIdx];
+      result.push({ id: sp.id, label: sp.label, type: sp.type, indent: sp.indent });
+      posIdx++;
+    }
+
+    // Insert any groups that precede this PDF page (0-indexed)
+    const groups = groupsBefore.get(pdfPage - 1);
+    if (groups) result.push(...groups);
+
+    // Insert the PDF page itself
+    result.push(pdfItems[pdfPage - 1]);
+  }
+
+  // Insert remaining positioned specials (position >= pdfCount)
+  while (posIdx < positioned.length) {
+    const sp = positioned[posIdx];
+    result.push({ id: sp.id, label: sp.label, type: sp.type, indent: sp.indent });
+    posIdx++;
+  }
+
+  // Insert trailing groups (groups after last PDF page)
+  if (trailingGroups.length > 0) result.push(...trailingGroups);
+
+  // Insert trailing specials (position = -1)
+  for (const sp of trailing) {
+    result.push({ id: sp.id, label: sp.label, type: sp.type, indent: sp.indent });
+  }
+
+  return result;
+}
 
 /* ─── Component ──────────────────────────────────────────────────────── */
 
@@ -59,10 +155,9 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         // Parse existing settings
         setSettings(parseTocSettings(entity.toc_settings));
 
-        // 2. Build the list of TOC-able items
-        const items: TocItem[] = [];
+        // 2. Build the list of PDF + group items from page_names
+        const pdfAndGroupItems: TocItem[] = [];
 
-        // PDF pages + groups from page_names
         if (entityType === 'template') {
           // Templates use template_pages as source of truth
           const { data: tPages } = await supabase
@@ -78,7 +173,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
           let pdfIdx = 0;
           for (const entry of normalized) {
             if (entry.type === 'group') {
-              items.push({
+              pdfAndGroupItems.push({
                 id: `group:${entry.name}`,
                 label: entry.name,
                 type: 'group',
@@ -87,7 +182,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
             } else {
               pdfIdx++;
               const tPage = tPages?.find((p: { page_number: number }) => p.page_number === pdfIdx);
-              items.push({
+              pdfAndGroupItems.push({
                 id: `pdf:${pdfIdx}`,
                 label: tPage?.label || entry.name || `Page ${pdfIdx}`,
                 type: 'pdf',
@@ -97,7 +192,6 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
           }
         } else {
           // Proposals + documents: use page_names directly
-          // We need PDF page count — for proposals/documents it's stored indirectly
           const pageNames = entity.page_names;
           if (Array.isArray(pageNames)) {
             let pdfIdx = 0;
@@ -107,7 +201,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                 : item as PageNameEntry;
 
               if (entry.type === 'group') {
-                items.push({
+                pdfAndGroupItems.push({
                   id: `group:${entry.name}`,
                   label: entry.name,
                   type: 'group',
@@ -115,7 +209,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                 });
               } else {
                 pdfIdx++;
-                items.push({
+                pdfAndGroupItems.push({
                   id: `pdf:${pdfIdx}`,
                   label: entry.name || `Page ${pdfIdx}`,
                   type: 'pdf',
@@ -126,7 +220,10 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
           }
         }
 
-        // 3. Fetch text pages
+        // 3. Collect special pages with their position info
+        const specials: SpecialPageInfo[] = [];
+
+        // Fetch text pages
         const textEndpoint = entityType === 'template'
           ? `/api/templates/text-pages?template_id=${entityId}`
           : entityType === 'proposal'
@@ -140,11 +237,13 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
             if (Array.isArray(textData)) {
               for (const tp of textData) {
                 if (tp.enabled) {
-                  items.push({
+                  specials.push({
                     id: `text:${tp.id}`,
                     label: tp.title || 'Text Page',
                     type: 'text',
-                    indent: 0,
+                    indent: tp.indent ?? 0,
+                    position: tp.position ?? -1,
+                    sortOrder: tp.sort_order ?? 0,
                   });
                 }
               }
@@ -152,49 +251,56 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
           }
         } catch { /* non-critical */ }
 
-        // 4. Fetch pricing
-        const pricingEndpoint = entityType === 'template'
-          ? `/api/templates/pricing?template_id=${entityId}`
-          : `/api/proposals/pricing?proposal_id=${entityId}`;
-
+        // Fetch pricing (proposals + templates only)
         if (entityType !== 'document') {
+          const pricingEndpoint = entityType === 'template'
+            ? `/api/templates/pricing?template_id=${entityId}`
+            : `/api/proposals/pricing?proposal_id=${entityId}`;
+
           try {
             const pricingRes = await fetch(pricingEndpoint);
             if (pricingRes.ok) {
               const pricingData = await pricingRes.json();
               if (pricingData?.enabled) {
-                items.push({
+                specials.push({
                   id: 'pricing',
                   label: pricingData.title || 'Your Investment',
                   type: 'pricing',
-                  indent: 0,
+                  indent: pricingData.indent ?? 0,
+                  position: pricingData.position ?? -1,
+                  sortOrder: 0,
                 });
               }
             }
           } catch { /* non-critical */ }
         }
 
-        // 5. Fetch packages (proposals + templates only)
+        // Fetch packages (proposals + templates only)
         if (entityType !== 'document') {
           const pkgTable = entityType === 'template' ? 'template_packages' : 'proposal_packages';
           const pkgCol = entityType === 'template' ? 'template_id' : 'proposal_id';
           try {
             const { data: pkgData } = await supabase
               .from(pkgTable)
-              .select('enabled, title')
+              .select('enabled, title, position, indent')
               .eq(pkgCol, entityId)
               .single();
 
             if (pkgData?.enabled) {
-              items.push({
+              specials.push({
                 id: 'packages',
                 label: pkgData.title || 'Packages',
                 type: 'packages',
-                indent: 0,
+                indent: pkgData.indent ?? 0,
+                position: pkgData.position ?? -1,
+                sortOrder: 0,
               });
             }
           } catch { /* non-critical */ }
         }
+
+        // 4. Interleave special pages at correct positions
+        const items = interleaveItems(pdfAndGroupItems, specials);
 
         setTocItems(items);
       } catch (err) {
@@ -289,7 +395,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -396,6 +502,11 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                         {isIncluded && <Check size={10} className="text-white" />}
                       </div>
 
+                      {/* Indent indicator */}
+                      {item.indent > 0 && (
+                        <CornerDownRight size={12} className="text-gray-300 shrink-0" />
+                      )}
+
                       {/* Icon + label */}
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         {isGroup ? (
@@ -419,6 +530,12 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                         <span className={`text-sm truncate ${isGroup ? 'font-medium text-gray-700' : 'text-gray-600'}`}>
                           {item.label}
                         </span>
+
+                        {item.indent > 0 && (
+                          <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                            Sub
+                          </span>
+                        )}
                       </div>
 
                       {/* Visibility indicator */}

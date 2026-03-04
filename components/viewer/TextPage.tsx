@@ -300,7 +300,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   if (layout === 'full') {
     return (
       <div
-       className="w-full min-h-full py-8 lg:py-12 px-6 sm:px-10 lg:px-16"
+       className="w-full min-h-full flex items-center py-8 lg:py-12 px-10 sm:px-16 lg:px-24"
         style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgColor }}
       >
         <div className="w-full">
@@ -328,7 +328,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   // Contained layout (default) — centered card with border + accent bar
   return (
     <div
-      className="w-full min-h-full flex items-start justify-center py-8 lg:py-12 px-4 sm:px-6"
+      className="w-full min-h-full flex items-center justify-center py-8 lg:py-12 px-8 sm:px-12 lg:px-16"
       style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgColor }}
     >
       <div

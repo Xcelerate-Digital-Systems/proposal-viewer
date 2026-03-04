@@ -57,7 +57,8 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
   const onTocPage = isTocPage(currentPage);
   const onTextPage = isTextPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
-  const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
+  const currentTextPage = currentTextPageId ?
+    getTextPage(currentTextPageId) : undefined;
   const pdfPage = toPdfPage(currentPage);
 
   // Dismiss cover state when cover isn't enabled
@@ -111,16 +112,17 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
   }
 
-  if (loading) {
-    return <ViewerLoader branding={branding} loading={true} label="Loading template preview…" />;
-  }
+  // NOTE: removed the `if (loading)` early return — ViewerLoader is now
+  // rendered as a sibling overlay so it stays mounted across the
+  // loading → loaded transition and can animate 85% → 100% → fade out.
 
   if (notFound) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: bgPrimary }}>
         <div className="text-center">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: bgSecondary }}>
+            style={{ backgroundColor: bgSecondary }}
+          >
             <FileText size={28} className="text-[#444]" />
           </div>
           <h2 className="text-xl font-semibold text-white mb-2">Template Not Found</h2>
@@ -155,6 +157,8 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
 
     return (
       <>
+        {/* Loader overlay — stays mounted so it animates 85% → 100% → fade */}
+        <ViewerLoader branding={branding} loading={loading} label="Loading template preview…" />
         <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <CoverPage proposal={coverCompat as any} branding={branding} onStart={() => setShowCover(false)} />
@@ -167,8 +171,11 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
       className="flex flex-col lg:flex-row overflow-hidden"
       style={{ backgroundColor: bgPrimary, height: '100dvh' }}
     >
+      {/* Loader overlay — stays mounted so it animates 85% → 100% → fade */}
+      <ViewerLoader branding={branding} loading={loading} label="Loading template preview…" />
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
+      {!loading && template && (<>
       {/* Mobile header bar */}
       <div
         className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
@@ -298,6 +305,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
           accentColor={accent}
         />
       </div>
+      </>)}
     </div>
   );
 }

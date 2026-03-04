@@ -4,13 +4,17 @@ export interface FontOption {
   family: string;
   category: 'serif' | 'sans-serif' | 'display' | 'handwriting' | 'monospace';
   weights?: string[]; // defaults to ['400','500','600','700']
+  local?: boolean;    // true = already loaded via @font-face, skip Google Fonts URL
 }
 
 /**
- * Curated list of ~100 Google Fonts suitable for professional proposals.
- * All confirmed available on Google Fonts. Grouped by category.
+ * Curated list of fonts suitable for professional proposals.
+ * Local fonts (bundled via @font-face) appear first, followed by Google Fonts grouped by category.
  */
 export const GOOGLE_FONTS: FontOption[] = [
+  // ── Local (bundled with app via @font-face) ────────────
+  { family: 'Clash Grotesk', category: 'sans-serif', weights: ['200', '300', '400', '500', '600', '700'], local: true },
+
   // ── Sans-Serif ─────────────────────────────────────────
   { family: 'Inter', category: 'sans-serif' },
   { family: 'DM Sans', category: 'sans-serif' },
@@ -119,6 +123,7 @@ export const GOOGLE_FONTS: FontOption[] = [
  * Named weight options for the UI weight picker.
  */
 export const WEIGHT_OPTIONS = [
+  { value: '200', label: 'Extra Light' },
   { value: '300', label: 'Light' },
   { value: '400', label: 'Regular' },
   { value: '500', label: 'Medium' },
@@ -145,13 +150,21 @@ export function getAvailableWeights(family: string | null | undefined): string[]
 
 /**
  * Build a Google Fonts URL for a set of font families.
- * Returns null if no fonts specified.
+ * Returns null if no fonts specified or all fonts are local.
+ * Skips locally-loaded fonts (e.g. Clash Grotesk bundled via @font-face).
  */
 export function buildGoogleFontsUrl(fonts: (string | null | undefined)[]): string | null {
   const unique = Array.from(new Set(fonts.filter(Boolean))) as string[];
   if (unique.length === 0) return null;
 
-  const families = unique.map((family) => {
+  // Filter out locally-loaded fonts — they're already available via @font-face
+  const remote = unique.filter((f) => {
+    const entry = GOOGLE_FONTS.find((g) => g.family === f);
+    return !entry?.local;
+  });
+  if (remote.length === 0) return null;
+
+  const families = remote.map((family) => {
     const font = GOOGLE_FONTS.find((f) => f.family === family);
     const weights = font?.weights || DEFAULT_WEIGHTS;
     return `family=${family.replace(/ /g, '+')}:wght@${weights.join(';')}`;
