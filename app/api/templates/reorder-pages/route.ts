@@ -1,6 +1,7 @@
 // app/api/templates/reorder-pages/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rebuildTemplateMerged } from '@/lib/rebuild-template-merged';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,13 @@ export async function POST(req: NextRequest) {
       .from('proposal_templates')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', template_id);
+
+    // Rebuild the merged PDF so the template preview reflects the new order
+    try {
+      await rebuildTemplateMerged(template_id);
+    } catch (err) {
+      console.error('Non-fatal: failed to rebuild merged PDF after reorder:', err);
+    }
 
     return NextResponse.json({
       success: true,

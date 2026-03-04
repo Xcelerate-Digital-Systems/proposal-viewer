@@ -8,8 +8,9 @@ import { deriveBorderColor } from '@/hooks/useProposal';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
 import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
-import TemplatePdfViewer from '@/components/viewer/TemplatePdfViewer';
+import PdfViewer from '@/components/viewer/PdfViewer';
 import PricingPage from '@/components/viewer/PricingPage';
+import PackagesPage from '@/components/viewer/PackagesPage';
 import TextPage from '@/components/viewer/TextPage';
 import TocPage from '@/components/viewer/TocPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
@@ -21,7 +22,7 @@ import PageNumberBadge from '@/components/viewer/PageNumberBadge';
 export default function TemplatePreviewPage({ params }: { params: { id: string } }) {
   const {
     template,
-    pageUrls,
+    pdfUrl,
     numPages,
     currentPage,
     setCurrentPage,
@@ -33,6 +34,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     pricing,
     packages,
     isPricingPage,
+    isPackagesPage,
     isTocPage,
     isTextPage,
     getTextPageId,
@@ -41,6 +43,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     tocSettings,
     pageSequence,
     getPageName,
+    onDocumentLoadSuccess,
   } = useTemplatePreview(params.id);
 
   const [showCover, setShowCover] = useState(true);
@@ -54,11 +57,11 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
 
   // Current page state
   const onPricingPage = isPricingPage(currentPage);
+  const onPackagesPage = isPackagesPage(currentPage);
   const onTocPage = isTocPage(currentPage);
   const onTextPage = isTextPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
-  const currentTextPage = currentTextPageId ?
-    getTextPage(currentTextPageId) : undefined;
+  const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
   const pdfPage = toPdfPage(currentPage);
 
   // Dismiss cover state when cover isn't enabled
@@ -120,38 +123,31 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: bgPrimary }}>
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
             style={{ backgroundColor: bgSecondary }}
           >
             <FileText size={28} className="text-[#444]" />
           </div>
           <h2 className="text-xl font-semibold text-white mb-2">Template Not Found</h2>
-          <p className="text-[#666] text-sm">This template may have been removed.</p>
+          <p className="text-[#666] text-sm">This template may have been deleted.</p>
         </div>
       </div>
     );
   }
 
-  // Build a proposal-compatible object for the CoverPage component
+  // Cover page
   if (showCover && template?.cover_enabled) {
     const coverCompat = {
       ...template,
-      title: template.name,
       client_name: '[Client Name]',
-      cover_subtitle: template.cover_subtitle || 'Prepared for [Client Name]',
-      cover_button_text: template.cover_button_text || 'START READING PROPOSAL',
-      prepared_by: template.prepared_by || null,
-      prepared_by_member_id: template.prepared_by_member_id || null,
+      cover_subtitle: template.cover_subtitle || template.description || template.name,
+      cover_button_text: template.cover_button_text || 'VIEW TEMPLATE',
       accept_button_text: null,
       status: 'sent' as const,
-      share_token: '',
-      file_path: '',
-      cover_client_logo_path: template.cover_client_logo_path || null,
-      cover_avatar_path: template.cover_avatar_path || null,
       cover_date: template.cover_date || null,
-      cover_show_client_logo: template.cover_show_client_logo ?? false,
-      cover_show_avatar: template.cover_show_avatar ?? false,
       cover_show_date: template.cover_show_date ?? false,
+      cover_show_avatar: template.cover_show_avatar ?? false,
       cover_show_prepared_by: template.cover_show_prepared_by ?? true,
     };
 
@@ -228,7 +224,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Conditionally render PDF, Pricing, TOC, or Text page */}
+        {/* Conditionally render PDF, Pricing, Packages, TOC, or Text page */}
         {onPricingPage && pricing ? (
           <div
             ref={mainRef}
@@ -239,6 +235,21 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             <div className="relative h-full">
               <PricingPage
                 pricing={pricing}
+                branding={branding}
+                clientName="[Client Name]"
+              />
+            </div>
+          </div>
+        ) : onPackagesPage && packages ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto relative"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              <PackagesPage
+                packages={packages}
                 branding={branding}
                 clientName="[Client Name]"
               />
@@ -279,9 +290,10 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             </div>
           </div>
         ) : (
-          <TemplatePdfViewer
-            pageUrls={pageUrls}
-            currentPdfPage={pdfPage}
+          <PdfViewer
+            pdfUrl={pdfUrl}
+            currentPage={pdfPage}
+            onLoadSuccess={onDocumentLoadSuccess}
             scrollRef={mainRef}
             bgColor={bgPrimary}
             accentColor={accent}
@@ -294,7 +306,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
           accentColor={accent}
         />
         <FloatingToolbar
-          pdfUrl={pageUrls[pdfPage] || null}
+          pdfUrl={pdfUrl}
           title={template?.name || ''}
           currentPage={currentPage}
           numPages={numPages}

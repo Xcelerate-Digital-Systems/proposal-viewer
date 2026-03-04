@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const pageCount = pdfDoc.getPageCount();
 
-    // Create the template record
+    // Create the template record (without file_path yet — we set it after moving the file)
     const { data: template, error: templateError } = await supabase
       .from('proposal_templates')
       .insert({
@@ -77,8 +77,26 @@ export async function POST(req: NextRequest) {
       await supabase.from('template_pages').insert(pages);
     }
 
-    // Clean up the original uploaded PDF
+    // Move the original uploaded PDF to the template's merged path
+    // instead of deleting it — this becomes the template's file_path
+    const mergedPath = `templates/${template.id}/merged.pdf`;
+    const { error: copyError } = await supabase.storage
+      .from('proposals')
+      .copy(file_path, mergedPath);
+
+    if (copyError) {
+      console.error('Failed to copy merged PDF:', copyError);
+      // Non-fatal: the rebuild-merged endpoint can regenerate it later
+    }
+
+    // Clean up the original upload location
     await supabase.storage.from('proposals').remove([file_path]);
+
+    // Update template with the merged file_path
+    await supabase
+      .from('proposal_templates')
+      .update({ file_path: copyError ? null : mergedPath })
+      .eq('id', template.id);
 
     return NextResponse.json({ template_id: template.id, page_count: pageCount });
   } catch (err) {

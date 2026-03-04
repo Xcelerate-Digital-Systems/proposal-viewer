@@ -4,18 +4,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Building2, Upload, Trash2, Loader2,
-  Check, Globe, Link2, Image as ImageIcon, FileText,
+  Check, Globe, Link2, Image as ImageIcon,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { supabase } from '@/lib/supabase';
 import CustomDomainManager from '@/components/admin/CustomDomainManager';
 import { CompanyData, isValidHex6, isValidHex6or8 } from '@/lib/company-utils';
 import ViewerPreview from '@/components/admin/company/ViewerPreview';
-import TextPagePreview from '@/components/admin/company/TextPagePreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
-import ColorRow from '@/components/admin/company/ColorRow';
 
 export default function CompanySettingsPage() {
   return (
@@ -52,14 +50,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   const [fontHeadingWeight, setFontHeadingWeight] = useState<string | null>(null);
   const [fontBodyWeight, setFontBodyWeight] = useState<string | null>(null);
   const [fontSidebarWeight, setFontSidebarWeight] = useState<string | null>(null);
-  const [textPageBgColor, setTextPageBgColor] = useState('#141414');
-  const [textPageTextColor, setTextPageTextColor] = useState('#ffffff');
-  const [textPageHeadingColor, setTextPageHeadingColor] = useState('');
-  const [textPageFontSize, setTextPageFontSize] = useState('14');
-  const [textPageBorderEnabled, setTextPageBorderEnabled] = useState(true);
-  const [textPageBorderColor, setTextPageBorderColor] = useState('');
-  const [textPageBorderRadius, setTextPageBorderRadius] = useState('12');
-  const [textPageLayout, setTextPageLayout] = useState<'contained' | 'full'>('contained');
   const [fontsSaved, setFontsSaved] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,14 +82,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         setFontHeadingWeight(data.font_heading_weight || null);
         setFontBodyWeight(data.font_body_weight || null);
         setFontSidebarWeight(data.font_sidebar_weight || null);
-        setTextPageBgColor(data.text_page_bg_color || '#141414');
-        setTextPageTextColor(data.text_page_text_color || '#ffffff');
-        setTextPageHeadingColor(data.text_page_heading_color || '');
-        setTextPageFontSize(data.text_page_font_size || '14');
-        setTextPageBorderEnabled(data.text_page_border_enabled ?? true);
-        setTextPageBorderColor(data.text_page_border_color || '');
-        setTextPageLayout(data.text_page_layout || 'contained');
-        setTextPageBorderRadius(data.text_page_border_radius || '12');
         // ── Background image ──
         setBgImagePath(data.bg_image_path || null);
         setBgImageOverlayOpacity(data.bg_image_overlay_opacity ?? 0.85);
@@ -173,7 +155,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     setSaving(null);
   };
 
-
   const handleSaveFonts = async () => {
     if (!isOwner) return;
     setSaving('fonts');
@@ -218,25 +199,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     }, 800);
     return () => clearTimeout(timer);
   }, [fontHeading, fontBody, fontSidebar, fontHeadingWeight, fontBodyWeight, fontSidebarWeight]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Autosave text page layout immediately on change
-  useEffect(() => {
-    if (!isOwner || !company) return;
-    if (textPageLayout === (company.text_page_layout || 'contained')) return;
-    const timer = setTimeout(async () => {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/company?company_id=${companyId}`, {
-        method: 'PATCH',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text_page_layout: textPageLayout }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCompany(prev => prev ? { ...prev, ...data } : prev);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [textPageLayout]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -337,34 +299,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     }
   };
 
-  const handleSaveTextPageColors = async () => {
-    if (!isOwner) return;
-    setSaving('textPageColors');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text_page_bg_color: textPageBgColor,
-        text_page_text_color: textPageTextColor,
-        text_page_heading_color: textPageHeadingColor || null,
-        text_page_font_size: textPageFontSize,
-        text_page_border_enabled: textPageBorderEnabled,
-        text_page_border_color: textPageBorderColor || null,
-        text_page_border_radius: textPageBorderRadius,
-        text_page_layout: textPageLayout,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      showFeedback('Text page colors saved');
-    }
-    setSaving(null);
-  };
-
   const colorsChanged =
     accentColor !== (company?.accent_color || '#ff6700') ||
     bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
@@ -372,15 +306,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
     sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
     acceptTextColor !== (company?.accept_text_color || '#ffffff') ||
     bgImageOverlayOpacity !== (company?.bg_image_overlay_opacity ?? 0.85);
-
-  const textPageColorsChanged =
-    textPageBgColor !== (company?.text_page_bg_color || '#141414') ||
-    textPageTextColor !== (company?.text_page_text_color || '#ffffff') ||
-    textPageHeadingColor !== (company?.text_page_heading_color || '') ||
-    textPageFontSize !== (company?.text_page_font_size || '14') ||
-    textPageBorderEnabled !== (company?.text_page_border_enabled ?? true) ||
-    textPageBorderColor !== (company?.text_page_border_color || '') ||
-    textPageBorderRadius !== (company?.text_page_border_radius || '12');
 
   if (loading) {
     return (
@@ -575,131 +500,6 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           onSave={handleSaveFonts}
           lastSaved={fontsSaved}
         />
-
-        {/* Text Page Colors — side-by-side with preview */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <FileText size={15} className="text-gray-400" />
-              <span className="text-sm font-medium text-gray-500">Text Page Colors</span>
-            </div>
-            {isOwner && textPageColorsChanged && (
-              <button
-                onClick={handleSaveTextPageColors}
-                disabled={saving === 'textPageColors'}
-                className="px-4 py-1.5 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
-              >
-                {saving === 'textPageColors' ? <Loader2 size={14} className="animate-spin" /> : 'Save Text Page Colors'}
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Controls */}
-            <div>
-              <p className="text-xs text-gray-400 mb-4">
-                Controls the background, text, and heading colors for text pages in your proposals.
-              </p>
-
-              {/* Layout toggle */}
-              <div className="mb-4">
-                <label className="block text-xs text-gray-400 mb-2">Layout</label>
-                <div className="flex gap-2">
-                  {(['contained', 'full'] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => isOwner && setTextPageLayout(opt)}
-                      disabled={!isOwner}
-                      className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-                        textPageLayout === opt
-                          ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
-                          : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
-                      } disabled:opacity-50`}
-                    >
-                      {opt === 'contained' ? 'Contained Card' : 'Full Width'}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-gray-400 mt-1">
-                  {textPageLayout === 'contained'
-                    ? 'Text content shown in a centered card with optional border and accent bar.'
-                    : 'Text content fills the full page width, similar to PDF pages.'}
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <ColorRow label="Background" value={textPageBgColor} onChange={setTextPageBgColor} disabled={!isOwner} />
-                <ColorRow label="Body Text" value={textPageTextColor} onChange={setTextPageTextColor} disabled={!isOwner} />
-                <ColorRow label="Heading Color (optional)" value={textPageHeadingColor} onChange={setTextPageHeadingColor} disabled={!isOwner} />
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Base Font Size (px)</label>
-                  <select
-                    value={textPageFontSize}
-                    onChange={(e) => setTextPageFontSize(e.target.value)}
-                    disabled={!isOwner}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
-                  >
-                    {['10', '12', '14', '16', '18', '20', '24'].map(size => (
-                      <option key={size} value={size}>{size}px</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Border toggle */}
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-gray-400">Show Border</label>
-                  <button
-                    onClick={() => isOwner && setTextPageBorderEnabled(!textPageBorderEnabled)}
-                    disabled={!isOwner}
-                    className={`w-10 h-5 rounded-full transition-colors relative ${
-                      textPageBorderEnabled ? 'bg-[#017C87]' : 'bg-gray-300'
-                    } disabled:opacity-50`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${
-                      textPageBorderEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                    }`} />
-                  </button>
-                </div>
-
-                {/* Border color - only show when border enabled */}
-                {textPageBorderEnabled && (
-                  <ColorRow label="Border Color (optional)" value={textPageBorderColor} onChange={setTextPageBorderColor} disabled={!isOwner} />
-                )}
-
-                {/* Border radius */}
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Border Radius (px)</label>
-                  <select
-                    value={textPageBorderRadius}
-                    onChange={(e) => setTextPageBorderRadius(e.target.value)}
-                    disabled={!isOwner}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
-                  >
-                    {['0', '4', '8', '12', '16', '20', '24'].map(r => (
-                      <option key={r} value={r}>{r}px{r === '0' ? ' (square)' : r === '24' ? ' (very round)' : ''}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Live preview */}
-            <div>
-              <p className="text-xs text-gray-400 mb-3">Preview of how text pages appear in the proposal viewer.</p>
-              <TextPagePreview
-                bgColor={textPageBgColor || '#141414'}
-                textColor={textPageTextColor || '#ffffff'}
-                headingColor={textPageHeadingColor}
-                fontSize={textPageFontSize || '14'}
-                accent={isValidHex6(accentColor) ? accentColor : '#ff6700'}
-                borderEnabled={textPageBorderEnabled}
-                borderColor={textPageBorderColor}
-                borderRadius={textPageBorderRadius || '12'}
-                layout={textPageLayout}
-              />
-            </div>
-          </div>
-        </div>
 
         {!isOwner && (
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">

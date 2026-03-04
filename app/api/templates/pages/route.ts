@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rebuildTemplateMerged } from '@/lib/rebuild-template-merged';
 
 // Add a new page to a template (uploaded as PDF, extracts first page)
 export async function POST(req: NextRequest) {
@@ -127,6 +128,13 @@ export async function POST(req: NextRequest) {
       .update({ page_count: count || 0, updated_at: new Date().toISOString() })
       .eq('id', templateId);
 
+    // Rebuild the merged PDF so the template preview stays in sync
+    try {
+      await rebuildTemplateMerged(templateId);
+    } catch (err) {
+      console.error('Non-fatal: failed to rebuild merged PDF after page add/replace:', err);
+    }
+
     return NextResponse.json({ success: true, page_number: pageNumber });
   } catch (err) {
     console.error('Page operation error:', err);
@@ -191,6 +199,13 @@ export async function DELETE(req: NextRequest) {
     await supabase.from('proposal_templates')
       .update({ page_count: count || 0, updated_at: new Date().toISOString() })
       .eq('id', template_id);
+
+    // Rebuild the merged PDF so the template preview stays in sync
+    try {
+      await rebuildTemplateMerged(template_id);
+    } catch (err) {
+      console.error('Non-fatal: failed to rebuild merged PDF after page delete:', err);
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

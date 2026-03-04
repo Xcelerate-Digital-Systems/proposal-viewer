@@ -176,66 +176,76 @@ function buildPageMap(
 
   const totalPages = sequence.length;
 
+  const isPricingPage = (vp: number) => sequence[vp - 1]?.type === 'pricing';
+  const isPackagesPage = (vp: number) => sequence[vp - 1]?.type === 'packages';
+  const isTocPage = (vp: number) => sequence[vp - 1]?.type === 'toc';
+  const isTextPage = (vp: number) => sequence[vp - 1]?.type === 'text';
+  const getTextPageId = (vp: number): string | null => {
+    const entry = sequence[vp - 1];
+    return entry?.type === 'text' ? entry.textPageId : null;
+  };
+  const toPdfPage = (vp: number): number => {
+    const entry = sequence[vp - 1];
+    return entry?.type === 'pdf' ? entry.pdfPage : 0;
+  };
+
   return {
     totalPages,
     pageSequence: sequence,
-    isPricingPage: (vp: number) => {
-      const idx = vp - 1;
-      return idx >= 0 && idx < sequence.length && sequence[idx].type === 'pricing';
-    },
-    isPackagesPage: (vp: number) => {
-      const idx = vp - 1;
-      return idx >= 0 && idx < sequence.length && sequence[idx].type === 'packages';
-    },
-    isTocPage: (vp: number) => {
-      const idx = vp - 1;
-      return idx >= 0 && idx < sequence.length && sequence[idx].type === 'toc';
-    },
-    isTextPage: (vp: number) => {
-      const idx = vp - 1;
-      return idx >= 0 && idx < sequence.length && sequence[idx].type === 'text';
-    },
-    getTextPageId: (vp: number): string | null => {
-      const idx = vp - 1;
-      if (idx >= 0 && idx < sequence.length && sequence[idx].type === 'text') {
-        return (sequence[idx] as { type: 'text'; textPageId: string }).textPageId;
-      }
-      return null;
-    },
-    toPdfPage: (vp: number): number => {
-      const idx = vp - 1;
-      if (idx < 0 || idx >= sequence.length) return -1;
-      const entry = sequence[idx];
-      if (entry.type === 'pdf') return entry.pdfPage;
-      return -1;
-    },
+    isPricingPage,
+    isPackagesPage,
+    isTocPage,
+    isTextPage,
+    getTextPageId,
+    toPdfPage,
   };
 }
 
-/* ─── Template data shape ─────────────────────────────────────────────── */
+/* ─── Template data type ───────────────────────────────────────────── */
 
 interface TemplateData {
   id: string;
   name: string;
   description: string | null;
-  company_id: string;
   page_count: number;
+  file_path: string | null;
   cover_enabled: boolean;
   cover_image_path: string | null;
   cover_subtitle: string | null;
-  cover_button_text: string | null;
-  prepared_by: string | null;
-  prepared_by_member_id: string | null;
-  cover_client_logo_path: string | null;
-  cover_avatar_path: string | null;
+  cover_button_text: string;
+  cover_bg_style: string | null;
+  cover_bg_color_1: string | null;
+  cover_bg_color_2: string | null;
+  cover_gradient_type: string | null;
+  cover_gradient_angle: number | null;
+  cover_overlay_opacity: number | null;
+  cover_text_color: string | null;
+  cover_subtitle_color: string | null;
+  cover_button_bg: string | null;
+  cover_button_text_color: string | null;
   cover_date: string | null;
-  cover_show_client_logo: boolean;
-  cover_show_avatar: boolean;
   cover_show_date: boolean;
   cover_show_prepared_by: boolean;
+  cover_show_client_logo: boolean;
+  cover_show_avatar: boolean;
+  cover_avatar_path: string | null;
+  cover_client_logo_path: string | null;
+  prepared_by: string | null;
+  prepared_by_member_id: string | null;
+  company_id: string;
   page_names: unknown;
   section_headers: unknown;
-  toc_settings?: unknown;
+  toc_settings: unknown;
+  bg_image_path: string | null;
+  bg_image_overlay_opacity: number | null;
+  text_page_bg_color: string | null;
+  text_page_text_color: string | null;
+  text_page_heading_color: string | null;
+  text_page_font_size: string | null;
+  text_page_border_enabled: boolean | null;
+  text_page_border_color: string | null;
+  text_page_border_radius: string | null;
+  text_page_layout: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -244,8 +254,8 @@ interface TemplateData {
 
 export function useTemplatePreview(templateId: string) {
   const [template, setTemplate] = useState<TemplateData | null>(null);
-  /** Map of PDF page number (1-based) → signed URL */
-  const [pageUrls, setPageUrls] = useState<Record<number, string>>({});
+  /** Single signed URL for the merged PDF (same approach as proposals) */
+  const [pdfUrl, setPdfUrl] = useState<string>('');
   const [pdfPageCount, setPdfPageCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -274,7 +284,7 @@ export function useTemplatePreview(templateId: string) {
 
       setTemplate(tmpl);
 
-      // Build page entries from template_pages
+      // Build page entries from template_pages (for sidebar labels/indents)
       const { data: tPages } = await supabase
         .from('template_pages')
         .select('page_number, label, indent')
@@ -282,6 +292,7 @@ export function useTemplatePreview(templateId: string) {
         .order('page_number', { ascending: true });
 
       const pdfCount = tPages?.length || 0;
+      setPdfPageCount(pdfCount);
 
       if (tPages && tPages.length > 0) {
         const entries: PageNameEntry[] = [];
@@ -299,13 +310,11 @@ export function useTemplatePreview(templateId: string) {
         // since groups aren't stored in template_pages.
         if (tmpl.page_names && Array.isArray(tmpl.page_names)) {
           const normalized = normalizePageNamesWithGroups(tmpl.page_names, pdfCount);
-          // Extract only group entries and their positions
           let groupOffset = 0;
           for (let i = 0; i < normalized.length; i++) {
             if (normalized[i].type === 'group') {
               const insertIdx = Math.min(i + groupOffset, entries.length);
               entries.splice(insertIdx, 0, normalized[i]);
-              // Don't increment groupOffset — the normalized array already accounts for groups
             }
           }
         }
@@ -319,7 +328,6 @@ export function useTemplatePreview(templateId: string) {
         if (brandingRes.ok) {
           const brandingData = await brandingRes.json();
 
-          // Entity-level bg image override (template → company fallback)
           // Entity-level bg image override (template → company fallback)
           if (tmpl.bg_image_path) {
             const { data: bgUrlData } = supabase.storage
@@ -348,24 +356,23 @@ export function useTemplatePreview(templateId: string) {
       }
       setBrandingLoaded(true);
 
-      // 3–6. Fetch page URLs, pricing, packages, text pages in parallel
-      const [urlsRes, pricingRes, pkgRes, textRes] = await Promise.all([
-        fetch(`/api/templates/page-urls?template_id=${templateId}`).catch(() => null),
+      // 3. Fetch signed URL for merged PDF (same approach as proposals)
+      if (tmpl.file_path) {
+        const { data: signedData } = await supabase.storage
+          .from('proposals')
+          .createSignedUrl(tmpl.file_path, 3600);
+
+        if (signedData?.signedUrl) {
+          setPdfUrl(signedData.signedUrl + '&v=' + Date.now());
+        }
+      }
+
+      // 4–6. Fetch pricing, packages, text pages in parallel
+      const [pricingRes, pkgRes, textRes] = await Promise.all([
         fetch(`/api/templates/pricing?template_id=${templateId}`).catch(() => null),
         fetch(`/api/templates/packages?template_id=${templateId}`).catch(() => null),
         fetch(`/api/templates/text-pages?template_id=${templateId}`).catch(() => null),
       ]);
-
-      // 3. Page URLs
-      if (urlsRes?.ok) {
-        try {
-          const urlsData = await urlsRes.json();
-          setPageUrls(urlsData.page_urls || {});
-          setPdfPageCount(urlsData.page_count || 0);
-        } catch {
-          console.error('Failed to parse template page URLs');
-        }
-      }
 
       // 4. Pricing
       if (pricingRes?.ok) {
@@ -478,9 +485,51 @@ export function useTemplatePreview(templateId: string) {
 
   const getTextPage = (id: string) => textPages.find((tp) => tp.id === id);
 
+  // Callback for when PdfViewer loads the document (safety net for page count)
+  const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
+    setPdfPageCount(n);
+    setPageEntries((prev) => {
+      // Separate groups from real page entries
+      const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
+      const realEntries: PageNameEntry[] = [];
+      for (const entry of prev) {
+        if (entry.type === 'group') {
+          groups.push({ beforePdfIndex: realEntries.length, entry });
+        } else {
+          realEntries.push(entry);
+        }
+      }
+
+      // Pad/trim real entries to match PDF page count
+      while (realEntries.length < n) realEntries.push({ name: `Page ${realEntries.length + 1}`, indent: 0 });
+      const trimmed = realEntries.slice(0, n);
+
+      // Re-insert groups at their original positions (if still valid)
+      const result: PageNameEntry[] = [];
+      let realIdx = 0;
+      let groupIdx = 0;
+      while (realIdx < trimmed.length || groupIdx < groups.length) {
+        while (groupIdx < groups.length && groups[groupIdx].beforePdfIndex <= realIdx) {
+          result.push(groups[groupIdx].entry);
+          groupIdx++;
+        }
+        if (realIdx < trimmed.length) {
+          result.push(trimmed[realIdx]);
+          realIdx++;
+        }
+      }
+      while (groupIdx < groups.length) {
+        result.push(groups[groupIdx].entry);
+        groupIdx++;
+      }
+
+      return result;
+    });
+  };
+
   return {
     template,
-    pageUrls,
+    pdfUrl,
     numPages,
     currentPage,
     setCurrentPage,
@@ -501,5 +550,6 @@ export function useTemplatePreview(templateId: string) {
     tocSettings,
     pageSequence: pageMap.pageSequence,
     getPageName,
+    onDocumentLoadSuccess,
   };
 }

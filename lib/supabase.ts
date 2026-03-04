@@ -269,6 +269,7 @@ export type ProposalTemplate = {
   text_page_border_color: string | null;
   text_page_border_radius: string | null;
   text_page_layout: string | null;
+  file_path: string | null; 
 };
 
 export type TemplatePage = {
