@@ -367,7 +367,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
+            <div className="relative h-full">
               <TextPage
                 textPage={currentTextPage}
                 branding={branding}

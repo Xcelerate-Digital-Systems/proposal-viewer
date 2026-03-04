@@ -452,7 +452,7 @@ export function useTemplatePreview(templateId: string) {
         result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
-        result.push({ name: tp?.title || 'Text Page', indent: 0 });
+        result.push({ name: tp?.title || 'Text Page', indent: tp?.indent ?? 0 });
       }
     }
 

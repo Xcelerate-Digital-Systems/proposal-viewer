@@ -53,6 +53,9 @@ export interface DocumentTextPage {
   title: string;
   content: unknown; // TipTap JSON
   sort_order: number;
+  indent: number;                    // add
+  link_url?: string | null;          // add
+  link_label?: string | null;        // add
 }
 
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
@@ -324,7 +327,12 @@ export function useDocument(token: string) {
         result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
-        result.push({ name: tp?.title || 'Text Page', indent: 0 });
+        result.push({
+  name: tp?.title || 'Text Page',
+  indent: tp?.indent ?? 0,
+  link_url: tp?.link_url ?? undefined,
+  link_label: tp?.link_label ?? undefined,
+});
       }
     }
 
