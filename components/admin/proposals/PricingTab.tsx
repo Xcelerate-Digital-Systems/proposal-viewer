@@ -2,19 +2,68 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Check, DollarSign, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Check, DollarSign, Loader2, Eye } from 'lucide-react';
 import {
-ProposalPricing, PricingLineItem, PricingOptionalItem,
-PaymentSchedule, DEFAULT_PAYMENT_SCHEDULE, normalizePaymentSchedule,
+  ProposalPricing, PricingLineItem, PricingOptionalItem,
+  PaymentSchedule, DEFAULT_PAYMENT_SCHEDULE, normalizePaymentSchedule,
+  supabase,
 } from '@/lib/supabase';
+import { CompanyBranding } from '@/hooks/useProposal';
 import { useToast } from '@/components/ui/Toast';
+import Toggle from '@/components/ui/Toggle';
+import PricingPreview from '@/components/admin/shared/PricingPreview';
 import PricingSettings from '../pricing/PricingSettings';
 import PricingLineItems from '../pricing/PricingLineItems';
 import PricingOptionalItems from '../pricing/PricingOptionalItems';
 import PricingTotals from '../pricing/PricingTotals';
 import PricingPaymentSchedule from '../pricing/PricingPaymentSchedule';
 
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
+
 const DEFAULT_INTRO = 'The following costs are based on the agreed scope of works outlined within this proposal. All pricing has been carefully prepared to reflect the works required for successful project delivery.';
+
+const DEFAULT_BRANDING: CompanyBranding = {
+  name: '',
+  logo_url: null,
+  accent_color: '#ff6700',
+  website: null,
+  bg_primary: '#0f0f0f',
+  bg_secondary: '#141414',
+  sidebar_text_color: '#ffffff',
+  accept_text_color: '#ffffff',
+  cover_bg_style: 'gradient',
+  cover_bg_color_1: '#0f0f0f',
+  cover_bg_color_2: '#141414',
+  cover_text_color: '#ffffff',
+  cover_subtitle_color: '#ffffffb3',
+  cover_button_bg: '#ff6700',
+  cover_button_text: '#ffffff',
+  cover_overlay_opacity: 0.65,
+  cover_gradient_type: 'linear',
+  cover_gradient_angle: 135,
+  font_heading: null,
+  font_body: null,
+  font_sidebar: null,
+  font_heading_weight: null,
+  font_body_weight: null,
+  font_sidebar_weight: null,
+  text_page_bg_color: '#141414',
+  text_page_text_color: '#ffffff',
+  text_page_heading_color: null,
+  text_page_font_size: '14',
+  text_page_border_enabled: true,
+  text_page_border_color: null,
+  text_page_border_radius: '12',
+  text_page_layout: 'contained',
+  bg_image_url: null,
+  bg_image_overlay_opacity: 0.85,
+};
+
+/* ------------------------------------------------------------------ */
+/*  Form State                                                         */
+/* ------------------------------------------------------------------ */
 
 type PricingFormState = {
   enabled: boolean;
@@ -44,9 +93,17 @@ const DEFAULT_PRICING: PricingFormState = {
   proposalDate: new Date().toISOString().split('T')[0],
 };
 
+/* ------------------------------------------------------------------ */
+/*  Props                                                              */
+/* ------------------------------------------------------------------ */
+
 interface PricingTabProps {
   proposalId: string;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 
 export default function PricingTab({ proposalId }: PricingTabProps) {
   const toast = useToast();
@@ -56,12 +113,16 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
   const [position, setPosition] = useState(-1);
   const [form, setForm] = useState<PricingFormState>(DEFAULT_PRICING);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [showPreview, setShowPreview] = useState(true);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
+
+  /* ── Fetch pricing ──────────────────────────────────────────── */
 
   useEffect(() => {
     const fetchPricing = async () => {
@@ -92,6 +153,30 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
     };
     fetchPricing();
   }, [proposalId]);
+
+  /* ── Fetch branding ─────────────────────────────────────────── */
+
+  useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const { data: proposal } = await supabase
+          .from('proposals')
+          .select('company_id')
+          .eq('id', proposalId)
+          .single();
+        if (proposal?.company_id) {
+          const res = await fetch(`/api/company/branding?company_id=${proposal.company_id}`);
+          if (res.ok) {
+            const data = await res.json();
+            setBranding({ ...DEFAULT_BRANDING, ...data });
+          }
+        }
+      } catch { /* Use defaults */ }
+    };
+    fetchBranding();
+  }, [proposalId]);
+
+  /* ── Save ───────────────────────────────────────────────────── */
 
   const savePricing = useCallback(async (formData: PricingFormState, pos: number) => {
     setSaveStatus('saving');
@@ -135,6 +220,8 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
     });
   }, [savePricing, position]);
 
+  /* ── Toggle ─────────────────────────────────────────────────── */
+
   const toggleEnabled = useCallback(async () => {
     const newEnabled = !form.enabled;
     const updated = { ...form, enabled: newEnabled };
@@ -150,6 +237,31 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
     }
   }, [form, exists, position, savePricing, toast]);
 
+  /* ── Build preview data ─────────────────────────────────────── */
+
+  const previewPricing: ProposalPricing = {
+    id: 'preview',
+    proposal_id: proposalId,
+    company_id: '',
+    enabled: form.enabled,
+    position,
+    indent: 0,
+    title: form.title,
+    intro_text: form.introText,
+    items: form.items,
+    optional_items: form.optionalItems,
+    payment_schedule: form.paymentSchedule,
+    tax_enabled: form.taxEnabled,
+    tax_rate: form.taxRate,
+    tax_label: form.taxLabel,
+    validity_days: form.validityDays,
+    proposal_date: form.proposalDate,
+    created_at: '',
+    updated_at: '',
+  };
+
+  /* ── Loading ────────────────────────────────────────────────── */
+
   if (!loaded) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -161,8 +273,10 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
     );
   }
 
+  /* ── Render ─────────────────────────────────────────────────── */
+
   return (
-    <div className="p-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
       {/* Toggle header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -183,60 +297,67 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
               <Check size={12} /> Saved
             </span>
           )}
-          <button
-            onClick={toggleEnabled}
-            className="flex items-center gap-2 text-sm font-medium transition-colors"
-          >
-            {form.enabled ? (
-              <>
-                <ToggleRight size={28} className="text-[#017C87]" />
-                <span className="text-[#017C87]">Enabled</span>
-              </>
-            ) : (
-              <>
-                <ToggleLeft size={28} className="text-gray-300" />
-                <span className="text-gray-400">Disabled</span>
-              </>
-            )}
-          </button>
+          {form.enabled && (
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                showPreview ? 'bg-[#017C87]/10 text-[#017C87]' : 'bg-gray-100 text-gray-400 hover:text-gray-600'
+              }`}
+              title={showPreview ? 'Hide preview' : 'Show preview'}
+            >
+              <Eye size={13} /> Preview
+            </button>
+          )}
+          <Toggle enabled={form.enabled} onChange={() => toggleEnabled()} />
         </div>
       </div>
 
+      {/* Content */}
       {form.enabled ? (
-        <div className="space-y-6 max-w-3xl">
-          <PricingSettings
-            title={form.title}
-            introText={form.introText}
-            taxEnabled={form.taxEnabled}
-            validityDays={form.validityDays}
-            proposalDate={form.proposalDate}
-            onTitleChange={(v) => updateForm({ title: v })}
-            onIntroTextChange={(v) => updateForm({ introText: v })}
-            onTaxEnabledChange={(v) => updateForm({ taxEnabled: v })}
-            onValidityDaysChange={(v) => updateForm({ validityDays: v })}
-            onProposalDateChange={(v) => updateForm({ proposalDate: v })}
-          />
-          <PricingLineItems
-            items={form.items}
-            onChange={(items) => updateForm({ items })}
-          />
-          <PricingOptionalItems
-            items={form.optionalItems}
-            onChange={(optionalItems) => updateForm({ optionalItems })}
-          />
-          <PricingTotals
-            items={form.items}
-            taxEnabled={form.taxEnabled}
-            taxRate={form.taxRate}
-            taxLabel={form.taxLabel}
-          />
-          <PricingPaymentSchedule
-            schedule={form.paymentSchedule}
-            items={form.items}
-            taxEnabled={form.taxEnabled}
-            taxRate={form.taxRate}
-            onChange={(paymentSchedule) => updateForm({ paymentSchedule })}
-          />
+        <div className="flex gap-6">
+          {/* Left: Form */}
+          <div className={`flex-1 min-w-0 space-y-6 ${showPreview ? 'max-w-[55%]' : 'max-w-3xl'}`}>
+            <PricingSettings
+              title={form.title}
+              introText={form.introText}
+              taxEnabled={form.taxEnabled}
+              validityDays={form.validityDays}
+              proposalDate={form.proposalDate}
+              onTitleChange={(v) => updateForm({ title: v })}
+              onIntroTextChange={(v) => updateForm({ introText: v })}
+              onTaxEnabledChange={(v) => updateForm({ taxEnabled: v })}
+              onValidityDaysChange={(v) => updateForm({ validityDays: v })}
+              onProposalDateChange={(v) => updateForm({ proposalDate: v })}
+            />
+            <PricingLineItems
+              items={form.items}
+              onChange={(items) => updateForm({ items })}
+            />
+            <PricingOptionalItems
+              items={form.optionalItems}
+              onChange={(optionalItems) => updateForm({ optionalItems })}
+            />
+            <PricingTotals
+              items={form.items}
+              taxEnabled={form.taxEnabled}
+              taxRate={form.taxRate}
+              taxLabel={form.taxLabel}
+            />
+            <PricingPaymentSchedule
+              schedule={form.paymentSchedule}
+              items={form.items}
+              taxEnabled={form.taxEnabled}
+              taxRate={form.taxRate}
+              onChange={(paymentSchedule) => updateForm({ paymentSchedule })}
+            />
+          </div>
+
+          {/* Right: Preview */}
+          {showPreview && (
+            <div className="w-[45%] shrink-0">
+              <PricingPreview pricing={previewPricing} branding={branding} />
+            </div>
+          )}
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">

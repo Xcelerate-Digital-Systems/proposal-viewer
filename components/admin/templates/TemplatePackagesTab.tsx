@@ -2,14 +2,14 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import {
-  Check, Loader2, ToggleLeft, ToggleRight, Package, Plus, Trash2,
-  GripVertical, ChevronDown, ChevronUp, Star, StarOff, Palette, Eye,
-} from 'lucide-react';
+import { Check, Loader2, Package, Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Star, StarOff, Palette, Eye, } from 'lucide-react';
+import Toggle from '@/components/ui/Toggle';
 import { PackageTier, PackageFeature, ProposalPackages } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { useToast } from '@/components/ui/Toast';
 import PackagesPage from '@/components/viewer/PackagesPage';
+import PackagesPreview from '@/components/admin/shared/PackagesPreview';
+
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -364,7 +364,7 @@ export default function TemplatePackagesTab({ templateId, companyId }: TemplateP
   /* ── Render ─────────────────────────────────────────────────── */
 
   return (
-    <div className="p-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
       {/* Toggle header — sits above the measured panel */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -392,13 +392,7 @@ export default function TemplatePackagesTab({ templateId, companyId }: TemplateP
           >
             <Eye size={13} /> Preview
           </button>
-          <button onClick={toggleEnabled} className="flex items-center gap-2 text-sm font-medium transition-colors">
-            {form.enabled ? (
-              <><ToggleRight size={28} className="text-[#017C87]" /><span className="text-[#017C87]">Enabled</span></>
-            ) : (
-              <><ToggleLeft size={28} className="text-gray-300" /><span className="text-gray-400">Disabled</span></>
-            )}
-          </button>
+          <Toggle enabled={form.enabled} onChange={() => toggleEnabled()} />
         </div>
       </div>
 
@@ -488,35 +482,8 @@ export default function TemplatePackagesTab({ templateId, companyId }: TemplateP
 
         {/* ── Right: Live Preview ────────────────────────────────── */}
         {showPreview && form.enabled && (
-          <div ref={previewRef} className="w-[45%] shrink-0 flex flex-col min-h-0">
-            <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-              <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
-                <span className="text-xs text-gray-500 font-medium">Live Preview</span>
-                <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
-                  <Package size={11} /> {form.title}
-                </span>
-              </div>
-              <div className="flex-1 min-h-0 overflow-hidden relative">
-                <div className="absolute inset-0 overflow-y-auto"
-                  style={{ transformOrigin: 'top left', transform: `scale(${previewScale})`, width: `${100 / previewScale}%`, height: `${100 / previewScale}%` }}>
-                  {form.packages.length > 0 ? (
-                    <PackagesPage packages={previewPackages} branding={branding} />
-                  ) : (
-                    <div className="w-full min-h-full flex items-center justify-center" style={{ backgroundColor: branding.bg_primary || '#0f0f0f' }}>
-                      <div className="text-center">
-                        <Package size={32} className="mx-auto mb-3" style={{ color: `${branding.sidebar_text_color || '#ffffff'}55` }} />
-                        <p className="text-sm" style={{ color: `${branding.sidebar_text_color || '#ffffff'}88` }}>Add packages to see a preview</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
-                <span className="text-[10px] text-gray-400">
-                  {form.packages.length} package{form.packages.length !== 1 ? 's' : ''} · Scales to fit
-                </span>
-              </div>
-            </div>
+          <div className="w-[45%] shrink-0">
+            <PackagesPreview packages={previewPackages} branding={branding} />
           </div>
         )}
       </div>

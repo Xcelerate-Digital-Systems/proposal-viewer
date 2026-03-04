@@ -424,7 +424,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
   // ─── Render ──────────────────────────────────────────────────────
   return (
-    <div className="p-5">
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-semibold text-gray-900">Template Pages</h3>

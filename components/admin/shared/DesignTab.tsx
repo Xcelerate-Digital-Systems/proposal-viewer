@@ -249,7 +249,7 @@ export default function DesignTab({
   /* ── Render ────────────────────────────────────────────────── */
 
   return (
-    <div className="bg-gray-50 p-5">
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900">Design Settings</h4>
         {saveStatus === 'saving' && (

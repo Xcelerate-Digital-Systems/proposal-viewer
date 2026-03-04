@@ -370,13 +370,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               : ''}
           </span>
         </div>
-        <button
-          onClick={handleDone}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#017C87] text-white hover:bg-[#01434A] transition-colors disabled:opacity-50"
-        >
-          <Check size={14} />
-          Done
-        </button>
       </div>
 
       {/* Action buttons */}

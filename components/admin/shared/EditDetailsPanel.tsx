@@ -73,7 +73,7 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, onCa
   const hasChanges = fields.some((f) => (form[f.key] || '') !== (initialValues[f.key] || ''));
 
   return (
-    <div className="p-5 space-y-4">
+    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
       <FormFields
         fields={fields}
         values={form}
