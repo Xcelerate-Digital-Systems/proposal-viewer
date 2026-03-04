@@ -11,6 +11,7 @@ import Sidebar from '@/components/viewer/Sidebar';
 import TemplatePdfViewer from '@/components/viewer/TemplatePdfViewer';
 import PricingPage from '@/components/viewer/PricingPage';
 import TextPage from '@/components/viewer/TextPage';
+import TocPage from '@/components/viewer/TocPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import ViewerBackground from '@/components/viewer/ViewerBackground';
@@ -30,11 +31,15 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     branding,
     brandingLoaded,
     pricing,
+    packages,
     isPricingPage,
+    isTocPage,
     isTextPage,
     getTextPageId,
     getTextPage,
     toPdfPage,
+    tocSettings,
+    pageSequence,
     getPageName,
   } = useTemplatePreview(params.id);
 
@@ -49,6 +54,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
 
   // Current page state
   const onPricingPage = isPricingPage(currentPage);
+  const onTocPage = isTocPage(currentPage);
   const onTextPage = isTextPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
@@ -215,7 +221,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Conditionally render PDF, Pricing, or Text page */}
+        {/* Conditionally render PDF, Pricing, TOC, or Text page */}
         {onPricingPage && pricing ? (
           <div
             ref={mainRef}
@@ -223,11 +229,28 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
+            <div className="relative h-full">
               <PricingPage
                 pricing={pricing}
                 branding={branding}
                 clientName="[Client Name]"
+              />
+            </div>
+          </div>
+        ) : onTocPage && tocSettings ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto relative"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              <TocPage
+                branding={branding}
+                tocSettings={tocSettings}
+                pageSequence={pageSequence}
+                pageEntries={pageEntries}
+                numPages={numPages}
               />
             </div>
           </div>

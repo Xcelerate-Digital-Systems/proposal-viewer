@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, Proposal, ProposalComment, ProposalPricing, ProposalPackages, normalizePageNamesWithGroups,
-  normalizePaymentSchedule, PageNameEntry, normalizePageNames } from '@/lib/supabase';
+  normalizePaymentSchedule, PageNameEntry, normalizePageNames, TocSettings, parseTocSettings } from '@/lib/supabase';
 
 
 // Fire-and-forget notification — doesn't block UI
@@ -131,7 +131,7 @@ export interface ProposalTextPage {
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
 
 interface SpecialPage {
-  type: 'pricing' | 'text' | 'packages';
+  type: 'pricing' | 'text' | 'packages' | 'toc';
   position: number;
   title: string;
   textPageId?: string;
@@ -152,7 +152,8 @@ function buildPageMap(
   pdfPageCount: number,
   pricing: ProposalPricing | null,
   textPages: ProposalTextPage[],
-  packages: ProposalPackages | null
+  packages: ProposalPackages | null,
+  tocSettings?: TocSettings | null
 ) {
 
   // Collect all special pages
@@ -166,11 +167,19 @@ function buildPageMap(
     });
   }
 
-  if (packages?.enabled) {
+if (packages?.enabled) {
     specials.push({
       type: 'packages',
       position: packages.position,
       title: packages.title || 'Packages',
+    });
+  }
+
+  if (tocSettings?.enabled) {
+    specials.push({
+      type: 'toc',
+      position: tocSettings.position,
+      title: tocSettings.title || 'Table of Contents',
     });
   }
 
@@ -189,9 +198,10 @@ function buildPageMap(
   if (specials.length === 0 || pdfPageCount === 0) {
     return {
       totalPages: pdfPageCount,
-      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages' } | { type: 'text'; textPageId: string }>,
+      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages' } | { type: 'text'; textPageId: string } | { type: 'toc' }>,
       isPricingPage: (_vp: number) => false,
       isPackagesPage: (_vp: number) => false,
+      isTocPage: (_vp: number) => false,
       isTextPage: (_vp: number) => false,
       getTextPageId: (_vp: number): string | null => null,
       toPdfPage: (vp: number) => vp,
@@ -203,7 +213,8 @@ function buildPageMap(
     | { type: 'pdf'; pdfPage: number }
     | { type: 'pricing' }
     | { type: 'packages' }
-    | { type: 'text'; textPageId: string };
+    | { type: 'text'; textPageId: string }
+    | { type: 'toc' };
 
   const sequence: VirtualPage[] = [];
 
@@ -228,6 +239,8 @@ function buildPageMap(
         sequence.push({ type: 'pricing' });
       } else if (sp.type === 'packages') {
         sequence.push({ type: 'packages' });
+      } else if (sp.type === 'toc') {
+        sequence.push({ type: 'toc' });
       } else {
         sequence.push({ type: 'text', textPageId: sp.textPageId! });
       }
@@ -274,6 +287,11 @@ function buildPageMap(
     return idx >= 0 && idx < sequence.length && sequence[idx].type === 'packages';
   };
 
+  const isTocPage = (vp: number) => {
+    const idx = vp - 1;
+    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'toc';
+  };
+
   const isTextPage = (vp: number) => {
     const idx = vp - 1;
     return idx >= 0 && idx < sequence.length && sequence[idx].type === 'text';
@@ -300,6 +318,7 @@ function buildPageMap(
     pageSequence: sequence,
     isPricingPage,
     isPackagesPage,
+    isTocPage,
     isTextPage,
     getTextPageId,
     toPdfPage,
@@ -454,9 +473,13 @@ export function useProposal(token: string) {
   useEffect(() => { fetchProposal(); }, [fetchProposal]);
 
   // Build virtual page map
+  // Parse TOC settings
+  const tocSettings = proposal ? parseTocSettings(proposal.toc_settings) : null;
+
+  // Build virtual page map
   const pageMap = useMemo(
-    () => buildPageMap(pdfPageCount, pricing, textPages, packages),
-    [pdfPageCount, pricing, textPages, packages]
+    () => buildPageMap(pdfPageCount, pricing, textPages, packages, tocSettings),
+    [pdfPageCount, pricing, textPages, packages, tocSettings]
   );
 
   // Build page entries with special pages inserted for sidebar
@@ -508,6 +531,11 @@ export function useProposal(token: string) {
         result.push({
           name: packages?.title || 'Packages',
           indent: packages?.indent ?? 0,
+        });
+      } else if (seqEntry.type === 'toc') {
+        result.push({
+          name: tocSettings?.title || 'Table of Contents',
+          indent: 0,
         });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
@@ -700,7 +728,10 @@ export function useProposal(token: string) {
     textPages,
     isPricingPage: pageMap.isPricingPage,
     isPackagesPage: pageMap.isPackagesPage,
+    isTocPage: pageMap.isTocPage,
     isTextPage: pageMap.isTextPage,
+    tocSettings,
+    pageSequence: pageMap.pageSequence,
     getTextPageId: pageMap.getTextPageId,
     toPdfPage: pageMap.toPdfPage,
     getTextPage,

@@ -8,9 +8,10 @@ import { createElement } from 'react';
 import TextPage from '@/components/viewer/TextPage';
 import PricingPage from '@/components/viewer/PricingPage';
 import PackagesPage from '@/components/viewer/PackagesPage';
+import TocPage, { PageSequenceEntry } from '@/components/viewer/TocPage';
 import CoverPage from '@/components/viewer/CoverPage';
 import type { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
-import type { Proposal, ProposalPricing, ProposalPackages, PageNameEntry } from '@/lib/supabase';
+import type { Proposal, ProposalPricing, ProposalPackages, PageNameEntry, TocSettings } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 
 /* ——— Types ———————————————————————————————————————————————— */
@@ -53,6 +54,10 @@ export interface CompositeExportOptions {
   proposal?: Proposal | null;
   /** Whether to include the cover page as page 1 */
   includeCover?: boolean;
+  /** TOC support */
+  isTocPage?: (vp: number) => boolean;
+  tocSettings?: TocSettings | null;
+  pageSequence?: Array<{ type: string; pdfPage?: number; textPageId?: string }>;
 }
 
 /* ——— Helpers ———————————————————————————————————————————— */
@@ -314,7 +319,7 @@ async function captureComponent(
 
 /**
  * Capture a React element, embed into the output PDF, and add the page.
- * Shared logic for cover, pricing, packages, and text pages.
+ * Shared logic for cover, pricing, packages, text, and TOC pages.
  */
 async function captureAndAddPage(
   outDoc: PDFDocument,
@@ -446,6 +451,9 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     textPageOrientations,
     proposal,
     includeCover,
+    isTocPage,
+    tocSettings,
+    pageSequence,
   } = opts;
 
   // Load the source PDF
@@ -526,6 +534,20 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
       });
 
       await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
+
+    } else if (isTocPage?.(vp) && tocSettings) {
+      // —— Capture TOC page ——————————————————————————————————————
+      const [pageWidth, pageHeight] = resolvePageDimensions(dominant.orientation, dominant);
+
+      const tocElement = createElement(TocPage, {
+        branding,
+        tocSettings,
+        pageSequence: (pageSequence || []) as PageSequenceEntry[],
+        pageEntries: pageEntries || [],
+        numPages,
+      });
+
+      await captureAndAddPage(outDoc, tocElement, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
 
     } else if (isTextPage(vp)) {
       // —— Capture text page —————————————————————————————————————

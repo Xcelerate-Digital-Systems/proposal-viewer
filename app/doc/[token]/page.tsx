@@ -9,6 +9,7 @@ import { useDocument, deriveBorderColor } from '@/hooks/useDocument';
 import CoverPage from '@/components/viewer/CoverPage';
 import PdfViewer from '@/components/viewer/PdfViewer';
 import TextPage from '@/components/viewer/TextPage';
+import TocPage from '@/components/viewer/TocPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { exportCompositePdf } from '@/lib/compositeExport';
@@ -32,10 +33,13 @@ export default function DocumentViewerPage({ params }: { params: { token: string
     branding,
     brandingLoaded,
     textPages,
+    isTocPage,
     isTextPage,
     getTextPageId,
     getTextPage,
     toPdfPage,
+    tocSettings,
+    pageSequence,
     onDocumentLoadSuccess,
     getPageName,
   } = useDocument(params.token);
@@ -44,6 +48,8 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
 
+  // Is the current virtual page the TOC page?
+  const onTocPage = isTocPage(currentPage);
   // Is the current virtual page a text page?
   const onTextPage = isTextPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
@@ -268,8 +274,25 @@ export default function DocumentViewerPage({ params }: { params: { token: string
             accentColor={accent}
           />
         )}
-        {/* Conditionally render Text page or PDF */}
-        {onTextPage && currentTextPage ? (
+        {/* Conditionally render TOC, Text page, or PDF */}
+        {onTocPage && tocSettings ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto relative"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <ViewerBackground branding={branding} />
+            <div className="relative h-full">
+              <TocPage
+                branding={branding}
+                tocSettings={tocSettings}
+                pageSequence={pageSequence}
+                pageEntries={pageEntries}
+                numPages={numPages}
+              />
+            </div>
+          </div>
+        ) : onTextPage && currentTextPage ? (
           <div
             ref={mainRef}
             className="flex-1 overflow-auto relative"

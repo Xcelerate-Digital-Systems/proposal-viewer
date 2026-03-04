@@ -11,6 +11,7 @@ import PdfViewer from '@/components/viewer/PdfViewer';
 import PricingPage from '@/components/viewer/PricingPage';
 import PackagesPage from '@/components/viewer/PackagesPage';
 import TextPage from '@/components/viewer/TextPage';
+import TocPage from '@/components/viewer/TocPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import CommentsPanel from '@/components/viewer/CommentsPanel';
 import AcceptModal from '@/components/viewer/AcceptModal';
@@ -41,9 +42,12 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     isPricingPage,
     isPackagesPage,
     isTextPage,
+    isTocPage,
     getTextPageId,
     getTextPage,
     toPdfPage,
+    tocSettings,
+    pageSequence,
     onDocumentLoadSuccess,
     getPageName,
     acceptProposal,
@@ -73,11 +77,13 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const onPricingPage = isPricingPage(currentPage);
   // Is the current virtual page the packages page?
   const onPackagesPage = isPackagesPage(currentPage);
+  // Is the current virtual page the TOC page?
+  const onTocPage = isTocPage(currentPage);
   // Is the current virtual page a text page?
   const onTextPage = isTextPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
-  // If not pricing, packages, or text, what PDF page should we show?
+  // If not pricing, packages, toc, or text, what PDF page should we show?
   const pdfPage = toPdfPage(currentPage);
 
   // Get link for current page (skip group entries to find Nth actual page)
@@ -306,7 +312,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             accentColor={accent}
           />
         )}
-        {/* Conditionally render PDF, Pricing, Packages, or Text page */}
+        {/* Conditionally render PDF, Pricing, Packages, TOC, or Text page */}
         {onPricingPage && pricing ? (
           <div
             ref={mainRef}
@@ -314,7 +320,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
+            <div className="relative h-full">
               <PricingPage
                 pricing={pricing}
                 branding={branding}
@@ -334,6 +340,23 @@ export default function ProposalViewerPage({ params }: { params: { token: string
                 packages={packages}
                 branding={branding}
                 clientName={proposal?.client_name}
+              />
+            </div>
+          </div>
+        ) : onTocPage && tocSettings ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto relative"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <ViewerBackground branding={branding} />
+            <div className="relative">
+              <TocPage
+                branding={branding}
+                tocSettings={tocSettings}
+                pageSequence={pageSequence}
+                pageEntries={pageEntries}
+                numPages={numPages}
               />
             </div>
           </div>

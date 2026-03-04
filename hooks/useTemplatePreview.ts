@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, PageNameEntry, normalizePageNamesWithGroups, ProposalPricing, ProposalPackages } from '@/lib/supabase';
+import { supabase, PageNameEntry, normalizePageNamesWithGroups, ProposalPricing, ProposalPackages, TocSettings, parseTocSettings } from '@/lib/supabase';
 import { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -45,7 +45,7 @@ const DEFAULT_BRANDING: CompanyBranding = {
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
 
 interface SpecialPage {
-  type: 'pricing' | 'text' | 'packages';
+  type: 'pricing' | 'text' | 'packages' | 'toc';
   position: number;
   title: string;
   textPageId?: string;
@@ -56,7 +56,8 @@ function buildPageMap(
   pdfPageCount: number,
   pricing: ProposalPricing | null,
   textPages: ProposalTextPage[],
-  packages: ProposalPackages | null
+  packages: ProposalPackages | null,
+  tocSettings?: TocSettings | null
 ) {
   const specials: SpecialPage[] = [];
 
@@ -76,6 +77,14 @@ function buildPageMap(
     });
   }
 
+  if (tocSettings?.enabled) {
+    specials.push({
+      type: 'toc',
+      position: tocSettings.position,
+      title: tocSettings.title || 'Table of Contents',
+    });
+  }
+
   for (const tp of textPages) {
     if (tp.enabled) {
       specials.push({
@@ -92,10 +101,11 @@ function buildPageMap(
     return {
       totalPages: pdfPageCount,
       pageSequence: [] as Array<
-        { type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages' } | { type: 'text'; textPageId: string }
+        { type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages' } | { type: 'text'; textPageId: string } | { type: 'toc' }
       >,
       isPricingPage: (_vp: number) => false,
       isPackagesPage: (_vp: number) => false,
+      isTocPage: (_vp: number) => false,
       isTextPage: (_vp: number) => false,
       getTextPageId: (_vp: number): string | null => null,
       toPdfPage: (vp: number) => vp,
@@ -106,7 +116,8 @@ function buildPageMap(
     | { type: 'pdf'; pdfPage: number }
     | { type: 'pricing' }
     | { type: 'packages' }
-    | { type: 'text'; textPageId: string };
+    | { type: 'text'; textPageId: string }
+    | { type: 'toc' };
 
   const sequence: VirtualPage[] = [];
 
@@ -126,6 +137,8 @@ function buildPageMap(
         sequence.push({ type: 'pricing' });
       } else if (sp.type === 'packages') {
         sequence.push({ type: 'packages' });
+      } else if (sp.type === 'toc') {
+        sequence.push({ type: 'toc' });
       } else {
         sequence.push({ type: 'text', textPageId: sp.textPageId! });
       }
@@ -140,6 +153,8 @@ function buildPageMap(
       sequence.push({ type: 'pricing' });
     } else if (sp.type === 'packages') {
       sequence.push({ type: 'packages' });
+    } else if (sp.type === 'toc') {
+      sequence.push({ type: 'toc' });
     } else {
       sequence.push({ type: 'text', textPageId: sp.textPageId! });
     }
@@ -152,6 +167,8 @@ function buildPageMap(
       sequence.push({ type: 'pricing' });
     } else if (sp.type === 'packages') {
       sequence.push({ type: 'packages' });
+    } else if (sp.type === 'toc') {
+      sequence.push({ type: 'toc' });
     } else {
       sequence.push({ type: 'text', textPageId: sp.textPageId! });
     }
@@ -169,6 +186,10 @@ function buildPageMap(
     isPackagesPage: (vp: number) => {
       const idx = vp - 1;
       return idx >= 0 && idx < sequence.length && sequence[idx].type === 'packages';
+    },
+    isTocPage: (vp: number) => {
+      const idx = vp - 1;
+      return idx >= 0 && idx < sequence.length && sequence[idx].type === 'toc';
     },
     isTextPage: (vp: number) => {
       const idx = vp - 1;
@@ -214,6 +235,7 @@ interface TemplateData {
   cover_show_prepared_by: boolean;
   page_names: unknown;
   section_headers: unknown;
+  toc_settings?: unknown;
   created_at: string;
   updated_at: string;
 }
@@ -381,10 +403,13 @@ export function useTemplatePreview(templateId: string) {
     fetchTemplate();
   }, [fetchTemplate]);
 
+  // Parse TOC settings
+  const tocSettings = template ? parseTocSettings(template.toc_settings) : null;
+
   // Build virtual page map
   const pageMap = useMemo(
-    () => buildPageMap(pdfPageCount, pricing, textPages, packages),
-    [pdfPageCount, pricing, textPages, packages]
+    () => buildPageMap(pdfPageCount, pricing, textPages, packages, tocSettings),
+    [pdfPageCount, pricing, textPages, packages, tocSettings]
   );
 
   // Build page entries with special pages inserted for sidebar
@@ -423,6 +448,8 @@ export function useTemplatePreview(templateId: string) {
         result.push({ name: pricing?.title || 'Your Investment', indent: 0 });
       } else if (seqEntry.type === 'packages') {
         result.push({ name: packages?.title || 'Packages', indent: 0 });
+      } else if (seqEntry.type === 'toc') {
+        result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
         result.push({ name: tp?.title || 'Text Page', indent: 0 });
@@ -431,7 +458,7 @@ export function useTemplatePreview(templateId: string) {
 
     result.push(...trailingGroups);
     return result;
-  }, [pageEntries, pdfPageCount, pricing, packages, textPages, pageMap.pageSequence]);
+  }, [pageEntries, pdfPageCount, pricing, packages, textPages, tocSettings, pageMap.pageSequence]);
 
   // Total virtual pages
   const numPages = pageMap.totalPages > 0 ? pageMap.totalPages : pdfPageCount;
@@ -457,10 +484,13 @@ export function useTemplatePreview(templateId: string) {
     packages,
     isPricingPage: pageMap.isPricingPage,
     isPackagesPage: pageMap.isPackagesPage,
+    isTocPage: pageMap.isTocPage,
     isTextPage: pageMap.isTextPage,
     getTextPageId: pageMap.getTextPageId,
     getTextPage,
     toPdfPage: pageMap.toPdfPage,
+    tocSettings,
+    pageSequence: pageMap.pageSequence,
     getPageName,
   };
 }

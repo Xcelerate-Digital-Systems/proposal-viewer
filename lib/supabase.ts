@@ -158,6 +158,7 @@ export type Proposal = {
   created_at: string;
   updated_at: string;
   page_orientation: 'auto' | 'portrait' | 'landscape';
+  toc_settings: TocSettings | null;
 };
 
 export type Document = {
@@ -190,6 +191,7 @@ export type Document = {
   created_at: string;
   updated_at: string;
   page_orientation: 'auto' | 'portrait' | 'landscape';
+  toc_settings: TocSettings | null;
 };
 
 export type ProposalComment = {
@@ -242,6 +244,7 @@ export type ProposalTemplate = {
   created_at: string;
   updated_at: string;
   page_orientation: 'auto' | 'portrait' | 'landscape';
+  toc_settings: TocSettings | null;
 };
 
 export type TemplatePage = {
@@ -630,7 +633,6 @@ export type TemplatePackages = Omit<ProposalPackages, 'proposal_id'> & {
   template_id: string;
 };
 
-// Default empty package for the admin editor "Add Package" action
 export const DEFAULT_PACKAGE_TIER: Omit<PackageTier, 'id' | 'sort_order'> = {
   name: 'Package Name',
   price: 0,
@@ -641,6 +643,43 @@ export const DEFAULT_PACKAGE_TIER: Omit<PackageTier, 'id' | 'sort_order'> = {
   conditions: [],
   features: [],
 };
+
+// ─── Table of Contents ───────────────────────────────────────────────────────
+
+// Table of Contents settings (stored as JSONB on proposals, documents, templates)
+export type TocSettings = {
+  enabled: boolean;
+  title: string;             // e.g. "Table of Contents"
+  position: number;          // 0 = before first page, N = after PDF page N, -1 = after last page
+  excluded_items: string[];  // identifiers of pages to EXCLUDE from the TOC
+  // Identifiers follow the format:
+  //   "pdf:3"       → PDF page 3 (1-indexed)
+  //   "text:uuid"   → text page by ID
+  //   "pricing"     → pricing page
+  //   "packages"    → packages page
+  //   "group:name"  → section group header
+};
+
+export const DEFAULT_TOC_SETTINGS: TocSettings = {
+  enabled: false,
+  title: 'Table of Contents',
+  position: 0,
+  excluded_items: [],
+};
+
+/** Parse toc_settings from DB JSONB into typed TocSettings */
+export function parseTocSettings(raw: unknown): TocSettings {
+  if (raw && typeof raw === 'object') {
+    const obj = raw as Record<string, unknown>;
+    return {
+      enabled: typeof obj.enabled === 'boolean' ? obj.enabled : false,
+      title: typeof obj.title === 'string' ? obj.title : 'Table of Contents',
+      position: typeof obj.position === 'number' ? obj.position : 0,
+      excluded_items: Array.isArray(obj.excluded_items) ? obj.excluded_items : [],
+    };
+  }
+  return { ...DEFAULT_TOC_SETTINGS };
+}
 
 
 

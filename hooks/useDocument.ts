@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, Document as DocType, PageNameEntry, normalizePageNamesWithGroups } from '@/lib/supabase';
+import { supabase, Document as DocType, PageNameEntry, normalizePageNamesWithGroups, TocSettings, parseTocSettings } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 
 const DEFAULT_BRANDING: CompanyBranding = {
@@ -58,21 +58,30 @@ export interface DocumentTextPage {
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
 
 interface SpecialPage {
-  type: 'text';
+  type: 'text' | 'toc';
   position: number;      // -1 = end, N = after PDF page N
   title: string;
-  textPageId: string;
-  sortOrder: number;
+  textPageId?: string;
+  sortOrder?: number;
 }
 
 /**
- * Virtual page mapping for documents (text pages only, no pricing).
+ * Virtual page mapping for documents (text pages + TOC, no pricing).
  */
 function buildDocumentPageMap(
   pdfPageCount: number,
-  textPages: DocumentTextPage[]
+  textPages: DocumentTextPage[],
+  tocSettings?: TocSettings | null
 ) {
   const specials: SpecialPage[] = [];
+
+  if (tocSettings?.enabled) {
+    specials.push({
+      type: 'toc',
+      position: tocSettings.position,
+      title: tocSettings.title || 'Table of Contents',
+    });
+  }
 
   for (const tp of textPages) {
     if (tp.enabled) {
@@ -89,7 +98,8 @@ function buildDocumentPageMap(
   if (specials.length === 0 || pdfPageCount === 0) {
     return {
       totalPages: pdfPageCount,
-      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'text'; textPageId: string }>,
+      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'text'; textPageId: string } | { type: 'toc' }>,
+      isTocPage: (_vp: number) => false,
       isTextPage: (_vp: number) => false,
       getTextPageId: (_vp: number): string | null => null,
       toPdfPage: (vp: number) => vp,
@@ -98,7 +108,8 @@ function buildDocumentPageMap(
 
   type VirtualPage =
     | { type: 'pdf'; pdfPage: number }
-    | { type: 'text'; textPageId: string };
+    | { type: 'text'; textPageId: string }
+    | { type: 'toc' };
 
   const sequence: VirtualPage[] = [];
 
@@ -114,7 +125,11 @@ function buildDocumentPageMap(
   for (let pdfPage = 1; pdfPage <= pdfPageCount; pdfPage++) {
     while (posIdx < positioned.length && positioned[posIdx].position < pdfPage) {
       const sp = positioned[posIdx];
-      sequence.push({ type: 'text', textPageId: sp.textPageId });
+      if (sp.type === 'toc') {
+        sequence.push({ type: 'toc' });
+      } else {
+        sequence.push({ type: 'text', textPageId: sp.textPageId! });
+      }
       posIdx++;
     }
     sequence.push({ type: 'pdf', pdfPage });
@@ -122,16 +137,29 @@ function buildDocumentPageMap(
 
   while (posIdx < positioned.length) {
     const sp = positioned[posIdx];
-    sequence.push({ type: 'text', textPageId: sp.textPageId });
+    if (sp.type === 'toc') {
+      sequence.push({ type: 'toc' });
+    } else {
+      sequence.push({ type: 'text', textPageId: sp.textPageId! });
+    }
     posIdx++;
   }
 
   trailing.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   for (const sp of trailing) {
-    sequence.push({ type: 'text', textPageId: sp.textPageId });
+    if (sp.type === 'toc') {
+      sequence.push({ type: 'toc' });
+    } else {
+      sequence.push({ type: 'text', textPageId: sp.textPageId! });
+    }
   }
 
   const totalPages = sequence.length;
+
+  const isTocPage = (vp: number) => {
+    const idx = vp - 1;
+    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'toc';
+  };
 
   const isTextPage = (vp: number) => {
     const idx = vp - 1;
@@ -157,6 +185,7 @@ function buildDocumentPageMap(
   return {
     totalPages,
     pageSequence: sequence,
+    isTocPage,
     isTextPage,
     getTextPageId,
     toPdfPage,
@@ -249,10 +278,13 @@ export function useDocument(token: string) {
     return normalizePageNamesWithGroups(document.page_names, pdfPageCount);
   }, [document, pdfPageCount]);
 
+  // Parse TOC settings
+  const tocSettings = document ? parseTocSettings(document.toc_settings) : null;
+
   // Build virtual page map
   const pageMap = useMemo(
-    () => buildDocumentPageMap(pdfPageCount, textPages),
-    [pdfPageCount, textPages]
+    () => buildDocumentPageMap(pdfPageCount, textPages, tocSettings),
+    [pdfPageCount, textPages, tocSettings]
   );
 
   // Build page entries with text pages interleaved for sidebar
@@ -288,6 +320,8 @@ export function useDocument(token: string) {
         const groups = groupsBefore.get(pdfIndex);
         if (groups) result.push(...groups);
         result.push(pdfEntries[pdfIndex] || { name: `Page ${seqEntry.pdfPage}`, indent: 0 });
+      } else if (seqEntry.type === 'toc') {
+        result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
         result.push({ name: tp?.title || 'Text Page', indent: 0 });
@@ -297,7 +331,7 @@ export function useDocument(token: string) {
     result.push(...trailingGroups);
 
     return result;
-  }, [pageEntries, pdfPageCount, textPages, pageMap.pageSequence]);
+  }, [pageEntries, pdfPageCount, textPages, tocSettings, pageMap.pageSequence]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
     setPdfPageCount(n);
@@ -329,9 +363,12 @@ export function useDocument(token: string) {
     branding,
     brandingLoaded,
     textPages,
+    isTocPage: pageMap.isTocPage,
     isTextPage: pageMap.isTextPage,
     getTextPageId: pageMap.getTextPageId,
     toPdfPage: pageMap.toPdfPage,
+    tocSettings,
+    pageSequence: pageMap.pageSequence,
     getTextPage,
     onDocumentLoadSuccess,
     getPageName,

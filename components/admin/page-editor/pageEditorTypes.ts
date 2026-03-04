@@ -6,7 +6,7 @@ import { PageNameEntry, PricingLineItem, PricingOptionalItem } from '@/lib/supab
 
 export type UnifiedItem = {
   id: string;
-  type: 'pdf' | 'pricing' | 'text' | 'group' | 'packages';
+  type: 'pdf' | 'pricing' | 'text' | 'group' | 'packages' | 'toc';
   pdfIndex: number;
   textPageId?: string;
   entryIndex?: number;
