@@ -244,6 +244,16 @@ export function useDocument(token: string) {
             data.bg_image_overlay_opacity = doc.bg_image_overlay_opacity ?? data.bg_image_overlay_opacity ?? 0.85;
           }
 
+          // Entity-level text page style overrides (document → company fallback)
+          if (doc.text_page_bg_color != null) data.text_page_bg_color = doc.text_page_bg_color;
+          if (doc.text_page_text_color != null) data.text_page_text_color = doc.text_page_text_color;
+          if (doc.text_page_heading_color != null) data.text_page_heading_color = doc.text_page_heading_color;
+          if (doc.text_page_font_size != null) data.text_page_font_size = doc.text_page_font_size;
+          if (doc.text_page_border_enabled != null) data.text_page_border_enabled = doc.text_page_border_enabled;
+          if (doc.text_page_border_color != null) data.text_page_border_color = doc.text_page_border_color;
+          if (doc.text_page_border_radius != null) data.text_page_border_radius = doc.text_page_border_radius;
+          if (doc.text_page_layout != null) data.text_page_layout = doc.text_page_layout;
+
           setBranding({ ...DEFAULT_BRANDING, ...data });
         }
       } catch {

@@ -85,6 +85,14 @@ function DesignContent({ documentId, companyId }: { documentId: string; companyI
           companyBgPrimary={companyBgPrimary}
           onSave={fetchDocument}
           initialPageOrientation={document.page_orientation || 'auto'}
+          initialTextPageBgColor={document.text_page_bg_color ?? null}
+          initialTextPageTextColor={document.text_page_text_color ?? null}
+          initialTextPageHeadingColor={document.text_page_heading_color ?? null}
+          initialTextPageFontSize={document.text_page_font_size ?? null}
+          initialTextPageBorderEnabled={document.text_page_border_enabled ?? null}
+          initialTextPageBorderColor={document.text_page_border_color ?? null}
+          initialTextPageBorderRadius={document.text_page_border_radius ?? null}
+          initialTextPageLayout={document.text_page_layout ?? null}
         />
       </div>
     </div>

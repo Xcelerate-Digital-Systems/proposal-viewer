@@ -85,6 +85,14 @@ function DesignContent({ proposalId, companyId }: { proposalId: string; companyI
           companyBgPrimary={companyBgPrimary}
           onSave={fetchProposal}
           initialPageOrientation={proposal.page_orientation || 'auto'}
+          initialTextPageBgColor={proposal.text_page_bg_color ?? null}
+          initialTextPageTextColor={proposal.text_page_text_color ?? null}
+          initialTextPageHeadingColor={proposal.text_page_heading_color ?? null}
+          initialTextPageFontSize={proposal.text_page_font_size ?? null}
+          initialTextPageBorderEnabled={proposal.text_page_border_enabled ?? null}
+          initialTextPageBorderColor={proposal.text_page_border_color ?? null}
+          initialTextPageBorderRadius={proposal.text_page_border_radius ?? null}
+          initialTextPageLayout={proposal.text_page_layout ?? null}
         />
       </div>
     </div>

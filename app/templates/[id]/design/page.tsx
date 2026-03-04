@@ -80,6 +80,14 @@ function DesignContent({ templateId, companyId }: { templateId: string; companyI
           companyBgPrimary={companyBgPrimary}
           onSave={fetchTemplate}
           initialPageOrientation={template.page_orientation || 'auto'}
+          initialTextPageBgColor={template.text_page_bg_color ?? null}
+          initialTextPageTextColor={template.text_page_text_color ?? null}
+          initialTextPageHeadingColor={template.text_page_heading_color ?? null}
+          initialTextPageFontSize={template.text_page_font_size ?? null}
+          initialTextPageBorderEnabled={template.text_page_border_enabled ?? null}
+          initialTextPageBorderColor={template.text_page_border_color ?? null}
+          initialTextPageBorderRadius={template.text_page_border_radius ?? null}
+          initialTextPageLayout={template.text_page_layout ?? null}
         />
       </div>
     </div>

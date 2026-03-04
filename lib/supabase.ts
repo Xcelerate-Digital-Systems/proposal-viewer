@@ -159,6 +159,14 @@ export type Proposal = {
   updated_at: string;
   page_orientation: 'auto' | 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
+  text_page_bg_color: string | null;
+  text_page_text_color: string | null;
+  text_page_heading_color: string | null;
+  text_page_font_size: string | null;
+  text_page_border_enabled: boolean | null;
+  text_page_border_color: string | null;
+  text_page_border_radius: string | null;
+  text_page_layout: string | null;
 };
 
 export type Document = {
@@ -192,6 +200,14 @@ export type Document = {
   updated_at: string;
   page_orientation: 'auto' | 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
+  text_page_bg_color: string | null;
+  text_page_text_color: string | null;
+  text_page_heading_color: string | null;
+  text_page_font_size: string | null;
+  text_page_border_enabled: boolean | null;
+  text_page_border_color: string | null;
+  text_page_border_radius: string | null;
+  text_page_layout: string | null;
 };
 
 export type ProposalComment = {
@@ -245,6 +261,14 @@ export type ProposalTemplate = {
   updated_at: string;
   page_orientation: 'auto' | 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
+  text_page_bg_color: string | null;
+  text_page_text_color: string | null;
+  text_page_heading_color: string | null;
+  text_page_font_size: string | null;
+  text_page_border_enabled: boolean | null;
+  text_page_border_color: string | null;
+  text_page_border_radius: string | null;
+  text_page_layout: string | null;
 };
 
 export type TemplatePage = {

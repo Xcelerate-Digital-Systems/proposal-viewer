@@ -214,7 +214,14 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         bg_image_path: selectedTemplate.bg_image_path || null,
         bg_image_overlay_opacity: selectedTemplate.bg_image_overlay_opacity ?? null,
         page_orientation: selectedTemplate.page_orientation || 'auto',
-        // ── Table of Contents (from template) ──
+        text_page_bg_color: selectedTemplate.text_page_bg_color || null,
+        text_page_text_color: selectedTemplate.text_page_text_color || null,
+        text_page_heading_color: selectedTemplate.text_page_heading_color || null,
+        text_page_font_size: selectedTemplate.text_page_font_size || null,
+        text_page_border_enabled: selectedTemplate.text_page_border_enabled ?? null,
+        text_page_border_color: selectedTemplate.text_page_border_color || null,
+        text_page_border_radius: selectedTemplate.text_page_border_radius || null,
+        text_page_layout: selectedTemplate.text_page_layout || null,
         toc_settings: selectedTemplate.toc_settings || null,
       }).select('id').single();
 

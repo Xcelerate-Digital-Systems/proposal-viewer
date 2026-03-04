@@ -320,6 +320,7 @@ export function useTemplatePreview(templateId: string) {
           const brandingData = await brandingRes.json();
 
           // Entity-level bg image override (template → company fallback)
+          // Entity-level bg image override (template → company fallback)
           if (tmpl.bg_image_path) {
             const { data: bgUrlData } = supabase.storage
               .from('company-assets')
@@ -329,6 +330,16 @@ export function useTemplatePreview(templateId: string) {
             }
             brandingData.bg_image_overlay_opacity = tmpl.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
           }
+
+          // Entity-level text page style overrides (template → company fallback)
+          if (tmpl.text_page_bg_color != null) brandingData.text_page_bg_color = tmpl.text_page_bg_color;
+          if (tmpl.text_page_text_color != null) brandingData.text_page_text_color = tmpl.text_page_text_color;
+          if (tmpl.text_page_heading_color != null) brandingData.text_page_heading_color = tmpl.text_page_heading_color;
+          if (tmpl.text_page_font_size != null) brandingData.text_page_font_size = tmpl.text_page_font_size;
+          if (tmpl.text_page_border_enabled != null) brandingData.text_page_border_enabled = tmpl.text_page_border_enabled;
+          if (tmpl.text_page_border_color != null) brandingData.text_page_border_color = tmpl.text_page_border_color;
+          if (tmpl.text_page_border_radius != null) brandingData.text_page_border_radius = tmpl.text_page_border_radius;
+          if (tmpl.text_page_layout != null) brandingData.text_page_layout = tmpl.text_page_layout;
 
           setBranding(brandingData);
         }
