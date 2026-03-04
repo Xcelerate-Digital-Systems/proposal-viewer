@@ -162,20 +162,98 @@ function resolvePageDimensions(
 }
 
 /**
+ * Fetch an image by URL, convert it to a base64 data URL.
+ * Using a data URL completely sidesteps CORS issues during html2canvas
+ * capture — the pixel data is already inline so no network request is
+ * needed at capture time.
+ *
+ * Returns the data URL string, or null on failure.
+ */
+async function preloadImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) {
+      console.warn('[compositeExport] Failed to fetch background image:', response.status, url);
+      return null;
+    }
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => {
+        console.warn('[compositeExport] Failed to read background image as data URL');
+        resolve(null);
+      };
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.warn('[compositeExport] Failed to preload background image:', err);
+    return null;
+  }
+}
+
+/**
+ * Inject background image + overlay layers into a container element.
+ * Uses an actual <img> tag with a base64 data URL src (not a remote URL)
+ * so html2canvas doesn't need to make any network requests during capture.
+ * object-fit: cover replicates CSS background-size: cover behaviour.
+ *
+ * This mirrors what ViewerBackground renders in the live viewer:
+ *   1. Full-bleed background image (cover, centered)
+ *   2. Colour overlay with configurable opacity
+ */
+function injectBackgroundLayers(
+  container: HTMLElement,
+  branding: CompanyBranding,
+  dataUrl: string,
+): void {
+  // Background image layer — use an <img> with the base64 data URL.
+  const imgEl = document.createElement('img');
+  imgEl.src = dataUrl;
+  imgEl.style.position = 'absolute';
+  imgEl.style.top = '0';
+  imgEl.style.left = '0';
+  imgEl.style.width = '100%';
+  imgEl.style.height = '100%';
+  imgEl.style.objectFit = 'cover';
+  imgEl.style.objectPosition = 'center';
+  imgEl.style.pointerEvents = 'none';
+  container.appendChild(imgEl);
+
+  // Colour overlay layer
+  const overlayLayer = document.createElement('div');
+  overlayLayer.style.position = 'absolute';
+  overlayLayer.style.top = '0';
+  overlayLayer.style.left = '0';
+  overlayLayer.style.width = '100%';
+  overlayLayer.style.height = '100%';
+  overlayLayer.style.backgroundColor = branding.bg_primary || '#0f0f0f';
+  overlayLayer.style.opacity = String(branding.bg_image_overlay_opacity ?? 0.85);
+  overlayLayer.style.pointerEvents = 'none';
+  container.appendChild(overlayLayer);
+}
+
+/** Context object passed through to captureComponent for background rendering */
+type BgImageCtx = { branding: CompanyBranding; dataUrl: string };
+
+/**
  * Render a React element into an offscreen container, capture it with
  * html2canvas, then clean up. Returns a PNG data URL.
  *
  * The container is sized to match the target page aspect ratio so
  * components using min-h-full / flex centering render correctly.
+ *
+ * When bgImage is provided, the background image + overlay are injected
+ * as DOM layers directly into the container — no extra React wrapper
+ * divs that could break the flex height chain.
  */
 async function captureComponent(
   element: React.ReactElement,
   bgColor: string,
-  targetAspect: number, // width / height of the target PDF page
+  targetAspect: number,
   overrideCaptureWidth?: number,
+  bgImage?: BgImageCtx | null,
 ): Promise<string> {
-  // Use a wide capture; the aspect ratio of the target page determines
-  // how the content is laid out — wider pages get wider containers.
   const baseWidth = overrideCaptureWidth || BASE_CAPTURE_WIDTH;
   const captureWidth = Math.max(baseWidth, Math.round(baseWidth * (targetAspect / 1.0)));
   const captureHeight = Math.round(captureWidth / targetAspect);
@@ -191,11 +269,26 @@ async function captureComponent(
   container.style.backgroundColor = bgColor;
   document.body.appendChild(container);
 
-  // Render React component
+  // Inject background image + overlay as DOM layers (before React content).
+  // These are absolutely positioned so they sit behind the content without
+  // adding any wrapper divs that could interfere with flex centering.
+  if (bgImage) {
+    injectBackgroundLayers(container, bgImage.branding, bgImage.dataUrl);
+  }
+
+  // Render React component — sits above bg layers via DOM order.
+  // The wrapper div gets position: relative for z-stacking and
+  // height: 100% so that child min-h-full / items-center resolves
+  // against the full container height.
   const root = createRoot(container);
 
   await new Promise<void>((resolve) => {
-    root.render(createElement('div', { ref: () => resolve(), style: { width: '100%', height: '100%' } }, element));
+    root.render(
+      createElement('div', {
+        ref: () => resolve(),
+        style: { position: 'relative', width: '100%', height: '100%' },
+      }, element),
+    );
   });
 
   // Extra tick for styles/layout to settle
@@ -205,7 +298,7 @@ async function captureComponent(
   const canvas = await html2canvas(container, {
     backgroundColor: bgColor,
     width: captureWidth,
-    scale: 2, // 2x for sharpness
+    scale: 2,
     useCORS: true,
     logging: false,
   });
@@ -230,9 +323,10 @@ async function captureAndAddPage(
   pageWidth: number,
   pageHeight: number,
   captureWidth?: number,
+  bgImage?: BgImageCtx | null,
 ): Promise<void> {
   const targetAspect = pageWidth / pageHeight;
-  const dataUrl = await captureComponent(element, bgColor, targetAspect, captureWidth);
+  const dataUrl = await captureComponent(element, bgColor, targetAspect, captureWidth, bgImage);
   const pngBytes = await fetch(dataUrl).then((r) => r.arrayBuffer());
   const pngImage = await outDoc.embedPng(pngBytes);
 
@@ -366,6 +460,18 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
 
   const bgPrimary = branding.bg_primary || '#0f0f0f';
 
+  // ── Pre-load the background image as a base64 data URL ─────────
+  // html2canvas cannot reliably capture remote images (even with
+  // useCORS / crossOrigin). Converting to a data URL up front means
+  // the pixel data is inline — no network request at capture time.
+  let bgImageCtx: BgImageCtx | null = null;
+  if (branding.bg_image_url) {
+    const dataUrl = await preloadImageAsDataUrl(branding.bg_image_url);
+    if (dataUrl) {
+      bgImageCtx = { branding, dataUrl };
+    }
+  }
+
   // ── Cover page (page 1) ────────────────────────────────────────
   if (includeCover && proposal) {
     const coverData = await resolveCoverData(proposal);
@@ -381,8 +487,8 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
       resolvedPreparedByName: coverData.preparedByName,
     });
 
-    // Cover always uses the dominant page size (matches the PDF slides)
-      await captureAndAddPage(outDoc, coverElement, bgPrimary, dominant.width, dominant.height, 960);
+    // Cover handles its own background — no bgImageCtx needed
+    await captureAndAddPage(outDoc, coverElement, bgPrimary, dominant.width, dominant.height, 960);
   }
 
   // ── Content pages ──────────────────────────────────────────────
@@ -403,7 +509,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         clientName,
       });
 
-      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960);
+      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
 
     } else if (isPackagesPage(vp) && packages) {
       // —— Capture packages page —————————————————————————————————
@@ -419,7 +525,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         clientName,
       });
 
-      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960);
+      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
 
     } else if (isTextPage(vp)) {
       // —— Capture text page —————————————————————————————————————
@@ -447,7 +553,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         });
 
         const textBg = branding.text_page_bg_color || branding.bg_secondary || '#141414';
-        await captureAndAddPage(outDoc, element, textBg, pageWidth, pageHeight);
+        await captureAndAddPage(outDoc, element, textBg, pageWidth, pageHeight, undefined, bgImageCtx);
       } else {
         // Fallback: empty page matching dominant size
         outDoc.addPage([pageWidth, pageHeight]);
