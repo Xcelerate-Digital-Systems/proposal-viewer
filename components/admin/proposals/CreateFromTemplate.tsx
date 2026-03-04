@@ -223,6 +223,9 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         text_page_border_radius: selectedTemplate.text_page_border_radius || null,
         text_page_layout: selectedTemplate.text_page_layout || null,
         toc_settings: selectedTemplate.toc_settings || null,
+        title_font_family: selectedTemplate.title_font_family || null,
+        title_font_weight: selectedTemplate.title_font_weight || null,
+        title_font_size: selectedTemplate.title_font_size || null,
       }).select('id').single();
 
       if (dbError || !newProposal) throw dbError || new Error('Failed to create proposal');

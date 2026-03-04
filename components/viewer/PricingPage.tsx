@@ -7,6 +7,8 @@ import {
   normalizePaymentSchedule, milestoneAmount,
 } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor, deriveSurfaceColor } from '@/hooks/useProposal';
+import { fontFamily } from '@/lib/google-fonts';
+
 
 interface PricingPageProps {
   pricing: ProposalPricing;
@@ -89,8 +91,13 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
           {/* Title */}
           <div className="mb-6">
             <h1
-              className="text-2xl sm:text-3xl font-bold tracking-tight font-[family-name:var(--font-display)]"
-              style={{ color: textColor }}
+              className="text-2xl sm:text-3xl font-bold tracking-tight"
+              style={{
+                color: textColor,
+                fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
+                fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
+                ...(branding.title_font_size ? { fontSize: `${branding.title_font_size}px` } : {}),
+              }}
             >
               {pricing.title}
             </h1>

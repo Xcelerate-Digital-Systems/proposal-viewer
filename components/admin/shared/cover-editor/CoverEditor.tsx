@@ -345,7 +345,7 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:max-h-[calc(100vh-200px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Settings */}
         <CoverSettingsPanel
           type={type}

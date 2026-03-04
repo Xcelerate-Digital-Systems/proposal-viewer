@@ -206,7 +206,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   if (showCover && proposal?.cover_enabled) {
     return (
       <>
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
         <CoverPage proposal={proposal} branding={branding} onStart={() => setShowCover(false)} />
       </>
     );
@@ -217,7 +217,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       className="flex flex-col lg:flex-row overflow-hidden"
       style={{ backgroundColor: bgPrimary, height: '100dvh' }}
     >
-      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
 
       {/* Mobile header bar — fixed to top, branded */}
       <div
@@ -335,7 +335,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
+            <div className="relative h-full">
               <PackagesPage
                 packages={packages}
                 branding={branding}
@@ -350,7 +350,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
+            <div className="relative h-full">
               <TocPage
                 branding={branding}
                 tocSettings={tocSettings}

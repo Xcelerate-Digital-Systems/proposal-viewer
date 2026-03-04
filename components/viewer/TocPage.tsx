@@ -46,7 +46,7 @@ export default function TocPage({
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const textColor = branding.cover_text_color || '#ffffff';
   const subtitleColor = branding.cover_subtitle_color || '#ffffffb3';
-  const headingFont = fontFamily(branding.font_heading);
+  const headingFont = fontFamily(branding.title_font_family || branding.font_heading);
   const bodyFont = fontFamily(branding.font_body);
   const excludedSet = useMemo(
     () => new Set(tocSettings.excluded_items),
@@ -110,7 +110,7 @@ export default function TocPage({
   return (
     <div
       className="min-h-full flex items-center justify-center py-16 px-8"
-      style={{ backgroundColor: bgPrimary }}
+      style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
     >
       <div className="w-full max-w-4xl">
         {/* Title — last word highlighted in accent colour */}
@@ -121,8 +121,13 @@ export default function TocPage({
             const firstWords = words.join(' ');
             return (
               <h1
-                className="text-4xl md:text-5xl lg:text-6xl font-black uppercase leading-tight"
-                style={{ fontFamily: headingFont, color: textColor }}
+                className="text-3xl md:text-4xl lg:text-5xl font-black uppercase leading-tight"
+                style={{
+                  fontFamily: headingFont,
+                  color: textColor,
+                  fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '900'),
+                  ...(branding.title_font_size ? { fontSize: `${branding.title_font_size}px` } : {}),
+                }}
               >
                 {firstWords && (
                   <>

@@ -93,6 +93,9 @@ function DesignContent({ documentId, companyId }: { documentId: string; companyI
           initialTextPageBorderColor={document.text_page_border_color ?? null}
           initialTextPageBorderRadius={document.text_page_border_radius ?? null}
           initialTextPageLayout={document.text_page_layout ?? null}
+          initialTitleFontFamily={document.title_font_family ?? null}
+          initialTitleFontWeight={document.title_font_weight ?? null}
+          initialTitleFontSize={document.title_font_size ?? null}
         />
       </div>
     </div>

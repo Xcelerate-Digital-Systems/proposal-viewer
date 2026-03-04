@@ -155,7 +155,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
       <>
         {/* Loader overlay — stays mounted so it animates 85% → 100% → fade */}
         <ViewerLoader branding={branding} loading={loading} label="Loading template preview…" />
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <CoverPage proposal={coverCompat as any} branding={branding} onStart={() => setShowCover(false)} />
       </>
@@ -169,7 +169,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     >
       {/* Loader overlay — stays mounted so it animates 85% → 100% → fade */}
       <ViewerLoader branding={branding} loading={loading} label="Loading template preview…" />
-      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
 
       {!loading && template && (<>
       {/* Mobile header bar */}
@@ -247,7 +247,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
+            <div className="relative h-full">
               <PackagesPage
                 packages={packages}
                 branding={branding}
@@ -262,7 +262,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
+            <div className="relative h-full">
               <TocPage
                 branding={branding}
                 tocSettings={tocSettings}
@@ -279,7 +279,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
+            <div className="relative h-full">
               <TextPage
                 textPage={currentTextPage}
                 branding={branding}

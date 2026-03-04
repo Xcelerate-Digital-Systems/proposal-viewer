@@ -199,7 +199,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
 
     return (
       <>
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <CoverPage proposal={coverCompat as any} branding={branding} onStart={() => setShowCover(false)} />
       </>
@@ -211,7 +211,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
       className="flex flex-col lg:flex-row overflow-hidden"
       style={{ backgroundColor: bgPrimary, height: '100dvh' }}
     >
-      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
 
       {/* Mobile header */}
       <div

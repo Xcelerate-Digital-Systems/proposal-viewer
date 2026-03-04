@@ -132,7 +132,7 @@ function renderNode(
   if (node.type === 'dynamicField') {
     const resolved = resolveDynamicField(node.attrs?.field as string || '', context);
     return (
-     <span key={key} style={{ color: textColor }}>
+      <span key={key} style={{ color: textColor }}>
         {resolved}
       </span>
     );
@@ -287,78 +287,37 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   const fontSize = parseInt(branding.text_page_font_size || '14', 10);
   const accent = branding.accent_color || '#ff6700';
   const border = deriveBorderColor(bgColor);
-  const borderEnabled = branding.text_page_border_enabled ?? true;
-  const borderColor = branding.text_page_border_color || border;
-  const borderRadius = parseInt(branding.text_page_border_radius || '12', 10);
-  const layout = branding.text_page_layout || 'contained';
   const muted = `${textColor}99`;
 
   const context = { clientName, companyName, userName, proposalTitle };
   const doc = textPage.content as TipTapNode;
 
-  // Full-width layout — no card wrapper, content fills the area
-  if (layout === 'full') {
-    return (
-      <div
-       className="w-full min-h-full flex items-center py-8 lg:py-12 px-10 sm:px-16 lg:px-24"
-        style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgColor }}
-      >
-        <div className="w-full">
-          {/* Title */}
-          {textPage.title && (
-            <div className="mb-6">
-              <h1
-                className="text-2xl sm:text-3xl font-bold tracking-tight"
-                style={{ color: headingColor, fontFamily: fontFamily(branding.font_heading, 'system-ui, sans-serif'), fontWeight: branding.font_heading_weight ? Number(branding.font_heading_weight) : undefined }}
-              >
-                {textPage.title}
-              </h1>
-            </div>
-          )}
-
-          {/* Content */}
-          <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
-            {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Contained layout (default) — centered card with border + accent bar
   return (
     <div
-      className="w-full min-h-full flex items-center justify-center py-8 lg:py-12 px-8 sm:px-12 lg:px-16"
+      className="w-full min-h-full flex flex-col justify-center py-8 lg:py-12 px-16 sm:px-24 lg:px-32"
       style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgColor }}
     >
-      <div
-        className="w-full max-w-[700px] overflow-hidden"
-        style={{
-          backgroundColor: bgColor,
-          border: borderEnabled ? `1px solid ${borderColor}` : 'none',
-          borderRadius: `${borderRadius}px`,
-        }}
-      >
-        {/* Header accent bar */}
-        <div className="h-1" style={{ backgroundColor: accent }} />
-
-        <div className="p-6 sm:p-8 lg:p-10">
-          {/* Title */}
-          {textPage.title && (
-            <div className="mb-6">
-              <h1
-                className="text-2xl sm:text-3xl font-bold tracking-tight"
-                style={{ color: headingColor, fontFamily: fontFamily(branding.font_heading, 'system-ui, sans-serif'), fontWeight: branding.font_heading_weight ? Number(branding.font_heading_weight) : undefined }}
-              >
-                {textPage.title}
-              </h1>
-            </div>
-          )}
-
-          {/* Content */}
-          <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
-            {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
+      <div className="w-full h-full">
+        {/* Title */}
+        {textPage.title && (
+          <div className="mb-6">
+            <h1
+              className="text-2xl sm:text-3xl font-bold tracking-tight"
+              style={{
+                color: headingColor,
+                fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
+                fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
+                ...(branding.title_font_size ? { fontSize: `${branding.title_font_size}px` } : {}),
+              }}
+            >
+              {textPage.title}
+            </h1>
           </div>
+        )}
+
+        {/* Content */}
+        <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
+          {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
         </div>
       </div>
     </div>

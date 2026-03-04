@@ -4,43 +4,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, Document as DocType, PageNameEntry, normalizePageNamesWithGroups, TocSettings, parseTocSettings } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 
-const DEFAULT_BRANDING: CompanyBranding = {
-  name: '',
-  logo_url: null,
-  accent_color: '#ff6700',
-  website: null,
-  bg_primary: '#0f0f0f',
-  bg_secondary: '#141414',
-  sidebar_text_color: '#ffffff',
-  accept_text_color: '#ffffff',
-  cover_bg_style: 'gradient',
-  cover_bg_color_1: '#0f0f0f',
-  cover_bg_color_2: '#141414',
-  cover_text_color: '#ffffff',
-  cover_subtitle_color: '#ffffffb3',
-  cover_button_bg: '#ff6700',
-  cover_button_text: '#ffffff',
-  cover_overlay_opacity: 0.65,
-  cover_gradient_type: 'linear',
-  cover_gradient_angle: 135,
-  font_heading: null,
-  font_body: null,
-  font_sidebar: null,
-  font_heading_weight: null,
-  font_body_weight: null,
-  font_sidebar_weight: null,
-  text_page_bg_color: '#141414',
-  text_page_text_color: '#ffffff',
-  text_page_heading_color: null,
-  text_page_font_size: '14',
-  text_page_border_enabled: true,
-  text_page_border_color: null,
-  text_page_border_radius: '12',
-  text_page_layout: 'contained',
-  bg_image_url: null,
-  bg_image_overlay_opacity: 0.85,
-};
 
 /* ─── Text page type ───────────────────────────────────────────────── */
 
@@ -253,6 +218,9 @@ export function useDocument(token: string) {
           if (doc.text_page_border_color != null) data.text_page_border_color = doc.text_page_border_color;
           if (doc.text_page_border_radius != null) data.text_page_border_radius = doc.text_page_border_radius;
           if (doc.text_page_layout != null) data.text_page_layout = doc.text_page_layout;
+          if (doc.title_font_family != null) data.title_font_family = doc.title_font_family;
+          if (doc.title_font_weight != null) data.title_font_weight = doc.title_font_weight;
+          if (doc.title_font_size != null) data.title_font_size = doc.title_font_size;
 
           setBranding({ ...DEFAULT_BRANDING, ...data });
         }

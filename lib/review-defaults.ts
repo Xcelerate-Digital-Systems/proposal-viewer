@@ -1,23 +1,16 @@
 // lib/review-defaults.ts
 
-import { type CompanyBranding } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING as BASE_BRANDING } from '@/lib/branding-defaults';
+import type { CompanyBranding } from '@/hooks/useProposal';
 
 export const DEFAULT_BRANDING: CompanyBranding = {
-  name: '', logo_url: null, accent_color: '#01434A', website: null,
-  bg_primary: '#01434A', bg_secondary: '#017C87',
-  sidebar_text_color: '#ffffff', accept_text_color: '#ffffff',
-  cover_bg_style: 'gradient', cover_bg_color_1: '#01434A', cover_bg_color_2: '#017C87',
-  cover_text_color: '#ffffff', cover_subtitle_color: '#ffffffb3',
-  cover_button_bg: '#017C87', cover_button_text: '#ffffff',
-  cover_overlay_opacity: 0.65, cover_gradient_type: 'linear', cover_gradient_angle: 135,
-  font_heading: null, font_body: null, font_sidebar: null,
-  font_heading_weight: null, font_body_weight: null, font_sidebar_weight: null,
-  text_page_bg_color: '#141414', text_page_text_color: '#ffffff',
-  text_page_heading_color: null, text_page_font_size: '14',
-  text_page_border_enabled: true, text_page_border_color: null,
-  text_page_border_radius: '12', text_page_layout: 'contained',
-  bg_image_url: null,
-  bg_image_overlay_opacity: 0.85,
+  ...BASE_BRANDING,
+  accent_color: '#01434A',
+  bg_primary: '#01434A',
+  bg_secondary: '#017C87',
+  cover_bg_color_1: '#01434A',
+  cover_bg_color_2: '#017C87',
+  cover_button_bg: '#017C87',
 };
 
 export const GUEST_STORAGE_KEY = 'review_guest_identity';

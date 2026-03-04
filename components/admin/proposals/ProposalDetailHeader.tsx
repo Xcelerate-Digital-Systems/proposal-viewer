@@ -23,7 +23,7 @@ type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined';
 
 interface ProposalDetailHeaderProps {
   proposalId: string;
-  activeTab: 'pages' | 'pricing' | 'packages' | 'contents' | 'cover' | 'design' | 'details';
+  activeTab: 'pages'| 'design' | 'pricing' | 'packages' | 'contents' | 'cover' | 'details';
   customDomain?: string | null;
 }
 

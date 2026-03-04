@@ -3,6 +3,8 @@
 
 import { ProposalPackages, PackageTier, PackageFeature, formatAUD } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor, deriveSurfaceColor } from '@/hooks/useProposal';
+import { fontFamily } from '@/lib/google-fonts';
+
 
 interface PackagesPageProps {
   packages: ProposalPackages;
@@ -41,9 +43,14 @@ export default function PackagesPage({ packages, branding, clientName }: Package
       <div className="w-full max-w-[1200px]">
         {/* Title section */}
         <div className="mb-8 text-center">
-          <h1
-            className="text-2xl sm:text-3xl font-bold tracking-tight font-[family-name:var(--font-display)]"
-            style={{ color: textColor }}
+         <h1
+            className="text-2xl sm:text-3xl font-bold tracking-tight"
+            style={{
+              color: textColor,
+              fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
+              fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
+              ...(branding.title_font_size ? { fontSize: `${branding.title_font_size}px` } : {}),
+            }}
           >
             {packages.title}
           </h1>

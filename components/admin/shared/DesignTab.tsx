@@ -2,9 +2,10 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Check, Loader2, Upload, Trash2, Image as ImageIcon, RotateCcw, FileText } from 'lucide-react';
+import { Check, Loader2, Upload, Trash2, Image as ImageIcon, RotateCcw, FileText, Type } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import TextPagePreview from '@/components/admin/company/TextPagePreview';
+import FontSelect from '@/components/admin/shared/FontSelect';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -12,7 +13,6 @@ import TextPagePreview from '@/components/admin/company/TextPagePreview';
 
 type EntityType = 'proposal' | 'template' | 'document';
 type PageOrientation = 'auto' | 'portrait' | 'landscape';
-type TextPageLayout = 'contained' | 'full';
 
 const tableByType: Record<EntityType, string> = {
   proposal: 'proposals',
@@ -38,7 +38,6 @@ interface TextPageDefaults {
   border_enabled: boolean;
   border_color: string;
   border_radius: string;
-  layout: TextPageLayout;
   accent_color: string;
 }
 
@@ -50,7 +49,6 @@ const FALLBACK_DEFAULTS: TextPageDefaults = {
   border_enabled: true,
   border_color: '',
   border_radius: '12',
-  layout: 'contained',
   accent_color: '#ff6700',
 };
 
@@ -81,6 +79,10 @@ interface DesignTabProps {
   initialTextPageBorderColor?: string | null;
   initialTextPageBorderRadius?: string | null;
   initialTextPageLayout?: string | null;
+  /** Entity-level title font settings (null = use company heading font) */
+  initialTitleFontFamily?: string | null;
+  initialTitleFontWeight?: string | null;
+  initialTitleFontSize?: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -181,17 +183,18 @@ export default function DesignTab({
   initialTextPageBgColor,
   initialTextPageTextColor,
   initialTextPageHeadingColor,
-  initialTextPageFontSize,
   initialTextPageBorderEnabled,
   initialTextPageBorderColor,
   initialTextPageBorderRadius,
-  initialTextPageLayout,
+  initialTitleFontFamily,
+  initialTitleFontWeight,
+  initialTitleFontSize,
 }: DesignTabProps) {
   const table = tableByType[type];
   const storagePrefix = storagePrefixByType[type];
 
   /* ================================================================ */
-  /*  BACKGROUND IMAGE STATE (existing)                                */
+  /*  BACKGROUND IMAGE STATE                                           */
   /* ================================================================ */
 
   const [bgMode, setBgMode] = useState<'company' | 'custom'>(
@@ -209,107 +212,101 @@ export default function DesignTab({
   const [companyOverlayOpacity, setCompanyOverlayOpacity] = useState(0.85);
 
   /* ================================================================ */
-  /*  PAGE ORIENTATION STATE (existing)                                */
+  /*  PAGE ORIENTATION STATE                                           */
   /* ================================================================ */
 
   const [pageOrientation, setPageOrientation] = useState<PageOrientation>(initialPageOrientation);
 
   /* ================================================================ */
-  /*  TEXT PAGE STYLE STATE (new)                                      */
+  /*  TEXT PAGE STYLE STATE                                            */
   /* ================================================================ */
 
-  const hasTextPageOverride =
-    initialTextPageBgColor !== null && initialTextPageBgColor !== undefined;
-
-  const [tpMode, setTpMode] = useState<'company' | 'custom'>(
-    hasTextPageOverride ? 'custom' : 'company'
-  );
   const [tpBgColor, setTpBgColor] = useState(initialTextPageBgColor || FALLBACK_DEFAULTS.bg_color);
   const [tpTextColor, setTpTextColor] = useState(initialTextPageTextColor || FALLBACK_DEFAULTS.text_color);
   const [tpHeadingColor, setTpHeadingColor] = useState(initialTextPageHeadingColor || FALLBACK_DEFAULTS.heading_color);
-  const [tpFontSize, setTpFontSize] = useState(initialTextPageFontSize || FALLBACK_DEFAULTS.font_size);
   const [tpBorderEnabled, setTpBorderEnabled] = useState(initialTextPageBorderEnabled ?? FALLBACK_DEFAULTS.border_enabled);
   const [tpBorderColor, setTpBorderColor] = useState(initialTextPageBorderColor || FALLBACK_DEFAULTS.border_color);
   const [tpBorderRadius, setTpBorderRadius] = useState(initialTextPageBorderRadius || FALLBACK_DEFAULTS.border_radius);
-  const [tpLayout, setTpLayout] = useState<TextPageLayout>((initialTextPageLayout as TextPageLayout) || FALLBACK_DEFAULTS.layout);
-
-  /* ── Company text page defaults (fetched) ──────────────────── */
-  const [companyTpDefaults, setCompanyTpDefaults] = useState<TextPageDefaults>(FALLBACK_DEFAULTS);
 
   /* ================================================================ */
-  /*  SHARED STATE                                                     */
+  /*  TITLE FONT STATE                                                 */
+  /* ================================================================ */
+
+  const [titleFontFamily, setTitleFontFamily] = useState<string | null>(initialTitleFontFamily ?? null);
+  const [titleFontWeight, setTitleFontWeight] = useState<string | null>(initialTitleFontWeight ?? null);
+  const [titleFontSize, setTitleFontSize] = useState<string>(initialTitleFontSize || '');
+
+  /* ================================================================ */
+  /*  SAVE STATUS + REFS                                               */
   /* ================================================================ */
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const fileRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initializedRef = useRef(false);
   const tpInitializedRef = useRef(false);
+  const titleFontInitializedRef = useRef(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   /* ================================================================ */
-  /*  EFFECTS — Load data                                              */
+  /*  COMPANY DEFAULTS                                                 */
   /* ================================================================ */
 
-  /** Load entity bg image URL */
-  useEffect(() => {
-    if (bgImagePath) {
-      const { data } = supabase.storage
-        .from('company-assets')
-        .getPublicUrl(bgImagePath);
-      setBgImageUrl(data?.publicUrl || null);
-    } else {
-      setBgImageUrl(null);
-    }
-  }, [bgImagePath]);
+  const [companyTpDefaults, setCompanyTpDefaults] = useState<TextPageDefaults>(FALLBACK_DEFAULTS);
 
-  /** Load company defaults for bg image AND text page style */
   useEffect(() => {
     const fetchCompanyDefaults = async () => {
-      const { data } = await supabase
+      // Fetch company bg image
+      const { data: companyData } = await supabase
         .from('companies')
-        .select('bg_image_path, bg_image_overlay_opacity, accent_color, text_page_bg_color, text_page_text_color, text_page_heading_color, text_page_font_size, text_page_border_enabled, text_page_border_color, text_page_border_radius, text_page_layout')
+        .select('bg_image_path, bg_image_overlay_opacity, text_page_bg_color, text_page_text_color, text_page_heading_color, text_page_font_size, text_page_border_enabled, text_page_border_color, text_page_border_radius, accent_color')
         .eq('id', companyId)
         .single();
 
-      if (data) {
-        // Background image defaults
-        setCompanyOverlayOpacity(data.bg_image_overlay_opacity ?? 0.85);
-        if (data.bg_image_path) {
+      if (companyData) {
+        // Company bg image
+        if (companyData.bg_image_path) {
           const { data: urlData } = supabase.storage
             .from('company-assets')
-            .getPublicUrl(data.bg_image_path);
-          setCompanyBgImageUrl(urlData?.publicUrl || null);
+            .getPublicUrl(companyData.bg_image_path);
+          if (urlData?.publicUrl) setCompanyBgImageUrl(urlData.publicUrl);
         }
+        setCompanyOverlayOpacity(companyData.bg_image_overlay_opacity ?? 0.85);
 
-        // Text page defaults
+        // Company text page defaults
         const defaults: TextPageDefaults = {
-          bg_color: data.text_page_bg_color || FALLBACK_DEFAULTS.bg_color,
-          text_color: data.text_page_text_color || FALLBACK_DEFAULTS.text_color,
-          heading_color: data.text_page_heading_color || FALLBACK_DEFAULTS.heading_color,
-          font_size: data.text_page_font_size || FALLBACK_DEFAULTS.font_size,
-          border_enabled: data.text_page_border_enabled ?? FALLBACK_DEFAULTS.border_enabled,
-          border_color: data.text_page_border_color || FALLBACK_DEFAULTS.border_color,
-          border_radius: data.text_page_border_radius || FALLBACK_DEFAULTS.border_radius,
-          layout: (data.text_page_layout as TextPageLayout) || FALLBACK_DEFAULTS.layout,
-          accent_color: data.accent_color || FALLBACK_DEFAULTS.accent_color,
+          bg_color: companyData.text_page_bg_color || FALLBACK_DEFAULTS.bg_color,
+          text_color: companyData.text_page_text_color || FALLBACK_DEFAULTS.text_color,
+          heading_color: companyData.text_page_heading_color || FALLBACK_DEFAULTS.heading_color,
+          font_size: companyData.text_page_font_size || FALLBACK_DEFAULTS.font_size,
+          border_enabled: companyData.text_page_border_enabled ?? FALLBACK_DEFAULTS.border_enabled,
+          border_color: companyData.text_page_border_color || FALLBACK_DEFAULTS.border_color,
+          border_radius: companyData.text_page_border_radius || FALLBACK_DEFAULTS.border_radius,
+          accent_color: companyData.accent_color || FALLBACK_DEFAULTS.accent_color,
         };
         setCompanyTpDefaults(defaults);
 
-        // If in company mode, sync local state to company values
-        if (!hasTextPageOverride) {
+        // If no entity-level overrides exist, sync to company values
+        if (initialTextPageBgColor == null) {
           setTpBgColor(defaults.bg_color);
           setTpTextColor(defaults.text_color);
           setTpHeadingColor(defaults.heading_color);
-          setTpFontSize(defaults.font_size);
           setTpBorderEnabled(defaults.border_enabled);
           setTpBorderColor(defaults.border_color);
           setTpBorderRadius(defaults.border_radius);
-          setTpLayout(defaults.layout);
         }
       }
     };
     fetchCompanyDefaults();
-  }, [companyId, hasTextPageOverride]);
+  }, [companyId, initialTextPageBgColor]);
+
+  // Fetch entity bg image signed URL
+  useEffect(() => {
+    if (!bgImagePath) return;
+    const { data } = supabase.storage
+      .from('company-assets')
+      .getPublicUrl(bgImagePath);
+    if (data?.publicUrl) setBgImageUrl(data.publicUrl);
+  }, [bgImagePath]);
 
   /** Cleanup debounce on unmount */
   useEffect(() => {
@@ -338,26 +335,20 @@ export default function DesignTab({
       payload.bg_image_overlay_opacity = overlayOpacity;
     }
 
-    // Text page style
-    if (tpMode === 'company') {
-      payload.text_page_bg_color = null;
-      payload.text_page_text_color = null;
-      payload.text_page_heading_color = null;
-      payload.text_page_font_size = null;
-      payload.text_page_border_enabled = null;
-      payload.text_page_border_color = null;
-      payload.text_page_border_radius = null;
-      payload.text_page_layout = null;
-    } else {
-      payload.text_page_bg_color = tpBgColor;
-      payload.text_page_text_color = tpTextColor;
-      payload.text_page_heading_color = tpHeadingColor || null;
-      payload.text_page_font_size = tpFontSize;
-      payload.text_page_border_enabled = tpBorderEnabled;
-      payload.text_page_border_color = tpBorderColor || null;
-      payload.text_page_border_radius = tpBorderRadius;
-      payload.text_page_layout = tpLayout;
-    }
+    // Text page style — always save values directly
+    payload.text_page_bg_color = tpBgColor;
+    payload.text_page_text_color = tpTextColor;
+    payload.text_page_heading_color = tpHeadingColor || null;
+    payload.text_page_font_size = null; // Font size handled in text editor
+    payload.text_page_border_enabled = tpBorderEnabled;
+    payload.text_page_border_color = tpBorderColor || null;
+    payload.text_page_border_radius = tpBorderRadius;
+    payload.text_page_layout = 'full'; // Always full width
+
+    // Title font
+    payload.title_font_family = titleFontFamily;
+    payload.title_font_weight = titleFontWeight;
+    payload.title_font_size = titleFontSize || null;
 
     await supabase.from(table).update(payload).eq('id', entityId);
     setSaveStatus('saved');
@@ -365,8 +356,9 @@ export default function DesignTab({
     onSave?.();
   }, [
     bgMode, bgImagePath, overlayOpacity, pageOrientation,
-    tpMode, tpBgColor, tpTextColor, tpHeadingColor, tpFontSize,
-    tpBorderEnabled, tpBorderColor, tpBorderRadius, tpLayout,
+    tpBgColor, tpTextColor, tpHeadingColor,
+    tpBorderEnabled, tpBorderColor, tpBorderRadius,
+    titleFontFamily, titleFontWeight, titleFontSize,
     table, entityId, onSave,
   ]);
 
@@ -396,10 +388,20 @@ export default function DesignTab({
     }
     scheduleSave(800);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tpMode, tpBgColor, tpTextColor, tpHeadingColor, tpFontSize, tpBorderEnabled, tpBorderColor, tpBorderRadius, tpLayout]);
+  }, [tpBgColor, tpTextColor, tpHeadingColor, tpBorderEnabled, tpBorderColor, tpBorderRadius]);
+
+  /* ── Autosave: watch title font state ──────────────────────── */
+  useEffect(() => {
+    if (!titleFontInitializedRef.current) {
+      titleFontInitializedRef.current = true;
+      return;
+    }
+    scheduleSave(800);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titleFontFamily, titleFontWeight, titleFontSize]);
 
   /* ================================================================ */
-  /*  BACKGROUND IMAGE HANDLERS (existing)                             */
+  /*  BACKGROUND IMAGE HANDLERS                                        */
   /* ================================================================ */
 
   const handleUpload = async (file: File) => {
@@ -444,19 +446,16 @@ export default function DesignTab({
   };
 
   /* ================================================================ */
-  /*  TEXT PAGE HANDLERS (new)                                         */
+  /*  TEXT PAGE HANDLERS                                                */
   /* ================================================================ */
 
   const handleTpResetToCompany = () => {
     setTpBgColor(companyTpDefaults.bg_color);
     setTpTextColor(companyTpDefaults.text_color);
     setTpHeadingColor(companyTpDefaults.heading_color);
-    setTpFontSize(companyTpDefaults.font_size);
     setTpBorderEnabled(companyTpDefaults.border_enabled);
     setTpBorderColor(companyTpDefaults.border_color);
     setTpBorderRadius(companyTpDefaults.border_radius);
-    setTpLayout(companyTpDefaults.layout);
-    setTpMode('company');
   };
 
   /* ================================================================ */
@@ -465,17 +464,6 @@ export default function DesignTab({
 
   const previewImageUrl = bgMode === 'custom' ? bgImageUrl : companyBgImageUrl;
   const previewOpacity = bgMode === 'custom' ? overlayOpacity : companyOverlayOpacity;
-
-  // Text page preview values — show company defaults when in company mode
-  const previewTpBgColor = tpMode === 'custom' ? tpBgColor : companyTpDefaults.bg_color;
-  const previewTpTextColor = tpMode === 'custom' ? tpTextColor : companyTpDefaults.text_color;
-  const previewTpHeadingColor = tpMode === 'custom' ? tpHeadingColor : companyTpDefaults.heading_color;
-  const previewTpFontSize = tpMode === 'custom' ? tpFontSize : companyTpDefaults.font_size;
-  const previewTpBorderEnabled = tpMode === 'custom' ? tpBorderEnabled : companyTpDefaults.border_enabled;
-  const previewTpBorderColor = tpMode === 'custom' ? tpBorderColor : companyTpDefaults.border_color;
-  const previewTpBorderRadius = tpMode === 'custom' ? tpBorderRadius : companyTpDefaults.border_radius;
-  const previewTpLayout = tpMode === 'custom' ? tpLayout : companyTpDefaults.layout;
-  const previewTpAccent = companyTpDefaults.accent_color;
 
   /* ================================================================ */
   /*  RENDER                                                           */
@@ -629,6 +617,7 @@ export default function DesignTab({
                     />
                     <p className="text-[10px] text-gray-400 mt-1">
                       Controls how much the main background color shows over the image.
+                      Higher = more color, less image.
                     </p>
                   </div>
 
@@ -691,7 +680,65 @@ export default function DesignTab({
       </div>
 
       {/* ──────────────────────────────────────────────────────────── */}
-      {/*  SECTION 2: Text Page Style                                  */}
+      {/*  SECTION: Page Title Font                                    */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Type size={15} className="text-gray-400" />
+            <h4 className="text-sm font-semibold text-gray-900">Page Title Font</h4>
+          </div>
+          {saveStatus === 'saving' && (
+            <span className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Loader2 size={12} className="animate-spin" /> Saving…
+            </span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-500">
+              <Check size={12} /> Saved
+            </span>
+          )}
+        </div>
+
+        <p className="text-xs text-gray-400 mb-4">
+          Font used for page titles on Table of Contents, Pricing, Text Pages &amp; Packages.
+          Leave as system default to use your company heading font.
+        </p>
+
+        <div className="space-y-4">
+          <FontSelect
+            label="Title Font"
+            description="Applied to all page titles in the viewer"
+            value={titleFontFamily}
+            onChange={setTitleFontFamily}
+            previewText="Your Page Title"
+            weight={titleFontWeight}
+            onWeightChange={setTitleFontWeight}
+          />
+
+          {/* Font size */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Title Size</label>
+            <select
+              value={titleFontSize}
+              onChange={(e) => setTitleFontSize(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30"
+            >
+              <option value="">Default</option>
+              <option value="20">20px — Small</option>
+              <option value="24">24px — Medium</option>
+              <option value="28">28px</option>
+              <option value="32">32px — Large</option>
+              <option value="36">36px</option>
+              <option value="40">40px — Extra Large</option>
+              <option value="48">48px</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/*  SECTION: Text Page Style                                    */}
       {/* ──────────────────────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
@@ -711,162 +758,79 @@ export default function DesignTab({
           )}
         </div>
 
-        {/* Mode toggle */}
-        <div className="flex gap-2 mb-5">
-          <button
-            onClick={() => setTpMode('company')}
-            className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-              tpMode === 'company'
-                ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
-                : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            Company Default
-          </button>
-          <button
-            onClick={() => {
-              if (tpMode !== 'custom') {
-                // When switching to custom, pre-fill with company values
-                setTpBgColor(companyTpDefaults.bg_color);
-                setTpTextColor(companyTpDefaults.text_color);
-                setTpHeadingColor(companyTpDefaults.heading_color);
-                setTpFontSize(companyTpDefaults.font_size);
-                setTpBorderEnabled(companyTpDefaults.border_enabled);
-                setTpBorderColor(companyTpDefaults.border_color);
-                setTpBorderRadius(companyTpDefaults.border_radius);
-                setTpLayout(companyTpDefaults.layout);
-              }
-              setTpMode('custom');
-            }}
-            className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-              tpMode === 'custom'
-                ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
-                : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            Custom Override
-          </button>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Controls */}
           <div>
             <p className="text-xs text-gray-400 mb-4">
-              {tpMode === 'company'
-                ? 'Using company-level text page colors. Switch to custom to override for this specific item.'
-                : 'Custom text page styling for this item. Changes will not affect other proposals, templates, or documents.'}
+              Styling for text pages in this {type}. Changes save automatically.
             </p>
 
-            {tpMode === 'custom' && (
-              <div className="space-y-4">
-                {/* Layout toggle */}
-                <div>
-                  <label className="block text-xs text-gray-400 mb-2">Layout</label>
-                  <div className="flex gap-2">
-                    {(['contained', 'full'] as const).map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => setTpLayout(opt)}
-                        className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-                          tpLayout === opt
-                            ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
-                            : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
-                        }`}
-                      >
-                        {opt === 'contained' ? 'Contained Card' : 'Full Width'}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    {tpLayout === 'contained'
-                      ? 'Text content shown in a centered card with optional border and accent bar.'
-                      : 'Text content fills the full page width, similar to PDF pages.'}
-                  </p>
-                </div>
+            <div className="space-y-4">
+              {/* Colors */}
+              <ColorRow label="Background Color" value={tpBgColor} onChange={setTpBgColor} />
+              <ColorRow label="Text Color" value={tpTextColor} onChange={setTpTextColor} />
+              <ColorRow label="Heading Color" value={tpHeadingColor} onChange={setTpHeadingColor} />
 
-                {/* Colors */}
-                <ColorRow label="Background Color" value={tpBgColor} onChange={setTpBgColor} />
-                <ColorRow label="Text Color" value={tpTextColor} onChange={setTpTextColor} />
-                <ColorRow label="Heading Color" value={tpHeadingColor} onChange={setTpHeadingColor} />
-
-                {/* Font size */}
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Font Size</label>
-                  <select
-                    value={tpFontSize}
-                    onChange={(e) => setTpFontSize(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30"
-                  >
-                    {['12', '13', '14', '15', '16', '17', '18'].map(s => (
-                      <option key={s} value={s}>{s}px{s === '14' ? ' (default)' : ''}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Border toggle */}
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-gray-500">Border</label>
-                  <button
-                    onClick={() => setTpBorderEnabled(!tpBorderEnabled)}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${
-                      tpBorderEnabled ? 'bg-[#017C87]' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${
-                      tpBorderEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                    }`} />
-                  </button>
-                </div>
-
-                {/* Border color — only show when border enabled */}
-                {tpBorderEnabled && (
-                  <ColorRow label="Border Color (optional)" value={tpBorderColor} onChange={setTpBorderColor} />
-                )}
-
-                {/* Border radius */}
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Border Radius (px)</label>
-                  <select
-                    value={tpBorderRadius}
-                    onChange={(e) => setTpBorderRadius(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30"
-                  >
-                    {['0', '4', '8', '12', '16', '20', '24'].map(r => (
-                      <option key={r} value={r}>{r}px{r === '0' ? ' (square)' : r === '24' ? ' (very round)' : ''}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Reset button */}
+              {/* Border toggle */}
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-500">Border</label>
                 <button
-                  onClick={handleTpResetToCompany}
-                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#017C87] transition-colors"
+                  onClick={() => setTpBorderEnabled(!tpBorderEnabled)}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
+                    tpBorderEnabled ? 'bg-[#017C87]' : 'bg-gray-300'
+                  }`}
                 >
-                  <RotateCcw size={12} />
-                  Reset to company default
+                  <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${
+                    tpBorderEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                  }`} />
                 </button>
               </div>
-            )}
+
+              {/* Border color — only show when border enabled */}
+              {tpBorderEnabled && (
+                <ColorRow label="Border Color (optional)" value={tpBorderColor} onChange={setTpBorderColor} />
+              )}
+
+              {/* Border radius */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Border Radius (px)</label>
+                <select
+                  value={tpBorderRadius}
+                  onChange={(e) => setTpBorderRadius(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30"
+                >
+                  {['0', '4', '8', '12', '16', '20', '24'].map(r => (
+                    <option key={r} value={r}>{r}px{r === '0' ? ' (square)' : r === '24' ? ' (very round)' : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Reset button */}
+              <button
+                onClick={handleTpResetToCompany}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#017C87] transition-colors"
+              >
+                <RotateCcw size={12} />
+                Reset to company defaults
+              </button>
+            </div>
           </div>
 
           {/* Right: Live preview */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-gray-400">Preview</p>
-              <span className="text-[9px] text-gray-300 bg-gray-100 px-1.5 py-0.5 rounded">
-                {tpMode === 'company' ? 'Company Default' : 'Custom Override'}
-              </span>
             </div>
             <TextPagePreview
-              bgColor={previewTpBgColor || '#141414'}
-              textColor={previewTpTextColor || '#ffffff'}
-              headingColor={previewTpHeadingColor}
-              fontSize={previewTpFontSize || '14'}
-              accent={previewTpAccent}
-              borderEnabled={previewTpBorderEnabled}
-              borderColor={previewTpBorderColor}
-              borderRadius={previewTpBorderRadius || '12'}
-              layout={previewTpLayout}
+              bgColor={tpBgColor || '#141414'}
+              textColor={tpTextColor || '#ffffff'}
+              headingColor={tpHeadingColor}
+              fontSize={companyTpDefaults.font_size || '14'}
+              accent={companyTpDefaults.accent_color}
+              borderEnabled={tpBorderEnabled}
+              borderColor={tpBorderColor}
+              borderRadius={tpBorderRadius || '12'}
+              layout="full"
             />
           </div>
         </div>

@@ -160,6 +160,9 @@ export type Proposal = {
   page_orientation: 'auto' | 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
   text_page_bg_color: string | null;
+  title_font_family: string | null;
+  title_font_weight: string | null;
+  title_font_size: string | null;
   text_page_text_color: string | null;
   text_page_heading_color: string | null;
   text_page_font_size: string | null;
@@ -208,6 +211,9 @@ export type Document = {
   text_page_border_color: string | null;
   text_page_border_radius: string | null;
   text_page_layout: string | null;
+  title_font_family: string | null;
+  title_font_weight: string | null;
+  title_font_size: string | null;
 };
 
 export type ProposalComment = {
@@ -269,6 +275,9 @@ export type ProposalTemplate = {
   text_page_border_color: string | null;
   text_page_border_radius: string | null;
   text_page_layout: string | null;
+  title_font_family: string | null;
+  title_font_weight: string | null;
+  title_font_size: string | null;
   file_path: string | null; 
 };
 

@@ -88,6 +88,9 @@ function DesignContent({ templateId, companyId }: { templateId: string; companyI
           initialTextPageBorderColor={template.text_page_border_color ?? null}
           initialTextPageBorderRadius={template.text_page_border_radius ?? null}
           initialTextPageLayout={template.text_page_layout ?? null}
+          initialTitleFontFamily={template.title_font_family ?? null}
+          initialTitleFontWeight={template.title_font_weight ?? null}
+          initialTitleFontSize={template.title_font_size ?? null}
         />
       </div>
     </div>

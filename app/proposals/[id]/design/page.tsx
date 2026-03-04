@@ -93,6 +93,9 @@ function DesignContent({ proposalId, companyId }: { proposalId: string; companyI
           initialTextPageBorderColor={proposal.text_page_border_color ?? null}
           initialTextPageBorderRadius={proposal.text_page_border_radius ?? null}
           initialTextPageLayout={proposal.text_page_layout ?? null}
+          initialTitleFontFamily={proposal.title_font_family ?? null}
+          initialTitleFontWeight={proposal.title_font_weight ?? null}
+          initialTitleFontSize={proposal.title_font_size ?? null}
         />
       </div>
     </div>
