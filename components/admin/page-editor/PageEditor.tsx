@@ -27,6 +27,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   // UI state
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
   const [panelHeight, setPanelHeight] = useState(520);
+  const [isReordering, setIsReordering] = useState(false);
 
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +37,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     saveStatus, syncPageCount, updateEntry,
     flushPendingSaves, forceSaveEntries, remapSaveStatus,
     addGroup, removeGroup,
-    } = usePageEditorState(proposalId, initialPageNames, tableName);
+  } = usePageEditorState(proposalId, initialPageNames, tableName);
 
   const {
     pricingLoaded, pricingExists, pricingPosition, setPricingPosition,
@@ -64,7 +65,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     updatePackages, flushPackagesSave,
     addPackagesPage, removePackagesPage, savePackages,
   } = usePackagesState(proposalId);
-
 
   const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
 
@@ -99,7 +99,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
     // Insert pricing page at its position (relative to PDF pages)
     if (pricingExists && pricingForm.enabled) {
-      // Count PDF items to find insert position
       let pdfCount = 0;
       let insertIdx = items.length;
       if (pricingPosition >= 0) {
@@ -225,74 +224,78 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     if (!over || active.id === over.id) return;
     if (processing) return; // Block reorder while a previous operation is in flight
 
-    const oldIdx = unifiedItems.findIndex((i) => i.id === active.id);
-    const newIdx = unifiedItems.findIndex((i) => i.id === over.id);
-    if (oldIdx === -1 || newIdx === -1) return;
+    setIsReordering(true);
+    try {
+      const oldIdx = unifiedItems.findIndex((i) => i.id === active.id);
+      const newIdx = unifiedItems.findIndex((i) => i.id === over.id);
+      if (oldIdx === -1 || newIdx === -1) return;
 
-    const reordered = arrayMove(unifiedItems, oldIdx, newIdx);
+      const reordered = arrayMove(unifiedItems, oldIdx, newIdx);
 
-    // Extract new PDF page order (for physical PDF reorder)
-    const pdfItems = reordered.filter((i) => i.type === 'pdf');
-    const newPageOrder = pdfItems.map((i) => i.pdfIndex);
+      // Extract new PDF page order (for physical PDF reorder)
+      const pdfItems = reordered.filter((i) => i.type === 'pdf');
+      const newPageOrder = pdfItems.map((i) => i.pdfIndex);
 
-    // Helper: count PDF pages before a given index in the reordered list
-    const countPdfBefore = (idx: number) =>
-      reordered.slice(0, idx).filter((i) => i.type === 'pdf').length;
+      // Helper: count PDF pages before a given index in the reordered list
+      const countPdfBefore = (idx: number) =>
+        reordered.slice(0, idx).filter((i) => i.type === 'pdf').length;
 
-    // Update pricing position
-    if (pricingExists && pricingForm.enabled) {
-      const pricingIdx = reordered.findIndex((i) => i.type === 'pricing');
-      const isLast = pricingIdx === reordered.length - 1;
-      const newPos = isLast ? -1 : countPdfBefore(pricingIdx);
-      if (newPos !== pricingPosition) {
-        setPricingPosition(newPos);
-        savePricing(pricingForm, newPos);
-      }
-    }
-
-    // Update packages position
-    if (packagesExists && packagesForm.enabled) {
-      const packagesIdx = reordered.findIndex((i) => i.type === 'packages');
-      if (packagesIdx !== -1) {
-        const isLast = packagesIdx === reordered.length - 1;
-        const newPos = isLast ? -1 : countPdfBefore(packagesIdx);
-        if (newPos !== packagesPosition) {
-          setPackagesPosition(newPos);
-          savePackages(packagesForm, newPos);
+      // Update pricing position
+      if (pricingExists && pricingForm.enabled) {
+        const pricingIdx = reordered.findIndex((i) => i.type === 'pricing');
+        const isLast = pricingIdx === reordered.length - 1;
+        const newPos = isLast ? -1 : countPdfBefore(pricingIdx);
+        if (newPos !== pricingPosition) {
+          setPricingPosition(newPos);
+          savePricing(pricingForm, newPos);
         }
       }
-    }
 
-    // Update text page positions
-    for (const tp of textPages) {
-      if (!tp.enabled) continue;
-      const textIdx = reordered.findIndex((i) => i.id === `text-${tp.id}`);
-      if (textIdx === -1) continue;
-      const isLast = textIdx === reordered.length - 1;
-      const newPos = isLast ? -1 : countPdfBefore(textIdx);
-      if (newPos !== tp.position) {
-        updateTextPagePosition(tp.id, newPos);
+      // Update packages position
+      if (packagesExists && packagesForm.enabled) {
+        const packagesIdx = reordered.findIndex((i) => i.type === 'packages');
+        if (packagesIdx !== -1) {
+          const isLast = packagesIdx === reordered.length - 1;
+          const newPos = isLast ? -1 : countPdfBefore(packagesIdx);
+          if (newPos !== packagesPosition) {
+            setPackagesPosition(newPos);
+            savePackages(packagesForm, newPos);
+          }
+        }
       }
-    }
 
-    // Rebuild entries array from reordered items (groups + PDF entries in new visual order)
-    // Only items that live in entries (pdf + group) are included; pricing/text are stored separately
-    const newEntries: typeof entries = [];
-    for (const item of reordered) {
-      if ((item.type === 'pdf' || item.type === 'group') && item.entryIndex !== undefined) {
-        newEntries.push(entries[item.entryIndex]);
+      // Update text page positions
+      for (const tp of textPages) {
+        if (!tp.enabled) continue;
+        const textIdx = reordered.findIndex((i) => i.id === `text-${tp.id}`);
+        if (textIdx === -1) continue;
+        const isLast = textIdx === reordered.length - 1;
+        const newPos = isLast ? -1 : countPdfBefore(textIdx);
+        if (newPos !== tp.position) {
+          updateTextPagePosition(tp.id, newPos);
+        }
       }
-    }
-    const entriesOrderChanged = newEntries.length !== entries.length || newEntries.some((e, i) => e !== entries[i]);
-    if (entriesOrderChanged) {
-      setEntries(newEntries);
-      await forceSaveEntries(newEntries);
-    }
 
-    // Check if physical PDF order actually changed
-    const orderChanged = newPageOrder.some((v, i) => v !== i);
-    if (orderChanged) {
-      await handleReorder(newPageOrder);
+      // Rebuild entries array from reordered items (groups + PDF entries in new visual order)
+      const newEntries: typeof entries = [];
+      for (const item of reordered) {
+        if ((item.type === 'pdf' || item.type === 'group') && item.entryIndex !== undefined) {
+          newEntries.push(entries[item.entryIndex]);
+        }
+      }
+      const entriesOrderChanged = newEntries.length !== entries.length || newEntries.some((e, i) => e !== entries[i]);
+      if (entriesOrderChanged) {
+        setEntries(newEntries);
+        await forceSaveEntries(newEntries);
+      }
+
+      // Check if physical PDF order actually changed
+      const orderChanged = newPageOrder.some((v, i) => v !== i);
+      if (orderChanged) {
+        await handleReorder(newPageOrder);
+      }
+    } finally {
+      setIsReordering(false);
     }
   };
 
@@ -418,8 +421,8 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       <div ref={panelRef} className="flex gap-6" style={{ height: panelHeight }}>
         {/* Left half: sortable page list */}
         <div className="w-1/2 min-w-0 overflow-hidden flex flex-col relative">
-          {/* Processing overlay — blocks interaction during PDF operations */}
-          {processing && (
+          {/* Processing overlay — blocks interaction during PDF operations and reordering */}
+          {(processing || isReordering) && (
             <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
                 <Loader2 size={14} className="animate-spin text-[#017C87]" />
@@ -621,8 +624,8 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               canGoNext={canGoNext}
             />
           ) : selectedIsGroup ? (
-            <div className="flex-1 flex items-center justify-center text-xs text-gray-400">
-              Section headers are visual dividers in the sidebar navigation.
+            <div className="flex-1 flex items-center justify-center rounded-lg border border-dashed border-gray-200">
+              <p className="text-xs text-gray-400">Section header — no preview</p>
             </div>
           ) : (
             <PdfPreviewPanel
@@ -631,7 +634,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               selectedPdfIndex={selectedPdfIndex}
               pageCount={pageCount}
               entries={entries}
-              onDocLoadSuccess={(data) => syncPageCount(data.numPages)}
+              onDocLoadSuccess={({ numPages }) => syncPageCount(numPages)}
               onGoPrev={goPrev}
               onGoNext={goNext}
             />

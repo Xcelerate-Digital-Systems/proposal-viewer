@@ -164,6 +164,8 @@ export type Proposal = {
   title_font_family: string | null;
   title_font_weight: string | null;
   title_font_size: string | null;
+  page_num_circle_color: string | null;
+  page_num_text_color: string | null;
   text_page_text_color: string | null;
   text_page_heading_color: string | null;
   text_page_font_size: string | null;
@@ -215,6 +217,8 @@ export type Document = {
   title_font_family: string | null;
   title_font_weight: string | null;
   title_font_size: string | null;
+  page_num_circle_color: string | null;
+  page_num_text_color: string | null;
 };
 
 export type ProposalComment = {
@@ -280,6 +284,8 @@ export type ProposalTemplate = {
   title_font_weight: string | null;
   title_font_size: string | null;
   file_path: string | null; 
+  page_num_circle_color: string | null;
+  page_num_text_color: string | null;
 };
 
 export type TemplatePage = {

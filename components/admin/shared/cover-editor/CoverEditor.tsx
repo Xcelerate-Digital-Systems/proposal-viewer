@@ -88,6 +88,23 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
     setColors((prev) => ({ ...prev, ...partial }));
   };
 
+  /* ── Panel height measurement (same pattern as PackagesTab) ── */
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [panelHeight, setPanelHeight] = useState(520);
+
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setPanelHeight(Math.max(400, window.innerHeight - rect.top - 32));
+      }
+    };
+    measure();
+    const timer = setTimeout(measure, 100);
+    window.addEventListener('resize', measure);
+    return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
+  }, []);
+
   /* ══════════════════════════════════════════════════════════════ */
   /*  Effects                                                       */
   /* ══════════════════════════════════════════════════════════════ */
@@ -125,6 +142,8 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
         .then(({ data }) => {
           if (data?.signedUrl) setImageUrl(data.signedUrl);
         });
+    } else {
+      setImageUrl(null);
     }
   }, [imagePath]);
 
@@ -137,44 +156,43 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
         .then(({ data }) => {
           if (data?.signedUrl) setClientLogoUrl(data.signedUrl);
         });
+    } else {
+      setClientLogoUrl(null);
     }
   }, [clientLogoPath]);
 
-  /* ── Resolve selected member for preview ───────────────────── */
+  /* ── Resolve prepared-by member ────────────────────────────── */
   useEffect(() => {
     if (!preparedByMemberId) {
       setResolvedMember(null);
       return;
     }
-    const resolve = async () => {
-      const { data } = await supabase
-        .from('team_members')
-        .select('name, avatar_path')
-        .eq('id', preparedByMemberId)
-        .single();
-      if (data) {
-        let avatar_url: string | null = null;
-        if (data.avatar_path) {
-          const { data: urlData } = await supabase.storage
-            .from('proposals')
-            .createSignedUrl(data.avatar_path, 3600);
-          avatar_url = urlData?.signedUrl || null;
+    supabase
+      .from('team_members')
+      .select('id, name, avatar_path')
+      .eq('id', preparedByMemberId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          if (data.avatar_path) {
+            supabase.storage
+              .from('company-assets')
+              .createSignedUrl(data.avatar_path, 3600)
+              .then(({ data: urlData }) => {
+                setResolvedMember({
+                  name: data.name,
+                  avatar_url: urlData?.signedUrl || null,
+                });
+              });
+          } else {
+            setResolvedMember({ name: data.name, avatar_url: null });
+          }
         }
-        setResolvedMember({ name: data.name, avatar_url });
-      }
-    };
-    resolve();
+      });
   }, [preparedByMemberId]);
 
-  /* ── Cleanup debounce on unmount ───────────────────────────── */
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
-
   /* ══════════════════════════════════════════════════════════════ */
-  /*  Save logic                                                    */
+  /*  Save                                                          */
   /* ══════════════════════════════════════════════════════════════ */
 
   const save = useCallback(async () => {
@@ -233,7 +251,6 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
 
   /* ── Autosave: watch all saveable state ────────────────────── */
   useEffect(() => {
-    // Skip the initial render — don't save on mount
     if (!initializedRef.current) {
       initializedRef.current = true;
       return;
@@ -252,66 +269,42 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
-    const filePath = `covers/${cfg.coverPrefix}${entity.id}-${Date.now()}.${file.name.split('.').pop()}`;
-
-    if (imagePath) {
-      await supabase.storage.from('proposals').remove([imagePath]);
-    }
-
-    const { error } = await supabase.storage.from('proposals').upload(filePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
-
+    const sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `covers/${cfg.coverPrefix}${entity.id}-${Date.now()}.${sanitized.split('.').pop()}`;
+    const { error } = await supabase.storage.from('proposals').upload(filePath, file, { upsert: true });
     if (!error) {
       setImagePath(filePath);
-      const { data } = await supabase.storage.from('proposals').createSignedUrl(filePath, 3600);
-      if (data?.signedUrl) setImageUrl(data.signedUrl);
+      const { data: urlData } = await supabase.storage.from('proposals').createSignedUrl(filePath, 3600);
+      if (urlData?.signedUrl) setImageUrl(urlData.signedUrl);
     }
     setUploading(false);
   };
 
-  const removeImage = async () => {
-    if (imagePath) {
-      await supabase.storage.from('proposals').remove([imagePath]);
-    }
+  const removeImage = () => {
     setImagePath('');
     setImageUrl(null);
   };
 
   const handleClientLogoUpload = async (file: File) => {
     setUploadingClientLogo(true);
-    const filePath = `covers/client-logo-${cfg.coverPrefix}${entity.id}-${Date.now()}.${file.name.split('.').pop()}`;
-
-    if (clientLogoPath) {
-      await supabase.storage.from('proposals').remove([clientLogoPath]);
-    }
-
-    const { error } = await supabase.storage.from('proposals').upload(filePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
-
+    const sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `client-logos/${entity.id}-${Date.now()}.${sanitized.split('.').pop()}`;
+    const { error } = await supabase.storage.from('proposals').upload(filePath, file, { upsert: true });
     if (!error) {
       setClientLogoPath(filePath);
-      setShowClientLogo(true);
-      const { data } = await supabase.storage.from('proposals').createSignedUrl(filePath, 3600);
-      if (data?.signedUrl) setClientLogoUrl(data.signedUrl);
+      const { data: urlData } = await supabase.storage.from('proposals').createSignedUrl(filePath, 3600);
+      if (urlData?.signedUrl) setClientLogoUrl(urlData.signedUrl);
     }
     setUploadingClientLogo(false);
   };
 
-  const removeClientLogo = async () => {
-    if (clientLogoPath) {
-      await supabase.storage.from('proposals').remove([clientLogoPath]);
-    }
+  const removeClientLogo = () => {
     setClientLogoPath('');
     setClientLogoUrl(null);
-    setShowClientLogo(false);
   };
 
   /* ══════════════════════════════════════════════════════════════ */
-  /*  Derived values                                                */
+  /*  Derived values for preview                                    */
   /* ══════════════════════════════════════════════════════════════ */
 
   const previewSubtitle =
@@ -331,6 +324,7 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
+      {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900">Cover Page Settings</h4>
         {saveStatus === 'saving' && (
@@ -345,48 +339,52 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
-        {/* Left: Settings */}
-        <CoverSettingsPanel
-          type={type}
-          cfg={cfg}
-          companyId={entity.company_id}
-          clientName={entity.client_name}
-          coverEnabled={coverEnabled}
-          setCoverEnabled={setCoverEnabled}
-          subtitle={subtitle}
-          setSubtitle={setSubtitle}
-          subtitlePlaceholder={subtitlePlaceholder}
-          preparedByMemberId={preparedByMemberId}
-          setPreparedByMemberId={setPreparedByMemberId}
-          showPreparedBy={showPreparedBy}
-          setShowPreparedBy={setShowPreparedBy}
-          showAvatar={showAvatar}
-          setShowAvatar={setShowAvatar}
-          coverDate={coverDate}
-          setCoverDate={setCoverDate}
-          showDate={showDate}
-          setShowDate={setShowDate}
-          showClientLogo={showClientLogo}
-          setShowClientLogo={setShowClientLogo}
-          clientLogoUrl={clientLogoUrl}
-          clientLogoPath={clientLogoPath}
-          uploadingClientLogo={uploadingClientLogo}
-          onClientLogoUpload={handleClientLogoUpload}
-          onClientLogoRemove={removeClientLogo}
-          acceptButtonText={acceptButtonText}
-          setAcceptButtonText={setAcceptButtonText}
-          imageUrl={imageUrl}
-          imagePath={imagePath}
-          uploading={uploading}
-          onImageUpload={handleImageUpload}
-          onImageRemove={removeImage}
-          colors={colors}
-          onColorsChange={updateColors}
-        />
+      {/* ── Two-column split — fixed height, left scrolls ───── */}
+      <div ref={containerRef} className="flex gap-6" style={{ height: panelHeight }}>
 
-        {/* Right: Live preview */}
-        <div className="lg:sticky lg:top-40">
+        {/* Left: Settings (scrollable) */}
+        <div className="flex-1 min-w-0 overflow-y-auto pr-2">
+          <CoverSettingsPanel
+            type={type}
+            cfg={cfg}
+            companyId={entity.company_id}
+            clientName={entity.client_name}
+            coverEnabled={coverEnabled}
+            setCoverEnabled={setCoverEnabled}
+            subtitle={subtitle}
+            setSubtitle={setSubtitle}
+            subtitlePlaceholder={subtitlePlaceholder}
+            preparedByMemberId={preparedByMemberId}
+            setPreparedByMemberId={setPreparedByMemberId}
+            showPreparedBy={showPreparedBy}
+            setShowPreparedBy={setShowPreparedBy}
+            showAvatar={showAvatar}
+            setShowAvatar={setShowAvatar}
+            coverDate={coverDate}
+            setCoverDate={setCoverDate}
+            showDate={showDate}
+            setShowDate={setShowDate}
+            showClientLogo={showClientLogo}
+            setShowClientLogo={setShowClientLogo}
+            clientLogoUrl={clientLogoUrl}
+            clientLogoPath={clientLogoPath}
+            uploadingClientLogo={uploadingClientLogo}
+            onClientLogoUpload={handleClientLogoUpload}
+            onClientLogoRemove={removeClientLogo}
+            acceptButtonText={acceptButtonText}
+            setAcceptButtonText={setAcceptButtonText}
+            imageUrl={imageUrl}
+            imagePath={imagePath}
+            uploading={uploading}
+            onImageUpload={handleImageUpload}
+            onImageRemove={removeImage}
+            colors={colors}
+            onColorsChange={updateColors}
+          />
+        </div>
+
+        {/* Right: Live preview (fixed, does not scroll) */}
+        <div className="flex-1 min-w-0">
           <CoverPreview
             cfg={cfg}
             coverEnabled={coverEnabled}

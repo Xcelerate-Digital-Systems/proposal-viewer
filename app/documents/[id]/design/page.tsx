@@ -96,6 +96,8 @@ function DesignContent({ documentId, companyId }: { documentId: string; companyI
           initialTitleFontFamily={document.title_font_family ?? null}
           initialTitleFontWeight={document.title_font_weight ?? null}
           initialTitleFontSize={document.title_font_size ?? null}
+          initialPageNumCircleColor={document.page_num_circle_color ?? null}
+          initialPageNumTextColor={document.page_num_text_color ?? null}
         />
       </div>
     </div>

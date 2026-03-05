@@ -74,113 +74,111 @@ export default function CoverPreview({
     : undefined;
 
   return (
-    <div className="lg:sticky lg:top-0 lg:self-start">
-      <div
-        className="rounded-lg overflow-hidden border border-gray-200 relative"
-        style={{ height: 320, backgroundColor: colors.coverBgColor1 }}
-      >
-        {/* Background layer */}
-        {imageUrl ? (
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }} />
-        ) : (
-          <div className="absolute inset-0" style={{ backgroundColor: previewBg, backgroundImage: previewBgImage }} />
-        )}
+    <div
+      className="rounded-lg overflow-hidden border border-gray-200 relative h-full"
+      style={{ backgroundColor: colors.coverBgColor1 }}
+    >
+      {/* Background layer */}
+      {imageUrl ? (
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }} />
+      ) : (
+        <div className="absolute inset-0" style={{ backgroundColor: previewBg, backgroundImage: previewBgImage }} />
+      )}
 
-        {/* Overlay (when background image present) */}
-        {imageUrl && previewOverlay && (
-          <div
-            className="absolute inset-0"
-            style={{
-              background: previewOverlay.includes('-gradient(') ? previewOverlay : undefined,
-              backgroundColor: !previewOverlay.includes('-gradient(') ? previewOverlay : undefined,
-            }}
-          />
-        )}
+      {/* Overlay (when background image present) */}
+      {imageUrl && previewOverlay && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background: previewOverlay.includes('-gradient(') ? previewOverlay : undefined,
+            backgroundColor: !previewOverlay.includes('-gradient(') ? previewOverlay : undefined,
+          }}
+        />
+      )}
 
-        {/* Content — mirrors CoverPage.tsx layout */}
-        <div className="relative z-10 flex flex-col h-full p-5">
-          {/* Top: company logo */}
-          <div>
-            {companyLogoUrl ? (
-              <img src={companyLogoUrl} alt={companyName} className="h-5 max-w-[120px] object-contain opacity-90" />
-            ) : companyName ? (
-              <div className="flex items-center gap-1.5">
-                <Building2 size={14} style={{ color: colors.coverSubtitleColor }} />
-                <span
-                  className="text-xs font-medium tracking-wide opacity-90"
-                  style={{ color: colors.coverTextColor }}
-                >
-                  {companyName}
-                </span>
-              </div>
-            ) : null}
-          </div>
-
-          {/* Spacer — pushes content to bottom */}
-          <div className="flex-1" />
-
-          {/* Bottom: content block */}
-          <div>
-            {/* Client logo */}
-            {showClientLogo && clientLogoUrl && (
-              <img src={clientLogoUrl} alt="" className="h-5 max-w-[100px] object-contain mb-2 opacity-90" />
-            )}
-
-            <h2
-              className="text-lg font-semibold leading-tight mb-0.5 font-[family-name:var(--font-display)]"
-              style={{ color: colors.coverTextColor }}
-            >
-              {displayTitle}
-            </h2>
-
-            {/* Date */}
-            {showDate && coverDate && (
-              <p className="text-[10px] opacity-70 mb-1" style={{ color: colors.coverSubtitleColor }}>
-                {coverDate}
-              </p>
-            )}
-
-            {/* Subtitle */}
-            {previewSubtitle && (
-              <p className="text-xs mb-1" style={{ color: colors.coverSubtitleColor }}>
-                {previewSubtitle}
-              </p>
-            )}
-
-            {/* Prepared-by + avatar */}
-            {cfg.fields.preparedBy && showPreparedBy && resolvedMember && (
-              <div className="flex items-center gap-1.5 mb-2">
-                {showAvatar && resolvedMember.avatar_url && (
-                  <img src={resolvedMember.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
-                )}
-                <span className="text-[10px] opacity-80" style={{ color: colors.coverSubtitleColor }}>
-                  Prepared by {resolvedMember.name}
-                </span>
-              </div>
-            )}
-
-            {/* CTA button */}
-            <div className="mt-3">
-              <div
-                className="inline-block px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase rounded-sm"
-                style={{ backgroundColor: colors.coverButtonBg, color: colors.coverButtonTextColor }}
+      {/* Content — mirrors CoverPage.tsx layout */}
+      <div className="relative z-10 flex flex-col h-full p-5">
+        {/* Top: company logo */}
+        <div>
+          {companyLogoUrl ? (
+            <img src={companyLogoUrl} alt={companyName} className="h-5 max-w-[120px] object-contain opacity-90" />
+          ) : companyName ? (
+            <div className="flex items-center gap-1.5">
+              <Building2 size={14} style={{ color: colors.coverSubtitleColor }} />
+              <span
+                className="text-xs font-medium tracking-wide opacity-90"
+                style={{ color: colors.coverTextColor }}
               >
-                {buttonText || cfg.defaultButtonText}
-              </div>
+                {companyName}
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Spacer — pushes content to bottom */}
+        <div className="flex-1" />
+
+        {/* Bottom: content block */}
+        <div>
+          {/* Client logo */}
+          {showClientLogo && clientLogoUrl && (
+            <img src={clientLogoUrl} alt="" className="h-5 max-w-[100px] object-contain mb-2 opacity-90" />
+          )}
+
+          <h2
+            className="text-lg font-semibold leading-tight mb-0.5 font-[family-name:var(--font-display)]"
+            style={{ color: colors.coverTextColor }}
+          >
+            {displayTitle}
+          </h2>
+
+          {/* Date */}
+          {showDate && coverDate && (
+            <p className="text-[10px] opacity-70 mb-1" style={{ color: colors.coverSubtitleColor }}>
+              {coverDate}
+            </p>
+          )}
+
+          {/* Subtitle */}
+          {previewSubtitle && (
+            <p className="text-xs mb-1" style={{ color: colors.coverSubtitleColor }}>
+              {previewSubtitle}
+            </p>
+          )}
+
+          {/* Prepared-by + avatar */}
+          {cfg.fields.preparedBy && showPreparedBy && resolvedMember && (
+            <div className="flex items-center gap-1.5 mb-2">
+              {showAvatar && resolvedMember.avatar_url && (
+                <img src={resolvedMember.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+              )}
+              <span className="text-[10px] opacity-80" style={{ color: colors.coverSubtitleColor }}>
+                Prepared by {resolvedMember.name}
+              </span>
+            </div>
+          )}
+
+          {/* CTA button */}
+          <div className="mt-3">
+            <div
+              className="inline-block px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase rounded-sm"
+              style={{ backgroundColor: colors.coverButtonBg, color: colors.coverButtonTextColor }}
+            >
+              {buttonText || cfg.defaultButtonText}
             </div>
           </div>
         </div>
-
-        {/* Disabled overlay */}
-        {!coverEnabled && (
-          <div className="absolute inset-0 z-20 bg-black/70 flex items-center justify-center">
-            <div className="flex items-center gap-2 text-[#666] text-sm">
-              <EyeOff size={16} />
-              Cover page disabled
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Disabled overlay */}
+      {!coverEnabled && (
+        <div className="absolute inset-0 z-20 bg-black/70 flex items-center justify-center">
+          <div className="flex items-center gap-2 text-[#666] text-sm">
+            <EyeOff size={16} />
+            Cover page disabled
+          </div>
+        </div>
+      )}
     </div>
   );
 }

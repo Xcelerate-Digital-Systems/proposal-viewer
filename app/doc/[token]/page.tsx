@@ -321,10 +321,12 @@ export default function DocumentViewerPage({ params }: { params: { token: string
           />
         )}
         <PageNumberBadge
-          currentPage={currentPage}
-          totalPages={numPages}
-          accentColor={accent}
-        />
+         currentPage={currentPage}
+         totalPages={numPages}
+         accentColor={accent}
+         circleColor={branding.page_num_circle_color ?? undefined}
+         textColor={branding.page_num_text_color ?? undefined}
+       />
         <FloatingToolbar
           pdfUrl={pdfUrl}
           title={doc?.title || ''}

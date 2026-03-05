@@ -38,6 +38,8 @@ interface DesignTabProps {
   initialTitleFontFamily?: string | null;
   initialTitleFontWeight?: string | null;
   initialTitleFontSize?: string | null;
+  initialPageNumCircleColor?: string | null;
+  initialPageNumTextColor?: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -62,6 +64,8 @@ export default function DesignTab({
   initialTitleFontFamily,
   initialTitleFontWeight,
   initialTitleFontSize,
+  initialPageNumCircleColor,
+  initialPageNumTextColor,
 }: DesignTabProps) {
   const table = tableByType[type];
   const storagePrefix = storagePrefixByType[type];
@@ -106,6 +110,17 @@ export default function DesignTab({
   const [titleFontSize, setTitleFontSize] = useState<string>(initialTitleFontSize || '');
 
   /* ================================================================ */
+  /*  PAGE NUMBER BADGE STATE                                          */
+  /* ================================================================ */
+
+  const [pageNumCircleColor, setPageNumCircleColor] = useState<string | null>(
+  initialPageNumCircleColor ?? null
+);
+const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
+  initialPageNumTextColor ?? null
+);
+
+  /* ================================================================ */
   /*  SAVE STATUS + REFS                                               */
   /* ================================================================ */
 
@@ -114,6 +129,7 @@ export default function DesignTab({
   const initializedRef = useRef(false);
   const tpInitializedRef = useRef(false);
   const titleFontInitializedRef = useRef(false);
+  const pageNumInitializedRef = useRef(false);
 
   /* ================================================================ */
   /*  COMPANY DEFAULTS                                                 */
@@ -201,18 +217,16 @@ export default function DesignTab({
       payload.bg_image_path = bgImagePath;
       payload.bg_image_overlay_opacity = overlayOpacity;
     }
-
-    // Text page style
     payload.text_page_bg_color = tpBgColor;
     payload.text_page_text_color = tpTextColor;
     payload.text_page_heading_color = tpHeadingColor || null;
     payload.text_page_font_size = null;
     payload.text_page_layout = 'full';
-
-    // Title font
     payload.title_font_family = titleFontFamily;
     payload.title_font_weight = titleFontWeight;
     payload.title_font_size = titleFontSize || null;
+    payload.page_num_circle_color = pageNumCircleColor ?? null;
+    payload.page_num_text_color = pageNumTextColor ?? null;
 
     await supabase.from(table).update(payload).eq('id', entityId);
     setSaveStatus('saved');
@@ -222,6 +236,7 @@ export default function DesignTab({
     bgMode, bgImagePath, overlayOpacity, pageOrientation,
     tpBgColor, tpTextColor, tpHeadingColor,
     titleFontFamily, titleFontWeight, titleFontSize,
+    pageNumCircleColor, pageNumTextColor,
     table, entityId, onSave,
   ]);
 
@@ -251,6 +266,12 @@ export default function DesignTab({
     scheduleSave(800);
   }, [titleFontFamily, titleFontWeight, titleFontSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Autosave: page number badge state
+  useEffect(() => {
+    if (!pageNumInitializedRef.current) { pageNumInitializedRef.current = true; return; }
+    scheduleSave(800);
+  }, [pageNumCircleColor, pageNumTextColor]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* ================================================================ */
   /*  BACKGROUND IMAGE HANDLERS                                        */
   /* ================================================================ */
@@ -258,46 +279,36 @@ export default function DesignTab({
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const safeName = `bg-image.${ext}`.replace(/[^a-zA-Z0-9._-]/g, '');
-      const storagePath = `${companyId}/bg-image/${storagePrefix}-${entityId}/${safeName}`;
-
-      if (bgImagePath) {
-        await supabase.storage.from('company-assets').remove([bgImagePath]);
-      }
-
+      const ext = file.name.split('.').pop();
+      const sanitized = file.name
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${storagePrefix}-bg/${entityId}/${sanitized}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from('company-assets')
-        .upload(storagePath, file, { upsert: true });
-
+        .upload(path, file, { upsert: true });
       if (error) throw error;
-      setBgImagePath(storagePath);
+      setBgImagePath(path);
       setBgMode('custom');
-    } catch (err) {
-      console.error('Failed to upload background image:', err);
+      const { data } = supabase.storage.from('company-assets').getPublicUrl(path);
+      if (data?.publicUrl) setBgImageUrl(data.publicUrl);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleRemove = async () => {
-    if (bgImagePath) {
-      await supabase.storage.from('company-assets').remove([bgImagePath]);
-    }
+  const handleRemove = () => {
     setBgImagePath(null);
     setBgImageUrl(null);
-  };
-
-  const handleBgResetToCompany = () => {
-    setBgImagePath(null);
-    setBgImageUrl(null);
-    setOverlayOpacity(companyOverlayOpacity);
     setBgMode('company');
   };
 
-  /* ================================================================ */
-  /*  TEXT PAGE HANDLERS                                                */
-  /* ================================================================ */
+  const handleBgResetToCompany = () => {
+    setBgMode('company');
+    setBgImagePath(null);
+    setBgImageUrl(null);
+    setOverlayOpacity(companyOverlayOpacity);
+  };
 
   const handleTpResetToCompany = () => {
     setTpBgColor(companyTpDefaults.bg_color);
@@ -306,50 +317,52 @@ export default function DesignTab({
   };
 
   /* ================================================================ */
-  /*  DERIVED VALUES                                                   */
+  /*  PREVIEW IMAGE                                                    */
   /* ================================================================ */
 
-  const previewImageUrl = bgMode === 'custom' ? bgImageUrl : companyBgImageUrl;
-  const previewOpacity = bgMode === 'custom' ? overlayOpacity : companyOverlayOpacity;
+  const previewImageUrl = bgMode === 'company' ? companyBgImageUrl : bgImageUrl;
+  const previewOpacity = bgMode === 'company' ? companyOverlayOpacity : overlayOpacity;
 
   /* ================================================================ */
   /*  RENDER                                                           */
   /* ================================================================ */
 
   return (
-    <div className="space-y-5">
-      <ViewerStyleSection
-        type={type}
-        saveStatus={saveStatus}
-        pageOrientation={pageOrientation}
-        setPageOrientation={setPageOrientation}
-        bgMode={bgMode}
-        setBgMode={setBgMode}
-        bgImageUrl={bgImageUrl}
-        uploading={uploading}
-        overlayOpacity={overlayOpacity}
-        setOverlayOpacity={setOverlayOpacity}
-        companyBgPrimary={companyBgPrimary}
-        previewImageUrl={previewImageUrl}
-        previewOpacity={previewOpacity}
-        onUpload={handleUpload}
-        onRemove={handleRemove}
-        onBgResetToCompany={handleBgResetToCompany}
-        titleFontFamily={titleFontFamily}
-        setTitleFontFamily={setTitleFontFamily}
-        titleFontWeight={titleFontWeight}
-        setTitleFontWeight={setTitleFontWeight}
-        titleFontSize={titleFontSize}
-        setTitleFontSize={setTitleFontSize}
-        tpBgColor={tpBgColor}
-        setTpBgColor={setTpBgColor}
-        tpTextColor={tpTextColor}
-        setTpTextColor={setTpTextColor}
-        tpHeadingColor={tpHeadingColor}
-        setTpHeadingColor={setTpHeadingColor}
-        companyDefaults={companyTpDefaults}
-        onTpResetToCompany={handleTpResetToCompany}
-      />
-    </div>
+    <ViewerStyleSection
+      type={type}
+      saveStatus={saveStatus}
+      pageOrientation={pageOrientation}
+      setPageOrientation={setPageOrientation}
+      bgMode={bgMode}
+      setBgMode={setBgMode}
+      bgImageUrl={bgImageUrl}
+      uploading={uploading}
+      overlayOpacity={overlayOpacity}
+      setOverlayOpacity={setOverlayOpacity}
+      companyBgPrimary={companyBgPrimary}
+      previewImageUrl={previewImageUrl}
+      previewOpacity={previewOpacity}
+      onUpload={handleUpload}
+      onRemove={handleRemove}
+      onBgResetToCompany={handleBgResetToCompany}
+      titleFontFamily={titleFontFamily}
+      setTitleFontFamily={setTitleFontFamily}
+      titleFontWeight={titleFontWeight}
+      setTitleFontWeight={setTitleFontWeight}
+      titleFontSize={titleFontSize}
+      setTitleFontSize={setTitleFontSize}
+      tpBgColor={tpBgColor}
+      setTpBgColor={setTpBgColor}
+      tpTextColor={tpTextColor}
+      setTpTextColor={setTpTextColor}
+      tpHeadingColor={tpHeadingColor}
+      setTpHeadingColor={setTpHeadingColor}
+      companyDefaults={companyTpDefaults}
+      onTpResetToCompany={handleTpResetToCompany}
+      pageNumCircleColor={pageNumCircleColor}
+      setPageNumCircleColor={setPageNumCircleColor}
+      pageNumTextColor={pageNumTextColor}
+      setPageNumTextColor={setPageNumTextColor}
+    />
   );
 }

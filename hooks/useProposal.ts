@@ -54,6 +54,8 @@ export type CompanyBranding = {
   text_page_layout: 'contained' | 'full';
   bg_image_url: string | null;
   bg_image_overlay_opacity: number;
+  page_num_circle_color: string | null;
+  page_num_text_color: string | null;
 };
 
 
@@ -361,6 +363,9 @@ export function useProposal(token: string) {
         if (data.title_font_family != null) brandingData.title_font_family = data.title_font_family;
         if (data.title_font_weight != null) brandingData.title_font_weight = data.title_font_weight;
         if (data.title_font_size != null) brandingData.title_font_size = data.title_font_size;
+        if (data.page_num_circle_color != null) brandingData.page_num_circle_color = data.page_num_circle_color;
+        if (data.page_num_text_color != null) brandingData.page_num_text_color = data.page_num_text_color;
+
 
         setBranding(brandingData);
       }

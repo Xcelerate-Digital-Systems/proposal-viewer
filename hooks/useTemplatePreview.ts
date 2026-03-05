@@ -215,6 +215,8 @@ interface TemplateData {
   title_font_weight: string | null;
   title_font_size: string | null;
   updated_at: string;
+  page_num_circle_color: string | null;
+  page_num_text_color: string | null;
 }
 
 /* ─── Hook ─────────────────────────────────────────────────────────────── */
@@ -318,6 +320,9 @@ export function useTemplatePreview(templateId: string) {
           if (tmpl.title_font_family != null) brandingData.title_font_family = tmpl.title_font_family;
           if (tmpl.title_font_weight != null) brandingData.title_font_weight = tmpl.title_font_weight;
           if (tmpl.title_font_size != null) brandingData.title_font_size = tmpl.title_font_size;
+          if (tmpl.page_num_circle_color != null) brandingData.page_num_circle_color = tmpl.page_num_circle_color;
+          if (tmpl.page_num_text_color != null) brandingData.page_num_text_color = tmpl.page_num_text_color;
+
 
           setBranding(brandingData);
         }

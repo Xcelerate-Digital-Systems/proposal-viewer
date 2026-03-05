@@ -91,6 +91,8 @@ function DesignContent({ templateId, companyId }: { templateId: string; companyI
           initialTitleFontFamily={template.title_font_family ?? null}
           initialTitleFontWeight={template.title_font_weight ?? null}
           initialTitleFontSize={template.title_font_size ?? null}
+          initialPageNumCircleColor={template.page_num_circle_color ?? null}
+          initialPageNumTextColor={template.page_num_text_color ?? null}
         />
       </div>
     </div>

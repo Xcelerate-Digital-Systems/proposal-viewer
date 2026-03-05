@@ -96,6 +96,8 @@ function DesignContent({ proposalId, companyId }: { proposalId: string; companyI
           initialTitleFontFamily={proposal.title_font_family ?? null}
           initialTitleFontWeight={proposal.title_font_weight ?? null}
           initialTitleFontSize={proposal.title_font_size ?? null}
+          initialPageNumCircleColor={proposal.page_num_circle_color ?? null}
+          initialPageNumTextColor={proposal.page_num_text_color ?? null}
         />
       </div>
     </div>

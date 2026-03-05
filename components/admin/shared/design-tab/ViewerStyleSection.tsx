@@ -1,15 +1,16 @@
 // components/admin/shared/design-tab/ViewerStyleSection.tsx
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   Check, Loader2, Upload, Trash2,
-  Image as ImageIcon, RotateCcw, Type, Palette,
+  Image as ImageIcon, RotateCcw, Type, Palette, Hash,
 } from 'lucide-react';
 import ViewerStylePreview, { ViewerStylePreviewTabs } from './ViewerStylePreview';
 import type { TabKey } from './ViewerStylePreview';
 import FontSelect from '@/components/admin/shared/FontSelect';
 import ColorRow from './ColorRow';
+import ColorPickerField from '@/components/ui/ColorPickerField';
 import {
   EntityType, PageOrientation, TextPageDefaults,
   orientationOptions, SaveStatus,
@@ -52,6 +53,11 @@ interface ViewerStyleSectionProps {
   setTpTextColor: (v: string) => void;
   tpHeadingColor: string;
   setTpHeadingColor: (v: string) => void;
+  /* ── Page number badge colors ───────────────────────────── */
+  pageNumCircleColor: string | null;
+  setPageNumCircleColor: (v: string | null) => void;
+  pageNumTextColor: string | null;
+  setPageNumTextColor: (v: string | null) => void;
   /* ── Defaults & actions ─────────────────────────────────── */
   companyDefaults: TextPageDefaults;
   onTpResetToCompany: () => void;
@@ -90,11 +96,32 @@ export default function ViewerStyleSection({
   setTpTextColor,
   tpHeadingColor,
   setTpHeadingColor,
+  pageNumCircleColor,
+  setPageNumCircleColor,
+  pageNumTextColor,
+  setPageNumTextColor,
   companyDefaults,
   onTpResetToCompany,
 }: ViewerStyleSectionProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [previewTab, setPreviewTab] = useState<TabKey>('text');
+
+  /* ── Measure panel height (same pattern as PackagesTab) ─── */
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [panelHeight, setPanelHeight] = useState(520);
+
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setPanelHeight(Math.max(400, window.innerHeight - rect.top - 32));
+      }
+    };
+    measure();
+    const timer = setTimeout(measure, 100);
+    window.addEventListener('resize', measure);
+    return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
+  }, []);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -116,11 +143,13 @@ export default function ViewerStyleSection({
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
+      {/* ── Two-column split — fixed height, left scrolls ───── */}
+      <div ref={containerRef} className="flex gap-6" style={{ height: panelHeight }}>
+
         {/* ══════════════════════════════════════════════════════ */}
-        {/*  Left: Controls                                       */}
+        {/*  Left: Controls (scrollable)                          */}
         {/* ══════════════════════════════════════════════════════ */}
-        <div className="space-y-5">
+        <div className="flex-1 min-w-0 overflow-y-auto space-y-5 pr-2">
           <p className="text-xs text-gray-400">
             Styling for this {type}&apos;s viewer. Changes save automatically.
           </p>
@@ -217,7 +246,7 @@ export default function ViewerStyleSection({
                   <button
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading}
-                    className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#017C87]/40 hover:text-[#017C87] transition-colors disabled:opacity-50 bg-white"
+                    className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#017C87]/40 hover:text-[#017C87] transition-colors disabled:opacity-50 mb-3"
                   >
                     {uploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
                     <span className="text-xs font-medium">Upload background image</span>
@@ -314,12 +343,39 @@ export default function ViewerStyleSection({
               Reset colours to company defaults
             </button>
           </div>
+
+          <div className="border-t border-gray-100" />
+
+          {/* ── Page Number Badge ─────────────────────────────── */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-1.5">
+              <Hash size={12} className="text-gray-400" />
+              <span className="text-xs font-medium text-gray-500">Page Number Badge</span>
+            </div>
+            <p className="text-[10px] text-gray-400">
+              Leave blank to use your accent colour (circle) and white (text).
+            </p>
+            <ColorPickerField
+              label="Circle Colour"
+              value={pageNumCircleColor}
+              fallback={companyDefaults.accent_color}
+              onChange={setPageNumCircleColor}
+              onReset={() => setPageNumCircleColor(null)}
+            />
+            <ColorPickerField
+              label="Text Colour"
+              value={pageNumTextColor}
+              fallback="#ffffff"
+              onChange={setPageNumTextColor}
+              onReset={() => setPageNumTextColor(null)}
+            />
+          </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════ */}
-        {/*  Right: Unified preview                               */}
+        {/*  Right: Unified preview (fixed, does not scroll)      */}
         {/* ══════════════════════════════════════════════════════ */}
-        <div className="lg:sticky lg:top-40">
+        <div className="flex-1 min-w-0 flex flex-col">
           {/* Tab bar — above the preview container */}
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-gray-400">Preview</p>
@@ -327,7 +383,7 @@ export default function ViewerStyleSection({
           </div>
 
           <div
-            className="relative rounded-xl overflow-hidden border border-gray-200 shadow-2xl shadow-black/40"
+            className="relative rounded-lg overflow-hidden border border-gray-200 flex-1"
             style={{ backgroundColor: companyBgPrimary }}
           >
             {/* Background image layer */}
@@ -370,13 +426,10 @@ export default function ViewerStyleSection({
             {/* Mode badge */}
             <div className="absolute bottom-2 right-2 z-10">
               <span className="text-[9px] text-white/30 bg-black/20 px-1.5 py-0.5 rounded">
-                {bgMode === 'company' ? 'Company BG' : 'Custom BG'}
+                {bgMode === 'company' ? 'company bg' : 'custom bg'}
               </span>
             </div>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1.5">
-            Switch tabs to see how each page type is affected by your styling.
-          </p>
         </div>
       </div>
     </div>
