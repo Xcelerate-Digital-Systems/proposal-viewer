@@ -4,12 +4,15 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Check, Loader2, Package, Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Star, StarOff, Palette, Eye } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
-import { PackageTier, PackageFeature, ProposalPackages, supabase } from '@/lib/supabase';
+import { PackageTier, PackageFeature, ProposalPackages, PackageStyling, normalizePackageStyling, DEFAULT_PACKAGE_STYLING, supabase } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { useToast } from '@/components/ui/Toast';
 import PackagesPage from '@/components/viewer/PackagesPage';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
+import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
+import ColorPickerField from '@/components/ui/ColorPickerField';
+
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -38,6 +41,7 @@ type PackagesFormState = {
   intro_text: string | null;
   packages: PackageTier[];
   footer_text: string | null;
+  styling: PackageStyling;
 };
 
 const DEFAULT_FORM: PackagesFormState = {
@@ -46,7 +50,9 @@ const DEFAULT_FORM: PackagesFormState = {
   intro_text: null,
   packages: [],
   footer_text: null,
+  styling: { ...DEFAULT_PACKAGE_STYLING },
 };
+
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -93,11 +99,13 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
             setPosition(data.position);
             setForm({
               enabled: data.enabled,
-              title: data.title || 'Your Investment',
+              title: data.title,
               intro_text: data.intro_text,
               packages: data.packages || [],
               footer_text: data.footer_text,
+              styling: normalizePackageStyling(data.styling),
             });
+
             setExpandedTiers(new Set((data.packages || []).map((p: PackageTier) => p.id)));
           }
         }
@@ -160,6 +168,7 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
           proposal_id: proposalId, enabled: data.enabled, position: currentPosition,
           title: data.title, intro_text: data.intro_text,
           packages: data.packages, footer_text: data.footer_text,
+          styling: data.styling,
         }),
       });
       if (res.ok) {
@@ -296,8 +305,10 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
   const previewPackages: ProposalPackages = {
     id: 'preview', proposal_id: proposalId, company_id: '', enabled: form.enabled,
     position, indent: 0, title: form.title, intro_text: form.intro_text,
-    packages: form.packages, footer_text: form.footer_text, created_at: '', updated_at: '',
+    packages: form.packages, footer_text: form.footer_text,
+    styling: form.styling, created_at: '', updated_at: '',
   };
+
 
   /* ── Loading ────────────────────────────────────────────────── */
 
@@ -366,7 +377,6 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
                   placeholder="Choose the package that best suits your needs..." />
               </div>
             </div>
-
             {/* Package tiers */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -396,6 +406,16 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
                     isExpanded={isExpanded}
                     onToggleExpand={() => toggleExpand(tier.id)}
                     onUpdate={(changes) => updateTier(tier.id, changes)}
+                    onToggleRecommended={() => {
+                      // Only one recommended at a time — toggle off others
+                      const newRecommended = !tier.is_recommended;
+                      updateForm({
+                        packages: form.packages.map(t => ({
+                          ...t,
+                          is_recommended: t.id === tier.id ? newRecommended : false,
+                        })),
+                      });
+                    }}
                     onMove={(dir) => moveTier(tier.id, dir)}
                     onRemove={() => removeTier(tier.id)}
                     onAddFeature={() => addFeature(tier.id)}
@@ -406,7 +426,13 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
                     onRemoveCondition={(ci) => removeCondition(tier.id, ci)}
                     onAddChild={(fi) => addChild(tier.id, fi)}
                     onUpdateChild={(fi, ci, val) => updateChild(tier.id, fi, ci, val)}
-                    onRemoveChild={(fi, ci) => removeChild(tier.id, fi, ci)}
+                   onRemoveChild={(fi, ci) => removeChild(tier.id, fi, ci)}
+                    recommendedTextColor={form.styling.recommended_text_color}
+                    onRecommendedTextColorChange={(color) => {
+                      updateForm({
+                        styling: { ...form.styling, recommended_text_color: color },
+                      });
+                    }}
                   />
                 );
               })}
@@ -419,6 +445,20 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
                 rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
                 placeholder="* Terms and conditions apply..." />
             </div>
+
+            {/* Appearance / Styling */}
+            <PackagesAppearanceSection
+              styling={form.styling}
+              tiers={form.packages}
+              onStylingChange={(styling) => updateForm({ styling })}
+              onTierChange={(tierId, changes) => {
+                updateForm({
+                  packages: form.packages.map(t =>
+                    t.id === tierId ? { ...t, ...changes } : t
+                  ),
+                });
+              }}
+            />
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
@@ -450,6 +490,7 @@ interface TierEditorProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   onUpdate: (changes: Partial<PackageTier>) => void;
+  onToggleRecommended: () => void;
   onMove: (dir: 'up' | 'down') => void;
   onRemove: () => void;
   onAddFeature: () => void;
@@ -461,14 +502,17 @@ interface TierEditorProps {
   onAddChild: (fi: number) => void;
   onUpdateChild: (fi: number, ci: number, val: string) => void;
   onRemoveChild: (fi: number, ci: number) => void;
+  recommendedTextColor: string | null;
+  onRecommendedTextColorChange: (color: string | null) => void;
 }
 
 function TierEditor({
   tier, tierIdx, totalTiers, isExpanded, onToggleExpand,
-  onUpdate, onMove, onRemove,
+  onUpdate, onToggleRecommended, onMove, onRemove,
   onAddFeature, onUpdateFeature, onRemoveFeature,
   onAddCondition, onUpdateCondition, onRemoveCondition,
   onAddChild, onUpdateChild, onRemoveChild,
+  recommendedTextColor, onRecommendedTextColorChange,
 }: TierEditorProps) {
   return (
     <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
@@ -516,26 +560,48 @@ function TierEditor({
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => onUpdate({ is_recommended: !tier.is_recommended })}
+            <button onClick={() => onToggleRecommended()}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 tier.is_recommended ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-gray-50 text-gray-400 border border-gray-200 hover:bg-gray-100'
               }`}>
               {tier.is_recommended ? <Star size={12} /> : <StarOff size={12} />}
               {tier.is_recommended ? 'Recommended' : 'Not Recommended'}
             </button>
-            <div className="flex items-center gap-2">
-              <Palette size={12} className="text-gray-400" />
-              <label className="text-xs text-gray-500">Highlight:</label>
-              <input type="color" value={tier.highlight_color || '#017C87'} onChange={e => onUpdate({ highlight_color: e.target.value })}
-                className="w-7 h-7 rounded border border-gray-200 cursor-pointer" />
-              {tier.highlight_color && <button onClick={() => onUpdate({ highlight_color: null })} className="text-xs text-gray-400 hover:text-gray-600">Reset</button>}
             </div>
-          </div>
+
+          <ColorPickerField
+            label="Highlight colour"
+            value={tier.highlight_color}
+            fallback="#017C87"
+            onChange={(v) => onUpdate({ highlight_color: v })}
+            onReset={() => onUpdate({ highlight_color: null })}
+            hint="Accent bar, price, and feature icon colour"
+          />
+
+
+
+
+
+
+          {/* Badge text colour — only visible when this tier is recommended */}
+          {tier.is_recommended && (
+            <ColorPickerField
+              label="Badge text colour"
+              value={recommendedTextColor}
+              fallback="#ffffff"
+              onChange={(v) => onRecommendedTextColorChange(v)}
+              onReset={() => onRecommendedTextColorChange(null)}
+              hint="Text colour on the 'Recommended Package' banner"
+            />
+          )}
+
+          {/* ── Divider ── */}
+          <hr className="border-gray-200" />
 
           {/* Conditions */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-gray-500">Conditions / Notes</label>
+              <label className="text-xs font-medium text-gray-500">CONDITIONS/NOTES</label>
               <button onClick={onAddCondition} className="text-xs text-[#017C87] hover:text-[#017C87]/80">+ Add</button>
             </div>
             {tier.conditions.map((cond, ci) => (
@@ -547,10 +613,12 @@ function TierEditor({
             ))}
           </div>
 
+          {/* ── Divider ── */}
+          <hr className="border-gray-200 mb-2" />
           {/* Features */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-gray-500">Features</label>
+              <label className="text-xs font-medium text-gray-500">FEATURES</label>
               <button onClick={onAddFeature} className="text-xs text-[#017C87] hover:text-[#017C87]/80">+ Add Feature</button>
             </div>
             {tier.features.map((feat, fi) => (

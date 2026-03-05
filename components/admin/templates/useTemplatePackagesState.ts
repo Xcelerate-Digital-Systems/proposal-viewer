@@ -1,6 +1,6 @@
 // components/admin/templates/useTemplatePackagesState.ts
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ProposalPackages, PackageTier } from '@/lib/supabase';
+import { ProposalPackages, PackageTier, PackageStyling, normalizePackageStyling, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 
@@ -14,6 +14,7 @@ export type TemplatePackagesFormState = {
   intro_text: string | null;
   packages: PackageTier[];
   footer_text: string | null;
+  styling: PackageStyling;
 };
 
 const DEFAULT_PACKAGES: TemplatePackagesFormState = {
@@ -22,6 +23,7 @@ const DEFAULT_PACKAGES: TemplatePackagesFormState = {
   intro_text: null,
   packages: [],
   footer_text: null,
+  styling: { ...DEFAULT_PACKAGE_STYLING },
 };
 
 /* ------------------------------------------------------------------ */
@@ -64,6 +66,7 @@ export function useTemplatePackagesState(templateId: string, pageCount: number) 
               intro_text: data.intro_text,
               packages: data.packages || [],
               footer_text: data.footer_text,
+              styling: normalizePackageStyling(data.styling),
             });
           }
         }
@@ -93,6 +96,7 @@ export function useTemplatePackagesState(templateId: string, pageCount: number) 
           intro_text: form.intro_text,
           packages: form.packages,
           footer_text: form.footer_text,
+          styling: form.styling,
         }),
       });
       setPackagesSaveStatus('saved');

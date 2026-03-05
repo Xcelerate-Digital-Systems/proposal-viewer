@@ -1,198 +1,179 @@
-// components/admin/page-editor/usePageEditorState.ts
+// components/admin/page-editor/usePackagesState.ts
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { supabase, PageNameEntry, normalizePageNames } from '@/lib/supabase';
+import { ProposalPackages, PackageTier, PackageStyling, normalizePackageStyling, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 
-export function usePageEditorState(
-  proposalId: string,
-  initialPageNames: (PageNameEntry | string)[],
-  tableName: 'proposals' | 'documents' = 'proposals'
-) {
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+
+export type PackagesFormState = {
+  enabled: boolean;
+  title: string;
+  intro_text: string | null;
+  packages: PackageTier[];
+  footer_text: string | null;
+  styling: PackageStyling;
+};
+
+export const DEFAULT_PACKAGES: PackagesFormState = {
+  enabled: true,
+  title: 'Your Investment',
+  intro_text: null,
+  packages: [],
+  footer_text: null,
+  styling: { ...DEFAULT_PACKAGE_STYLING },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Hook                                                               */
+/* ------------------------------------------------------------------ */
+
+export function usePackagesState(proposalId: string) {
+  const confirm = useConfirm();
   const toast = useToast();
 
-  const [entries, setEntries] = useState<PageNameEntry[]>([]);
-  const [pageCount, setPageCount] = useState(0);
-  const [saveStatus, setSaveStatus] = useState<Record<number, 'saving' | 'saved' | null>>({});
-  const [dirtyRows, setDirtyRows] = useState<Set<number>>(new Set());
+  const [packagesLoaded, setPackagesLoaded] = useState(false);
+  const [packagesExists, setPackagesExists] = useState(false);
+  const [packagesPosition, setPackagesPosition] = useState(-1);
+  const [packagesIndent, setPackagesIndent] = useState(0);
+  const [packagesForm, setPackagesForm] = useState<PackagesFormState>(DEFAULT_PACKAGES);
+  const [packagesSaveStatus, setPackagesSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const savedTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-  const entriesRef = useRef(entries);
-  entriesRef.current = entries;
-  const dirtyRowsRef = useRef(dirtyRows);
-  dirtyRowsRef.current = dirtyRows;
+  const packagesDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Initialize entries from props
-  useEffect(() => {
-    setEntries(normalizePageNames(initialPageNames, initialPageNames.length || 0));
-  }, [initialPageNames]);
-
-  // Cleanup timers
+  // Cleanup
   useEffect(() => {
     return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      Object.values(savedTimers.current).forEach(clearTimeout);
+      if (packagesDebounce.current) clearTimeout(packagesDebounce.current);
     };
   }, []);
 
-  // Sync entries when PDF loads (ensure we have enough entries for all pages)
-  // Preserves group entries (section headers) which don't count as PDF pages
-  const syncPageCount = useCallback((numPages: number) => {
-    setPageCount(numPages);
-    setEntries((prev) => {
-      // Separate groups from real page entries
-      const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
-      const realEntries: PageNameEntry[] = [];
-      for (const entry of prev) {
-        if (entry.type === 'group') {
-          groups.push({ beforePdfIndex: realEntries.length, entry });
-        } else {
-          realEntries.push(entry);
+  /* ── Fetch ──────────────────────────────────────────────────── */
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const res = await fetch(`/api/proposals/packages?proposal_id=${proposalId}`);
+        if (res.ok) {
+          const data: ProposalPackages | null = await res.json();
+          if (data) {
+            setPackagesExists(true);
+            setPackagesPosition(data.position);
+            setPackagesIndent(data.indent ?? 0);
+            setPackagesForm({
+              enabled: data.enabled,
+              title: data.title || 'Your Investment',
+              intro_text: data.intro_text,
+              packages: data.packages || [],
+              footer_text: data.footer_text,
+              styling: normalizePackageStyling(data.styling),
+            });
+          }
         }
-      }
+      } catch { /* no packages yet */ }
+      setPackagesLoaded(true);
+    };
+    fetchPackages();
+  }, [proposalId]);
 
-      // Pad/trim real entries to match PDF page count
-      while (realEntries.length < numPages) realEntries.push({ name: `Page ${realEntries.length + 1}`, indent: 0 });
-      const trimmed = realEntries.slice(0, numPages);
+  /* ── Save ───────────────────────────────────────────────────── */
 
-      // Re-insert groups at their original positions
-      const result: PageNameEntry[] = [];
-      let realIdx = 0;
-      let groupIdx = 0;
-      while (realIdx < trimmed.length || groupIdx < groups.length) {
-        while (groupIdx < groups.length && groups[groupIdx].beforePdfIndex <= realIdx) {
-          result.push(groups[groupIdx].entry);
-          groupIdx++;
-        }
-        if (realIdx < trimmed.length) {
-          result.push(trimmed[realIdx]);
-          realIdx++;
-        }
-      }
-      while (groupIdx < groups.length) {
-        result.push(groups[groupIdx].entry);
-        groupIdx++;
-      }
-
-      return result;
-    });
-  }, []);
-
-  // Save entries to database
-  const saveEntries = useCallback(async (entriesToSave: PageNameEntry[], rowsToMark: Set<number>) => {
-    const savingStatus: Record<number, 'saving'> = {};
-    rowsToMark.forEach((idx) => { savingStatus[idx] = 'saving'; });
-    setSaveStatus((prev) => ({ ...prev, ...savingStatus }));
-
+  const savePackages = useCallback(async (
+    form: PackagesFormState,
+    pos: number,
+    indent?: number,
+  ) => {
+    setPackagesSaveStatus('saving');
     try {
-      await supabase.from(tableName).update({ page_names: entriesToSave }).eq('id', proposalId);
-      const savedStatus: Record<number, 'saved'> = {};
-      rowsToMark.forEach((idx) => { savedStatus[idx] = 'saved'; });
-      setSaveStatus((prev) => ({ ...prev, ...savedStatus }));
-      rowsToMark.forEach((idx) => {
-        if (savedTimers.current[idx]) clearTimeout(savedTimers.current[idx]);
-        savedTimers.current[idx] = setTimeout(() => {
-          setSaveStatus((prev) => ({ ...prev, [idx]: null }));
-        }, 2000);
+      await fetch('/api/proposals/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          proposal_id: proposalId,
+          enabled: form.enabled,
+          position: pos,
+          indent: indent ?? packagesIndent,
+          title: form.title,
+          intro_text: form.intro_text,
+          packages: form.packages,
+          footer_text: form.footer_text,
+          styling: form.styling,
+        }),
       });
+      setPackagesSaveStatus('saved');
+      setTimeout(() => setPackagesSaveStatus('idle'), 2000);
     } catch {
-      toast.error('Failed to save');
-      const clearedStatus: Record<number, null> = {};
-      rowsToMark.forEach((idx) => { clearedStatus[idx] = null; });
-      setSaveStatus((prev) => ({ ...prev, ...clearedStatus }));
+      toast.error('Failed to save packages');
+      setPackagesSaveStatus('idle');
     }
-  }, [proposalId, toast]);
+  }, [proposalId, packagesIndent, toast]);
 
-  // Schedule a debounced save
-  const scheduleSave = useCallback((delay: number, changedIndex: number) => {
-    setDirtyRows((prev) => { const next = new Set(prev); next.add(changedIndex); return next; });
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      const currentEntries = entriesRef.current;
-      const currentDirty = new Set(dirtyRowsRef.current);
-      setDirtyRows(new Set());
-      saveEntries(currentEntries, currentDirty);
-      debounceTimer.current = null;
-    }, delay);
-  }, [saveEntries]);
+  /* ── Debounced save scheduler ───────────────────────────────── */
 
-  // Flush any pending debounced saves immediately
-  const flushPendingSaves = useCallback(async () => {
-    if (debounceTimer.current) { clearTimeout(debounceTimer.current); debounceTimer.current = null; }
-    const currentDirty = new Set(dirtyRowsRef.current);
-    if (currentDirty.size > 0) { setDirtyRows(new Set()); await saveEntries(entriesRef.current, currentDirty); }
-  }, [saveEntries]);
+  const schedulePackagesSave = useCallback((form: PackagesFormState, pos: number) => {
+    if (packagesDebounce.current) clearTimeout(packagesDebounce.current);
+    packagesDebounce.current = setTimeout(() => {
+      savePackages(form, pos);
+      packagesDebounce.current = null;
+    }, 800);
+  }, [savePackages]);
 
-  // Force-save a given entries array (used after drag reorder where no rows are "dirty")
-  const forceSaveEntries = useCallback(async (entriesToSave: PageNameEntry[]) => {
-    if (debounceTimer.current) { clearTimeout(debounceTimer.current); debounceTimer.current = null; }
-    setDirtyRows(new Set());
-    entriesRef.current = entriesToSave;
-    await saveEntries(entriesToSave, new Set([0]));
-  }, [saveEntries]);
+  /* ── Update form ────────────────────────────────────────────── */
 
-  // Update a single entry and schedule save
-  const updateEntry = useCallback((index: number, changes: Partial<PageNameEntry>) => {
-    setEntries((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], ...changes };
-      return updated;
+  const updatePackages = useCallback((changes: Partial<PackagesFormState>) => {
+    setPackagesForm((prev) => {
+      const next = { ...prev, ...changes };
+      schedulePackagesSave(next, packagesPosition);
+      return next;
     });
-    scheduleSave(changes.indent !== undefined ? 0 : 800, index);
-  }, [scheduleSave]);
+  }, [schedulePackagesSave, packagesPosition]);
 
-  // Remap save statuses after reorder
-  const remapSaveStatus = useCallback((newPageOrder: number[]) => {
-    const newSaveStatus: Record<number, 'saving' | 'saved' | null> = {};
-    newPageOrder.forEach((origIdx, newIdx) => {
-      if (saveStatus[origIdx]) newSaveStatus[newIdx] = saveStatus[origIdx];
-    });
-    setSaveStatus(newSaveStatus);
-  }, [saveStatus]);
+  /* ── Flush pending save ─────────────────────────────────────── */
 
-  // Add a section header (group) at the end of entries
-  const addGroup = useCallback((name: string = 'New Section') => {
-    let newEntries: PageNameEntry[] = [];
-    setEntries((prev) => {
-      newEntries = [...prev, { name, indent: 0, type: 'group' as const }];
-      return newEntries;
-    });
-    // Save immediately with the computed entries (don't rely on ref timing)
-    requestAnimationFrame(() => {
-      saveEntries(newEntries, new Set([newEntries.length - 1]));
-    });
-  }, [saveEntries]);
+  const flushPackagesSave = useCallback(async () => {
+    if (packagesDebounce.current) {
+      clearTimeout(packagesDebounce.current);
+      packagesDebounce.current = null;
+      await savePackages(packagesForm, packagesPosition);
+    }
+  }, [savePackages, packagesForm, packagesPosition]);
 
-  // Remove a group entry by its index in the entries array
-  const removeGroup = useCallback((entryIndex: number) => {
-    let newEntries: PageNameEntry[] = [];
-    setEntries((prev) => {
-      if (prev[entryIndex]?.type !== 'group') return prev;
-      newEntries = [...prev];
-      newEntries.splice(entryIndex, 1);
-      return newEntries;
+  /* ── Add packages page ──────────────────────────────────────── */
+
+  const addPackagesPage = useCallback(async () => {
+    setPackagesExists(true);
+    setPackagesForm(DEFAULT_PACKAGES);
+    setPackagesPosition(-1);
+    await savePackages(DEFAULT_PACKAGES, -1);
+    toast.success('Packages page added');
+  }, [savePackages, toast]);
+
+  /* ── Remove (disable) packages page ─────────────────────────── */
+
+  const removePackagesPage = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Remove packages page?',
+      message: 'This will disable the packages page. Your package data will be preserved and can be re-enabled later.',
+      confirmLabel: 'Remove',
+      destructive: true,
     });
-    // Save immediately with the computed entries
-    requestAnimationFrame(() => {
-      if (newEntries.length > 0) {
-        saveEntries(newEntries, new Set([0]));
-      }
-    });
-  }, [saveEntries]);
+    if (!ok) return false;
+
+    const updated = { ...packagesForm, enabled: false };
+    setPackagesForm(updated);
+    await savePackages(updated, packagesPosition);
+    toast.success('Packages page removed');
+    return true;
+  }, [confirm, packagesForm, packagesPosition, savePackages, toast]);
 
   return {
-    entries,
-    setEntries,
-    pageCount,
-    setPageCount,
-    saveStatus,
-    syncPageCount,
-    updateEntry,
-    flushPendingSaves,
-    forceSaveEntries,
-    remapSaveStatus,
-    addGroup,
-    removeGroup,
+    packagesLoaded, packagesExists, packagesPosition, setPackagesPosition,
+    packagesIndent, setPackagesIndent,
+    packagesForm, setPackagesForm, packagesSaveStatus,
+    savePackages, schedulePackagesSave, updatePackages, flushPackagesSave,
+    addPackagesPage, removePackagesPage,
   };
 }

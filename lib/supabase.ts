@@ -5,6 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export type PackageFeatureIcon = 'dot' | 'check' | 'checkCircle' | 'arrow' | 'star' | 'dash';
 
 export type PageNameEntry = {
   name: string;
@@ -634,16 +635,18 @@ export type PackageFeature = {
 
 // A single package/tier
 export type PackageTier = {
-  id: string;                    // Unique ID (use generateItemId())
-  name: string;                  // e.g. "XDS Essentials"
-  price: number;                 // e.g. 1500
-  price_prefix: string;          // e.g. "FROM" (shown above price)
-  price_suffix: string;          // e.g. "/month*" (shown after price)
-  is_recommended: boolean;       // Shows "Recommended" badge
-  highlight_color: string | null; // Override accent color for this tier (null = use default accent)
-  conditions: string[];          // e.g. ["+ 15% Ad Spend Value if over $4,000 AUD", "Excludes Ad Spend*"]
-  features: PackageFeature[];    // Feature list
-  sort_order: number;            // Display order (0, 1, 2...)
+  id: string;
+  name: string;
+  price: number;
+  price_prefix: string;
+  price_suffix: string;
+  is_recommended: boolean;
+  highlight_color: string | null;       // Override accent color for this tier
+  conditions: string[];
+  features: PackageFeature[];
+  sort_order: number;
+  card_bg_color?: string | null;        // Per-tier card background
+  card_text_color?: string | null;      // Per-tier card text color
 };
 
 // Full packages record for a proposal
@@ -652,15 +655,31 @@ export type ProposalPackages = {
   proposal_id: string;
   company_id: string;
   enabled: boolean;
-  position: number;          // Page position in sidebar (same as pricing)
-  indent: number;            // Sidebar indent level (same as pricing)
-  title: string;             // Page heading e.g. "Your Investment – Monthly"
-  intro_text: string | null; // Optional intro paragraph
-  packages: PackageTier[];   // The package tiers
-  footer_text: string | null; // Optional footer text/disclaimers
+  position: number;
+  indent: number;
+  title: string;
+  intro_text: string | null;
+  packages: PackageTier[];
+  footer_text: string | null;
+  styling: PackageStyling;            
   created_at: string;
   updated_at: string;
 };
+
+export const DEFAULT_PACKAGE_TIER_UPDATED: Omit<PackageTier, 'id' | 'sort_order'> = {
+  name: 'Package Name',
+  price: 0,
+  price_prefix: 'FROM',
+  price_suffix: '/month',
+  is_recommended: false,
+  highlight_color: null,
+  conditions: [],
+  features: [],
+  card_bg_color: null,
+  card_text_color: null,
+};
+
+
 
 // Template variant (same shape minus proposal-specific fields)
 export type TemplatePackages = Omit<ProposalPackages, 'proposal_id'> & {
@@ -715,6 +734,49 @@ export function parseTocSettings(raw: unknown): TocSettings {
   return { ...DEFAULT_TOC_SETTINGS };
 }
 
+export type PackageStyling = {
+  title_color: string | null;          
+  card_bg_color: string | null; 
+  card_bg_independent: boolean;       
+  card_text_color: string | null;       
+  card_text_independent: boolean; 
+  recommended_text_color: string | null; 
+  recommended_bg_color: string | null;  
+  feature_icon: PackageFeatureIcon;
+  border_radius: number;               
+  border_width: number;   
+};
 
+export const DEFAULT_PACKAGE_STYLING: PackageStyling = {
+  title_color: null,
+  card_bg_color: null,
+  card_bg_independent: false,
+  card_text_color: null,
+  card_text_independent: false,
+  recommended_text_color: null,
+  recommended_bg_color: null,
+  feature_icon: 'dot',
+  border_radius: 12,
+  border_width: 1,
+};
 
+/** Normalize styling from DB, filling in defaults for any missing keys */
+export function normalizePackageStyling(raw: unknown): PackageStyling {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_PACKAGE_STYLING };
+  const r = raw as Record<string, unknown>;
+  return {
+    title_color: (r.title_color as string) ?? null,
+    card_bg_color: (r.card_bg_color as string) ?? null,
+    card_bg_independent: !!(r.card_bg_independent),
+    card_text_color: (r.card_text_color as string) ?? null,
+    card_text_independent: !!(r.card_text_independent),
+    recommended_text_color: (r.recommended_text_color as string) ?? null,
+    recommended_bg_color: (r.recommended_bg_color as string) ?? null,
+    feature_icon: (['dot', 'check', 'checkCircle', 'arrow', 'star', 'dash'].includes(r.feature_icon as string)
+      ? r.feature_icon as PackageFeatureIcon
+      : 'dot'),
+    border_radius: typeof r.border_radius === 'number' ? r.border_radius : 12,
+    border_width: typeof r.border_width === 'number' ? r.border_width : 1,
+  };
+}
 
