@@ -19,7 +19,7 @@ interface TocEntry {
 export type PageSequenceEntry =
   | { type: 'pdf'; pdfPage: number }
   | { type: 'pricing' }
-  | { type: 'packages' }
+  | { type: 'packages'; packagesId?: string }
   | { type: 'text'; textPageId: string }
   | { type: 'toc' };
 
@@ -79,7 +79,7 @@ export default function TocPage({
         } else if (seq.type === 'pricing') {
           itemId = 'pricing';
         } else if (seq.type === 'packages') {
-          itemId = 'packages';
+          itemId = seq.packagesId ? `packages:${seq.packagesId}` : 'packages';
         } else if (seq.type === 'text') {
           itemId = `text:${seq.textPageId}`;
         } else if (seq.type === 'toc') {
@@ -107,21 +107,72 @@ export default function TocPage({
     return result;
   }, [pageEntries, pageSequence, numPages, excludedSet]);
 
+  // Auto two-column when there are more than 8 entries
+  const isTwoCol = entries.length > 8;
+  const splitAt = Math.ceil(entries.length / 2);
+  const leftEntries = isTwoCol ? entries.slice(0, splitAt) : entries;
+  const rightEntries = isTwoCol ? entries.slice(splitAt) : [];
+
+  const renderEntries = (list: TocEntry[]) =>
+    list.map((entry, idx) => {
+      if (entry.isGroup) {
+        return (
+          <div key={`group-${idx}`} className={`${idx > 0 ? 'mt-8' : ''} mb-1`}>
+            <span
+              className="text-xs font-bold uppercase tracking-[0.2em]"
+              style={{ color: subtitleColor, fontFamily: bodyFont }}
+            >
+              {entry.label}
+            </span>
+          </div>
+        );
+      }
+
+      return (
+        <div
+          key={`entry-${idx}`}
+          style={{ paddingLeft: entry.indent > 0 ? '24px' : '0' }}
+        >
+          <div className="flex items-center justify-between py-3">
+            <span
+              className={`font-bold uppercase tracking-wide ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
+              style={{ color: textColor, fontFamily: headingFont }}
+            >
+              {entry.label}
+            </span>
+
+            <span
+              className={`font-bold tabular-nums ml-6 shrink-0 ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
+              style={{ color: textColor, fontFamily: headingFont }}
+            >
+              {entry.pageNumber}
+            </span>
+          </div>
+
+          {/* Accent underline bar */}
+          <div
+            className="h-[3px] rounded-full"
+            style={{ backgroundColor: accent, width: '28px' }}
+          />
+        </div>
+      );
+    });
+
   return (
     <div
-      className="min-h-full flex items-center justify-center py-16 px-8"
+      className="h-full flex items-center justify-center py-12 px-8 overflow-hidden"
       style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
     >
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-5xl">
         {/* Title — last word highlighted in accent colour */}
-        <div className="mb-14">
+        <div className={isTwoCol ? 'mb-10' : 'mb-14'}>
           {(() => {
             const words = (tocSettings.title || 'Table of Contents').split(' ');
             const lastWord = words.pop() || '';
             const firstWords = words.join(' ');
             return (
               <h1
-                className="text-3xl md:text-4xl lg:text-5xl font-black uppercase leading-tight"
+                className={`font-black uppercase leading-tight ${isTwoCol ? 'text-2xl md:text-3xl lg:text-4xl' : 'text-3xl md:text-4xl lg:text-5xl'}`}
                 style={{
                   fontFamily: headingFont,
                   color: textColor,
@@ -141,56 +192,19 @@ export default function TocPage({
           })()}
         </div>
 
-        {/* TOC entries */}
-        <div>
-          {entries.map((entry, idx) => {
-            if (entry.isGroup) {
-              return (
-                <div key={`group-${idx}`} className={`${idx > 0 ? 'mt-10' : ''} mb-1`}>
-                  <span
-                    className="text-xs font-bold uppercase tracking-[0.2em]"
-                    style={{ color: subtitleColor, fontFamily: bodyFont }}
-                  >
-                    {entry.label}
-                  </span>
-                </div>
-              );
-            }
-
-            return (
-              <div
-                key={`entry-${idx}`}
-                style={{ paddingLeft: entry.indent > 0 ? '24px' : '0' }}
-              >
-                <div className="flex items-center justify-between py-3.5">
-                  <span
-                    className="text-sm md:text-base font-bold uppercase tracking-wide"
-                    style={{ color: textColor, fontFamily: headingFont }}
-                  >
-                    {entry.label}
-                  </span>
-
-                  <span
-                    className="text-sm md:text-base font-bold tabular-nums ml-8 shrink-0"
-                    style={{ color: textColor, fontFamily: headingFont }}
-                  >
-                    {entry.pageNumber}
-                  </span>
-                </div>
-
-                {/* Accent underline bar */}
-                <div
-                  className="h-[3px] rounded-full"
-                  style={{ backgroundColor: accent, width: '36px' }}
-                />
-              </div>
-            );
-          })}
-        </div>
+        {/* TOC entries — single or two-column */}
+        {isTwoCol ? (
+          <div className="grid grid-cols-2 gap-x-12">
+            <div>{renderEntries(leftEntries)}</div>
+            <div>{renderEntries(rightEntries)}</div>
+          </div>
+        ) : (
+          <div>{renderEntries(leftEntries)}</div>
+        )}
 
         {/* Footer */}
         {companyName && (
-          <div className="mt-20 flex items-center justify-end">
+          <div className={`${isTwoCol ? 'mt-10' : 'mt-20'} flex items-center justify-end`}>
             <span
               className="text-[10px] uppercase tracking-[0.25em] font-medium"
               style={{ color: subtitleColor, fontFamily: bodyFont }}

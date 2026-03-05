@@ -822,6 +822,7 @@ function TierEditor({
           </div>
 
           {/* Conditions */}
+          <div className="pt-4 border-t border-gray-100">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Conditions / Notes</label>
@@ -843,6 +844,7 @@ function TierEditor({
                 </button>
               </div>
             ))}
+          </div>
           </div>
         </div>
       )}

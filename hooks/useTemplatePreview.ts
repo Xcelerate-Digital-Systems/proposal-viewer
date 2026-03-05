@@ -78,8 +78,20 @@ function buildPageMap(
   const positioned = specials.filter((s) => s.position >= 0);
   const trailing = specials.filter((s) => s.position === -1);
 
+  // Sort positioned by position, then by type order, then by sortOrder.
+  // Type order mirrors PageEditor's splice insertion order: pricing is inserted
+  // first (ends up last due to later splices at the same index), text pages are
+  // inserted last (end up first). So: text=0, packages=1, toc=2, pricing=3.
+  const positionedTypeOrder = (type: string) => {
+    if (type === 'text') return 0;
+    if (type === 'packages') return 1;
+    if (type === 'toc') return 2;
+    return 3; // pricing
+  };
   positioned.sort((a, b) => {
     if (a.position !== b.position) return a.position - b.position;
+    const ta = positionedTypeOrder(a.type), tb = positionedTypeOrder(b.type);
+    if (ta !== tb) return ta - tb;
     return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
   });
 
