@@ -407,8 +407,8 @@ export function useProposal(token: string) {
       const packagesRes = await fetch(`/api/proposals/packages?share_token=${token}`);
       if (packagesRes.ok) {
         const packagesData = await packagesRes.json();
-        if (packagesData && packagesData.enabled) {
-          setPackages(packagesData);
+        if (Array.isArray(packagesData)) {
+          setPackages(packagesData.filter((p: ProposalPackages) => p.enabled));
         }
       }
     } catch {
