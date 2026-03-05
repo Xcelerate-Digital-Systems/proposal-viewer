@@ -6,20 +6,12 @@ import Toggle from '@/components/ui/Toggle';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import { PackageStyling, PackageFeatureIcon, PackageTier, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
 
-/* ------------------------------------------------------------------ */
-/*  Props                                                              */
-/* ------------------------------------------------------------------ */
-
 interface PackagesAppearanceSectionProps {
   styling: PackageStyling;
   tiers: PackageTier[];
   onStylingChange: (styling: PackageStyling) => void;
   onTierChange: (tierId: string, changes: Partial<PackageTier>) => void;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Feature icon options                                               */
-/* ------------------------------------------------------------------ */
 
 const ICON_OPTIONS: { key: PackageFeatureIcon; label: string; icon: React.ReactNode }[] = [
   { key: 'dot', label: 'Dot', icon: <Circle size={12} className="fill-current" /> },
@@ -29,10 +21,6 @@ const ICON_OPTIONS: { key: PackageFeatureIcon; label: string; icon: React.ReactN
   { key: 'star', label: 'Star', icon: <Star size={12} className="fill-current" strokeWidth={0} /> },
   { key: 'dash', label: 'Dash', icon: <Minus size={12} strokeWidth={3} /> },
 ];
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
 
 export default function PackagesAppearanceSection({
   styling,
@@ -49,10 +37,11 @@ export default function PackagesAppearanceSection({
   };
 
   return (
-    <div className="space-y-5">
-      {/* Section heading + reset */}
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Appearance</label>
+    <div className="space-y-0 divide-y divide-gray-100 border border-gray-100 rounded-lg overflow-hidden">
+
+      {/* ── Header ────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Appearance</label>
         {!isDefault(styling) && (
           <button
             onClick={resetAll}
@@ -64,8 +53,8 @@ export default function PackagesAppearanceSection({
         )}
       </div>
 
-      {/* ── Title ─────────────────────────────────────────── */}
-      <div className="space-y-2.5">
+      {/* ── Title colour ──────────────────────────────────── */}
+      <div className="px-4 py-3 space-y-2">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</label>
         <ColorPickerField
           label="Title text colour"
@@ -76,10 +65,8 @@ export default function PackagesAppearanceSection({
         />
       </div>
 
-      <hr className="border-gray-100" />
-
       {/* ── Card Background ───────────────────────────────── */}
-      <div className="space-y-2.5">
+      <div className="px-4 py-3 space-y-2">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Background</label>
         <ColorPickerField
           label="All cards"
@@ -88,7 +75,7 @@ export default function PackagesAppearanceSection({
           onChange={(v) => update({ card_bg_color: v })}
           onReset={() => update({ card_bg_color: null })}
         />
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-1">
           <label className="text-xs text-gray-600">Independent per card</label>
           <Toggle
             enabled={styling.card_bg_independent}
@@ -96,7 +83,7 @@ export default function PackagesAppearanceSection({
           />
         </div>
         {styling.card_bg_independent && tiers.length > 0 && (
-          <div className="ml-3 pl-3 border-l-2 border-gray-100 space-y-2">
+          <div className="ml-3 pl-3 border-l-2 border-gray-100 space-y-2 pt-1">
             {tiers.map((tier) => (
               <ColorPickerField
                 key={tier.id}
@@ -111,10 +98,8 @@ export default function PackagesAppearanceSection({
         )}
       </div>
 
-      <hr className="border-gray-100" />
-
       {/* ── Card Text ─────────────────────────────────────── */}
-      <div className="space-y-2.5">
+      <div className="px-4 py-3 space-y-2">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Text</label>
         <ColorPickerField
           label="All cards"
@@ -123,7 +108,7 @@ export default function PackagesAppearanceSection({
           onChange={(v) => update({ card_text_color: v })}
           onReset={() => update({ card_text_color: null })}
         />
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-1">
           <label className="text-xs text-gray-600">Independent per card</label>
           <Toggle
             enabled={styling.card_text_independent}
@@ -131,7 +116,7 @@ export default function PackagesAppearanceSection({
           />
         </div>
         {styling.card_text_independent && tiers.length > 0 && (
-          <div className="ml-3 pl-3 border-l-2 border-gray-100 space-y-2">
+          <div className="ml-3 pl-3 border-l-2 border-gray-100 space-y-2 pt-1">
             {tiers.map((tier) => (
               <ColorPickerField
                 key={tier.id}
@@ -146,17 +131,27 @@ export default function PackagesAppearanceSection({
         )}
       </div>
 
-      <hr className="border-gray-100" />
+      {/* ── Recommended Badge ─────────────────────────────── */}
+      <div className="px-4 py-3 space-y-2">
+        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Recommended Badge</label>
+        <ColorPickerField
+          label="Badge text"
+          value={styling.recommended_text_color}
+          fallback="#ffffff"
+          onChange={(v) => update({ recommended_text_color: v })}
+          onReset={() => update({ recommended_text_color: null })}
+        />
+      </div>
 
-      {/* ── Feature Icons ─────────────────────────────────── */}
-      <div className="space-y-2.5">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Feature Icons</label>
-        <div className="grid grid-cols-6 gap-1.5">
+      {/* ── Feature Icon ──────────────────────────────────── */}
+      <div className="px-4 py-3 space-y-2">
+        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Feature Icon</label>
+        <div className="flex flex-wrap gap-1.5">
           {ICON_OPTIONS.map((opt) => (
             <button
               key={opt.key}
               onClick={() => update({ feature_icon: opt.key })}
-              className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors ${
                 styling.feature_icon === opt.key
                   ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
                   : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
@@ -170,12 +165,10 @@ export default function PackagesAppearanceSection({
         </div>
       </div>
 
-      <hr className="border-gray-100" />
-
       {/* ── Card Shape ────────────────────────────────────── */}
-      <div className="space-y-2.5">
+      <div className="px-4 py-3 space-y-3">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Shape</label>
-        <div className="flex items-center justify-between">
+        <div className="space-y-1">
           <label className="text-xs text-gray-600">Border radius</label>
           <div className="flex items-center gap-2">
             <input
@@ -185,14 +178,14 @@ export default function PackagesAppearanceSection({
               step={1}
               value={styling.border_radius}
               onChange={(e) => update({ border_radius: Number(e.target.value) })}
-              className="w-24 h-1 accent-[#017C87]"
+              className="flex-1 h-1 accent-[#017C87]"
             />
             <span className="text-[10px] text-gray-500 font-mono w-[32px] text-right">
               {styling.border_radius}px
             </span>
           </div>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="space-y-1">
           <label className="text-xs text-gray-600">Border thickness</label>
           <div className="flex items-center gap-2">
             <input
@@ -202,7 +195,7 @@ export default function PackagesAppearanceSection({
               step={1}
               value={styling.border_width}
               onChange={(e) => update({ border_width: Number(e.target.value) })}
-              className="w-24 h-1 accent-[#017C87]"
+              className="flex-1 h-1 accent-[#017C87]"
             />
             <span className="text-[10px] text-gray-500 font-mono w-[32px] text-right">
               {styling.border_width}px
@@ -210,13 +203,10 @@ export default function PackagesAppearanceSection({
           </div>
         </div>
       </div>
+
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Helper: check if styling is default                                */
-/* ------------------------------------------------------------------ */
 
 function isDefault(s: PackageStyling): boolean {
   return (

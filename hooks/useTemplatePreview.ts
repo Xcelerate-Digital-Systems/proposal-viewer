@@ -234,7 +234,28 @@ export function useTemplatePreview(templateId: string) {
       }
 
       setTemplate(tmpl as TemplateData);
-      setPageEntries(normalizePageNamesWithGroups(tmpl.page_names, 100));
+
+        // Fetch template_pages for real labels and indents
+        const { data: tPages } = await supabase
+          .from('template_pages')
+          .select('page_number, label, indent')
+          .eq('template_id', templateId)
+          .order('page_number', { ascending: true });
+
+        const pdfCount = tPages?.length ?? 0;
+        const normalized = normalizePageNamesWithGroups(tmpl.page_names, pdfCount);
+
+        let pdfIdx = 0;
+        const builtEntries: PageNameEntry[] = normalized.map((entry) => {
+          if (entry.type === 'group') return entry;
+          pdfIdx++;
+          const tPage = tPages?.find((p) => p.page_number === pdfIdx);
+          return {
+            name: tPage?.label || entry.name || `Page ${pdfIdx}`,
+            indent: tPage?.indent ?? entry.indent ?? 0,
+          };
+        });
+        setPageEntries(builtEntries);
 
       // 2. Fetch branding
       try {

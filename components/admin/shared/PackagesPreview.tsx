@@ -29,7 +29,7 @@ export default function PackagesPreview({ packages, branding }: PackagesPreviewP
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, []);
 
-  const hasPackages = packages.packages.length > 0;
+  const hasPackages = (packages.packages ?? []).length > 0;
 
   return (
     <div
@@ -76,7 +76,7 @@ export default function PackagesPreview({ packages, branding }: PackagesPreviewP
         {/* Footer */}
         <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
           <span className="text-[10px] text-gray-400">
-            {packages.packages.length} package{packages.packages.length !== 1 ? 's' : ''} · Scales to fit
+            {(packages.packages ?? []).length} package{(packages.packages ?? []).length !== 1 ? 's' : ''} · Scales to fit
           </span>
         </div>
       </div>

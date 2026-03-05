@@ -13,10 +13,12 @@ interface SortablePackagesRowProps {
   isSelected: boolean;
   onSelect: () => void;
   onToggleIndent: () => void;
+  onRemove?: () => void;
+  renderInsertAfter?: React.ReactNode;
 }
 
 export default function SortablePackagesRow({
-  id, title, indent, isFirst, isSelected, onSelect, onToggleIndent,
+  id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, renderInsertAfter,
 }: SortablePackagesRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -67,6 +69,7 @@ export default function SortablePackagesRow({
           {title || 'Packages'}
         </span>
       </div>
+      {renderInsertAfter}
     </div>
   );
 }

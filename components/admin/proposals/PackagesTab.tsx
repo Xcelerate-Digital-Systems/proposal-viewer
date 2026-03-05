@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Check, Loader2, Package, Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Star, StarOff, Palette, Eye } from 'lucide-react';
+import { Check, Loader2, Package, Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Star, StarOff, Palette, Eye, ArrowUp, ArrowDown } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 import { PackageTier, PackageFeature, ProposalPackages, PackageStyling, normalizePackageStyling, DEFAULT_PACKAGE_STYLING, supabase } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
@@ -221,14 +221,6 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
     });
   }, [selectedId, position, savePkg]);
 
-  /* ── Position change (immediate save) ──────────────────────── */
-
-  const handlePositionChange = useCallback((newPos: number) => {
-    if (!selectedId) return;
-    setPosition(newPos);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    savePkg(selectedId, form, newPos);
-  }, [selectedId, form, savePkg]);
 
   /* ── Toggle enabled ─────────────────────────────────────────── */
 
@@ -468,56 +460,44 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
           )}
         </div>
       </div>
-
-      {/* Body: list + editor + preview */}
-      <div ref={containerRef} className="flex gap-5" style={{ height: panelHeight }}>
-
-        {/* ── Pages list (left column) ─────────────────────────── */}
-        <div className="w-48 shrink-0 flex flex-col gap-2">
-          <div className="flex-1 overflow-y-auto space-y-1">
-            {allPages.length === 0 && (
-              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-8 text-center">
-                <Package size={18} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-xs text-gray-400">No pages yet</p>
-              </div>
-            )}
-            {allPages.map((page) => (
-              <div
-                key={page.id}
-                onClick={() => selectPage(page)}
-                className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
-                  selectedId === page.id
-                    ? 'bg-[#017C87]/8 border border-[#017C87]/20'
-                    : 'hover:bg-gray-50 border border-transparent'
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-medium truncate ${selectedId === page.id ? 'text-[#017C87]' : 'text-gray-700'}`}>
-                    {page.title || 'Untitled'}
-                  </p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    {page.enabled ? 'Enabled' : 'Disabled'} · {page.packages?.length ?? 0} tier{page.packages?.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); deletePage(page.id); }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-50 hover:text-red-500 text-gray-300 transition-all"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))}
-          </div>
-
+      {/* Page navigation bar (top) */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        {allPages.map((page) => (
           <button
-            onClick={addPage}
-            disabled={adding}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#017C87] bg-[#017C87]/5 hover:bg-[#017C87]/10 transition-colors disabled:opacity-50 shrink-0"
+            key={page.id}
+            onClick={() => selectPage(page)}
+            className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors border text-xs font-medium ${
+              selectedId === page.id
+                ? 'bg-[#017C87]/10 border-[#017C87]/30 text-[#017C87]'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
           >
-            {adding ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-            Add Page
+            <span className="truncate max-w-[140px]">{page.title || 'Untitled'}</span>
+            {!page.enabled && <span className="text-[10px] opacity-50 ml-0.5">(off)</span>}
+            <span
+              role="button"
+              onClick={(e) => { e.stopPropagation(); deletePage(page.id); }}
+              className="opacity-0 group-hover:opacity-100 ml-0.5 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
+            >
+              <Trash2 size={10} />
+            </span>
           </button>
-        </div>
+        ))}
+        {allPages.length === 0 && (
+          <span className="text-xs text-gray-400">No pages yet — add one to get started</span>
+        )}
+        <button
+          onClick={addPage}
+          disabled={adding}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 transition-colors disabled:opacity-50"
+        >
+          {adding ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+          Add Page
+        </button>
+      </div>
+
+      {/* Body: editor + preview */}
+      <div ref={containerRef} className="flex gap-5" style={{ height: panelHeight }}>
 
         {/* ── Editor (center column) ───────────────────────────── */}
         {selectedId && selectedPage ? (
@@ -529,20 +509,6 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-0.5">Status</p>
                     <Toggle enabled={form.enabled} onChange={toggleEnabled} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Position</label>
-                    <select
-                      value={position}
-                      onChange={e => handlePositionChange(Number(e.target.value))}
-                      className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
-                    >
-                      <option value={0}>Before page 1</option>
-                      {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                        <option key={n} value={n}>After page {n}</option>
-                      ))}
-                      <option value={-1}>End of document</option>
-                    </select>
                   </div>
                 </div>
               </div>
@@ -624,10 +590,6 @@ export default function PackagesTab({ proposalId }: PackagesTabProps) {
                           onAddChild={(fi) => addChild(tier.id, fi)}
                           onUpdateChild={(fi, ci, val) => updateChild(tier.id, fi, ci, val)}
                           onRemoveChild={(fi, ci) => removeChild(tier.id, fi, ci)}
-                          recommendedTextColor={form.styling.recommended_text_color}
-                          onRecommendedTextColorChange={(color) => {
-                            updateForm({ styling: { ...form.styling, recommended_text_color: color } });
-                          }}
                         />
                       );
                     })}
@@ -710,8 +672,6 @@ interface TierEditorProps {
   onAddChild: (fi: number) => void;
   onUpdateChild: (fi: number, ci: number, val: string) => void;
   onRemoveChild: (fi: number, ci: number) => void;
-  recommendedTextColor: string | null;
-  onRecommendedTextColorChange: (color: string | null) => void;
 }
 
 function TierEditor({
@@ -720,27 +680,50 @@ function TierEditor({
   onAddFeature, onUpdateFeature, onRemoveFeature,
   onAddCondition, onUpdateCondition, onRemoveCondition,
   onAddChild, onUpdateChild, onRemoveChild,
-  recommendedTextColor, onRecommendedTextColorChange,
 }: TierEditorProps) {
   return (
-    <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+    <div className="border border-gray-200 rounded-lg bg-white">
       {/* Tier header */}
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border-b border-gray-100">
+      <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border-b border-gray-100 rounded-t-lg">
         <GripVertical size={14} className="text-gray-300 shrink-0" />
         <button onClick={onToggleExpand} className="flex-1 flex items-center gap-2 text-left min-w-0">
           <span className="text-xs font-medium text-gray-700 truncate">{tier.name || 'Unnamed'}</span>
-          {tier.is_recommended && <Star size={10} className="text-amber-400 shrink-0" fill="currentColor" />}
           {isExpanded ? <ChevronUp size={12} className="text-gray-400 shrink-0 ml-auto" /> : <ChevronDown size={12} className="text-gray-400 shrink-0 ml-auto" />}
         </button>
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => onMove('up')} disabled={tierIdx === 0} className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 transition-colors"><ChevronUp size={12} /></button>
-          <button onClick={() => onMove('down')} disabled={tierIdx === totalTiers - 1} className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 transition-colors"><ChevronDown size={12} /></button>
-          <button onClick={onToggleRecommended} className={`p-1 rounded transition-colors ${tier.is_recommended ? 'text-amber-400 hover:bg-amber-50' : 'text-gray-300 hover:bg-gray-200'}`} title={tier.is_recommended ? 'Remove recommended' : 'Mark as recommended'}>
-            {tier.is_recommended ? <Star size={12} fill="currentColor" /> : <StarOff size={12} />}
+          <button
+            onClick={() => onMove('up')}
+            disabled={tierIdx === 0}
+            title="Move up"
+            className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 transition-colors text-gray-400"
+          >
+            <ArrowUp size={12} />
           </button>
-          <button onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
+          <button
+            onClick={() => onMove('down')}
+            disabled={tierIdx === totalTiers - 1}
+            title="Move down"
+            className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 transition-colors text-gray-400"
+          >
+            <ArrowDown size={12} />
+          </button>
+          <button
+            onClick={onToggleRecommended}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors ${
+              tier.is_recommended
+                ? 'bg-amber-50 text-amber-500 hover:bg-amber-100'
+                : 'text-gray-400 hover:bg-gray-200'
+            }`}
+          >
+            <Star size={10} className={tier.is_recommended ? 'fill-current' : ''} />
+            {tier.is_recommended ? 'Recommended' : 'Recommend'}
+          </button>
+          <button onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors">
+            <Trash2 size={12} />
+          </button>
         </div>
       </div>
+
 
       {/* Tier body */}
       {isExpanded && (
@@ -778,7 +761,7 @@ function TierEditor({
           </div>
 
           {/* Highlight color */}
-          <div className="flex items-center gap-3">
+          <div className="space-y-2 pt-1 border-t border-gray-100">
             <ColorPickerField
               label="Highlight Color"
               value={tier.highlight_color || ''}
@@ -786,15 +769,6 @@ function TierEditor({
               onChange={(val) => onUpdate({ highlight_color: val || null })}
               onReset={() => onUpdate({ highlight_color: null })}
             />
-            {tier.is_recommended && (
-              <ColorPickerField
-                label="Badge Text Color"
-                value={recommendedTextColor || ''}
-                fallback="#ffffff"
-                onChange={(val) => onRecommendedTextColorChange(val || null)}
-                onReset={() => onRecommendedTextColorChange(null)}
-              />
-            )}
           </div>
 
           {/* Features */}

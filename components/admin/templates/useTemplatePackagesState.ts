@@ -48,22 +48,22 @@ export function useTemplatePackagesState(templateId: string, _pageCount: number)
   const savePackagesRecord = useCallback(async (record: ProposalPackages) => {
     setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'saving' }));
     try {
-      await fetch('/api/templates/packages', {
-        method: 'POST',
+      const payload = {
+        template_id: templateId,
+        enabled: record.enabled,
+        position: record.position,
+        sort_order: record.sort_order,
+        indent: record.indent,
+        title: record.title,
+        intro_text: record.intro_text,
+        packages: record.packages,
+        footer_text: record.footer_text,
+        styling: record.styling,
+      };
+      await fetch(`/api/templates/packages?id=${record.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          template_id: templateId,
-          id: record.id,
-          enabled: record.enabled,
-          position: record.position,
-          sort_order: record.sort_order,
-          indent: record.indent,
-          title: record.title,
-          intro_text: record.intro_text,
-          packages: record.packages,
-          footer_text: record.footer_text,
-          styling: record.styling,
-        }),
+        body: JSON.stringify(payload),
       });
       setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'saved' }));
       setTimeout(() => setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'idle' })), 2000);
@@ -72,7 +72,7 @@ export function useTemplatePackagesState(templateId: string, _pageCount: number)
       setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'idle' }));
     }
   }, [templateId, toast]);
-
+  
   /* ── Debounced update ───────────────────────────────────────── */
 
   const updatePackagesPage = useCallback((id: string, changes: Partial<ProposalPackages>) => {

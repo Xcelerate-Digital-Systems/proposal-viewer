@@ -70,7 +70,7 @@ export default function PackagesPage({ packages, branding, clientName }: Package
   // Resolved title color — styling override → branding fallback
   const titleColor = styling.title_color || textColor;
 
-  const tiers = [...packages.packages].sort((a, b) => a.sort_order - b.sort_order);
+  const tiers = [...(packages.packages ?? [])].sort((a, b) => a.sort_order - b.sort_order);
 
   return (
     <div
@@ -191,17 +191,17 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
 
   // ── Border styling ─────────────────────────────────────────────
   const borderRadius = `${styling.border_radius}px`;
-  // Only recommended cards get a visible border
-  const recommendedBorder = `${Math.max(styling.border_width, 2)}px solid ${tierAccent}`;
-  const normalBorder = 'none';
-
+  const borderW = styling.border_width ?? 1;
+  const cardBorder = borderW > 0
+    ? `${tier.is_recommended ? Math.max(borderW, 2) : borderW}px solid ${tier.is_recommended ? tierAccent : border}`
+    : 'none';
   return (
     <div
       className="overflow-hidden flex flex-col"
       style={{
         backgroundColor: cardBg,
         borderRadius,
-        border: tier.is_recommended ? recommendedBorder : normalBorder,
+        border: cardBorder,
       }}
     >
       {/* Recommended badge */}

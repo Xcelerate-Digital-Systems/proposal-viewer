@@ -84,6 +84,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
   // ─── UI state ────────────────────────────────────────────────────
   const [processing, setProcessing] = useState(false);
+  const [isReordering, setIsReordering] = useState(false); 
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
   const [previewWidth, setPreviewWidth] = useState(300);
   const [panelHeight, setPanelHeight] = useState(520);
@@ -316,62 +317,67 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIdx = unifiedItems.findIndex((i) => i.id === active.id);
-    const newIdx = unifiedItems.findIndex((i) => i.id === over.id);
-    if (oldIdx === -1 || newIdx === -1) return;
+    setIsReordering(true);
+    try {
+      const oldIdx = unifiedItems.findIndex((i) => i.id === active.id);
+      const newIdx = unifiedItems.findIndex((i) => i.id === over.id);
+      if (oldIdx === -1 || newIdx === -1) return;
 
-    const reordered = arrayMove(unifiedItems, oldIdx, newIdx);
-    const countPdfBefore = (idx: number) =>
-      reordered.slice(0, idx).filter((i) => i.type === 'pdf').length;
+      const reordered = arrayMove(unifiedItems, oldIdx, newIdx);
+      const countPdfBefore = (idx: number) =>
+        reordered.slice(0, idx).filter((i) => i.type === 'pdf').length;
 
-    const pdfItems = reordered.filter((i) => i.type === 'pdf');
-    const newPageOrder = pdfItems.map((i) => i.pageIndex);
+      const pdfItems = reordered.filter((i) => i.type === 'pdf');
+      const newPageOrder = pdfItems.map((i) => i.pageIndex);
 
-    // Update pricing position
-    if (pricingExists && pricingForm.enabled) {
-      const pricingIdx = reordered.findIndex((i) => i.type === 'pricing');
-      const isLast = pricingIdx === reordered.length - 1;
-      const newPos = isLast ? -1 : countPdfBefore(pricingIdx);
-      if (newPos !== pricingPosition) {
-        setPricingPosition(newPos);
-        savePricing(pricingForm, newPos);
+      // Update pricing position
+      if (pricingExists && pricingForm.enabled) {
+        const pricingIdx = reordered.findIndex((i) => i.type === 'pricing');
+        const isLast = pricingIdx === reordered.length - 1;
+        const newPos = isLast ? -1 : countPdfBefore(pricingIdx);
+        if (newPos !== pricingPosition) {
+          setPricingPosition(newPos);
+          savePricing(pricingForm, newPos);
+        }
       }
-    }
 
-    // Update position for each packages page
-    for (const pkg of packagesPages.filter((p) => p.enabled)) {
-      const pkgIdx = reordered.findIndex((i) => i.id === `packages-${pkg.id}`);
-      if (pkgIdx === -1) continue;
-      const isLast = pkgIdx === reordered.length - 1;
-      const newPos = isLast ? -1 : countPdfBefore(pkgIdx);
-      if (newPos !== pkg.position) {
-        updatePackagesPagePosition(pkg.id, newPos);
+      // Update position for each packages page
+      for (const pkg of packagesPages.filter((p) => p.enabled)) {
+        const pkgIdx = reordered.findIndex((i) => i.id === `packages-${pkg.id}`);
+        if (pkgIdx === -1) continue;
+        const isLast = pkgIdx === reordered.length - 1;
+        const newPos = isLast ? -1 : countPdfBefore(pkgIdx);
+        if (newPos !== pkg.position) {
+          updatePackagesPagePosition(pkg.id, newPos);
+        }
       }
-    }
 
-    // Update text page positions
-    for (const tp of textPages) {
-      if (!tp.enabled) continue;
-      const textIdx = reordered.findIndex((i) => i.id === `text-${tp.id}`);
-      if (textIdx === -1) continue;
-      const isLast = textIdx === reordered.length - 1;
-      const newPos = isLast ? -1 : countPdfBefore(textIdx);
-      if (newPos !== tp.position) {
-        updateTextPagePosition(tp.id, newPos);
+      // Update text page positions
+      for (const tp of textPages) {
+        if (!tp.enabled) continue;
+        const textIdx = reordered.findIndex((i) => i.id === `text-${tp.id}`);
+        if (textIdx === -1) continue;
+        const isLast = textIdx === reordered.length - 1;
+        const newPos = isLast ? -1 : countPdfBefore(textIdx);
+        if (newPos !== tp.position) {
+          updateTextPagePosition(tp.id, newPos);
+        }
       }
-    }
 
-    // Reorder PDF pages if needed
-    const orderChanged = newPageOrder.some((v, i) => v !== i);
-    if (orderChanged) {
-      setProcessing(true);
-      const formData = new FormData();
-      formData.append('template_id', template.id);
-      formData.append('page_order', JSON.stringify(newPageOrder));
-      await fetch('/api/templates/reorder-pages', { method: 'POST', body: formData });
-      setProcessing(false);
-      onRefresh();
-      fetchPages();
+      // Reorder PDF pages if needed
+      const orderChanged = newPageOrder.some((v, i) => v !== i);
+      if (orderChanged) {
+        setProcessing(true);
+        const formData = new FormData();
+        formData.append('template_id', template.id);
+        formData.append('page_order', JSON.stringify(newPageOrder));
+        await fetch('/api/templates/reorder-pages', { method: 'POST', body: formData });
+        setProcessing(false);
+        onRefresh();
+        fetchPages();
+      }
+    } finally {
+      setIsReordering(false);
     }
   };
 
@@ -460,7 +466,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
         <div ref={panelRef} className="flex gap-6" style={{ height: panelHeight }}>
           {/* Left half: sortable page list */}
           <div className="w-1/2 min-w-0 overflow-hidden flex flex-col relative">
-            {processing && (
+            {(processing || isReordering) && (
               <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
                   <Loader2 size={14} className="animate-spin text-[#017C87]" />
@@ -531,6 +537,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                           onToggleIndent={() => {
                             if (pkg) updatePackagesPage(pkg.id, { indent: pkg.indent ? 0 : 1 });
                           }}
+                          renderInsertAfter={
+                            <InsertPageMenu
+                              disabled={processing}
+                              showPricing={true}
+                              pricingAlreadyExists={pricingAlreadyActive}
+                              onInsertPdf={(file) => handleAddPage(pages[item.pageIndex]?.page_number ?? 0, file)}
+                              onInsertTextPage={handleAddTextPage}
+                              onInsertPricingPage={handleAddPricing}
+                            />
+                          }
                         />
                       );
                     }

@@ -502,17 +502,27 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                     const pkg = packagesPages.find((p) => p.id === item.packagesId);
                     return (
                       <SortablePackagesRow
-                        key={item.id}
-                        id={item.id}
-                        title={pkg?.title || 'Your Investment'}
-                        indent={pkg?.indent ?? 0}
-                        isFirst={visualIdx === 0}
-                        isSelected={selectedId === item.id}
-                        onSelect={() => setSelectedId(item.id)}
-                        onToggleIndent={() => {
-                          if (pkg) updatePackagesPage(pkg.id, { indent: pkg.indent ? 0 : 1 });
-                        }}
-                      />
+                          key={item.id}
+                          id={item.id}
+                          title={pkg?.title || 'Your Investment'}
+                          indent={pkg?.indent ?? 0}
+                          isFirst={visualIdx === 0}
+                          isSelected={selectedId === item.id}
+                          onSelect={() => setSelectedId(item.id)}
+                          onToggleIndent={() => {
+                            if (pkg) updatePackagesPage(pkg.id, { indent: pkg.indent ? 0 : 1 });
+                          }}
+                          renderInsertAfter={
+                            <InsertPageMenu
+                              disabled={processing}
+                              showPricing={!isDocuments}
+                              pricingAlreadyExists={pricingAlreadyActive}
+                              onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
+                              onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
+                              onInsertPricingPage={handleInsertPricingAtPosition}
+                            />
+                          }
+                        />
                     );
                   }
 
