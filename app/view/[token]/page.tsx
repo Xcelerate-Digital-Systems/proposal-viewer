@@ -70,8 +70,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
   const handleAccept = async (name: string) => {
     await acceptProposal(name);
-    setShowAccept(false);
   };
+
 
   // Is the current virtual page the pricing page?
   const onPricingPage = isPricingPage(currentPage);
@@ -439,6 +439,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           textColor={branding.sidebar_text_color || '#ffffff'}
           acceptTextColor={branding.accept_text_color || '#ffffff'}
           buttonText={acceptLabel}
+          postAcceptAction={proposal?.post_accept_action ?? null}
+          postAcceptRedirectUrl={proposal?.post_accept_redirect_url ?? null}
+          postAcceptMessage={proposal?.post_accept_message ?? null}
         />
       )}
     </div>

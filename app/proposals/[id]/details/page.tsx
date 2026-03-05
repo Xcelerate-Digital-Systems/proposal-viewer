@@ -8,6 +8,8 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import ProposalDetailHeader from '@/components/admin/proposals/ProposalDetailHeader';
 import EditDetailsPanel from '@/components/admin/shared/EditDetailsPanel';
 import { useToast } from '@/components/ui/Toast';
+import PostAcceptSection from '@/components/admin/proposals/PostAcceptSection';
+
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -91,7 +93,7 @@ function DetailsContent({
         customDomain={customDomain}
       />
 
-      <div className="flex-1 px-6 lg:px-10 py-6">
+      <div className="flex-1 px-6 lg:px-10 py-6 space-y-4">
         <EditDetailsPanel
             type="proposal"
             id={proposal.id}
@@ -107,7 +109,14 @@ function DetailsContent({
                 fetchProposal();
             }}
             onCancel={() => {}}
-/>
+        />
+        <PostAcceptSection
+          entityId={proposal.id}
+          table="proposals"
+          initialAction={proposal.post_accept_action ?? null}
+          initialRedirectUrl={proposal.post_accept_redirect_url ?? null}
+          initialMessage={proposal.post_accept_message ?? null}
+        />
       </div>
     </div>
   );

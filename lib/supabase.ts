@@ -173,6 +173,7 @@ export type Proposal = {
   text_page_border_color: string | null;
   text_page_border_radius: string | null;
   text_page_layout: string | null;
+  
 };
 
 export type Document = {
@@ -286,6 +287,9 @@ export type ProposalTemplate = {
   file_path: string | null; 
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
+  post_accept_action: 'redirect' | 'message' | null;
+  post_accept_redirect_url: string | null;
+  post_accept_message: string | null;
 };
 
 export type TemplatePage = {

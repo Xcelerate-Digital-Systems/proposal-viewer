@@ -14,6 +14,8 @@ import { PageEditor } from '../page-editor';
 import CoverEditor from './CoverEditor';
 import PricingTab from './PricingTab';
 import EditDetailsPanel from '../shared/EditDetailsPanel';
+import PostAcceptSection from './PostAcceptSection';
+
 
 interface ProposalCardProps {
   proposal: Proposal;
@@ -183,19 +185,28 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
 
       {/* ─── Tab Content ───────────────────────────────────────────── */}
       {activeTab === 'details' && (
-        <EditDetailsPanel
-          type="proposal"
-          id={p.id}
-          initialValues={{
-            title: p.title,
-            client_name: p.client_name,
-            client_email: p.client_email,
-            crm_identifier: p.crm_identifier,
-            description: p.description,
-          }}
-          onSave={() => { setActiveTab(null); onRefresh(); }}
-          onCancel={() => setActiveTab(null)}
-        />
+        <div className="space-y-3">
+          <EditDetailsPanel
+            type="proposal"
+            id={p.id}
+            initialValues={{
+              title: p.title,
+              client_name: p.client_name,
+              client_email: p.client_email,
+              crm_identifier: p.crm_identifier,
+              description: p.description,
+            }}
+            onSave={() => { setActiveTab(null); onRefresh(); }}
+            onCancel={() => setActiveTab(null)}
+          />
+          <PostAcceptSection
+            entityId={p.id}
+            table="proposals"
+            initialAction={p.post_accept_action ?? null}
+            initialRedirectUrl={p.post_accept_redirect_url ?? null}
+            initialMessage={p.post_accept_message ?? null}
+          />
+        </div>
       )}
 
       {activeTab === 'pages' && (
