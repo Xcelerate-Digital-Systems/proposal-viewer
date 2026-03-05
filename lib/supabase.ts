@@ -660,6 +660,7 @@ export type PackageTier = {
 };
 
 // Full packages record for a proposal
+// Full packages record for a proposal
 export type ProposalPackages = {
   id: string;
   proposal_id: string;
@@ -667,14 +668,28 @@ export type ProposalPackages = {
   enabled: boolean;
   position: number;
   indent: number;
+  sort_order: number;       // ordering when multiple packages pages exist
   title: string;
   intro_text: string | null;
   packages: PackageTier[];
   footer_text: string | null;
-  styling: PackageStyling;            
+  styling: PackageStyling;
   created_at: string;
   updated_at: string;
 };
+
+export interface PackagesPageData {
+  id: string;
+  enabled: boolean;
+  position: number;
+  indent: number;
+  sort_order: number;
+  title: string;
+  intro_text: string | null;
+  packages: PackageTier[];
+  footer_text: string | null;
+  styling: PackageStyling;
+}
 
 export const DEFAULT_PACKAGE_TIER_UPDATED: Omit<PackageTier, 'id' | 'sort_order'> = {
   name: 'Package Name',
@@ -768,6 +783,19 @@ export const DEFAULT_PACKAGE_STYLING: PackageStyling = {
   feature_icon: 'dot',
   border_radius: 12,
   border_width: 1,
+};
+
+// Default state for a new packages page (used by usePackagesState)
+export const DEFAULT_PACKAGES_PAGE_DATA: Omit<PackagesPageData, 'id'> = {
+  enabled: true,
+  position: -1,
+  indent: 0,
+  sort_order: 0,
+  title: 'Your Investment',
+  intro_text: null,
+  packages: [],
+  footer_text: null,
+  styling: { ...DEFAULT_PACKAGE_STYLING },
 };
 
 /** Normalize styling from DB, filling in defaults for any missing keys */

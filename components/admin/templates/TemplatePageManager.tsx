@@ -36,6 +36,7 @@ type UnifiedItem = {
   type: 'pdf' | 'pricing' | 'packages' | 'text' | 'group';
   pageIndex: number;
   textPageId?: string;
+  packagesId?: string;
   groupId?: string;
 };
 
@@ -65,10 +66,9 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   } = useTemplatePricingState(template.id, pages.length);
 
   const {
-    packagesLoaded, packagesExists, packagesPosition, setPackagesPosition,
-    packagesIndent, setPackagesIndent,
-    packagesForm, packagesSaveStatus,
-    savePackages, addPackagesPage, removePackagesPage,
+    packagesLoaded, packagesPages, packagesSaveStatuses,
+    updatePackagesPage, updatePackagesPagePosition, flushPackagesSaves,
+    addPackagesPage, removePackagesPage,
   } = useTemplatePackagesState(template.id, pages.length);
 
   const {
@@ -86,53 +86,59 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   const [processing, setProcessing] = useState(false);
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
   const [previewWidth, setPreviewWidth] = useState(300);
+  const [panelHeight, setPanelHeight] = useState(520);
 
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  // ─── DnD sensors ─────────────────────────────────────────────────
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // ─── Measure preview container ───────────────────────────────────
+  // ─── Measure preview width ───────────────────────────────────────
   useEffect(() => {
     const measure = () => {
       if (previewContainerRef.current) {
-        setPreviewWidth(Math.max(200, previewContainerRef.current.offsetWidth - 2));
+        setPreviewWidth(previewContainerRef.current.offsetWidth - 32);
+      }
+      if (panelRef.current) {
+        const rect = panelRef.current.getBoundingClientRect();
+        setPanelHeight(Math.max(400, window.innerHeight - rect.top - 32));
       }
     };
     measure();
     const timer = setTimeout(measure, 100);
     window.addEventListener('resize', measure);
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
-  }, [loading]);
+  }, []);
 
-  // ─── Computed unified items ──────────────────────────────────────
+  // ─── Unified items ───────────────────────────────────────────────
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
-    const items: UnifiedItem[] = pages.map((_, i) => ({
-      id: `pdf-${i}`,
-      type: 'pdf' as const,
-      pageIndex: i,
-    }));
+    const items: UnifiedItem[] = [];
 
-    for (const header of sectionHeaders) {
-      const groupItem: UnifiedItem = {
-        id: `group-${header.id}`, type: 'group', pageIndex: -1, groupId: header.id,
-      };
-      if (header.position === -1 || header.position >= items.length) {
-        items.push(groupItem);
-      } else {
-        let pdfCount = 0;
-        let insertAt = items.length;
-        for (let i = 0; i < items.length; i++) {
-          if (pdfCount >= header.position) { insertAt = i; break; }
-          if (items[i].type === 'pdf') pdfCount++;
-          insertAt = i + 1;
+    // Insert section headers and PDF pages
+    let pageIdx = 0;
+    const usedHeaders = new Set<string>();
+
+    for (const page of pages) {
+      // Insert any section headers positioned before this page
+      for (const header of sectionHeaders) {
+        if (!usedHeaders.has(header.id) && header.position <= page.page_number) {
+          items.push({ id: `group-${header.id}`, type: 'group', pageIndex: -1, groupId: header.id });
+          usedHeaders.add(header.id);
         }
-        items.splice(insertAt, 0, groupItem);
+      }
+      items.push({ id: `pdf-${pageIdx}`, type: 'pdf', pageIndex: pageIdx });
+      pageIdx++;
+    }
+    // Trailing headers
+    for (const header of sectionHeaders) {
+      if (!usedHeaders.has(header.id)) {
+        items.push({ id: `group-${header.id}`, type: 'group', pageIndex: -1, groupId: header.id });
       }
     }
 
+    // Insert pricing at its position
     if (pricingExists && pricingForm.enabled) {
       let pdfCount = 0;
       let insertIdx = items.length;
@@ -146,20 +152,25 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pageIndex: -1 });
     }
 
-    // Insert packages page at its position
-    if (packagesExists && packagesForm.enabled) {
+    // Insert each enabled packages page at its position
+    const sortedPkgs = packagesPages
+      .filter((p) => p.enabled)
+      .sort((a, b) => a.position !== b.position ? a.position - b.position : (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+    for (const pkg of sortedPkgs) {
       let pdfCount = 0;
       let insertIdx = items.length;
-      if (packagesPosition >= 0) {
+      if (pkg.position >= 0) {
         for (let i = 0; i < items.length; i++) {
-          if (pdfCount >= packagesPosition) { insertIdx = i; break; }
+          if (pdfCount >= pkg.position) { insertIdx = i; break; }
           if (items[i].type === 'pdf') pdfCount++;
           insertIdx = i + 1;
         }
       }
-      items.splice(insertIdx, 0, { id: 'packages', type: 'packages', pageIndex: -1 });
+      items.splice(insertIdx, 0, { id: `packages-${pkg.id}`, type: 'packages', pageIndex: -1, packagesId: pkg.id });
     }
 
+    // Insert text pages at their positions
     for (const tp of textPages) {
       if (!tp.enabled) continue;
       const textItem: UnifiedItem = {
@@ -180,10 +191,12 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     }
 
     return items;
-  }, [pages, sectionHeaders, pricingExists, pricingForm.enabled, pricingPosition, packagesExists, packagesForm.enabled, packagesPosition, textPages]);
+  }, [pages, sectionHeaders, pricingExists, pricingForm.enabled, pricingPosition, packagesPages, textPages]);
 
   const selectedIsPricing = selectedId === 'pricing';
-  const selectedIsPackages = selectedId === 'packages';
+  const selectedIsPackages = selectedId.startsWith('packages-');
+  const selectedPackagesId = selectedIsPackages ? selectedId.replace('packages-', '') : null;
+  const selectedPackagesPage = selectedPackagesId ? packagesPages.find((p) => p.id === selectedPackagesId) ?? null : null;
   const selectedIsGroup = selectedId.startsWith('group-');
   const selectedTextPage = selectedId.startsWith('text-')
     ? textPages.find((tp) => tp.id === selectedId.replace('text-', ''))
@@ -201,12 +214,12 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   };
 
   const handleAddPackages = async () => {
-    await addPackagesPage();
-    setSelectedId('packages');
+    const newPage = await addPackagesPage();
+    if (newPage) setSelectedId(`packages-${newPage.id}`);
   };
 
-  const handleRemovePackages = async () => {
-    const removed = await removePackagesPage();
+  const handleRemovePackages = async (pageId: string) => {
+    const removed = await removePackagesPage(pageId);
     if (removed) setSelectedId('pdf-0');
   };
 
@@ -325,20 +338,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       }
     }
 
-    // Update packages position
-    if (packagesExists && packagesForm.enabled) {
-      const packagesIdx = reordered.findIndex((i) => i.type === 'packages');
-      if (packagesIdx !== -1) {
-        const isLast = packagesIdx === reordered.length - 1;
-        const newPos = isLast ? -1 : countPdfBefore(packagesIdx);
-        if (newPos !== packagesPosition) {
-          setPackagesPosition(newPos);
-          savePackages(packagesForm, newPos);
-        }
+    // Update position for each packages page
+    for (const pkg of packagesPages.filter((p) => p.enabled)) {
+      const pkgIdx = reordered.findIndex((i) => i.id === `packages-${pkg.id}`);
+      if (pkgIdx === -1) continue;
+      const isLast = pkgIdx === reordered.length - 1;
+      const newPos = isLast ? -1 : countPdfBefore(pkgIdx);
+      if (newPos !== pkg.position) {
+        updatePackagesPagePosition(pkg.id, newPos);
       }
     }
-
-    // Update text page positions
 
     // Update text page positions
     for (const tp of textPages) {
@@ -347,77 +356,34 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       if (textIdx === -1) continue;
       const isLast = textIdx === reordered.length - 1;
       const newPos = isLast ? -1 : countPdfBefore(textIdx);
-      if (newPos !== tp.position) updateTextPagePosition(tp.id, newPos);
-    }
-
-    // Update section header positions
-    let sectionsChanged = false;
-    const updatedHeaders = sectionHeaders.map((header) => {
-      const groupIdx = reordered.findIndex((i) => i.id === `group-${header.id}`);
-      if (groupIdx === -1) return header;
-      const isLast = groupIdx === reordered.length - 1;
-      const newPos = isLast ? -1 : countPdfBefore(groupIdx);
-      if (newPos !== header.position) {
-        sectionsChanged = true;
-        return { ...header, position: newPos };
+      if (newPos !== tp.position) {
+        updateTextPagePosition(tp.id, newPos);
       }
-      return header;
-    });
-    if (sectionsChanged) {
-      setSectionHeaders(updatedHeaders);
-      saveSectionHeaders(updatedHeaders);
     }
 
-    // Reorder PDF pages if order changed
+    // Reorder PDF pages if needed
     const orderChanged = newPageOrder.some((v, i) => v !== i);
     if (orderChanged) {
-      const reorderedPages = newPageOrder.map((origIdx) => pages[origIdx]);
-      setPages(reorderedPages);
-
-      const newEdits: Record<string, { label: string; indent: number }> = {};
-      for (const p of reorderedPages) {
-        newEdits[p.id] = localEdits[p.id] ?? { label: p.label, indent: p.indent ?? 0 };
-      }
-      setLocalEdits(newEdits);
-
-      if (selectedId.startsWith('pdf-')) {
-        const oldPdfIdx = parseInt(selectedId.replace('pdf-', ''));
-        const newPdfIdx = newPageOrder.indexOf(oldPdfIdx);
-        if (newPdfIdx !== -1) setSelectedId(`pdf-${newPdfIdx}`);
-      }
-
-      try {
-        await flushPendingSaves();
-        const res = await fetch('/api/templates/reorder-pages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ template_id: template.id, page_order: newPageOrder }),
-        });
-        if (!res.ok) throw new Error('Reorder failed');
-        fetchPages();
-      } catch {
-        toast.error('Failed to reorder pages');
-        fetchPages();
-      }
+      setProcessing(true);
+      const formData = new FormData();
+      formData.append('template_id', template.id);
+      formData.append('page_order', JSON.stringify(newPageOrder));
+      await fetch('/api/templates/reorder-pages', { method: 'POST', body: formData });
+      setProcessing(false);
+      onRefresh();
+      fetchPages();
     }
   };
 
   // ─── Navigation ──────────────────────────────────────────────────
-  const goPrev = () => {
-    const idx = unifiedItems.findIndex((i) => i.id === selectedId);
-    if (idx > 0) setSelectedId(unifiedItems[idx - 1].id);
-  };
-  const goNext = () => {
-    const idx = unifiedItems.findIndex((i) => i.id === selectedId);
-    if (idx < unifiedItems.length - 1) setSelectedId(unifiedItems[idx + 1].id);
-  };
-
   const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
   const selectedPageData = selectedPdfIndex >= 0 ? pages[selectedPdfIndex] : null;
   const selectedPageUrl = selectedPageData ? pageUrls[selectedPageData.id] : null;
   const currentVisualIdx = unifiedItems.findIndex((i) => i.id === selectedId);
   const canGoPrev = currentVisualIdx > 0;
   const canGoNext = currentVisualIdx < unifiedItems.length - 1;
+  const goPrev = () => { if (canGoPrev) setSelectedId(unifiedItems[currentVisualIdx - 1].id); };
+  const goNext = () => { if (canGoNext) setSelectedId(unifiedItems[currentVisualIdx + 1].id); };
 
   // ─── Shared insert menu props ────────────────────────────────────
   const pricingAlreadyActive = pricingExists && pricingForm.enabled;
@@ -431,7 +397,9 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
           <span className="text-xs text-gray-400">
             {pages.length} page{pages.length !== 1 ? 's' : ''}
             {pricingExists && pricingForm.enabled ? ' + pricing' : ''}
-            {packagesExists && packagesForm.enabled ? ' + packages' : ''}
+            {packagesPages.filter((p) => p.enabled).length > 0
+              ? ` + ${packagesPages.filter((p) => p.enabled).length} packages`
+              : ''}
             {textPages.filter((tp) => tp.enabled).length > 0
               ? ` + ${textPages.filter((tp) => tp.enabled).length} text`
               : ''}
@@ -456,15 +424,13 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
               Add Pricing Page
             </button>
           )}
-          {(!packagesExists || !packagesForm.enabled) && (
-            <button
-              onClick={handleAddPackages}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
-            >
-              <Package size={12} />
-              Add Packages Page
-            </button>
-          )}
+          <button
+            onClick={handleAddPackages}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+          >
+            <Package size={12} />
+            Add Packages Page
+          </button>
           <button
             onClick={handleAddTextPage}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
@@ -488,10 +454,10 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 size={24} className="animate-spin text-gray-300" />
+          <Loader2 size={20} className="animate-spin text-gray-300" />
         </div>
       ) : (
-        <div className="flex gap-6" style={{ height: 520 }}>
+        <div ref={panelRef} className="flex gap-6" style={{ height: panelHeight }}>
           {/* Left half: sortable page list */}
           <div className="w-1/2 min-w-0 overflow-hidden flex flex-col relative">
             {processing && (
@@ -503,7 +469,6 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
               </div>
             )}
             <div className="flex-1 overflow-y-auto pr-1 space-y-0.5">
-              {/* Insert-at-start menu */}
               <InsertPageMenu
                 label="Insert"
                 isStart
@@ -521,10 +486,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                 modifiers={[restrictToVerticalAxis]}
                 onDragEnd={handleDragEnd}
               >
-                <SortableContext
-                  items={unifiedItems.map((i) => i.id)}
-                  strategy={verticalListSortingStrategy}
-                >
+                <SortableContext items={unifiedItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                   {unifiedItems.map((item, visualIdx) => {
                     if (item.type === 'pricing') {
                       return (
@@ -546,7 +508,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                               disabled={processing}
                               showPricing={true}
                               pricingAlreadyExists={pricingAlreadyActive}
-                              onInsertPdf={(file) => handleAddPage(0, file)}
+                              onInsertPdf={(file) => handleAddPage(pages[item.pageIndex]?.page_number ?? 0, file)}
                               onInsertTextPage={handleAddTextPage}
                               onInsertPricingPage={handleAddPricing}
                             />
@@ -556,19 +518,18 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                     }
 
                     if (item.type === 'packages') {
+                      const pkg = packagesPages.find((p) => p.id === item.packagesId);
                       return (
                         <SortablePackagesRow
                           key={item.id}
                           id={item.id}
-                          title={packagesForm.title}
-                          indent={packagesIndent}
+                          title={pkg?.title || 'Your Investment'}
+                          indent={pkg?.indent ?? 0}
                           isFirst={visualIdx === 0}
-                          isSelected={selectedIsPackages}
-                          onSelect={() => setSelectedId('packages')}
+                          isSelected={selectedId === item.id}
+                          onSelect={() => setSelectedId(item.id)}
                           onToggleIndent={() => {
-                            const next = packagesIndent ? 0 : 1;
-                            setPackagesIndent(next);
-                            savePackages(packagesForm, packagesPosition, next);
+                            if (pkg) updatePackagesPage(pkg.id, { indent: pkg.indent ? 0 : 1 });
                           }}
                         />
                       );
@@ -594,7 +555,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                               disabled={processing}
                               showPricing={true}
                               pricingAlreadyExists={pricingAlreadyActive}
-                              onInsertPdf={(file) => handleAddPage(0, file)}
+                              onInsertPdf={(file) => handleAddPage(pages[item.pageIndex]?.page_number ?? 0, file)}
                               onInsertTextPage={handleAddTextPage}
                               onInsertPricingPage={handleAddPricing}
                             />
@@ -672,9 +633,10 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                 canGoPrev={canGoPrev}
                 canGoNext={canGoNext}
               />
-            ) : selectedIsPackages && packagesExists ? (
+            ) : selectedIsPackages && selectedPackagesPage ? (
               <PackagesPreviewPanel
                 proposalId={template.id}
+                packagesId={selectedPackagesPage.id}
                 companyId={template.company_id}
                 onGoPrev={goPrev}
                 onGoNext={goNext}
@@ -702,30 +664,16 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                 </p>
               </div>
             ) : selectedPageUrl ? (
-              <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-                <div className="shrink-0 px-3 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
+              <div className="flex-1 flex flex-col min-h-0 rounded-lg border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-white shrink-0">
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={goPrev}
-                      disabled={!canGoPrev}
-                      className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
-                    >
-                      <ChevronLeft size={14} />
-                    </button>
-                    <span className="text-xs text-gray-500 font-medium">
-                      Page {currentVisualIdx + 1} of {unifiedItems.length}
-                    </span>
-                    <button
-                      onClick={goNext}
-                      disabled={!canGoNext}
-                      className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
-                    >
-                      <ChevronRight size={14} />
-                    </button>
+                    <button onClick={goPrev} disabled={!canGoPrev} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"><ChevronLeft size={16} /></button>
+                    <button onClick={goNext} disabled={!canGoNext} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"><ChevronRight size={16} /></button>
                   </div>
-                  <span className="text-xs text-[#017C87] font-medium truncate ml-2">
-                    {selectedPageData ? getEdit(selectedPageData.id).label : ''}
+                  <span className="text-xs text-gray-500 font-medium truncate max-w-[160px]">
+                    {getEdit(selectedPageData!.id).label || `Page ${selectedPageData!.page_number}`}
                   </span>
+                  <div className="w-16" />
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center">
                   <Document

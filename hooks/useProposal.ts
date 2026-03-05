@@ -109,6 +109,7 @@ interface SpecialPage {
   position: number;
   title: string;
   textPageId?: string;
+  packagesId?: string;
   sortOrder?: number;
 }
 
@@ -126,7 +127,7 @@ function buildPageMap(
   pdfPageCount: number,
   pricing: ProposalPricing | null,
   textPages: ProposalTextPage[],
-  packages: ProposalPackages | null,
+  packages: ProposalPackages[],
   tocSettings?: TocSettings | null
 ) {
 
@@ -141,12 +142,16 @@ function buildPageMap(
     });
   }
 
-if (packages?.enabled) {
-    specials.push({
-      type: 'packages',
-      position: packages.position,
-      title: packages.title || 'Packages',
-    });
+  for (const pkg of packages) {
+    if (pkg.enabled) {
+      specials.push({
+        type: 'packages',
+        position: pkg.position,
+        title: pkg.title || 'Packages',
+        packagesId: pkg.id,
+        sortOrder: pkg.sort_order ?? 0,
+      });
+    }
   }
 
   if (tocSettings?.enabled) {
@@ -172,9 +177,10 @@ if (packages?.enabled) {
   if (specials.length === 0 || pdfPageCount === 0) {
     return {
       totalPages: pdfPageCount,
-      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages' } | { type: 'text'; textPageId: string } | { type: 'toc' }>,
+      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages'; packagesId: string } | { type: 'text'; textPageId: string } | { type: 'toc' }>,
       isPricingPage: (_vp: number) => false,
       isPackagesPage: (_vp: number) => false,
+      getPackagesId: (_vp: number): string | null => null,
       isTocPage: (_vp: number) => false,
       isTextPage: (_vp: number) => false,
       getTextPageId: (_vp: number): string | null => null,
@@ -186,7 +192,7 @@ if (packages?.enabled) {
   type VirtualPage =
     | { type: 'pdf'; pdfPage: number }
     | { type: 'pricing' }
-    | { type: 'packages' }
+    | { type: 'packages'; packagesId: string }
     | { type: 'text'; textPageId: string }
     | { type: 'toc' };
 
@@ -212,7 +218,7 @@ if (packages?.enabled) {
       if (sp.type === 'pricing') {
         sequence.push({ type: 'pricing' });
       } else if (sp.type === 'packages') {
-        sequence.push({ type: 'packages' });
+        sequence.push({ type: 'packages', packagesId: sp.packagesId! });
       } else if (sp.type === 'toc') {
         sequence.push({ type: 'toc' });
       } else {
@@ -230,7 +236,7 @@ if (packages?.enabled) {
     if (sp.type === 'pricing') {
       sequence.push({ type: 'pricing' });
     } else if (sp.type === 'packages') {
-      sequence.push({ type: 'packages' });
+      sequence.push({ type: 'packages', packagesId: sp.packagesId! });
     } else {
       sequence.push({ type: 'text', textPageId: sp.textPageId! });
     }
@@ -243,7 +249,7 @@ if (packages?.enabled) {
     if (sp.type === 'pricing') {
       sequence.push({ type: 'pricing' });
     } else if (sp.type === 'packages') {
-      sequence.push({ type: 'packages' });
+      sequence.push({ type: 'packages', packagesId: sp.packagesId! });
     } else {
       sequence.push({ type: 'text', textPageId: sp.textPageId! });
     }
@@ -271,6 +277,14 @@ if (packages?.enabled) {
     return idx >= 0 && idx < sequence.length && sequence[idx].type === 'text';
   };
 
+  const getPackagesId = (vp: number): string | null => {
+    const idx = vp - 1;
+    if (idx >= 0 && idx < sequence.length && sequence[idx].type === 'packages') {
+      return (sequence[idx] as { type: 'packages'; packagesId: string }).packagesId;
+    }
+    return null;
+  };
+
   const getTextPageId = (vp: number): string | null => {
     const idx = vp - 1;
     if (idx >= 0 && idx < sequence.length && sequence[idx].type === 'text') {
@@ -292,6 +306,7 @@ if (packages?.enabled) {
     pageSequence: sequence,
     isPricingPage,
     isPackagesPage,
+    getPackagesId,
     isTocPage,
     isTextPage,
     getTextPageId,
@@ -312,7 +327,7 @@ export function useProposal(token: string) {
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [pricing, setPricing] = useState<ProposalPricing | null>(null);
-  const [packages, setPackages] = useState<ProposalPackages | null>(null);
+  const [packages, setPackages] = useState<ProposalPackages[]>([]);
   const [textPages, setTextPages] = useState<ProposalTextPage[]>([]);
   const [isTeamPreview, setIsTeamPreview] = useState(false);
 
@@ -519,9 +534,10 @@ export function useProposal(token: string) {
           link_label: (pricing as Record<string, unknown>)?.link_label as string | undefined,
         });
       } else if (seqEntry.type === 'packages') {
+        const pkg = packages.find((p) => p.id === (seqEntry as { type: 'packages'; packagesId: string }).packagesId);
         result.push({
-          name: packages?.title || 'Packages',
-          indent: packages?.indent ?? 0,
+          name: pkg?.title || 'Packages',
+          indent: pkg?.indent ?? 0,
         });
       } else if (seqEntry.type === 'toc') {
         result.push({
@@ -719,6 +735,7 @@ export function useProposal(token: string) {
     textPages,
     isPricingPage: pageMap.isPricingPage,
     isPackagesPage: pageMap.isPackagesPage,
+    getPackagesId: pageMap.getPackagesId,
     isTocPage: pageMap.isTocPage,
     isTextPage: pageMap.isTextPage,
     tocSettings,

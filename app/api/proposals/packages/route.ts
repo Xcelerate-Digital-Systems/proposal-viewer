@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-// GET — Fetch packages for a proposal (by proposal_id or share_token)
+// GET — Fetch all packages pages for a proposal (returns array)
 export async function GET(req: NextRequest) {
   try {
     const supabase = createServiceClient();
@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'proposal_id or share_token required' }, { status: 400 });
     }
 
-    // If share_token provided, look up proposal_id first
     let resolvedProposalId = proposalId;
     if (shareToken && !proposalId) {
       const { data: proposal } = await supabase
@@ -33,21 +32,20 @@ export async function GET(req: NextRequest) {
       .from('proposal_packages')
       .select('*')
       .eq('proposal_id', resolvedProposalId)
-      .single();
+      .order('sort_order', { ascending: true });
 
-    if (error && error.code !== 'PGRST116') {
-      // PGRST116 = no rows — that's fine, just means no packages yet
+    if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data || null);
+    return NextResponse.json(data || []);
   } catch (err) {
     console.error('Packages GET error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST — Create or update packages for a proposal
+// POST — Create a new packages page for a proposal
 export async function POST(req: NextRequest) {
   try {
     const supabase = createServiceClient();
@@ -58,7 +56,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'proposal_id is required' }, { status: 400 });
     }
 
-    // Get the proposal's company_id
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
       .select('id, company_id')
@@ -69,54 +66,90 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
     }
 
-    // Check if packages row already exists
-    const { data: existing } = await supabase
+    // Determine sort_order from existing count
+    const { count } = await supabase
       .from('proposal_packages')
-      .select('id')
-      .eq('proposal_id', proposal_id)
-      .single();
+      .select('id', { count: 'exact', head: true })
+      .eq('proposal_id', proposal_id);
 
     const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('proposal_packages')
+      .insert({
+        proposal_id,
+        company_id: proposal.company_id,
+        sort_order: count ?? 0,
+        ...packagesData,
+        created_at: now,
+        updated_at: now,
+      })
+      .select()
+      .single();
 
-    if (existing) {
-      // Update existing
-      const { data, error } = await supabase
-        .from('proposal_packages')
-        .update({
-          ...packagesData,
-          updated_at: now,
-        })
-        .eq('proposal_id', proposal_id)
-        .select()
-        .single();
-
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-
-      return NextResponse.json(data);
-    } else {
-      // Insert new
-      const { data, error } = await supabase
-        .from('proposal_packages')
-        .insert({
-          proposal_id,
-          company_id: proposal.company_id,
-          ...packagesData,
-          created_at: now,
-          updated_at: now,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-
-      return NextResponse.json(data);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json(data);
   } catch (err) {
     console.error('Packages POST error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PUT — Update a packages page by id
+export async function PUT(req: NextRequest) {
+  try {
+    const supabase = createServiceClient();
+    const id = req.nextUrl.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('proposal_packages')
+      .update({ ...body, updated_at: now })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error('Packages PUT error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE — Delete a packages page by id
+export async function DELETE(req: NextRequest) {
+  try {
+    const supabase = createServiceClient();
+    const id = req.nextUrl.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('proposal_packages')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Packages DELETE error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -10,11 +10,11 @@ import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 
 interface PackagesPreviewPanelProps {
   proposalId: string;
+  packagesId?: string;
   onGoPrev: () => void;
   onGoNext: () => void;
   canGoPrev: boolean;
   canGoNext: boolean;
-  /** When provided, fetches branding directly instead of looking up via proposals table */
   companyId?: string;
 }
 
@@ -26,6 +26,7 @@ export default function PackagesPreviewPanel({
   canGoPrev,
   canGoNext,
   companyId: directCompanyId,
+  packagesId,
 }: PackagesPreviewPanelProps) {
   const [packages, setPackages] = useState<ProposalPackages | null>(null);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -40,8 +41,8 @@ export default function PackagesPreviewPanel({
         // Fetch packages — use proposal endpoint for proposals, template for templates
         const isTemplate = !!directCompanyId;
         const endpoint = isTemplate
-          ? `/api/templates/packages?template_id=${proposalId}`
-          : `/api/proposals/packages?proposal_id=${proposalId}`;
+          ? `/api/templates/packages?template_id=${proposalId}${packagesId ? `&packages_id=${packagesId}` : ''}`
+          : `/api/proposals/packages?proposal_id=${proposalId}${packagesId ? `&packages_id=${packagesId}` : ''}`;
 
         const pkgRes = await fetch(endpoint);
         if (pkgRes.ok) {

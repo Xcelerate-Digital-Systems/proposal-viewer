@@ -37,24 +37,19 @@ export interface CompositeExportOptions {
   toPdfPage: (vp: number) => number;
   getTextPage: (id: string) => BaseTextPage | undefined;
   pricing: ProposalPricing | null;
-  packages: ProposalPackages | null;
+  packages: ProposalPackages[];
+  getPackagesId: (vp: number) => string | null;
   branding: CompanyBranding;
   clientName?: string;
   companyName?: string;
   userName?: string;
   proposalTitle?: string;
   onProgress?: (current: number, total: number) => void;
-  /** Page entries for per-page orientation overrides (PDF pages) */
   pageEntries?: PageNameEntry[];
-  /** Entity-level orientation override for special pages (pricing, packages, text) */
   pricingOrientation?: 'auto' | 'portrait' | 'landscape';
-  /** Per-text-page orientation overrides keyed by text page ID */
   textPageOrientations?: Record<string, 'auto' | 'portrait' | 'landscape'>;
-  /** Proposal object for cover page rendering (omit to skip cover) */
   proposal?: Proposal | null;
-  /** Whether to include the cover page as page 1 */
   includeCover?: boolean;
-  /** TOC support */
   isTocPage?: (vp: number) => boolean;
   tocSettings?: TocSettings | null;
   pageSequence?: Array<{ type: string; pdfPage?: number; textPageId?: string }>;
@@ -440,6 +435,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     getTextPage,
     pricing,
     packages,
+    getPackagesId,
     branding,
     clientName,
     companyName,
@@ -519,21 +515,27 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
 
       await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
 
-    } else if (isPackagesPage(vp) && packages) {
+    } else if (isPackagesPage(vp)) {
       // —— Capture packages page —————————————————————————————————
-      const orientation = pricingOrientation
-        ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
-        : resolvePageOrientation(vp, pageEntries, dominant.orientation);
+      const pkgId = getPackagesId(vp);
+      const pkg = pkgId ? packages.find((p) => p.id === pkgId) : undefined;
+      if (pkg) {
+        const orientation = pricingOrientation
+          ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
+          : resolvePageOrientation(vp, pageEntries, dominant.orientation);
 
-      const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
+        const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
 
-      const element = createElement(PackagesPage, {
-        packages,
-        branding,
-        clientName,
-      });
+        const element = createElement(PackagesPage, {
+          packages: pkg,
+          branding,
+          clientName,
+        });
 
-      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
+        await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
+      } else {
+        outDoc.addPage([dominant.width, dominant.height]);
+      }
 
     } else if (isTocPage?.(vp) && tocSettings) {
       // —— Capture TOC page ——————————————————————————————————————

@@ -59,11 +59,9 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   });
 
   const {
-    packagesLoaded, packagesExists, packagesPosition, setPackagesPosition,
-    packagesIndent, setPackagesIndent,
-    packagesForm, packagesSaveStatus,
-    updatePackages, flushPackagesSave,
-    addPackagesPage, removePackagesPage, savePackages,
+    packagesLoaded, packagesPages, packagesSaveStatuses,
+    updatePackagesPage, updatePackagesPagePosition, flushPackagesSaves,
+    addPackagesPage, removePackagesPage,
   } = usePackagesState(proposalId);
 
   const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
@@ -85,7 +83,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   /* ——— Computed unified items ——————————————————————————————————— */
 
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
-    // Build items from entries, separating groups from PDF pages
     const items: UnifiedItem[] = [];
     let pdfIdx = 0;
     for (let i = 0; i < entries.length; i++) {
@@ -111,18 +108,22 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pdfIndex: -1 });
     }
 
-    // Insert packages page at its position
-    if (packagesExists && packagesForm.enabled) {
+    // Insert each enabled packages page at its position
+    const sortedPkgs = packagesPages
+      .filter((p) => p.enabled)
+      .sort((a, b) => a.position !== b.position ? a.position - b.position : (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+    for (const pkg of sortedPkgs) {
       let pdfCount = 0;
       let insertIdx = items.length;
-      if (packagesPosition >= 0) {
+      if (pkg.position >= 0) {
         for (let i = 0; i < items.length; i++) {
-          if (pdfCount >= packagesPosition) { insertIdx = i; break; }
+          if (pdfCount >= pkg.position) { insertIdx = i; break; }
           if (items[i].type === 'pdf') pdfCount++;
           insertIdx = i + 1;
         }
       }
-      items.splice(insertIdx, 0, { id: 'packages', type: 'packages', pdfIndex: -1 });
+      items.splice(insertIdx, 0, { id: `packages-${pkg.id}`, type: 'packages', pdfIndex: -1, packagesId: pkg.id });
     }
 
     // Insert text pages at their positions
@@ -152,10 +153,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     }
 
     return items;
-  }, [entries, pricingExists, pricingForm.enabled, pricingPosition, packagesExists, packagesForm.enabled, packagesPosition, textPages]);
+  }, [entries, pricingExists, pricingForm.enabled, pricingPosition, packagesPages, textPages]);
 
   const selectedIsPricing = selectedId === 'pricing';
-  const selectedIsPackages = selectedId === 'packages';
+  const selectedIsPackages = selectedId.startsWith('packages-');
+  const selectedPackagesId = selectedIsPackages ? selectedId.replace('packages-', '') : null;
+  const selectedPackagesPage = selectedPackagesId ? packagesPages.find((p) => p.id === selectedPackagesId) ?? null : null;
   const selectedIsGroup = selectedId.startsWith('group-');
   const selectedTextPage = selectedId.startsWith('text-')
     ? textPages.find((tp) => tp.id === selectedId.replace('text-', ''))
@@ -180,13 +183,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
   const toggleIndent = (index: number) => {
     if (index === 0) return;
-    if (entries[index]?.type === 'group') return; // groups can't be indented
+    if (entries[index]?.type === 'group') return;
     updateEntry(index, { indent: entries[index].indent === 0 ? 1 : 0 });
   };
 
   /* ——— Position calculation helpers ———————————————————————————— */
 
-  /** Count PDF pages up to and including the given visual index in unifiedItems */
   const countPdfPagesUpTo = useCallback((afterVisualIdx: number): number => {
     let count = 0;
     for (let i = 0; i <= afterVisualIdx && i < unifiedItems.length; i++) {
@@ -197,20 +199,17 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
   /* ——— Insert-at-position handlers ———————————————————————————— */
 
-  /** Insert a PDF page at a specific position in the unified list */
   const handleInsertPdfAtPosition = useCallback((afterVisualIdx: number, file: File) => {
     const afterPdfPage = afterVisualIdx === -1 ? 0 : countPdfPagesUpTo(afterVisualIdx);
     handleInsertPage(afterPdfPage, file);
   }, [countPdfPagesUpTo, handleInsertPage]);
 
-  /** Insert a text page at a specific position in the unified list */
   const handleInsertTextPageAtPosition = useCallback(async (afterVisualIdx: number) => {
     const position = afterVisualIdx === -1 ? 0 : countPdfPagesUpTo(afterVisualIdx);
     const newPage = await addTextPage(position);
     if (newPage) setSelectedId(`text-${newPage.id}`);
   }, [countPdfPagesUpTo, addTextPage, setSelectedId]);
 
-  /** Insert a pricing page (created at end, user can drag to position) */
   const handleInsertPricingAtPosition = useCallback(async () => {
     if (pricingExists && pricingForm.enabled) return;
     await addPricingPage();
@@ -222,7 +221,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    if (processing) return; // Block reorder while a previous operation is in flight
+    if (processing) return;
 
     setIsReordering(true);
     try {
@@ -232,11 +231,9 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
       const reordered = arrayMove(unifiedItems, oldIdx, newIdx);
 
-      // Extract new PDF page order (for physical PDF reorder)
       const pdfItems = reordered.filter((i) => i.type === 'pdf');
       const newPageOrder = pdfItems.map((i) => i.pdfIndex);
 
-      // Helper: count PDF pages before a given index in the reordered list
       const countPdfBefore = (idx: number) =>
         reordered.slice(0, idx).filter((i) => i.type === 'pdf').length;
 
@@ -251,16 +248,14 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         }
       }
 
-      // Update packages position
-      if (packagesExists && packagesForm.enabled) {
-        const packagesIdx = reordered.findIndex((i) => i.type === 'packages');
-        if (packagesIdx !== -1) {
-          const isLast = packagesIdx === reordered.length - 1;
-          const newPos = isLast ? -1 : countPdfBefore(packagesIdx);
-          if (newPos !== packagesPosition) {
-            setPackagesPosition(newPos);
-            savePackages(packagesForm, newPos);
-          }
+      // Update position for each packages page
+      for (const pkg of packagesPages.filter((p) => p.enabled)) {
+        const pkgIdx = reordered.findIndex((i) => i.id === `packages-${pkg.id}`);
+        if (pkgIdx === -1) continue;
+        const isLast = pkgIdx === reordered.length - 1;
+        const newPos = isLast ? -1 : countPdfBefore(pkgIdx);
+        if (newPos !== pkg.position) {
+          updatePackagesPagePosition(pkg.id, newPos);
         }
       }
 
@@ -276,7 +271,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         }
       }
 
-      // Rebuild entries array from reordered items (groups + PDF entries in new visual order)
+      // Rebuild entries array from reordered items
       const newEntries: typeof entries = [];
       for (const item of reordered) {
         if ((item.type === 'pdf' || item.type === 'group') && item.entryIndex !== undefined) {
@@ -289,7 +284,6 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         await forceSaveEntries(newEntries);
       }
 
-      // Check if physical PDF order actually changed
       const orderChanged = newPageOrder.some((v, i) => v !== i);
       if (orderChanged) {
         await handleReorder(newPageOrder);
@@ -314,12 +308,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   /* ——— Add/remove packages ————————————————————————————————————— */
 
   const handleAddPackages = async () => {
-    await addPackagesPage();
-    setSelectedId('packages');
+    const newPage = await addPackagesPage();
+    if (newPage) setSelectedId(`packages-${newPage.id}`);
   };
 
-  const handleRemovePackages = async () => {
-    const removed = await removePackagesPage();
+  const handleRemovePackages = async (pageId: string) => {
+    const removed = await removePackagesPage(pageId);
     if (removed) setSelectedId('pdf-0');
   };
 
@@ -349,6 +343,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     await flushPendingSaves();
     await flushPricingSave();
     await flushTextPageSaves();
+    await flushPackagesSaves();
     onSave();
   };
 
@@ -368,10 +363,30 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
           <span className="text-xs text-gray-400">
             {pageCount} PDF page{pageCount !== 1 ? 's' : ''}
             {pricingExists && pricingForm.enabled ? ' + pricing' : ''}
+            {packagesPages.filter((p) => p.enabled).length > 0
+              ? ` + ${packagesPages.filter((p) => p.enabled).length} packages`
+              : ''}
             {textPages.filter((tp) => tp.enabled).length > 0
               ? ` + ${textPages.filter((tp) => tp.enabled).length} text`
               : ''}
           </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            onClick={handleDone}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#017C87] text-white hover:bg-[#017C87]/90 transition-colors"
+          >
+            <Check size={12} />
+            Done
+          </button>
         </div>
       </div>
 
@@ -387,7 +402,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               Add Pricing Page
             </button>
           )}
-          {tableName !== 'documents' && (!packagesExists || !packagesForm.enabled) && (
+          {tableName !== 'documents' && (
             <button
               onClick={handleAddPackages}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
@@ -421,7 +436,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       <div ref={panelRef} className="flex gap-6" style={{ height: panelHeight }}>
         {/* Left half: sortable page list */}
         <div className="w-1/2 min-w-0 overflow-hidden flex flex-col relative">
-          {/* Processing overlay — blocks interaction during PDF operations and reordering */}
+          {/* Processing overlay */}
           {(processing || isReordering) && (
             <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
@@ -484,19 +499,18 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                   }
 
                   if (item.type === 'packages') {
+                    const pkg = packagesPages.find((p) => p.id === item.packagesId);
                     return (
                       <SortablePackagesRow
                         key={item.id}
                         id={item.id}
-                        title={packagesForm.title}
-                        indent={packagesIndent}
+                        title={pkg?.title || 'Your Investment'}
+                        indent={pkg?.indent ?? 0}
                         isFirst={visualIdx === 0}
-                        isSelected={selectedIsPackages}
-                        onSelect={() => setSelectedId('packages')}
+                        isSelected={selectedId === item.id}
+                        onSelect={() => setSelectedId(item.id)}
                         onToggleIndent={() => {
-                          const next = packagesIndent ? 0 : 1;
-                          setPackagesIndent(next);
-                          savePackages(packagesForm, packagesPosition, next);
+                          if (pkg) updatePackagesPage(pkg.id, { indent: pkg.indent ? 0 : 1 });
                         }}
                       />
                     );
@@ -604,9 +618,10 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
             />
-          ) : selectedIsPackages && packagesExists ? (
+          ) : selectedIsPackages && selectedPackagesPage ? (
             <PackagesPreviewPanel
               proposalId={proposalId}
+              packagesId={selectedPackagesPage.id}
               onGoPrev={goPrev}
               onGoNext={goNext}
               canGoPrev={canGoPrev}
@@ -624,8 +639,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               canGoNext={canGoNext}
             />
           ) : selectedIsGroup ? (
-            <div className="flex-1 flex items-center justify-center rounded-lg border border-dashed border-gray-200">
-              <p className="text-xs text-gray-400">Section header — no preview</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+              <FolderOpen size={32} className="text-amber-400 mb-3" />
+              <p className="text-sm font-medium text-amber-700">Section Header</p>
+              <p className="text-xs text-amber-500 mt-1 max-w-[240px]">
+                This is a non-navigable group header. Pages nested below it will appear as children in the sidebar.
+              </p>
             </div>
           ) : (
             <PdfPreviewPanel

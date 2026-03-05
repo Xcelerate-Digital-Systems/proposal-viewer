@@ -9,6 +9,7 @@ export type UnifiedItem = {
   type: 'pdf' | 'pricing' | 'text' | 'group' | 'packages' | 'toc';
   pdfIndex: number;
   textPageId?: string;
+  packagesId?: string;
   entryIndex?: number;
 };
 

@@ -35,6 +35,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     packages,
     isPricingPage,
     isPackagesPage,
+    getPackagesId,
     isTocPage,
     isTextPage,
     getTextPageId,
@@ -60,9 +61,10 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
   const onPackagesPage = isPackagesPage(currentPage);
   const onTocPage = isTocPage(currentPage);
   const onTextPage = isTextPage(currentPage);
+  const currentPackagesId = getPackagesId(currentPage);
+  const currentPackages = currentPackagesId ? packages.find((p) => p.id === currentPackagesId) : undefined;
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
-  const pdfPage = toPdfPage(currentPage);
 
   // Dismiss cover state when cover isn't enabled
   useEffect(() => {
@@ -241,7 +243,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
               />
             </div>
           </div>
-        ) : onPackagesPage && packages ? (
+        ) : onPackagesPage && currentPackages ? (
           <div
             ref={mainRef}
             className="flex-1 overflow-auto relative"
@@ -250,7 +252,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             <ViewerBackground branding={branding} />
             <div className="relative h-full">
               <PackagesPage
-                packages={packages}
+                packages={currentPackages}
                 branding={branding}
                 clientName="[Client Name]"
               />
@@ -293,7 +295,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
         ) : (
           <PdfViewer
             pdfUrl={pdfUrl}
-            currentPage={pdfPage}
+            currentPage={toPdfPage(currentPage)}
             onLoadSuccess={onDocumentLoadSuccess}
             scrollRef={mainRef}
             bgColor={bgPrimary}

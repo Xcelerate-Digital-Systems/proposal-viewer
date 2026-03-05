@@ -1,74 +1,41 @@
 // components/admin/templates/useTemplatePackagesState.ts
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { ProposalPackages, PackageTier, PackageStyling, normalizePackageStyling, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { ProposalPackages, normalizePackageStyling, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-export type TemplatePackagesFormState = {
-  enabled: boolean;
-  title: string;
-  intro_text: string | null;
-  packages: PackageTier[];
-  footer_text: string | null;
-  styling: PackageStyling;
-};
-
-const DEFAULT_PACKAGES: TemplatePackagesFormState = {
-  enabled: true,
-  title: 'Your Investment',
-  intro_text: null,
-  packages: [],
-  footer_text: null,
-  styling: { ...DEFAULT_PACKAGE_STYLING },
-};
 
 /* ------------------------------------------------------------------ */
 /*  Hook                                                               */
 /* ------------------------------------------------------------------ */
 
-export function useTemplatePackagesState(templateId: string, pageCount: number) {
+export function useTemplatePackagesState(templateId: string, _pageCount: number) {
   const confirm = useConfirm();
   const toast = useToast();
 
   const [packagesLoaded, setPackagesLoaded] = useState(false);
-  const [packagesExists, setPackagesExists] = useState(false);
-  const [packagesPosition, setPackagesPosition] = useState(-1);
-  const [packagesIndent, setPackagesIndent] = useState(0);
-  const [packagesForm, setPackagesForm] = useState<TemplatePackagesFormState>(DEFAULT_PACKAGES);
-  const [packagesSaveStatus, setPackagesSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const packagesDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [packagesPages, setPackagesPages] = useState<ProposalPackages[]>([]);
+  const [packagesSaveStatuses, setPackagesSaveStatuses] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
 
-  // Cleanup
+  const debounces = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
   useEffect(() => {
-    return () => {
-      if (packagesDebounce.current) clearTimeout(packagesDebounce.current);
-    };
+    return () => { Object.values(debounces.current).forEach(clearTimeout); };
   }, []);
 
-  // Fetch packages
+  /* ── Fetch ──────────────────────────────────────────────────── */
+
   useEffect(() => {
     const fetchPackages = async () => {
       try {
         const res = await fetch(`/api/templates/packages?template_id=${templateId}`);
         if (res.ok) {
           const data = await res.json();
-          if (data) {
-            setPackagesExists(true);
-            setPackagesPosition(data.position);
-            setPackagesIndent(data.indent ?? 0);
-            setPackagesForm({
-              enabled: data.enabled,
-              title: data.title || 'Your Investment',
-              intro_text: data.intro_text,
-              packages: data.packages || [],
-              footer_text: data.footer_text,
-              styling: normalizePackageStyling(data.styling),
-            });
-          }
+          const rows = (Array.isArray(data) ? data : data ? [data] : []).map((r: ProposalPackages) => ({
+            ...r,
+            styling: normalizePackageStyling(r.styling),
+          }));
+          setPackagesPages(rows);
         }
       } catch { /* no packages yet */ }
       setPackagesLoaded(true);
@@ -76,69 +43,137 @@ export function useTemplatePackagesState(templateId: string, pageCount: number) 
     fetchPackages();
   }, [templateId]);
 
-  // Save packages
-  const savePackages = useCallback(async (
-    form: TemplatePackagesFormState,
-    pos: number,
-    indent?: number,
-  ) => {
-    setPackagesSaveStatus('saving');
+  /* ── Save a single record ───────────────────────────────────── */
+
+  const savePackagesRecord = useCallback(async (record: ProposalPackages) => {
+    setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'saving' }));
     try {
       await fetch('/api/templates/packages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           template_id: templateId,
-          enabled: form.enabled,
-          position: pos,
-          indent: indent ?? packagesIndent,
-          title: form.title,
-          intro_text: form.intro_text,
-          packages: form.packages,
-          footer_text: form.footer_text,
-          styling: form.styling,
+          id: record.id,
+          enabled: record.enabled,
+          position: record.position,
+          sort_order: record.sort_order,
+          indent: record.indent,
+          title: record.title,
+          intro_text: record.intro_text,
+          packages: record.packages,
+          footer_text: record.footer_text,
+          styling: record.styling,
         }),
       });
-      setPackagesSaveStatus('saved');
-      setTimeout(() => setPackagesSaveStatus('idle'), 2000);
+      setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'saved' }));
+      setTimeout(() => setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'idle' })), 2000);
     } catch {
       toast.error('Failed to save packages');
-      setPackagesSaveStatus('idle');
+      setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'idle' }));
     }
-  }, [templateId, packagesIndent, toast]);
+  }, [templateId, toast]);
 
-  // Add packages page
-  const addPackagesPage = useCallback(async () => {
-    const pos = pageCount;
-    const form = { ...DEFAULT_PACKAGES, enabled: true };
-    setPackagesForm(form);
-    setPackagesExists(true);
-    setPackagesPosition(pos);
-    await savePackages(form, pos);
-    toast.success('Packages page added');
-  }, [pageCount, savePackages, toast]);
+  /* ── Debounced update ───────────────────────────────────────── */
 
-  // Remove packages page
-  const removePackagesPage = useCallback(async () => {
+  const updatePackagesPage = useCallback((id: string, changes: Partial<ProposalPackages>) => {
+    setPackagesPages((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id !== id) return p;
+        const next = { ...p, ...changes };
+        if (debounces.current[id]) clearTimeout(debounces.current[id]);
+        debounces.current[id] = setTimeout(() => savePackagesRecord(next), 800);
+        return next;
+      });
+      return updated;
+    });
+  }, [savePackagesRecord]);
+
+  /* ── Immediate position update ──────────────────────────────── */
+
+  const updatePackagesPagePosition = useCallback((id: string, newPos: number) => {
+    setPackagesPages((prev) => {
+      const updated = prev.map((p) => p.id === id ? { ...p, position: newPos } : p);
+      const record = updated.find((p) => p.id === id);
+      if (record) savePackagesRecord(record);
+      return updated;
+    });
+  }, [savePackagesRecord]);
+
+  /* ── Flush all pending saves ────────────────────────────────── */
+
+  const flushPackagesSaves = useCallback(async () => {
+    const pending = Object.entries(debounces.current);
+    for (const [id, timer] of pending) {
+      clearTimeout(timer);
+      delete debounces.current[id];
+      const record = packagesPages.find((p) => p.id === id);
+      if (record) await savePackagesRecord(record);
+    }
+  }, [packagesPages, savePackagesRecord]);
+
+  /* ── Add a new packages page ────────────────────────────────── */
+
+  const addPackagesPage = useCallback(async (): Promise<ProposalPackages | null> => {
+    try {
+      const res = await fetch('/api/templates/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template_id: templateId,
+          enabled: true,
+          title: 'Your Investment',
+          intro_text: null,
+          packages: [],
+          footer_text: null,
+          position: -1,
+          indent: 0,
+          styling: { ...DEFAULT_PACKAGE_STYLING },
+        }),
+      });
+      if (!res.ok) {
+        toast.error('Failed to add packages page');
+        return null;
+      }
+      const newRecord: ProposalPackages = await res.json();
+      newRecord.styling = normalizePackageStyling(newRecord.styling);
+      setPackagesPages((prev) => [...prev, newRecord]);
+      toast.success('Packages page added');
+      return newRecord;
+    } catch {
+      toast.error('Failed to add packages page');
+      return null;
+    }
+  }, [templateId, toast]);
+
+  /* ── Remove (disable) a specific packages page ──────────────── */
+
+  const removePackagesPage = useCallback(async (id: string): Promise<boolean> => {
     const ok = await confirm({
-      title: 'Remove Packages Page',
+      title: 'Remove packages page?',
       message: 'Remove the packages page from this template?',
       confirmLabel: 'Remove',
       destructive: true,
     });
     if (!ok) return false;
 
-    const updated = { ...packagesForm, enabled: false };
-    setPackagesForm(updated);
-    await savePackages(updated, packagesPosition);
+    setPackagesPages((prev) => {
+      const updated = prev.map((p) => p.id === id ? { ...p, enabled: false } : p);
+      const record = updated.find((p) => p.id === id);
+      if (record) savePackagesRecord(record);
+      return updated;
+    });
     toast.success('Packages page removed');
     return true;
-  }, [confirm, packagesForm, packagesPosition, savePackages, toast]);
+  }, [confirm, savePackagesRecord, toast]);
 
   return {
-    packagesLoaded, packagesExists, packagesPosition, setPackagesPosition,
-    packagesIndent, setPackagesIndent,
-    packagesForm, setPackagesForm, packagesSaveStatus,
-    savePackages, addPackagesPage, removePackagesPage,
+    packagesLoaded,
+    packagesPages,
+    packagesSaveStatuses,
+    updatePackagesPage,
+    updatePackagesPagePosition,
+    flushPackagesSaves,
+    addPackagesPage,
+    removePackagesPage,
   };
 }

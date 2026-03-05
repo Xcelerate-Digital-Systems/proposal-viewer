@@ -41,6 +41,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     textPages,
     isPricingPage,
     isPackagesPage,
+    getPackagesId,
     isTextPage,
     isTocPage,
     getTextPageId,
@@ -75,15 +76,13 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
   // Is the current virtual page the pricing page?
   const onPricingPage = isPricingPage(currentPage);
-  // Is the current virtual page the packages page?
   const onPackagesPage = isPackagesPage(currentPage);
-  // Is the current virtual page the TOC page?
   const onTocPage = isTocPage(currentPage);
-  // Is the current virtual page a text page?
   const onTextPage = isTextPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
-  // If not pricing, packages, toc, or text, what PDF page should we show?
+  const currentPackagesId = getPackagesId(currentPage);
+  const currentPackages = currentPackagesId ? packages.find((p) => p.id === currentPackagesId) : undefined;
   const pdfPage = toPdfPage(currentPage);
 
   // Get link for current page (skip group entries to find Nth actual page)
@@ -169,6 +168,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       proposalTitle: proposal?.title,
       isPackagesPage,
       packages,
+      getPackagesId,
       pricingOrientation: entityOrientation,
       textPageOrientations: Object.fromEntries(
         textPages.map(tp => [tp.id, entityOrientation])
@@ -328,7 +328,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
               />
             </div>
           </div>
-        ) : onPackagesPage && packages ? (
+        ) : onPackagesPage && currentPackages ? (
           <div
             ref={mainRef}
             className="flex-1 overflow-auto relative"
@@ -337,7 +337,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             <ViewerBackground branding={branding} />
             <div className="relative h-full">
               <PackagesPage
-                packages={packages}
+                packages={currentPackages}
                 branding={branding}
                 clientName={proposal?.client_name}
               />

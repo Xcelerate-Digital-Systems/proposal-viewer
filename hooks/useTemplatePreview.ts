@@ -6,13 +6,14 @@ import { supabase, PageNameEntry, normalizePageNamesWithGroups, ProposalPricing,
 import { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 
-/* ─── Special page: represents a non-PDF page in the virtual sequence ── */
+/* ─── Special page ──────────────────────────────────────────────────── */
 
 interface SpecialPage {
   type: 'pricing' | 'text' | 'packages' | 'toc';
   position: number;
   title: string;
   textPageId?: string;
+  packagesId?: string;
   sortOrder?: number;
 }
 
@@ -20,55 +21,44 @@ function buildPageMap(
   pdfPageCount: number,
   pricing: ProposalPricing | null,
   textPages: ProposalTextPage[],
-  packages: ProposalPackages | null,
+  packages: ProposalPackages[],
   tocSettings?: TocSettings | null
 ) {
   const specials: SpecialPage[] = [];
 
   if (pricing?.enabled) {
-    specials.push({
-      type: 'pricing',
-      position: pricing.position,
-      title: pricing.title || 'Your Investment',
-    });
+    specials.push({ type: 'pricing', position: pricing.position, title: pricing.title || 'Your Investment' });
   }
 
-  if (packages?.enabled) {
-    specials.push({
-      type: 'packages',
-      position: packages.position,
-      title: packages.title || 'Packages',
-    });
+  for (const pkg of packages) {
+    if (pkg.enabled) {
+      specials.push({
+        type: 'packages',
+        position: pkg.position,
+        title: pkg.title || 'Packages',
+        packagesId: pkg.id,
+        sortOrder: pkg.sort_order,
+      });
+    }
   }
 
   if (tocSettings?.enabled) {
-    specials.push({
-      type: 'toc',
-      position: tocSettings.position,
-      title: tocSettings.title || 'Table of Contents',
-    });
+    specials.push({ type: 'toc', position: tocSettings.position, title: tocSettings.title || 'Table of Contents' });
   }
 
   for (const tp of textPages) {
     if (tp.enabled) {
-      specials.push({
-        type: 'text',
-        position: tp.position,
-        title: tp.title || 'Text Page',
-        textPageId: tp.id,
-        sortOrder: tp.sort_order,
-      });
+      specials.push({ type: 'text', position: tp.position, title: tp.title || 'Text Page', textPageId: tp.id, sortOrder: tp.sort_order });
     }
   }
 
   if (specials.length === 0 || pdfPageCount === 0) {
     return {
       totalPages: pdfPageCount,
-      pageSequence: [] as Array<
-        { type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages' } | { type: 'text'; textPageId: string } | { type: 'toc' }
-      >,
+      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages'; packagesId: string } | { type: 'text'; textPageId: string } | { type: 'toc' }>,
       isPricingPage: (_vp: number) => false,
       isPackagesPage: (_vp: number) => false,
+      getPackagesId: (_vp: number): string | null => null,
       isTocPage: (_vp: number) => false,
       isTextPage: (_vp: number) => false,
       getTextPageId: (_vp: number): string | null => null,
@@ -79,7 +69,7 @@ function buildPageMap(
   type VirtualPage =
     | { type: 'pdf'; pdfPage: number }
     | { type: 'pricing' }
-    | { type: 'packages' }
+    | { type: 'packages'; packagesId: string }
     | { type: 'text'; textPageId: string }
     | { type: 'toc' };
 
@@ -97,15 +87,10 @@ function buildPageMap(
   for (let pdfPage = 1; pdfPage <= pdfPageCount; pdfPage++) {
     while (posIdx < positioned.length && positioned[posIdx].position < pdfPage) {
       const sp = positioned[posIdx];
-      if (sp.type === 'pricing') {
-        sequence.push({ type: 'pricing' });
-      } else if (sp.type === 'packages') {
-        sequence.push({ type: 'packages' });
-      } else if (sp.type === 'toc') {
-        sequence.push({ type: 'toc' });
-      } else {
-        sequence.push({ type: 'text', textPageId: sp.textPageId! });
-      }
+      if (sp.type === 'pricing') sequence.push({ type: 'pricing' });
+      else if (sp.type === 'packages') sequence.push({ type: 'packages', packagesId: sp.packagesId! });
+      else if (sp.type === 'toc') sequence.push({ type: 'toc' });
+      else sequence.push({ type: 'text', textPageId: sp.textPageId! });
       posIdx++;
     }
     sequence.push({ type: 'pdf', pdfPage });
@@ -113,29 +98,19 @@ function buildPageMap(
 
   while (posIdx < positioned.length) {
     const sp = positioned[posIdx];
-    if (sp.type === 'pricing') {
-      sequence.push({ type: 'pricing' });
-    } else if (sp.type === 'packages') {
-      sequence.push({ type: 'packages' });
-    } else if (sp.type === 'toc') {
-      sequence.push({ type: 'toc' });
-    } else {
-      sequence.push({ type: 'text', textPageId: sp.textPageId! });
-    }
+    if (sp.type === 'pricing') sequence.push({ type: 'pricing' });
+    else if (sp.type === 'packages') sequence.push({ type: 'packages', packagesId: sp.packagesId! });
+    else if (sp.type === 'toc') sequence.push({ type: 'toc' });
+    else sequence.push({ type: 'text', textPageId: sp.textPageId! });
     posIdx++;
   }
 
   trailing.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   for (const sp of trailing) {
-    if (sp.type === 'pricing') {
-      sequence.push({ type: 'pricing' });
-    } else if (sp.type === 'packages') {
-      sequence.push({ type: 'packages' });
-    } else if (sp.type === 'toc') {
-      sequence.push({ type: 'toc' });
-    } else {
-      sequence.push({ type: 'text', textPageId: sp.textPageId! });
-    }
+    if (sp.type === 'pricing') sequence.push({ type: 'pricing' });
+    else if (sp.type === 'packages') sequence.push({ type: 'packages', packagesId: sp.packagesId! });
+    else if (sp.type === 'toc') sequence.push({ type: 'toc' });
+    else sequence.push({ type: 'text', textPageId: sp.textPageId! });
   }
 
   const totalPages = sequence.length;
@@ -144,10 +119,17 @@ function buildPageMap(
   const isPackagesPage = (vp: number) => sequence[vp - 1]?.type === 'packages';
   const isTocPage = (vp: number) => sequence[vp - 1]?.type === 'toc';
   const isTextPage = (vp: number) => sequence[vp - 1]?.type === 'text';
+
+  const getPackagesId = (vp: number): string | null => {
+    const entry = sequence[vp - 1];
+    return entry?.type === 'packages' ? (entry as { type: 'packages'; packagesId: string }).packagesId : null;
+  };
+
   const getTextPageId = (vp: number): string | null => {
     const entry = sequence[vp - 1];
     return entry?.type === 'text' ? entry.textPageId : null;
   };
+
   const toPdfPage = (vp: number): number => {
     const entry = sequence[vp - 1];
     return entry?.type === 'pdf' ? entry.pdfPage : 0;
@@ -158,6 +140,7 @@ function buildPageMap(
     pageSequence: sequence,
     isPricingPage,
     isPackagesPage,
+    getPackagesId,
     isTocPage,
     isTextPage,
     getTextPageId,
@@ -219,11 +202,10 @@ interface TemplateData {
   page_num_text_color: string | null;
 }
 
-/* ─── Hook ─────────────────────────────────────────────────────────────── */
+/* ─── Hook ─────────────────────────────────────────────────────────── */
 
 export function useTemplatePreview(templateId: string) {
   const [template, setTemplate] = useState<TemplateData | null>(null);
-  /** Single signed URL for the merged PDF (same approach as proposals) */
   const [pdfUrl, setPdfUrl] = useState<string>('');
   const [pdfPageCount, setPdfPageCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -233,12 +215,12 @@ export function useTemplatePreview(templateId: string) {
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [pricing, setPricing] = useState<ProposalPricing | null>(null);
-  const [packages, setPackages] = useState<ProposalPackages | null>(null);
+  const [packages, setPackages] = useState<ProposalPackages[]>([]);
   const [textPages, setTextPages] = useState<ProposalTextPage[]>([]);
 
   const fetchTemplate = useCallback(async () => {
     try {
-      // 1. Fetch template data
+      // 1. Fetch template
       const { data: tmpl, error } = await supabase
         .from('proposal_templates')
         .select('*')
@@ -251,45 +233,8 @@ export function useTemplatePreview(templateId: string) {
         return;
       }
 
-      setTemplate(tmpl);
-
-      // Build page entries from template_pages (for sidebar labels/indents)
-      const { data: tPages } = await supabase
-        .from('template_pages')
-        .select('page_number, label, indent')
-        .eq('template_id', templateId)
-        .order('page_number', { ascending: true });
-
-      const pdfCount = tPages?.length || 0;
-      setPdfPageCount(pdfCount);
-
-      if (tPages && tPages.length > 0) {
-        const entries: PageNameEntry[] = [];
-
-        // Always build from template_pages records (source of truth after page CRUD).
-        // page_names JSON on the template record can be stale after insert/delete.
-        for (const p of tPages) {
-          entries.push({
-            name: p.label || `Page ${p.page_number}`,
-            indent: p.indent || 0,
-          });
-        }
-
-        // Re-insert section headers (groups) from page_names if present,
-        // since groups aren't stored in template_pages.
-        if (tmpl.page_names && Array.isArray(tmpl.page_names)) {
-          const normalized = normalizePageNamesWithGroups(tmpl.page_names, pdfCount);
-          let groupOffset = 0;
-          for (let i = 0; i < normalized.length; i++) {
-            if (normalized[i].type === 'group') {
-              const insertIdx = Math.min(i + groupOffset, entries.length);
-              entries.splice(insertIdx, 0, normalized[i]);
-            }
-          }
-        }
-
-        setPageEntries(entries);
-      }
+      setTemplate(tmpl as TemplateData);
+      setPageEntries(normalizePageNamesWithGroups(tmpl.page_names, 100));
 
       // 2. Fetch branding
       try {
@@ -297,7 +242,6 @@ export function useTemplatePreview(templateId: string) {
         if (brandingRes.ok) {
           const brandingData = await brandingRes.json();
 
-          // Entity-level bg image override (template → company fallback)
           if (tmpl.bg_image_path) {
             const { data: bgUrlData } = supabase.storage
               .from('company-assets')
@@ -308,7 +252,6 @@ export function useTemplatePreview(templateId: string) {
             brandingData.bg_image_overlay_opacity = tmpl.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
           }
 
-          // Entity-level text page style overrides (template → company fallback)
           if (tmpl.text_page_bg_color != null) brandingData.text_page_bg_color = tmpl.text_page_bg_color;
           if (tmpl.text_page_text_color != null) brandingData.text_page_text_color = tmpl.text_page_text_color;
           if (tmpl.text_page_heading_color != null) brandingData.text_page_heading_color = tmpl.text_page_heading_color;
@@ -323,7 +266,6 @@ export function useTemplatePreview(templateId: string) {
           if (tmpl.page_num_circle_color != null) brandingData.page_num_circle_color = tmpl.page_num_circle_color;
           if (tmpl.page_num_text_color != null) brandingData.page_num_text_color = tmpl.page_num_text_color;
 
-
           setBranding(brandingData);
         }
       } catch {
@@ -331,7 +273,7 @@ export function useTemplatePreview(templateId: string) {
       }
       setBrandingLoaded(true);
 
-      // 3. Fetch signed URL for merged PDF (same approach as proposals)
+      // 3. Fetch signed URL for merged PDF
       if (tmpl.file_path) {
         const { data: signedData } = await supabase.storage
           .from('proposals')
@@ -363,12 +305,7 @@ export function useTemplatePreview(templateId: string) {
       if (pkgRes?.ok) {
         try {
           const pkgData = await pkgRes.json();
-          if (pkgData && pkgData.enabled) {
-            setPackages({
-              ...pkgData,
-              proposal_id: templateId, // Map template_id → proposal_id for component compat
-            });
-          }
+          setPackages(Array.isArray(pkgData) ? pkgData : []);
         } catch { /* Non-critical */ }
       }
 
@@ -438,7 +375,8 @@ export function useTemplatePreview(templateId: string) {
       } else if (seqEntry.type === 'pricing') {
         result.push({ name: pricing?.title || 'Your Investment', indent: pricing?.indent ?? 0 });
       } else if (seqEntry.type === 'packages') {
-        result.push({ name: packages?.title || 'Packages', indent: packages?.indent ?? 0 });
+        const pkg = packages.find((p) => p.id === (seqEntry as { type: 'packages'; packagesId: string }).packagesId);
+        result.push({ name: pkg?.title || 'Packages', indent: pkg?.indent ?? 0 });
       } else if (seqEntry.type === 'toc') {
         result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
       } else {
@@ -451,7 +389,6 @@ export function useTemplatePreview(templateId: string) {
     return result;
   }, [pageEntries, pdfPageCount, pricing, packages, textPages, tocSettings, pageMap.pageSequence]);
 
-  // Total virtual pages
   const numPages = pageMap.totalPages > 0 ? pageMap.totalPages : pdfPageCount;
 
   const getPageName = (pageNum: number) => {
@@ -460,11 +397,9 @@ export function useTemplatePreview(templateId: string) {
 
   const getTextPage = (id: string) => textPages.find((tp) => tp.id === id);
 
-  // Callback for when PdfViewer loads the document (safety net for page count)
   const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
     setPdfPageCount(n);
     setPageEntries((prev) => {
-      // Separate groups from real page entries
       const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
       const realEntries: PageNameEntry[] = [];
       for (const entry of prev) {
@@ -475,11 +410,9 @@ export function useTemplatePreview(templateId: string) {
         }
       }
 
-      // Pad/trim real entries to match PDF page count
       while (realEntries.length < n) realEntries.push({ name: `Page ${realEntries.length + 1}`, indent: 0 });
       const trimmed = realEntries.slice(0, n);
 
-      // Re-insert groups at their original positions (if still valid)
       const result: PageNameEntry[] = [];
       let realIdx = 0;
       let groupIdx = 0;
@@ -517,6 +450,7 @@ export function useTemplatePreview(templateId: string) {
     packages,
     isPricingPage: pageMap.isPricingPage,
     isPackagesPage: pageMap.isPackagesPage,
+    getPackagesId: pageMap.getPackagesId,
     isTocPage: pageMap.isTocPage,
     isTextPage: pageMap.isTextPage,
     getTextPageId: pageMap.getTextPageId,

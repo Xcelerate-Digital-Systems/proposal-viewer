@@ -146,7 +146,8 @@ export default function DocumentViewerPage({ params }: { params: { token: string
       proposalTitle: doc?.title,
       textPageOrientations,
       isPackagesPage: () => false,
-      packages: null,
+      packages: [],
+      getPackagesId: () => null,
       proposal: null,
       includeCover: false,
     });
