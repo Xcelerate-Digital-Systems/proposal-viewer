@@ -562,7 +562,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                       entry={entry}
                       visualNum={visualIdx + 1}
                       isSelected={selectedId === item.id}
-                      status={saveStatus[entryIdx] || null}
+                      status={saveStatus[entryIdx] === 'saving' || saveStatus[entryIdx] === 'saved' ? saveStatus[entryIdx] : null}
                       processing={processing}
                       pageCount={pageCount}
                       index={i}

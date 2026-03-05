@@ -1,179 +1,178 @@
-// components/admin/page-editor/usePackagesState.ts
+// components/admin/page-editor/usePageEditorState.ts
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ProposalPackages, PackageTier, PackageStyling, normalizePackageStyling, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
-import { useConfirm } from '@/components/ui/ConfirmDialog';
-import { useToast } from '@/components/ui/Toast';
+import { PageNameEntry, normalizePageNamesWithGroups } from '@/lib/supabase';
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+/**
+ * Manages the PDF page entries (names, indents, section groups) for the
+ * PageEditor. Handles debounced per-entry saves, group CRUD, and
+ * utilities needed by usePdfOperations (flush, forceSave, remap).
+ */
+export function usePageEditorState(
+  proposalId: string,
+  initialPageNames: (PageNameEntry | string)[],
+  tableName: 'proposals' | 'documents' = 'proposals',
+) {
+  const [entries, setEntries] = useState<PageNameEntry[]>(() =>
+    normalizePageNamesWithGroups(
+      initialPageNames,
+      initialPageNames.filter(
+        (e) => typeof e === 'string' || (e as PageNameEntry).type !== 'group'
+      ).length
+    )
+  );
 
-export type PackagesFormState = {
-  enabled: boolean;
-  title: string;
-  intro_text: string | null;
-  packages: PackageTier[];
-  footer_text: string | null;
-  styling: PackageStyling;
-};
+  const [pageCount, setPageCount] = useState<number>(() =>
+    entries.filter((e) => e.type !== 'group').length
+  );
 
-export const DEFAULT_PACKAGES: PackagesFormState = {
-  enabled: true,
-  title: 'Your Investment',
-  intro_text: null,
-  packages: [],
-  footer_text: null,
-  styling: { ...DEFAULT_PACKAGE_STYLING },
-};
+  const [saveStatus, setSaveStatus] = useState<Record<number, 'idle' | 'saving' | 'saved'>>({});
+  const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
-/* ------------------------------------------------------------------ */
-/*  Hook                                                               */
-/* ------------------------------------------------------------------ */
-
-export function usePackagesState(proposalId: string) {
-  const confirm = useConfirm();
-  const toast = useToast();
-
-  const [packagesLoaded, setPackagesLoaded] = useState(false);
-  const [packagesExists, setPackagesExists] = useState(false);
-  const [packagesPosition, setPackagesPosition] = useState(-1);
-  const [packagesIndent, setPackagesIndent] = useState(0);
-  const [packagesForm, setPackagesForm] = useState<PackagesFormState>(DEFAULT_PACKAGES);
-  const [packagesSaveStatus, setPackagesSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-
-  const packagesDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Cleanup
   useEffect(() => {
-    return () => {
-      if (packagesDebounce.current) clearTimeout(packagesDebounce.current);
-    };
+    return () => { Object.values(debounceTimers.current).forEach(clearTimeout); };
   }, []);
 
-  /* ── Fetch ──────────────────────────────────────────────────── */
+  /* ── Save entries to API ──────────────────────────────────── */
 
-  useEffect(() => {
-    const fetchPackages = async () => {
-      try {
-        const res = await fetch(`/api/proposals/packages?proposal_id=${proposalId}`);
-        if (res.ok) {
-          const data: ProposalPackages | null = await res.json();
-          if (data) {
-            setPackagesExists(true);
-            setPackagesPosition(data.position);
-            setPackagesIndent(data.indent ?? 0);
-            setPackagesForm({
-              enabled: data.enabled,
-              title: data.title || 'Your Investment',
-              intro_text: data.intro_text,
-              packages: data.packages || [],
-              footer_text: data.footer_text,
-              styling: normalizePackageStyling(data.styling),
-            });
-          }
-        }
-      } catch { /* no packages yet */ }
-      setPackagesLoaded(true);
-    };
-    fetchPackages();
-  }, [proposalId]);
-
-  /* ── Save ───────────────────────────────────────────────────── */
-
-  const savePackages = useCallback(async (
-    form: PackagesFormState,
-    pos: number,
-    indent?: number,
-  ) => {
-    setPackagesSaveStatus('saving');
+  const saveEntries = useCallback(async (entriesToSave: PageNameEntry[]) => {
+    const apiPath = tableName === 'documents' ? '/api/documents' : '/api/proposals';
     try {
-      await fetch('/api/proposals/packages', {
-        method: 'POST',
+      await fetch(apiPath, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          proposal_id: proposalId,
-          enabled: form.enabled,
-          position: pos,
-          indent: indent ?? packagesIndent,
-          title: form.title,
-          intro_text: form.intro_text,
-          packages: form.packages,
-          footer_text: form.footer_text,
-          styling: form.styling,
-        }),
+        body: JSON.stringify({ id: proposalId, page_names: entriesToSave }),
       });
-      setPackagesSaveStatus('saved');
-      setTimeout(() => setPackagesSaveStatus('idle'), 2000);
     } catch {
-      toast.error('Failed to save packages');
-      setPackagesSaveStatus('idle');
+      // Non-critical
     }
-  }, [proposalId, packagesIndent, toast]);
+  }, [proposalId, tableName]);
 
-  /* ── Debounced save scheduler ───────────────────────────────── */
+  const forceSaveEntries = useCallback(async (entriesToSave: PageNameEntry[]) => {
+    await saveEntries(entriesToSave);
+  }, [saveEntries]);
 
-  const schedulePackagesSave = useCallback((form: PackagesFormState, pos: number) => {
-    if (packagesDebounce.current) clearTimeout(packagesDebounce.current);
-    packagesDebounce.current = setTimeout(() => {
-      savePackages(form, pos);
-      packagesDebounce.current = null;
+  /* ── Schedule debounced save for a single entry ──────────── */
+
+  const scheduleSave = useCallback((index: number, currentEntries: PageNameEntry[]) => {
+    if (debounceTimers.current[index]) clearTimeout(debounceTimers.current[index]);
+    setSaveStatus((prev) => ({ ...prev, [index]: 'saving' }));
+    debounceTimers.current[index] = setTimeout(async () => {
+      delete debounceTimers.current[index];
+      await saveEntries(currentEntries);
+      setSaveStatus((prev) => ({ ...prev, [index]: 'saved' }));
+      setTimeout(() => {
+        setSaveStatus((prev) => {
+          const next = { ...prev };
+          if (next[index] === 'saved') delete next[index];
+          return next;
+        });
+      }, 1500);
     }, 800);
-  }, [savePackages]);
+  }, [saveEntries]);
 
-  /* ── Update form ────────────────────────────────────────────── */
+  /* ── Update a single entry ────────────────────────────────── */
 
-  const updatePackages = useCallback((changes: Partial<PackagesFormState>) => {
-    setPackagesForm((prev) => {
-      const next = { ...prev, ...changes };
-      schedulePackagesSave(next, packagesPosition);
+  const updateEntry = useCallback((index: number, changes: Partial<PageNameEntry>) => {
+    setEntries((prev) => {
+      const updated = prev.map((e, i) => i === index ? { ...e, ...changes } : e);
+      scheduleSave(index, updated);
+      return updated;
+    });
+  }, [scheduleSave]);
+
+  /* ── Flush all pending saves ─────────────────────────────── */
+
+  const flushPendingSaves = useCallback(async () => {
+    const pending = { ...debounceTimers.current };
+    Object.values(pending).forEach(clearTimeout);
+    debounceTimers.current = {};
+    if (Object.keys(pending).length > 0) {
+      await new Promise<void>((resolve) => {
+        setEntries((current) => {
+          saveEntries(current).then(resolve);
+          return current;
+        });
+      });
+    }
+  }, [saveEntries]);
+
+  /* ── Sync page count from PDF load ──────────────────────── */
+
+  const syncPageCount = useCallback((n: number) => {
+    setPageCount(n);
+    setEntries((prev) => {
+      const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
+      const realEntries: PageNameEntry[] = [];
+      for (const entry of prev) {
+        if (entry.type === 'group') {
+          groups.push({ beforePdfIndex: realEntries.length, entry });
+        } else {
+          realEntries.push(entry);
+        }
+      }
+      if (realEntries.length === n) return prev;
+      while (realEntries.length < n) {
+        realEntries.push({ name: `Page ${realEntries.length + 1}`, indent: 0 });
+      }
+      const trimmed = realEntries.slice(0, n);
+      const result: PageNameEntry[] = [];
+      let realIdx = 0;
+      let groupIdx = 0;
+      while (realIdx < trimmed.length || groupIdx < groups.length) {
+        while (groupIdx < groups.length && groups[groupIdx].beforePdfIndex <= realIdx) {
+          result.push(groups[groupIdx].entry);
+          groupIdx++;
+        }
+        if (realIdx < trimmed.length) { result.push(trimmed[realIdx]); realIdx++; }
+      }
+      while (groupIdx < groups.length) { result.push(groups[groupIdx].entry); groupIdx++; }
+      return result;
+    });
+  }, []);
+
+  /* ── Remap save statuses after reorder ──────────────────── */
+
+  const remapSaveStatus = useCallback((newPageOrder: number[]) => {
+    setSaveStatus((prev) => {
+      const next: Record<number, 'idle' | 'saving' | 'saved'> = {};
+      newPageOrder.forEach((oldIdx, newIdx) => {
+        if (prev[oldIdx]) next[newIdx] = prev[oldIdx];
+      });
       return next;
     });
-  }, [schedulePackagesSave, packagesPosition]);
+  }, []);
 
-  /* ── Flush pending save ─────────────────────────────────────── */
+  /* ── Group CRUD ──────────────────────────────────────────── */
 
-  const flushPackagesSave = useCallback(async () => {
-    if (packagesDebounce.current) {
-      clearTimeout(packagesDebounce.current);
-      packagesDebounce.current = null;
-      await savePackages(packagesForm, packagesPosition);
-    }
-  }, [savePackages, packagesForm, packagesPosition]);
-
-  /* ── Add packages page ──────────────────────────────────────── */
-
-  const addPackagesPage = useCallback(async () => {
-    setPackagesExists(true);
-    setPackagesForm(DEFAULT_PACKAGES);
-    setPackagesPosition(-1);
-    await savePackages(DEFAULT_PACKAGES, -1);
-    toast.success('Packages page added');
-  }, [savePackages, toast]);
-
-  /* ── Remove (disable) packages page ─────────────────────────── */
-
-  const removePackagesPage = useCallback(async () => {
-    const ok = await confirm({
-      title: 'Remove packages page?',
-      message: 'This will disable the packages page. Your package data will be preserved and can be re-enabled later.',
-      confirmLabel: 'Remove',
-      destructive: true,
+  const addGroup = useCallback((name: string) => {
+    setEntries((prev) => {
+      const updated = [...prev, { name, type: 'group' as const, indent: 0 }];
+      saveEntries(updated);
+      return updated;
     });
-    if (!ok) return false;
+  }, [saveEntries]);
 
-    const updated = { ...packagesForm, enabled: false };
-    setPackagesForm(updated);
-    await savePackages(updated, packagesPosition);
-    toast.success('Packages page removed');
-    return true;
-  }, [confirm, packagesForm, packagesPosition, savePackages, toast]);
+  const removeGroup = useCallback((index: number) => {
+    setEntries((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      saveEntries(updated);
+      return updated;
+    });
+  }, [saveEntries]);
 
   return {
-    packagesLoaded, packagesExists, packagesPosition, setPackagesPosition,
-    packagesIndent, setPackagesIndent,
-    packagesForm, setPackagesForm, packagesSaveStatus,
-    savePackages, schedulePackagesSave, updatePackages, flushPackagesSave,
-    addPackagesPage, removePackagesPage,
+    entries,
+    setEntries,
+    pageCount,
+    setPageCount,
+    saveStatus,
+    updateEntry,
+    syncPageCount,
+    flushPendingSaves,
+    forceSaveEntries,
+    remapSaveStatus,
+    addGroup,
+    removeGroup,
   };
 }

@@ -431,9 +431,9 @@ export function useTemplatePreview(templateId: string) {
         if (groups) result.push(...groups);
         result.push(pdfEntries[pdfIndex] || { name: `Page ${seqEntry.pdfPage}`, indent: 0 });
       } else if (seqEntry.type === 'pricing') {
-        result.push({ name: pricing?.title || 'Your Investment', indent: 0 });
+        result.push({ name: pricing?.title || 'Your Investment', indent: pricing?.indent ?? 0 });
       } else if (seqEntry.type === 'packages') {
-        result.push({ name: packages?.title || 'Packages', indent: 0 });
+        result.push({ name: packages?.title || 'Packages', indent: packages?.indent ?? 0 });
       } else if (seqEntry.type === 'toc') {
         result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
       } else {
