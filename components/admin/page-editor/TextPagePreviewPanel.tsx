@@ -105,7 +105,7 @@ export default function TextPagePreviewPanel({
     <>
       <div ref={containerRef} className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-          {/* Header bar */}
+          {/* Header bar — matches PricingPreviewPanel / PdfPreviewPanel */}
           <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
@@ -125,7 +125,6 @@ export default function TextPagePreviewPanel({
               </button>
             </div>
             <div className="flex items-center gap-2">
-              {/* Save status */}
               {saveStatus === 'saving' && (
                 <span className="flex items-center gap-1 text-[10px] text-gray-400">
                   <Loader2 size={10} className="animate-spin" />
@@ -138,7 +137,6 @@ export default function TextPagePreviewPanel({
                   Saved
                 </span>
               )}
-              {/* Edit button */}
               <button
                 onClick={() => setShowEditor(true)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white bg-[#017C87] hover:bg-[#015F68] transition-colors"
@@ -146,20 +144,22 @@ export default function TextPagePreviewPanel({
                 <Pencil size={12} />
                 Edit
               </button>
-              <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
+              <span className="text-xs text-[#017C87] font-medium flex items-center gap-1 ml-1">
                 <FileText size={11} />
                 {page.title || 'Text Page'}
               </span>
             </div>
           </div>
 
-          {/* Scaled preview */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          {/* Scaled preview container — matches PricingPreviewPanel */}
+          <div className="flex-1 min-h-0 overflow-hidden relative">
             <div
+              className="absolute inset-0 overflow-y-auto"
               style={{
-                transform: `scale(${previewScale})`,
                 transformOrigin: 'top left',
+                transform: `scale(${previewScale})`,
                 width: `${100 / previewScale}%`,
+                height: `${100 / previewScale}%`,
               }}
             >
               <TextPage
@@ -183,6 +183,14 @@ export default function TextPagePreviewPanel({
                 proposalTitle={proposal?.title}
               />
             </div>
+          </div>
+
+          {/* Footer hint */}
+          <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
+            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+              <Pencil size={9} />
+              Click Edit to update content
+            </span>
           </div>
         </div>
       </div>

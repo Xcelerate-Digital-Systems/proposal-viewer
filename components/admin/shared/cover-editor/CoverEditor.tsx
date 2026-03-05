@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Layout } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import {
@@ -383,26 +383,47 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
           />
         </div>
 
-        {/* Right: Live preview (fixed, does not scroll) */}
-        <div className="flex-1 min-w-0">
-          <CoverPreview
-            cfg={cfg}
-            coverEnabled={coverEnabled}
-            displayTitle={displayTitle}
-            buttonText={buttonText}
-            previewSubtitle={previewSubtitle}
-            colors={colors}
-            imageUrl={imageUrl}
-            companyLogoUrl={companyLogoUrl}
-            companyName={companyName}
-            showClientLogo={showClientLogo}
-            clientLogoUrl={clientLogoUrl}
-            showDate={showDate}
-            coverDate={coverDate}
-            showPreparedBy={showPreparedBy}
-            showAvatar={showAvatar}
-            resolvedMember={resolvedMember}
-          />
+        {/* Right: Live preview — matches page editor frame style */}
+        <div className="flex-1 min-w-0 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
+            {/* Header bar */}
+            <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
+              <span className="text-xs text-gray-500 font-medium">Cover Page</span>
+              <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
+                <Layout size={11} />
+                Live Preview
+              </span>
+            </div>
+
+            {/* Preview area — centred, aspect-ratio constrained */}
+            <div className="flex-1 min-h-0 overflow-y-auto flex items-start justify-center p-4">
+              <div className="w-full" style={{ aspectRatio: '4/3' }}>
+                <CoverPreview
+                  cfg={cfg}
+                  coverEnabled={coverEnabled}
+                  displayTitle={displayTitle}
+                  buttonText={buttonText}
+                  previewSubtitle={previewSubtitle}
+                  colors={colors}
+                  imageUrl={imageUrl}
+                  companyLogoUrl={companyLogoUrl}
+                  companyName={companyName}
+                  showClientLogo={showClientLogo}
+                  clientLogoUrl={clientLogoUrl}
+                  showDate={showDate}
+                  coverDate={coverDate}
+                  showPreparedBy={showPreparedBy}
+                  showAvatar={showAvatar}
+                  resolvedMember={resolvedMember}
+                />
+              </div>
+            </div>
+
+            {/* Footer hint */}
+            <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
+              <span className="text-[10px] text-gray-400">Updates live as you edit</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

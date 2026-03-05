@@ -75,7 +75,7 @@ export default function CoverPreview({
 
   return (
     <div
-      className="rounded-lg overflow-hidden border border-gray-200 relative h-full"
+      className="rounded-lg overflow-hidden relative w-full h-full"
       style={{ backgroundColor: colors.coverBgColor1 }}
     >
       {/* Background layer */}
