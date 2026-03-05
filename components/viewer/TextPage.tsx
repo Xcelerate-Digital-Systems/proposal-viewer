@@ -1,9 +1,12 @@
 // components/viewer/TextPage.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
+import { User } from 'lucide-react';
 import { CompanyBranding, deriveBorderColor, ProposalTextPage } from '@/hooks/useProposal';
 import { resolveDynamicField } from '@/components/admin/text-editor/DynamicFieldExtension';
 import { fontFamily } from '@/lib/google-fonts';
+import { supabase } from '@/lib/supabase';
 
 interface TextPageProps {
   textPage: ProposalTextPage;
@@ -280,6 +283,98 @@ function renderNode(
   }
 }
 
+/* ── Member badge sub-component ──────────────────────────────────── */
+
+function MemberBadge({
+  memberId,
+  branding,
+  companyName,
+  fontSize,
+}: {
+  memberId: string;
+  branding: CompanyBranding;
+  companyName?: string;
+  fontSize: number;
+}) {
+  const [name, setName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const resolve = async () => {
+      const { data } = await supabase
+        .from('team_members')
+        .select('name, avatar_path')
+        .eq('id', memberId)
+        .single();
+
+      if (!data) return;
+      setName(data.name);
+
+      if (data.avatar_path) {
+        const { data: urlData } = await supabase.storage
+          .from('proposals')
+          .createSignedUrl(data.avatar_path, 3600);
+        if (urlData?.signedUrl) setAvatarUrl(urlData.signedUrl);
+      }
+    };
+    resolve();
+  }, [memberId]);
+
+  if (!name) return null;
+
+  const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
+  const muted = `${textColor}80`;
+  const border = deriveBorderColor(branding.text_page_bg_color || branding.bg_secondary || '#141414');
+
+  return (
+    <div
+      className="flex items-center gap-4 pt-6 mt-8"
+      style={{ borderTop: `1px solid ${border}` }}
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          className="w-14 h-14 rounded-full object-cover shrink-0"
+          style={{ border: `2px solid ${textColor}` }}
+        />
+      ) : (
+        <div
+          className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
+          style={{ backgroundColor: `${textColor}15`, border: `2px solid ${textColor}` }}
+        >
+          <User size={22} style={{ color: muted }} />
+        </div>
+      )}
+      <div>
+        <p
+          className="font-medium"
+          style={{
+            color: textColor,
+            fontSize: `${fontSize}px`,
+            fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif'),
+          }}
+        >
+          {name}
+        </p>
+        {companyName && (
+          <p
+            style={{
+              color: muted,
+              fontSize: `${Math.max(fontSize - 2, 11)}px`,
+              fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif'),
+            }}
+          >
+            {companyName}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Main component ──────────────────────────────────────────────── */
+
 export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle }: TextPageProps) {
   const bgColor = branding.text_page_bg_color || branding.bg_secondary || '#141414';
   const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
@@ -292,6 +387,8 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   const context = { clientName, companyName, userName, proposalTitle };
   const doc = textPage.content as TipTapNode;
 
+  const showBadge = textPage.show_member_badge && textPage.prepared_by_member_id;
+
   return (
     <div
       className="w-full min-h-full flex flex-col justify-center py-8 lg:py-12 px-16 sm:px-24 lg:px-32"
@@ -299,7 +396,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
     >
       <div className="w-full h-full">
         {/* Title */}
-        {textPage.title && (
+        {textPage.title && (textPage.show_title ?? true) && (
           <div className="mb-6">
             <h1
               className="text-2xl sm:text-3xl font-bold tracking-tight"
@@ -319,6 +416,16 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
         <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
           {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
         </div>
+
+        {/* Member badge at the bottom */}
+        {showBadge && (
+          <MemberBadge
+            memberId={textPage.prepared_by_member_id!}
+            branding={branding}
+            companyName={companyName}
+            fontSize={fontSize}
+          />
+        )}
       </div>
     </div>
   );

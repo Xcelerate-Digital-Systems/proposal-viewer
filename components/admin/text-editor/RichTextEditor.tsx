@@ -79,6 +79,10 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
   const textColorRef = useRef<HTMLDivElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
+  // Force re-render on selection/cursor changes so attribute-based
+  // dropdowns (font size, font weight, text color, highlight) stay in sync
+  const [, setSelectionVersion] = useState(0);
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -126,6 +130,18 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
       contentRef.current = content;
     }
   }, [editor, content]);
+
+  // Re-render on selection changes so toolbar dropdowns reflect cursor position
+  useEffect(() => {
+    if (!editor) return;
+    const handler = () => setSelectionVersion((v) => v + 1);
+    editor.on('selectionUpdate', handler);
+    editor.on('transaction', handler);
+    return () => {
+      editor.off('selectionUpdate', handler);
+      editor.off('transaction', handler);
+    };
+  }, [editor]);
 
   // Close menus on outside click
   useEffect(() => {

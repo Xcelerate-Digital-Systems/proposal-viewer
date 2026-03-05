@@ -2,14 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
-import { ArrowLeft, Upload, Check, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { supabase, ProposalTemplate, TemplatePage } from '@/lib/supabase';
 import { FormField } from '@/components/ui/FormField';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface CreateFromTemplateProps {
   companyId: string;
@@ -21,10 +16,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ProposalTemplate | null>(null);
   const [pages, setPages] = useState<TemplatePage[]>([]);
-  const [pageUrls, setPageUrls] = useState<Record<string, string>>({});
-  const [replacements, setReplacements] = useState<Record<number, { file: File; url: string }>>({});
   const [loading, setLoading] = useState(true);
-  const [loadingPages, setLoadingPages] = useState(false);
   const [creating, setCreating] = useState(false);
   const [status, setStatus] = useState('');
 
@@ -49,8 +41,6 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
 
   const selectTemplate = async (t: ProposalTemplate) => {
     setSelectedTemplate(t);
-    setLoadingPages(true);
-    setReplacements({});
 
     const { data } = await supabase
       .from('template_pages')
@@ -58,32 +48,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       .eq('template_id', t.id)
       .order('page_number', { ascending: true });
 
-    const templatePages = data || [];
-    setPages(templatePages);
-
-    const urls: Record<string, string> = {};
-    for (const page of templatePages) {
-      const { data: urlData } = await supabase.storage
-        .from('proposals')
-        .createSignedUrl(page.file_path, 3600);
-      if (urlData?.signedUrl) urls[page.id] = urlData.signedUrl;
-    }
-    setPageUrls(urls);
-    setLoadingPages(false);
-  };
-
-  const replacePageFile = (pageNumber: number, file: File) => {
-    const url = URL.createObjectURL(file);
-    setReplacements((prev) => ({ ...prev, [pageNumber]: { file, url } }));
-  };
-
-  const undoReplacement = (pageNumber: number) => {
-    setReplacements((prev) => {
-      const next = { ...prev };
-      if (next[pageNumber]) URL.revokeObjectURL(next[pageNumber].url);
-      delete next[pageNumber];
-      return next;
-    });
+    setPages(data || []);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -105,26 +70,12 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         creatorName = member?.name || null;
       }
 
-      // 1. Upload any replacement pages to temp storage
-      setStatus('Uploading custom pages...');
-      const replacementPaths: Record<number, string> = {};
-
-      for (const [pageNumStr, { file }] of Object.entries(replacements)) {
-        const pageNum = parseInt(pageNumStr);
-        const tempPath = `temp/${Date.now()}-replace-${pageNum}.pdf`;
-        const { error } = await supabase.storage
-          .from('proposals')
-          .upload(tempPath, file, { contentType: 'application/pdf' });
-        if (error) throw new Error(`Failed to upload replacement for page ${pageNum}`);
-        replacementPaths[pageNum] = tempPath;
-      }
-
-      // 2. Build the page list with replacements
+      // 1. Build the page list from template pages
       const mergePages = pages.map((page) => ({
-        file_path: replacementPaths[page.page_number] || page.file_path,
+        file_path: page.file_path,
       }));
 
-      // 3. Generate proposal file path and merge
+      // 2. Generate proposal file path and merge
       setStatus('Merging pages...');
       const proposalFilePath = `proposals/${Date.now()}-${title.trim().replace(/\s+/g, '-').toLowerCase()}.pdf`;
 
@@ -141,7 +92,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       }
       const mergeData = await mergeRes.json();
 
-      // 4. Build page_names from template pages + section header groups
+      // 3. Build page_names from template pages + section header groups
       //    Start with PDF page entries from template_pages
       const pageNames: Array<{ name: string; indent: number; type?: 'group' }> =
         pages.map((p) => ({ name: p.label, indent: p.indent ?? 0 }));
@@ -173,7 +124,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         }
       }
 
-      // 5. Create proposal record
+      // 4. Create proposal record
       setStatus('Creating proposal...');
       const { data: newProposal, error: dbError } = await supabase.from('proposals').insert({
         title: title.trim(),
@@ -230,13 +181,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
 
       if (dbError || !newProposal) throw dbError || new Error('Failed to create proposal');
 
-      // 6. Clean up temp replacement files
-      const tempPaths = Object.values(replacementPaths);
-      if (tempPaths.length > 0) {
-        await supabase.storage.from('proposals').remove(tempPaths);
-      }
-
-      // 7. Copy template data (pricing, text pages, packages) to proposal
+      // 5. Copy template data (pricing, text pages, packages) to proposal
       setStatus('Copying template data...');
       try {
         await fetch('/api/templates/copy-data', {
@@ -340,85 +285,6 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           onChange={setCrmIdentifier}
           disabled={creating}
         />
-
-        {/* Page list */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Pages from &ldquo;{selectedTemplate.name}&rdquo;
-          </label>
-          <p className="text-xs text-gray-400 mb-3">
-            Click &ldquo;Replace&rdquo; on any page to swap it with a custom PDF.
-          </p>
-          {loadingPages ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 size={16} className="animate-spin text-gray-300" />
-            </div>
-          ) : (
-            <div className="space-y-1.5 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2">
-              {pages.map((page) => {
-                const isReplaced = !!replacements[page.page_number];
-                return (
-                  <div
-                    key={page.id}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                      isReplaced
-                        ? 'bg-[#017C87]/10 border border-[#017C87]/20'
-                        : 'bg-white border border-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-xs text-gray-400 font-mono w-5 shrink-0">{page.page_number}</span>
-                      {(page.indent ?? 0) > 0 && (
-                        <span className="text-[10px] text-[#017C87]/50 shrink-0 font-medium">SUB</span>
-                      )}
-                      <span className={`truncate ${isReplaced ? 'text-[#017C87]' : 'text-gray-700'}`}>
-                        {(page.indent ?? 0) > 0 ? `└ ${page.label}` : page.label}
-                      </span>
-                      {isReplaced && (
-                        <span className="text-xs text-[#017C87] bg-[#017C87]/10 px-1.5 py-0.5 rounded shrink-0">
-                          Custom
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 ml-2">
-                      {isReplaced ? (
-                        <button
-                          type="button"
-                          onClick={() => undoReplacement(page.page_number)}
-                          className="flex items-center gap-1 px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                          disabled={creating}
-                        >
-                          <RefreshCw size={10} />
-                          Undo
-                        </button>
-                      ) : (
-                        <label className="flex items-center gap-1 px-2 py-1 rounded text-xs text-gray-400 hover:text-[#017C87] transition-colors cursor-pointer">
-                          <Upload size={10} />
-                          Replace
-                          <input
-                            type="file"
-                            accept=".pdf"
-                            className="hidden"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) replacePageFile(page.page_number, f);
-                            }}
-                            disabled={creating}
-                          />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {Object.keys(replacements).length > 0 && (
-            <p className="text-xs text-[#017C87] mt-2">
-              {Object.keys(replacements).length} page{Object.keys(replacements).length > 1 ? 's' : ''} will be replaced with your custom versions.
-            </p>
-          )}
-        </div>
 
         {status && (
           <div className="flex items-center gap-2 text-sm text-gray-500">

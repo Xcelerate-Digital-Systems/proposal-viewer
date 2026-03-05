@@ -11,11 +11,11 @@ interface TemplateTabsProps {
 
 const tabs: { key: string; label: string; icon: typeof Pencil; path: string }[] = [
   { key: 'pages',    label: 'Pages',    icon: Pencil,      path: 'pages'    },
-  { key: 'contents', label: 'Contents', icon: List, path: 'contents' },
+  { key: 'contents', label: 'Table Of Contents', icon: List, path: 'contents' },
+  { key: 'design',   label: 'Design',   icon: Paintbrush,  path: 'design'   },
+  { key: 'cover',    label: 'Cover Page',    icon: Image,       path: 'cover'    },
   { key: 'pricing',  label: 'Pricing',  icon: DollarSign,  path: 'pricing'  },
   { key: 'packages', label: 'Packages', icon: Package,     path: 'packages' },
-  { key: 'cover',    label: 'Cover',    icon: Image,       path: 'cover'    },
-  { key: 'design',   label: 'Design',   icon: Paintbrush,  path: 'design'   },
   { key: 'details',  label: 'Details',  icon: Settings,    path: 'details'  },
 ];
 

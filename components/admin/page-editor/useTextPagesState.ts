@@ -14,6 +14,9 @@ export interface TextPageData {
   sort_order: number;
   link_url?: string | null;
   link_label?: string | null;
+  show_member_badge?: boolean;
+  prepared_by_member_id?: string | null;
+  show_title?: boolean;
 }
 
 interface UseTextPagesStateOptions {
@@ -89,6 +92,9 @@ export function useTextPagesState({ entityId, entityType }: UseTextPagesStateOpt
           sort_order: page.sort_order,
           link_url: page.link_url ?? null,
           link_label: page.link_label ?? null,
+          show_member_badge: page.show_member_badge ?? false,
+          prepared_by_member_id: page.prepared_by_member_id ?? null,
+          show_title: page.show_title ?? true,
         }),
       });
       setTextPageSaveStatuses((prev) => ({ ...prev, [page.id]: 'saved' }));

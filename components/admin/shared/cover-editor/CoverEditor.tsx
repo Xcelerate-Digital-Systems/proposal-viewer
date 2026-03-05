@@ -345,7 +345,7 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
         {/* Left: Settings */}
         <CoverSettingsPanel
           type={type}
@@ -386,24 +386,26 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
         />
 
         {/* Right: Live preview */}
-        <CoverPreview
-          cfg={cfg}
-          coverEnabled={coverEnabled}
-          displayTitle={displayTitle}
-          buttonText={buttonText}
-          previewSubtitle={previewSubtitle}
-          colors={colors}
-          imageUrl={imageUrl}
-          companyLogoUrl={companyLogoUrl}
-          companyName={companyName}
-          showClientLogo={showClientLogo}
-          clientLogoUrl={clientLogoUrl}
-          showDate={showDate}
-          coverDate={coverDate}
-          showPreparedBy={showPreparedBy}
-          showAvatar={showAvatar}
-          resolvedMember={resolvedMember}
-        />
+        <div className="lg:sticky lg:top-40">
+          <CoverPreview
+            cfg={cfg}
+            coverEnabled={coverEnabled}
+            displayTitle={displayTitle}
+            buttonText={buttonText}
+            previewSubtitle={previewSubtitle}
+            colors={colors}
+            imageUrl={imageUrl}
+            companyLogoUrl={companyLogoUrl}
+            companyName={companyName}
+            showClientLogo={showClientLogo}
+            clientLogoUrl={clientLogoUrl}
+            showDate={showDate}
+            coverDate={coverDate}
+            showPreparedBy={showPreparedBy}
+            showAvatar={showAvatar}
+            resolvedMember={resolvedMember}
+          />
+        </div>
       </div>
     </div>
   );

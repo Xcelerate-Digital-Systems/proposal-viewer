@@ -140,8 +140,9 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
   if (showCover && template?.cover_enabled) {
     const coverCompat = {
       ...template,
+      title: template.name,
       client_name: '[Client Name]',
-      cover_subtitle: template.cover_subtitle || template.description || template.name,
+      cover_subtitle: template.cover_subtitle || null,
       cover_button_text: template.cover_button_text || 'VIEW TEMPLATE',
       accept_button_text: null,
       status: 'sent' as const,

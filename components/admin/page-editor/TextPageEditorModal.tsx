@@ -2,15 +2,18 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
-import { X, FileText, Check, Loader2 } from 'lucide-react';
+import { X, FileText, Check, Loader2, User } from 'lucide-react';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
 import { TextPageData } from './useTextPagesState';
+import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
 
 interface TextPageEditorModalProps {
   page: TextPageData;
   saveStatus: 'idle' | 'saving' | 'saved';
   onUpdate: (pageId: string, changes: Partial<TextPageData>) => void;
   onClose: () => void;
+  /** Company ID for the PreparedBySelector team member lookup */
+  companyId?: string;
 }
 
 export default function TextPageEditorModal({
@@ -18,6 +21,7 @@ export default function TextPageEditorModal({
   saveStatus,
   onUpdate,
   onClose,
+  companyId,
 }: TextPageEditorModalProps) {
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,6 +33,26 @@ export default function TextPageEditorModal({
   const handleContentChange = useCallback(
     (content: unknown) => {
       onUpdate(page.id, { content });
+    },
+    [page.id, onUpdate],
+  );
+
+  const handleToggleBadge = useCallback(() => {
+    const newValue = !page.show_member_badge;
+    onUpdate(page.id, {
+      show_member_badge: newValue,
+      // Clear member selection when disabling
+      ...(!newValue ? { prepared_by_member_id: null } : {}),
+    });
+  }, [page.id, page.show_member_badge, onUpdate]);
+
+  const handleToggleTitle = useCallback(() => {
+    onUpdate(page.id, { show_title: !(page.show_title ?? true) });
+  }, [page.id, page.show_title, onUpdate]);
+
+  const handleMemberSelect = useCallback(
+    (memberId: string | null) => {
+      onUpdate(page.id, { prepared_by_member_id: memberId });
     },
     [page.id, onUpdate],
   );
@@ -82,7 +106,27 @@ export default function TextPageEditorModal({
         <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
           {/* Page title */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Page Title</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-medium text-gray-500">Page Title</label>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-400">Show on page</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={page.show_title ?? true}
+                  onClick={handleToggleTitle}
+                  className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
+                    (page.show_title ?? true) ? 'bg-[#017C87]' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-3 w-3 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
+                      (page.show_title ?? true) ? 'translate-x-3' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
             <input
               type="text"
               value={page.title}
@@ -90,6 +134,49 @@ export default function TextPageEditorModal({
               placeholder="e.g. Executive Summary, Welcome, Terms & Conditions"
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#017C87] focus:ring-1 focus:ring-[#017C87]/20"
             />
+          </div>
+
+          {/* Member badge toggle */}
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User size={14} className="text-gray-400" />
+                <span className="text-xs font-medium text-gray-700">Show Member Badge</span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!page.show_member_badge}
+                onClick={handleToggleBadge}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
+                  page.show_member_badge ? 'bg-[#017C87]' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
+                    page.show_member_badge ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Member selector — visible when badge is enabled */}
+            {page.show_member_badge && companyId && (
+              <div>
+                <label className="block text-[10px] font-medium text-gray-400 mb-1">Team Member</label>
+                <PreparedBySelector
+                  companyId={companyId}
+                  selectedMemberId={page.prepared_by_member_id || null}
+                  onSelect={handleMemberSelect}
+                />
+              </div>
+            )}
+
+            {page.show_member_badge && !companyId && (
+              <p className="text-[10px] text-gray-400">
+                Save and reopen this page to select a team member.
+              </p>
+            )}
           </div>
 
           {/* Rich text editor */}

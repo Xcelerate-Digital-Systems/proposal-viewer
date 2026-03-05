@@ -32,12 +32,13 @@ export default function TextPagePreviewPanel({
   onGoNext,
   canGoPrev,
   canGoNext,
-  companyId,
+  companyId: companyIdProp,
 }: TextPagePreviewPanelProps) {
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [proposal, setProposal] = useState<{ client_name?: string; title?: string } | null>(null);
   const [previewScale, setPreviewScale] = useState(0.5);
   const [showEditor, setShowEditor] = useState(false);
+  const [resolvedCompanyId, setResolvedCompanyId] = useState<string | undefined>(companyIdProp);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Fetch branding + proposal info for preview context
@@ -45,8 +46,9 @@ export default function TextPagePreviewPanel({
     const fetchData = async () => {
       try {
         // If companyId is provided directly (e.g. from templates), skip proposals lookup
-        if (companyId) {
-          const res = await fetch(`/api/company/branding?company_id=${companyId}`);
+        if (companyIdProp) {
+          setResolvedCompanyId(companyIdProp);
+          const res = await fetch(`/api/company/branding?company_id=${companyIdProp}`);
           if (res.ok) {
             const data = await res.json();
             setBranding({ ...DEFAULT_BRANDING, ...data });
@@ -62,6 +64,7 @@ export default function TextPagePreviewPanel({
 
         if (prop) {
           setProposal({ client_name: prop.client_name, title: prop.title });
+          setResolvedCompanyId(prop.company_id);
 
           if (prop.company_id) {
             const res = await fetch(`/api/company/branding?company_id=${prop.company_id}`);
@@ -77,7 +80,7 @@ export default function TextPagePreviewPanel({
     };
 
     fetchData();
-  }, [proposalId, companyId]);
+  }, [proposalId, companyIdProp]);
 
   // Measure container and calculate scale
   useEffect(() => {
@@ -170,6 +173,9 @@ export default function TextPagePreviewPanel({
                   enabled: page.enabled,
                   sort_order: page.sort_order,
                   indent: 0,
+                  show_member_badge: page.show_member_badge,
+                  prepared_by_member_id: page.prepared_by_member_id,
+                  show_title: page.show_title,
                 }}
                 branding={branding}
                 clientName={proposal?.client_name}
@@ -188,6 +194,7 @@ export default function TextPagePreviewPanel({
           saveStatus={saveStatus}
           onUpdate={onUpdate}
           onClose={() => setShowEditor(false)}
+          companyId={resolvedCompanyId}
         />
       )}
     </>

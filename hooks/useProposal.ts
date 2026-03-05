@@ -90,11 +90,14 @@ export interface ProposalTextPage {
   enabled: boolean;
   position: number;
   title: string;
-  content: unknown; // TipTap JSON
+  content: unknown;
   sort_order: number;
   indent: number;
   link_url?: string | null;
   link_label?: string | null;
+  show_member_badge?: boolean;          
+  prepared_by_member_id?: string | null;
+  show_title?: boolean
 }
 
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
