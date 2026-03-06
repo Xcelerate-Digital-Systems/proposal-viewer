@@ -6,7 +6,6 @@ import { User } from 'lucide-react';
 import { CompanyBranding, deriveBorderColor, ProposalTextPage } from '@/hooks/useProposal';
 import { resolveDynamicField } from '@/components/admin/text-editor/DynamicFieldExtension';
 import { fontFamily } from '@/lib/google-fonts';
-import { supabase } from '@/lib/supabase';
 
 interface TextPageProps {
   textPage: ProposalTextPage;
@@ -301,21 +300,13 @@ function MemberBadge({
 
   useEffect(() => {
     const resolve = async () => {
-      const { data } = await supabase
-        .from('team_members')
-        .select('name, avatar_path')
-        .eq('id', memberId)
-        .single();
-
-      if (!data) return;
-      setName(data.name);
-
-      if (data.avatar_path) {
-        const { data: urlData } = await supabase.storage
-          .from('proposals')
-          .createSignedUrl(data.avatar_path, 3600);
-        if (urlData?.signedUrl) setAvatarUrl(urlData.signedUrl);
-      }
+      // Use the API route — direct supabase queries on team_members are blocked
+      // by RLS for the unauthenticated anon key used in the client-facing viewer.
+      const res = await fetch(`/api/member-badge?member_id=${memberId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.name) setName(data.name);
+      if (data.avatar_url) setAvatarUrl(data.avatar_url);
     };
     resolve();
   }, [memberId]);
