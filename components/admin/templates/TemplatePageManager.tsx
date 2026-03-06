@@ -477,10 +477,11 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       const orderChanged = newPageOrder.some((v, i) => v !== i);
       if (orderChanged) {
         setProcessing(true);
-        const formData = new FormData();
-        formData.append('template_id', template.id);
-        formData.append('page_order', JSON.stringify(newPageOrder));
-        await fetch('/api/templates/reorder-pages', { method: 'POST', body: formData });
+        await fetch('/api/templates/reorder-pages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ template_id: template.id, page_order: newPageOrder }),
+        });
         setProcessing(false);
         onRefresh();
         fetchPages();
