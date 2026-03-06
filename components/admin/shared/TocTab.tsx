@@ -51,11 +51,37 @@ function interleaveItems(
   const positioned = specials.filter((s) => s.position >= 0);
   const trailing = specials.filter((s) => s.position === -1);
 
+  // AFTER
   positioned.sort((a, b) => {
     if (a.position !== b.position) return a.position - b.position;
     return a.sortOrder - b.sortOrder;
   });
   trailing.sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // Co-locate child packages (indent > 0) immediately after their nearest parent.
+  const colocateChildren = (arr: SpecialPageInfo[]): SpecialPageInfo[] => {
+    const result: SpecialPageInfo[] = [];
+    for (const sp of arr) {
+      if (sp.type === 'packages' && sp.indent > 0) {
+        let insertAt = result.length;
+        for (let i = result.length - 1; i >= 0; i--) {
+          if (result[i].type === 'packages' && result[i].indent === 0) {
+            insertAt = i + 1;
+            while (insertAt < result.length && result[insertAt].type === 'packages' && result[insertAt].indent > 0) {
+              insertAt++;
+            }
+            break;
+          }
+        }
+        result.splice(insertAt, 0, sp);
+      } else {
+        result.push(sp);
+      }
+    }
+    return result;
+  };
+  const positionedFinal = colocateChildren(positioned);
+  const trailingFinal = colocateChildren(trailing);
 
   const pdfItems: TocItem[] = [];
   const groupsBefore: Map<number, TocItem[]> = new Map();
@@ -76,10 +102,10 @@ function interleaveItems(
   const pdfCount = pdfItems.length;
   const result: TocItem[] = [];
 
-  let posIdx = 0;
+   let posIdx = 0;
   for (let pdfPage = 1; pdfPage <= pdfCount; pdfPage++) {
-    while (posIdx < positioned.length && positioned[posIdx].position < pdfPage) {
-      const sp = positioned[posIdx];
+    while (posIdx < positionedFinal.length && positionedFinal[posIdx].position < pdfPage) {
+      const sp = positionedFinal[posIdx];
       result.push({ id: sp.id, label: sp.label, type: sp.type, indent: sp.indent });
       posIdx++;
     }
@@ -88,14 +114,14 @@ function interleaveItems(
     result.push(pdfItems[pdfPage - 1]);
   }
 
-  while (posIdx < positioned.length) {
-    const sp = positioned[posIdx];
+  while (posIdx < positionedFinal.length) {
+    const sp = positionedFinal[posIdx];
     result.push({ id: sp.id, label: sp.label, type: sp.type, indent: sp.indent });
     posIdx++;
   }
 
   if (trailingGroups.length > 0) result.push(...trailingGroups);
-  for (const sp of trailing) {
+  for (const sp of trailingFinal) {
     result.push({ id: sp.id, label: sp.label, type: sp.type, indent: sp.indent });
   }
 

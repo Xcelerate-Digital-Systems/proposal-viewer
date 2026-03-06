@@ -3,14 +3,16 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ArrowLeft, CornerDownRight, Package } from 'lucide-react';
+import { GripVertical, ArrowLeft, CornerDownRight, Package, Loader2 } from 'lucide-react';
 
+// AFTER
 interface SortablePackagesRowProps {
   id: string;
   title: string;
   indent: number;
   isFirst: boolean;
   isSelected: boolean;
+  processing?: boolean;
   onSelect: () => void;
   onToggleIndent: () => void;
   onRemove?: () => void;
@@ -18,7 +20,7 @@ interface SortablePackagesRowProps {
 }
 
 export default function SortablePackagesRow({
-  id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, renderInsertAfter,
+  id, title, indent, isFirst, isSelected, processing, onSelect, onToggleIndent, onRemove, renderInsertAfter,
 }: SortablePackagesRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -68,6 +70,9 @@ export default function SortablePackagesRow({
         <span className={`text-sm font-medium truncate ${indent ? 'ml-4' : ''} text-[#017C87]`}>
           {title || 'Packages'}
         </span>
+        <div className="ml-auto shrink-0 w-5 flex items-center justify-center">
+          {processing && <Loader2 size={12} className="animate-spin text-[#017C87]/40" />}
+        </div>
       </div>
       {renderInsertAfter}
     </div>

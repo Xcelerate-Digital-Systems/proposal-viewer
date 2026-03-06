@@ -44,15 +44,14 @@ export function usePackagesState(proposalId: string) {
 
   /* ── Save a single record ───────────────────────────────────── */
 
+  // AFTER
   const savePackagesRecord = useCallback(async (record: ProposalPackages) => {
     setPackagesSaveStatuses((prev) => ({ ...prev, [record.id]: 'saving' }));
     try {
-      await fetch('/api/proposals/packages', {
-        method: 'POST',
+      await fetch(`/api/proposals/packages?id=${record.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          proposal_id: proposalId,
-          id: record.id,
           enabled: record.enabled,
           position: record.position,
           sort_order: record.sort_order,

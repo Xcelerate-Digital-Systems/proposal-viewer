@@ -162,6 +162,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       .filter((p) => p.enabled)
       .sort((a, b) => a.position !== b.position ? a.position - b.position : (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
+    // AFTER
     for (const pkg of sortedPkgs) {
       let pdfCount = 0;
       let insertIdx = items.length;
@@ -170,6 +171,10 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
           if (pdfCount >= pkg.position) { insertIdx = i; break; }
           if (items[i].type === 'pdf') pdfCount++;
           insertIdx = i + 1;
+        }
+        // Advance past packages already spliced in at this same boundary
+        while (insertIdx < items.length && items[insertIdx].type === 'packages') {
+          insertIdx++;
         }
       }
       items.splice(insertIdx, 0, { id: `packages-${pkg.id}`, type: 'packages', pageIndex: -1, packagesId: pkg.id });
@@ -346,14 +351,38 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       }
 
       // Update position for each packages page
+      // AFTER
+      // Update position for each packages page
+      const pkgPositions = new Map<string, number>();
       for (const pkg of packagesPages.filter((p) => p.enabled)) {
         const pkgIdx = reordered.findIndex((i) => i.id === `packages-${pkg.id}`);
         if (pkgIdx === -1) continue;
         const isLast = pkgIdx === reordered.length - 1;
         const newPos = isLast ? -1 : countPdfBefore(pkgIdx);
+        pkgPositions.set(pkg.id, newPos);
         if (newPos !== pkg.position) {
           updatePackagesPagePosition(pkg.id, newPos);
         }
+      }
+      // Update sort_order for packages sharing the same position
+      const byPos2 = new Map<number, Array<{ id: string; idx: number }>>();
+      for (const pkg of packagesPages.filter((p) => p.enabled)) {
+        const pkgIdx = reordered.findIndex((i) => i.id === `packages-${pkg.id}`);
+        if (pkgIdx === -1) continue;
+        const pos = pkgPositions.get(pkg.id) ?? pkg.position;
+        const arr = byPos2.get(pos) ?? [];
+        arr.push({ id: pkg.id, idx: pkgIdx });
+        byPos2.set(pos, arr);
+      }
+      for (const group of Array.from(byPos2.values())) {
+        if (group.length < 2) continue;
+        group.sort((a: { id: string; idx: number }, b: { id: string; idx: number }) => a.idx - b.idx);
+        group.forEach(({ id }: { id: string }, i: number) => {
+          const pkg = packagesPages.find((p) => p.id === id);
+          if (pkg && (pkg.sort_order ?? 0) !== i) {
+            updatePackagesPage(id, { sort_order: i });
+          }
+        });
       }
 
       // Update text page positions

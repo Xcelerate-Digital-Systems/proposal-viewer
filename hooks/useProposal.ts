@@ -104,6 +104,7 @@ export interface ProposalTextPage {
 
 /* ─── Special page: represents a non-PDF page in the virtual sequence ── */
 
+// AFTER
 interface SpecialPage {
   type: 'pricing' | 'text' | 'packages' | 'toc';
   position: number;
@@ -111,6 +112,7 @@ interface SpecialPage {
   textPageId?: string;
   packagesId?: string;
   sortOrder?: number;
+  indent?: number;
 }
 
 /**
@@ -144,12 +146,14 @@ function buildPageMap(
 
   for (const pkg of packages) {
     if (pkg.enabled) {
+      // AFTER
       specials.push({
         type: 'packages',
         position: pkg.position,
         title: pkg.title || 'Packages',
         packagesId: pkg.id,
         sortOrder: pkg.sort_order ?? 0,
+        indent: pkg.indent ?? 0,
       });
     }
   }
@@ -212,6 +216,7 @@ function buildPageMap(
     if (type === 'toc') return 2;
     return 3; // pricing
   };
+  // AFTER
   positioned.sort((a, b) => {
     if (a.position !== b.position) return a.position - b.position;
     const ta = positionedTypeOrder(a.type), tb = positionedTypeOrder(b.type);
@@ -219,13 +224,38 @@ function buildPageMap(
     return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
   });
 
+  // Co-locate child packages (indent > 0) immediately after their nearest parent.
+  // This handles cases where a child has a different `position` value than its parent.
+  const colocateChildren = (arr: SpecialPage[]): SpecialPage[] => {
+    const result: SpecialPage[] = [];
+    for (const sp of arr) {
+      if (sp.type === 'packages' && (sp.indent ?? 0) > 0) {
+        let insertAt = result.length;
+        for (let i = result.length - 1; i >= 0; i--) {
+          if (result[i].type === 'packages' && (result[i].indent ?? 0) === 0) {
+            insertAt = i + 1;
+            while (insertAt < result.length && result[insertAt].type === 'packages' && (result[insertAt].indent ?? 0) > 0) {
+              insertAt++;
+            }
+            break;
+          }
+        }
+        result.splice(insertAt, 0, sp);
+      } else {
+        result.push(sp);
+      }
+    }
+    return result;
+  };
+  const positionedFinal = colocateChildren(positioned);
+  const trailingFinal = colocateChildren(trailing);
+
   // Build sequence: interleave PDF pages with positioned specials
+  // AFTER
   let posIdx = 0;
   for (let pdfPage = 1; pdfPage <= pdfPageCount; pdfPage++) {
-    // Insert any specials that come BEFORE this PDF page
-    // position = 0 means before first PDF page
-    while (posIdx < positioned.length && positioned[posIdx].position < pdfPage) {
-      const sp = positioned[posIdx];
+    while (posIdx < positionedFinal.length && positionedFinal[posIdx].position < pdfPage) {
+      const sp = positionedFinal[posIdx];
       if (sp.type === 'pricing') {
         sequence.push({ type: 'pricing' });
       } else if (sp.type === 'packages') {
@@ -242,8 +272,8 @@ function buildPageMap(
   }
 
   // Insert remaining positioned specials (position >= pdfPageCount)
-  while (posIdx < positioned.length) {
-    const sp = positioned[posIdx];
+  while (posIdx < positionedFinal.length) {
+    const sp = positionedFinal[posIdx];
     if (sp.type === 'pricing') {
       sequence.push({ type: 'pricing' });
     } else if (sp.type === 'packages') {
@@ -255,8 +285,8 @@ function buildPageMap(
   }
 
   // Add trailing specials
-  trailing.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  for (const sp of trailing) {
+  trailingFinal.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  for (const sp of trailingFinal) {
     if (sp.type === 'pricing') {
       sequence.push({ type: 'pricing' });
     } else if (sp.type === 'packages') {
