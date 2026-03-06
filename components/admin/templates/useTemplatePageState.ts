@@ -3,13 +3,20 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase, TemplatePage } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 
+type PageEdit = {
+  label: string;
+  indent: number;
+  link_url: string;
+  link_label: string;
+};
+
 export function useTemplatePageState(templateId: string) {
   const toast = useToast();
 
   const [pages, setPages] = useState<TemplatePage[]>([]);
   const [pageUrls, setPageUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [localEdits, setLocalEdits] = useState<Record<string, { label: string; indent: number }>>({});
+  const [localEdits, setLocalEdits] = useState<Record<string, PageEdit>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saving' | 'saved' | null>>({});
 
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -36,9 +43,14 @@ export function useTemplatePageState(templateId: string) {
     const templatePages = (data || []) as TemplatePage[];
     setPages(templatePages);
 
-    const edits: Record<string, { label: string; indent: number }> = {};
+    const edits: Record<string, PageEdit> = {};
     for (const p of templatePages) {
-      edits[p.id] = { label: p.label, indent: p.indent ?? 0 };
+      edits[p.id] = {
+        label: p.label,
+        indent: p.indent ?? 0,
+        link_url: (p as any).link_url ?? '',
+        link_label: (p as any).link_label ?? '',
+      };
     }
     setLocalEdits(edits);
 
@@ -56,10 +68,15 @@ export function useTemplatePageState(templateId: string) {
   useEffect(() => { fetchPages(); }, [fetchPages]);
 
   // Save a single page edit
-  const savePageEdit = useCallback(async (pageId: string, label: string, indent: number) => {
+  const savePageEdit = useCallback(async (pageId: string, edit: PageEdit) => {
     setSaveStatus((prev) => ({ ...prev, [pageId]: 'saving' }));
     try {
-      await supabase.from('template_pages').update({ label, indent }).eq('id', pageId);
+      await supabase.from('template_pages').update({
+        label: edit.label,
+        indent: edit.indent,
+        link_url: edit.link_url || null,
+        link_label: edit.link_label || null,
+      }).eq('id', pageId);
       setSaveStatus((prev) => ({ ...prev, [pageId]: 'saved' }));
       if (savedTimers.current[pageId]) clearTimeout(savedTimers.current[pageId]);
       savedTimers.current[pageId] = setTimeout(() => {
@@ -77,23 +94,24 @@ export function useTemplatePageState(templateId: string) {
     for (const [pageId, timer] of Object.entries(debounceTimers.current)) {
       clearTimeout(timer);
       const edit = localEditsRef.current[pageId];
-      if (edit) promises.push(savePageEdit(pageId, edit.label, edit.indent));
+      if (edit) promises.push(savePageEdit(pageId, edit));
     }
     debounceTimers.current = {};
     if (promises.length > 0) await Promise.all(promises);
   }, [savePageEdit]);
 
-  const getEdit = (pageId: string) =>
-    localEdits[pageId] ?? { label: '', indent: 0 };
+  const getEdit = (pageId: string): PageEdit =>
+    localEdits[pageId] ?? { label: '', indent: 0, link_url: '', link_label: '' };
 
-  const updateEdit = (pageId: string, changes: Partial<{ label: string; indent: number }>) => {
+  const updateEdit = (pageId: string, changes: Partial<PageEdit>) => {
     const updated = { ...getEdit(pageId), ...changes };
     setLocalEdits((prev) => ({ ...prev, [pageId]: updated }));
 
     if (debounceTimers.current[pageId]) clearTimeout(debounceTimers.current[pageId]);
+    // Indent changes save immediately; everything else debounced 800ms
     const delay = changes.indent !== undefined ? 0 : 800;
     debounceTimers.current[pageId] = setTimeout(() => {
-      savePageEdit(pageId, updated.label, updated.indent);
+      savePageEdit(pageId, updated);
       delete debounceTimers.current[pageId];
     }, delay);
   };

@@ -7,6 +7,7 @@ import {
   GripVertical, ArrowLeft, CornerDownRight,
   Upload, Trash2, Loader2, Check,
 } from 'lucide-react';
+import PageLinkInput from '@/components/admin/page-editor/PageLinkInput';
 
 interface SortableTemplateRowProps {
   id: string;
@@ -17,9 +18,12 @@ interface SortableTemplateRowProps {
   status: 'saving' | 'saved' | null;
   processing: boolean;
   index: number;
+  linkUrl?: string;
+  linkLabel?: string;
   onSelect: () => void;
   onToggleIndent: () => void;
   onLabelChange: (label: string) => void;
+  onLinkChange?: (url: string, label: string) => void;
   onReplacePage: (file: File) => void;
   onDeletePage: () => void;
   /** Slot for rendering insert menu after this row */
@@ -35,9 +39,12 @@ export default function SortableTemplateRow({
   status,
   processing,
   index,
+  linkUrl,
+  linkLabel,
   onSelect,
   onToggleIndent,
   onLabelChange,
+  onLinkChange,
   onReplacePage,
   onDeletePage,
   renderInsertAfter,
@@ -96,7 +103,7 @@ export default function SortableTemplateRow({
           <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
         )}
 
-        {/* Label */}
+        {/* Label input */}
         <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
           <input
             type="text"
@@ -115,16 +122,30 @@ export default function SortableTemplateRow({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {onLinkChange && (
+            <PageLinkInput
+              linkUrl={linkUrl || ''}
+              linkLabel={linkLabel || ''}
+              onChange={onLinkChange}
+              variant="teal"
+            />
+          )}
+
           <label
-            className="p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
+            className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
+              processing
+                ? 'text-gray-200 border-gray-100 cursor-not-allowed'
+                : 'text-[#017C87] border-[#017C87]/25 hover:bg-[#017C87]/5 hover:border-[#017C87]/40 cursor-pointer'
+            }`}
             title="Replace page PDF"
           >
-            <Upload size={12} />
+            <Upload size={13} />
             <input
               type="file"
               accept=".pdf"
               className="hidden"
+              disabled={processing}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) onReplacePage(f);
@@ -132,12 +153,18 @@ export default function SortableTemplateRow({
               }}
             />
           </label>
+
           <button
             onClick={onDeletePage}
-            className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            disabled={processing}
+            className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
+              processing
+                ? 'text-gray-200 border-gray-100 cursor-not-allowed'
+                : 'text-gray-300 border-gray-100 hover:text-red-500 hover:border-red-200 hover:bg-red-50'
+            }`}
             title="Delete page"
           >
-            <Trash2 size={12} />
+            <Trash2 size={13} />
           </button>
         </div>
       </div>

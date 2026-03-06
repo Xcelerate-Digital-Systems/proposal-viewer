@@ -281,7 +281,7 @@ export function useTemplatePreview(templateId: string) {
         // Fetch template_pages for real labels and indents
         const { data: tPages } = await supabase
           .from('template_pages')
-          .select('page_number, label, indent')
+          .select('page_number, label, indent, link_url, link_label')
           .eq('template_id', templateId)
           .order('page_number', { ascending: true });
 
@@ -296,6 +296,8 @@ export function useTemplatePreview(templateId: string) {
           return {
             name: tPage?.label || entry.name || `Page ${pdfIdx}`,
             indent: tPage?.indent ?? entry.indent ?? 0,
+            ...((tPage as any)?.link_url ? { link_url: (tPage as any).link_url } : {}),
+            ...((tPage as any)?.link_label ? { link_label: (tPage as any).link_label } : {}),
           };
         });
         setPageEntries(builtEntries);

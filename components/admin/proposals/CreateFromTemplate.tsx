@@ -94,8 +94,13 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
 
       // 3. Build page_names from template pages + section header groups
       //    Start with PDF page entries from template_pages
-      const pageNames: Array<{ name: string; indent: number; type?: 'group' }> =
-        pages.map((p) => ({ name: p.label, indent: p.indent ?? 0 }));
+      const pageNames: Array<{ name: string; indent: number; type?: 'group'; link_url?: string; link_label?: string }> =
+        pages.map((p) => ({
+          name: p.label,
+          indent: p.indent ?? 0,
+          ...((p as any).link_url ? { link_url: (p as any).link_url } : {}),
+          ...((p as any).link_label ? { link_label: (p as any).link_label } : {}),
+        }));
 
       //    Interleave section header groups from the template
       //    section_headers are stored as { id, name, position } where

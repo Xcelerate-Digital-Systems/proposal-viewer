@@ -647,6 +647,9 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
                         onSelect={() => setSelectedId(item.id)}
                         onToggleIndent={() => toggleIndent(page.id, item.pageIndex)}
                         onLabelChange={(label: string) => updateEdit(page.id, { label })}
+                        linkUrl={edit.link_url}
+                        linkLabel={edit.link_label}
+                        onLinkChange={(url: string, lbl: string) => updateEdit(page.id, { link_url: url, link_label: lbl })}
                         onReplacePage={(file: File) => handleReplacePage(page.page_number, file)}
                         onDeletePage={() => deletePage(page.page_number)}
                         renderInsertAfter={
