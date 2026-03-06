@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { buildGoogleFontsUrl } from '@/lib/google-fonts';
 
 interface GoogleFontLoaderProps {
   fonts: (string | null | undefined)[];
@@ -10,19 +9,31 @@ interface GoogleFontLoaderProps {
 
 /**
  * Injects a Google Fonts <link> into <head> for the given font families.
- * Only loads fonts that are actually set (non-null).
- * Cleans up on unmount.
+ * Requests each font with the full variable weight axis (100..900) so any
+ * branding-configured weight is always available — on both the main domain
+ * and custom domains where no other font loading occurs.
  */
+function buildFontUrl(fonts: (string | null | undefined)[]): string | null {
+  const families = Array.from(new Set(fonts.filter(Boolean) as string[]));
+  if (families.length === 0) return null;
+
+  const params = families
+    .map((f) => `family=${encodeURIComponent(f)}:ital,wght@0,100..900;1,100..900`)
+    .join('&');
+
+  return `https://fonts.googleapis.com/css2?${params}&display=swap`;
+}
+
 export default function GoogleFontLoader({ fonts }: GoogleFontLoaderProps) {
+  const cacheKey = fonts.filter(Boolean).sort().join(',');
+
   useEffect(() => {
-    const url = buildGoogleFontsUrl(fonts);
+    const url = buildFontUrl(fonts);
     if (!url) return;
 
     // Avoid duplicate links
-    const existing = document.querySelector(`link[href="${url}"]`);
-    if (existing) return;
+    if (document.querySelector(`link[data-agv-fonts="${cacheKey}"]`)) return;
 
-    // Preconnect to Google Fonts for faster loading
     const preconnect = document.createElement('link');
     preconnect.rel = 'preconnect';
     preconnect.href = 'https://fonts.googleapis.com';
@@ -34,10 +45,10 @@ export default function GoogleFontLoader({ fonts }: GoogleFontLoaderProps) {
     preconnectStatic.crossOrigin = 'anonymous';
     document.head.appendChild(preconnectStatic);
 
-    // Load the fonts
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = url;
+    link.dataset.agvFonts = cacheKey;
     document.head.appendChild(link);
 
     return () => {
@@ -45,7 +56,7 @@ export default function GoogleFontLoader({ fonts }: GoogleFontLoaderProps) {
       document.head.removeChild(preconnect);
       document.head.removeChild(preconnectStatic);
     };
-  }, [fonts.filter(Boolean).sort().join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cacheKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
 }

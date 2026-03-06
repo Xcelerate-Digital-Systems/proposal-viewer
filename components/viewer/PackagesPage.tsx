@@ -62,7 +62,7 @@ export default function PackagesPage({ packages, branding, clientName }: Package
 
   const styling = normalizePackageStyling(packages.styling);
   const titleColor = styling.title_color || textColor;
-  const tiers = [...(packages.packages ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+  const tiers = [...(packages.packages ?? [])]; // Order preserved from DB — sort_order within JSONB tiers is not reliably maintained by the editor
 
   return (
     <div
