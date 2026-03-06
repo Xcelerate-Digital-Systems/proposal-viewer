@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, Proposal, ProposalComment, ProposalPricing, ProposalPackages, normalizePageNamesWithGroups,
-  normalizePaymentSchedule, PageNameEntry, TocSettings, parseTocSettings } from '@/lib/supabase';
+  normalizePaymentSchedule, PageNameEntry, TocSettings, parseTocSettings, parsePageOrder, PageOrderEntry } from '@/lib/supabase';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import { buildPageMap } from '@/lib/buildPageMap';
 
@@ -109,6 +109,7 @@ export function useProposal(token: string) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [pageNamesRaw, setPageNamesRaw] = useState<unknown>(null);
+  const [pageOrder, setPageOrder] = useState<PageOrderEntry[] | null>(null);
   const [comments, setComments] = useState<ProposalComment[]>([]);
   const [accepted, setAccepted] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -133,6 +134,7 @@ export function useProposal(token: string) {
 
     setProposal(data);
     setPageNamesRaw(data.page_names);
+    setPageOrder(parsePageOrder(data.page_order));
     if (data.status === 'accepted') setAccepted(true);
 
     // Fetch company branding
@@ -274,8 +276,8 @@ export function useProposal(token: string) {
 
   // Build virtual page map
   const pageMap = useMemo(
-    () => buildPageMap(pdfPageCount, pricing, textPages, packages, tocSettings),
-    [pdfPageCount, pricing, textPages, packages, tocSettings]
+    () => buildPageMap(pdfPageCount, pricing, textPages, packages, tocSettings, pageOrder),
+    [pdfPageCount, pricing, textPages, packages, tocSettings, pageOrder]
   );
 
   // Build page entries with special pages inserted for sidebar.

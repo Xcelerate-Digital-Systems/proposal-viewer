@@ -160,6 +160,7 @@ export type Proposal = {
   updated_at: string;
   page_orientation: 'auto' | 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
+  page_order: unknown;
   text_page_bg_color: string | null;
   title_font_family: string | null;
   title_font_weight: string | null;
@@ -273,6 +274,7 @@ export type ProposalTemplate = {
   updated_at: string;
   page_orientation: 'auto' | 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
+  page_order: unknown;
   text_page_bg_color: string | null;
   text_page_text_color: string | null;
   text_page_heading_color: string | null;
@@ -745,6 +747,36 @@ export const DEFAULT_TOC_SETTINGS: TocSettings = {
   excluded_items: [],
 };
 
+
+// ─── Page Order ──────────────────────────────────────────────────────────────
+
+/**
+ * One entry in the page_order JSONB array stored on proposals / proposal_templates.
+ * Defines the exact sequence of all visible pages. NULL page_order = legacy fallback.
+ */
+export type PageOrderEntry =
+  | { type: 'pdf' }                          // one entry per PDF page, in sequence
+  | { type: 'pricing' }
+  | { type: 'packages'; id: string }        // id = proposal_packages / template_packages row
+  | { type: 'text'; id: string }             // id = proposal_text_pages / template_text_pages row
+  | { type: 'toc' };
+
+/** Parse page_order JSONB from DB into PageOrderEntry[]. Returns null if missing/invalid. */
+export function parsePageOrder(raw: unknown): PageOrderEntry[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const valid: PageOrderEntry[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const t = (item as Record<string, unknown>).type;
+    if (t === 'pdf' || t === 'pricing' || t === 'toc') {
+      valid.push({ type: t } as PageOrderEntry);
+    } else if ((t === 'packages' || t === 'text') && typeof (item as Record<string, unknown>).id === 'string') {
+      valid.push({ type: t, id: (item as Record<string, unknown>).id as string } as PageOrderEntry);
+    }
+  }
+  return valid.length > 0 ? valid : null;
+}
+
 /** Parse toc_settings from DB JSONB into typed TocSettings */
 export function parseTocSettings(raw: unknown): TocSettings {
   if (raw && typeof raw === 'object') {
@@ -817,4 +849,3 @@ export function normalizePackageStyling(raw: unknown): PackageStyling {
     border_width: typeof r.border_width === 'number' ? r.border_width : 1,
   };
 }
-

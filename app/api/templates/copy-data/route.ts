@@ -199,6 +199,39 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── 5. Remap page_order ─────────────────────────────────────────
+    // The template's page_order contains template-scoped package/text IDs.
+    // Remap them to the new proposal IDs, then write to the proposal.
+    try {
+      const { data: tmplRow } = await supabase
+        .from('proposal_templates')
+        .select('page_order')
+        .eq('id', template_id)
+        .single();
+
+      const rawOrder = tmplRow?.page_order;
+      if (Array.isArray(rawOrder) && rawOrder.length > 0) {
+        const remappedOrder = (rawOrder as Array<Record<string, unknown>>).map((entry) => {
+          if (entry.type === 'packages' && typeof entry.id === 'string') {
+            const newId = packagesIdMap.get(entry.id);
+            return newId ? { type: 'packages', id: newId } : entry;
+          }
+          if (entry.type === 'text' && typeof entry.id === 'string') {
+            const newId = textPageIdMap.get(entry.id);
+            return newId ? { type: 'text', id: newId } : entry;
+          }
+          return entry;
+        });
+
+        await supabase
+          .from('proposals')
+          .update({ page_order: remappedOrder })
+          .eq('id', proposal_id);
+      }
+    } catch (err) {
+      console.error('Remap page_order error (non-fatal):', err);
+    }
+
     return NextResponse.json({ success: true, copied: results });
   } catch (err) {
     console.error('Copy template data error:', err);

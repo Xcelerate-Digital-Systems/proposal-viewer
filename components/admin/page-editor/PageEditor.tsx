@@ -7,6 +7,7 @@ import { SortableContext, verticalListSortingStrategy, arrayMove, } from '@dnd-k
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { Check, Loader2, Plus, DollarSign, Package, FileText, FolderOpen } from 'lucide-react';
 import { PageEditorProps, UnifiedItem } from './pageEditorTypes';
+import { PageOrderEntry } from '@/lib/supabase';
 import { usePageEditorState } from './usePageEditorState';
 import { usePricingState } from './usePricingState';
 import { useTextPagesState } from './useTextPagesState';
@@ -28,6 +29,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
   const [panelHeight, setPanelHeight] = useState(520);
   const [isReordering, setIsReordering] = useState(false);
+  const [pageOrderVersion, setPageOrderVersion] = useState(0);
 
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -223,6 +225,43 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
 
   /* ——— Drag and drop ——————————————————————————————————————————— */
 
+
+  /* ——— page_order helpers ————————————————————————————————————— */
+
+  const buildPageOrderFromItems = (items: UnifiedItem[]): PageOrderEntry[] =>
+    items
+      .filter((i) => i.type !== 'group')
+      .map((i): PageOrderEntry | null => {
+        if (i.type === 'pdf') return { type: 'pdf' };
+        if (i.type === 'pricing') return { type: 'pricing' };
+        if (i.type === 'packages' && i.packagesId) return { type: 'packages', id: i.packagesId };
+        if (i.type === 'text' && i.textPageId) return { type: 'text', id: i.textPageId };
+        if (i.type === 'toc') return { type: 'toc' };
+        return null;
+      })
+      .filter((e): e is PageOrderEntry => e !== null);
+
+  const savePageOrder = useCallback(async (items: UnifiedItem[]) => {
+    const apiPath = tableName === 'documents' ? '/api/documents' : '/api/proposals';
+    const pageOrder = buildPageOrderFromItems(items);
+    await fetch(apiPath, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: proposalId, page_order: pageOrder }),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposalId, tableName]);
+
+  // Save page_order whenever add/remove operations settle (version bump triggers this).
+  // Drag-and-drop saves directly via savePageOrder(reordered) instead.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (pageOrderVersion === 0) return;
+    savePageOrder(unifiedItems);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageOrderVersion]);
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -317,6 +356,9 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       if (orderChanged) {
         await handleReorder(newPageOrder);
       }
+
+      // Save the explicit page ordering so viewers use the new path.
+      await savePageOrder(reordered);
     } finally {
       setIsReordering(false);
     }
@@ -327,35 +369,37 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const handleAddPricing = async () => {
     await addPricingPage();
     setSelectedId('pricing');
+    setPageOrderVersion((v) => v + 1);
   };
 
   const handleRemovePricing = async () => {
     const removed = await removePricingPage();
-    if (removed) setSelectedId('pdf-0');
+    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
   };
 
   /* ——— Add/remove packages ————————————————————————————————————— */
 
   const handleAddPackages = async () => {
     const newPage = await addPackagesPage();
-    if (newPage) setSelectedId(`packages-${newPage.id}`);
+    if (newPage) { setSelectedId(`packages-${newPage.id}`); setPageOrderVersion((v) => v + 1); }
   };
 
   const handleRemovePackages = async (pageId: string) => {
     const removed = await removePackagesPage(pageId);
-    if (removed) setSelectedId('pdf-0');
+    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
   };
 
   const handleAddTextPage = async () => {
     const newPage = await addTextPage();
     if (newPage) {
       setSelectedId(`text-${newPage.id}`);
+      setPageOrderVersion((v) => v + 1);
     }
   };
 
   const handleRemoveTextPage = async (pageId: string) => {
     const removed = await removeTextPage(pageId);
-    if (removed) setSelectedId('pdf-0');
+    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
   };
 
   /* ——— Prev / Next navigation for preview panels ——————————————— */

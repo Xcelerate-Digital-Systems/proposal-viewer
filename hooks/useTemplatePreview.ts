@@ -2,194 +2,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, PageNameEntry, normalizePageNamesWithGroups, ProposalPricing, ProposalPackages, TocSettings, parseTocSettings } from '@/lib/supabase';
+import { supabase, PageNameEntry, normalizePageNamesWithGroups, ProposalPricing, ProposalPackages, TocSettings, parseTocSettings, parsePageOrder, PageOrderEntry } from '@/lib/supabase';
 import { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
+import { buildPageMap } from '@/lib/buildPageMap';
 
-/* ─── Special page ──────────────────────────────────────────────────── */
-
-interface SpecialPage {
-  type: 'pricing' | 'text' | 'packages' | 'toc';
-  position: number;
-  title: string;
-  textPageId?: string;
-  packagesId?: string;
-  sortOrder?: number;
-  indent?: number;
-}
-
-function buildPageMap(
-  pdfPageCount: number,
-  pricing: ProposalPricing | null,
-  textPages: ProposalTextPage[],
-  packages: ProposalPackages[],
-  tocSettings?: TocSettings | null
-) {
-  const specials: SpecialPage[] = [];
-
-  if (pricing?.enabled) {
-    specials.push({ type: 'pricing', position: pricing.position, title: pricing.title || 'Your Investment' });
-  }
-
-  for (const pkg of packages) {
-    if (pkg.enabled) {
-      specials.push({
-        type: 'packages',
-        position: pkg.position,
-        title: pkg.title || 'Packages',
-        packagesId: pkg.id,
-        sortOrder: pkg.sort_order ?? 0,
-        indent: pkg.indent ?? 0,
-      });
-    }
-  }
-
-  if (tocSettings?.enabled) {
-    specials.push({ type: 'toc', position: tocSettings.position, title: tocSettings.title || 'Table of Contents' });
-  }
-
-  for (const tp of textPages) {
-    if (tp.enabled) {
-      specials.push({ type: 'text', position: tp.position, title: tp.title || 'Text Page', textPageId: tp.id, sortOrder: tp.sort_order });
-    }
-  }
-
-  if (specials.length === 0 || pdfPageCount === 0) {
-    return {
-      totalPages: pdfPageCount,
-      pageSequence: [] as Array<{ type: 'pdf'; pdfPage: number } | { type: 'pricing' } | { type: 'packages'; packagesId: string } | { type: 'text'; textPageId: string } | { type: 'toc' }>,
-      isPricingPage: (_vp: number) => false,
-      isPackagesPage: (_vp: number) => false,
-      getPackagesId: (_vp: number): string | null => null,
-      isTocPage: (_vp: number) => false,
-      isTextPage: (_vp: number) => false,
-      getTextPageId: (_vp: number): string | null => null,
-      toPdfPage: (vp: number) => vp,
-    };
-  }
-
-  type VirtualPage =
-    | { type: 'pdf'; pdfPage: number }
-    | { type: 'pricing' }
-    | { type: 'packages'; packagesId: string }
-    | { type: 'text'; textPageId: string }
-    | { type: 'toc' };
-
-  const sequence: VirtualPage[] = [];
-
-  const positioned = specials.filter((s) => s.position >= 0);
-  const trailing = specials.filter((s) => s.position === -1);
-
-  // Sort positioned by position, then by type order, then by sortOrder.
-  // Type order mirrors PageEditor's splice insertion order: pricing is inserted
-  // first (ends up last due to later splices at the same index), text pages are
-  // inserted last (end up first). So: text=0, packages=1, toc=2, pricing=3.
-  const positionedTypeOrder = (type: string) => {
-    if (type === 'text') return 0;
-    if (type === 'packages') return 1;
-    if (type === 'toc') return 2;
-    return 3; // pricing
-  };
-  // AFTER
-  positioned.sort((a, b) => {
-    if (a.position !== b.position) return a.position - b.position;
-    const ta = positionedTypeOrder(a.type), tb = positionedTypeOrder(b.type);
-    if (ta !== tb) return ta - tb;
-    return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-  });
-
-  // Co-locate child packages (indent > 0) immediately after their nearest parent.
-  // This handles cases where a child has a different `position` value than its parent.
-  const colocateChildren = (arr: SpecialPage[]): SpecialPage[] => {
-    const result: SpecialPage[] = [];
-    for (const sp of arr) {
-      if (sp.type === 'packages' && (sp.indent ?? 0) > 0) {
-        let insertAt = result.length;
-        for (let i = result.length - 1; i >= 0; i--) {
-          if (result[i].type === 'packages' && (result[i].indent ?? 0) === 0) {
-            insertAt = i + 1;
-            while (insertAt < result.length && result[insertAt].type === 'packages' && (result[insertAt].indent ?? 0) > 0) {
-              insertAt++;
-            }
-            break;
-          }
-        }
-        result.splice(insertAt, 0, sp);
-      } else {
-        result.push(sp);
-      }
-    }
-    return result;
-  };
-  const positionedFinal = colocateChildren(positioned);
-  const trailingFinal = colocateChildren(trailing);
-
-  // Build sequence: interleave PDF pages with positioned specials
-
-  let posIdx = 0;
-  for (let pdfPage = 1; pdfPage <= pdfPageCount; pdfPage++) {
-    while (posIdx < positionedFinal.length && positionedFinal[posIdx].position < pdfPage) {
-      const sp = positionedFinal[posIdx];
-      if (sp.type === 'pricing') sequence.push({ type: 'pricing' });
-      else if (sp.type === 'packages') sequence.push({ type: 'packages', packagesId: sp.packagesId! });
-      else if (sp.type === 'toc') sequence.push({ type: 'toc' });
-      else sequence.push({ type: 'text', textPageId: sp.textPageId! });
-      posIdx++;
-    }
-    sequence.push({ type: 'pdf', pdfPage });
-  }
-
-  while (posIdx < positionedFinal.length) {
-    const sp = positionedFinal[posIdx];
-    if (sp.type === 'pricing') sequence.push({ type: 'pricing' });
-    else if (sp.type === 'packages') sequence.push({ type: 'packages', packagesId: sp.packagesId! });
-    else if (sp.type === 'toc') sequence.push({ type: 'toc' });
-    else sequence.push({ type: 'text', textPageId: sp.textPageId! });
-    posIdx++;
-  }
-
-  trailingFinal.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  for (const sp of trailingFinal) {
-    if (sp.type === 'pricing') sequence.push({ type: 'pricing' });
-    else if (sp.type === 'packages') sequence.push({ type: 'packages', packagesId: sp.packagesId! });
-    else if (sp.type === 'toc') sequence.push({ type: 'toc' });
-    else sequence.push({ type: 'text', textPageId: sp.textPageId! });
-  }
-
-  const totalPages = sequence.length;
-
-  const isPricingPage = (vp: number) => sequence[vp - 1]?.type === 'pricing';
-  const isPackagesPage = (vp: number) => sequence[vp - 1]?.type === 'packages';
-  const isTocPage = (vp: number) => sequence[vp - 1]?.type === 'toc';
-  const isTextPage = (vp: number) => sequence[vp - 1]?.type === 'text';
-
-  const getPackagesId = (vp: number): string | null => {
-    const entry = sequence[vp - 1];
-    return entry?.type === 'packages' ? (entry as { type: 'packages'; packagesId: string }).packagesId : null;
-  };
-
-  const getTextPageId = (vp: number): string | null => {
-    const entry = sequence[vp - 1];
-    return entry?.type === 'text' ? entry.textPageId : null;
-  };
-
-  const toPdfPage = (vp: number): number => {
-    const entry = sequence[vp - 1];
-    return entry?.type === 'pdf' ? entry.pdfPage : 0;
-  };
-
-  return {
-    totalPages,
-    pageSequence: sequence,
-    isPricingPage,
-    isPackagesPage,
-    getPackagesId,
-    isTocPage,
-    isTextPage,
-    getTextPageId,
-    toPdfPage,
-  };
-}
 
 /* ─── Template data type ───────────────────────────────────────────── */
 
@@ -260,6 +77,7 @@ export function useTemplatePreview(templateId: string) {
   const [pricing, setPricing] = useState<ProposalPricing | null>(null);
   const [packages, setPackages] = useState<ProposalPackages[]>([]);
   const [textPages, setTextPages] = useState<ProposalTextPage[]>([]);
+  const [pageOrder, setPageOrder] = useState<PageOrderEntry[] | null>(null);
 
   const fetchTemplate = useCallback(async () => {
     try {
@@ -277,6 +95,7 @@ export function useTemplatePreview(templateId: string) {
       }
 
       setTemplate(tmpl as TemplateData);
+      setPageOrder(parsePageOrder((tmpl as Record<string, unknown>).page_order));
 
         // Fetch template_pages for real labels and indents
         const { data: tPages } = await supabase
@@ -402,8 +221,8 @@ export function useTemplatePreview(templateId: string) {
 
   // Build virtual page map
   const pageMap = useMemo(
-    () => buildPageMap(pdfPageCount, pricing, textPages, packages, tocSettings),
-    [pdfPageCount, pricing, textPages, packages, tocSettings]
+    () => buildPageMap(pdfPageCount, pricing, textPages, packages, tocSettings, pageOrder),
+    [pdfPageCount, pricing, textPages, packages, tocSettings, pageOrder]
   );
 
   // Build page entries with special pages inserted for sidebar

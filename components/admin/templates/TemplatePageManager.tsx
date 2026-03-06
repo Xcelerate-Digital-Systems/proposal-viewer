@@ -1,7 +1,7 @@
 // components/admin/templates/TemplatePageManager.tsx
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -9,7 +9,7 @@ import { Plus, Loader2, ChevronLeft, ChevronRight, DollarSign, Package, FileText
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors, } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove, } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { ProposalTemplate } from '@/lib/supabase';
+import { ProposalTemplate, PageOrderEntry, parsePageOrder } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import SortableTemplateRow from './SortableTemplateRow';
@@ -84,7 +84,10 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
   // ─── UI state ────────────────────────────────────────────────────
   const [processing, setProcessing] = useState(false);
-  const [isReordering, setIsReordering] = useState(false); 
+  const [isReordering, setIsReordering] = useState(false);
+  const [pageOrderVersion, setPageOrderVersion] = useState(0);
+  // Local page_order state — initialised from DB on first load, updated optimistically on drag/add/remove
+  const [localPageOrder, setLocalPageOrder] = useState<PageOrderEntry[] | null>(null);
   const [selectedId, setSelectedId] = useState<string>('pdf-0');
   const [previewWidth, setPreviewWidth] = useState(300);
   const [panelHeight, setPanelHeight] = useState(520);
@@ -117,8 +120,55 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, [loading]);
 
+  // ─── Initialise localPageOrder from template prop ──────────────────
+  useEffect(() => {
+    const parsed = parsePageOrder((template as Record<string, unknown>).page_order);
+    if (parsed) setLocalPageOrder(parsed);
+  }, [template.id]);
+
   // ─── Unified items ───────────────────────────────────────────────
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
+    // ── New path: use explicit page_order when available ──────────────────
+    if (localPageOrder && localPageOrder.length > 0) {
+      const items: UnifiedItem[] = [];
+      let pdfIdx = 0;
+
+      // Interleave section headers (position-based, groups only) before pdf pages
+      const usedHeaders = new Set<string>();
+
+      for (const entry of localPageOrder) {
+        if (entry.type === 'pdf') {
+          // Insert any section headers whose position <= current pdf count
+          for (const header of sectionHeaders) {
+            if (!usedHeaders.has(header.id) && header.position <= pdfIdx) {
+              items.push({ id: `group-${header.id}`, type: 'group', pageIndex: -1, groupId: header.id });
+              usedHeaders.add(header.id);
+            }
+          }
+          items.push({ id: `pdf-${pdfIdx}`, type: 'pdf', pageIndex: pdfIdx });
+          pdfIdx++;
+        } else if (entry.type === 'pricing') {
+          if (pricingExists && pricingForm.enabled) {
+            items.push({ id: 'pricing', type: 'pricing', pageIndex: -1 });
+          }
+        } else if (entry.type === 'packages') {
+          const pkg = packagesPages.find((p) => p.id === entry.id && p.enabled);
+          if (pkg) items.push({ id: `packages-${pkg.id}`, type: 'packages', pageIndex: -1, packagesId: pkg.id });
+        } else if (entry.type === 'text') {
+          const tp = textPages.find((t) => t.id === entry.id && t.enabled);
+          if (tp) items.push({ id: `text-${tp.id}`, type: 'text', pageIndex: -1, textPageId: tp.id });
+        }
+      }
+      // Trailing section headers
+      for (const header of sectionHeaders) {
+        if (!usedHeaders.has(header.id)) {
+          items.push({ id: `group-${header.id}`, type: 'group', pageIndex: -1, groupId: header.id });
+        }
+      }
+      return items;
+    }
+
+    // ── Legacy path: position-based (templates without page_order) ────────
     const items: UnifiedItem[] = [];
 
     // Insert section headers and PDF pages
@@ -126,7 +176,6 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     const usedHeaders = new Set<string>();
 
     for (const page of pages) {
-      // Insert any section headers positioned before this page
       for (const header of sectionHeaders) {
         if (!usedHeaders.has(header.id) && header.position <= page.page_number) {
           items.push({ id: `group-${header.id}`, type: 'group', pageIndex: -1, groupId: header.id });
@@ -136,14 +185,12 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       items.push({ id: `pdf-${pageIdx}`, type: 'pdf', pageIndex: pageIdx });
       pageIdx++;
     }
-    // Trailing headers
     for (const header of sectionHeaders) {
       if (!usedHeaders.has(header.id)) {
         items.push({ id: `group-${header.id}`, type: 'group', pageIndex: -1, groupId: header.id });
       }
     }
 
-    // Insert pricing at its position
     if (pricingExists && pricingForm.enabled) {
       let pdfCount = 0;
       let insertIdx = items.length;
@@ -157,12 +204,10 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
       items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pageIndex: -1 });
     }
 
-    // Insert each enabled packages page at its position
     const sortedPkgs = packagesPages
       .filter((p) => p.enabled)
       .sort((a, b) => a.position !== b.position ? a.position - b.position : (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
-    // AFTER
     for (const pkg of sortedPkgs) {
       let pdfCount = 0;
       let insertIdx = items.length;
@@ -172,20 +217,14 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
           if (items[i].type === 'pdf') pdfCount++;
           insertIdx = i + 1;
         }
-        // Advance past packages already spliced in at this same boundary
-        while (insertIdx < items.length && items[insertIdx].type === 'packages') {
-          insertIdx++;
-        }
+        while (insertIdx < items.length && items[insertIdx].type === 'packages') insertIdx++;
       }
       items.splice(insertIdx, 0, { id: `packages-${pkg.id}`, type: 'packages', pageIndex: -1, packagesId: pkg.id });
     }
 
-    // Insert text pages at their positions
     for (const tp of textPages) {
       if (!tp.enabled) continue;
-      const textItem: UnifiedItem = {
-        id: `text-${tp.id}`, type: 'text', pageIndex: -1, textPageId: tp.id,
-      };
+      const textItem: UnifiedItem = { id: `text-${tp.id}`, type: 'text', pageIndex: -1, textPageId: tp.id };
       if (tp.position === -1 || tp.position >= items.length) {
         items.push(textItem);
       } else {
@@ -201,7 +240,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     }
 
     return items;
-  }, [pages, sectionHeaders, pricingExists, pricingForm.enabled, pricingPosition, packagesPages, textPages]);
+  }, [localPageOrder, pages, sectionHeaders, pricingExists, pricingForm.enabled, pricingPosition, packagesPages, textPages]);
 
   const selectedIsPricing = selectedId === 'pricing';
   const selectedIsPackages = selectedId.startsWith('packages-');
@@ -216,31 +255,32 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   const handleAddPricing = async () => {
     await addPricingPage();
     setSelectedId('pricing');
+    setPageOrderVersion((v) => v + 1);
   };
 
   const handleRemovePricing = async () => {
     const removed = await removePricingPage();
-    if (removed) setSelectedId('pdf-0');
+    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
   };
 
   const handleAddPackages = async () => {
     const newPage = await addPackagesPage();
-    if (newPage) setSelectedId(`packages-${newPage.id}`);
+    if (newPage) { setSelectedId(`packages-${newPage.id}`); setPageOrderVersion((v) => v + 1); }
   };
 
   const handleRemovePackages = async (pageId: string) => {
     const removed = await removePackagesPage(pageId);
-    if (removed) setSelectedId('pdf-0');
+    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
   };
 
   const handleAddTextPage = async () => {
     const newPage = await addTextPage();
-    if (newPage) setSelectedId(`text-${newPage.id}`);
+    if (newPage) { setSelectedId(`text-${newPage.id}`); setPageOrderVersion((v) => v + 1); }
   };
 
   const handleRemoveTextPage = async (pageId: string) => {
     const removed = await removeTextPage(pageId);
-    if (removed) setSelectedId('pdf-0');
+    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
   };
 
   const handleAddSectionHeader = () => {
@@ -250,7 +290,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
 
   const handleRemoveSectionHeader = async (headerId: string) => {
     const removed = await removeSectionHeader(headerId);
-    if (removed) setSelectedId('pdf-0');
+    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
   };
 
   // ─── Page CRUD ───────────────────────────────────────────────────
@@ -320,6 +360,42 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     onRefresh();
     fetchPages();
   };
+
+
+  // ─── page_order helpers ──────────────────────────────────────────
+
+  const buildPageOrderFromItems = (items: typeof unifiedItems): PageOrderEntry[] =>
+    items
+      .filter((i) => i.type !== 'group')
+      .map((i): PageOrderEntry | null => {
+        if (i.type === 'pdf') return { type: 'pdf' };
+        if (i.type === 'pricing') return { type: 'pricing' };
+        if (i.type === 'packages' && i.packagesId) return { type: 'packages', id: i.packagesId };
+        if (i.type === 'text' && i.textPageId) return { type: 'text', id: i.textPageId };
+        return null;
+      })
+      .filter((e): e is PageOrderEntry => e !== null);
+
+  const savePageOrder = useCallback(async (items: typeof unifiedItems) => {
+    const pageOrder = buildPageOrderFromItems(items);
+    setLocalPageOrder(pageOrder);
+    await fetch('/api/templates', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: template.id, page_order: pageOrder }),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template.id]);
+
+  // Save page_order whenever add/remove operations settle.
+  // Drag-and-drop saves directly via savePageOrder(reordered).
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (pageOrderVersion === 0) return;
+    savePageOrder(unifiedItems);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageOrderVersion]);
 
   // ─── Drag and drop ───────────────────────────────────────────────
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -409,6 +485,9 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
         onRefresh();
         fetchPages();
       }
+
+      // Save the explicit page ordering.
+      await savePageOrder(reordered);
     } finally {
       setIsReordering(false);
     }

@@ -1,11 +1,20 @@
 // lib/buildPageMap.ts
 
-import { ProposalPricing, ProposalPackages, TocSettings } from '@/lib/supabase';
+import { ProposalPricing, ProposalPackages, TocSettings, PageOrderEntry } from '@/lib/supabase';
 import { ProposalTextPage } from '@/hooks/useProposal';
 
-// ─── Special page: represents a non-PDF page in the virtual sequence ───
+// ─── Virtual page sequence ────────────────────────────────────────────────────
 
-export interface SpecialPage {
+export type VirtualPage =
+  | { type: 'pdf'; pdfPage: number }
+  | { type: 'pricing' }
+  | { type: 'packages'; packagesId: string }
+  | { type: 'text'; textPageId: string }
+  | { type: 'toc' };
+
+// ─── Legacy special page (used only by fallback path) ────────────────────────
+
+interface SpecialPage {
   type: 'pricing' | 'text' | 'packages' | 'toc';
   position: number;
   title: string;
@@ -15,39 +24,120 @@ export interface SpecialPage {
   indent?: number;
 }
 
-export type VirtualPage =
-  | { type: 'pdf'; pdfPage: number }
-  | { type: 'pricing' }
-  | { type: 'packages'; packagesId: string }
-  | { type: 'text'; textPageId: string }
-  | { type: 'toc' };
+// ─── Shared return-value builder ──────────────────────────────────────────────
 
-/**
- * Virtual page mapping:
- * PDF pages and special pages (pricing, packages, text pages) are interleaved.
- * Each special page has a position:
- *  - position = -1  → appears at the end (after all PDF pages)
- *  - position = 0   → appears first (before first PDF page)
- *  - position = N   → appears after PDF page N
- *
- * The resulting virtualPage is the 1-indexed page number the user sees.
- */
-export function buildPageMap(
+function makeResult(sequence: VirtualPage[]) {
+  const totalPages = sequence.length;
+
+  const isPricingPage = (vp: number) =>
+    sequence[vp - 1]?.type === 'pricing';
+
+  const isPackagesPage = (vp: number) =>
+    sequence[vp - 1]?.type === 'packages';
+
+  const isTocPage = (vp: number) =>
+    sequence[vp - 1]?.type === 'toc';
+
+  const isTextPage = (vp: number) =>
+    sequence[vp - 1]?.type === 'text';
+
+  const getPackagesId = (vp: number): string | null => {
+    const e = sequence[vp - 1];
+    return e?.type === 'packages' ? (e as { type: 'packages'; packagesId: string }).packagesId : null;
+  };
+
+  const getTextPageId = (vp: number): string | null => {
+    const e = sequence[vp - 1];
+    return e?.type === 'text' ? (e as { type: 'text'; textPageId: string }).textPageId : null;
+  };
+
+  const toPdfPage = (vp: number): number => {
+    const e = sequence[vp - 1];
+    return e?.type === 'pdf' ? (e as { type: 'pdf'; pdfPage: number }).pdfPage : -1;
+  };
+
+  return {
+    totalPages,
+    pageSequence: sequence,
+    isPricingPage,
+    isPackagesPage,
+    getPackagesId,
+    isTocPage,
+    isTextPage,
+    getTextPageId,
+    toPdfPage,
+  };
+}
+
+// ─── Empty result ─────────────────────────────────────────────────────────────
+
+function emptyResult(pdfPageCount: number) {
+  return {
+    totalPages: pdfPageCount,
+    pageSequence: [] as VirtualPage[],
+    isPricingPage: (_vp: number) => false,
+    isPackagesPage: (_vp: number) => false,
+    getPackagesId: (_vp: number): string | null => null,
+    isTocPage: (_vp: number) => false,
+    isTextPage: (_vp: number) => false,
+    getTextPageId: (_vp: number): string | null => null,
+    toPdfPage: (vp: number) => vp,
+  };
+}
+
+// ─── New path: build sequence directly from page_order ───────────────────────
+
+function buildFromPageOrder(
+  pageOrder: PageOrderEntry[],
+  pricing: ProposalPricing | null,
+  textPages: ProposalTextPage[],
+  packages: ProposalPackages[],
+  tocSettings: TocSettings | null | undefined,
+): VirtualPage[] {
+  const sequence: VirtualPage[] = [];
+  let pdfPage = 0;
+
+  for (const entry of pageOrder) {
+    if (entry.type === 'pdf') {
+      pdfPage++;
+      sequence.push({ type: 'pdf', pdfPage });
+    } else if (entry.type === 'pricing') {
+      if (pricing?.enabled) {
+        sequence.push({ type: 'pricing' });
+      }
+    } else if (entry.type === 'packages') {
+      const pkg = packages.find((p) => p.id === entry.id);
+      if (pkg?.enabled) {
+        sequence.push({ type: 'packages', packagesId: pkg.id });
+      }
+    } else if (entry.type === 'text') {
+      const tp = textPages.find((t) => t.id === entry.id);
+      if (tp?.enabled) {
+        sequence.push({ type: 'text', textPageId: tp.id });
+      }
+    } else if (entry.type === 'toc') {
+      if (tocSettings?.enabled) {
+        sequence.push({ type: 'toc' });
+      }
+    }
+  }
+
+  return sequence;
+}
+
+// ─── Legacy path: position-based ordering (existing proposals) ───────────────
+
+function buildFromPositions(
   pdfPageCount: number,
   pricing: ProposalPricing | null,
   textPages: ProposalTextPage[],
   packages: ProposalPackages[],
-  tocSettings?: TocSettings | null
-) {
-  // Collect all special pages
+  tocSettings: TocSettings | null | undefined,
+): VirtualPage[] {
   const specials: SpecialPage[] = [];
 
   if (pricing?.enabled) {
-    specials.push({
-      type: 'pricing',
-      position: pricing.position,
-      title: pricing.title || 'Your Investment',
-    });
+    specials.push({ type: 'pricing', position: pricing.position, title: pricing.title || 'Your Investment' });
   }
 
   for (const pkg of packages) {
@@ -64,63 +154,36 @@ export function buildPageMap(
   }
 
   if (tocSettings?.enabled) {
-    specials.push({
-      type: 'toc',
-      position: tocSettings.position,
-      title: tocSettings.title || 'Table of Contents',
-    });
+    specials.push({ type: 'toc', position: tocSettings.position, title: tocSettings.title || 'Table of Contents' });
   }
 
   for (const tp of textPages) {
     if (tp.enabled) {
-      specials.push({
-        type: 'text',
-        position: tp.position,
-        title: tp.title || 'Text Page',
-        textPageId: tp.id,
-        sortOrder: tp.sort_order,
-      });
+      specials.push({ type: 'text', position: tp.position, title: tp.title || 'Text Page', textPageId: tp.id, sortOrder: tp.sort_order });
     }
   }
 
-  if (specials.length === 0 || pdfPageCount === 0) {
-    return {
-      totalPages: pdfPageCount,
-      pageSequence: [] as VirtualPage[],
-      isPricingPage: (_vp: number) => false,
-      isPackagesPage: (_vp: number) => false,
-      getPackagesId: (_vp: number): string | null => null,
-      isTocPage: (_vp: number) => false,
-      isTextPage: (_vp: number) => false,
-      getTextPageId: (_vp: number): string | null => null,
-      toPdfPage: (vp: number) => vp,
-    };
-  }
-
-  const sequence: VirtualPage[] = [];
+  if (specials.length === 0) return [];
 
   const positioned = specials.filter((s) => s.position >= 0);
   const trailing = specials.filter((s) => s.position === -1);
 
-  // Sort positioned by position, then type order, then sortOrder.
-  // Type order mirrors PageEditor's splice insertion order:
-  // text=0, packages=1, toc=2, pricing=3
-  const positionedTypeOrder = (type: string) => {
+  const typeOrder = (type: string) => {
     if (type === 'text') return 0;
     if (type === 'packages') return 1;
     if (type === 'toc') return 2;
-    return 3; // pricing
+    return 3;
   };
 
   positioned.sort((a, b) => {
     if (a.position !== b.position) return a.position - b.position;
-    const ta = positionedTypeOrder(a.type), tb = positionedTypeOrder(b.type);
+    const ta = typeOrder(a.type), tb = typeOrder(b.type);
     if (ta !== tb) return ta - tb;
     return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
   });
 
-  // Co-locate child packages (indent > 0) immediately after their nearest parent.
-  const colocateChildren = (arr: SpecialPage[]): SpecialPage[] => {
+  // Co-locate child packages immediately after their nearest parent
+  const colocate = (arr: SpecialPage[]): SpecialPage[] => {
     const result: SpecialPage[] = [];
     for (const sp of arr) {
       if (sp.type === 'packages' && (sp.indent ?? 0) > 0) {
@@ -128,11 +191,7 @@ export function buildPageMap(
         for (let i = result.length - 1; i >= 0; i--) {
           if (result[i].type === 'packages' && (result[i].indent ?? 0) === 0) {
             insertAt = i + 1;
-            while (
-              insertAt < result.length &&
-              result[insertAt].type === 'packages' &&
-              (result[insertAt].indent ?? 0) > 0
-            ) {
+            while (insertAt < result.length && result[insertAt].type === 'packages' && (result[insertAt].indent ?? 0) > 0) {
               insertAt++;
             }
             break;
@@ -146,108 +205,64 @@ export function buildPageMap(
     return result;
   };
 
-  const positionedFinal = colocateChildren(positioned);
-  const trailingFinal = colocateChildren(trailing);
+  const positionedFinal = colocate(positioned);
+  const trailingFinal = colocate(trailing);
 
-  // Build sequence: interleave PDF pages with positioned specials
+  const push = (sequence: VirtualPage[], sp: SpecialPage) => {
+    if (sp.type === 'pricing') sequence.push({ type: 'pricing' });
+    else if (sp.type === 'packages') sequence.push({ type: 'packages', packagesId: sp.packagesId! });
+    else if (sp.type === 'toc') sequence.push({ type: 'toc' });
+    else sequence.push({ type: 'text', textPageId: sp.textPageId! });
+  };
+
+  const sequence: VirtualPage[] = [];
   let posIdx = 0;
+
   for (let pdfPage = 1; pdfPage <= pdfPageCount; pdfPage++) {
     while (posIdx < positionedFinal.length && positionedFinal[posIdx].position < pdfPage) {
-      const sp = positionedFinal[posIdx];
-      if (sp.type === 'pricing') {
-        sequence.push({ type: 'pricing' });
-      } else if (sp.type === 'packages') {
-        sequence.push({ type: 'packages', packagesId: sp.packagesId! });
-      } else if (sp.type === 'toc') {
-        sequence.push({ type: 'toc' });
-      } else {
-        sequence.push({ type: 'text', textPageId: sp.textPageId! });
-      }
-      posIdx++;
+      push(sequence, positionedFinal[posIdx++]);
     }
     sequence.push({ type: 'pdf', pdfPage });
   }
-
-  // Insert remaining positioned specials (position >= pdfPageCount)
   while (posIdx < positionedFinal.length) {
-    const sp = positionedFinal[posIdx];
-    if (sp.type === 'pricing') {
-      sequence.push({ type: 'pricing' });
-    } else if (sp.type === 'packages') {
-      sequence.push({ type: 'packages', packagesId: sp.packagesId! });
-    } else {
-      sequence.push({ type: 'text', textPageId: sp.textPageId! });
-    }
-    posIdx++;
+    push(sequence, positionedFinal[posIdx++]);
   }
 
-  // Add trailing specials
   trailingFinal.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  for (const sp of trailingFinal) {
-    if (sp.type === 'pricing') {
-      sequence.push({ type: 'pricing' });
-    } else if (sp.type === 'packages') {
-      sequence.push({ type: 'packages', packagesId: sp.packagesId! });
-    } else {
-      sequence.push({ type: 'text', textPageId: sp.textPageId! });
-    }
+  for (const sp of trailingFinal) push(sequence, sp);
+
+  return sequence;
+}
+
+// ─── Main export ──────────────────────────────────────────────────────────────
+
+/**
+ * Build the virtual page map.
+ *
+ * When `pageOrder` is provided (new proposals/templates), it is used directly
+ * as the authoritative sequence — no position math, no colocate logic.
+ *
+ * When `pageOrder` is null/undefined (existing records), falls back to the
+ * legacy position-based approach for full backward compatibility.
+ */
+export function buildPageMap(
+  pdfPageCount: number,
+  pricing: ProposalPricing | null,
+  textPages: ProposalTextPage[],
+  packages: ProposalPackages[],
+  tocSettings?: TocSettings | null,
+  pageOrder?: PageOrderEntry[] | null,
+) {
+  if (pdfPageCount === 0) return emptyResult(0);
+
+  let sequence: VirtualPage[];
+
+  if (pageOrder && pageOrder.length > 0) {
+    sequence = buildFromPageOrder(pageOrder, pricing, textPages, packages, tocSettings);
+  } else {
+    sequence = buildFromPositions(pdfPageCount, pricing, textPages, packages, tocSettings);
+    if (sequence.length === 0) return emptyResult(pdfPageCount);
   }
 
-  const totalPages = sequence.length;
-
-  const isPricingPage = (vp: number) => {
-    const idx = vp - 1;
-    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'pricing';
-  };
-
-  const isPackagesPage = (vp: number) => {
-    const idx = vp - 1;
-    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'packages';
-  };
-
-  const isTocPage = (vp: number) => {
-    const idx = vp - 1;
-    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'toc';
-  };
-
-  const isTextPage = (vp: number) => {
-    const idx = vp - 1;
-    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'text';
-  };
-
-  const getPackagesId = (vp: number): string | null => {
-    const idx = vp - 1;
-    if (idx >= 0 && idx < sequence.length && sequence[idx].type === 'packages') {
-      return (sequence[idx] as { type: 'packages'; packagesId: string }).packagesId;
-    }
-    return null;
-  };
-
-  const getTextPageId = (vp: number): string | null => {
-    const idx = vp - 1;
-    if (idx >= 0 && idx < sequence.length && sequence[idx].type === 'text') {
-      return (sequence[idx] as { type: 'text'; textPageId: string }).textPageId;
-    }
-    return null;
-  };
-
-  const toPdfPage = (vp: number): number => {
-    const idx = vp - 1;
-    if (idx < 0 || idx >= sequence.length) return -1;
-    const entry = sequence[idx];
-    if (entry.type === 'pdf') return entry.pdfPage;
-    return -1;
-  };
-
-  return {
-    totalPages,
-    pageSequence: sequence,
-    isPricingPage,
-    isPackagesPage,
-    getPackagesId,
-    isTocPage,
-    isTextPage,
-    getTextPageId,
-    toPdfPage,
-  };
+  return makeResult(sequence);
 }
