@@ -54,19 +54,10 @@ function DashboardContent({ companyId }: { companyId: string }) {
     setLoading(false);
   }, [companyId]);
 
-  const fetchCustomDomain = useCallback(async () => {
-    if (!companyId) return;
-    const { data } = await supabase
-      .from('companies')
-      .select('custom_domain, domain_verified')
-      .eq('id', companyId)
-      .single();
-    if (data?.domain_verified && data.custom_domain) {
-      setCustomDomain(data.custom_domain);
-    } else {
-      setCustomDomain(null);
-    }
-  }, [companyId]);
+  // AFTER
+const fetchCustomDomain = useCallback(async () => {
+  setCustomDomain(null);
+}, []);
 
   useEffect(() => {
     setLoading(true);

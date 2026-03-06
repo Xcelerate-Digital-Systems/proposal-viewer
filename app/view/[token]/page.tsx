@@ -81,10 +81,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
   const currentPackagesId = getPackagesId(currentPage);
   const currentPackages = currentPackagesId ? packages.find((p) => p.id === currentPackagesId) : undefined;
-  const pdfPage = toPdfPage(currentPage);
-
-  // True whenever a non-PDF special page is active
-  const isSpecialPage = onPricingPage || onPackagesPage || onTocPage || onTextPage;
+  const pdfPage = Math.max(1, toPdfPage(currentPage));
 
   const currentPageLink = useMemo(() => {
     let count = 0;
@@ -308,12 +305,72 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           />
         )}
 
-        {/*
-          PdfViewer is ALWAYS mounted to avoid re-fetching/re-parsing the PDF
-          when navigating between PDF pages and special pages.
-          It is hidden (display:none) while a special page is active.
-        */}
-        <div className={isSpecialPage ? 'hidden' : 'flex-1 flex flex-col min-w-0'}>
+        {onPricingPage && pricing ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto relative"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <ViewerBackground branding={branding} />
+            <div className="relative h-full">
+              <PricingPage
+                pricing={pricing}
+                branding={branding}
+                clientName={proposal?.client_name}
+              />
+            </div>
+          </div>
+        ) : onPackagesPage && currentPackages ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto relative"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <ViewerBackground branding={branding} />
+            <div className="relative h-full">
+              <PackagesPage
+                packages={currentPackages}
+                branding={branding}
+                clientName={proposal?.client_name}
+              />
+            </div>
+          </div>
+        ) : onTocPage && tocSettings ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto relative"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <ViewerBackground branding={branding} />
+            <div className="relative h-full">
+              <TocPage
+                branding={branding}
+                tocSettings={tocSettings}
+                pageSequence={pageSequence}
+                pageEntries={pageEntries}
+                numPages={numPages}
+              />
+            </div>
+          </div>
+        ) : onTextPage && currentTextPage ? (
+          <div
+            ref={mainRef}
+            className="flex-1 overflow-auto relative"
+            style={{ backgroundColor: bgPrimary }}
+          >
+            <ViewerBackground branding={branding} />
+            <div className="relative h-full">
+              <TextPage
+                textPage={currentTextPage}
+                branding={branding}
+                clientName={proposal?.client_name}
+                companyName={branding.name}
+                userName={creatorName || undefined}
+                proposalTitle={proposal?.title}
+              />
+            </div>
+          </div>
+        ) : (
           <PdfViewer
             pdfUrl={pdfUrl}
             currentPage={pdfPage}
@@ -323,50 +380,6 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             accentColor={accent}
             branding={branding}
           />
-        </div>
-
-        {/* Special pages — rendered on top when active */}
-        {isSpecialPage && (
-          <div
-            ref={mainRef}
-            className="flex-1 overflow-auto relative"
-            style={{ backgroundColor: bgPrimary }}
-          >
-            <ViewerBackground branding={branding} />
-            {onPricingPage && pricing && (
-              <PricingPage
-                pricing={pricing}
-                branding={branding}
-                clientName={proposal?.client_name}
-              />
-            )}
-            {onPackagesPage && currentPackages && (
-              <PackagesPage
-                packages={currentPackages}
-                branding={branding}
-                clientName={proposal?.client_name}
-              />
-            )}
-            {onTocPage && tocSettings && (
-              <TocPage
-                branding={branding}
-                tocSettings={tocSettings}
-                pageSequence={pageSequence}
-                pageEntries={pageEntries}
-                numPages={numPages}
-              />
-            )}
-            {onTextPage && currentTextPage && (
-              <TextPage
-                textPage={currentTextPage}
-                branding={branding}
-                clientName={proposal?.client_name}
-                companyName={branding.name}
-                userName={creatorName || undefined}
-                proposalTitle={proposal?.title}
-              />
-            )}
-          </div>
         )}
 
         <PageNumberBadge
