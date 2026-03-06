@@ -1,7 +1,7 @@
 // app/template-preview/[id]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import { deriveBorderColor } from '@/hooks/useProposal';
@@ -17,6 +17,7 @@ import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import ViewerBackground from '@/components/viewer/ViewerBackground';
 import PageNumberBadge from '@/components/viewer/PageNumberBadge';
+import PageLinkButton from '@/components/viewer/PageLinkButton';
 
 
 export default function TemplatePreviewPage({ params }: { params: { id: string } }) {
@@ -110,6 +111,18 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
   const accent = branding.accent_color || '#ff6700';
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#fff';
+
+  const currentPageLink = useMemo(() => {
+    let count = 0;
+    for (const entry of pageEntries) {
+      if (entry.type === 'group') continue;
+      count++;
+      if (count === currentPage) {
+        return entry.link_url ? { url: entry.link_url, label: entry.link_label } : null;
+      }
+    }
+    return null;
+  }, [pageEntries, currentPage]);
 
   // ── Early returns AFTER all hooks ──────────────────────────────────
 
@@ -226,7 +239,14 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
       />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
+        {currentPageLink && (
+          <PageLinkButton
+            url={currentPageLink.url}
+            label={currentPageLink.label}
+            accentColor={accent}
+          />
+        )}
         {/* Conditionally render PDF, Pricing, Packages, TOC, or Text page */}
         {onPricingPage && pricing ? (
           <div

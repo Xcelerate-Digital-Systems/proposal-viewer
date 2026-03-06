@@ -439,7 +439,12 @@ export function useTemplatePreview(templateId: string) {
         if (groups) result.push(...groups);
         result.push(pdfEntries[pdfIndex] || { name: `Page ${seqEntry.pdfPage}`, indent: 0 });
       } else if (seqEntry.type === 'pricing') {
-        result.push({ name: pricing?.title || 'Your Investment', indent: pricing?.indent ?? 0 });
+        result.push({
+          name: pricing?.title || 'Your Investment',
+          indent: pricing?.indent ?? 0,
+          link_url: (pricing as Record<string, unknown>)?.link_url as string | undefined,
+          link_label: (pricing as Record<string, unknown>)?.link_label as string | undefined,
+        });
       } else if (seqEntry.type === 'packages') {
         const pkg = packages.find((p) => p.id === (seqEntry as { type: 'packages'; packagesId: string }).packagesId);
         result.push({ name: pkg?.title || 'Packages', indent: pkg?.indent ?? 0 });
@@ -447,7 +452,12 @@ export function useTemplatePreview(templateId: string) {
         result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
       } else {
         const tp = textPages.find((t) => t.id === seqEntry.textPageId);
-        result.push({ name: tp?.title || 'Text Page', indent: tp?.indent ?? 0 });
+        result.push({
+          name: tp?.title || 'Text Page',
+          indent: tp?.indent ?? 0,
+          link_url: tp?.link_url ?? undefined,
+          link_label: tp?.link_label ?? undefined,
+        });
       }
     }
 
