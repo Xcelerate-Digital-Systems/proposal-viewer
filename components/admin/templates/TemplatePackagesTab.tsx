@@ -765,80 +765,82 @@ function TierEditor({
             />
           </div>
 
-          {/* Features */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Features</label>
-              <button onClick={onAddFeature} className="flex items-center gap-1 text-[10px] text-[#017C87] hover:text-[#017C87]/80 transition-colors">
-                <Plus size={10} /> Add
-              </button>
-            </div>
-            {tier.features.map((feature, fi) => (
-              <div key={fi} className="space-y-1.5 pl-2 border-l-2 border-gray-100">
-                <div className="flex gap-2">
+          {/* Conditions / Notes */}
+          <div className="pt-1 border-t border-gray-100">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Conditions / Notes</label>
+                <button onClick={onAddCondition} className="flex items-center gap-1 px-2 py-0.5 rounded border border-[#017C87]/30 text-xs text-[#017C87] hover:bg-[#017C87]/5 hover:border-[#017C87] transition-colors">
+                  <Plus size={11} /> Add
+                </button>
+              </div>
+              {tier.conditions.map((condition, ci) => (
+                <div key={ci} className="flex gap-2">
                   <input
                     type="text"
-                    value={feature.bold_prefix || ''}
-                    onChange={e => onUpdateFeature(fi, { bold_prefix: e.target.value || null })}
-                    className="w-28 px-2 py-1 rounded border border-gray-200 text-[10px] focus:outline-none focus:ring-1 focus:ring-[#017C87]/20"
-                    placeholder="Bold prefix"
+                    value={condition}
+                    onChange={e => onUpdateCondition(ci, e.target.value)}
+                    className="flex-1 px-2.5 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#017C87]/20"
+                    placeholder="* Minimum 3 month contract"
                   />
-                  <input
-                    type="text"
-                    value={feature.text}
-                    onChange={e => onUpdateFeature(fi, { text: e.target.value })}
-                    className="flex-1 px-2 py-1 rounded border border-gray-200 text-[10px] focus:outline-none focus:ring-1 focus:ring-[#017C87]/20"
-                    placeholder="Feature description"
-                  />
-                  <button onClick={() => onAddChild(fi)} className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-gray-500 transition-colors" title="Add sub-feature">
-                    <Plus size={10} />
-                  </button>
-                  <button onClick={() => onRemoveFeature(fi)} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+                  <button onClick={() => onRemoveCondition(ci)} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
                     <Trash2 size={10} />
                   </button>
                 </div>
-                {feature.children.map((child, ci) => (
-                  <div key={ci} className="flex gap-2 pl-4">
+              ))}
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="pt-1 border-t border-gray-100">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Features</label>
+                <button onClick={onAddFeature} className="flex items-center gap-1 px-2 py-0.5 rounded border border-[#017C87]/30 text-xs text-[#017C87] hover:bg-[#017C87]/5 hover:border-[#017C87] transition-colors">
+                  <Plus size={11} /> Add
+                </button>
+              </div>
+              {tier.features.map((feature, fi) => (
+                <div key={fi} className="space-y-1.5 pl-2 border-l-2 border-gray-100">
+                  <div className="flex gap-2">
                     <input
                       type="text"
-                      value={child}
-                      onChange={e => onUpdateChild(fi, ci, e.target.value)}
-                      className="flex-1 px-2 py-1 rounded border border-gray-100 text-[10px] focus:outline-none focus:ring-1 focus:ring-[#017C87]/20 bg-gray-50"
-                      placeholder="Sub-feature"
+                      value={feature.bold_prefix || ''}
+                      onChange={e => onUpdateFeature(fi, { bold_prefix: e.target.value || null })}
+                      className="w-28 px-2.5 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#017C87]/20"
+                      placeholder="Bold prefix"
                     />
-                    <button onClick={() => onRemoveChild(fi, ci)} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+                    <input
+                      type="text"
+                      value={feature.text}
+                      onChange={e => onUpdateFeature(fi, { text: e.target.value })}
+                      className="flex-1 px-2.5 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#017C87]/20"
+                      placeholder="Feature description"
+                    />
+                    <button onClick={() => onAddChild(fi)} className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-gray-500 transition-colors" title="Add sub-feature">
+                      <Plus size={11} />
+                    </button>
+                    <button onClick={() => onRemoveFeature(fi)} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
                       <Trash2 size={10} />
                     </button>
                   </div>
-                ))}
-              </div>
-            ))}
-          </div>
-
-          {/* Conditions */}
-          <div className="pt-4 border-t border-gray-100">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Conditions / Notes</label>
-              <button onClick={onAddCondition} className="flex items-center gap-1 text-[10px] text-[#017C87] hover:text-[#017C87]/80 transition-colors">
-                <Plus size={10} /> Add
-              </button>
+                  {feature.children.map((child, ci) => (
+                    <div key={ci} className="flex gap-2 pl-4">
+                      <input
+                        type="text"
+                        value={child}
+                        onChange={e => onUpdateChild(fi, ci, e.target.value)}
+                        className="flex-1 px-2.5 py-1.5 rounded border border-gray-100 text-xs focus:outline-none focus:ring-1 focus:ring-[#017C87]/20 bg-gray-50"
+                        placeholder="Sub-feature"
+                      />
+                      <button onClick={() => onRemoveChild(fi, ci)} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+                        <Trash2 size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
-            {tier.conditions.map((condition, ci) => (
-              <div key={ci} className="flex gap-2">
-                <input
-                  type="text"
-                  value={condition}
-                  onChange={e => onUpdateCondition(ci, e.target.value)}
-                  className="flex-1 px-2 py-1 rounded border border-gray-200 text-[10px] focus:outline-none focus:ring-1 focus:ring-[#017C87]/20"
-                  placeholder="* Minimum 3 month contract"
-                />
-                <button onClick={() => onRemoveCondition(ci)} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
-                  <Trash2 size={10} />
-                </button>
-              </div>
-            ))}
-          </div>
           </div>
         </div>
       )}

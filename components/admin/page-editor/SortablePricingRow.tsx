@@ -3,7 +3,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ArrowLeft, CornerDownRight } from 'lucide-react';
+import { GripVertical, ArrowLeft, CornerDownRight, DollarSign } from 'lucide-react';
 import PageLinkInput from '@/components/admin/page-editor/PageLinkInput';
 
 
@@ -69,6 +69,7 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
         {indent > 0 && (
           <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
         )}
+        <DollarSign size={14} className="text-[#017C87] shrink-0" />
         <span className="text-sm font-medium text-[#017C87] flex-1 truncate">
           {title || 'Pricing Page'}
         </span>

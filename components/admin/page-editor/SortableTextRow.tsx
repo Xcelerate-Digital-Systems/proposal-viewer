@@ -3,7 +3,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ArrowLeft, CornerDownRight, Trash2 } from 'lucide-react';
+import { GripVertical, ArrowLeft, CornerDownRight, Trash2, FileText } from 'lucide-react';
 import PageLinkInput from './PageLinkInput';
 
 interface SortableTextRowProps {
@@ -69,6 +69,7 @@ export default function SortableTextRow({ id, title, indent, isFirst, isSelected
         {indent > 0 && (
           <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
         )}
+        <FileText size={14} className="text-[#017C87]/70 shrink-0" />
         <span className="text-sm font-medium text-[#017C87]/70 flex-1 truncate">
           {title || 'Text Page'}
         </span>
