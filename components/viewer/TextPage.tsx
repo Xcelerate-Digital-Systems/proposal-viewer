@@ -395,11 +395,13 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
       style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgColor }}
     >
       <div className="w-full h-full">
+        {/* Mobile font size caps — body 14px, title 22px on screens < lg */}
+        <style>{`@media (max-width: 1023px) { .agv-text-body { font-size: 14px !important; } .agv-text-title { font-size: 22px !important; } }`}</style>
         {/* Title */}
         {textPage.title && (textPage.show_title ?? true) && (
           <div className="mb-6">
             <h1
-              className="text-2xl sm:text-3xl font-bold tracking-tight"
+              className="text-2xl sm:text-3xl font-bold tracking-tight agv-text-title"
               style={{
                 color: headingColor,
                 fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
@@ -413,7 +415,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
         )}
 
         {/* Content */}
-        <div style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
+        <div className="agv-text-body" style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
           {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
         </div>
 

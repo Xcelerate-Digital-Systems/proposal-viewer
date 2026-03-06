@@ -214,8 +214,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
   return (
     <div
-      className="flex flex-col lg:flex-row overflow-hidden"
-      style={{ backgroundColor: bgPrimary, height: '100dvh' }}
+      className="flex flex-col lg:flex-row overflow-hidden fixed inset-0"
+      style={{ backgroundColor: bgPrimary }}
     >
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
 

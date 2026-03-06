@@ -95,23 +95,29 @@ export async function POST(req: NextRequest) {
         .from('template_packages')
         .select('*')
         .eq('template_id', template_id)
-        .single();
+        .order('sort_order', { ascending: true });
 
-      if (templatePackages && templatePackages.enabled) {
-        const {
-          id: _id, template_id: _tid, created_at: _ca, updated_at: _ua,
-          ...packagesFields
-        } = templatePackages;
+      if (templatePackages && templatePackages.length > 0) {
+        const packagesInserts = templatePackages
+          .filter((pkg) => pkg.enabled)
+          .map((pkg) => {
+            const {
+              id: _id, template_id: _tid, created_at: _ca, updated_at: _ua,
+              ...packagesFields
+            } = pkg;
+            return {
+              ...packagesFields,
+              proposal_id,
+              company_id,
+              created_at: now,
+              updated_at: now,
+            };
+          });
 
-        await supabase.from('proposal_packages').insert({
-          ...packagesFields,
-          proposal_id,
-          company_id,
-          created_at: now,
-          updated_at: now,
-        });
-
-        results.packages = true;
+        if (packagesInserts.length > 0) {
+          await supabase.from('proposal_packages').insert(packagesInserts);
+          results.packages = true;
+        }
       }
     } catch (err) {
       console.error('Copy packages error (non-fatal):', err);
