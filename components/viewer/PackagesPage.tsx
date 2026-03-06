@@ -12,10 +12,6 @@ interface PackagesPageProps {
   clientName?: string;
 }
 
-/**
- * Format price for display — strips trailing .00 for whole numbers.
- * e.g. 1500 → "$1,500", 1500.50 → "$1,500.50"
- */
 function formatPrice(amount: number): string {
   const formatted = formatAUD(amount);
   return formatted.replace(/\.00$/, '');
@@ -64,12 +60,8 @@ export default function PackagesPage({ packages, branding, clientName }: Package
   const muted = `${textColor}99`;
   const faint = `${textColor}55`;
 
-  // Normalize styling with safe defaults
   const styling = normalizePackageStyling(packages.styling);
-
-  // Resolved title color — styling override → branding fallback
   const titleColor = styling.title_color || textColor;
-
   const tiers = [...(packages.packages ?? [])].sort((a, b) => a.sort_order - b.sort_order);
 
   return (
@@ -77,11 +69,24 @@ export default function PackagesPage({ packages, branding, clientName }: Package
       className="w-full min-h-full flex items-center justify-center py-8 lg:py-12 px-4 sm:px-6"
       style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
     >
+      {/* Mobile font standardisation — below lg breakpoint */}
+      <style>{`
+        @media (max-width: 1023px) {
+          .agv-pkg-title     { font-size: 22px !important; }
+          .agv-pkg-card-name { font-size: 18px !important; }
+          .agv-pkg-price     { font-size: 24px !important; }
+          .agv-pkg-body      { font-size: 16px !important; }
+        }
+        @media (max-width: 640px) {
+          .packages-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+
       <div className="w-full max-w-[1200px]">
         {/* Title section */}
         <div className="mb-8 text-center">
           <h1
-            className="text-2xl sm:text-3xl font-bold tracking-tight"
+            className="agv-pkg-title text-2xl sm:text-3xl font-bold tracking-tight"
             style={{
               color: titleColor,
               fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
@@ -92,12 +97,12 @@ export default function PackagesPage({ packages, branding, clientName }: Package
             {packages.title}
           </h1>
           {clientName && (
-            <p className="text-sm mt-1.5" style={{ color: muted }}>
+            <p className="agv-pkg-body text-sm mt-1.5" style={{ color: muted }}>
               Prepared for {clientName}
             </p>
           )}
           {packages.intro_text && (
-            <p className="text-sm leading-relaxed mt-4 max-w-[700px] mx-auto" style={{ color: muted }}>
+            <p className="agv-pkg-body text-sm leading-relaxed mt-4 max-w-[700px] mx-auto" style={{ color: muted }}>
               {packages.intro_text}
             </p>
           )}
@@ -105,7 +110,7 @@ export default function PackagesPage({ packages, branding, clientName }: Package
 
         {/* Package cards grid */}
         <div
-          className="grid gap-4 sm:gap-5 mx-auto"
+          className="packages-grid grid gap-4 sm:gap-5 mx-auto"
           style={{
             maxWidth: tiers.length === 1
               ? '400px'
@@ -135,14 +140,7 @@ export default function PackagesPage({ packages, branding, clientName }: Package
           ))}
         </div>
 
-        {/* Responsive stacking — on small screens, override grid to single column */}
-        <style>{`
-          @media (max-width: 640px) {
-            .packages-grid { grid-template-columns: 1fr !important; }
-          }
-        `}</style>
-
-        {/* Footer text / disclaimers */}
+        {/* Footer text */}
         {packages.footer_text && (
           <div className="mt-6 text-center">
             <p className="text-xs leading-relaxed" style={{ color: faint }}>
@@ -172,12 +170,10 @@ interface PackageCardProps {
 function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, border, surface, styling }: PackageCardProps) {
   const tierAccent = tier.highlight_color || accent;
 
-  // ── Resolve card background ────────────────────────────────────
   const cardBg = styling.card_bg_independent && tier.card_bg_color
     ? tier.card_bg_color
     : styling.card_bg_color || bgSecondary;
 
-  // ── Resolve card text color ────────────────────────────────────
   const cardText = styling.card_text_independent && tier.card_text_color
     ? tier.card_text_color
     : styling.card_text_color || textColor;
@@ -185,16 +181,15 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
   const cardMuted = `${cardText}99`;
   const cardFaint = `${cardText}55`;
 
-  // ── Recommended badge colours ──────────────────────────────────
   const recBg = tierAccent;
   const recText = styling.recommended_text_color || '#ffffff';
 
-  // ── Border styling ─────────────────────────────────────────────
   const borderRadius = `${styling.border_radius}px`;
   const borderW = styling.border_width ?? 1;
   const cardBorder = borderW > 0
     ? `${tier.is_recommended ? Math.max(borderW, 2) : borderW}px solid ${tier.is_recommended ? tierAccent : border}`
     : 'none';
+
   return (
     <div
       className="overflow-hidden flex flex-col"
@@ -228,7 +223,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
       <div className="p-5 sm:p-6 flex flex-col flex-1">
         {/* Package name */}
         <h2
-          className="text-lg sm:text-xl font-bold tracking-tight font-[family-name:var(--font-display)]"
+          className="agv-pkg-card-name text-lg sm:text-xl font-bold tracking-tight font-[family-name:var(--font-display)]"
           style={{ color: cardText }}
         >
           {tier.name}
@@ -246,14 +241,14 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
           )}
           <div className="flex items-baseline gap-0.5">
             <span
-              className="text-2xl sm:text-3xl font-bold tracking-tight"
+              className="agv-pkg-price text-2xl sm:text-3xl font-bold tracking-tight"
               style={{ color: tierAccent }}
             >
               {formatPrice(tier.price)}
             </span>
             {tier.price_suffix && (
               <span
-                className="text-sm sm:text-base font-semibold"
+                className="agv-pkg-body text-sm sm:text-base font-semibold"
                 style={{ color: tierAccent }}
               >
                 {tier.price_suffix}
@@ -262,13 +257,13 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
           </div>
         </div>
 
-        {/* Conditions (e.g. "+ 15% Ad Spend...", "Excludes Ad Spend*") */}
+        {/* Conditions */}
         {tier.conditions.length > 0 && (
           <div className="mb-4 space-y-0.5">
             {tier.conditions.map((condition, idx) => (
               <p
                 key={idx}
-                className="text-xs font-semibold uppercase tracking-wide"
+                className="agv-pkg-body text-xs font-semibold uppercase tracking-wide"
                 style={{ color: cardText }}
               >
                 {condition}
@@ -277,7 +272,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
           </div>
         )}
 
-        {/* Divider — uses card text colour (faint opacity) for cohesion */}
+        {/* Divider */}
         <div className="mb-4" style={{ borderBottom: `1px solid ${cardFaint}` }} />
 
         {/* Features list */}
@@ -300,7 +295,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
   );
 }
 
-/* ─── Feature Item (supports bold prefix + nested children) ──────── */
+/* ─── Feature Item ───────────────────────────────────────────────── */
 
 interface FeatureItemProps {
   feature: PackageFeature;
@@ -317,10 +312,9 @@ function FeatureItem({ feature, textColor, muted, faint, accent, surface, featur
 
   return (
     <div>
-      {/* Main feature */}
       <div className="flex items-start gap-2.5">
         <FeatureIcon icon={featureIcon} color={accent} size="normal" />
-        <span className="text-sm leading-relaxed" style={{ color: textColor }}>
+        <span className="agv-pkg-body text-sm leading-relaxed" style={{ color: textColor }}>
           {feature.bold_prefix ? (
             <>
               <strong className="font-semibold">{feature.bold_prefix}</strong>
@@ -334,7 +328,6 @@ function FeatureItem({ feature, textColor, muted, faint, accent, surface, featur
         </span>
       </div>
 
-      {/* Nested children */}
       {hasChildren && (
         <div className="ml-4 mt-1.5 space-y-1.5">
           {feature.children.map((child, idx) => (

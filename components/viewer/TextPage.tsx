@@ -396,7 +396,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
     >
       <div className="w-full h-full">
         {/* Mobile font size caps — body 14px, title 22px on screens < lg */}
-        <style>{`@media (max-width: 1023px) { .agv-text-body { font-size: 14px !important; } .agv-text-title { font-size: 22px !important; } }`}</style>
+        <style>{`@media (max-width: 1023px) { .agv-text-body { font-size: 16px !important; } .agv-text-title { font-size: 22px !important; } }`}</style>
         {/* Title */}
         {textPage.title && (textPage.show_title ?? true) && (
           <div className="mb-6">

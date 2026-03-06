@@ -65,11 +65,9 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
   const muted = `${textColor}99`;
   const faint = `${textColor}55`;
 
-  // Per-item GST helper
   const itemTax = (amount: number) =>
     pricing.tax_enabled ? Math.round(amount * (pricing.tax_rate / 100) * 100) / 100 : 0;
 
-  // Payment schedule — handles both old deposit/balance and new milestones format
   const ps = pricing.payment_schedule
     ? normalizePaymentSchedule(pricing.payment_schedule)
     : null;
@@ -80,6 +78,14 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
       className="w-full min-h-full flex items-center justify-center py-8 lg:py-12 px-4 sm:px-6"
       style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
     >
+      {/* Mobile font standardisation — title 22px, body 16px below lg breakpoint */}
+      <style>{`
+        @media (max-width: 1023px) {
+          .agv-pricing-title { font-size: 22px !important; }
+          .agv-pricing-body  { font-size: 16px !important; }
+        }
+      `}</style>
+
       <div
         className="w-full max-w-[900px] overflow-hidden"
         style={{ backgroundColor: bgSecondary, border: `1px solid ${border}` }}
@@ -91,7 +97,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
           {/* Title */}
           <div className="mb-6">
             <h1
-              className="text-2xl sm:text-3xl font-bold tracking-tight"
+              className="agv-pricing-title text-2xl sm:text-3xl font-bold tracking-tight"
               style={{
                 color: textColor,
                 fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
@@ -102,7 +108,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
               {pricing.title}
             </h1>
             {clientName && (
-              <p className="text-sm mt-1.5" style={{ color: muted }}>
+              <p className="agv-pricing-body text-sm mt-1.5" style={{ color: muted }}>
                 Prepared for {clientName}
               </p>
             )}
@@ -110,7 +116,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
 
           {/* Intro text */}
           {pricing.intro_text && (
-            <p className="text-sm leading-relaxed mb-8" style={{ color: muted }}>
+            <p className="agv-pricing-body text-sm leading-relaxed mb-8" style={{ color: muted }}>
               {pricing.intro_text}
             </p>
           )}
@@ -148,7 +154,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                       }}
                     >
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium" style={{ color: textColor }}>
+                        <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
                           {item.label}
                         </span>
                         {item.description && (
@@ -157,15 +163,15 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                           </span>
                         )}
                       </div>
-                      <span className="w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
+                      <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
                         {formatAUD(item.amount)}
                       </span>
                       {pricing.tax_enabled && (
-                        <span className="w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
+                        <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
                           {formatAUD(gst)}
                         </span>
                       )}
-                      <span className="w-28 text-right shrink-0 text-sm font-medium" style={{ color: textColor }}>
+                      <span className="agv-pricing-body w-28 text-right shrink-0 text-sm font-medium" style={{ color: textColor }}>
                         {formatAUD(pricing.tax_enabled ? item.amount + gst : item.amount)}
                       </span>
                     </div>
@@ -175,20 +181,20 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
               {/* Subtotal / Tax / Total */}
               <div className="rounded-b-lg overflow-hidden" style={{ backgroundColor: surface }}>
                 <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                  <span className="text-sm" style={{ color: muted }}>Subtotal</span>
-                  <span className="text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
+                  <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
+                  <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
                 </div>
                 {pricing.tax_enabled && (
                   <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                    <span className="text-sm" style={{ color: muted }}>{pricing.tax_label}</span>
-                    <span className="text-sm font-semibold" style={{ color: textColor }}>{formatAUD(tax)}</span>
+                    <span className="agv-pricing-body text-sm" style={{ color: muted }}>{pricing.tax_label}</span>
+                    <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(tax)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between px-4 py-4">
-                  <span className="text-base font-bold" style={{ color: textColor }}>
+                  <span className="agv-pricing-body text-base font-bold" style={{ color: textColor }}>
                     Total{pricing.tax_enabled ? ' (inc. tax)' : ''}
                   </span>
-                  <span className="text-xl font-bold" style={{ color: accent }}>{formatAUD(total)}</span>
+                  <span className="agv-pricing-body text-xl font-bold" style={{ color: accent }}>{formatAUD(total)}</span>
                 </div>
               </div>
             </div>
@@ -219,7 +225,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                         style={{ backgroundColor: accent }}
                       />
                       <div className="min-w-0">
-                        <span className="text-sm font-medium" style={{ color: textColor }}>
+                        <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
                           {ps.one_off.label}
                         </span>
                         {ps.one_off.note && (
@@ -229,7 +235,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                         )}
                       </div>
                     </div>
-                    <span className="text-sm font-bold shrink-0 ml-4" style={{ color: accent }}>
+                    <span className="agv-pricing-body text-sm font-bold shrink-0 ml-4" style={{ color: accent }}>
                       {formatAUD(ps.one_off.amount)}
                     </span>
                   </div>
@@ -242,7 +248,6 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                       const amt = milestoneAmount(payment, total);
                       const isLast = idx === ps.milestones.payments.length - 1;
                       const hasRecurringAfter = ps.recurring?.enabled;
-                      // Gradient opacity from full accent to lighter
                       const opacity = 1 - (idx / Math.max(1, ps.milestones.payments.length - 1)) * 0.6;
                       return (
                         <div
@@ -258,7 +263,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                               style={{ backgroundColor: accent, opacity }}
                             />
                             <div className="min-w-0">
-                              <span className="text-sm font-medium" style={{ color: textColor }}>
+                              <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
                                 {payment.label}
                               </span>
                               {payment.note && (
@@ -269,7 +274,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                             </div>
                           </div>
                           <span
-                            className="text-sm font-bold shrink-0 ml-4"
+                            className="agv-pricing-body text-sm font-bold shrink-0 ml-4"
                             style={{ color: idx === 0 ? accent : textColor }}
                           >
                             {formatAUD(amt)}
@@ -326,7 +331,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
                       <div className="min-w-0">
-                        <span className="text-sm font-medium" style={{ color: textColor }}>
+                        <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
                           {ps.recurring.label}
                         </span>
                         {ps.recurring.note && (
@@ -336,7 +341,7 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                         )}
                       </div>
                     </div>
-                    <span className="text-sm font-bold shrink-0 ml-4" style={{ color: accent }}>
+                    <span className="agv-pricing-body text-sm font-bold shrink-0 ml-4" style={{ color: accent }}>
                       {formatAUD(ps.recurring.amount)}/{FREQ_LABELS[ps.recurring.frequency] || ps.recurring.frequency}
                     </span>
                   </div>
@@ -364,12 +369,12 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                       }}
                     >
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium" style={{ color: textColor }}>{item.label}</span>
+                        <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>{item.label}</span>
                         {item.description && (
                           <span className="text-xs ml-2" style={{ color: muted }}>{item.description}</span>
                         )}
                       </div>
-                      <span className="text-sm font-medium shrink-0 ml-4" style={{ color: textColor }}>
+                      <span className="agv-pricing-body text-sm font-medium shrink-0 ml-4" style={{ color: textColor }}>
                         {formatAUD(item.amount)}
                       </span>
                     </div>
@@ -384,7 +389,6 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
 
             return (
               <div className="space-y-2">
-                {/* Validity bar — changes tone when expired */}
                 <div
                   className="rounded-lg px-4 py-3 text-xs flex items-center justify-between"
                   style={{
@@ -404,7 +408,6 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
                   </span>
                 </div>
 
-                {/* Expired notice */}
                 {expired && (
                   <div
                     className="rounded-lg px-4 py-3 text-xs"
