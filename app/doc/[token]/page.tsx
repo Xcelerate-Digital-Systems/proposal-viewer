@@ -41,6 +41,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
     tocSettings,
     pageSequence,
     onDocumentLoadSuccess,
+    pageUrls,
     getPageName,
   } = useDocument(params.token);
 
@@ -319,6 +320,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
             bgColor={bgPrimary}
             accentColor={accent}
             branding={branding}
+            pageUrls={pageUrls}
           />
         )}
         <PageNumberBadge
@@ -338,7 +340,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
           bgColor={bgSecondary}
           borderColor={border}
           accentColor={accent}
-          onCompositeDownload={hasSpecialPages && pdfUrl ? handleCompositeDownload : undefined}
+          onCompositeDownload={hasSpecialPages && (pdfUrl || pageUrls.length > 0) ? handleCompositeDownload : undefined}
         />
       </div>
     </div>

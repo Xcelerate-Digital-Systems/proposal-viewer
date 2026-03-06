@@ -50,6 +50,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     tocSettings,
     pageSequence,
     onDocumentLoadSuccess,
+    pageUrls,
     getPageName,
     acceptProposal,
     submitComment,
@@ -379,6 +380,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             bgColor={bgPrimary}
             accentColor={accent}
             branding={branding}
+            pageUrls={pageUrls}
           />
         )}
 
@@ -399,7 +401,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           bgColor={bgSecondary}
           borderColor={border}
           accentColor={accent}
-          onCompositeDownload={hasSpecialPages && pdfUrl ? handleCompositeDownload : undefined}
+          onCompositeDownload={hasSpecialPages && (pdfUrl || pageUrls.length > 0) ? handleCompositeDownload : undefined}
         />
       </div>
 
