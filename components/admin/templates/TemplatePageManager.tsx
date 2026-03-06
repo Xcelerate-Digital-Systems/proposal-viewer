@@ -97,7 +97,11 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
   );
 
   // ─── Measure preview width ───────────────────────────────────────
+  // NOTE: panelRef and previewContainerRef are inside the `!loading` conditional,
+  // so they are null on first mount. Including `loading` in deps ensures we
+  // re-measure once data arrives and the divs are actually in the DOM.
   useEffect(() => {
+    if (loading) return;
     const measure = () => {
       if (previewContainerRef.current) {
         setPreviewWidth(previewContainerRef.current.offsetWidth - 32);
@@ -111,7 +115,7 @@ export default function TemplatePageManager({ template, onRefresh }: TemplatePag
     const timer = setTimeout(measure, 100);
     window.addEventListener('resize', measure);
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
-  }, []);
+  }, [loading]);
 
   // ─── Unified items ───────────────────────────────────────────────
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
