@@ -33,14 +33,22 @@ export async function GET(req: NextRequest) {
     }
 
     let avatarUrl: string | null = null;
-    if (data.avatar_path) {
-      const { data: urlData } = await supabase.storage
-        .from('proposals')
-        .createSignedUrl(data.avatar_path, 3600);
-      if (urlData?.signedUrl) avatarUrl = urlData.signedUrl;
-    }
+if (data.avatar_path) {
+  const { data: fileData } = await supabase.storage
+    .from('proposals')
+    .download(data.avatar_path);
+  if (fileData) {
+    const buffer = await fileData.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    const mime = data.avatar_path.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    avatarUrl = `data:${mime};base64,${base64}`;
+  }
+}
 
-    return NextResponse.json({ name: data.name, avatar_url: avatarUrl });
+return NextResponse.json(
+  { name: data.name, avatar_url: avatarUrl },
+  { headers: { 'Cache-Control': 'no-store' } }
+);
   } catch (err) {
     console.error('member-badge API error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

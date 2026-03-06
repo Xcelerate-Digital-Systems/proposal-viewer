@@ -302,7 +302,9 @@ function MemberBadge({
     const resolve = async () => {
       // Use the API route — direct supabase queries on team_members are blocked
       // by RLS for the unauthenticated anon key used in the client-facing viewer.
-      const res = await fetch(`/api/member-badge?member_id=${memberId}`);
+      const res = await fetch(`/api/member-badge?member_id=${memberId}`, {
+        cache: 'no-store',
+      });
       if (!res.ok) return;
       const data = await res.json();
       if (data.name) setName(data.name);
@@ -323,12 +325,16 @@ function MemberBadge({
       style={{ borderTop: `1px solid ${border}` }}
     >
       {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={name}
-          className="w-14 h-14 rounded-full object-cover shrink-0"
+        <div
+          className="w-14 h-14 rounded-full shrink-0 overflow-hidden"
           style={{ border: `2px solid ${textColor}` }}
-        />
+        >
+          <img
+            src={avatarUrl}
+            alt={name}
+            className="w-full h-full object-cover"
+          />
+        </div>
       ) : (
         <div
           className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
