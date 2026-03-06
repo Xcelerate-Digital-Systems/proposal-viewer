@@ -10,7 +10,7 @@ import PricingPage from '@/components/viewer/PricingPage';
 import PackagesPage from '@/components/viewer/PackagesPage';
 import TocPage, { PageSequenceEntry } from '@/components/viewer/TocPage';
 import CoverPage from '@/components/viewer/CoverPage';
-import type { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
+import type { CompanyBranding, ProposalTextPage, PageUrlEntry } from '@/hooks/useProposal';
 import type { Proposal, ProposalPricing, ProposalPackages, PageNameEntry, TocSettings } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 
@@ -27,7 +27,10 @@ interface BaseTextPage {
 }
 
 export interface CompositeExportOptions {
-  pdfUrl: string;
+  /** Legacy single merged PDF URL. Null when per-page mode is active. */
+  pdfUrl: string | null;
+  /** Per-page signed URL entries (primary path post-migration). */
+  pageUrls?: PageUrlEntry[];
   title: string;
   numPages: number;
   isPricingPage: (vp: number) => boolean;
@@ -85,7 +88,6 @@ function detectDominantPageSize(srcDoc: PDFDocument): {
   for (let i = 0; i < srcDoc.getPageCount(); i++) {
     const page = srcDoc.getPage(i);
     const { width, height } = page.getSize();
-    // Round to avoid floating-point noise
     const key = `${Math.round(width)}x${Math.round(height)}`;
     const existing = sizeCounts.get(key);
     if (existing) {
@@ -95,7 +97,6 @@ function detectDominantPageSize(srcDoc: PDFDocument): {
     }
   }
 
-  // Pick the most common page size
   let dominant = { width: A4_WIDTH, height: A4_HEIGHT, count: 0 };
   for (const entry of Array.from(sizeCounts.values())) {
     if (entry.count > dominant.count) {
@@ -134,7 +135,6 @@ function resolvePageOrientation(
 
 /**
  * Resolve orientation from a direct override value.
- * Returns the override if set (and not 'auto'), otherwise the dominant orientation.
  */
 function resolveDirectOrientation(
   override: 'auto' | 'portrait' | 'landscape' | undefined,
@@ -157,17 +157,11 @@ function resolvePageDimensions(
   if (orientation === dominant.orientation) {
     return [dominant.width, dominant.height];
   }
-  // Orientation flipped — swap dimensions
   return [dominant.height, dominant.width];
 }
 
 /**
  * Fetch an image by URL, convert it to a base64 data URL.
- * Using a data URL completely sidesteps CORS issues during html2canvas
- * capture — the pixel data is already inline so no network request is
- * needed at capture time.
- *
- * Returns the data URL string, or null on failure.
  */
 async function preloadImageAsDataUrl(url: string): Promise<string | null> {
   try {
@@ -194,20 +188,12 @@ async function preloadImageAsDataUrl(url: string): Promise<string | null> {
 
 /**
  * Inject background image + overlay layers into a container element.
- * Uses an actual <img> tag with a base64 data URL src (not a remote URL)
- * so html2canvas doesn't need to make any network requests during capture.
- * object-fit: cover replicates CSS background-size: cover behaviour.
- *
- * This mirrors what ViewerBackground renders in the live viewer:
- *   1. Full-bleed background image (cover, centered)
- *   2. Colour overlay with configurable opacity
  */
 function injectBackgroundLayers(
   container: HTMLElement,
   branding: CompanyBranding,
   dataUrl: string,
 ): void {
-  // Background image layer — use an <img> with the base64 data URL.
   const imgEl = document.createElement('img');
   imgEl.src = dataUrl;
   imgEl.style.position = 'absolute';
@@ -220,7 +206,6 @@ function injectBackgroundLayers(
   imgEl.style.pointerEvents = 'none';
   container.appendChild(imgEl);
 
-  // Colour overlay layer
   const overlayLayer = document.createElement('div');
   overlayLayer.style.position = 'absolute';
   overlayLayer.style.top = '0';
@@ -233,19 +218,10 @@ function injectBackgroundLayers(
   container.appendChild(overlayLayer);
 }
 
-/** Context object passed through to captureComponent for background rendering */
 type BgImageCtx = { branding: CompanyBranding; dataUrl: string };
 
 /**
- * Render a React element into an offscreen container, capture it with
- * html2canvas, then clean up. Returns a PNG data URL.
- *
- * The container is sized to match the target page aspect ratio so
- * components using min-h-full / flex centering render correctly.
- *
- * When bgImage is provided, the background image + overlay are injected
- * as DOM layers directly into the container — no extra React wrapper
- * divs that could break the flex height chain.
+ * Render a React element offscreen, capture with html2canvas, clean up.
  */
 async function captureComponent(
   element: React.ReactElement,
@@ -258,7 +234,6 @@ async function captureComponent(
   const captureWidth = Math.max(baseWidth, Math.round(baseWidth * (targetAspect / 1.0)));
   const captureHeight = Math.round(captureWidth / targetAspect);
 
-  // Create offscreen container
   const container = document.createElement('div');
   container.style.position = 'fixed';
   container.style.left = '-9999px';
@@ -269,17 +244,10 @@ async function captureComponent(
   container.style.backgroundColor = bgColor;
   document.body.appendChild(container);
 
-  // Inject background image + overlay as DOM layers (before React content).
-  // These are absolutely positioned so they sit behind the content without
-  // adding any wrapper divs that could interfere with flex centering.
   if (bgImage) {
     injectBackgroundLayers(container, bgImage.branding, bgImage.dataUrl);
   }
 
-  // Render React component — sits above bg layers via DOM order.
-  // The wrapper div gets position: relative for z-stacking and
-  // height: 100% so that child min-h-full / items-center resolves
-  // against the full container height.
   const root = createRoot(container);
 
   await new Promise<void>((resolve) => {
@@ -291,10 +259,8 @@ async function captureComponent(
     );
   });
 
-  // Extra tick for styles/layout to settle
   await new Promise((r) => setTimeout(r, 100));
 
-  // Capture with html2canvas
   const canvas = await html2canvas(container, {
     backgroundColor: bgColor,
     width: captureWidth,
@@ -305,7 +271,6 @@ async function captureComponent(
 
   const dataUrl = canvas.toDataURL('image/png');
 
-  // Cleanup
   root.unmount();
   document.body.removeChild(container);
 
@@ -314,7 +279,6 @@ async function captureComponent(
 
 /**
  * Capture a React element, embed into the output PDF, and add the page.
- * Shared logic for cover, pricing, packages, text, and TOC pages.
  */
 async function captureAndAddPage(
   outDoc: PDFDocument,
@@ -330,7 +294,6 @@ async function captureAndAddPage(
   const pngBytes = await fetch(dataUrl).then((r) => r.arrayBuffer());
   const pngImage = await outDoc.embedPng(pngBytes);
 
-  // Scale image to fill page width, preserving aspect ratio
   const imgAspect = pngImage.width / pngImage.height;
   const fitWidth = pageWidth;
   const fitHeight = fitWidth / imgAspect;
@@ -346,9 +309,6 @@ async function captureAndAddPage(
 
 /* ——— Cover page helpers ————————————————————————————————— */
 
-/**
- * Get a signed URL from Supabase storage. Returns null on failure.
- */
 async function getSignedUrl(bucket: string, path: string): Promise<string | null> {
   try {
     const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
@@ -358,10 +318,6 @@ async function getSignedUrl(bucket: string, path: string): Promise<string | null
   }
 }
 
-/**
- * Pre-fetch all signed URLs and resolved member data needed for
- * the cover page so they're available synchronously during render.
- */
 async function resolveCoverData(proposal: Proposal): Promise<{
   bgUrl: string | null;
   clientLogoUrl: string | null;
@@ -373,22 +329,18 @@ async function resolveCoverData(proposal: Proposal): Promise<{
   let avatarUrl: string | null = null;
   let preparedByName: string | null = proposal.prepared_by || null;
 
-  // Fetch cover image
   if (proposal.cover_image_path) {
     bgUrl = await getSignedUrl('proposals', proposal.cover_image_path);
   }
 
-  // Fetch client logo
   if (proposal.cover_client_logo_path && (proposal.cover_show_client_logo ?? false)) {
     clientLogoUrl = await getSignedUrl('proposals', proposal.cover_client_logo_path);
   }
 
-  // Fetch avatar (direct path first)
   if (proposal.cover_avatar_path && (proposal.cover_show_avatar ?? false)) {
     avatarUrl = await getSignedUrl('proposals', proposal.cover_avatar_path);
   }
 
-  // Resolve member data if needed
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const memberId = (proposal as any).prepared_by_member_id;
   if (memberId) {
@@ -420,11 +372,31 @@ async function resolveCoverData(proposal: Proposal): Promise<{
   return { bgUrl, clientLogoUrl, avatarUrl, preparedByName };
 }
 
+/* ——— Per-page source document helpers —————————————————— */
+
+/**
+ * Load all per-page PDFs in parallel.
+ * Returns a Map from 1-based page number → loaded PDFDocument.
+ */
+async function loadPerPageDocs(
+  pageUrls: PageUrlEntry[],
+): Promise<Map<number, PDFDocument>> {
+  const entries = await Promise.all(
+    pageUrls.map(async (entry) => {
+      const bytes = await fetch(entry.url).then((r) => r.arrayBuffer());
+      const doc = await PDFDocument.load(bytes);
+      return [entry.page_number, doc] as [number, PDFDocument];
+    })
+  );
+  return new Map(entries);
+}
+
 /* ——— Main export function ——————————————————————————————— */
 
 export async function exportCompositePdf(opts: CompositeExportOptions): Promise<Blob> {
   const {
     pdfUrl,
+    pageUrls = [],
     title,
     numPages,
     isPricingPage,
@@ -452,12 +424,33 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     pageSequence,
   } = opts;
 
-  // Load the source PDF
-  const pdfBytes = await fetch(pdfUrl).then((r) => r.arrayBuffer());
-  const srcDoc = await PDFDocument.load(pdfBytes);
+  const isPerPage = pageUrls.length > 0;
 
-  // Detect dominant page size from source PDF (actual dimensions, not A4)
-  const dominant = detectDominantPageSize(srcDoc);
+  // ── Load source PDF(s) ─────────────────────────────────────────
+  // Per-page mode: load all individual page PDFs in parallel.
+  // Legacy mode: load the single merged PDF.
+  let srcDoc: PDFDocument | null = null;
+  let perPageDocs: Map<number, PDFDocument> = new Map();
+
+  if (isPerPage) {
+    perPageDocs = await loadPerPageDocs(pageUrls);
+    // Detect dominant size from page 1 (all pages should be same size)
+    const firstDoc = perPageDocs.get(1);
+    if (firstDoc) {
+      srcDoc = firstDoc; // used only for detectDominantPageSize below
+    }
+  } else {
+    if (!pdfUrl) {
+      throw new Error('exportCompositePdf: pdfUrl is required when pageUrls is empty');
+    }
+    const pdfBytes = await fetch(pdfUrl).then((r) => r.arrayBuffer());
+    srcDoc = await PDFDocument.load(pdfBytes);
+  }
+
+  // Detect dominant page size
+  const dominant = srcDoc
+    ? detectDominantPageSize(srcDoc)
+    : { width: A4_WIDTH, height: A4_HEIGHT, orientation: 'portrait' as const };
 
   // Create the output PDF
   const outDoc = await PDFDocument.create();
@@ -465,9 +458,6 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
   const bgPrimary = branding.bg_primary || '#0f0f0f';
 
   // ── Pre-load the background image as a base64 data URL ─────────
-  // html2canvas cannot reliably capture remote images (even with
-  // useCORS / crossOrigin). Converting to a data URL up front means
-  // the pixel data is inline — no network request at capture time.
   let bgImageCtx: BgImageCtx | null = null;
   if (branding.bg_image_url) {
     const dataUrl = await preloadImageAsDataUrl(branding.bg_image_url);
@@ -476,7 +466,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     }
   }
 
-  // ── Cover page (page 1) ────────────────────────────────────────
+  // ── Cover page ─────────────────────────────────────────────────
   if (includeCover && proposal) {
     const coverData = await resolveCoverData(proposal);
 
@@ -491,7 +481,6 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
       resolvedPreparedByName: coverData.preparedByName,
     });
 
-    // Cover handles its own background — no bgImageCtx needed
     await captureAndAddPage(outDoc, coverElement, bgPrimary, dominant.width, dominant.height, 960);
   }
 
@@ -504,15 +493,9 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
       const orientation = pricingOrientation
         ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
         : resolvePageOrientation(vp, pageEntries, dominant.orientation);
-
       const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
 
-      const element = createElement(PricingPage, {
-        pricing,
-        branding,
-        clientName,
-      });
-
+      const element = createElement(PricingPage, { pricing, branding, clientName });
       await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
 
     } else if (isPackagesPage(vp)) {
@@ -523,15 +506,9 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         const orientation = pricingOrientation
           ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
           : resolvePageOrientation(vp, pageEntries, dominant.orientation);
-
         const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
 
-        const element = createElement(PackagesPage, {
-          packages: pkg,
-          branding,
-          clientName,
-        });
-
+        const element = createElement(PackagesPage, { packages: pkg, branding, clientName });
         await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
       } else {
         outDoc.addPage([dominant.width, dominant.height]);
@@ -548,7 +525,6 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
         pageEntries: pageEntries || [],
         numPages,
       });
-
       await captureAndAddPage(outDoc, tocElement, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
 
     } else if (isTextPage(vp)) {
@@ -561,11 +537,9 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
       } else {
         orientation = resolvePageOrientation(vp, pageEntries, dominant.orientation);
       }
-
       const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
 
       const textPage = textPageId ? getTextPage(textPageId) : undefined;
-
       if (textPage) {
         const element = createElement(TextPage, {
           textPage: textPage as ProposalTextPage,
@@ -575,22 +549,33 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
           userName,
           proposalTitle,
         });
-
         const textBg = branding.text_page_bg_color || branding.bg_secondary || '#141414';
         await captureAndAddPage(outDoc, element, textBg, pageWidth, pageHeight, undefined, bgImageCtx);
       } else {
-        // Fallback: empty page matching dominant size
         outDoc.addPage([pageWidth, pageHeight]);
       }
 
     } else {
       // —— Copy PDF page ———————————————————————————————————————
       const pdfPage = toPdfPage(vp);
-      if (pdfPage > 0 && pdfPage <= srcDoc.getPageCount()) {
-        const [copiedPage] = await outDoc.copyPages(srcDoc, [pdfPage - 1]);
-        outDoc.addPage(copiedPage);
+
+      if (isPerPage) {
+        // Per-page mode: each PDF page lives in its own document
+        const pageDoc = perPageDocs.get(pdfPage);
+        if (pageDoc && pageDoc.getPageCount() > 0) {
+          const [copiedPage] = await outDoc.copyPages(pageDoc, [0]);
+          outDoc.addPage(copiedPage);
+        } else {
+          outDoc.addPage([dominant.width, dominant.height]);
+        }
       } else {
-        outDoc.addPage([dominant.width, dominant.height]);
+        // Legacy mode: copy from the single merged source doc
+        if (srcDoc && pdfPage > 0 && pdfPage <= srcDoc.getPageCount()) {
+          const [copiedPage] = await outDoc.copyPages(srcDoc, [pdfPage - 1]);
+          outDoc.addPage(copiedPage);
+        } else {
+          outDoc.addPage([dominant.width, dominant.height]);
+        }
       }
     }
   }

@@ -6,14 +6,18 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { ZoomIn, ZoomOut } from 'lucide-react';
-import { CompanyBranding } from '@/hooks/useProposal';
+import { CompanyBranding, PageUrlEntry } from '@/hooks/useProposal';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import ViewerBackground from '@/components/viewer/ViewerBackground';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PdfViewerProps {
+  /** Legacy single signed URL (populated in fallback mode only) */
   pdfUrl: string | null;
+  /** Per-page signed URL entries (primary path post-migration) */
+  pageUrls?: PageUrlEntry[];
+  /** Current virtual PDF page number (1-based) */
   currentPage: number;
   onLoadSuccess: (data: { numPages: number }) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
@@ -22,7 +26,16 @@ interface PdfViewerProps {
   branding?: CompanyBranding;
 }
 
-export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRef, bgColor = '#0f0f0f', accentColor = '#ff6700', branding }: PdfViewerProps) {
+export default function PdfViewer({
+  pdfUrl,
+  pageUrls = [],
+  currentPage,
+  onLoadSuccess,
+  scrollRef,
+  bgColor = '#0f0f0f',
+  accentColor = '#ff6700',
+  branding,
+}: PdfViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -32,13 +45,19 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
   const [scale, setScale] = useState(1);
   const [documentLoading, setDocumentLoading] = useState(true);
 
+  // Whether we are in per-page mode or legacy single-PDF mode
+  const isPerPage = pageUrls.length > 0;
+
+  // In per-page mode the active URL is indexed by currentPage
+  const activePageUrl = isPerPage ? (pageUrls[currentPage - 1]?.url ?? null) : null;
+
   // Track pinch-to-zoom
   const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
 
+  // ── Container width measurement ──────────────────────────────────
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setContainerWidth(entry.contentRect.width);
@@ -48,19 +67,55 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
     return () => observer.disconnect();
   }, []);
 
-  // When currentPage changes, start transition and reset zoom
+  // ── Page transition on change ────────────────────────────────────
   useEffect(() => {
     if (currentPage !== renderedPage) {
       setIsTransitioning(true);
       setScale(1); // reset zoom on page change
+      // In per-page mode each URL change remounts the Document, so reset loading
+      if (isPerPage) setDocumentLoading(true);
     }
-  }, [currentPage, renderedPage]);
+  }, [currentPage, renderedPage, isPerPage]);
 
-  const handleDocumentLoadSuccess = useCallback((data: { numPages: number }) => {
-    setDocumentLoading(false);
-    onLoadSuccess(data);
-  }, [onLoadSuccess]);
+  // ── Adjacent-page prefetch (per-page mode only) ──────────────────
+  // Injects <link rel="prefetch"> for prev and next page URLs so the
+  // browser warms its cache before the user navigates to them.
+  useEffect(() => {
+    if (!isPerPage) return;
 
+    const toFetch = [
+      pageUrls[currentPage]?.url,     // next page (currentPage is 1-based → index = currentPage)
+      pageUrls[currentPage - 2]?.url, // prev page (index = currentPage - 2)
+    ].filter(Boolean) as string[];
+
+    const links: HTMLLinkElement[] = [];
+    for (const url of toFetch) {
+      const link = window.document.createElement('link');
+      link.rel = 'prefetch';
+      link.as = 'fetch';
+      link.href = url;
+      link.crossOrigin = 'anonymous';
+      window.document.head.appendChild(link);
+      links.push(link);
+    }
+
+    return () => {
+      for (const link of links) {
+        link.remove();
+      }
+    };
+  }, [isPerPage, currentPage, pageUrls]);
+
+  // ── Document load success ────────────────────────────────────────
+  const handleDocumentLoadSuccess = useCallback(
+    (data: { numPages: number }) => {
+      setDocumentLoading(false);
+      onLoadSuccess(data);
+    },
+    [onLoadSuccess]
+  );
+
+  // ── Page render success ──────────────────────────────────────────
   const handlePageRenderSuccess = useCallback(() => {
     setRenderedPage(currentPage);
     requestAnimationFrame(() => {
@@ -68,28 +123,34 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
     });
   }, [currentPage]);
 
-  // Capture native PDF page width on first load
-  const handlePageLoadSuccess = useCallback((page: { originalWidth: number }) => {
-    if (nativePdfWidth === null) {
-      setNativePdfWidth(Math.round(page.originalWidth * 1.5));
-    }
-  }, [nativePdfWidth]);
+  // ── Capture native PDF page width on first load ──────────────────
+  const handlePageLoadSuccess = useCallback(
+    (page: { originalWidth: number }) => {
+      if (nativePdfWidth === null) {
+        setNativePdfWidth(Math.round(page.originalWidth * 1.5));
+      }
+    },
+    [nativePdfWidth]
+  );
 
-  // Pinch-to-zoom touch handlers
+  // ── Pinch-to-zoom ────────────────────────────────────────────────
   const getTouchDist = (t0: React.Touch, t1: React.Touch) => {
     const dx = t0.clientX - t1.clientX;
     const dy = t0.clientY - t1.clientY;
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      pinchRef.current = {
-        startDist: getTouchDist(e.touches[0], e.touches[1]),
-        startScale: scale,
-      };
-    }
-  }, [scale]);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = {
+          startDist: getTouchDist(e.touches[0], e.touches[1]),
+          startScale: scale,
+        };
+      }
+    },
+    [scale]
+  );
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2 && pinchRef.current) {
@@ -105,17 +166,9 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
     pinchRef.current = null;
   }, []);
 
-  const zoomIn = useCallback(() => {
-    setScale((s) => Math.min(3, s + 0.25));
-  }, []);
-
-  const zoomOut = useCallback(() => {
-    setScale((s) => Math.max(0.5, s - 0.25));
-  }, []);
-
-  const resetZoom = useCallback(() => {
-    setScale(1);
-  }, []);
+  const zoomIn = useCallback(() => setScale((s) => Math.min(3, s + 0.25)), []);
+  const zoomOut = useCallback(() => setScale((s) => Math.max(0.5, s - 0.25)), []);
+  const resetZoom = useCallback(() => setScale(1), []);
 
   // Never render wider than the PDF's native width (scaled)
   const renderWidth = nativePdfWidth
@@ -124,24 +177,28 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
 
   const showZoomControls = scale !== 1;
 
-  // Show branded loader while PDF document is loading (if branding available)
-  const showBrandedLoader = documentLoading && branding && pdfUrl;
+  // Determine what URL to pass to the Document
+  const fileUrl = isPerPage ? activePageUrl : pdfUrl;
+
+  // Show branded loader while PDF is loading
+  const showBrandedLoader = documentLoading && branding && fileUrl;
 
   return (
     <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: bgColor }}>
       {branding && <ViewerBackground branding={branding} />}
-      {/* Branded loader overlay while PDF document loads */}
+
+      {/* Branded loader overlay while PDF loads */}
       {showBrandedLoader && (
         <ViewerLoader
           branding={branding}
           loading={documentLoading}
-          label="Loading proposal…"
+          label="Loading…"
           minDisplayTime={600}
         />
       )}
 
-      {/* Branded loader when no PDF URL yet */}
-      {!pdfUrl && branding && (
+      {/* Branded loader when no URL yet */}
+      {!fileUrl && branding && (
         <ViewerLoader
           branding={branding}
           loading={true}
@@ -168,9 +225,12 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
           }}
         >
           <div ref={contentRef} className="w-full">
-            {pdfUrl ? (
+            {fileUrl ? (
               <Document
-                file={pdfUrl}
+                // In per-page mode, key on the URL so react-pdf fully remounts
+                // on page change — prevents stale page flash during transitions.
+                key={isPerPage ? fileUrl : undefined}
+                file={fileUrl}
                 onLoadSuccess={handleDocumentLoadSuccess}
                 loading={<></>}
               >
@@ -180,7 +240,8 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
                     style={{ opacity: isTransitioning ? 0 : 1, maxWidth: renderWidth }}
                   >
                     <Page
-                      pageNumber={currentPage}
+                      // In per-page mode every Document has only page 1
+                      pageNumber={isPerPage ? 1 : currentPage}
                       width={renderWidth}
                       className="[&_canvas]:!w-full"
                       renderTextLayer={false}
@@ -200,10 +261,12 @@ export default function PdfViewer({ pdfUrl, currentPage, onLoadSuccess, scrollRe
         </div>
       </div>
 
-      {/* Zoom controls — always visible on mobile (vertical), only when zoomed on desktop (horizontal) */}
+      {/* Zoom controls */}
       <div
         className={`absolute z-10 transition-opacity duration-200 ${
-          showZoomControls ? 'opacity-100' : 'opacity-100 lg:opacity-0 lg:pointer-events-none'
+          showZoomControls
+            ? 'opacity-100'
+            : 'opacity-100 lg:opacity-0 lg:pointer-events-none'
         } top-14 right-2 flex flex-col items-center gap-1 lg:top-3 lg:right-3 lg:flex-row`}
       >
         <div

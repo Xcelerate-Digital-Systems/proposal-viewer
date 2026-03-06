@@ -55,10 +55,15 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
     e.preventDefault();
     if (!selectedTemplate || !title.trim() || !clientName.trim()) return;
 
+    if (!selectedTemplate.file_path) {
+      setStatus('Template has no pages — please add pages to the template first.');
+      return;
+    }
+
     setCreating(true);
 
     try {
-      // Get current user's name
+      // ── 1. Get creator name ─────────────────────────────────────────
       const { data: sessionData } = await supabase.auth.getSession();
       let creatorName: string | null = null;
       if (sessionData?.session?.user?.id) {
@@ -70,41 +75,28 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         creatorName = member?.name || null;
       }
 
-      // 1. Build the page list from template pages
-      const mergePages = pages.map((page) => ({
-        file_path: page.file_path,
+      // ── 2. Build page_names from template pages + section headers ───
+      // This is passed to the proposal so that splitProposalPages picks
+      // up the correct labels, indents, and link metadata when it creates
+      // proposal_pages rows.
+      setStatus('Preparing pages...');
+
+      const pageNames: Array<{
+        name: string;
+        indent: number;
+        type?: 'group';
+        link_url?: string;
+        link_label?: string;
+      }> = pages.map((p) => ({
+        name: p.label,
+        indent: p.indent ?? 0,
+        ...((p as any).link_url   ? { link_url:   (p as any).link_url   } : {}),
+        ...((p as any).link_label ? { link_label: (p as any).link_label } : {}),
       }));
 
-      // 2. Generate proposal file path and merge
-      setStatus('Merging pages...');
-      const proposalFilePath = `proposals/${Date.now()}-${title.trim().replace(/\s+/g, '-').toLowerCase()}.pdf`;
-
-      const mergeRes = await fetch('/api/templates/merge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pages: mergePages, proposal_file_path: proposalFilePath }),
-      });
-
-      if (!mergeRes.ok) {
-        const errorBody = await mergeRes.text();
-        console.error('Merge API failed:', mergeRes.status, errorBody);
-        throw new Error(`Merge failed (${mergeRes.status}): ${errorBody}`);
-      }
-      const mergeData = await mergeRes.json();
-
-      // 3. Build page_names from template pages + section header groups
-      //    Start with PDF page entries from template_pages
-      const pageNames: Array<{ name: string; indent: number; type?: 'group'; link_url?: string; link_label?: string }> =
-        pages.map((p) => ({
-          name: p.label,
-          indent: p.indent ?? 0,
-          ...((p as any).link_url ? { link_url: (p as any).link_url } : {}),
-          ...((p as any).link_label ? { link_label: (p as any).link_label } : {}),
-        }));
-
-      //    Interleave section header groups from the template
-      //    section_headers are stored as { id, name, position } where
-      //    position is relative to PDF pages (0 = before first, N = after Nth, -1 = end)
+      // Interleave section header groups from the template.
+      // section_headers: { id, name, position } — position is 0-based relative
+      // to PDF pages (0 = before first, N = after Nth, -1 = end).
       const rawHeaders = selectedTemplate.section_headers;
       if (Array.isArray(rawHeaders) && rawHeaders.length > 0) {
         for (const header of rawHeaders as Array<{ id?: string; name: string; position?: number }>) {
@@ -114,7 +106,6 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           if (pos === -1) {
             pageNames.push(groupEntry);
           } else {
-            // Count non-group (PDF) entries to find the correct insert index
             let pdfCount = 0;
             let insertAt = pageNames.length;
             for (let i = 0; i < pageNames.length; i++) {
@@ -129,68 +120,86 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         }
       }
 
-      // 4. Create proposal record
+      // ── 3. Create proposal + split pages ───────────────────────────
+      // POST /api/proposals inserts the record and immediately calls
+      // splitProposalPages, which downloads selectedTemplate.file_path
+      // (the template's merged PDF) and creates proposal_pages rows.
+      // No separate merge step needed.
       setStatus('Creating proposal...');
-      const { data: newProposal, error: dbError } = await supabase.from('proposals').insert({
-        title: title.trim(),
-        client_name: clientName.trim(),
-        client_email: clientEmail.trim() || null,
-        crm_identifier: crmIdentifier.trim() || null,
-        description: description.trim() || null,
-        file_path: proposalFilePath,
-        file_size_bytes: mergeData.file_size_bytes || 0,
-        status: 'draft',
-        page_names: pageNames,
-        company_id: companyId,
-        created_by_name: creatorName,
-        prepared_by: selectedTemplate.prepared_by || creatorName,
-        prepared_by_member_id: selectedTemplate.prepared_by_member_id || null,
-        cover_subtitle: selectedTemplate.cover_subtitle || null,
-        cover_image_path: selectedTemplate.cover_image_path || null,
-        cover_button_text: selectedTemplate.cover_button_text || null,
-        cover_enabled: selectedTemplate.cover_enabled ?? true,
-        cover_bg_style: selectedTemplate.cover_bg_style || null,
-        cover_bg_color_1: selectedTemplate.cover_bg_color_1 || null,
-        cover_bg_color_2: selectedTemplate.cover_bg_color_2 || null,
-        cover_gradient_type: selectedTemplate.cover_gradient_type || null,
-        cover_gradient_angle: selectedTemplate.cover_gradient_angle ?? null,
-        cover_overlay_opacity: selectedTemplate.cover_overlay_opacity ?? null,
-        cover_text_color: selectedTemplate.cover_text_color || null,
-        cover_subtitle_color: selectedTemplate.cover_subtitle_color || null,
-        cover_button_bg: selectedTemplate.cover_button_bg || null,
-        cover_button_text_color: selectedTemplate.cover_button_text_color || null,
-        cover_show_date: selectedTemplate.cover_show_date ?? false,
-        cover_date: selectedTemplate.cover_date || null,
-        cover_show_prepared_by: selectedTemplate.cover_show_prepared_by ?? true,
-        cover_show_client_logo: selectedTemplate.cover_show_client_logo ?? false,
-        cover_show_avatar: selectedTemplate.cover_show_avatar ?? false,
-        cover_client_logo_path: selectedTemplate.cover_client_logo_path || null,
-        cover_avatar_path: selectedTemplate.cover_avatar_path || null,
-        bg_image_path: selectedTemplate.bg_image_path || null,
-        bg_image_overlay_opacity: selectedTemplate.bg_image_overlay_opacity ?? null,
-        page_orientation: selectedTemplate.page_orientation || 'auto',
-        text_page_bg_color: selectedTemplate.text_page_bg_color || null,
-        text_page_text_color: selectedTemplate.text_page_text_color || null,
-        text_page_heading_color: selectedTemplate.text_page_heading_color || null,
-        text_page_font_size: selectedTemplate.text_page_font_size || null,
-        text_page_border_enabled: selectedTemplate.text_page_border_enabled ?? null,
-        text_page_border_color: selectedTemplate.text_page_border_color || null,
-        text_page_border_radius: selectedTemplate.text_page_border_radius || null,
-        text_page_layout: selectedTemplate.text_page_layout || null,
-        toc_settings: selectedTemplate.toc_settings || null,
-        title_font_family: selectedTemplate.title_font_family || null,
-        title_font_weight: selectedTemplate.title_font_weight || null,
-        title_font_size: selectedTemplate.title_font_size || null,
-        page_num_circle_color: selectedTemplate.page_num_circle_color || null,
-        page_num_text_color: selectedTemplate.page_num_text_color || null,
-        post_accept_action: selectedTemplate.post_accept_action || null,
-        post_accept_redirect_url: selectedTemplate.post_accept_redirect_url || null,
-        post_accept_message: selectedTemplate.post_accept_message || null,
-      }).select('id').single();
 
-      if (dbError || !newProposal) throw dbError || new Error('Failed to create proposal');
+      const res = await fetch('/api/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:           title.trim(),
+          client_name:     clientName.trim(),
+          client_email:    clientEmail.trim()    || null,
+          crm_identifier:  crmIdentifier.trim()  || null,
+          description:     description.trim()    || null,
+          // file_path points to the template's merged PDF.
+          // splitProposalPages downloads it and creates per-page files.
+          // This path is retained as a legacy fallback; the viewer will
+          // prefer proposal_pages rows once they exist.
+          file_path:       selectedTemplate.file_path,
+          file_size_bytes: (selectedTemplate as any).file_size_bytes ?? 0,
+          page_names:      pageNames,
+          company_id:      companyId,
+          created_by_name: creatorName,
+          // ── Cover / design fields copied from template ──────────────
+          prepared_by:                    selectedTemplate.prepared_by || creatorName,
+          prepared_by_member_id:          selectedTemplate.prepared_by_member_id || null,
+          cover_subtitle:                 selectedTemplate.cover_subtitle || null,
+          cover_image_path:               selectedTemplate.cover_image_path || null,
+          cover_button_text:              selectedTemplate.cover_button_text || null,
+          cover_enabled:                  selectedTemplate.cover_enabled ?? true,
+          cover_bg_style:                 selectedTemplate.cover_bg_style || null,
+          cover_bg_color_1:               selectedTemplate.cover_bg_color_1 || null,
+          cover_bg_color_2:               selectedTemplate.cover_bg_color_2 || null,
+          cover_gradient_type:            selectedTemplate.cover_gradient_type || null,
+          cover_gradient_angle:           selectedTemplate.cover_gradient_angle ?? null,
+          cover_overlay_opacity:          selectedTemplate.cover_overlay_opacity ?? null,
+          cover_text_color:               selectedTemplate.cover_text_color || null,
+          cover_subtitle_color:           selectedTemplate.cover_subtitle_color || null,
+          cover_button_bg:                selectedTemplate.cover_button_bg || null,
+          cover_button_text_color:        selectedTemplate.cover_button_text_color || null,
+          cover_show_date:                selectedTemplate.cover_show_date ?? false,
+          cover_date:                     selectedTemplate.cover_date || null,
+          cover_show_prepared_by:         selectedTemplate.cover_show_prepared_by ?? true,
+          cover_show_client_logo:         selectedTemplate.cover_show_client_logo ?? false,
+          cover_show_avatar:              selectedTemplate.cover_show_avatar ?? false,
+          cover_client_logo_path:         selectedTemplate.cover_client_logo_path || null,
+          cover_avatar_path:              selectedTemplate.cover_avatar_path || null,
+          bg_image_path:                  selectedTemplate.bg_image_path || null,
+          bg_image_overlay_opacity:       selectedTemplate.bg_image_overlay_opacity ?? null,
+          page_orientation:               selectedTemplate.page_orientation || 'auto',
+          text_page_bg_color:             selectedTemplate.text_page_bg_color || null,
+          text_page_text_color:           selectedTemplate.text_page_text_color || null,
+          text_page_heading_color:        selectedTemplate.text_page_heading_color || null,
+          text_page_font_size:            selectedTemplate.text_page_font_size || null,
+          text_page_border_enabled:       selectedTemplate.text_page_border_enabled ?? null,
+          text_page_border_color:         selectedTemplate.text_page_border_color || null,
+          text_page_border_radius:        selectedTemplate.text_page_border_radius || null,
+          text_page_layout:               selectedTemplate.text_page_layout || null,
+          toc_settings:                   selectedTemplate.toc_settings || null,
+          title_font_family:              selectedTemplate.title_font_family || null,
+          title_font_weight:              selectedTemplate.title_font_weight || null,
+          title_font_size:                selectedTemplate.title_font_size || null,
+          page_num_circle_color:          selectedTemplate.page_num_circle_color || null,
+          page_num_text_color:            selectedTemplate.page_num_text_color || null,
+          post_accept_action:             selectedTemplate.post_accept_action || null,
+          post_accept_redirect_url:       selectedTemplate.post_accept_redirect_url || null,
+          post_accept_message:            selectedTemplate.post_accept_message || null,
+        }),
+      });
 
-      // 5. Copy template data (pricing, text pages, packages) to proposal
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Failed to create proposal (${res.status})`);
+      }
+
+      const newProposal = await res.json();
+
+      // ── 4. Copy template data (pricing, text pages, packages) ───────
       setStatus('Copying template data...');
       try {
         await fetch('/api/templates/copy-data', {
@@ -198,43 +207,43 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             template_id: selectedTemplate.id,
-            proposal_id: newProposal.id,
-            company_id: companyId,
+            proposal_id: newProposal.proposal_id,
+            company_id:  companyId,
           }),
         });
       } catch (err) {
-        console.error('Copy template data warning:', err);
-        // Non-fatal — proposal was already created successfully
+        console.error('Copy template data warning (non-fatal):', err);
       }
 
       setStatus('Done!');
       setTimeout(() => onSuccess(), 300);
     } catch (err: any) {
       console.error('Create from template failed:', err);
-      console.error('Error message:', err?.message);
-      console.error('Error details:', err?.details || err?.hint);
       const msg = err?.message || 'Unknown error';
       setStatus(`Failed: ${msg}`);
       setCreating(false);
     }
   };
 
-  // Template selection view
+  // ── Template selection view ──────────────────────────────────────
   if (!selectedTemplate) {
     return (
       <div>
-        <button onClick={onBack} className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-sm mb-4 transition-colors">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-sm mb-4 transition-colors"
+        >
           <ArrowLeft size={14} />
           Back
         </button>
         <h3 className="text-gray-900 font-semibold mb-4">Choose a Template</h3>
         {loading ? (
-          <div className="flex items-center justify-center py-10">
+          <div className="flex justify-center py-8">
             <Loader2 size={20} className="animate-spin text-gray-300" />
           </div>
         ) : templates.length === 0 ? (
-          <p className="text-sm text-gray-400 py-6 text-center">
-            No templates yet. Create one from the Templates page first.
+          <p className="text-sm text-gray-400 text-center py-8">
+            No templates yet. Create a template first.
           </p>
         ) : (
           <div className="space-y-2">
@@ -242,10 +251,15 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
               <button
                 key={t.id}
                 onClick={() => selectTemplate(t)}
-                className="w-full text-left p-3 rounded-lg bg-gray-50 border border-gray-200 hover:border-[#017C87]/40 transition-colors"
+                className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-all"
               >
-                <div className="font-medium text-gray-900 text-sm">{t.name}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{t.page_count} pages{t.description ? ` · ${t.description}` : ''}</div>
+                <div className="text-sm font-medium text-gray-900">{t.name}</div>
+                {t.description && (
+                  <div className="text-xs text-gray-400 mt-0.5">{t.description}</div>
+                )}
+                <div className="text-xs text-gray-300 mt-0.5">
+                  {(t as any).page_count ?? pages.length} pages
+                </div>
               </button>
             ))}
           </div>
@@ -254,60 +268,73 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
     );
   }
 
-  // Template customization + form view
+  // ── Proposal creation form ───────────────────────────────────────
   return (
     <div>
       <button
-        onClick={() => setSelectedTemplate(null)}
+        onClick={() => { setSelectedTemplate(null); setPages([]); }}
         className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-sm mb-4 transition-colors"
-        disabled={creating}
       >
         <ArrowLeft size={14} />
-        Choose different template
+        Back to templates
       </button>
 
-      <form onSubmit={handleCreate} className="space-y-4">
-        {/* Proposal details */}
-        <FormField
-          config={{ key: 'title', label: 'Proposal Title', required: true, placeholder: 'Website Redesign Proposal' }}
-          value={title}
-          onChange={setTitle}
-          disabled={creating}
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            config={{ key: 'client_name', label: 'Client Name', required: true, placeholder: 'John Smith' }}
-            value={clientName}
-            onChange={setClientName}
-            disabled={creating}
-          />
-          <FormField
-            config={{ key: 'client_email', label: 'Client Email', type: 'email', placeholder: 'john@example.com' }}
-            value={clientEmail}
-            onChange={setClientEmail}
-            disabled={creating}
-          />
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-7 h-7 rounded-lg bg-[#017C87]/10 flex items-center justify-center">
+          <Check size={13} className="text-[#017C87]" />
         </div>
+        <div>
+          <div className="text-sm font-medium text-gray-900">{selectedTemplate.name}</div>
+          <div className="text-xs text-gray-400">{pages.length} pages</div>
+        </div>
+      </div>
+
+      <form onSubmit={handleCreate} className="space-y-3">
         <FormField
-          config={{ key: 'crm_identifier', label: 'CRM Identifier', placeholder: 'e.g. GHL contact ID', optional: true }}
+          config={{ key: 'title', label: 'Proposal Title', required: true, placeholder: 'e.g. Website Redesign for Acme Co.' }}
+          value={title}
+          onChange={(v) => setTitle(v)}
+        />
+        <FormField
+          config={{ key: 'client_name', label: 'Client Name', required: true, placeholder: 'e.g. Acme Co.' }}
+          value={clientName}
+          onChange={(v) => setClientName(v)}
+        />
+        <FormField
+          config={{ key: 'client_email', label: 'Client Email', type: 'email', placeholder: 'client@example.com', optional: true }}
+          value={clientEmail}
+          onChange={(v) => setClientEmail(v)}
+        />
+        <FormField
+          config={{ key: 'crm_identifier', label: 'CRM Identifier', placeholder: 'Optional deal ID or reference', optional: true }}
           value={crmIdentifier}
-          onChange={setCrmIdentifier}
-          disabled={creating}
+          onChange={(v) => setCrmIdentifier(v)}
+        />
+        <FormField
+          config={{ key: 'description', label: 'Description', type: 'textarea', placeholder: 'Internal notes (not shown to client)', optional: true }}
+          value={description}
+          onChange={(v) => setDescription(v)}
         />
 
         {status && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            {creating && <Loader2 size={14} className="animate-spin text-[#017C87]" />}
+          <p className={`text-xs ${status.startsWith('Failed') ? 'text-red-500' : 'text-gray-400'}`}>
             {status}
-          </div>
+          </p>
         )}
 
         <button
           type="submit"
           disabled={creating || !title.trim() || !clientName.trim()}
-          className="w-full bg-[#017C87] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-[#017C87] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {creating ? 'Creating proposal...' : 'Create Proposal'}
+          {creating ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              {status || 'Creating...'}
+            </>
+          ) : (
+            'Create Proposal'
+          )}
         </button>
       </form>
     </div>

@@ -1,9 +1,10 @@
 // components/admin/page-editor/usePdfOperations.ts
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { PageNameEntry, normalizePageNames, pdfIndexToEntryIndex, supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import type { PageUrlEntry } from '@/hooks/useProposal';
 
 interface UsePdfOperationsOptions {
   proposalId: string;
@@ -52,6 +53,45 @@ export function usePdfOperations({
 
   const [processing, setProcessing] = useState(false);
   const [pdfVersion, setPdfVersion] = useState(0);
+
+  // ── Per-page signed URLs ─────────────────────────────────────────
+  // Populated once proposal_pages rows exist (post-backfill). Empty
+  // array signals legacy mode — PdfPreviewPanel falls back to filePath.
+  const [pageUrls, setPageUrls] = useState<PageUrlEntry[]>([]);
+
+  const fetchPageUrls = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({
+        entity_id: proposalId,
+        table_name: tableName,
+      });
+      const res = await fetch(`/api/proposals/page-urls?${params.toString()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      // If fallback is true, no rows exist yet — stay in legacy mode
+      if (data.fallback) {
+        setPageUrls([]);
+      } else {
+        setPageUrls(data.pages ?? []);
+      }
+    } catch {
+      // Non-fatal — legacy mode stays active
+    }
+  }, [proposalId, tableName]);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchPageUrls();
+  }, [fetchPageUrls]);
+
+  // Re-fetch after every operation that changes page content / order
+  // (pdfVersion is bumped at the end of each successful mutation)
+  useEffect(() => {
+    if (pdfVersion === 0) return; // skip initial render
+    fetchPageUrls();
+  }, [pdfVersion, fetchPageUrls]);
+
+  // ── Mutations ────────────────────────────────────────────────────
 
   const handleReplacePage = useCallback(async (pageIndex: number, file: File) => {
     await flushPendingSaves();
@@ -111,7 +151,10 @@ export function usePdfOperations({
       const result = await res.json();
       setEntries((prev) => {
         const updated = [...prev];
-        const newEntries = Array.from({ length: result.pages_inserted || 1 }, (_, idx) => ({ name: `Page ${afterPage + idx + 1}`, indent: 0 }));
+        const newEntries = Array.from(
+          { length: result.pages_inserted || 1 },
+          (_, idx) => ({ name: `Page ${afterPage + idx + 1}`, indent: 0 })
+        );
         // Find correct insertion point by skipping groups
         let entryInsertIdx: number;
         if (afterPage === 0) {
@@ -193,6 +236,7 @@ export function usePdfOperations({
   return {
     processing,
     pdfVersion,
+    pageUrls,
     handleReplacePage,
     handleInsertPage,
     handleDeletePage,

@@ -1,106 +1,113 @@
 // app/api/proposals/delete-page/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
-import { normalizePageNamesWithGroups, pdfIndexToEntryIndex, PageNameEntry } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
+/**
+ * POST /api/proposals/delete-page
+ *
+ * Deletes a single page from a proposal or document.
+ * - Removes the storage file for that page
+ * - Deletes the proposal_pages / document_pages row
+ * - Renumbers all later pages down by 1 (ascending pass, no constraint conflicts)
+ *
+ * No PDF download, no pdf-lib, no merged-file rewrite.
+ *
+ * Body:
+ *   proposal_id  string  — UUID of the proposal or document
+ *   page_number  number  — 1-based page number to delete
+ *   table_name   string  — 'proposals' | 'documents' (default: 'proposals')
+ *
+ * Response:
+ *   { success: true, deleted_page: number, total_pages: number }
+ */
 export async function POST(req: NextRequest) {
   try {
     const { proposal_id, page_number, table_name } = await req.json();
-    const tableName = table_name === 'documents' ? 'documents' : 'proposals';
+    const entityType = table_name === 'documents' ? 'document' : 'proposal';
+    const pagesTable = entityType === 'document' ? 'document_pages' : 'proposal_pages';
+    const idColumn   = entityType === 'document' ? 'document_id'    : 'proposal_id';
 
     if (!proposal_id || !page_number) {
       return NextResponse.json(
         { error: 'Missing proposal_id or page_number' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const supabase = createServiceClient();
 
-    // Get record to find file_path and current page_names
-    const { data: proposal, error: proposalError } = await supabase
-      .from(tableName)
-      .select('id, file_path, page_names')
-      .eq('id', proposal_id)
-      .single();
+    // ── Fetch total page count ────────────────────────────────────────────
+    const { data: allPages, error: countError } = await supabase
+      .from(pagesTable)
+      .select('id, page_number, file_path')
+      .eq(idColumn, proposal_id)
+      .order('page_number', { ascending: true });
 
-    if (proposalError || !proposal) {
-      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+    if (countError || !allPages) {
+      return NextResponse.json({ error: 'Failed to fetch pages' }, { status: 500 });
     }
 
-    // Download existing proposal PDF
-    const { data: existingFile, error: downloadError } = await supabase.storage
-      .from('proposals')
-      .download(proposal.file_path);
-
-    if (downloadError || !existingFile) {
-      return NextResponse.json({ error: 'Failed to download existing PDF' }, { status: 500 });
-    }
-
-    const existingBytes = await existingFile.arrayBuffer();
-    const existingDoc = await PDFDocument.load(existingBytes);
-    const totalPages = existingDoc.getPageCount();
+    const totalPages = allPages.length;
 
     if (page_number < 1 || page_number > totalPages) {
       return NextResponse.json(
-        { error: `Invalid page number. PDF has ${totalPages} pages.` },
-        { status: 400 }
+        { error: `Invalid page number. ${entityType} has ${totalPages} pages.` },
+        { status: 400 },
       );
     }
 
     if (totalPages <= 1) {
       return NextResponse.json(
         { error: 'Cannot delete the only remaining page.' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Remove the page (0-indexed)
-    existingDoc.removePage(page_number - 1);
+    // ── Find the target page row ──────────────────────────────────────────
+    const targetPage = allPages.find((p) => p.page_number === page_number);
+    if (!targetPage) {
+      return NextResponse.json({ error: 'Page not found' }, { status: 404 });
+    }
 
-    // Save modified PDF
-    const modifiedBytes = await existingDoc.save();
-
-    // Re-upload, overwriting original
-    const { error: uploadError } = await supabase.storage
+    // ── Delete storage file (fire-and-forget — don't block on failure) ────
+    // File may have already been cleaned up; a missing file is not fatal.
+    supabase.storage
       .from('proposals')
-      .upload(proposal.file_path, modifiedBytes, {
-        contentType: 'application/pdf',
-        upsert: true,
-      });
+      .remove([targetPage.file_path])
+      .catch((err) =>
+        console.error(`Non-fatal: failed to delete storage file ${targetPage.file_path}:`, err),
+      );
 
-    if (uploadError) {
-      return NextResponse.json({ error: 'Failed to upload modified PDF' }, { status: 500 });
+    // ── Delete the page row ───────────────────────────────────────────────
+    const { error: deleteError } = await supabase
+      .from(pagesTable)
+      .delete()
+      .eq('id', targetPage.id);
+
+    if (deleteError) {
+      return NextResponse.json({ error: 'Failed to delete page record' }, { status: 500 });
     }
 
-    // Update page_names array: remove the entry at the deleted position
-    // Use group-aware normalization to preserve section headers
-    const currentNames = normalizePageNamesWithGroups(proposal.page_names, totalPages);
+    // ── Renumber later pages down by 1 ────────────────────────────────────
+    // Process in ascending page_number order so each decrement frees the
+    // slot below it — no unique constraint conflicts without a two-pass needed.
+    const laterPages = allPages
+      .filter((p) => p.page_number > page_number)
+      .sort((a, b) => a.page_number - b.page_number);
 
-    // Find the correct entry index (PDF page_number is 1-indexed, pdfIndex is 0-indexed)
-    const entryIdx = pdfIndexToEntryIndex(currentNames, page_number - 1);
-    if (entryIdx >= 0) {
-      currentNames.splice(entryIdx, 1);
+    for (const page of laterPages) {
+      await supabase
+        .from(pagesTable)
+        .update({ page_number: page.page_number - 1 })
+        .eq('id', page.id);
     }
-
-    const newTotalPages = existingDoc.getPageCount();
-
-    // Update record
-    await supabase
-      .from(tableName)
-      .update({
-        file_size_bytes: modifiedBytes.byteLength,
-        page_names: currentNames,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', proposal_id);
 
     return NextResponse.json({
-      success: true,
+      success:      true,
       deleted_page: page_number,
-      total_pages: newTotalPages,
-      file_size_bytes: modifiedBytes.byteLength,
+      total_pages:  totalPages - 1,
     });
   } catch (err) {
     console.error('Delete page error:', err);

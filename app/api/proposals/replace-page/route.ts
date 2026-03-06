@@ -1,103 +1,106 @@
 // app/api/proposals/replace-page/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
 
+export const dynamic = 'force-dynamic';
+
+/**
+ * POST /api/proposals/replace-page
+ *
+ * Replaces a single page in a proposal or document.
+ *
+ * The client has already uploaded the replacement PDF to a temp path in
+ * Supabase Storage (via uploadTempPdf in usePdfOperations). This route:
+ *   1. Finds the proposal_pages / document_pages row for the target page
+ *   2. Deletes the old storage file (fire-and-forget)
+ *   3. Updates file_path on the row to point to the temp file
+ *      (the temp file becomes the permanent file — no copy needed)
+ *
+ * No PDF download, no pdf-lib, no merged-file rewrite.
+ *
+ * Body:
+ *   proposal_id  string  — UUID of the proposal or document
+ *   page_number  number  — 1-based page number to replace
+ *   table_name   string  — 'proposals' | 'documents' (default: 'proposals')
+ *   temp_path    string  — storage path of the replacement file
+ *                          (already uploaded by the client)
+ *
+ * Response:
+ *   { success: true, page_number: number, total_pages: number }
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { proposal_id: proposalId, table_name: tableNameRaw, page_number, temp_path } = body;
-    const tableName = tableNameRaw === 'documents' ? 'documents' : 'proposals';
+    const {
+      proposal_id: proposalId,
+      table_name: tableNameRaw,
+      page_number,
+      temp_path,
+    } = body;
+
+    const entityType = tableNameRaw === 'documents' ? 'document' : 'proposal';
+    const pagesTable = entityType === 'document' ? 'document_pages' : 'proposal_pages';
+    const idColumn   = entityType === 'document' ? 'document_id'    : 'proposal_id';
     const pageNumber = parseInt(page_number);
 
     if (!proposalId || !pageNumber || !temp_path) {
-      return NextResponse.json({ error: 'Missing proposal_id, page_number, or temp_path' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing proposal_id, page_number, or temp_path' },
+        { status: 400 },
+      );
     }
 
     const supabase = createServiceClient();
 
-    // Get record to find file_path
-    const { data: proposal, error: proposalError } = await supabase
-      .from(tableName)
-      .select('id, file_path')
-      .eq('id', proposalId)
+    // ── Fetch the target page row ─────────────────────────────────────────
+    const { data: targetPage, error: pageError } = await supabase
+      .from(pagesTable)
+      .select('id, page_number, file_path')
+      .eq(idColumn, proposalId)
+      .eq('page_number', pageNumber)
       .single();
 
-    if (proposalError || !proposal) {
-      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+    if (pageError || !targetPage) {
+      return NextResponse.json({ error: 'Page not found' }, { status: 404 });
     }
 
-    // Download existing proposal PDF
-    const { data: existingFile, error: downloadError } = await supabase.storage
-      .from('proposals')
-      .download(proposal.file_path);
+    const oldFilePath = targetPage.file_path;
 
-    if (downloadError || !existingFile) {
-      return NextResponse.json({ error: 'Failed to download existing PDF' }, { status: 500 });
+    // ── Update the row to point to the new file ───────────────────────────
+    // The temp file is already in the 'proposals' bucket — we just update
+    // the DB reference. The temp path becomes the permanent path.
+    const { error: updateError } = await supabase
+      .from(pagesTable)
+      .update({ file_path: temp_path })
+      .eq('id', targetPage.id);
+
+    if (updateError) {
+      // Clean up the temp file we'll never use now (fire-and-forget)
+      supabase.storage.from('proposals').remove([temp_path]).catch(() => {});
+      return NextResponse.json({ error: 'Failed to update page record' }, { status: 500 });
     }
 
-    // Download the replacement page from temp storage
-    const { data: tempFile, error: tempError } = await supabase.storage
-      .from('proposals')
-      .download(temp_path);
-
-    if (tempError || !tempFile) {
-      return NextResponse.json({ error: 'Failed to download replacement page from temp storage' }, { status: 500 });
+    // ── Delete the old storage file ───────────────────────────────────────
+    // Fire-and-forget: a missing or already-deleted file is not fatal.
+    if (oldFilePath && oldFilePath !== temp_path) {
+      supabase.storage
+        .from('proposals')
+        .remove([oldFilePath])
+        .catch((err) =>
+          console.error(`Non-fatal: failed to delete old page file ${oldFilePath}:`, err),
+        );
     }
 
-    const existingBytes = await existingFile.arrayBuffer();
-    const existingDoc = await PDFDocument.load(existingBytes);
-    const totalPages = existingDoc.getPageCount();
-
-    if (pageNumber < 1 || pageNumber > totalPages) {
-      return NextResponse.json(
-        { error: `Invalid page number. PDF has ${totalPages} pages.` },
-        { status: 400 }
-      );
-    }
-
-    // Extract first page from replacement PDF
-    const uploadedBytes = await tempFile.arrayBuffer();
-    const uploadedDoc = await PDFDocument.load(uploadedBytes);
-    const [newPage] = await existingDoc.copyPages(uploadedDoc, [0]);
-
-    // Remove old page and insert new one at the same position (0-indexed)
-    const pageIndex = pageNumber - 1;
-    existingDoc.removePage(pageIndex);
-    existingDoc.insertPage(pageIndex, newPage);
-
-    // Save modified PDF
-    const modifiedBytes = await existingDoc.save();
-
-    // Re-upload, overwriting original
-    const { error: uploadError } = await supabase.storage
-      .from('proposals')
-      .upload(proposal.file_path, modifiedBytes, {
-        contentType: 'application/pdf',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      return NextResponse.json({ error: 'Failed to upload modified PDF' }, { status: 500 });
-    }
-
-    // Update file size
-    await supabase
-      .from(tableName)
-      .update({
-        file_size_bytes: modifiedBytes.byteLength,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', proposalId);
-
-    // Clean up temp file (fire-and-forget — don't block the response)
-    supabase.storage.from('proposals').remove([temp_path]).catch(() => {});
+    // ── Return total page count ───────────────────────────────────────────
+    const { count } = await supabase
+      .from(pagesTable)
+      .select('*', { count: 'exact', head: true })
+      .eq(idColumn, proposalId);
 
     return NextResponse.json({
-      success: true,
+      success:     true,
       page_number: pageNumber,
-      total_pages: totalPages,
-      file_size_bytes: modifiedBytes.byteLength,
+      total_pages: count ?? 0,
     });
   } catch (err) {
     console.error('Replace page error:', err);
