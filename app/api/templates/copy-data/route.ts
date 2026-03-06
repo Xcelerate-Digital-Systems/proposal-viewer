@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const results = { pricing: false, text_pages: 0, packages: false };
 
+    // Maps from template entity IDs → new proposal entity IDs.
+    // Used at the end to remap toc_settings.excluded_items, which is copied
+    // from the template before this route runs (so it still contains template IDs).
+    const textPageIdMap = new Map<string, string>();
+    const packagesIdMap = new Map<string, string>();
+
     // ── 1. Copy template_pricing → proposal_pricing ─────────────────
     try {
       const { data: templatePricing } = await supabase
@@ -43,7 +49,6 @@ export async function POST(req: NextRequest) {
           ...pricingFields,
           proposal_id,
           company_id,
-          // Add proposal_date if field exists on proposal_pricing but not template_pricing
           proposal_date: new Date().toISOString().split('T')[0],
           created_at: now,
           updated_at: now,
@@ -64,25 +69,39 @@ export async function POST(req: NextRequest) {
         .order('sort_order', { ascending: true });
 
       if (templateTextPages && templateTextPages.length > 0) {
-        const textPageInserts = templateTextPages
-          .filter((tp) => tp.enabled)
-          .map((tp) => {
-            const {
-              id: _id, template_id: _tid, created_at: _ca, updated_at: _ua,
-              ...pageFields
-            } = tp;
-            return {
-              ...pageFields,
-              proposal_id,
-              company_id,
-              created_at: now,
-              updated_at: now,
-            };
-          });
+        const enabledTextPages = templateTextPages.filter((tp) => tp.enabled);
+
+        const textPageInserts = enabledTextPages.map((tp) => {
+          const {
+            id: _id, template_id: _tid, created_at: _ca, updated_at: _ua,
+            ...pageFields
+          } = tp;
+          return {
+            ...pageFields,
+            proposal_id,
+            company_id,
+            created_at: now,
+            updated_at: now,
+          };
+        });
 
         if (textPageInserts.length > 0) {
-          await supabase.from('proposal_text_pages').insert(textPageInserts);
+          // Use .select('id') so we can remap toc_settings.excluded_items below.
+          // Supabase returns rows in insertion order, so index i → enabledTextPages[i].
+          const { data: insertedTextPages } = await supabase
+            .from('proposal_text_pages')
+            .insert(textPageInserts)
+            .select('id');
+
           results.text_pages = textPageInserts.length;
+
+          if (insertedTextPages) {
+            enabledTextPages.forEach((tp, i) => {
+              if (insertedTextPages[i]) {
+                textPageIdMap.set(tp.id, insertedTextPages[i].id);
+              }
+            });
+          }
         }
       }
     } catch (err) {
@@ -90,6 +109,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 3. Copy template_packages → proposal_packages ───────────────
+    // position and sort_order are preserved via ...packagesFields spread,
+    // so package page placement carries over exactly from the template.
     try {
       const { data: templatePackages } = await supabase
         .from('template_packages')
@@ -98,29 +119,84 @@ export async function POST(req: NextRequest) {
         .order('sort_order', { ascending: true });
 
       if (templatePackages && templatePackages.length > 0) {
-        const packagesInserts = templatePackages
-          .filter((pkg) => pkg.enabled)
-          .map((pkg) => {
-            const {
-              id: _id, template_id: _tid, created_at: _ca, updated_at: _ua,
-              ...packagesFields
-            } = pkg;
-            return {
-              ...packagesFields,
-              proposal_id,
-              company_id,
-              created_at: now,
-              updated_at: now,
-            };
-          });
+        const enabledPackages = templatePackages.filter((pkg) => pkg.enabled);
+
+        const packagesInserts = enabledPackages.map((pkg) => {
+          const {
+            id: _id, template_id: _tid, created_at: _ca, updated_at: _ua,
+            ...packagesFields
+          } = pkg;
+          return {
+            ...packagesFields,
+            proposal_id,
+            company_id,
+            created_at: now,
+            updated_at: now,
+          };
+        });
 
         if (packagesInserts.length > 0) {
-          await supabase.from('proposal_packages').insert(packagesInserts);
+          // Use .select('id') so we can remap toc_settings.excluded_items below.
+          const { data: insertedPackages } = await supabase
+            .from('proposal_packages')
+            .insert(packagesInserts)
+            .select('id');
+
           results.packages = true;
+
+          if (insertedPackages) {
+            enabledPackages.forEach((pkg, i) => {
+              if (insertedPackages[i]) {
+                packagesIdMap.set(pkg.id, insertedPackages[i].id);
+              }
+            });
+          }
         }
       }
     } catch (err) {
       console.error('Copy packages error (non-fatal):', err);
+    }
+
+    // ── 4. Remap toc_settings.excluded_items ────────────────────────
+    // toc_settings was written to the proposal from the template BEFORE this
+    // route ran, so excluded_items still contains template-scoped IDs like
+    // "text:template-uuid" and "packages:template-uuid". Remap them to the
+    // new proposal IDs captured above.
+    // "pdf:N", "pricing", and "group:name" identifiers are position-based /
+    // static and do not need remapping.
+    if (textPageIdMap.size > 0 || packagesIdMap.size > 0) {
+      try {
+        const { data: proposalRow } = await supabase
+          .from('proposals')
+          .select('toc_settings')
+          .eq('id', proposal_id)
+          .single();
+
+        const toc = proposalRow?.toc_settings as Record<string, unknown> | null;
+
+        if (toc && Array.isArray(toc.excluded_items) && toc.excluded_items.length > 0) {
+          const remapped = (toc.excluded_items as string[]).map((item) => {
+            if (item.startsWith('text:')) {
+              const oldId = item.slice('text:'.length);
+              const newId = textPageIdMap.get(oldId);
+              return newId ? `text:${newId}` : item;
+            }
+            if (item.startsWith('packages:')) {
+              const oldId = item.slice('packages:'.length);
+              const newId = packagesIdMap.get(oldId);
+              return newId ? `packages:${newId}` : item;
+            }
+            return item;
+          });
+
+          await supabase
+            .from('proposals')
+            .update({ toc_settings: { ...toc, excluded_items: remapped } })
+            .eq('id', proposal_id);
+        }
+      } catch (err) {
+        console.error('Remap toc excluded_items error (non-fatal):', err);
+      }
     }
 
     return NextResponse.json({ success: true, copied: results });
