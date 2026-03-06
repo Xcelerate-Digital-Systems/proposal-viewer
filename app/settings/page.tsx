@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import {
   Bell, Eye, CheckCircle2, MessageSquare, CheckCheck,
   Loader2, Settings, Webhook, Trash2, Copy, Check,
-  EyeOff, RefreshCw, Palette, AlertCircle,
+  EyeOff, RefreshCw, Palette, AlertCircle, Send,
   type LucideIcon,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -411,6 +411,7 @@ function WebhookEventCard({
   const [secret, setSecret] = useState(endpoint?.secret || '');
   const [enabled, setEnabled] = useState(endpoint?.enabled ?? true);
   const [saving, setSaving] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -431,6 +432,30 @@ function WebhookEventCard({
     navigator.clipboard.writeText(secret);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSendTest = async () => {
+    if (!endpoint) return;
+    setSendingTest(true);
+    try {
+      const res = await fetch('/api/webhooks/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint_id: endpoint.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        toast.success(`Test payload sent — server responded ${data.status}`);
+      } else if (res.ok && !data.ok) {
+        toast.error(`Endpoint returned ${data.status}`);
+      } else {
+        toast.error(data.error || 'Failed to send test payload');
+      }
+    } catch {
+      toast.error('Network error sending test payload');
+    } finally {
+      setSendingTest(false);
+    }
   };
 
   const handleSave = async () => {
@@ -610,6 +635,20 @@ function WebhookEventCard({
             </button>
           </div>
         </div>
+
+        {hasEndpoint && enabled && !hasChanges && (
+          <div className="flex justify-end pt-1">
+            <button
+              onClick={handleSendTest}
+              disabled={sendingTest}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:text-[#017C87] hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-colors disabled:opacity-50"
+              title="Send a sample payload to this endpoint"
+            >
+              {sendingTest ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+              Send test
+            </button>
+          </div>
+        )}
 
         {hasChanges && hasUrl && (
           <div className="flex justify-end pt-1">
