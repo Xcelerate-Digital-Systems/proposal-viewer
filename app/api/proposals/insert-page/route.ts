@@ -2,20 +2,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
-import { normalizePageNamesWithGroups, pdfIndexToEntryIndex, PageNameEntry } from '@/lib/supabase';
+import { normalizePageNamesWithGroups, pdfIndexToEntryIndex } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const proposalId = formData.get('proposal_id') as string;
-    const tableNameRaw = formData.get('table_name') as string;
+    const body = await req.json();
+    const { proposal_id: proposalId, table_name: tableNameRaw, after_page, temp_path } = body;
     const tableName = tableNameRaw === 'documents' ? 'documents' : 'proposals';
-    const afterPage = parseInt(formData.get('after_page') as string); // 1-indexed, 0 = insert at start
-    const file = formData.get('file') as File;
+    const afterPage = parseInt(after_page);
 
-    if (!proposalId || isNaN(afterPage) || !file) {
+    if (!proposalId || isNaN(afterPage) || !temp_path) {
       return NextResponse.json(
-        { error: 'Missing proposal_id, after_page, or file' },
+        { error: 'Missing proposal_id, after_page, or temp_path' },
         { status: 400 }
       );
     }
@@ -42,6 +40,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to download existing PDF' }, { status: 500 });
     }
 
+    // Download the new page from temp storage
+    const { data: tempFile, error: tempError } = await supabase.storage
+      .from('proposals')
+      .download(temp_path);
+
+    if (tempError || !tempFile) {
+      return NextResponse.json({ error: 'Failed to download new page from temp storage' }, { status: 500 });
+    }
+
     const existingBytes = await existingFile.arrayBuffer();
     const existingDoc = await PDFDocument.load(existingBytes);
     const totalPages = existingDoc.getPageCount();
@@ -53,16 +60,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Load uploaded PDF and copy its first page
-    const uploadedBytes = await file.arrayBuffer();
+    // Load uploaded PDF and copy all its pages (supports multi-page inserts)
+    const uploadedBytes = await tempFile.arrayBuffer();
     const uploadedDoc = await PDFDocument.load(uploadedBytes);
     const uploadedPageCount = uploadedDoc.getPageCount();
 
-    // Copy all pages from uploaded PDF (supports multi-page inserts)
     const pageIndices = Array.from({ length: uploadedPageCount }, (_, i) => i);
     const copiedPages = await existingDoc.copyPages(uploadedDoc, pageIndices);
 
-    // Insert pages at the correct position (afterPage is 1-indexed, so insertIndex = afterPage)
+    // Insert pages at the correct position
     const insertIndex = afterPage;
     copiedPages.forEach((page, i) => {
       existingDoc.insertPage(insertIndex + i, page);
@@ -83,23 +89,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload modified PDF' }, { status: 500 });
     }
 
-    // Update page_names array: insert default entries for the new pages
-    // Use group-aware normalization to preserve section headers
+    // Update page_names array preserving group entries
     const currentNames = normalizePageNamesWithGroups(proposal.page_names, totalPages);
 
-    // Find the correct insertion point in the entries array
-    // afterPage is a PDF position (0 = before first, N = after Nth PDF page)
     let entryInsertIdx: number;
     if (afterPage === 0) {
-      // Insert at the very start (before any entries including groups)
       entryInsertIdx = 0;
     } else {
-      // Find the entry index of the PDF page at position (afterPage - 1), then insert after it
       const prevEntryIdx = pdfIndexToEntryIndex(currentNames, afterPage - 1);
       entryInsertIdx = prevEntryIdx >= 0 ? prevEntryIdx + 1 : currentNames.length;
     }
 
-    // Insert new entries at the correct position
     const newEntries = Array.from({ length: uploadedPageCount }, (_, i) => ({
       name: `Page ${afterPage + i + 1}`,
       indent: 0,
@@ -108,7 +108,6 @@ export async function POST(req: NextRequest) {
 
     const newTotalPages = existingDoc.getPageCount();
 
-    // Update record
     await supabase
       .from(tableName)
       .update({
@@ -117,6 +116,9 @@ export async function POST(req: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', proposalId);
+
+    // Clean up temp file (fire-and-forget)
+    supabase.storage.from('proposals').remove([temp_path]).catch(() => {});
 
     return NextResponse.json({
       success: true,

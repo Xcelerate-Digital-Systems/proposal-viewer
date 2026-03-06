@@ -5,15 +5,13 @@ import { createServiceClient } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const proposalId = formData.get('proposal_id') as string;
-    const tableNameRaw = formData.get('table_name') as string;
+    const body = await req.json();
+    const { proposal_id: proposalId, table_name: tableNameRaw, page_number, temp_path } = body;
     const tableName = tableNameRaw === 'documents' ? 'documents' : 'proposals';
-    const pageNumber = parseInt(formData.get('page_number') as string); // 1-indexed
-    const file = formData.get('file') as File;
+    const pageNumber = parseInt(page_number);
 
-    if (!proposalId || !pageNumber || !file) {
-      return NextResponse.json({ error: 'Missing proposal_id, page_number, or file' }, { status: 400 });
+    if (!proposalId || !pageNumber || !temp_path) {
+      return NextResponse.json({ error: 'Missing proposal_id, page_number, or temp_path' }, { status: 400 });
     }
 
     const supabase = createServiceClient();
@@ -38,6 +36,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to download existing PDF' }, { status: 500 });
     }
 
+    // Download the replacement page from temp storage
+    const { data: tempFile, error: tempError } = await supabase.storage
+      .from('proposals')
+      .download(temp_path);
+
+    if (tempError || !tempFile) {
+      return NextResponse.json({ error: 'Failed to download replacement page from temp storage' }, { status: 500 });
+    }
+
     const existingBytes = await existingFile.arrayBuffer();
     const existingDoc = await PDFDocument.load(existingBytes);
     const totalPages = existingDoc.getPageCount();
@@ -49,8 +56,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Extract first page from uploaded PDF
-    const uploadedBytes = await file.arrayBuffer();
+    // Extract first page from replacement PDF
+    const uploadedBytes = await tempFile.arrayBuffer();
     const uploadedDoc = await PDFDocument.load(uploadedBytes);
     const [newPage] = await existingDoc.copyPages(uploadedDoc, [0]);
 
@@ -82,6 +89,9 @@ export async function POST(req: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', proposalId);
+
+    // Clean up temp file (fire-and-forget — don't block the response)
+    supabase.storage.from('proposals').remove([temp_path]).catch(() => {});
 
     return NextResponse.json({
       success: true,

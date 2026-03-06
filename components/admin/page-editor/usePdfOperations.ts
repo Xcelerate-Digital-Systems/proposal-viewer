@@ -1,7 +1,7 @@
 // components/admin/page-editor/usePdfOperations.ts
 
 import { useState, useCallback } from 'react';
-import { PageNameEntry, normalizePageNames, pdfIndexToEntryIndex } from '@/lib/supabase';
+import { PageNameEntry, normalizePageNames, pdfIndexToEntryIndex, supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 
@@ -17,6 +17,21 @@ interface UsePdfOperationsOptions {
   setSelectedId: (id: string) => void;
   flushPendingSaves: () => Promise<void>;
   remapSaveStatus: (newPageOrder: number[]) => void;
+}
+
+/**
+ * Upload a file directly to Supabase Storage (temp bucket path) from the client,
+ * bypassing Vercel's 4.5 MB serverless body limit.
+ * Returns the temp storage path, or throws on failure.
+ */
+async function uploadTempPdf(file: File): Promise<string> {
+  const ext = file.name.endsWith('.pdf') ? '.pdf' : '';
+  const tempPath = `temp/${crypto.randomUUID()}${ext}`;
+  const { error } = await supabase.storage
+    .from('proposals')
+    .upload(tempPath, file, { contentType: 'application/pdf', upsert: false });
+  if (error) throw new Error(`Temp upload failed: ${error.message}`);
+  return tempPath;
 }
 
 export function usePdfOperations({
@@ -41,30 +56,58 @@ export function usePdfOperations({
   const handleReplacePage = useCallback(async (pageIndex: number, file: File) => {
     await flushPendingSaves();
     setProcessing(true);
+    let tempPath: string | null = null;
     try {
-      const formData = new FormData();
-      formData.append('proposal_id', proposalId);
-      formData.append('table_name', tableName);
-      formData.append('page_number', (pageIndex + 1).toString());
-      formData.append('file', file);
-      const res = await fetch('/api/proposals/replace-page', { method: 'POST', body: formData });
-      if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed to replace page'); }
-      else { toast.success(`Page ${pageIndex + 1} replaced`); setPdfVersion((v) => v + 1); }
-    } catch { toast.error('Failed to replace page'); }
+      // Upload directly to Supabase Storage to avoid Vercel payload limit
+      tempPath = await uploadTempPdf(file);
+
+      const res = await fetch('/api/proposals/replace-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          proposal_id: proposalId,
+          table_name: tableName,
+          page_number: pageIndex + 1,
+          temp_path: tempPath,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to replace page');
+      } else {
+        toast.success(`Page ${pageIndex + 1} replaced`);
+        setPdfVersion((v) => v + 1);
+      }
+    } catch {
+      toast.error('Failed to replace page');
+    }
     setProcessing(false);
   }, [proposalId, tableName, flushPendingSaves, toast]);
 
   const handleInsertPage = useCallback(async (afterPage: number, file: File) => {
     await flushPendingSaves();
     setProcessing(true);
+    let tempPath: string | null = null;
     try {
-      const formData = new FormData();
-      formData.append('proposal_id', proposalId);
-      formData.append('table_name', tableName);
-      formData.append('after_page', afterPage.toString());
-      formData.append('file', file);
-      const res = await fetch('/api/proposals/insert-page', { method: 'POST', body: formData });
-      if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed to insert page'); setProcessing(false); return; }
+      // Upload directly to Supabase Storage to avoid Vercel payload limit
+      tempPath = await uploadTempPdf(file);
+
+      const res = await fetch('/api/proposals/insert-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          proposal_id: proposalId,
+          table_name: tableName,
+          after_page: afterPage,
+          temp_path: tempPath,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to insert page');
+        setProcessing(false);
+        return;
+      }
       const result = await res.json();
       setEntries((prev) => {
         const updated = [...prev];
@@ -84,7 +127,9 @@ export function usePdfOperations({
       setSelectedId(`pdf-${afterPage}`);
       toast.success('Page inserted');
       setPdfVersion((v) => v + 1);
-    } catch { toast.error('Failed to insert page'); }
+    } catch {
+      toast.error('Failed to insert page');
+    }
     setProcessing(false);
   }, [proposalId, tableName, flushPendingSaves, setEntries, setPageCount, setSelectedId, toast]);
 
