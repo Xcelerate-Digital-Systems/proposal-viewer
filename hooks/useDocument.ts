@@ -266,9 +266,9 @@ export function useDocument(token: string) {
             if (doc.file_path) {
               const { data: urlData } = await supabase.storage
                 .from('proposals')
-                .createSignedUrl(doc.file_path, 3600);
+                .createSignedUrl(doc.file_path, 2592000);
               if (urlData?.signedUrl) {
-                setPdfUrl(urlData.signedUrl + '&v=' + Date.now());
+                setPdfUrl(urlData.signedUrl);
               }
             }
           } else {
@@ -283,9 +283,9 @@ export function useDocument(token: string) {
           if (doc.file_path) {
             const { data: urlData } = await supabase.storage
               .from('proposals')
-              .createSignedUrl(doc.file_path, 3600);
+              .createSignedUrl(doc.file_path, 2592000);
             if (urlData?.signedUrl) {
-              setPdfUrl(urlData.signedUrl + '&v=' + Date.now());
+              setPdfUrl(urlData.signedUrl);
             }
           }
         }
@@ -294,9 +294,9 @@ export function useDocument(token: string) {
         if (doc.file_path) {
           const { data: urlData } = await supabase.storage
             .from('proposals')
-            .createSignedUrl(doc.file_path, 3600);
+            .createSignedUrl(doc.file_path, 2592000);
           if (urlData?.signedUrl) {
-            setPdfUrl(urlData.signedUrl + '&v=' + Date.now());
+            setPdfUrl(urlData.signedUrl);
           }
         }
       }

@@ -5,9 +5,10 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors, } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove, } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Check, Loader2, Plus, DollarSign, Package, FileText, FolderOpen } from 'lucide-react';
+import { Check, Loader2, Plus, DollarSign, Package, FileText, FolderOpen, List } from 'lucide-react';
 import { PageEditorProps, UnifiedItem } from './pageEditorTypes';
-import { PageOrderEntry } from '@/lib/supabase';
+import { PageOrderEntry, TocSettings, DEFAULT_TOC_SETTINGS, parseTocSettings } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { usePageEditorState } from './usePageEditorState';
 import { usePricingState } from './usePricingState';
 import { useTextPagesState } from './useTextPagesState';
@@ -22,6 +23,7 @@ import TextPagePreviewPanel from './TextPagePreviewPanel';
 import { usePackagesState } from './usePackagesState';
 import SortablePackagesRow from './SortablePackagesRow';
 import PackagesPreviewPanel from './PackagesPreviewPanel';
+import SortableTocRow from './SortableTocRow';
 import InsertPageMenu from './InsertPageMenu';
 
 export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel, tableName = 'proposals' }: PageEditorProps) {
@@ -31,7 +33,25 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
   const [isReordering, setIsReordering] = useState(false);
   const [pageOrderVersion, setPageOrderVersion] = useState(0);
 
+  // TOC settings — fetched from DB so we can show/position it in the editor list
+  const [tocSettings, setTocSettings] = useState<TocSettings>(DEFAULT_TOC_SETTINGS);
+  const [tocLoaded, setTocLoaded] = useState(false);
+
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Fetch toc_settings so we can show the TOC as a row in the page list
+  useEffect(() => {
+    const table = tableName === 'documents' ? 'documents' : 'proposals';
+    supabase
+      .from(table)
+      .select('toc_settings')
+      .eq('id', proposalId)
+      .single()
+      .then(({ data }) => {
+        if (data) setTocSettings(parseTocSettings(data.toc_settings));
+        setTocLoaded(true);
+      });
+  }, [proposalId, tableName]);
 
   // Hooks
   const {
@@ -66,10 +86,18 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     addPackagesPage, removePackagesPage,
   } = usePackagesState(proposalId);
 
+  // Save updated TOC position back to the entity's toc_settings JSONB
+  const saveTocPosition = useCallback(async (position: number) => {
+    const table = tableName === 'documents' ? 'documents' : 'proposals';
+    const updated: TocSettings = { ...tocSettings, position };
+    setTocSettings(updated);
+    await supabase.from(table).update({ toc_settings: updated }).eq('id', proposalId);
+  }, [proposalId, tableName, tocSettings]);
+
   const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
 
   const {
-    processing, pdfVersion,
+    processing, pdfVersion, pageUrls,
     handleReplacePage, handleInsertPage, handleDeletePage, handleReorder,
   } = usePdfOperations({
     proposalId, tableName, initialPageNames, entries, setEntries,
@@ -159,10 +187,26 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       }
     }
 
+    // Insert TOC page at its position when enabled
+    if (tocSettings.enabled) {
+      const tocPosition = tocSettings.position;
+      let pdfCount = 0;
+      let insertIdx = items.length;
+      if (tocPosition >= 0) {
+        for (let i = 0; i < items.length; i++) {
+          if (pdfCount >= tocPosition) { insertIdx = i; break; }
+          if (items[i].type === 'pdf') pdfCount++;
+          insertIdx = i + 1;
+        }
+      }
+      items.splice(insertIdx, 0, { id: 'toc', type: 'toc', pdfIndex: -1 });
+    }
+
     return items;
-  }, [entries, pricingExists, pricingForm.enabled, pricingPosition, packagesPages, textPages]);
+  }, [entries, pricingExists, pricingForm.enabled, pricingPosition, packagesPages, textPages, tocSettings]);
 
   const selectedIsPricing = selectedId === 'pricing';
+  const selectedIsToc = selectedId === 'toc';
   const selectedIsPackages = selectedId.startsWith('packages-');
   const selectedPackagesId = selectedIsPackages ? selectedId.replace('packages-', '') : null;
   const selectedPackagesPage = selectedPackagesId ? packagesPages.find((p) => p.id === selectedPackagesId) ?? null : null;
@@ -339,6 +383,18 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         }
       }
 
+      // Update TOC position if it was dragged
+      if (tocSettings.enabled) {
+        const tocIdx = reordered.findIndex((i) => i.id === 'toc');
+        if (tocIdx !== -1) {
+          const isLast = tocIdx === reordered.length - 1;
+          const newPos = isLast ? -1 : countPdfBefore(tocIdx);
+          if (newPos !== tocSettings.position) {
+            saveTocPosition(newPos);
+          }
+        }
+      }
+
       // Rebuild entries array from reordered items
       const newEntries: typeof entries = [];
       for (const item of reordered) {
@@ -442,6 +498,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
             {textPages.filter((tp) => tp.enabled).length > 0
               ? ` + ${textPages.filter((tp) => tp.enabled).length} text`
               : ''}
+            {tocSettings.enabled ? ' + contents' : ''}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -464,7 +521,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       </div>
 
       {/* Action buttons */}
-      {(pricingLoaded && packagesLoaded && textPagesLoaded) && (
+      {(pricingLoaded && packagesLoaded && textPagesLoaded && tocLoaded) && (
         <div className="flex flex-wrap gap-2 mb-3">
           {!isDocuments && (!pricingExists || !pricingForm.enabled) && (
             <button
@@ -634,6 +691,28 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                     );
                   }
 
+                  if (item.type === 'toc') {
+                    return (
+                      <SortableTocRow
+                        key={item.id}
+                        id={item.id}
+                        title={tocSettings.title}
+                        isSelected={selectedId === 'toc'}
+                        onSelect={() => setSelectedId('toc')}
+                        renderInsertAfter={
+                          <InsertPageMenu
+                            disabled={processing}
+                            showPricing={!isDocuments}
+                            pricingAlreadyExists={pricingAlreadyActive}
+                            onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
+                            onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
+                            onInsertPricingPage={handleInsertPricingAtPosition}
+                          />
+                        }
+                      />
+                    );
+                  }
+
                   if (item.type === 'group') {
                     const entryIdx = item.entryIndex!;
                     const entry = entries[entryIdx];
@@ -722,6 +801,14 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
             />
+          ) : selectedIsToc ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+              <List size={32} className="text-amber-400 mb-3" />
+              <p className="text-sm font-medium text-amber-700">Table of Contents</p>
+              <p className="text-xs text-amber-500 mt-1 max-w-[240px]">
+                Drag to reposition. Configure content and styling in the Contents tab.
+              </p>
+            </div>
           ) : selectedIsGroup ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
               <FolderOpen size={32} className="text-amber-400 mb-3" />
@@ -737,6 +824,7 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               selectedPdfIndex={selectedPdfIndex}
               pageCount={pageCount}
               entries={entries}
+              pageUrls={pageUrls}
               onDocLoadSuccess={({ numPages }) => syncPageCount(numPages)}
               onGoPrev={goPrev}
               onGoNext={goNext}

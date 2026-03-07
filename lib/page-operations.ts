@@ -78,17 +78,15 @@ export async function getPageUrls(
   if (pagesError) return { pages: [], fallback: false, error: 'Failed to fetch pages' };
   if (!pages || pages.length === 0) return { pages: [], fallback: true };
 
-  const cacheBuster = Date.now();
-
   const signedPages = await Promise.all(
     pages.map(async (page) => {
       const { data: signed } = await supabase.storage
         .from('proposals')
-        .createSignedUrl(page.file_path, 3600);
+        .createSignedUrl(page.file_path, 2592000);
 
       return {
         page_number: page.page_number,
-        url:         signed?.signedUrl ? `${signed.signedUrl}&v=${cacheBuster}` : null,
+        url:         signed?.signedUrl ?? null,
         label:       page.label,
         indent:      page.indent,
         link_url:    page.link_url   ?? undefined,

@@ -269,9 +269,9 @@ export function useProposal(token: string) {
           if (data.file_path) {
             const { data: signedData } = await supabase.storage
               .from('proposals')
-              .createSignedUrl(data.file_path, 3600);
+              .createSignedUrl(data.file_path, 2592000);
             if (signedData?.signedUrl) {
-              setPdfUrl(signedData.signedUrl + '&v=' + Date.now());
+              setPdfUrl(signedData.signedUrl);
             }
           }
         } else {
@@ -286,9 +286,9 @@ export function useProposal(token: string) {
         if (data.file_path) {
           const { data: signedData } = await supabase.storage
             .from('proposals')
-            .createSignedUrl(data.file_path, 3600);
+            .createSignedUrl(data.file_path, 2592000);
           if (signedData?.signedUrl) {
-            setPdfUrl(signedData.signedUrl + '&v=' + Date.now());
+            setPdfUrl(signedData.signedUrl);
           }
         }
       }
@@ -297,9 +297,9 @@ export function useProposal(token: string) {
       if (data.file_path) {
         const { data: signedData } = await supabase.storage
           .from('proposals')
-          .createSignedUrl(data.file_path, 3600);
+          .createSignedUrl(data.file_path, 2592000);
         if (signedData?.signedUrl) {
-          setPdfUrl(signedData.signedUrl + '&v=' + Date.now());
+          setPdfUrl(signedData.signedUrl);
         }
       }
     }
