@@ -105,13 +105,16 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     setSelectedId, flushPendingSaves, remapSaveStatus,
   });
 
-  // When page_names is empty (e.g. a freshly uploaded document) but pageUrls
-  // has loaded from document_pages / proposal_pages, seed entries from the
-  // page count. Without this, the sidebar shows "Loading pages..." forever
-  // because syncPageCount is a no-op in per-page mode (PdfPreviewPanel never
-  // fires onDocLoadSuccess when pageUrls are present).
+  // Seed entries from pageUrls when:
+  // 1. entries is empty (fresh upload with no page_names saved), OR
+  // 2. pageUrls count doesn't match entries count (e.g. after a delete, the
+  //    async refetch returns the new count and we need to trim/expand entries)
+  // This is necessary because PdfPreviewPanel is a no-op for onDocLoadSuccess
+  // in per-page mode, so syncPageCount never fires from the PDF renderer.
   useEffect(() => {
-    if (pageUrls.length > 0 && entries.filter((e) => e.type !== 'group').length === 0) {
+    if (pageUrls.length === 0) return;
+    const pdfEntryCount = entries.filter((e) => e.type !== 'group').length;
+    if (pdfEntryCount !== pageUrls.length) {
       syncPageCount(pageUrls.length);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

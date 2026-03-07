@@ -198,11 +198,16 @@ export async function deletePage(
     .sort((a, b) => a.page_number - b.page_number);
 
   for (const page of laterPages) {
-    await supabase
-      .from(pagesTable)
-      .update({ page_number: page.page_number - 1 })
-      .eq('id', page.id);
+  const newPageNum = page.page_number - 1;
+  const updates: Record<string, unknown> = { page_number: newPageNum };
+  if (page.label === `Page ${page.page_number}`) {
+    updates.label = `Page ${newPageNum}`;
   }
+  await supabase
+    .from(pagesTable)
+    .update(updates)
+    .eq('id', page.id);
+}
 
   return { success: true, totalPages: totalPages - 1 };
 }
