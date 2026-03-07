@@ -34,7 +34,9 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
     const { supabase } = await import('@/lib/supabase');
 
     try {
-      const filePath = `documents/${Date.now()}-${file.name}`;
+      // Sanitize filename — Supabase storage rejects spaces and special chars
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `documents/${Date.now()}-${safeName}`;
 
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -55,16 +57,24 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
         xhr.send(file);
       });
 
-      const { error: dbError } = await supabase.from('documents').insert({
+      const { data: insertedDoc, error: dbError } = await supabase.from('documents').insert({
         title: form.title,
         description: form.description || null,
         file_path: filePath,
         file_size_bytes: file.size,
         page_names: [],
         company_id: companyId,
-      });
+      }).select('id').single();
 
       if (dbError) throw dbError;
+
+      // Trigger the per-page split so document_pages rows are created immediately
+      // This runs async — we don't block the UI on it
+      fetch('/api/proposals/split', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity_id: insertedDoc.id, entity_type: 'document' }),
+      }).catch(() => {/* non-critical — page editor falls back gracefully */});
 
       onSuccess();
       onClose();
