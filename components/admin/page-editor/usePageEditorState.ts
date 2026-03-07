@@ -28,9 +28,10 @@ export function usePageEditorState(
 
   const [saveStatus, setSaveStatus] = useState<Record<number, 'idle' | 'saving' | 'saved'>>({});
   const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-  // Holds entries that need to be saved after a syncPageCount trim/expand.
-  // Set inside the setEntries updater (synchronous); consumed by a useEffect.
-  const syncSavePendingRef = useRef<PageNameEntry[] | null>(null);
+  // Always mirrors the latest committed entries so post-commit callbacks
+  // (setTimeout) can read the trimmed value without a stale closure.
+  const entriesRef = useRef<PageNameEntry[]>(entries);
+  entriesRef.current = entries;
 
   useEffect(() => {
     return () => { Object.values(debounceTimers.current).forEach(clearTimeout); };
@@ -114,6 +115,7 @@ export function usePageEditorState(
     debounceTimers.current = {};
 
     setPageCount(n);
+    let didChange = false;
     setEntries((prev) => {
       const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
       const realEntries: PageNameEntry[] = [];
@@ -125,6 +127,7 @@ export function usePageEditorState(
         }
       }
       if (realEntries.length === n) return prev;
+      didChange = true;
       while (realEntries.length < n) {
         realEntries.push({ name: `Page ${realEntries.length + 1}`, indent: 0 });
       }
@@ -140,25 +143,15 @@ export function usePageEditorState(
         if (realIdx < trimmed.length) { result.push(trimmed[realIdx]); realIdx++; }
       }
       while (groupIdx < groups.length) { result.push(groups[groupIdx].entry); groupIdx++; }
-
-      // Schedule the save via ref — calling saveEntries() directly inside a
-      // setState updater is a side effect that React may invoke multiple times
-      // (e.g. in StrictMode). The useEffect below consumes this ref safely.
-      syncSavePendingRef.current = result;
-
       return result;
     });
-  }, []);
 
-  // Persist entries whenever syncPageCount trims/expands them.
-  useEffect(() => {
-    if (syncSavePendingRef.current !== null) {
-      const toSave = syncSavePendingRef.current;
-      syncSavePendingRef.current = null;
-      saveEntries(toSave);
+    // After React commits the state update, entriesRef.current will hold the
+    // trimmed/expanded entries. Save them to DB at that point.
+    if (didChange) {
+      setTimeout(() => saveEntries(entriesRef.current), 0);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries]);
+  }, [saveEntries]);
 
   /* ── Remap save statuses after reorder ──────────────────── */
 
