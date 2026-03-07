@@ -153,6 +153,9 @@ export function useTemplatePreview(templateId: string) {
                 indent: p.indent,
                 link_url: p.link_url ?? undefined,
                 link_label: p.link_label ?? undefined,
+                show_title: (p as Record<string, unknown>).show_title as boolean ?? true,
+                show_member_badge: (p as Record<string, unknown>).show_member_badge as boolean ?? false,
+                prepared_by_member_id: (p as Record<string, unknown>).prepared_by_member_id as string | null ?? null,
                 payload: p.payload,
               };
             }),
@@ -272,6 +275,9 @@ export function useTemplatePreview(templateId: string) {
           indent: p.indent,
           link_url: p.link_url ?? null,
           link_label: p.link_label ?? null,
+          show_title: p.show_title ?? true,
+          show_member_badge: p.show_member_badge ?? false,
+          prepared_by_member_id: p.prepared_by_member_id ?? null,
         })),
     [pageUrls, template, templateId],
   );

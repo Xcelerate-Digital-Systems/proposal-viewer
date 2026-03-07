@@ -97,15 +97,18 @@ export async function getPages(
 /* ─── getPageUrls ────────────────────────────────────────────────────────── */
 
 export interface PageUrlEntry {
-  id:          string;
-  position:    number;
-  type:        PageType;
-  url:         string | null; // signed URL for pdf type; null for other types
-  title:       string;
-  indent:      number;
-  link_url?:   string;
-  link_label?: string;
-  payload:     Record<string, unknown>;
+  id:                    string;
+  position:              number;
+  type:                  PageType;
+  url:                   string | null; // signed URL for pdf type; null for other types
+  title:                 string;
+  indent:                number;
+  link_url?:             string;
+  link_label?:           string;
+  show_title:            boolean;
+  show_member_badge:     boolean;
+  prepared_by_member_id: string | null;
+  payload:               Record<string, unknown>;
 }
 
 /**
@@ -139,7 +142,7 @@ export async function getPageUrls(
 
   const { data: rows, error: pagesError } = await supabase
     .from(pagesTable)
-    .select('id, position, type, title, indent, link_url, link_label, payload')
+    .select('id, position, type, title, indent, link_url, link_label, show_title, show_member_badge, prepared_by_member_id, payload')
     .eq(idColumn, resolvedId)
     .eq('enabled', true)
     .order('position', { ascending: true });
@@ -160,14 +163,17 @@ export async function getPageUrls(
       }
 
       return {
-        id:         row.id as string,
-        position:   row.position as number,
-        type:       row.type as PageType,
-        url:        signedUrl,
-        title:      row.title as string,
-        indent:     (row.indent as number) ?? 0,
-        link_url:   (row.link_url as string) || undefined,
-        link_label: (row.link_label as string) || undefined,
+        id:                    row.id as string,
+        position:              row.position as number,
+        type:                  row.type as PageType,
+        url:                   signedUrl,
+        title:                 row.title as string,
+        indent:                (row.indent as number) ?? 0,
+        link_url:              (row.link_url as string) || undefined,
+        link_label:            (row.link_label as string) || undefined,
+        show_title:            (row.show_title as boolean) ?? true,
+        show_member_badge:     (row.show_member_badge as boolean) ?? false,
+        prepared_by_member_id: (row.prepared_by_member_id as string | null) ?? null,
         payload,
       };
     }),

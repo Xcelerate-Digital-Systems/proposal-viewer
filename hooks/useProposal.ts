@@ -104,15 +104,18 @@ export interface ProposalTextPage {
  * Covers all page types — PDF pages have a signed `url`.
  */
 export interface PageUrlEntry {
-  id:          string;
-  position:    number;
-  type:        'pdf' | 'text' | 'pricing' | 'packages' | 'toc' | 'section';
-  url:         string | null;
-  title:       string;
-  indent:      number;
-  link_url?:   string;
-  link_label?: string;
-  payload:     Record<string, unknown>;
+  id:                    string;
+  position:              number;
+  type:                  'pdf' | 'text' | 'pricing' | 'packages' | 'toc' | 'section';
+  url:                   string | null;
+  title:                 string;
+  indent:                number;
+  link_url?:             string;
+  link_label?:           string;
+  show_title:            boolean;
+  show_member_badge:     boolean;
+  prepared_by_member_id: string | null;
+  payload:               Record<string, unknown>;
 }
 
 /* ─── Hook ─────────────────────────────────────────────────────────────────── */
@@ -323,6 +326,9 @@ export function useProposal(token: string) {
           indent: p.indent,
           link_url: p.link_url ?? null,
           link_label: p.link_label ?? null,
+          show_title: p.show_title ?? true,
+          show_member_badge: p.show_member_badge ?? false,
+          prepared_by_member_id: p.prepared_by_member_id ?? null,
         })),
     [pageUrls, proposal],
   );
