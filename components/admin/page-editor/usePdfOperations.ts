@@ -199,6 +199,12 @@ export function usePdfOperations({
         if (entryIdx >= 0) updated.splice(entryIdx, 1);
         return updated;
       });
+      // Optimistically remove the deleted index from pageUrls immediately so
+      // resolvedPageCount in PdfPreviewPanel is correct before the async
+      // refetch triggered by setPdfVersion completes. Without this, the stale
+      // array causes a phantom extra page (e.g. "2 page 31s") to appear
+      // briefly, which is confusing enough to prompt a second accidental delete.
+      setPageUrls((prev) => prev.filter((_, i) => i !== pageIndex));
       setPageCount(result.total_pages);
       if (selectedPdfIndex >= result.total_pages) setSelectedId(`pdf-${Math.max(0, result.total_pages - 1)}`);
       toast.success(`Page ${pageIndex + 1} deleted`);

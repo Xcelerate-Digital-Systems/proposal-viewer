@@ -162,7 +162,7 @@ export async function deletePage(
 
   const { data: allPages, error: fetchError } = await supabase
     .from(pagesTable)
-    .select('id, page_number, file_path')
+    .select('id, page_number, file_path, label')
     .eq(idColumn, opts.entityId)
     .order('page_number', { ascending: true });
 
