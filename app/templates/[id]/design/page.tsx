@@ -79,7 +79,7 @@ function DesignContent({ templateId, companyId }: { templateId: string; companyI
           initialBgImageOverlayOpacity={template.bg_image_overlay_opacity}
           companyBgPrimary={companyBgPrimary}
           onSave={fetchTemplate}
-          initialPageOrientation={template.page_orientation || 'auto'}
+          initialPageOrientation={template.page_orientation || 'portrait'}
           initialTextPageBgColor={template.text_page_bg_color ?? null}
           initialTextPageTextColor={template.text_page_text_color ?? null}
           initialTextPageHeadingColor={template.text_page_heading_color ?? null}

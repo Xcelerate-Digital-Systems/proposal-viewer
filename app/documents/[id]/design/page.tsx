@@ -84,7 +84,7 @@ function DesignContent({ documentId, companyId }: { documentId: string; companyI
           initialBgImageOverlayOpacity={document.bg_image_overlay_opacity}
           companyBgPrimary={companyBgPrimary}
           onSave={fetchDocument}
-          initialPageOrientation={document.page_orientation || 'auto'}
+          initialPageOrientation={document.page_orientation || 'portrait'}
           initialTextPageBgColor={document.text_page_bg_color ?? null}
           initialTextPageTextColor={document.text_page_text_color ?? null}
           initialTextPageHeadingColor={document.text_page_heading_color ?? null}

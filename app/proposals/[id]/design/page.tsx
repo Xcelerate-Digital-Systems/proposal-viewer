@@ -84,7 +84,7 @@ function DesignContent({ proposalId, companyId }: { proposalId: string; companyI
           initialBgImageOverlayOpacity={proposal.bg_image_overlay_opacity}
           companyBgPrimary={companyBgPrimary}
           onSave={fetchProposal}
-          initialPageOrientation={proposal.page_orientation || 'auto'}
+          initialPageOrientation={proposal.page_orientation || 'portrait'}
           initialTextPageBgColor={proposal.text_page_bg_color ?? null}
           initialTextPageTextColor={proposal.text_page_text_color ?? null}
           initialTextPageHeadingColor={proposal.text_page_heading_color ?? null}

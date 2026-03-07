@@ -125,7 +125,7 @@ function resolvePageOrientation(
     for (const entry of pageEntries) {
       if (entry.type === 'group') continue;
       count++;
-      if (count === vp && entry.orientation && entry.orientation !== 'auto') {
+      if (count === vp && entry.orientation) {
         return entry.orientation;
       }
     }

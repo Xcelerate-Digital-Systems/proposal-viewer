@@ -13,7 +13,7 @@ export type PageNameEntry = {
   type?: 'page' | 'group'; // 'group' = section header only (no navigable page), default 'page'
   link_url?: string;   // optional external link attached to this page
   link_label?: string; // display label for the link button (defaults to 'View Resource')
-  orientation?: 'portrait' | 'landscape' | 'auto';
+  orientation?: 'portrait' | 'landscape';
 };
 
 /**
@@ -34,7 +34,7 @@ export function normalizePageNames(raw: unknown, count: number): PageNameEntry[]
           ...(obj.type === 'group' ? { type: 'group' as const } : {}),
           ...(obj.link_url ? { link_url: obj.link_url as string } : {}),
           ...(obj.link_label ? { link_label: obj.link_label as string } : {}),
-          ...(obj.orientation ? { orientation: obj.orientation as 'portrait' | 'landscape' | 'auto' } : {}),
+          ...(obj.orientation && obj.orientation !== 'auto' ? { orientation: obj.orientation as 'portrait' | 'landscape' } : {}),
         });
       } else if (typeof item === 'string') {
         result.push({ name: item, indent: 0 });
@@ -89,7 +89,7 @@ export function normalizePageNamesWithGroups(raw: unknown, pdfCount: number): Pa
         ...(isGroup ? { type: 'group' as const } : {}),
         ...(obj.link_url ? { link_url: obj.link_url as string } : {}),
         ...(obj.link_label ? { link_label: obj.link_label as string } : {}),
-        ...(obj.orientation ? { orientation: obj.orientation as 'portrait' | 'landscape' | 'auto' } : {}),
+        ...(obj.orientation && obj.orientation !== 'auto' ? { orientation: obj.orientation as 'portrait' | 'landscape' } : {}),
       });
       if (!isGroup) realPagesSeen++;
     } else if (typeof item === 'string') {
@@ -158,7 +158,7 @@ export type Proposal = {
   company_id: string;
   created_at: string;
   updated_at: string;
-  page_orientation: 'auto' | 'portrait' | 'landscape';
+  page_orientation: 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
   page_order: unknown;
   text_page_bg_color: string | null;
@@ -206,7 +206,7 @@ export type Document = {
   company_id: string;
   created_at: string;
   updated_at: string;
-  page_orientation: 'auto' | 'portrait' | 'landscape';
+  page_orientation: 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
   text_page_bg_color: string | null;
   text_page_text_color: string | null;
@@ -272,7 +272,7 @@ export type ProposalTemplate = {
   company_id: string;
   created_at: string;
   updated_at: string;
-  page_orientation: 'auto' | 'portrait' | 'landscape';
+  page_orientation: 'portrait' | 'landscape';
   toc_settings: TocSettings | null;
   page_order: unknown;
   text_page_bg_color: string | null;

@@ -253,7 +253,7 @@ export function useProposal(token: string) {
         company_id: data.company_id,
       });
 
-      if (isFirstView && data.status === 'sent') {
+      if (isFirstView) {
         notify({ event_type: 'proposal_viewed', share_token: token });
       }
     }
