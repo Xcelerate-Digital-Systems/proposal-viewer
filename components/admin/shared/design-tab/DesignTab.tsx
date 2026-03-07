@@ -52,7 +52,7 @@ export default function DesignTab({
   companyId,
   initialBgImagePath,
   initialBgImageOverlayOpacity,
-  initialPageOrientation = 'auto',
+  initialPageOrientation = 'portrait',
   companyBgPrimary = '#0f0f0f',
   onSave,
   initialTextPageBgColor,

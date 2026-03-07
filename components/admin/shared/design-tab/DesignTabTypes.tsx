@@ -6,7 +6,7 @@ import React from 'react';
 /* ------------------------------------------------------------------ */
 
 export type EntityType = 'proposal' | 'template' | 'document';
-export type PageOrientation = 'auto' | 'portrait' | 'landscape';
+export type PageOrientation = 'portrait' | 'landscape';
 
 export const tableByType: Record<EntityType, string> = {
   proposal: 'proposals',
@@ -71,16 +71,6 @@ export function isValidHex6(v: string): boolean {
 /* ------------------------------------------------------------------ */
 
 export const orientationOptions: { key: PageOrientation; label: string; icon: React.ReactNode }[] = [
-  {
-    key: 'auto',
-    label: 'Auto (match PDF)',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="2" width="12" height="12" rx="1.5" />
-        <path d="M8 5v6M5.5 7.5L8 5l2.5 2.5" />
-      </svg>
-    ),
-  },
   {
     key: 'portrait',
     label: 'Portrait',
