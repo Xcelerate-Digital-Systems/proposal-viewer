@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
 
@@ -13,7 +13,7 @@ interface DocumentUploadModalProps {
 }
 
 const formatSize = (bytes: number | null) => {
-  if (!bytes) return '\u2014';
+  if (!bytes) return '—';
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
@@ -24,15 +24,19 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [status, setStatus] = useState('');
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
+
     setUploading(true);
     setUploadProgress(0);
+    setStatus('Uploading PDF...');
 
     const { supabase } = await import('@/lib/supabase');
 
+    // ── Step 1: Upload PDF to storage ──────────────────────────────
     try {
       // Sanitize filename — Supabase storage rejects spaces and special chars
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -57,31 +61,51 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
         xhr.send(file);
       });
 
-      const { data: insertedDoc, error: dbError } = await supabase.from('documents').insert({
-        title: form.title,
-        description: form.description || null,
-        file_path: filePath,
-        file_size_bytes: file.size,
-        page_names: [],
-        company_id: companyId,
-      }).select('id').single();
+      // ── Step 2: Insert document record ────────────────────────────
+      const { data: insertedDoc, error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          title: form.title,
+          description: form.description || null,
+          file_path: filePath,
+          file_size_bytes: file.size,
+          page_names: [],
+          company_id: companyId,
+        })
+        .select('id')
+        .single();
 
       if (dbError) throw dbError;
 
-      // Trigger the per-page split so document_pages rows are created immediately
-      // This runs async — we don't block the UI on it
-      fetch('/api/proposals/split', {
+      // ── Step 3: Split into individual pages (awaited, with status) ─
+      setStatus('Splitting into pages...');
+
+      const splitRes = await fetch('/api/proposals/split', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entity_id: insertedDoc.id, entity_type: 'document' }),
-      }).catch(() => {/* non-critical — page editor falls back gracefully */});
+      });
 
-      onSuccess();
-      onClose();
+      if (!splitRes.ok) {
+        // Non-fatal — page editor falls back gracefully, but warn the user
+        toast.error('Document created but page splitting failed. Try re-uploading.');
+        setUploading(false);
+        onSuccess();
+        onClose();
+        return;
+      }
+
+      const splitData = await splitRes.json();
+      toast.success(`Document created with ${splitData.page_count} pages!`);
+
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 300);
     } catch (err) {
       console.error(err);
       toast.error('Upload failed. Please try again.');
-    } finally {
+      setStatus('');
       setUploading(false);
     }
   };
@@ -93,7 +117,11 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
           <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-gray-900">
             New Document
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button
+            onClick={onClose}
+            disabled={uploading}
+            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
             <X size={20} />
           </button>
         </div>
@@ -103,6 +131,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
             fields={fieldsByType.document}
             values={form}
             onChange={(key, value) => setForm({ ...form, [key]: value })}
+            disabled={uploading}
           />
 
           <div>
@@ -118,6 +147,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
                 <div className="flex flex-col items-center gap-2">
                   <Upload size={24} className="text-gray-300" />
                   <span className="text-sm text-gray-400">Click to upload PDF</span>
+                  <span className="text-xs text-gray-300">Each page becomes individually editable</span>
                 </div>
               )}
               <input
@@ -125,6 +155,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
                 accept=".pdf"
                 className="hidden"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
+                disabled={uploading}
               />
             </label>
           </div>
@@ -132,13 +163,18 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
           {uploading && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">Uploading...</span>
-                <span className="text-[#017C87] font-medium">{uploadProgress}%</span>
+                <span className="text-gray-500 flex items-center gap-1.5">
+                  <Loader2 size={12} className="animate-spin text-[#017C87]" />
+                  {status}
+                </span>
+                {status === 'Uploading PDF...' && (
+                  <span className="text-[#017C87] font-medium">{uploadProgress}%</span>
+                )}
               </div>
               <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#017C87] rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${uploadProgress}%` }}
+                  style={{ width: status === 'Uploading PDF...' ? `${uploadProgress}%` : '100%' }}
                 />
               </div>
             </div>
@@ -149,7 +185,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
             disabled={uploading || !file}
             className="w-full bg-[#017C87] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploading ? 'Creating document...' : 'Create Document'}
+            {uploading ? 'Processing...' : 'Create Document'}
           </button>
         </form>
       </div>

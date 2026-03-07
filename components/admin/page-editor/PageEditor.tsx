@@ -105,7 +105,19 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     setSelectedId, flushPendingSaves, remapSaveStatus,
   });
 
-  // DnD sensors
+  // When page_names is empty (e.g. a freshly uploaded document) but pageUrls
+  // has loaded from document_pages / proposal_pages, seed entries from the
+  // page count. Without this, the sidebar shows "Loading pages..." forever
+  // because syncPageCount is a no-op in per-page mode (PdfPreviewPanel never
+  // fires onDocLoadSuccess when pageUrls are present).
+  useEffect(() => {
+    if (pageUrls.length > 0 && entries.filter((e) => e.type !== 'group').length === 0) {
+      syncPageCount(pageUrls.length);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageUrls.length]);
+
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
