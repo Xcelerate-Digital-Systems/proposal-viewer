@@ -2,214 +2,270 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
+import {
+  getPages,
+  addPage,
+  updatePage,
+  deletePage,
+  insertPdfPage,
+  replacePdfPage,
+} from '@/lib/page-operations';
 import { rebuildTemplateMerged } from '@/lib/rebuild-template-merged';
 
-// Add a new page to a template (uploaded as PDF, extracts first page)
-export async function POST(req: NextRequest) {
-  try {
-    const formData = await req.formData();
-    const templateId = formData.get('template_id') as string;
-    const pageNumber = parseInt(formData.get('page_number') as string);
-    const label = (formData.get('label') as string) || 'New Page';
-    const companyId = formData.get('company_id') as string;
-    const file = formData.get('file') as File;
-    const mode = (formData.get('mode') as string) || 'auto'; // 'insert' | 'replace' | 'auto'
+export const dynamic = 'force-dynamic';
 
-    if (!templateId || !pageNumber || !file || !companyId) {
+/* ─── GET — fetch all pages for a template ───────────────────────────────── */
+
+export async function GET(req: NextRequest) {
+  try {
+    const supabase = createServiceClient();
+    const templateId = req.nextUrl.searchParams.get('template_id');
+
+    if (!templateId) {
+      return NextResponse.json({ error: 'template_id required' }, { status: 400 });
+    }
+
+    const { pages, error } = await getPages(supabase, 'template', templateId);
+
+    if (error) {
+      return NextResponse.json({ error }, { status: 500 });
+    }
+
+    return NextResponse.json(pages);
+  } catch (err) {
+    console.error('Template pages GET error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/* ─── POST — add a page ──────────────────────────────────────────────────── */
+/*
+ * Two modes detected by Content-Type:
+ *
+ * 1. multipart/form-data  →  PDF upload (insert or replace)
+ *    Fields: template_id, company_id, after_position (int), file (File), mode? ('insert'|'replace'|'auto')
+ *
+ * 2. application/json  →  Non-PDF page (text, pricing, packages, section, toc)
+ *    Body: { template_id, company_id, type, position?, title?, payload?, ...meta }
+ */
+
+export async function POST(req: NextRequest) {
+  const contentType = req.headers.get('content-type') ?? '';
+
+  if (contentType.includes('multipart/form-data')) {
+    return handlePdfUpload(req);
+  }
+
+  return handleJsonAdd(req);
+}
+
+async function handlePdfUpload(req: NextRequest) {
+  try {
+    const supabase = createServiceClient();
+    const formData = await req.formData();
+
+    const templateId   = formData.get('template_id') as string;
+    const companyId    = formData.get('company_id') as string;
+    const afterPos     = parseInt(formData.get('after_position') as string, 10);
+    const file         = formData.get('file') as File;
+    const mode         = (formData.get('mode') as string) || 'auto';
+    // For replace mode: the id of the page to replace
+    const replacePageId = formData.get('page_id') as string | null;
+
+    if (!templateId || !companyId || !file) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const supabase = createServiceClient();
-
     // Extract first page from uploaded PDF
-    const pdfBytes = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const singlePageDoc = await PDFDocument.create();
-    const [copiedPage] = await singlePageDoc.copyPages(pdfDoc, [0]);
-    singlePageDoc.addPage(copiedPage);
-    const singlePageBytes = await singlePageDoc.save();
+    const pdfBytes     = await file.arrayBuffer();
+    const pdfDoc       = await PDFDocument.load(pdfBytes);
+    const singlePage   = await PDFDocument.create();
+    const [copiedPage] = await singlePage.copyPages(pdfDoc, [0]);
+    singlePage.addPage(copiedPage);
+    const singlePageBytes = await singlePage.save();
 
-    // Check if a page already exists at this position
-    const { data: existingPage } = await supabase
-      .from('template_pages')
-      .select('id')
-      .eq('template_id', templateId)
-      .eq('page_number', pageNumber)
-      .single();
+    // Sanitise filename — no special chars in storage paths
+    const safeName = `page-${Date.now()}.pdf`.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const tempPath = `templates/${templateId}/${safeName}`;
 
-    const isReplace = mode === 'replace' || (mode === 'auto' && !!existingPage);
-    const isInsert = mode === 'insert' || (mode === 'auto' && !existingPage);
-
-    // If inserting, shift existing pages BEFORE uploading the new file.
-    // Only update page_number — do NOT move files in storage.
-    // File paths are just unique identifiers; the actual ordering comes from page_number.
-    // Moving files in storage is fragile and can fail silently, causing DB/storage mismatches.
-    if (isInsert && existingPage) {
-      // There's a page at this slot — shift it and everything after it up by 1
-      const { data: laterPages } = await supabase
-        .from('template_pages')
-        .select('id, page_number')
-        .eq('template_id', templateId)
-        .gte('page_number', pageNumber)
-        .order('page_number', { ascending: false });
-
-      if (laterPages && laterPages.length > 0) {
-        // Process in descending order to avoid unique constraint conflicts
-        for (const p of laterPages) {
-          await supabase.from('template_pages')
-            .update({ page_number: p.page_number + 1 })
-            .eq('id', p.id);
-        }
-      }
-    } else if (!isInsert && !existingPage) {
-      // Nothing to replace — shift pages at and after this slot up by 1
-      const { data: laterPages } = await supabase
-        .from('template_pages')
-        .select('id, page_number')
-        .eq('template_id', templateId)
-        .gte('page_number', pageNumber)
-        .order('page_number', { ascending: false });
-
-      if (laterPages && laterPages.length > 0) {
-        for (const p of laterPages) {
-          await supabase.from('template_pages')
-            .update({ page_number: p.page_number + 1 })
-            .eq('id', p.id);
-        }
-      }
-    }
-
-    // Use a unique filename to avoid collisions
-    const pagePath = `templates/${templateId}/page-${pageNumber}-${Date.now()}.pdf`;
-
-    // Upload the page
     const { error: uploadError } = await supabase.storage
       .from('proposals')
-      .upload(pagePath, singlePageBytes, {
-        contentType: 'application/pdf',
-        upsert: false,
-      });
+      .upload(tempPath, singlePageBytes, { contentType: 'application/pdf', upsert: false });
 
     if (uploadError) {
       return NextResponse.json({ error: 'Failed to upload page' }, { status: 500 });
     }
 
-    if (isReplace && existingPage) {
-      // Replace — remove old file and update record
-      const { data: oldPage } = await supabase
-        .from('template_pages')
-        .select('file_path')
-        .eq('id', existingPage.id)
-        .single();
-      if (oldPage?.file_path) {
-        await supabase.storage.from('proposals').remove([oldPage.file_path]);
-      }
-      await supabase.from('template_pages')
-        .update({ file_path: pagePath, label })
-        .eq('id', existingPage.id);
-    } else {
-      // Insert new record
-      await supabase.from('template_pages').insert({
-        template_id: templateId,
-        page_number: pageNumber,
-        file_path: pagePath,
-        label,
-        company_id: companyId,
+    if (mode === 'replace' && replacePageId) {
+      // Replace an existing PDF page's file
+      const { success, error } = await replacePdfPage(supabase, 'template', {
+        pageId:   replacePageId,
+        tempPath,
       });
+
+      if (!success) {
+        return NextResponse.json({ error: error ?? 'Replace failed' }, { status: 500 });
+      }
+    } else {
+      // Insert new PDF page after afterPos
+      const { page, error } = await insertPdfPage(supabase, 'template', {
+        entityId:      templateId,
+        companyId,
+        afterPosition: isNaN(afterPos) ? -1 : afterPos,
+        tempPath,
+      });
+
+      if (!page) {
+        return NextResponse.json({ error: error ?? 'Insert failed' }, { status: 500 });
+      }
     }
 
-    // Update template page count
-    const { count } = await supabase
-      .from('template_pages')
-      .select('*', { count: 'exact', head: true })
-      .eq('template_id', templateId);
-
-    await supabase.from('proposal_templates')
-      .update({ page_count: count || 0, updated_at: new Date().toISOString() })
-      .eq('id', templateId);
-
-    // Rebuild the merged PDF so the template preview stays in sync
+    // Rebuild merged PDF so template preview stays in sync
     try {
       await rebuildTemplateMerged(templateId);
     } catch (err) {
-      console.error('Non-fatal: failed to rebuild merged PDF after page add/replace:', err);
+      console.error('Non-fatal: failed to rebuild merged PDF after page add:', err);
     }
 
-    return NextResponse.json({ success: true, page_number: pageNumber });
+    return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Page operation error:', err);
+    console.error('Template pages PDF upload error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// Delete a page from a template
-export async function DELETE(req: NextRequest) {
+async function handleJsonAdd(req: NextRequest) {
   try {
-    const { template_id, page_number } = await req.json();
+    const supabase = createServiceClient();
+    const body = await req.json();
+    const { template_id, company_id, type, position, title, payload, ...meta } = body;
 
-    if (!template_id || !page_number) {
-      return NextResponse.json({ error: 'Missing template_id or page_number' }, { status: 400 });
+    if (!template_id || !type) {
+      return NextResponse.json({ error: 'template_id and type are required' }, { status: 400 });
     }
 
-    const supabase = createServiceClient();
+    // Resolve company_id if not provided
+    let resolvedCompanyId = company_id;
+    if (!resolvedCompanyId) {
+      const { data: template, error: tmplError } = await supabase
+        .from('proposal_templates')
+        .select('company_id')
+        .eq('id', template_id)
+        .single();
 
-    // Get the page to delete
-    const { data: page } = await supabase
-      .from('template_pages')
-      .select('*')
-      .eq('template_id', template_id)
-      .eq('page_number', page_number)
-      .single();
+      if (tmplError || !template) {
+        return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      }
+      resolvedCompanyId = template.company_id;
+    }
+
+    const { page, error } = await addPage(supabase, 'template', {
+      entityId:         template_id,
+      companyId:        resolvedCompanyId,
+      type,
+      position,
+      title,
+      payload:          payload ?? {},
+      indent:           meta.indent,
+      linkUrl:          meta.link_url ?? null,
+      linkLabel:        meta.link_label ?? null,
+      orientation:      meta.orientation,
+      showTitle:        meta.show_title,
+      showMemberBadge:  meta.show_member_badge,
+    });
 
     if (!page) {
-      return NextResponse.json({ error: 'Page not found' }, { status: 404 });
+      return NextResponse.json({ error: error ?? 'Failed to add page' }, { status: 500 });
     }
 
-    // Remove file from storage
-    await supabase.storage.from('proposals').remove([page.file_path]);
+    return NextResponse.json(page);
+  } catch (err) {
+    console.error('Template pages JSON add error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
 
-    // Delete record
-    await supabase.from('template_pages').delete().eq('id', page.id);
+/* ─── PUT — update a page ────────────────────────────────────────────────── */
+/*
+ * Query param: ?id=<page_id>
+ * Body: any combination of top-level fields + optional payload or payload_patch
+ */
 
-    // Shift later pages down (only update page_number, keep files in place).
-    // File paths are just unique identifiers — the actual ordering comes from page_number.
-    // Moving files in storage is fragile and can fail silently, causing DB/storage mismatches.
-    const { data: laterPages } = await supabase
-      .from('template_pages')
-      .select('id, page_number')
-      .eq('template_id', template_id)
-      .gt('page_number', page_number)
-      .order('page_number', { ascending: true });
+export async function PUT(req: NextRequest) {
+  try {
+    const supabase  = createServiceClient();
+    const pageId    = req.nextUrl.searchParams.get('id');
 
-    if (laterPages && laterPages.length > 0) {
-      // Process in ascending order so lower numbers are freed first
-      for (const p of laterPages) {
-        await supabase.from('template_pages')
-          .update({ page_number: p.page_number - 1 })
-          .eq('id', p.id);
-      }
+    if (!pageId) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    // Update page count
-    const { count } = await supabase
-      .from('template_pages')
-      .select('*', { count: 'exact', head: true })
-      .eq('template_id', template_id);
+    const body = await req.json();
+    const {
+      title, indent, enabled, link_url, link_label,
+      orientation, show_title, show_member_badge, prepared_by_member_id,
+      payload, payload_patch,
+    } = body;
 
-    await supabase.from('proposal_templates')
-      .update({ page_count: count || 0, updated_at: new Date().toISOString() })
-      .eq('id', template_id);
+    const { page, error } = await updatePage(supabase, 'template', pageId, {
+      ...(title                !== undefined && { title }),
+      ...(indent               !== undefined && { indent }),
+      ...(enabled              !== undefined && { enabled }),
+      ...(link_url             !== undefined && { link_url }),
+      ...(link_label           !== undefined && { link_label }),
+      ...(orientation          !== undefined && { orientation }),
+      ...(show_title           !== undefined && { show_title }),
+      ...(show_member_badge    !== undefined && { show_member_badge }),
+      ...(prepared_by_member_id !== undefined && { prepared_by_member_id }),
+      ...(payload              !== undefined && { payload }),
+      ...(payload_patch        !== undefined && { payload_patch }),
+    });
 
-    // Rebuild the merged PDF so the template preview stays in sync
+    if (!page) {
+      return NextResponse.json({ error: error ?? 'Update failed' }, { status: 500 });
+    }
+
+    return NextResponse.json(page);
+  } catch (err) {
+    console.error('Template pages PUT error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/* ─── DELETE — delete a page ─────────────────────────────────────────────── */
+/*
+ * Body: { template_id, page_id }
+ * Rebuilds merged PDF after deletion so template preview stays in sync.
+ */
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const supabase = createServiceClient();
+    const { template_id, page_id } = await req.json();
+
+    if (!template_id || !page_id) {
+      return NextResponse.json({ error: 'template_id and page_id are required' }, { status: 400 });
+    }
+
+    const { success, totalPages, error, status } = await deletePage(supabase, 'template', {
+      entityId: template_id,
+      pageId:   page_id,
+    });
+
+    if (!success) {
+      return NextResponse.json({ error: error ?? 'Delete failed' }, { status: status ?? 500 });
+    }
+
+    // Rebuild merged PDF so template preview stays in sync
     try {
       await rebuildTemplateMerged(template_id);
     } catch (err) {
       console.error('Non-fatal: failed to rebuild merged PDF after page delete:', err);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, totalPages });
   } catch (err) {
-    console.error('Delete page error:', err);
+    console.error('Template pages DELETE error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

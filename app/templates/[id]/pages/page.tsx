@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, type ProposalTemplate } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import TemplateDetailHeader from '@/components/admin/templates/TemplateDetailHeader';
-import TemplatePageManager from '@/components/admin/templates/TemplatePageManager';
+import PageEditor from '@/components/admin/page-editor/PageEditor';
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -76,9 +76,10 @@ function PagesContent({
       />
 
       <div className="flex-1 px-6 lg:px-10 py-6">
-        <TemplatePageManager
-          template={template}
-          onRefresh={fetchTemplate}
+        <PageEditor
+          proposalId={templateId}
+          tableName="templates"
+          onSave={fetchTemplate}
         />
       </div>
     </div>

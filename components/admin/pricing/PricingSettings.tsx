@@ -6,7 +6,7 @@ interface PricingSettingsProps {
   introText: string;
   taxEnabled: boolean;
   validityDays: number | null;
-  proposalDate: string;
+  proposalDate: string | null;
   onTitleChange: (v: string) => void;
   onIntroTextChange: (v: string) => void;
   onTaxEnabledChange: (v: boolean) => void;
@@ -49,7 +49,7 @@ export default function PricingSettings({
           <label className="block text-sm font-medium text-gray-700 mb-1">Quote Date</label>
           <input
             type="date"
-            value={proposalDate}
+            value={proposalDate ?? ''}
             onChange={(e) => onProposalDateChange(e.target.value)}
             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
           />

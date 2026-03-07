@@ -1,238 +1,87 @@
 // components/admin/page-editor/PageEditor.tsx
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors, } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove, } from '@dnd-kit/sortable';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  DndContext, closestCenter, DragEndEvent,
+  PointerSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Check, Loader2, Plus, DollarSign, Package, FileText, FolderOpen, List } from 'lucide-react';
-import { PageEditorProps, UnifiedItem } from './pageEditorTypes';
-import { PageOrderEntry, TocSettings, DEFAULT_TOC_SETTINGS, parseTocSettings } from '@/lib/supabase';
-import { supabase } from '@/lib/supabase';
-import { usePageEditorState } from './usePageEditorState';
-import { usePricingState } from './usePricingState';
-import { useTextPagesState } from './useTextPagesState';
-import { usePdfOperations } from './usePdfOperations';
-import SortablePdfRow from './SortablePdfRow';
-import SortablePricingRow from './SortablePricingRow';
-import SortableTextRow from './SortableTextRow';
-import SortableGroupRow from './SortableGroupRow';
-import PdfPreviewPanel from './PdfPreviewPanel';
+import {
+  Check, Loader2, Plus, DollarSign, Package,
+  FileText, FolderOpen, List,
+} from 'lucide-react';
+
+import type { PageEditorProps, UnifiedPage } from './pageEditorTypes';
+import { usePageEditor } from './usePageEditor';
+import type { EntityType } from './usePageEditor';
+
+import SortablePdfRow      from './SortablePdfRow';
+import SortablePricingRow  from './SortablePricingRow';
+import SortableTextRow     from './SortableTextRow';
+import SortableGroupRow    from './SortableGroupRow';
+import SortablePackagesRow from './SortablePackagesRow';
+import SortableTocRow      from './SortableTocRow';
+import InsertPageMenu      from './InsertPageMenu';
+import PdfPreviewPanel     from './PdfPreviewPanel';
 import PricingPreviewPanel from './PricingPreviewPanel';
 import TextPagePreviewPanel from './TextPagePreviewPanel';
-import { usePackagesState } from './usePackagesState';
-import SortablePackagesRow from './SortablePackagesRow';
 import PackagesPreviewPanel from './PackagesPreviewPanel';
-import SortableTocRow from './SortableTocRow';
-import InsertPageMenu from './InsertPageMenu';
 
-export default function PageEditor({ proposalId, filePath, initialPageNames, onSave, onCancel, tableName = 'proposals' }: PageEditorProps) {
-  // UI state
-  const [selectedId, setSelectedId] = useState<string>('pdf-0');
-  const [panelHeight, setPanelHeight] = useState(520);
-  const [isReordering, setIsReordering] = useState(false);
-  const [pageOrderVersion, setPageOrderVersion] = useState(0);
+/* ─── Helpers ────────────────────────────────────────────────────────────── */
 
-  // TOC settings — fetched from DB so we can show/position it in the editor list
-  const [tocSettings, setTocSettings] = useState<TocSettings>(DEFAULT_TOC_SETTINGS);
-  const [tocLoaded, setTocLoaded] = useState(false);
+function tableName2EntityType(t: PageEditorProps['tableName']): EntityType {
+  if (t === 'documents') return 'document';
+  if (t === 'templates') return 'template';
+  return 'proposal';
+}
 
+/* ─── Component ──────────────────────────────────────────────────────────── */
+
+export default function PageEditor({
+  proposalId,
+  filePath = '',
+  onSave,
+  onCancel,
+  tableName = 'proposals',
+}: PageEditorProps) {
+
+  const entityType = tableName2EntityType(tableName);
+
+  const {
+    pages,
+    pagesLoaded,
+    saveStatuses,
+    processing,
+    signedUrls,
+    pdfPages,
+    addPage,
+    updatePage,
+    deletePage,
+    reorderPages,
+    insertPdfPage,
+    replacePdfPage,
+    flushSaves,
+  } = usePageEditor(proposalId, entityType);
+
+  /* ── UI state ─────────────────────────────────────────────────────────── */
+
+  const [selectedId, setSelectedId]         = useState<string>('');
+  const [isReordering, setIsReordering]     = useState(false);
+  const [panelHeight, setPanelHeight]       = useState(520);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Fetch toc_settings so we can show the TOC as a row in the page list
+  // Auto-select first page once loaded
   useEffect(() => {
-    const table = tableName === 'documents' ? 'documents' : 'proposals';
-    supabase
-      .from(table)
-      .select('toc_settings')
-      .eq('id', proposalId)
-      .single()
-      .then(({ data }) => {
-        if (data) setTocSettings(parseTocSettings(data.toc_settings));
-        setTocLoaded(true);
-      });
-  }, [proposalId, tableName]);
-
-  // Hooks
-  const {
-    entries, setEntries, pageCount, setPageCount,
-    saveStatus, syncPageCount, updateEntry,
-    flushPendingSaves, forceSaveEntries, remapSaveStatus,
-    addGroup, removeGroup,
-  } = usePageEditorState(proposalId, initialPageNames, tableName);
-
-  const {
-    pricingLoaded, pricingExists, pricingPosition, setPricingPosition,
-    pricingIndent, setPricingIndent,
-    pricingForm, pricingSaveStatus, updatePricing, flushPricingSave,
-    addPricingPage, removePricingPage, savePricing,
-    pricingLinkUrl, pricingLinkLabel, updatePricingLink,
-  } = usePricingState(proposalId);
-
-  const textPageEntityType = tableName === 'documents' ? 'document' as const : 'proposal' as const;
-
-  const {
-    textPagesLoaded, textPages, textPageSaveStatuses,
-    updateTextPage, updateTextPagePosition, flushTextPageSaves,
-    addTextPage, removeTextPage,
-  } = useTextPagesState({
-    entityId: proposalId,
-    entityType: textPageEntityType,
-  });
-
-  const {
-    packagesLoaded, packagesPages, packagesSaveStatuses,
-    updatePackagesPage, updatePackagesPagePosition, flushPackagesSaves,
-    addPackagesPage, removePackagesPage,
-  } = usePackagesState(proposalId);
-
-  // Save updated TOC position back to the entity's toc_settings JSONB
-  const saveTocPosition = useCallback(async (position: number) => {
-    const table = tableName === 'documents' ? 'documents' : 'proposals';
-    const updated: TocSettings = { ...tocSettings, position };
-    setTocSettings(updated);
-    await supabase.from(table).update({ toc_settings: updated }).eq('id', proposalId);
-  }, [proposalId, tableName, tocSettings]);
-
-  const selectedPdfIndex = selectedId.startsWith('pdf-') ? parseInt(selectedId.replace('pdf-', '')) : -1;
-
-  const {
-    processing, pdfVersion, pageUrls,
-    handleReplacePage, handleInsertPage, handleDeletePage, handleReorder,
-  } = usePdfOperations({
-      proposalId, tableName, initialPageNames, entries, setEntries,
-      pageCount, setPageCount, selectedPdfIndex,
-      setSelectedId, flushPendingSaves, remapSaveStatus,
-      syncPageCount,
-      onAfterDelete: () => setPageOrderVersion((v) => v + 1),
-    });
-
-  // Seed entries from pageUrls when:
-  // 1. entries is empty (fresh upload with no page_names saved), OR
-  // 2. pageUrls count doesn't match entries count (e.g. after a delete, the
-  //    async refetch returns the new count and we need to trim/expand entries)
-  // This is necessary because PdfPreviewPanel is a no-op for onDocLoadSuccess
-  // in per-page mode, so syncPageCount never fires from the PDF renderer.
-  useEffect(() => {
-    if (pageUrls.length === 0) return;
-    const pdfEntryCount = entries.filter((e) => e.type !== 'group').length;
-    if (pdfEntryCount !== pageUrls.length) {
-      syncPageCount(pageUrls.length);
+    if (pagesLoaded && pages.length > 0 && !selectedId) {
+      setSelectedId(pages[0].id);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageUrls.length]);
+  }, [pagesLoaded, pages, selectedId]);
 
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
-
-  /* ——— Computed unified items ——————————————————————————————————— */
-
-  const unifiedItems = useMemo<UnifiedItem[]>(() => {
-    const items: UnifiedItem[] = [];
-    let pdfIdx = 0;
-    for (let i = 0; i < entries.length; i++) {
-      if (entries[i].type === 'group') {
-        items.push({ id: `group-${i}`, type: 'group', pdfIndex: -1, entryIndex: i });
-      } else {
-        items.push({ id: `pdf-${pdfIdx}`, type: 'pdf', pdfIndex: pdfIdx, entryIndex: i });
-        pdfIdx++;
-      }
-    }
-
-    // Insert pricing page at its position (relative to PDF pages)
-    if (pricingExists && pricingForm.enabled) {
-      let pdfCount = 0;
-      let insertIdx = items.length;
-      if (pricingPosition >= 0) {
-        for (let i = 0; i < items.length; i++) {
-          if (pdfCount >= pricingPosition) { insertIdx = i; break; }
-          if (items[i].type === 'pdf') pdfCount++;
-          insertIdx = i + 1;
-        }
-      }
-      items.splice(insertIdx, 0, { id: 'pricing', type: 'pricing', pdfIndex: -1 });
-    }
-
-    // Insert each enabled packages page at its position
-    const sortedPkgs = packagesPages
-      .filter((p) => p.enabled)
-      .sort((a, b) => a.position !== b.position ? a.position - b.position : (a.sort_order ?? 0) - (b.sort_order ?? 0));
-
-    // AFTER
-    for (const pkg of sortedPkgs) {
-      let pdfCount = 0;
-      let insertIdx = items.length;
-      if (pkg.position >= 0) {
-        for (let i = 0; i < items.length; i++) {
-          if (pdfCount >= pkg.position) { insertIdx = i; break; }
-          if (items[i].type === 'pdf') pdfCount++;
-          insertIdx = i + 1;
-        }
-        // Advance past packages already spliced in at this same boundary
-        while (insertIdx < items.length && items[insertIdx].type === 'packages') {
-          insertIdx++;
-        }
-      }
-      items.splice(insertIdx, 0, { id: `packages-${pkg.id}`, type: 'packages', pdfIndex: -1, packagesId: pkg.id });
-    }
-
-    // Insert text pages at their positions
-    for (const tp of textPages) {
-      if (!tp.enabled) continue;
-      const textItem: UnifiedItem = {
-        id: `text-${tp.id}`,
-        type: 'text',
-        pdfIndex: -1,
-        textPageId: tp.id,
-      };
-      if (tp.position === -1 || tp.position >= items.length) {
-        items.push(textItem);
-      } else {
-        let pdfCount = 0;
-        let insertAt = 0;
-        for (let i = 0; i < items.length; i++) {
-          if (pdfCount >= tp.position) {
-            insertAt = i;
-            break;
-          }
-          if (items[i].type === 'pdf') pdfCount++;
-          insertAt = i + 1;
-        }
-        items.splice(insertAt, 0, textItem);
-      }
-    }
-
-    // Insert TOC page at its position when enabled
-    if (tocSettings.enabled) {
-      const tocPosition = tocSettings.position;
-      let pdfCount = 0;
-      let insertIdx = items.length;
-      if (tocPosition >= 0) {
-        for (let i = 0; i < items.length; i++) {
-          if (pdfCount >= tocPosition) { insertIdx = i; break; }
-          if (items[i].type === 'pdf') pdfCount++;
-          insertIdx = i + 1;
-        }
-      }
-      items.splice(insertIdx, 0, { id: 'toc', type: 'toc', pdfIndex: -1 });
-    }
-
-    return items;
-  }, [entries, pricingExists, pricingForm.enabled, pricingPosition, packagesPages, textPages, tocSettings]);
-
-  const selectedIsPricing = selectedId === 'pricing';
-  const selectedIsToc = selectedId === 'toc';
-  const selectedIsPackages = selectedId.startsWith('packages-');
-  const selectedPackagesId = selectedIsPackages ? selectedId.replace('packages-', '') : null;
-  const selectedPackagesPage = selectedPackagesId ? packagesPages.find((p) => p.id === selectedPackagesId) ?? null : null;
-  const selectedIsGroup = selectedId.startsWith('group-');
-  const selectedTextPage = selectedId.startsWith('text-')
-    ? textPages.find((tp) => tp.id === selectedId.replace('text-', ''))
-    : null;
-
-  /* ——— Measure panel height ————————————————————————————————————— */
+  /* ── Panel height ─────────────────────────────────────────────────────── */
 
   useEffect(() => {
     const measure = () => {
@@ -242,281 +91,172 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
       }
     };
     measure();
-    const timer = setTimeout(measure, 100);
+    const t = setTimeout(measure, 100);
     window.addEventListener('resize', measure);
-    return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
+    return () => { window.removeEventListener('resize', measure); clearTimeout(t); };
   }, []);
 
-  /* ——— Label helpers ———————————————————————————————————————————— */
+  /* ── DnD ──────────────────────────────────────────────────────────────── */
 
-  const toggleIndent = (index: number) => {
-    if (index === 0) return;
-    if (entries[index]?.type === 'group') return;
-    updateEntry(index, { indent: entries[index].indent === 0 ? 1 : 0 });
-  };
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
-  /* ——— Position calculation helpers ———————————————————————————— */
-
-  const countPdfPagesUpTo = useCallback((afterVisualIdx: number): number => {
-    let count = 0;
-    for (let i = 0; i <= afterVisualIdx && i < unifiedItems.length; i++) {
-      if (unifiedItems[i].type === 'pdf') count++;
-    }
-    return count;
-  }, [unifiedItems]);
-
-  /* ——— Insert-at-position handlers ———————————————————————————— */
-
-  const handleInsertPdfAtPosition = useCallback((afterVisualIdx: number, file: File) => {
-    const afterPdfPage = afterVisualIdx === -1 ? 0 : countPdfPagesUpTo(afterVisualIdx);
-    handleInsertPage(afterPdfPage, file);
-  }, [countPdfPagesUpTo, handleInsertPage]);
-
-  const handleInsertTextPageAtPosition = useCallback(async (afterVisualIdx: number) => {
-    const position = afterVisualIdx === -1 ? 0 : countPdfPagesUpTo(afterVisualIdx);
-    const newPage = await addTextPage(position);
-    if (newPage) setSelectedId(`text-${newPage.id}`);
-  }, [countPdfPagesUpTo, addTextPage, setSelectedId]);
-
-  const handleInsertPricingAtPosition = useCallback(async () => {
-    if (pricingExists && pricingForm.enabled) return;
-    await addPricingPage();
-    setSelectedId('pricing');
-  }, [pricingExists, pricingForm.enabled, addPricingPage, setSelectedId]);
-
-  /* ——— Drag and drop ——————————————————————————————————————————— */
-
-
-  /* ——— page_order helpers ————————————————————————————————————— */
-
-  const buildPageOrderFromItems = (items: UnifiedItem[]): PageOrderEntry[] =>
-    items
-      .filter((i) => i.type !== 'group')
-      .map((i): PageOrderEntry | null => {
-        if (i.type === 'pdf') return { type: 'pdf' };
-        if (i.type === 'pricing') return { type: 'pricing' };
-        if (i.type === 'packages' && i.packagesId) return { type: 'packages', id: i.packagesId };
-        if (i.type === 'text' && i.textPageId) return { type: 'text', id: i.textPageId };
-        if (i.type === 'toc') return { type: 'toc' };
-        return null;
-      })
-      .filter((e): e is PageOrderEntry => e !== null);
-
-  const savePageOrder = useCallback(async (items: UnifiedItem[]) => {
-    const apiPath = tableName === 'documents' ? '/api/documents' : '/api/proposals';
-    const pageOrder = buildPageOrderFromItems(items);
-    await fetch(apiPath, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: proposalId, page_order: pageOrder }),
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [proposalId, tableName]);
-
-  // Save page_order whenever add/remove operations settle (version bump triggers this).
-  // Drag-and-drop saves directly via savePageOrder(reordered) instead.
-  const isFirstRender = useRef(true);
-  useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
-    if (pageOrderVersion === 0) return;
-    savePageOrder(unifiedItems);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageOrderVersion]);
-
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    if (processing) return;
+    if (!over || active.id === over.id || processing || isReordering) return;
 
+    const oldIdx = pages.findIndex((p) => p.id === active.id);
+    const newIdx = pages.findIndex((p) => p.id === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+
+    const reordered = arrayMove(pages, oldIdx, newIdx);
     setIsReordering(true);
     try {
-      const oldIdx = unifiedItems.findIndex((i) => i.id === active.id);
-      const newIdx = unifiedItems.findIndex((i) => i.id === over.id);
-      if (oldIdx === -1 || newIdx === -1) return;
-
-      const reordered = arrayMove(unifiedItems, oldIdx, newIdx);
-
-      const pdfItems = reordered.filter((i) => i.type === 'pdf');
-      const newPageOrder = pdfItems.map((i) => i.pdfIndex);
-
-      const countPdfBefore = (idx: number) =>
-        reordered.slice(0, idx).filter((i) => i.type === 'pdf').length;
-
-      // Update pricing position
-      if (pricingExists && pricingForm.enabled) {
-        const pricingIdx = reordered.findIndex((i) => i.type === 'pricing');
-        const isLast = pricingIdx === reordered.length - 1;
-        const newPos = isLast ? -1 : countPdfBefore(pricingIdx);
-        if (newPos !== pricingPosition) {
-          setPricingPosition(newPos);
-          savePricing(pricingForm, newPos);
-        }
-      }
-
-      // Update position for each packages page
-      // AFTER
-      // Update position for each packages page
-      const pkgPositions = new Map<string, number>();
-      for (const pkg of packagesPages.filter((p) => p.enabled)) {
-        const pkgIdx = reordered.findIndex((i) => i.id === `packages-${pkg.id}`);
-        if (pkgIdx === -1) continue;
-        const isLast = pkgIdx === reordered.length - 1;
-        const newPos = isLast ? -1 : countPdfBefore(pkgIdx);
-        pkgPositions.set(pkg.id, newPos);
-        if (newPos !== pkg.position) {
-          updatePackagesPagePosition(pkg.id, newPos);
-        }
-      }
-      // Update sort_order for packages sharing the same position
-      const byPos2 = new Map<number, Array<{ id: string; idx: number }>>();
-      for (const pkg of packagesPages.filter((p) => p.enabled)) {
-        const pkgIdx = reordered.findIndex((i) => i.id === `packages-${pkg.id}`);
-        if (pkgIdx === -1) continue;
-        const pos = pkgPositions.get(pkg.id) ?? pkg.position;
-        const arr = byPos2.get(pos) ?? [];
-        arr.push({ id: pkg.id, idx: pkgIdx });
-        byPos2.set(pos, arr);
-      }
-      for (const group of Array.from(byPos2.values())) {
-        if (group.length < 2) continue;
-        group.sort((a: { id: string; idx: number }, b: { id: string; idx: number }) => a.idx - b.idx);
-        group.forEach(({ id }: { id: string }, i: number) => {
-          const pkg = packagesPages.find((p) => p.id === id);
-          if (pkg && (pkg.sort_order ?? 0) !== i) {
-            updatePackagesPage(id, { sort_order: i });
-          }
-        });
-      }
-
-      // Update text page positions
-      for (const tp of textPages) {
-        if (!tp.enabled) continue;
-        const textIdx = reordered.findIndex((i) => i.id === `text-${tp.id}`);
-        if (textIdx === -1) continue;
-        const isLast = textIdx === reordered.length - 1;
-        const newPos = isLast ? -1 : countPdfBefore(textIdx);
-        if (newPos !== tp.position) {
-          updateTextPagePosition(tp.id, newPos);
-        }
-      }
-
-      // Update TOC position if it was dragged
-      if (tocSettings.enabled) {
-        const tocIdx = reordered.findIndex((i) => i.id === 'toc');
-        if (tocIdx !== -1) {
-          const isLast = tocIdx === reordered.length - 1;
-          const newPos = isLast ? -1 : countPdfBefore(tocIdx);
-          if (newPos !== tocSettings.position) {
-            saveTocPosition(newPos);
-          }
-        }
-      }
-
-      // Rebuild entries array from reordered items
-      const newEntries: typeof entries = [];
-      for (const item of reordered) {
-        if ((item.type === 'pdf' || item.type === 'group') && item.entryIndex !== undefined) {
-          newEntries.push(entries[item.entryIndex]);
-        }
-      }
-      const entriesOrderChanged = newEntries.length !== entries.length || newEntries.some((e, i) => e !== entries[i]);
-      if (entriesOrderChanged) {
-        setEntries(newEntries);
-        await forceSaveEntries(newEntries);
-      }
-
-      const orderChanged = newPageOrder.some((v, i) => v !== i);
-      if (orderChanged) {
-        await handleReorder(newPageOrder);
-      }
-
-      // Save the explicit page ordering so viewers use the new path.
-      await savePageOrder(reordered);
+      await reorderPages(reordered.map((p) => p.id));
     } finally {
       setIsReordering(false);
     }
-  };
+  }, [pages, processing, isReordering, reorderPages]);
 
-  /* ——— Add/remove pricing ————————————————————————————————————— */
+  /* ── Insert handlers ──────────────────────────────────────────────────── */
 
-  const handleAddPricing = async () => {
-    await addPricingPage();
-    setSelectedId('pricing');
-    setPageOrderVersion((v) => v + 1);
-  };
+  const insertAfterPosition = (page: UnifiedPage | null) =>
+    page ? page.position : -1;
 
-  const handleRemovePricing = async () => {
-    const removed = await removePricingPage();
-    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
-  };
+  const handleInsertPdf = useCallback(async (afterPage: UnifiedPage | null, file: File) => {
+    const afterPos = insertAfterPosition(afterPage);
+    const ok = await insertPdfPage(file, afterPos);
+    // selection stays on current page; user can click the new one
+    return ok;
+  }, [insertPdfPage]);
 
-  /* ——— Add/remove packages ————————————————————————————————————— */
+  const handleInsertText = useCallback(async (afterPage: UnifiedPage | null) => {
+    const newPage = await addPage('text', {
+      title:    'New Text Page',
+      position: afterPage ? afterPage.position + 1 : undefined,
+    });
+    if (newPage) setSelectedId(newPage.id);
+  }, [addPage]);
 
-  const handleAddPackages = async () => {
-    const newPage = await addPackagesPage();
-    if (newPage) { setSelectedId(`packages-${newPage.id}`); setPageOrderVersion((v) => v + 1); }
-  };
+  const handleInsertPricing = useCallback(async () => {
+    const alreadyExists = pages.some((p) => p.type === 'pricing');
+    if (alreadyExists) return;
+    const newPage = await addPage('pricing', { title: 'Project Investment' });
+    if (newPage) setSelectedId(newPage.id);
+  }, [pages, addPage]);
 
-  const handleRemovePackages = async (pageId: string) => {
-    const removed = await removePackagesPage(pageId);
-    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
-  };
+  const handleAddPackages = useCallback(async () => {
+    const newPage = await addPage('packages', { title: 'Your Investment' });
+    if (newPage) setSelectedId(newPage.id);
+  }, [addPage]);
 
-  const handleAddTextPage = async () => {
-    const newPage = await addTextPage();
-    if (newPage) {
-      setSelectedId(`text-${newPage.id}`);
-      setPageOrderVersion((v) => v + 1);
+  const handleAddSection = useCallback(async () => {
+    const newPage = await addPage('section', { title: 'New Section' });
+    if (newPage) setSelectedId(newPage.id);
+  }, [addPage]);
+
+  const handleDeletePage = useCallback(async (pageId: string) => {
+    const currentIdx = pages.findIndex((p) => p.id === pageId);
+    const deleted = await deletePage(pageId);
+    if (deleted && selectedId === pageId) {
+      // Select adjacent page
+      const next = pages[currentIdx + 1] ?? pages[currentIdx - 1];
+      setSelectedId(next?.id ?? '');
     }
-  };
+  }, [pages, selectedId, deletePage]);
 
-  const handleRemoveTextPage = async (pageId: string) => {
-    const removed = await removeTextPage(pageId);
-    if (removed) { setSelectedId('pdf-0'); setPageOrderVersion((v) => v + 1); }
-  };
+  /* ── Text page update (maps Partial<TextPageData> → updatePage) ─────── */
 
-  /* ——— Prev / Next navigation for preview panels ——————————————— */
+  const handleTextPageUpdate = useCallback((
+    pageId: string,
+    changes: Record<string, unknown>,
+  ) => {
+    const { content, ...rest } = changes;
+    const mapped: Record<string, unknown> = { ...rest };
+    if (content !== undefined) {
+      mapped.payload_patch = { content };
+    }
+    updatePage(pageId, mapped as Parameters<typeof updatePage>[1]);
+  }, [updatePage]);
 
-  const selectedUnifiedIdx = unifiedItems.findIndex((i) => i.id === selectedId);
-  const canGoPrev = selectedUnifiedIdx > 0;
-  const canGoNext = selectedUnifiedIdx < unifiedItems.length - 1;
-  const goPrev = () => { if (canGoPrev) setSelectedId(unifiedItems[selectedUnifiedIdx - 1].id); };
-  const goNext = () => { if (canGoNext) setSelectedId(unifiedItems[selectedUnifiedIdx + 1].id); };
+  /* ── Prev / next navigation ──────────────────────────────────────────── */
 
-  /* ——— Done button: flush all pending saves ———————————————————— */
+  const selectedIdx  = pages.findIndex((p) => p.id === selectedId);
+  const canGoPrev    = selectedIdx > 0;
+  const canGoNext    = selectedIdx < pages.length - 1;
+  const goPrev       = () => { if (canGoPrev) setSelectedId(pages[selectedIdx - 1].id); };
+  const goNext       = () => { if (canGoNext) setSelectedId(pages[selectedIdx + 1].id); };
+
+  /* ── Derived: selected page ──────────────────────────────────────────── */
+
+  const selectedPage    = pages.find((p) => p.id === selectedId) ?? null;
+  const selectedPdfIdx  = selectedPage?.type === 'pdf'
+    ? pdfPages.findIndex((p) => p.id === selectedId)
+    : -1;
+
+  /* ── Derived: pageUrls for PdfPreviewPanel ───────────────────────────── */
+
+  const pageUrlEntries = pdfPages.map((p) => ({
+    id:          p.id,
+    position:    p.position,
+    type:        'pdf' as const,
+    url:         signedUrls[p.id] ?? null,
+    title:       p.title,
+    indent:      p.indent,
+    link_url:    p.link_url ?? undefined,
+    link_label:  p.link_label ?? undefined,
+    payload:     p.payload as Record<string, unknown>,
+  }));
+
+  /* ── Derived: entries (PageNameEntry) for PdfPreviewPanel ───────────── */
+
+  const pdfEntries = pdfPages.map((p) => ({
+    name:       p.title,
+    indent:     p.indent,
+    link_url:   p.link_url ?? undefined,
+    link_label: p.link_label ?? undefined,
+  }));
+
+  /* ── Feature flags ───────────────────────────────────────────────────── */
+
+  const isDocuments      = entityType === 'document';
+  const pricingExists    = pages.some((p) => p.type === 'pricing');
+  const pricingActive    = pricingExists;
+  const canAddPricing    = !isDocuments && !pricingExists;
+
+  /* ── Done ────────────────────────────────────────────────────────────── */
 
   const handleDone = async () => {
-    await flushPendingSaves();
-    await flushPricingSave();
-    await flushTextPageSaves();
-    await flushPackagesSaves();
+    await flushSaves();
     onSave();
   };
 
-  /* ——— Shared insert menu props ——————————————————————————————— */
+  /* ── Summary label ───────────────────────────────────────────────────── */
 
-  const isDocuments = tableName === 'documents';
-  const pricingAlreadyActive = pricingExists && pricingForm.enabled;
+  const pdfCount  = pdfPages.length;
+  const textCount = pages.filter((p) => p.type === 'text').length;
+  const pkgCount  = pages.filter((p) => p.type === 'packages').length;
+  const hasToc    = pages.some((p) => p.type === 'toc');
 
-  /* ——— Render ————————————————————————————————————————————————— */
+  const summaryParts = [
+    `${pdfCount} PDF page${pdfCount !== 1 ? 's' : ''}`,
+    pricingExists ? 'pricing' : '',
+    pkgCount > 0  ? `${pkgCount} packages` : '',
+    textCount > 0 ? `${textCount} text` : '',
+    hasToc        ? 'contents' : '',
+  ].filter(Boolean);
+
+  /* ── Render ──────────────────────────────────────────────────────────── */
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
-      {/* Header */}
+
+      {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">Page Editor</h3>
-          <span className="text-xs text-gray-400">
-            {pageCount} PDF page{pageCount !== 1 ? 's' : ''}
-            {pricingExists && pricingForm.enabled ? ' + pricing' : ''}
-            {packagesPages.filter((p) => p.enabled).length > 0
-              ? ` + ${packagesPages.filter((p) => p.enabled).length} packages`
-              : ''}
-            {textPages.filter((tp) => tp.enabled).length > 0
-              ? ` + ${textPages.filter((tp) => tp.enabled).length} text`
-              : ''}
-            {tocSettings.enabled ? ' + contents' : ''}
-          </span>
+          <span className="text-xs text-gray-400">{summaryParts.join(' + ')}</span>
         </div>
         <div className="flex items-center gap-2">
           {onCancel && (
@@ -537,19 +277,19 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         </div>
       </div>
 
-      {/* Action buttons */}
-      {(pricingLoaded && packagesLoaded && textPagesLoaded && tocLoaded) && (
+      {/* ── Add-page buttons ────────────────────────────────────────── */}
+      {pagesLoaded && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {!isDocuments && (!pricingExists || !pricingForm.enabled) && (
+          {canAddPricing && (
             <button
-              onClick={handleAddPricing}
+              onClick={handleInsertPricing}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
             >
               <DollarSign size={12} />
               Add Pricing Page
             </button>
           )}
-          {tableName !== 'documents' && (
+          {!isDocuments && (
             <button
               onClick={handleAddPackages}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
@@ -559,14 +299,14 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
             </button>
           )}
           <button
-            onClick={handleAddTextPage}
+            onClick={() => handleInsertText(null)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
           >
             <FileText size={12} />
             Add Text Page
           </button>
           <button
-            onClick={() => addGroup('New Section')}
+            onClick={handleAddSection}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
           >
             <FolderOpen size={12} />
@@ -579,10 +319,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
         Drag to reorder pages. Type a name for each page or leave blank for default numbering. Changes save automatically.
       </p>
 
-      {/* 50/50 split */}
+      {/* ── 50/50 split ─────────────────────────────────────────────── */}
       <div ref={panelRef} className="flex gap-6" style={{ height: panelHeight }}>
-        {/* Left half: sortable page list */}
+
+        {/* Left: sortable page list */}
         <div className="w-1/2 min-w-0 overflow-hidden flex flex-col relative">
+
           {/* Processing overlay */}
           {(processing || isReordering) && (
             <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
@@ -592,17 +334,19 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               </div>
             </div>
           )}
+
           <div className="flex-1 overflow-y-auto pr-1 space-y-0.5">
-            {/* Insert-at-start menu */}
+
+            {/* Insert-at-start */}
             <InsertPageMenu
               label="Insert"
               isStart
               disabled={processing}
               showPricing={!isDocuments}
-              pricingAlreadyExists={pricingAlreadyActive}
-              onInsertPdf={(file) => handleInsertPage(0, file)}
-              onInsertTextPage={() => handleInsertTextPageAtPosition(-1)}
-              onInsertPricingPage={handleInsertPricingAtPosition}
+              pricingAlreadyExists={pricingActive}
+              onInsertPdf={(file) => handleInsertPdf(null, file)}
+              onInsertTextPage={() => handleInsertText(null)}
+              onInsertPricingPage={handleInsertPricing}
             />
 
             <DndContext
@@ -611,214 +355,200 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleDragEnd}
             >
-              <SortableContext items={unifiedItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-                {unifiedItems.map((item, visualIdx) => {
-                  if (item.type === 'pricing') {
-                    return (
-                      <SortablePricingRow
-                        key={item.id}
-                        id={item.id}
-                        title={pricingForm.title}
-                        indent={pricingIndent}
-                        isFirst={visualIdx === 0}
-                        isSelected={selectedIsPricing}
-                        onSelect={() => setSelectedId('pricing')}
-                        onToggleIndent={() => {
-                          const next = pricingIndent ? 0 : 1;
-                          setPricingIndent(next);
-                          savePricing(pricingForm, pricingPosition, next);
-                        }}
-                        linkUrl={pricingLinkUrl}
-                        linkLabel={pricingLinkLabel}
-                        onLinkChange={(url: string, label: string) => updatePricingLink(url, label)}
-                        renderInsertAfter={
-                          <InsertPageMenu
-                            disabled={processing}
-                            showPricing={!isDocuments}
-                            pricingAlreadyExists={pricingAlreadyActive}
-                            onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
-                            onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
-                            onInsertPricingPage={handleInsertPricingAtPosition}
-                          />
-                        }
-                      />
-                    );
-                  }
+              <SortableContext
+                items={pages.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {pages.map((page, visualIdx) => {
+                  const insertAfterMenu = (
+                    <InsertPageMenu
+                      disabled={processing}
+                      showPricing={!isDocuments}
+                      pricingAlreadyExists={pricingActive}
+                      onInsertPdf={(file) => handleInsertPdf(page, file)}
+                      onInsertTextPage={() => handleInsertText(page)}
+                      onInsertPricingPage={handleInsertPricing}
+                    />
+                  );
 
-                  if (item.type === 'packages') {
-                    const pkg = packagesPages.find((p) => p.id === item.packagesId);
-                    return (
-                      <SortablePackagesRow
-                          key={item.id}
-                          id={item.id}
-                          title={pkg?.title || 'Your Investment'}
-                          indent={pkg?.indent ?? 0}
-                          isFirst={visualIdx === 0}
-                          isSelected={selectedId === item.id}
-                          processing={isReordering || processing}
-                          onSelect={() => setSelectedId(item.id)}
-                          onToggleIndent={() => {
-                            if (pkg) updatePackagesPage(pkg.id, { indent: pkg.indent ? 0 : 1 });
-                          }}
-                          renderInsertAfter={
-                            <InsertPageMenu
-                              disabled={processing}
-                              showPricing={!isDocuments}
-                              pricingAlreadyExists={pricingAlreadyActive}
-                              onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
-                              onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
-                              onInsertPricingPage={handleInsertPricingAtPosition}
-                            />
-                          }
-                        />
-                    );
-                  }
-
-                  if (item.type === 'text') {
-                    const tp = textPages.find((t) => t.id === item.textPageId);
-                    return (
-                      <SortableTextRow
-                        key={item.id}
-                        id={item.id}
-                        title={tp?.title || 'Text Page'}
-                        indent={tp?.indent ?? 0}
-                        isFirst={visualIdx === 0}
-                        isSelected={selectedId === item.id}
-                        onSelect={() => setSelectedId(item.id)}
-                        onToggleIndent={() => {
-                          if (tp) updateTextPage(tp.id, { indent: tp.indent ? 0 : 1 });
-                        }}
-                        onRemove={() => tp && handleRemoveTextPage(tp.id)}
-                        linkUrl={tp?.link_url || ''}
-                        linkLabel={tp?.link_label || ''}
-                        onLinkChange={(url: string, label: string) => {
-                          if (tp) updateTextPage(tp.id, { link_url: url, link_label: label });
-                        }}
-                        renderInsertAfter={
-                          <InsertPageMenu
-                            disabled={processing}
-                            showPricing={!isDocuments}
-                            pricingAlreadyExists={pricingAlreadyActive}
-                            onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
-                            onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
-                            onInsertPricingPage={handleInsertPricingAtPosition}
-                          />
-                        }
-                      />
-                    );
-                  }
-
-                  if (item.type === 'toc') {
-                    return (
-                      <SortableTocRow
-                        key={item.id}
-                        id={item.id}
-                        title={tocSettings.title}
-                        isSelected={selectedId === 'toc'}
-                        onSelect={() => setSelectedId('toc')}
-                        renderInsertAfter={
-                          <InsertPageMenu
-                            disabled={processing}
-                            showPricing={!isDocuments}
-                            pricingAlreadyExists={pricingAlreadyActive}
-                            onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
-                            onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
-                            onInsertPricingPage={handleInsertPricingAtPosition}
-                          />
-                        }
-                      />
-                    );
-                  }
-
-                  if (item.type === 'group') {
-                    const entryIdx = item.entryIndex!;
-                    const entry = entries[entryIdx];
-                    if (!entry) return null;
+                  /* ── section ──────────────────────────────────────── */
+                  if (page.type === 'section') {
                     return (
                       <SortableGroupRow
-                        key={item.id}
-                        id={item.id}
-                        name={entry.name}
-                        isSelected={selectedId === item.id}
-                        onSelect={() => setSelectedId(item.id)}
-                        onRename={(name) => updateEntry(entryIdx, { name })}
-                        onRemove={() => removeGroup(entryIdx)}
+                        key={page.id}
+                        id={page.id}
+                        name={page.title}
+                        isSelected={selectedId === page.id}
+                        onSelect={() => setSelectedId(page.id)}
+                        onRename={(name) => updatePage(page.id, { title: name })}
+                        onRemove={() => handleDeletePage(page.id)}
                       />
                     );
                   }
 
-                  const entryIdx = item.entryIndex ?? item.pdfIndex;
-                  const entry = entries[entryIdx];
-                  if (!entry) return null;
-                  const i = item.pdfIndex;
+                  /* ── toc ──────────────────────────────────────────── */
+                  if (page.type === 'toc') {
+                    return (
+                      <SortableTocRow
+                        key={page.id}
+                        id={page.id}
+                        title={page.title || 'Table of Contents'}
+                        isSelected={selectedId === page.id}
+                        onSelect={() => setSelectedId(page.id)}
+                        renderInsertAfter={insertAfterMenu}
+                      />
+                    );
+                  }
 
+                  /* ── pricing ──────────────────────────────────────── */
+                  if (page.type === 'pricing') {
+                    return (
+                      <SortablePricingRow
+                        key={page.id}
+                        id={page.id}
+                        title={page.title}
+                        indent={page.indent}
+                        isFirst={visualIdx === 0}
+                        isSelected={selectedId === page.id}
+                        onSelect={() => setSelectedId(page.id)}
+                        onToggleIndent={() =>
+                          updatePage(page.id, { indent: page.indent ? 0 : 1 })
+                        }
+                        linkUrl={page.link_url ?? ''}
+                        linkLabel={page.link_label ?? ''}
+                        onLinkChange={(url, label) =>
+                          updatePage(page.id, { link_url: url, link_label: label })
+                        }
+                        renderInsertAfter={insertAfterMenu}
+                      />
+                    );
+                  }
+
+                  /* ── packages ─────────────────────────────────────── */
+                  if (page.type === 'packages') {
+                    return (
+                      <SortablePackagesRow
+                        key={page.id}
+                        id={page.id}
+                        title={page.title}
+                        indent={page.indent}
+                        isFirst={visualIdx === 0}
+                        isSelected={selectedId === page.id}
+                        processing={isReordering || processing}
+                        onSelect={() => setSelectedId(page.id)}
+                        onToggleIndent={() =>
+                          updatePage(page.id, { indent: page.indent ? 0 : 1 })
+                        }
+                        onRemove={() => handleDeletePage(page.id)}
+                        renderInsertAfter={insertAfterMenu}
+                      />
+                    );
+                  }
+
+                  /* ── text ─────────────────────────────────────────── */
+                  if (page.type === 'text') {
+                    return (
+                      <SortableTextRow
+                        key={page.id}
+                        id={page.id}
+                        title={page.title}
+                        indent={page.indent}
+                        isFirst={visualIdx === 0}
+                        isSelected={selectedId === page.id}
+                        onSelect={() => setSelectedId(page.id)}
+                        onToggleIndent={() =>
+                          updatePage(page.id, { indent: page.indent ? 0 : 1 })
+                        }
+                        onRemove={() => handleDeletePage(page.id)}
+                        linkUrl={page.link_url ?? ''}
+                        linkLabel={page.link_label ?? ''}
+                        onLinkChange={(url, label) =>
+                          updatePage(page.id, { link_url: url, link_label: label })
+                        }
+                        renderInsertAfter={insertAfterMenu}
+                      />
+                    );
+                  }
+
+                  /* ── pdf ──────────────────────────────────────────── */
+                  const pdfIdx = pdfPages.findIndex((p) => p.id === page.id);
                   return (
                     <SortablePdfRow
-                      key={item.id}
-                      id={item.id}
-                      entry={entry}
+                      key={page.id}
+                      id={page.id}
+                      page={page}
                       visualNum={visualIdx + 1}
-                      isSelected={selectedId === item.id}
-                      status={saveStatus[entryIdx] === 'saving' || saveStatus[entryIdx] === 'saved' ? saveStatus[entryIdx] : null}
-                      processing={processing}
-                      pageCount={pageCount}
-                      index={i}
-                      onSelect={() => setSelectedId(item.id)}
-                      onToggleIndent={() => toggleIndent(entryIdx)}
-                      onUpdateEntry={(changes) => updateEntry(entryIdx, changes)}
-                      onReplacePage={(file) => handleReplacePage(i, file)}
-                      onDeletePage={() => handleDeletePage(i)}
-                      renderInsertAfter={
-                        <InsertPageMenu
-                          disabled={processing}
-                          showPricing={!isDocuments}
-                          pricingAlreadyExists={pricingAlreadyActive}
-                          onInsertPdf={(file) => handleInsertPdfAtPosition(visualIdx, file)}
-                          onInsertTextPage={() => handleInsertTextPageAtPosition(visualIdx)}
-                          onInsertPricingPage={handleInsertPricingAtPosition}
-                        />
+                      isSelected={selectedId === page.id}
+                      status={
+                        saveStatuses[page.id] === 'saving' || saveStatuses[page.id] === 'saved'
+                          ? (saveStatuses[page.id] as 'saving' | 'saved')
+                          : null
                       }
+                      processing={processing}
+                      pageCount={pdfPages.length}
+                      index={pdfIdx}
+                      onSelect={() => setSelectedId(page.id)}
+                      onToggleIndent={() =>
+                        updatePage(page.id, { indent: page.indent ? 0 : 1 })
+                      }
+                      onUpdate={(changes) =>
+                        updatePage(page.id, changes as Parameters<typeof updatePage>[1])
+                      }
+                      onReplacePage={(file) => replacePdfPage(page.id, file)}
+                      onDeletePage={() => handleDeletePage(page.id)}
+                      renderInsertAfter={insertAfterMenu}
                     />
                   );
                 })}
               </SortableContext>
             </DndContext>
 
-            {entries.length === 0 && <p className="text-sm text-gray-400">Loading pages...</p>}
+            {!pagesLoaded && (
+              <p className="text-sm text-gray-400 py-4 text-center">Loading pages…</p>
+            )}
           </div>
         </div>
 
-        {/* Right half: preview / editor */}
+        {/* Right: preview panel */}
         <div className="w-1/2 min-w-0 flex flex-col">
-          {selectedIsPricing && pricingExists ? (
+          {!selectedPage ? (
+            <div className="flex-1 flex items-center justify-center text-gray-300 text-xs">
+              Select a page to preview
+            </div>
+
+          ) : selectedPage.type === 'pricing' ? (
             <PricingPreviewPanel
               proposalId={proposalId}
+              page={selectedPage}
               onGoPrev={goPrev}
               onGoNext={goNext}
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
             />
-          ) : selectedIsPackages && selectedPackagesPage ? (
+
+          ) : selectedPage.type === 'packages' ? (
             <PackagesPreviewPanel
               proposalId={proposalId}
-              packagesId={selectedPackagesPage.id}
+              page={selectedPage}
               onGoPrev={goPrev}
               onGoNext={goNext}
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
             />
-          ) : selectedTextPage ? (
+
+          ) : selectedPage.type === 'text' ? (
             <TextPagePreviewPanel
               proposalId={proposalId}
-              page={selectedTextPage}
-              saveStatus={textPageSaveStatuses[selectedTextPage.id] || 'idle'}
-              onUpdate={(pageId: string, changes) => updateTextPage(pageId, changes)}
+              page={selectedPage}
+              saveStatus={saveStatuses[selectedPage.id] ?? 'idle'}
+              onUpdate={handleTextPageUpdate}
               onGoPrev={goPrev}
               onGoNext={goNext}
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
             />
-          ) : selectedIsToc ? (
+
+          ) : selectedPage.type === 'toc' ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
               <List size={32} className="text-amber-400 mb-3" />
               <p className="text-sm font-medium text-amber-700">Table of Contents</p>
@@ -826,23 +556,26 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
                 Drag to reposition. Configure content and styling in the Contents tab.
               </p>
             </div>
-          ) : selectedIsGroup ? (
+
+          ) : selectedPage.type === 'section' ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
               <FolderOpen size={32} className="text-amber-400 mb-3" />
               <p className="text-sm font-medium text-amber-700">Section Header</p>
               <p className="text-xs text-amber-500 mt-1 max-w-[240px]">
-                This is a non-navigable group header. Pages nested below it will appear as children in the sidebar.
+                Non-navigable group header. Pages below it appear as children in the sidebar.
               </p>
             </div>
+
           ) : (
+            /* pdf */
             <PdfPreviewPanel
               filePath={filePath}
-              pdfVersion={pdfVersion}
-              selectedPdfIndex={selectedPdfIndex}
-              pageCount={pageCount}
-              entries={entries}
-              pageUrls={pageUrls}
-              onDocLoadSuccess={({ numPages }) => syncPageCount(numPages)}
+              pdfVersion={0}
+              selectedPdfIndex={Math.max(0, selectedPdfIdx)}
+              pageCount={pdfPages.length}
+              entries={pdfEntries}
+              pageUrls={pageUrlEntries}
+              onDocLoadSuccess={() => {}}
               onGoPrev={goPrev}
               onGoNext={goNext}
             />

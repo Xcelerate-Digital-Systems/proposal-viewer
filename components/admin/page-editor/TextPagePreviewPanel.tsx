@@ -6,21 +6,39 @@ import { ChevronLeft, ChevronRight, FileText, Pencil, Check, Loader2 } from 'luc
 import { supabase } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import TextPage from '@/components/viewer/TextPage';
-import { TextPageData } from './useTextPagesState';
+import { TextPageData } from './pageEditorTypes';
 import TextPageEditorModal from './TextPageEditorModal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
+import { UnifiedPage } from '@/lib/page-operations';
 
 interface TextPagePreviewPanelProps {
   proposalId: string;
-  page: TextPageData;
+  page: UnifiedPage;
   saveStatus: 'idle' | 'saving' | 'saved';
-  onUpdate: (pageId: string, changes: Partial<TextPageData>) => void;
+  /** Mapped through handleTextPageUpdate in PageEditor — receives (pageId, Record<string,unknown>) */
+  onUpdate: (pageId: string, changes: Record<string, unknown>) => void;
   onGoPrev: () => void;
   onGoNext: () => void;
   canGoPrev: boolean;
   canGoNext: boolean;
   /** When provided, fetches branding directly instead of looking up via proposals table */
   companyId?: string;
+}
+
+/**
+ * Build a TextPageData-compatible object from a UnifiedPage so the existing
+ * TextPageEditorModal can consume it without modification.
+ */
+function toTextPageData(page: UnifiedPage): TextPageData {
+  const payload = (page.payload ?? {}) as Record<string, unknown>;
+  return {
+    id:                    page.id,
+    title:                 page.title,
+    content:               payload.content ?? null,
+    show_title:            page.show_title,
+    show_member_badge:     page.show_member_badge,
+    prepared_by_member_id: page.prepared_by_member_id ?? null,
+  };
 }
 
 export default function TextPagePreviewPanel({
@@ -41,14 +59,15 @@ export default function TextPagePreviewPanel({
   const [resolvedCompanyId, setResolvedCompanyId] = useState<string | undefined>(companyIdProp);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch branding + proposal info for preview context
+  // Resolve company_id — prefer page.company_id when available (avoids extra DB call)
   useEffect(() => {
+    const effectiveCompanyId = companyIdProp ?? page.company_id ?? undefined;
+
     const fetchData = async () => {
       try {
-        // If companyId is provided directly (e.g. from templates), skip proposals lookup
-        if (companyIdProp) {
-          setResolvedCompanyId(companyIdProp);
-          const res = await fetch(`/api/company/branding?company_id=${companyIdProp}`);
+        if (effectiveCompanyId) {
+          setResolvedCompanyId(effectiveCompanyId);
+          const res = await fetch(`/api/company/branding?company_id=${effectiveCompanyId}`);
           if (res.ok) {
             const data = await res.json();
             setBranding({ ...DEFAULT_BRANDING, ...data });
@@ -56,6 +75,7 @@ export default function TextPagePreviewPanel({
           return;
         }
 
+        // Fallback: look up company_id via proposals table
         const { data: prop } = await supabase
           .from('proposals')
           .select('company_id, client_name, title')
@@ -80,14 +100,14 @@ export default function TextPagePreviewPanel({
     };
 
     fetchData();
-  }, [proposalId, companyIdProp]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposalId, companyIdProp, page.company_id]);
 
   // Measure container and calculate scale
   useEffect(() => {
     const measure = () => {
       if (containerRef.current) {
         const width = containerRef.current.offsetWidth - 2;
-        // TextPage renders at ~700px max-width + padding ≈ ~780px
         const scale = Math.min(1, width / 780);
         setPreviewScale(scale);
       }
@@ -101,11 +121,14 @@ export default function TextPagePreviewPanel({
     };
   }, []);
 
+  const textPageData = toTextPageData(page);
+  const payload = (page.payload ?? {}) as Record<string, unknown>;
+
   return (
     <>
       <div ref={containerRef} className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-          {/* Header bar — matches PricingPreviewPanel / PdfPreviewPanel */}
+          {/* Header bar */}
           <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
@@ -151,7 +174,7 @@ export default function TextPagePreviewPanel({
             </div>
           </div>
 
-          {/* Scaled preview container — matches PricingPreviewPanel */}
+          {/* Scaled preview */}
           <div className="flex-1 min-h-0 overflow-hidden relative">
             <div
               className="absolute inset-0 overflow-y-auto"
@@ -164,18 +187,18 @@ export default function TextPagePreviewPanel({
             >
               <TextPage
                 textPage={{
-                  id: page.id,
-                  proposal_id: proposalId,
-                  company_id: '',
-                  title: page.title,
-                  content: page.content,
-                  position: page.position,
-                  enabled: page.enabled,
-                  sort_order: page.sort_order,
-                  indent: 0,
-                  show_member_badge: page.show_member_badge,
-                  prepared_by_member_id: page.prepared_by_member_id,
-                  show_title: page.show_title,
+                  id:                    page.id,
+                  proposal_id:           proposalId,
+                  company_id:            page.company_id ?? '',
+                  title:                 page.title,
+                  content:               payload.content ?? null,
+                  position:              page.position,
+                  enabled:               page.enabled,
+                  sort_order:            page.position,
+                  indent:                0,
+                  show_member_badge:     page.show_member_badge,
+                  prepared_by_member_id: page.prepared_by_member_id ?? null,
+                  show_title:            page.show_title,
                 }}
                 branding={branding}
                 clientName={proposal?.client_name}
@@ -195,12 +218,12 @@ export default function TextPagePreviewPanel({
         </div>
       </div>
 
-      {/* Editor modal */}
+      {/* Editor modal — still takes TextPageData; we pass the derived object */}
       {showEditor && (
         <TextPageEditorModal
-          page={page}
+          page={textPageData}
           saveStatus={saveStatus}
-          onUpdate={onUpdate}
+          onUpdate={(pageId, changes) => onUpdate(pageId, changes as Record<string, unknown>)}
           onClose={() => setShowEditor(false)}
           companyId={resolvedCompanyId}
         />

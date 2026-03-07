@@ -381,14 +381,17 @@ async function resolveCoverData(proposal: Proposal): Promise<{
 async function loadPerPageDocs(
   pageUrls: PageUrlEntry[],
 ): Promise<Map<number, PDFDocument>> {
+  // pageUrls here contains only PDF-type entries (callers filter before passing in).
+  // We key them 1-based by their order in the array, matching toPdfPage() return values.
   const entries = await Promise.all(
-    pageUrls.map(async (entry) => {
+    pageUrls.map(async (entry, idx) => {
+      if (!entry.url) return null; // signed URL missing — skip
       const bytes = await fetch(entry.url).then((r) => r.arrayBuffer());
       const doc = await PDFDocument.load(bytes);
-      return [entry.page_number, doc] as [number, PDFDocument];
+      return [idx + 1, doc] as [number, PDFDocument];
     })
   );
-  return new Map(entries);
+  return new Map(entries.filter((e): e is [number, PDFDocument] => e !== null));
 }
 
 /* ——— Main export function ——————————————————————————————— */

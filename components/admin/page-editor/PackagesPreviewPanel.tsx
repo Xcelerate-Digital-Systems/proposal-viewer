@@ -3,91 +3,69 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Package, ExternalLink } from 'lucide-react';
-import { supabase, ProposalPackages } from '@/lib/supabase';
+import { ProposalPackages, normalizePackageStyling } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import PackagesPage from '@/components/viewer/PackagesPage';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
+import { UnifiedPage } from '@/lib/page-operations';
 
 interface PackagesPreviewPanelProps {
   proposalId: string;
-  packagesId?: string;
+  /** Packages page row — already loaded by usePageEditor in the parent */
+  page: UnifiedPage;
   onGoPrev: () => void;
   onGoNext: () => void;
   canGoPrev: boolean;
   canGoNext: boolean;
-  companyId?: string;
+}
+
+/** Reconstruct a ProposalPackages object from a unified page row. */
+function toPackagesData(page: UnifiedPage): ProposalPackages {
+  const payload = (page.payload ?? {}) as Record<string, unknown>;
+  return {
+    id:           page.id,
+    proposal_id:  page.entity_id,
+    company_id:   page.company_id,
+    enabled:      page.enabled,
+    position:     page.position,
+    indent:       page.indent ?? 0,
+    sort_order:   0,
+    title:        page.title,
+    intro_text:   (payload.intro_text  as string)  ?? null,
+    packages:     (payload.packages    as ProposalPackages['packages']) ?? [],
+    footer_text:  (payload.footer_text as string)  ?? null,
+    styling:      normalizePackageStyling(payload.styling),
+    created_at:   page.created_at,
+    updated_at:   page.updated_at,
+  };
 }
 
 export default function PackagesPreviewPanel({
   proposalId,
+  page,
   onGoPrev,
   onGoNext,
   canGoPrev,
   canGoNext,
-  companyId: directCompanyId,
-  packagesId,
 }: PackagesPreviewPanelProps) {
-  const [packages, setPackages] = useState<ProposalPackages | null>(null);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
-  const [loading, setLoading] = useState(true);
   const [previewScale, setPreviewScale] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch packages + branding
+  // Fetch branding using company_id already present on the page row
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const isTemplate = !!directCompanyId;
-        const endpoint = isTemplate
-          ? `/api/templates/packages?template_id=${proposalId}${packagesId ? `&packages_id=${packagesId}` : ''}`
-          : `/api/proposals/packages?proposal_id=${proposalId}${packagesId ? `&packages_id=${packagesId}` : ''}`;
-
-        const pkgRes = await fetch(endpoint);
-        if (pkgRes.ok) {
-          const data = await pkgRes.json();
-          const rows: ProposalPackages[] = Array.isArray(data) ? data : (data ? [data] : []);
-          const found = packagesId ? rows.find((p) => p.id === packagesId) ?? rows[0] : rows[0];
-          if (found) setPackages(found);
-        }
-
-        // Fetch branding
-        let companyIdToUse = directCompanyId;
-
-        if (!companyIdToUse) {
-          const { data: proposal } = await supabase
-            .from('proposals')
-            .select('company_id')
-            .eq('id', proposalId)
-            .single();
-          companyIdToUse = proposal?.company_id;
-        }
-
-        if (companyIdToUse) {
-          const { data: company } = await supabase
-            .from('companies')
-            .select('name, logo_url, accent_color, website, bg_primary, bg_secondary, sidebar_text_color, accept_text_color, cover_bg_style, cover_bg_color_1, cover_bg_color_2, cover_text_color, cover_subtitle_color, cover_button_bg, cover_button_text, cover_overlay_opacity, cover_gradient_type, cover_gradient_angle, font_heading, font_body, font_sidebar')
-            .eq('id', companyIdToUse)
-            .single();
-
-          if (company) {
-            setBranding({ ...DEFAULT_BRANDING, ...company });
-          }
-        }
-      } catch {
-        // silent
-      }
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [proposalId, directCompanyId, packagesId]);
+    if (!page.company_id) return;
+    fetch(`/api/company/branding?company_id=${page.company_id}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setBranding({ ...DEFAULT_BRANDING, ...data }); })
+      .catch(() => {});
+  }, [page.company_id]);
 
   // Measure container and calculate scale
   useEffect(() => {
     const measure = () => {
       if (containerRef.current) {
         const width = containerRef.current.offsetWidth - 2;
-        // PackagesPage renders at ~960px max-width + padding ~1020px
         const scale = Math.min(1, width / 1020);
         setPreviewScale(scale);
       }
@@ -98,33 +76,12 @@ export default function PackagesPreviewPanel({
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, []);
 
-  if (loading) {
-    return (
-      <div ref={containerRef} className="flex-1 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-5 h-5 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
-          <p className="text-xs text-gray-400">Loading preview...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!packages) {
-    return (
-      <div ref={containerRef} className="flex-1 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <Package size={20} className="text-gray-300" />
-          <p className="text-xs text-gray-400">No packages data yet</p>
-          <p className="text-[10px] text-gray-300">Add packages in the Packages tab</p>
-        </div>
-      </div>
-    );
-  }
+  const packages = toPackagesData(page);
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col min-h-0">
       <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-        {/* Header bar — matches PricingPreviewPanel / PdfPreviewPanel */}
+        {/* Header bar */}
         <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
@@ -149,7 +106,7 @@ export default function PackagesPreviewPanel({
           </span>
         </div>
 
-        {/* Scaled preview container */}
+        {/* Scaled preview */}
         <div className="flex-1 min-h-0 overflow-hidden relative">
           <div
             className="absolute inset-0 overflow-y-auto"

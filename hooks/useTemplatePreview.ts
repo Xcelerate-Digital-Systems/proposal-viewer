@@ -2,19 +2,16 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, PageNameEntry, normalizePageNamesWithGroups, ProposalPricing, ProposalPackages, TocSettings, parseTocSettings, parsePageOrder, PageOrderEntry } from '@/lib/supabase';
-import { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
+import { supabase, PageNameEntry, TocSettings, parseTocSettings } from '@/lib/supabase';
+import { CompanyBranding, ProposalTextPage, PageUrlEntry } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
-import { buildPageMap } from '@/lib/buildPageMap';
 
-
-/* ─── Template data type ───────────────────────────────────────────── */
+/* ─── Template data type ─────────────────────────────────────────────────── */
 
 interface TemplateData {
   id: string;
   name: string;
   description: string | null;
-  page_count: number;
   file_path: string | null;
   cover_enabled: boolean;
   cover_image_path: string | null;
@@ -40,8 +37,6 @@ interface TemplateData {
   prepared_by: string | null;
   prepared_by_member_id: string | null;
   company_id: string;
-  page_names: unknown;
-  section_headers: unknown;
   toc_settings: unknown;
   bg_image_path: string | null;
   bg_image_overlay_opacity: number | null;
@@ -62,22 +57,16 @@ interface TemplateData {
   page_num_text_color: string | null;
 }
 
-/* ─── Hook ─────────────────────────────────────────────────────────── */
+/* ─── Hook ───────────────────────────────────────────────────────────────── */
 
 export function useTemplatePreview(templateId: string) {
   const [template, setTemplate] = useState<TemplateData | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string>('');
-  const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [pageUrls, setPageUrls] = useState<PageUrlEntry[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [pageEntries, setPageEntries] = useState<PageNameEntry[]>([]);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
-  const [pricing, setPricing] = useState<ProposalPricing | null>(null);
-  const [packages, setPackages] = useState<ProposalPackages[]>([]);
-  const [textPages, setTextPages] = useState<ProposalTextPage[]>([]);
-  const [pageOrder, setPageOrder] = useState<PageOrderEntry[] | null>(null);
 
   const fetchTemplate = useCallback(async () => {
     try {
@@ -95,31 +84,6 @@ export function useTemplatePreview(templateId: string) {
       }
 
       setTemplate(tmpl as TemplateData);
-      setPageOrder(parsePageOrder((tmpl as Record<string, unknown>).page_order));
-
-        // Fetch template_pages for real labels and indents
-        const { data: tPages } = await supabase
-          .from('template_pages')
-          .select('page_number, label, indent, link_url, link_label')
-          .eq('template_id', templateId)
-          .order('page_number', { ascending: true });
-
-        const pdfCount = tPages?.length ?? 0;
-        const normalized = normalizePageNamesWithGroups(tmpl.page_names, pdfCount);
-
-        let pdfIdx = 0;
-        const builtEntries: PageNameEntry[] = normalized.map((entry) => {
-          if (entry.type === 'group') return entry;
-          pdfIdx++;
-          const tPage = tPages?.find((p) => p.page_number === pdfIdx);
-          return {
-            name: tPage?.label || entry.name || `Page ${pdfIdx}`,
-            indent: tPage?.indent ?? entry.indent ?? 0,
-            ...((tPage as any)?.link_url ? { link_url: (tPage as any).link_url } : {}),
-            ...((tPage as any)?.link_label ? { link_label: (tPage as any).link_label } : {}),
-          };
-        });
-        setPageEntries(builtEntries);
 
       // 2. Fetch branding
       try {
@@ -131,10 +95,9 @@ export function useTemplatePreview(templateId: string) {
             const { data: bgUrlData } = supabase.storage
               .from('company-assets')
               .getPublicUrl(tmpl.bg_image_path);
-            if (bgUrlData?.publicUrl) {
-              brandingData.bg_image_url = bgUrlData.publicUrl;
-            }
-            brandingData.bg_image_overlay_opacity = tmpl.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
+            if (bgUrlData?.publicUrl) brandingData.bg_image_url = bgUrlData.publicUrl;
+            brandingData.bg_image_overlay_opacity =
+              tmpl.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
           }
 
           if (tmpl.text_page_bg_color != null) brandingData.text_page_bg_color = tmpl.text_page_bg_color;
@@ -153,56 +116,51 @@ export function useTemplatePreview(templateId: string) {
 
           setBranding(brandingData);
         }
-      } catch {
-        // Non-critical
-      }
+      } catch { /* Non-critical */ }
       setBrandingLoaded(true);
 
-      // 3. Fetch signed URL for merged PDF
-      if (tmpl.file_path) {
-        const { data: signedData } = await supabase.storage
-          .from('proposals')
-          .createSignedUrl(tmpl.file_path, 3600);
+      // 3. Fetch all pages from v2 table, sign PDF page URLs client-side
+      try {
+        const pagesRes = await fetch(`/api/templates/pages?template_id=${templateId}`);
+        if (pagesRes.ok) {
+          const rawPages: Array<{
+            id: string;
+            position: number;
+            type: string;
+            title: string;
+            indent: number;
+            link_url: string | null;
+            link_label: string | null;
+            payload: Record<string, unknown>;
+          }> = await pagesRes.json();
 
-        if (signedData?.signedUrl) {
-          setPdfUrl(signedData.signedUrl + '&v=' + Date.now());
-        }
-      }
-
-      // 4–6. Fetch pricing, packages, text pages in parallel
-      const [pricingRes, pkgRes, textRes] = await Promise.all([
-        fetch(`/api/templates/pricing?template_id=${templateId}`).catch(() => null),
-        fetch(`/api/templates/packages?template_id=${templateId}`).catch(() => null),
-        fetch(`/api/templates/text-pages?template_id=${templateId}`).catch(() => null),
-      ]);
-
-      // 4. Pricing
-      if (pricingRes?.ok) {
-        try {
-          const pricingData = await pricingRes.json();
-          if (pricingData && pricingData.enabled) {
-            setPricing(pricingData);
-          }
-        } catch { /* Non-critical */ }
-      }
-
-      // 5. Packages
-      if (pkgRes?.ok) {
-        try {
-          const pkgData = await pkgRes.json();
-          setPackages(Array.isArray(pkgData) ? pkgData : []);
-        } catch { /* Non-critical */ }
-      }
-
-      // 6. Text pages
-      if (textRes?.ok) {
-        try {
-          const textData = await textRes.json();
-          setTextPages(
-            Array.isArray(textData) ? textData.filter((tp: ProposalTextPage) => tp.enabled) : []
+          // Sign URLs for PDF pages in parallel
+          const signed = await Promise.all(
+            rawPages.map(async (p) => {
+              let url: string | null = null;
+              if (p.type === 'pdf' && p.payload?.file_path) {
+                const { data } = await supabase.storage
+                  .from('proposals')
+                  .createSignedUrl(p.payload.file_path as string, 3600);
+                url = data?.signedUrl ?? null;
+              }
+              return {
+                id: p.id,
+                position: p.position,
+                type: p.type as PageUrlEntry['type'],
+                url,
+                title: p.title,
+                indent: p.indent,
+                link_url: p.link_url ?? undefined,
+                link_label: p.link_label ?? undefined,
+                payload: p.payload,
+              };
+            }),
           );
-        } catch { /* Non-critical */ }
-      }
+
+          setPageUrls(signed);
+        }
+      } catch { /* Non-critical */ }
 
       setLoading(false);
     } catch (err) {
@@ -216,143 +174,143 @@ export function useTemplatePreview(templateId: string) {
     fetchTemplate();
   }, [fetchTemplate]);
 
-  // Parse TOC settings
-  const tocSettings = template ? parseTocSettings(template.toc_settings) : null;
+  /* ── Derived state from unified page list ──────────────────────────────── */
 
-  // Build virtual page map
-  const pageMap = useMemo(
-    () => buildPageMap(pdfPageCount, pricing, textPages, packages, tocSettings, pageOrder),
-    [pdfPageCount, pricing, textPages, packages, tocSettings, pageOrder]
+  // Sidebar nav entries — section pages become 'group' type
+  const pageEntries: PageNameEntry[] = useMemo(
+    () =>
+      pageUrls.map((p) => ({
+        name: p.title,
+        indent: p.indent,
+        ...(p.type === 'section' ? { type: 'group' as const } : {}),
+        ...(p.link_url ? { link_url: p.link_url } : {}),
+        ...(p.link_label ? { link_label: p.link_label } : {}),
+      })),
+    [pageUrls],
   );
 
-  // Build page entries with special pages inserted for sidebar
-  const allPageEntries = useMemo(() => {
-    if (pdfPageCount === 0) return pageEntries;
+  const numPages = pageUrls.length;
+  const pdfPageCount = useMemo(() => pageUrls.filter((p) => p.type === 'pdf').length, [pageUrls]);
 
-    const pdfEntries: PageNameEntry[] = [];
-    const groupsBefore: Map<number, PageNameEntry[]> = new Map();
-    let pendingGroups: PageNameEntry[] = [];
+  // First signed PDF URL — used for any legacy merged-PDF consumers (cover page, etc.)
+  const pdfUrl = useMemo(
+    () => pageUrls.find((p) => p.type === 'pdf')?.url ?? '',
+    [pageUrls],
+  );
 
-    for (const entry of pageEntries) {
-      if (entry.type === 'group') {
-        pendingGroups.push(entry);
-      } else {
-        if (pendingGroups.length > 0) {
-          groupsBefore.set(pdfEntries.length, [...pendingGroups]);
-          pendingGroups = [];
+  const tocSettings = template ? parseTocSettings(template.toc_settings) : null;
+
+  // Virtual page type helpers
+  const isPricingPage  = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'pricing',  [pageUrls]);
+  const isPackagesPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'packages', [pageUrls]);
+  const isTocPage      = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'toc',      [pageUrls]);
+  const isTextPage     = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'text',     [pageUrls]);
+
+  const getPackagesId = useCallback(
+    (vp: number): string | null => pageUrls[vp - 1]?.type === 'packages' ? pageUrls[vp - 1].id : null,
+    [pageUrls],
+  );
+  const getTextPageId = useCallback(
+    (vp: number): string | null => pageUrls[vp - 1]?.type === 'text' ? pageUrls[vp - 1].id : null,
+    [pageUrls],
+  );
+  const toPdfPage = useCallback(
+    (vp: number): number => {
+      let pdfCount = 0;
+      for (let i = 0; i < vp - 1 && i < pageUrls.length; i++) {
+        if (pageUrls[i].type === 'pdf') pdfCount++;
+      }
+      return pageUrls[vp - 1]?.type === 'pdf' ? pdfCount + 1 : -1;
+    },
+    [pageUrls],
+  );
+
+  const pageSequence = useMemo(
+    () =>
+      pageUrls.map((p) => {
+        if (p.type === 'pdf') {
+          const pdfIndex = pageUrls.slice(0, pageUrls.indexOf(p) + 1).filter((x) => x.type === 'pdf').length;
+          return { type: 'pdf' as const, pdfPage: pdfIndex };
         }
-        pdfEntries.push(entry);
-      }
-    }
-    const trailingGroups = pendingGroups;
+        if (p.type === 'text')     return { type: 'text' as const, textPageId: p.id };
+        if (p.type === 'pricing')  return { type: 'pricing' as const };
+        if (p.type === 'packages') return { type: 'packages' as const, packagesId: p.id };
+        if (p.type === 'toc')      return { type: 'toc' as const };
+        return { type: 'pdf' as const, pdfPage: 0 };
+      }),
+    [pageUrls],
+  );
 
-    if (!pageMap.pageSequence || pageMap.pageSequence.length === 0) {
-      return pageEntries;
-    }
+  // Backward-compat extracted slices for viewer components
+  const pricing = useMemo(() => {
+    const p = pageUrls.find((x) => x.type === 'pricing');
+    if (!p) return null;
+    return { id: p.id, enabled: true, ...p.payload } as Record<string, unknown>;
+  }, [pageUrls]);
 
-    const result: PageNameEntry[] = [];
-    for (const seqEntry of pageMap.pageSequence) {
-      if (seqEntry.type === 'pdf') {
-        const pdfIndex = seqEntry.pdfPage - 1;
-        const groups = groupsBefore.get(pdfIndex);
-        if (groups) result.push(...groups);
-        result.push(pdfEntries[pdfIndex] || { name: `Page ${seqEntry.pdfPage}`, indent: 0 });
-      } else if (seqEntry.type === 'pricing') {
-        result.push({
-          name: pricing?.title || 'Your Investment',
-          indent: pricing?.indent ?? 0,
-          link_url: (pricing as Record<string, unknown>)?.link_url as string | undefined,
-          link_label: (pricing as Record<string, unknown>)?.link_label as string | undefined,
-        });
-      } else if (seqEntry.type === 'packages') {
-        const pkg = packages.find((p) => p.id === (seqEntry as { type: 'packages'; packagesId: string }).packagesId);
-        result.push({ name: pkg?.title || 'Packages', indent: pkg?.indent ?? 0 });
-      } else if (seqEntry.type === 'toc') {
-        result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
-      } else {
-        const tp = textPages.find((t) => t.id === seqEntry.textPageId);
-        result.push({
-          name: tp?.title || 'Text Page',
-          indent: tp?.indent ?? 0,
-          link_url: tp?.link_url ?? undefined,
-          link_label: tp?.link_label ?? undefined,
-        });
-      }
-    }
+  const packages = useMemo(
+    () =>
+      pageUrls
+        .filter((x) => x.type === 'packages')
+        .map((p) => ({ id: p.id, enabled: true, title: p.title, indent: p.indent, ...p.payload })),
+    [pageUrls],
+  );
 
-    result.push(...trailingGroups);
-    return result;
-  }, [pageEntries, pdfPageCount, pricing, packages, textPages, tocSettings, pageMap.pageSequence]);
+  const textPages: ProposalTextPage[] = useMemo(
+    () =>
+      pageUrls
+        .filter((x) => x.type === 'text')
+        .map((p) => ({
+          id: p.id,
+          proposal_id: templateId, // satisfies type; consumers use id directly
+          company_id: template?.company_id ?? '',
+          enabled: true,
+          position: p.position,
+          title: p.title,
+          content: p.payload.content ?? null,
+          sort_order: p.position,
+          indent: p.indent,
+          link_url: p.link_url ?? null,
+          link_label: p.link_label ?? null,
+        })),
+    [pageUrls, template, templateId],
+  );
 
-  const numPages = pageMap.totalPages > 0 ? pageMap.totalPages : pdfPageCount;
-
-  const getPageName = (pageNum: number) => {
-    return allPageEntries[pageNum - 1]?.name || `Page ${pageNum}`;
-  };
+  const getPageName = (pageNum: number) =>
+    pageEntries[pageNum - 1]?.name || `Page ${pageNum}`;
 
   const getTextPage = (id: string) => textPages.find((tp) => tp.id === id);
 
-  const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
-    setPdfPageCount(n);
-    setPageEntries((prev) => {
-      const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
-      const realEntries: PageNameEntry[] = [];
-      for (const entry of prev) {
-        if (entry.type === 'group') {
-          groups.push({ beforePdfIndex: realEntries.length, entry });
-        } else {
-          realEntries.push(entry);
-        }
-      }
-
-      while (realEntries.length < n) realEntries.push({ name: `Page ${realEntries.length + 1}`, indent: 0 });
-      const trimmed = realEntries.slice(0, n);
-
-      const result: PageNameEntry[] = [];
-      let realIdx = 0;
-      let groupIdx = 0;
-      while (realIdx < trimmed.length || groupIdx < groups.length) {
-        while (groupIdx < groups.length && groups[groupIdx].beforePdfIndex <= realIdx) {
-          result.push(groups[groupIdx].entry);
-          groupIdx++;
-        }
-        if (realIdx < trimmed.length) {
-          result.push(trimmed[realIdx]);
-          realIdx++;
-        }
-      }
-      while (groupIdx < groups.length) {
-        result.push(groups[groupIdx].entry);
-        groupIdx++;
-      }
-
-      return result;
-    });
-  };
+  const onDocumentLoadSuccess = useCallback((_: { numPages: number }) => {
+    // No-op in v2: page count comes from pageUrls.length
+  }, []);
 
   return {
     template,
     pdfUrl,
-    numPages,
+    pageUrls,
+    numPages: numPages || pdfPageCount,
+    pdfPageCount,
     currentPage,
     setCurrentPage,
     loading,
     notFound,
-    pageEntries: allPageEntries,
+    pageEntries,
     branding,
     brandingLoaded,
     pricing,
     packages,
-    isPricingPage: pageMap.isPricingPage,
-    isPackagesPage: pageMap.isPackagesPage,
-    getPackagesId: pageMap.getPackagesId,
-    isTocPage: pageMap.isTocPage,
-    isTextPage: pageMap.isTextPage,
-    getTextPageId: pageMap.getTextPageId,
+    textPages,
+    isPricingPage,
+    isPackagesPage,
+    getPackagesId,
+    isTocPage,
+    isTextPage,
+    getTextPageId,
     getTextPage,
-    toPdfPage: pageMap.toPdfPage,
+    toPdfPage,
     tocSettings,
-    pageSequence: pageMap.pageSequence,
+    pageSequence,
     getPageName,
     onDocumentLoadSuccess,
   };

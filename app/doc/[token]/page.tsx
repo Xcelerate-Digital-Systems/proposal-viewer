@@ -57,24 +57,26 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
   // If not a text page, what PDF page should we show?
   const pdfPage = toPdfPage(currentPage);
+  const isSectionPage = pageUrls[currentPage - 1]?.type === 'section';
 
-  // Get link for current page (skip group entries to find Nth actual page)
+  // Link for the current page — look up directly by virtual page index
   const currentPageLink = useMemo(() => {
-    let count = 0;
-    for (const entry of pageEntries) {
-      if (entry.type === 'group') continue;
-      count++;
-      if (count === currentPage) {
-        return entry.link_url ? { url: entry.link_url, label: entry.link_label } : null;
-      }
-    }
-    return null;
-  }, [pageEntries, currentPage]);
+    const entry = pageUrls[currentPage - 1];
+    return entry?.link_url ? { url: entry.link_url, label: entry.link_label ?? undefined } : null;
+  }, [pageUrls, currentPage]);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setCurrentPage]);
+
+  // Auto-skip section pages — they are sidebar group headers, not renderable pages
+  useEffect(() => {
+    if (isSectionPage && numPages > 0) {
+      const next = currentPage < numPages ? currentPage + 1 : currentPage - 1;
+      goToPage(next);
+    }
+  }, [isSectionPage, currentPage, numPages, goToPage]);
 
   // Dismiss cover state when cover isn't enabled so keyboard nav works
   useEffect(() => {
@@ -320,7 +322,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
             bgColor={bgPrimary}
             accentColor={accent}
             branding={branding}
-            pageUrls={pageUrls}
+            pageUrls={pageUrls.filter((p) => p.type === 'pdf')}
           />
         )}
         <PageNumberBadge

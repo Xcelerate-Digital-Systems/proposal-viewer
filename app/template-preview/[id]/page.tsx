@@ -6,6 +6,7 @@ import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import { deriveBorderColor } from '@/hooks/useProposal';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
+import type { ProposalPricing, ProposalPackages } from '@/lib/supabase';
 import CoverPage from '@/components/viewer/CoverPage';
 import Sidebar from '@/components/viewer/Sidebar';
 import PdfViewer from '@/components/viewer/PdfViewer';
@@ -42,6 +43,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     getTextPageId,
     getTextPage,
     toPdfPage,
+    pageUrls,
     tocSettings,
     pageSequence,
     getPageName,
@@ -56,6 +58,14 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     setCurrentPage(page);
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setCurrentPage]);
+
+  // Auto-skip section pages — they are sidebar group headers, not renderable pages
+  useEffect(() => {
+    if (pageUrls[currentPage - 1]?.type === 'section' && numPages > 0) {
+      const next = currentPage < numPages ? currentPage + 1 : currentPage - 1;
+      goToPage(next);
+    }
+  }, [pageUrls, currentPage, numPages, goToPage]);
 
   // Current page state
   const onPricingPage = isPricingPage(currentPage);
@@ -112,17 +122,13 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#fff';
 
+  const isSectionPage = pageUrls[currentPage - 1]?.type === 'section';
+
+  // Link for the current page — look up directly by virtual page index
   const currentPageLink = useMemo(() => {
-    let count = 0;
-    for (const entry of pageEntries) {
-      if (entry.type === 'group') continue;
-      count++;
-      if (count === currentPage) {
-        return entry.link_url ? { url: entry.link_url, label: entry.link_label } : null;
-      }
-    }
-    return null;
-  }, [pageEntries, currentPage]);
+    const entry = pageUrls[currentPage - 1];
+    return entry?.link_url ? { url: entry.link_url, label: entry.link_label ?? undefined } : null;
+  }, [pageUrls, currentPage]);
 
   // ── Early returns AFTER all hooks ──────────────────────────────────
 
@@ -257,7 +263,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             <ViewerBackground branding={branding} />
             <div className="relative h-full">
               <PricingPage
-                pricing={pricing}
+                pricing={pricing as unknown as ProposalPricing}
                 branding={branding}
                 clientName="[Client Name]"
               />
@@ -272,7 +278,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             <ViewerBackground branding={branding} />
             <div className="relative h-full">
               <PackagesPage
-                packages={currentPackages}
+                packages={currentPackages as unknown as ProposalPackages}
                 branding={branding}
                 clientName="[Client Name]"
               />
@@ -321,6 +327,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
             bgColor={bgPrimary}
             accentColor={accent}
             branding={branding}
+            pageUrls={pageUrls.filter((p) => p.type === 'pdf')}
           />
         )}
         <PageNumberBadge

@@ -6,14 +6,13 @@ import {
   supabase,
   Document as DocType,
   PageNameEntry,
-  normalizePageNamesWithGroups,
   TocSettings,
   parseTocSettings,
 } from '@/lib/supabase';
-import { CompanyBranding, deriveBorderColor, PageUrlEntry } from '@/hooks/useProposal';
+import { CompanyBranding, PageUrlEntry } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 
-/* ─── Text page type ───────────────────────────────────────────────── */
+/* ─── Types ─────────────────────────────────────────────────────────────── */
 
 export interface DocumentTextPage {
   id: string;
@@ -22,173 +21,29 @@ export interface DocumentTextPage {
   enabled: boolean;
   position: number;
   title: string;
-  content: unknown; // TipTap JSON
+  content: unknown;
   sort_order: number;
   indent: number;
   link_url?: string | null;
   link_label?: string | null;
 }
 
-/* ─── Special page: represents a non-PDF page in the virtual sequence ── */
-
-interface SpecialPage {
-  type: 'text' | 'toc';
-  position: number;      // -1 = end, N = after PDF page N
-  title: string;
-  textPageId?: string;
-  sortOrder?: number;
-}
-
-/**
- * Virtual page mapping for documents (text pages + TOC, no pricing).
- */
-function buildDocumentPageMap(
-  pdfPageCount: number,
-  textPages: DocumentTextPage[],
-  tocSettings?: TocSettings | null
-) {
-  const specials: SpecialPage[] = [];
-
-  if (tocSettings?.enabled) {
-    specials.push({
-      type: 'toc',
-      position: tocSettings.position,
-      title: tocSettings.title || 'Table of Contents',
-    });
-  }
-
-  for (const tp of textPages) {
-    if (tp.enabled) {
-      specials.push({
-        type: 'text',
-        position: tp.position,
-        title: tp.title || 'Text Page',
-        textPageId: tp.id,
-        sortOrder: tp.sort_order,
-      });
-    }
-  }
-
-  if (specials.length === 0 || pdfPageCount === 0) {
-    return {
-      totalPages: pdfPageCount,
-      pageSequence: [] as Array<
-        | { type: 'pdf'; pdfPage: number }
-        | { type: 'text'; textPageId: string }
-        | { type: 'toc' }
-      >,
-      isTocPage: (_vp: number) => false,
-      isTextPage: (_vp: number) => false,
-      getTextPageId: (_vp: number): string | null => null,
-      toPdfPage: (vp: number) => vp,
-    };
-  }
-
-  type VirtualPage =
-    | { type: 'pdf'; pdfPage: number }
-    | { type: 'text'; textPageId: string }
-    | { type: 'toc' };
-
-  const sequence: VirtualPage[] = [];
-
-  const positioned = specials.filter((s) => s.position >= 0);
-  const trailing = specials.filter((s) => s.position === -1);
-
-  positioned.sort((a, b) => {
-    if (a.position !== b.position) return a.position - b.position;
-    return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-  });
-
-  let posIdx = 0;
-  for (let pdfPage = 1; pdfPage <= pdfPageCount; pdfPage++) {
-    while (posIdx < positioned.length && positioned[posIdx].position < pdfPage) {
-      const sp = positioned[posIdx];
-      if (sp.type === 'toc') {
-        sequence.push({ type: 'toc' });
-      } else {
-        sequence.push({ type: 'text', textPageId: sp.textPageId! });
-      }
-      posIdx++;
-    }
-    sequence.push({ type: 'pdf', pdfPage });
-  }
-
-  while (posIdx < positioned.length) {
-    const sp = positioned[posIdx];
-    if (sp.type === 'toc') {
-      sequence.push({ type: 'toc' });
-    } else {
-      sequence.push({ type: 'text', textPageId: sp.textPageId! });
-    }
-    posIdx++;
-  }
-
-  trailing.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  for (const sp of trailing) {
-    if (sp.type === 'toc') {
-      sequence.push({ type: 'toc' });
-    } else {
-      sequence.push({ type: 'text', textPageId: sp.textPageId! });
-    }
-  }
-
-  const totalPages = sequence.length;
-
-  const isTocPage = (vp: number) => {
-    const idx = vp - 1;
-    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'toc';
-  };
-
-  const isTextPage = (vp: number) => {
-    const idx = vp - 1;
-    return idx >= 0 && idx < sequence.length && sequence[idx].type === 'text';
-  };
-
-  const getTextPageId = (vp: number): string | null => {
-    const idx = vp - 1;
-    if (idx >= 0 && idx < sequence.length && sequence[idx].type === 'text') {
-      return (sequence[idx] as { type: 'text'; textPageId: string }).textPageId;
-    }
-    return null;
-  };
-
-  const toPdfPage = (vp: number): number => {
-    const idx = vp - 1;
-    if (idx < 0 || idx >= sequence.length) return -1;
-    const entry = sequence[idx];
-    if (entry.type === 'pdf') return entry.pdfPage;
-    return -1;
-  };
-
-  return {
-    totalPages,
-    pageSequence: sequence,
-    isTocPage,
-    isTextPage,
-    getTextPageId,
-    toPdfPage,
-  };
-}
+/* ─── Hook ──────────────────────────────────────────────────────────────── */
 
 export function useDocument(token: string) {
   const [document, setDocument] = useState<DocType | null>(null);
-  // Legacy single signed URL — populated only when document_pages rows don't exist yet (fallback)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  // Per-page signed URLs — primary path post-migration
   const [pageUrls, setPageUrls] = useState<PageUrlEntry[]>([]);
-  const [pdfPageCount, setPdfPageCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
-  const [textPages, setTextPages] = useState<DocumentTextPage[]>([]);
 
   useEffect(() => {
     if (!token) return;
 
     (async () => {
-      // 1. Fetch the document by share token
+      // 1. Fetch document by share token
       const { data: doc, error } = await supabase
         .from('documents')
         .select('*')
@@ -216,9 +71,7 @@ export function useDocument(token: string) {
             const { data: bgUrlData } = supabase.storage
               .from('company-assets')
               .getPublicUrl(doc.bg_image_path);
-            if (bgUrlData?.publicUrl) {
-              data.bg_image_url = bgUrlData.publicUrl;
-            }
+            if (bgUrlData?.publicUrl) data.bg_image_url = bgUrlData.publicUrl;
             data.bg_image_overlay_opacity =
               doc.bg_image_overlay_opacity ?? data.bg_image_overlay_opacity ?? 0.85;
           }
@@ -239,210 +92,136 @@ export function useDocument(token: string) {
 
           setBranding({ ...DEFAULT_BRANDING, ...data });
         }
-      } catch {
-        // Use defaults
-      }
+      } catch { /* Use defaults */ }
       setBrandingLoaded(true);
 
-      // 3. Fetch text pages
-      try {
-        const textRes = await fetch(`/api/documents/text-pages?share_token=${token}`);
-        if (textRes.ok) {
-          const textData: DocumentTextPage[] = await textRes.json();
-          setTextPages(textData.filter((tp) => tp.enabled));
-        }
-      } catch {
-        // Non-critical
-      }
-
-      // 4. Fetch per-page URLs from the dedicated documents route
+      // 3. Fetch all pages (unified v2 — signed URLs included)
       try {
         const pageUrlRes = await fetch(`/api/documents/page-urls?share_token=${token}`);
         if (pageUrlRes.ok) {
           const pageUrlData = await pageUrlRes.json();
-
-          if (pageUrlData.fallback) {
-            // Pre-backfill: no document_pages rows yet — fall back to legacy merged PDF
-            if (doc.file_path) {
-              const { data: urlData } = await supabase.storage
-                .from('proposals')
-                .createSignedUrl(doc.file_path, 2592000);
-              if (urlData?.signedUrl) {
-                setPdfUrl(urlData.signedUrl);
-              }
-            }
-          } else {
-            // Per-page path: set URLs and derive page count immediately
-            const pages: PageUrlEntry[] = pageUrlData.pages ?? [];
-            setPageUrls(pages);
-            setPdfPageCount(pages.length);
-            // Keep pdfUrl null — PdfViewer will consume pageUrls directly
-          }
-        } else {
-          // API error — fall back to legacy signed URL
-          if (doc.file_path) {
-            const { data: urlData } = await supabase.storage
-              .from('proposals')
-              .createSignedUrl(doc.file_path, 2592000);
-            if (urlData?.signedUrl) {
-              setPdfUrl(urlData.signedUrl);
-            }
-          }
+          const pages: PageUrlEntry[] = pageUrlData.pages ?? [];
+          setPageUrls(pages);
         }
-      } catch {
-        // Network error — fall back to legacy signed URL
-        if (doc.file_path) {
-          const { data: urlData } = await supabase.storage
-            .from('proposals')
-            .createSignedUrl(doc.file_path, 2592000);
-          if (urlData?.signedUrl) {
-            setPdfUrl(urlData.signedUrl);
-          }
-        }
-      }
+      } catch { /* Non-critical */ }
 
       setLoading(false);
     })();
   }, [token]);
 
-  const pageUrlMap = useMemo<Map<number, PageUrlEntry>>(() => {
-    const map = new Map<number, PageUrlEntry>();
-    for (const p of pageUrls) map.set(p.page_number, p);
-    return map;
-  }, [pageUrls]);
+  /* ── Derived state from unified page list ──────────────────────────────── */
 
-  const pageEntries: PageNameEntry[] = useMemo(() => {
-    if (!document && pageUrls.length === 0) return [];
+  // Sidebar nav entries — section pages become 'group' type
+  const pageEntries: PageNameEntry[] = useMemo(
+    () =>
+      pageUrls.map((p) => ({
+        name: p.title,
+        indent: p.indent,
+        ...(p.type === 'section' ? { type: 'group' as const } : {}),
+        ...(p.link_url ? { link_url: p.link_url } : {}),
+        ...(p.link_label ? { link_label: p.link_label } : {}),
+      })),
+    [pageUrls],
+  );
 
-    if (pageUrls.length > 0) {
-      const normalized = normalizePageNamesWithGroups(
-        (document as DocType | null)?.page_names,
-        pdfPageCount
-      );
-      let pdfIdx = 0;
-      return normalized.map((entry) => {
-        if (entry.type === 'group') return entry;
-        pdfIdx++;
-        const pageData = pageUrlMap.get(pdfIdx);
-        return {
-          name: pageData?.label || entry.name || `Page ${pdfIdx}`,
-          indent: pageData?.indent ?? entry.indent ?? 0,
-          ...(pageData?.link_url ? { link_url: pageData.link_url } : {}),
-          ...(pageData?.link_label ? { link_label: pageData.link_label } : {}),
-        };
-      });
-    }
-
-    return normalizePageNamesWithGroups(
-      (document as DocType | null)?.page_names,
-      pdfPageCount
-    );
-  }, [document, pdfPageCount, pageUrls, pageUrlMap]);
+  const numPages = pageUrls.length;
+  const pdfPageCount = useMemo(() => pageUrls.filter((p) => p.type === 'pdf').length, [pageUrls]);
 
   const tocSettings = document ? parseTocSettings((document as DocType).toc_settings) : null;
 
-  const pageMap = useMemo(
-    () => buildDocumentPageMap(pdfPageCount, textPages, tocSettings),
-    [pdfPageCount, textPages, tocSettings]
+  // Virtual page type helpers
+  const isTocPage  = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'toc',  [pageUrls]);
+  const isTextPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'text', [pageUrls]);
+
+  const getTextPageId = useCallback(
+    (vp: number): string | null => pageUrls[vp - 1]?.type === 'text' ? pageUrls[vp - 1].id : null,
+    [pageUrls],
   );
 
-  const allPageEntries = useMemo(() => {
-    if (pdfPageCount === 0) return pageEntries;
-
-    const pdfEntries: PageNameEntry[] = [];
-    const groupsBefore: Map<number, PageNameEntry[]> = new Map();
-    let pendingGroups: PageNameEntry[] = [];
-
-    for (const entry of pageEntries) {
-      if (entry.type === 'group') {
-        pendingGroups.push(entry);
-      } else {
-        if (pendingGroups.length > 0) {
-          groupsBefore.set(pdfEntries.length, [...pendingGroups]);
-          pendingGroups = [];
-        }
-        pdfEntries.push(entry);
+  const toPdfPage = useCallback(
+    (vp: number): number => {
+      let pdfCount = 0;
+      for (let i = 0; i < vp - 1 && i < pageUrls.length; i++) {
+        if (pageUrls[i].type === 'pdf') pdfCount++;
       }
-    }
-    const trailingGroups = pendingGroups;
-
-    if (!pageMap.pageSequence || pageMap.pageSequence.length === 0) {
-      return pageEntries;
-    }
-
-    const result: PageNameEntry[] = [];
-    for (const seqEntry of pageMap.pageSequence) {
-      if (seqEntry.type === 'pdf') {
-        const pdfIndex = seqEntry.pdfPage - 1;
-        const groups = groupsBefore.get(pdfIndex);
-        if (groups) result.push(...groups);
-        result.push(pdfEntries[pdfIndex] || { name: `Page ${seqEntry.pdfPage}`, indent: 0 });
-      } else if (seqEntry.type === 'toc') {
-        result.push({ name: tocSettings?.title || 'Table of Contents', indent: 0 });
-      } else {
-        const tp = textPages.find((t) => t.id === seqEntry.textPageId);
-        result.push({
-          name: tp?.title || 'Text Page',
-          indent: tp?.indent ?? 0,
-          link_url: tp?.link_url ?? undefined,
-          link_label: tp?.link_label ?? undefined,
-        });
-      }
-    }
-
-    result.push(...trailingGroups);
-
-    return result;
-  }, [pageEntries, pdfPageCount, textPages, tocSettings, pageMap.pageSequence]);
-
-  const onDocumentLoadSuccess = useCallback(
-    ({ numPages: n }: { numPages: number }) => {
-      if (pageUrls.length === 0) {
-        setPdfPageCount(n);
-      }
+      return pageUrls[vp - 1]?.type === 'pdf' ? pdfCount + 1 : -1;
     },
-    [pageUrls.length]
+    [pageUrls],
+  );
+
+  const pageSequence = useMemo(
+    () =>
+      pageUrls.map((p) => {
+        if (p.type === 'pdf') {
+          const pdfIndex = pageUrls.slice(0, pageUrls.indexOf(p) + 1).filter((x) => x.type === 'pdf').length;
+          return { type: 'pdf' as const, pdfPage: pdfIndex };
+        }
+        if (p.type === 'text') return { type: 'text' as const, textPageId: p.id };
+        if (p.type === 'toc')  return { type: 'toc' as const };
+        return { type: 'pdf' as const, pdfPage: 0 };
+      }),
+    [pageUrls],
+  );
+
+  const textPages: DocumentTextPage[] = useMemo(
+    () =>
+      pageUrls
+        .filter((x) => x.type === 'text')
+        .map((p) => ({
+          id: p.id,
+          document_id: document?.id ?? '',
+          company_id: (document as DocType | null)?.company_id ?? '',
+          enabled: true,
+          position: p.position,
+          title: p.title,
+          content: p.payload.content ?? null,
+          sort_order: p.position,
+          indent: p.indent,
+          link_url: p.link_url ?? null,
+          link_label: p.link_label ?? null,
+        })),
+    [pageUrls, document],
   );
 
   const getPageName = useCallback(
-    (page: number) => {
-      if (page < 1 || page > allPageEntries.length) return `Page ${page}`;
-      return allPageEntries[page - 1]?.name || `Page ${page}`;
-    },
-    [allPageEntries]
+    (page: number) => pageEntries[page - 1]?.name || `Page ${page}`,
+    [pageEntries],
   );
 
   const getTextPage = useCallback(
-    (textPageId: string): DocumentTextPage | undefined => {
-      return textPages.find((tp) => tp.id === textPageId);
-    },
-    [textPages]
+    (textPageId: string): DocumentTextPage | undefined =>
+      textPages.find((tp) => tp.id === textPageId),
+    [textPages],
   );
+
+  const onDocumentLoadSuccess = useCallback((_: { numPages: number }) => {
+    // No-op in v2: page count comes from pageUrls.length
+  }, []);
 
   return {
     document,
-    pdfUrl,
+    pdfUrl: null, // v2: per-page URLs only
     pageUrls,
-    numPages: pageMap.totalPages || pdfPageCount,
+    numPages: numPages || pdfPageCount,
     pdfPageCount,
     currentPage,
     setCurrentPage,
     loading,
     notFound,
-    pageEntries: allPageEntries,
+    pageEntries,
     branding,
     brandingLoaded,
     textPages,
-    isTocPage: pageMap.isTocPage,
-    isTextPage: pageMap.isTextPage,
-    getTextPageId: pageMap.getTextPageId,
-    toPdfPage: pageMap.toPdfPage,
+    isTocPage,
+    isTextPage,
+    getTextPageId,
+    toPdfPage,
     tocSettings,
-    pageSequence: pageMap.pageSequence,
+    pageSequence,
     getTextPage,
     onDocumentLoadSuccess,
     getPageName,
   };
 }
 
-export { deriveBorderColor };
+export { deriveBorderColor } from '@/hooks/useProposal';

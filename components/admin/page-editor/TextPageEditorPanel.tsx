@@ -4,7 +4,7 @@
 import { useCallback } from 'react';
 import { ChevronLeft, ChevronRight, FileText, Check, Loader2 } from 'lucide-react';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
-import { TextPageData } from './useTextPagesState';
+import { TextPageData } from './pageEditorTypes';
 
 interface TextPageEditorPanelProps {
   page: TextPageData;

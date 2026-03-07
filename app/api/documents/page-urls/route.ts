@@ -21,12 +21,12 @@ export async function GET(req: NextRequest) {
     const supabase = createServiceClient();
     const result = await getPageUrls(supabase, 'document', { entityId, shareToken });
 
-    if (result.error && !result.fallback) {
+    if (result.error) {
       const status = result.error === 'Not found' ? 404 : 500;
       return NextResponse.json({ error: result.error }, { status });
     }
 
-    return NextResponse.json({ pages: result.pages, fallback: result.fallback });
+    return NextResponse.json({ pages: result.pages });
   } catch (err) {
     console.error('Documents page-urls route error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -7,12 +7,12 @@ import {
   Check, CornerDownRight, ArrowLeft,
   Upload, Loader2, Trash2, GripVertical,
 } from 'lucide-react';
-import { PageNameEntry } from '@/lib/supabase';
+import { UnifiedPage } from '@/lib/page-operations';
 import PageLinkInput from './PageLinkInput';
 
 interface SortablePdfRowProps {
   id: string;
-  entry: PageNameEntry;
+  page: UnifiedPage;
   visualNum: number;
   isSelected: boolean;
   status: 'saving' | 'saved' | null;
@@ -21,7 +21,12 @@ interface SortablePdfRowProps {
   index: number;
   onSelect: () => void;
   onToggleIndent: () => void;
-  onUpdateEntry: (changes: Partial<PageNameEntry>) => void;
+  onUpdate: (changes: {
+    title?: string;
+    indent?: number;
+    link_url?: string | null;
+    link_label?: string | null;
+  }) => void;
   onReplacePage: (file: File) => void;
   onDeletePage: () => void;
   /** Slot for rendering insert menu after this row */
@@ -29,9 +34,9 @@ interface SortablePdfRowProps {
 }
 
 export default function SortablePdfRow({
-  id, entry, visualNum, isSelected,
+  id, page, visualNum, isSelected,
   status, processing, pageCount, index,
-  onSelect, onToggleIndent, onUpdateEntry,
+  onSelect, onToggleIndent, onUpdate,
   onReplacePage, onDeletePage, renderInsertAfter,
 }: SortablePdfRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -65,19 +70,19 @@ export default function SortablePdfRow({
         <button
           onClick={(e) => { e.stopPropagation(); onToggleIndent(); }}
           disabled={index === 0}
-          title={entry.indent ? 'Remove indent' : 'Indent under parent'}
+          title={page.indent ? 'Remove indent' : 'Indent under parent'}
           className={`shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors ${
             index === 0
               ? 'text-gray-200 cursor-not-allowed'
-              : entry.indent
+              : page.indent
               ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
           }`}
         >
-          {entry.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
+          {page.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
         </button>
 
-        {entry.indent > 0 && (
+        {page.indent > 0 && (
           <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
         )}
 
@@ -85,8 +90,8 @@ export default function SortablePdfRow({
         <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
           <input
             type="text"
-            value={entry.name}
-            onChange={(e) => onUpdateEntry({ name: e.target.value })}
+            value={page.title}
+            onChange={(e) => onUpdate({ title: e.target.value })}
             onFocus={onSelect}
             className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
             placeholder={`Page ${visualNum}`}
@@ -96,15 +101,18 @@ export default function SortablePdfRow({
         {/* Autosave status */}
         <div className="shrink-0 w-5 flex items-center justify-center">
           {status === 'saving' && <Loader2 size={12} className="animate-spin text-gray-300" />}
-          {status === 'saved' && <Check size={13} className="text-emerald-400" />}
+          {status === 'saved'  && <Check   size={13} className="text-emerald-400" />}
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
           <PageLinkInput
-            linkUrl={entry.link_url || ''}
-            linkLabel={entry.link_label || ''}
-            onChange={(url, label) => onUpdateEntry({ link_url: url || undefined, link_label: label || undefined })}
+            linkUrl={page.link_url || ''}
+            linkLabel={page.link_label || ''}
+            onChange={(url, label) => onUpdate({
+              link_url:  url   || null,
+              link_label: label || null,
+            })}
             variant="teal"
           />
           <label
@@ -116,7 +124,11 @@ export default function SortablePdfRow({
             title="Replace page PDF"
           >
             <Upload size={13} />
-            <input type="file" accept=".pdf" className="hidden" disabled={processing}
+            <input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              disabled={processing}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) onReplacePage(f); e.target.value = ''; }}
             />
           </label>

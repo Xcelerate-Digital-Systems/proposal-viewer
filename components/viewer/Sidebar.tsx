@@ -32,30 +32,41 @@ interface NavItem {
   children: { pageNum: number; name: string }[];
 }
 
-function buildNavTree(entries: PageNameEntry[], numPages: number): NavItem[] {
+/**
+ * Build a navigation tree from the unified page entries.
+ *
+ * In the v2 architecture every page — PDF, text, pricing, packages, toc, section —
+ * is a row in the v2 table. pageEntries maps them 1-for-1, so entry[i] corresponds
+ * to virtual page (i+1). We assign pageNum = i+1 directly so that the page numbers
+ * passed to onPageSelect match the virtual-page indices used by the viewer.
+ *
+ * Section entries become isGroup=true headers; their children (indent > 0 entries
+ * that follow them) are nested underneath.
+ */
+function buildNavTree(entries: PageNameEntry[]): NavItem[] {
   const tree: NavItem[] = [];
-  let virtualPage = 0; // increments only for non-group entries
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
+    const pageNum = i + 1; // 1-indexed virtual page position
     const isGroup = entry.type === 'group';
 
-    if (!isGroup) {
-      virtualPage++;
-      if (virtualPage > numPages) break; // don't exceed total virtual pages
-    }
-
     if (entry.indent > 0 && tree.length > 0) {
-      // Nested child — attach to the last parent/group
+      // Nested child — attach to the last top-level parent/group
       if (!isGroup) {
-        tree[tree.length - 1].children.push({ pageNum: virtualPage, name: entry.name });
+        tree[tree.length - 1].children.push({ pageNum, name: entry.name });
       }
     } else {
-      // Top-level item: groups get a stable negative ID (for expandedGroup key)
-      const pageNum = isGroup ? -(i + 1) : virtualPage;
-      tree.push({ pageNum, name: entry.name, isGroup, children: [] });
+      // Top-level: groups use a negative pageNum as a stable key (not navigable)
+      tree.push({
+        pageNum: isGroup ? -(i + 1) : pageNum,
+        name: entry.name,
+        isGroup,
+        children: [],
+      });
     }
   }
+
   return tree;
 }
 
@@ -75,7 +86,7 @@ export default function Sidebar({
   commentCount,
   acceptButtonText,
 }: SidebarProps) {
-  const navTree = buildNavTree(pageEntries, numPages);
+  const navTree = buildNavTree(pageEntries);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
 
   const accent = branding.accent_color || '#ff6700';
@@ -86,7 +97,6 @@ export default function Sidebar({
 
   const label = acceptButtonText || 'Approve & Continue';
 
-  // Whether to show bottom action buttons (accept + comments)
   const showActions = onAcceptClick !== undefined && onToggleComments !== undefined;
 
   // Auto-expand the group containing the current page, collapse when leaving
@@ -94,13 +104,11 @@ export default function Sidebar({
     for (const item of navTree) {
       if (item.children.length > 0) {
         if (item.isGroup) {
-          // Group headers: expand only when a child is active
           if (item.children.some((c) => c.pageNum === currentPage)) {
             setExpandedGroup(item.pageNum);
             return;
           }
         } else {
-          // Regular parents: expand when parent or child is active
           if (item.pageNum === currentPage || item.children.some((c) => c.pageNum === currentPage)) {
             setExpandedGroup(item.pageNum);
             return;
@@ -108,13 +116,11 @@ export default function Sidebar({
         }
       }
     }
-    // Current page is not inside any parent group — collapse all
     setExpandedGroup(null);
   }, [currentPage, numPages, pageEntries.length]);
 
   const handleParentClick = (item: NavItem) => {
     if (item.isGroup) {
-      // Group headers: toggle expand/collapse, navigate to first child if expanding
       const willExpand = expandedGroup !== item.pageNum;
       setExpandedGroup(willExpand ? item.pageNum : null);
       if (willExpand && item.children.length > 0) {
@@ -151,7 +157,6 @@ export default function Sidebar({
             <img src="/logo-white.svg" alt="Logo" className="h-6" />
           )}
         </div>
-        {/* Mobile close button */}
         {onMobileClose && (
           <button
             onClick={onMobileClose}
@@ -163,18 +168,22 @@ export default function Sidebar({
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto tab-sidebar pt-2" style={{ fontFamily: fontFamily(branding.font_sidebar), fontWeight: branding.font_sidebar_weight ? Number(branding.font_sidebar_weight) : undefined }}>
+      <div
+        className="flex-1 overflow-y-auto tab-sidebar pt-2"
+        style={{
+          fontFamily: fontFamily(branding.font_sidebar),
+          fontWeight: branding.font_sidebar_weight ? Number(branding.font_sidebar_weight) : undefined,
+        }}
+      >
         {navTree.map((item) => {
           const hasChildren = item.children.length > 0;
           const isExpanded = expandedGroup === item.pageNum;
-          // Groups never have an "active" state themselves — only their children do
           const isParentActive = !item.isGroup && currentPage === item.pageNum;
           const childActive = isChildActive(item);
           const groupActive = isParentActive || childActive;
 
           return (
             <div key={`${item.pageNum}-${item.isGroup ? 'g' : 'p'}`}>
-              {/* Parent tab */}
               <button
                 onClick={() => handleParentClick(item)}
                 className="w-full text-left flex items-center justify-between transition-colors truncate relative"
@@ -183,9 +192,7 @@ export default function Sidebar({
                 <span
                   className="truncate text-sm"
                   style={{
-                    color: isParentActive
-                      ? sidebarText
-                      : `${sidebarText}99`,
+                    color: isParentActive ? sidebarText : `${sidebarText}99`,
                     fontWeight: isParentActive
                       ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
                       : childActive && !isExpanded
@@ -196,7 +203,6 @@ export default function Sidebar({
                   {item.name}
                 </span>
 
-                {/* Dot indicator for items with children */}
                 {hasChildren ? (
                   <span
                     className="shrink-0 ml-2 w-1 h-1 rounded-full transition-opacity"
@@ -207,7 +213,6 @@ export default function Sidebar({
                   />
                 ) : null}
 
-                {/* Accent underline for items with children */}
                 {hasChildren && (
                   <span
                     className="absolute bottom-0 left-5 right-5 h-px transition-opacity"
@@ -219,21 +224,15 @@ export default function Sidebar({
                 )}
               </button>
 
-              {/* Children — shown with accent left border */}
               {hasChildren && isExpanded && (
-                <div
-                  className="ml-5 mr-3 mb-1"
-                  style={{ borderLeft: `2px solid ${accent}40` }}
-                >
+                <div className="ml-5 mr-3 mb-1" style={{ borderLeft: `2px solid ${accent}40` }}>
                   {item.children.map((child) => (
                     <button
                       key={child.pageNum}
                       onClick={() => handleChildClick(child.pageNum)}
                       className="w-full text-left pl-4 pr-3 py-2 text-sm transition-colors truncate"
                       style={{
-                        color: currentPage === child.pageNum
-                          ? sidebarText
-                          : `${sidebarText}99`,
+                        color: currentPage === child.pageNum ? sidebarText : `${sidebarText}99`,
                         fontWeight: currentPage === child.pageNum
                           ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
                           : Number(branding.font_sidebar_weight || 400),

@@ -161,7 +161,7 @@ export default function PdfPreviewPanel({
               <span className="text-xs text-[#017C87] font-medium truncate ml-2">
                 {/* In per-page mode prefer the label from pageUrls; fall back to entries */}
                 {isPerPage
-                  ? (pageUrls[selectedPdfIndex]?.label || entries[selectedPdfIndex]?.name || '')
+                  ? (pageUrls[selectedPdfIndex]?.title || entries[selectedPdfIndex]?.name || '')
                   : (entries[selectedPdfIndex]?.name || '')}
               </span>
             </div>

@@ -1,53 +1,63 @@
 // components/admin/page-editor/pageEditorTypes.ts
 
-import { PageNameEntry, PricingLineItem, PricingOptionalItem } from '@/lib/supabase';
+import type { UnifiedPage, PageType } from '@/lib/page-operations';
+import type {
+  PricingLineItem,
+  PricingOptionalItem,
+  PaymentSchedule,
+} from '@/lib/supabase';
 
-/* ——— Types ——————————————————————————————————————————————————— */
+/* ──────────────────────────────────────────────────────────────────────────
+ * Re-export the canonical types from lib so component files only need one
+ * import location.
+ * ──────────────────────────────────────────────────────────────────────── */
 
-export type UnifiedItem = {
-  id: string;
-  type: 'pdf' | 'pricing' | 'text' | 'group' | 'packages' | 'toc';
-  pdfIndex: number;
-  textPageId?: string;
-  packagesId?: string;
-  entryIndex?: number;
-};
+export type { UnifiedPage, PageType };
 
-export type PricingFormState = {
-  enabled: boolean;
-  title: string;
-  introText: string;
-  items: PricingLineItem[];
-  optionalItems: PricingOptionalItem[];
-  taxEnabled: boolean;
-  taxRate: number;
-  taxLabel: string;
-  validityDays: number | null;
-  proposalDate: string;
-};
+/* ──────────────────────────────────────────────────────────────────────────
+ * TextPageData — form shape used by TextPageEditorModal.
+ * Mirrors the text-page fields stored on a UnifiedPage row.
+ * ──────────────────────────────────────────────────────────────────────── */
 
-export interface PageEditorProps {
-  proposalId: string;
-  filePath: string;
-  initialPageNames: (PageNameEntry | string)[];
-  onSave: () => void;
-  onCancel?: () => void;
-  tableName?: 'proposals' | 'documents';
+export interface TextPageData {
+  id:                    string;
+  title:                 string;
+  show_title:            boolean;
+  show_member_badge:     boolean;
+  prepared_by_member_id: string | null;
+  content:               unknown; // Tiptap JSON
 }
 
-/* ——— Constants ——————————————————————————————————————————————— */
+/* ──────────────────────────────────────────────────────────────────────────
+ * PricingFormState — local form shape used by PricingPanel and callers.
+ * Mirrors the pricing payload fields stored in UnifiedPage.payload.
+ * ──────────────────────────────────────────────────────────────────────── */
 
-export const DEFAULT_INTRO = 'The following costs are based on the agreed scope of works outlined within this proposal. All pricing has been carefully prepared to reflect the works required for successful project delivery.';
+export interface PricingFormState {
+  title:           string;
+  introText:       string;
+  items:           PricingLineItem[];
+  optionalItems:   PricingOptionalItem[];
+  paymentSchedule: PaymentSchedule;
+  taxEnabled:      boolean;
+  taxRate:         number;
+  taxLabel:        string;
+  validityDays:    number | null;
+  proposalDate:    string | null;
+}
 
-export const DEFAULT_PRICING: PricingFormState = {
-  enabled: true,
-  title: 'Project Investment',
-  introText: DEFAULT_INTRO,
-  items: [],
-  optionalItems: [],
-  taxEnabled: true,
-  taxRate: 10,
-  taxLabel: 'GST (10%)',
-  validityDays: 30,
-  proposalDate: new Date().toISOString().split('T')[0],
-};
+/* ──────────────────────────────────────────────────────────────────────────
+ * PageEditorProps — public API consumed by callers
+ *
+ * filePath / initialPageNames are kept for backward-compat but are no longer
+ * used by the refactored PageEditor (pages come from the v2 DB tables).
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface PageEditorProps {
+  proposalId:        string;
+  filePath?:         string;       // kept for compat; ignored
+  initialPageNames?: unknown[];    // kept for compat; ignored
+  onSave:            () => void;
+  onCancel?:         () => void;
+  tableName?:        'proposals' | 'documents' | 'templates';
+}

@@ -4,7 +4,7 @@
 import { useCallback, useEffect } from 'react';
 import { X, FileText, Check, Loader2, User } from 'lucide-react';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
-import { TextPageData } from './useTextPagesState';
+import { TextPageData } from './pageEditorTypes';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
 
 interface TextPageEditorModalProps {
