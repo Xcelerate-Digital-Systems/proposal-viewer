@@ -28,6 +28,9 @@ export function usePageEditorState(
 
   const [saveStatus, setSaveStatus] = useState<Record<number, 'idle' | 'saving' | 'saved'>>({});
   const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  // Holds entries that need to be saved after a syncPageCount trim/expand.
+  // Set inside the setEntries updater (synchronous); consumed by a useEffect.
+  const syncSavePendingRef = useRef<PageNameEntry[] | null>(null);
 
   useEffect(() => {
     return () => { Object.values(debounceTimers.current).forEach(clearTimeout); };
@@ -97,9 +100,19 @@ export function usePageEditorState(
     }
   }, [saveEntries]);
 
-  /* ── Sync page count from PDF load ──────────────────────── */
+  /* ── Sync page count from PDF load or post-mutation re-fetch ─
+   *
+   * Called by PageEditor when pageUrls.length changes after a delete/insert.
+   * Reconciles entries to match the new count AND persists the result to DB
+   * so page_names stays in sync with document_pages / proposal_pages.
+   * ────────────────────────────────────────────────────────────── */
 
   const syncPageCount = useCallback((n: number) => {
+    // Cancel any in-flight debounce saves so a stale closure (capturing the
+    // old entries array) can't fire after we trim and overwrite the result.
+    Object.values(debounceTimers.current).forEach(clearTimeout);
+    debounceTimers.current = {};
+
     setPageCount(n);
     setEntries((prev) => {
       const groups: { beforePdfIndex: number; entry: PageNameEntry }[] = [];
@@ -127,9 +140,25 @@ export function usePageEditorState(
         if (realIdx < trimmed.length) { result.push(trimmed[realIdx]); realIdx++; }
       }
       while (groupIdx < groups.length) { result.push(groups[groupIdx].entry); groupIdx++; }
+
+      // Schedule the save via ref — calling saveEntries() directly inside a
+      // setState updater is a side effect that React may invoke multiple times
+      // (e.g. in StrictMode). The useEffect below consumes this ref safely.
+      syncSavePendingRef.current = result;
+
       return result;
     });
   }, []);
+
+  // Persist entries whenever syncPageCount trims/expands them.
+  useEffect(() => {
+    if (syncSavePendingRef.current !== null) {
+      const toSave = syncSavePendingRef.current;
+      syncSavePendingRef.current = null;
+      saveEntries(toSave);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries]);
 
   /* ── Remap save statuses after reorder ──────────────────── */
 

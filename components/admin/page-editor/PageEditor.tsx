@@ -100,10 +100,12 @@ export default function PageEditor({ proposalId, filePath, initialPageNames, onS
     processing, pdfVersion, pageUrls,
     handleReplacePage, handleInsertPage, handleDeletePage, handleReorder,
   } = usePdfOperations({
-    proposalId, tableName, initialPageNames, entries, setEntries,
-    pageCount, setPageCount, selectedPdfIndex,
-    setSelectedId, flushPendingSaves, remapSaveStatus,
-  });
+      proposalId, tableName, initialPageNames, entries, setEntries,
+      pageCount, setPageCount, selectedPdfIndex,
+      setSelectedId, flushPendingSaves, remapSaveStatus,
+      syncPageCount,
+      onAfterDelete: () => setPageOrderVersion((v) => v + 1),
+    });
 
   // Seed entries from pageUrls when:
   // 1. entries is empty (fresh upload with no page_names saved), OR

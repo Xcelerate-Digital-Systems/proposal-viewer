@@ -1,7 +1,7 @@
 // components/admin/page-editor/usePdfOperations.ts
 
 import { useState, useCallback, useEffect } from 'react';
-import { PageNameEntry, normalizePageNames, pdfIndexToEntryIndex, supabase } from '@/lib/supabase';
+import { PageNameEntry, normalizePageNames, supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import type { PageUrlEntry } from '@/hooks/useProposal';
@@ -18,6 +18,8 @@ interface UsePdfOperationsOptions {
   setSelectedId: (id: string) => void;
   flushPendingSaves: () => Promise<void>;
   remapSaveStatus: (newPageOrder: number[]) => void;
+  syncPageCount: (n: number) => void;
+  onAfterDelete?: () => void;
 }
 
 /**
@@ -39,7 +41,6 @@ export function usePdfOperations({
   proposalId,
   tableName,
   initialPageNames,
-  entries,
   setEntries,
   pageCount,
   setPageCount,
@@ -47,6 +48,8 @@ export function usePdfOperations({
   setSelectedId,
   flushPendingSaves,
   remapSaveStatus,
+  syncPageCount,
+  onAfterDelete,
 }: UsePdfOperationsOptions) {
   const confirm = useConfirm();
   const toast = useToast();
@@ -57,9 +60,8 @@ export function usePdfOperations({
   // ── Per-page signed URLs ─────────────────────────────────────────
   const [pageUrls, setPageUrls] = useState<PageUrlEntry[]>([]);
 
-  // Route prefix based on entity type — no ambiguous table_name param needed
+  // Route prefix based on entity type
   const apiBase = tableName === 'documents' ? '/api/documents' : '/api/proposals';
-  // The body ID key matches the route expectation
   const idKey = tableName === 'documents' ? 'document_id' : 'proposal_id';
 
   const fetchPageUrls = useCallback(async () => {
@@ -141,22 +143,9 @@ export function usePdfOperations({
         return;
       }
       const result = await res.json();
-      setEntries((prev) => {
-        const updated = [...prev];
-        const newEntries = Array.from(
-          { length: result.pages_inserted || 1 },
-          (_, idx) => ({ name: `Page ${afterPage + idx + 1}`, indent: 0 })
-        );
-        let entryInsertIdx: number;
-        if (afterPage === 0) {
-          entryInsertIdx = 0;
-        } else {
-          const prevIdx = pdfIndexToEntryIndex(updated, afterPage - 1);
-          entryInsertIdx = prevIdx >= 0 ? prevIdx + 1 : updated.length;
-        }
-        updated.splice(entryInsertIdx, 0, ...newEntries);
-        return updated;
-      });
+      // Don't optimistically mutate entries — let fetchPageUrls (triggered by
+      // pdfVersion bump) return the fresh list, and the syncPageCount effect in
+      // PageEditor will reconcile entries automatically when pageUrls.length changes.
       setPageCount(result.total_pages);
       setSelectedId(`pdf-${afterPage}`);
       toast.success('Page inserted');
@@ -165,7 +154,7 @@ export function usePdfOperations({
       toast.error('Failed to insert page');
     }
     setProcessing(false);
-  }, [proposalId, idKey, apiBase, flushPendingSaves, setEntries, setPageCount, setSelectedId, toast]);
+  }, [proposalId, idKey, apiBase, flushPendingSaves, setPageCount, setSelectedId, toast]);
 
   const handleDeletePage = useCallback(async (pageIndex: number) => {
     if (pageCount <= 1) { toast.error('Cannot delete the only remaining page'); return; }
@@ -193,27 +182,32 @@ export function usePdfOperations({
         return;
       }
       const result = await res.json();
-      setEntries((prev) => {
-        const updated = [...prev];
-        const entryIdx = pdfIndexToEntryIndex(updated, pageIndex);
-        if (entryIdx >= 0) updated.splice(entryIdx, 1);
-        return updated;
-      });
-      // Optimistically remove the deleted index from pageUrls immediately so
-      // resolvedPageCount in PdfPreviewPanel is correct before the async
-      // refetch triggered by setPdfVersion completes. Without this, the stale
-      // array causes a phantom extra page (e.g. "2 page 31s") to appear
-      // briefly, which is confusing enough to prompt a second accidental delete.
+
+      // Remove the deleted page from the local URL list immediately so the
+      // preview doesn't briefly try to load a now-deleted storage file.
+      // Remaining pages' file_path values in document_pages are unchanged after
+      // a delete (only page_number is renumbered), so existing signed URLs stay
+      // valid — no need to re-fetch. We call syncPageCount directly instead of
+      // relying on the pageUrls.length effect to avoid a stale-read race where
+      // fetchPageUrls returns the old count and syncPageCount then re-expands
+      // entries back to N.
       setPageUrls((prev) => prev.filter((_, i) => i !== pageIndex));
       setPageCount(result.total_pages);
-      if (selectedPdfIndex >= result.total_pages) setSelectedId(`pdf-${Math.max(0, result.total_pages - 1)}`);
+      syncPageCount(result.total_pages);
+      if (selectedPdfIndex >= result.total_pages) {
+        setSelectedId(`pdf-${Math.max(0, result.total_pages - 1)}`);
+      }
       toast.success(`Page ${pageIndex + 1} deleted`);
-      setPdfVersion((v) => v + 1);
+      onAfterDelete?.();
+      // Re-fetch to replace any stale signed URLs (the optimistic filter above
+      // updates the count immediately; this refresh ensures deleted-file URLs
+      // are replaced so pages don't show "Failed to load PDF").
+      fetchPageUrls();
     } catch {
       toast.error('Failed to delete page');
     }
     setProcessing(false);
-  }, [proposalId, idKey, apiBase, tableName, pageCount, selectedPdfIndex, flushPendingSaves, setEntries, setPageCount, setSelectedId, confirm, toast]);
+  }, [proposalId, idKey, apiBase, tableName, pageCount, selectedPdfIndex, flushPendingSaves, fetchPageUrls, setPageCount, setSelectedId, syncPageCount, onAfterDelete, confirm, toast]);
 
   const handleReorder = useCallback(async (newPageOrder: number[]) => {
     remapSaveStatus(newPageOrder);
