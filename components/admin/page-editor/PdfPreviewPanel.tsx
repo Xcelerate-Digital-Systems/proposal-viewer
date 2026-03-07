@@ -62,11 +62,10 @@ export default function PdfPreviewPanel({
       load();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
+ }, [
     isPerPage,
-    // Per-page deps
     selectedPdfIndex,
-    // Legacy deps
+    pageUrls,
     filePath,
     pdfVersion,
   ]);

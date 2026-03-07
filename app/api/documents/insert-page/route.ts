@@ -1,4 +1,4 @@
-// app/api/proposals/insert-page/route.ts
+// app/api/documents/insert-page/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { insertPage } from '@/lib/page-operations';
@@ -7,18 +7,18 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { proposal_id, after_page, temp_path } = await req.json();
+    const { document_id, after_page, temp_path } = await req.json();
 
-    if (!proposal_id || isNaN(parseInt(after_page)) || !temp_path) {
+    if (!document_id || isNaN(parseInt(after_page)) || !temp_path) {
       return NextResponse.json(
-        { error: 'Missing proposal_id, after_page, or temp_path' },
+        { error: 'Missing document_id, after_page, or temp_path' },
         { status: 400 },
       );
     }
 
     const supabase = createServiceClient();
-    const result = await insertPage(supabase, 'proposal', {
-      entityId:  proposal_id,
+    const result = await insertPage(supabase, 'document', {
+      entityId:  document_id,
       afterPage: parseInt(after_page),
       tempPath:  temp_path,
     });
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       total_pages:    result.totalPages,
     });
   } catch (err) {
-    console.error('Insert page error:', err);
+    console.error('Documents insert page error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -184,7 +184,6 @@ export function useDocument(token: string) {
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [textPages, setTextPages] = useState<DocumentTextPage[]>([]);
 
-  // Fetch document + branding + text pages + page URLs
   useEffect(() => {
     if (!token) return;
 
@@ -213,7 +212,6 @@ export function useDocument(token: string) {
         if (res.ok) {
           const data = await res.json();
 
-          // Entity-level bg image override (document → company fallback)
           if (doc.bg_image_path) {
             const { data: bgUrlData } = supabase.storage
               .from('company-assets')
@@ -225,7 +223,6 @@ export function useDocument(token: string) {
               doc.bg_image_overlay_opacity ?? data.bg_image_overlay_opacity ?? 0.85;
           }
 
-          // Entity-level text page style overrides (document → company fallback)
           if (doc.text_page_bg_color != null) data.text_page_bg_color = doc.text_page_bg_color;
           if (doc.text_page_text_color != null) data.text_page_text_color = doc.text_page_text_color;
           if (doc.text_page_heading_color != null) data.text_page_heading_color = doc.text_page_heading_color;
@@ -258,9 +255,9 @@ export function useDocument(token: string) {
         // Non-critical
       }
 
-      // ── Per-page URL fetch (primary path) ──────────────────────────────
+      // 4. Fetch per-page URLs from the dedicated documents route
       try {
-        const pageUrlRes = await fetch(`/api/proposals/page-urls?share_token=${token}`);
+        const pageUrlRes = await fetch(`/api/documents/page-urls?share_token=${token}`);
         if (pageUrlRes.ok) {
           const pageUrlData = await pageUrlRes.json();
 
@@ -308,20 +305,16 @@ export function useDocument(token: string) {
     })();
   }, [token]);
 
-  // Build a lookup map from per-page data for label/indent/link overlay
   const pageUrlMap = useMemo<Map<number, PageUrlEntry>>(() => {
     const map = new Map<number, PageUrlEntry>();
     for (const p of pageUrls) map.set(p.page_number, p);
     return map;
   }, [pageUrls]);
 
-  // Normalize page names — groups come from page_names JSONB; labels/indents/links
-  // are overlaid from document_pages rows (via pageUrlMap) when available.
   const pageEntries: PageNameEntry[] = useMemo(() => {
     if (!document && pageUrls.length === 0) return [];
 
     if (pageUrls.length > 0) {
-      // Per-page path: overlay labels/indents/links from pageUrls, preserve group entries
       const normalized = normalizePageNamesWithGroups(
         (document as DocType | null)?.page_names,
         pdfPageCount
@@ -340,28 +333,22 @@ export function useDocument(token: string) {
       });
     }
 
-    // Fallback path: legacy page_names only
     return normalizePageNamesWithGroups(
       (document as DocType | null)?.page_names,
       pdfPageCount
     );
   }, [document, pdfPageCount, pageUrls, pageUrlMap]);
 
-  // Parse TOC settings
   const tocSettings = document ? parseTocSettings((document as DocType).toc_settings) : null;
 
-  // Build virtual page map
   const pageMap = useMemo(
     () => buildDocumentPageMap(pdfPageCount, textPages, tocSettings),
     [pdfPageCount, textPages, tocSettings]
   );
 
-  // Build page entries with text pages interleaved for sidebar.
-  // Groups (section headers) are preserved at their original positions relative to PDF pages.
   const allPageEntries = useMemo(() => {
     if (pdfPageCount === 0) return pageEntries;
 
-    // Separate groups from real page entries
     const pdfEntries: PageNameEntry[] = [];
     const groupsBefore: Map<number, PageNameEntry[]> = new Map();
     let pendingGroups: PageNameEntry[] = [];
@@ -408,8 +395,6 @@ export function useDocument(token: string) {
     return result;
   }, [pageEntries, pdfPageCount, textPages, tocSettings, pageMap.pageSequence]);
 
-  // onDocumentLoadSuccess: only updates pdfPageCount in legacy fallback mode.
-  // In per-page mode (pageUrls.length > 0) the count is already set from pageUrls.length.
   const onDocumentLoadSuccess = useCallback(
     ({ numPages: n }: { numPages: number }) => {
       if (pageUrls.length === 0) {
@@ -436,9 +421,7 @@ export function useDocument(token: string) {
 
   return {
     document,
-    // pdfUrl: populated in legacy fallback mode only; null when per-page is active
     pdfUrl,
-    // pageUrls: populated when document_pages rows exist (primary path)
     pageUrls,
     numPages: pageMap.totalPages || pdfPageCount,
     pdfPageCount,

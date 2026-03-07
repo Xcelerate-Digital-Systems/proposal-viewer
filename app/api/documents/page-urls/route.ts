@@ -1,4 +1,4 @@
-// app/api/proposals/page-urls/route.ts
+// app/api/documents/page-urls/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getPageUrls } from '@/lib/page-operations';
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     }
 
     const supabase = createServiceClient();
-    const result = await getPageUrls(supabase, 'proposal', { entityId, shareToken });
+    const result = await getPageUrls(supabase, 'document', { entityId, shareToken });
 
     if (result.error && !result.fallback) {
       const status = result.error === 'Not found' ? 404 : 500;
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ pages: result.pages, fallback: result.fallback });
   } catch (err) {
-    console.error('page-urls route error:', err);
+    console.error('Documents page-urls route error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

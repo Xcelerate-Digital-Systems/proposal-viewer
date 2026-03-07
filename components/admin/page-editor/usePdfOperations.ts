@@ -55,20 +55,19 @@ export function usePdfOperations({
   const [pdfVersion, setPdfVersion] = useState(0);
 
   // ── Per-page signed URLs ─────────────────────────────────────────
-  // Populated once proposal_pages rows exist (post-backfill). Empty
-  // array signals legacy mode — PdfPreviewPanel falls back to filePath.
   const [pageUrls, setPageUrls] = useState<PageUrlEntry[]>([]);
+
+  // Route prefix based on entity type — no ambiguous table_name param needed
+  const apiBase = tableName === 'documents' ? '/api/documents' : '/api/proposals';
+  // The body ID key matches the route expectation
+  const idKey = tableName === 'documents' ? 'document_id' : 'proposal_id';
 
   const fetchPageUrls = useCallback(async () => {
     try {
-      const params = new URLSearchParams({
-        entity_id: proposalId,
-        table_name: tableName,
-      });
-      const res = await fetch(`/api/proposals/page-urls?${params.toString()}`);
+      const params = new URLSearchParams({ entity_id: proposalId });
+      const res = await fetch(`${apiBase}/page-urls?${params.toString()}`);
       if (!res.ok) return;
       const data = await res.json();
-      // If fallback is true, no rows exist yet — stay in legacy mode
       if (data.fallback) {
         setPageUrls([]);
       } else {
@@ -77,7 +76,7 @@ export function usePdfOperations({
     } catch {
       // Non-fatal — legacy mode stays active
     }
-  }, [proposalId, tableName]);
+  }, [proposalId, apiBase]);
 
   // Fetch on mount
   useEffect(() => {
@@ -85,9 +84,8 @@ export function usePdfOperations({
   }, [fetchPageUrls]);
 
   // Re-fetch after every operation that changes page content / order
-  // (pdfVersion is bumped at the end of each successful mutation)
   useEffect(() => {
-    if (pdfVersion === 0) return; // skip initial render
+    if (pdfVersion === 0) return;
     fetchPageUrls();
   }, [pdfVersion, fetchPageUrls]);
 
@@ -96,19 +94,16 @@ export function usePdfOperations({
   const handleReplacePage = useCallback(async (pageIndex: number, file: File) => {
     await flushPendingSaves();
     setProcessing(true);
-    let tempPath: string | null = null;
     try {
-      // Upload directly to Supabase Storage to avoid Vercel payload limit
-      tempPath = await uploadTempPdf(file);
+      const tempPath = await uploadTempPdf(file);
 
-      const res = await fetch('/api/proposals/replace-page', {
+      const res = await fetch(`${apiBase}/replace-page`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          proposal_id: proposalId,
-          table_name: tableName,
+          [idKey]:     proposalId,
           page_number: pageIndex + 1,
-          temp_path: tempPath,
+          temp_path:   tempPath,
         }),
       });
       if (!res.ok) {
@@ -122,24 +117,21 @@ export function usePdfOperations({
       toast.error('Failed to replace page');
     }
     setProcessing(false);
-  }, [proposalId, tableName, flushPendingSaves, toast]);
+  }, [proposalId, idKey, apiBase, flushPendingSaves, toast]);
 
   const handleInsertPage = useCallback(async (afterPage: number, file: File) => {
     await flushPendingSaves();
     setProcessing(true);
-    let tempPath: string | null = null;
     try {
-      // Upload directly to Supabase Storage to avoid Vercel payload limit
-      tempPath = await uploadTempPdf(file);
+      const tempPath = await uploadTempPdf(file);
 
-      const res = await fetch('/api/proposals/insert-page', {
+      const res = await fetch(`${apiBase}/insert-page`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          proposal_id: proposalId,
-          table_name: tableName,
+          [idKey]:    proposalId,
           after_page: afterPage,
-          temp_path: tempPath,
+          temp_path:  tempPath,
         }),
       });
       if (!res.ok) {
@@ -155,7 +147,6 @@ export function usePdfOperations({
           { length: result.pages_inserted || 1 },
           (_, idx) => ({ name: `Page ${afterPage + idx + 1}`, indent: 0 })
         );
-        // Find correct insertion point by skipping groups
         let entryInsertIdx: number;
         if (afterPage === 0) {
           entryInsertIdx = 0;
@@ -174,28 +165,36 @@ export function usePdfOperations({
       toast.error('Failed to insert page');
     }
     setProcessing(false);
-  }, [proposalId, tableName, flushPendingSaves, setEntries, setPageCount, setSelectedId, toast]);
+  }, [proposalId, idKey, apiBase, flushPendingSaves, setEntries, setPageCount, setSelectedId, toast]);
 
   const handleDeletePage = useCallback(async (pageIndex: number) => {
     if (pageCount <= 1) { toast.error('Cannot delete the only remaining page'); return; }
     const ok = await confirm({
       title: 'Delete page?',
-      message: `This will permanently remove page ${pageIndex + 1} from the proposal PDF. This cannot be undone.`,
+      message: `This will permanently remove page ${pageIndex + 1} from the ${tableName === 'documents' ? 'document' : 'proposal'} PDF. This cannot be undone.`,
       confirmLabel: 'Delete', destructive: true,
     });
     if (!ok) return;
     await flushPendingSaves();
     setProcessing(true);
     try {
-      const res = await fetch('/api/proposals/delete-page', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposal_id: proposalId, table_name: tableName, page_number: pageIndex + 1 }),
+      const res = await fetch(`${apiBase}/delete-page`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [idKey]:     proposalId,
+          page_number: pageIndex + 1,
+        }),
       });
-      if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed to delete page'); setProcessing(false); return; }
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to delete page');
+        setProcessing(false);
+        return;
+      }
       const result = await res.json();
       setEntries((prev) => {
         const updated = [...prev];
-        // Find the correct entry index by skipping groups
         const entryIdx = pdfIndexToEntryIndex(updated, pageIndex);
         if (entryIdx >= 0) updated.splice(entryIdx, 1);
         return updated;
@@ -204,21 +203,23 @@ export function usePdfOperations({
       if (selectedPdfIndex >= result.total_pages) setSelectedId(`pdf-${Math.max(0, result.total_pages - 1)}`);
       toast.success(`Page ${pageIndex + 1} deleted`);
       setPdfVersion((v) => v + 1);
-    } catch { toast.error('Failed to delete page'); }
+    } catch {
+      toast.error('Failed to delete page');
+    }
     setProcessing(false);
-  }, [proposalId, tableName, pageCount, selectedPdfIndex, flushPendingSaves, setEntries, setPageCount, setSelectedId, confirm, toast]);
+  }, [proposalId, idKey, apiBase, tableName, pageCount, selectedPdfIndex, flushPendingSaves, setEntries, setPageCount, setSelectedId, confirm, toast]);
 
   const handleReorder = useCallback(async (newPageOrder: number[]) => {
-    // NOTE: entries are already reordered by handleDragEnd in PageEditor.tsx
-    // We only need to remap save statuses and call the API for PDF reorder
     remapSaveStatus(newPageOrder);
-
     setProcessing(true);
     try {
-      const res = await fetch('/api/proposals/reorder-pages', {
+      const res = await fetch(`${apiBase}/reorder-pages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposal_id: proposalId, table_name: tableName, page_order: newPageOrder }),
+        body: JSON.stringify({
+          [idKey]:    proposalId,
+          page_order: newPageOrder,
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -231,7 +232,7 @@ export function usePdfOperations({
       toast.error('Failed to reorder pages');
     }
     setProcessing(false);
-  }, [proposalId, tableName, initialPageNames, setEntries, remapSaveStatus, toast]);
+  }, [proposalId, idKey, apiBase, initialPageNames, setEntries, remapSaveStatus, toast]);
 
   return {
     processing,

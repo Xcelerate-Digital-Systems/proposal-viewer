@@ -1,4 +1,4 @@
-// app/api/proposals/replace-page/route.ts
+// app/api/documents/replace-page/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { replacePage } from '@/lib/page-operations';
@@ -7,18 +7,18 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { proposal_id, page_number, temp_path } = await req.json();
+    const { document_id, page_number, temp_path } = await req.json();
 
-    if (!proposal_id || !page_number || !temp_path) {
+    if (!document_id || !page_number || !temp_path) {
       return NextResponse.json(
-        { error: 'Missing proposal_id, page_number, or temp_path' },
+        { error: 'Missing document_id, page_number, or temp_path' },
         { status: 400 },
       );
     }
 
     const supabase = createServiceClient();
-    const result = await replacePage(supabase, 'proposal', {
-      entityId:   proposal_id,
+    const result = await replacePage(supabase, 'document', {
+      entityId:   document_id,
       pageNumber: parseInt(page_number),
       tempPath:   temp_path,
     });
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       total_pages: result.totalPages,
     });
   } catch (err) {
-    console.error('Replace page error:', err);
+    console.error('Documents replace page error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

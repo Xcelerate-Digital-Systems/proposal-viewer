@@ -1,25 +1,25 @@
-// app/api/proposals/reorder-pages/route.ts
+// app/api/documents/delete-page/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { reorderPages } from '@/lib/page-operations';
+import { deletePage } from '@/lib/page-operations';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { proposal_id, page_order } = await req.json();
+    const { document_id, page_number } = await req.json();
 
-    if (!proposal_id || !Array.isArray(page_order)) {
+    if (!document_id || !page_number) {
       return NextResponse.json(
-        { error: 'Missing proposal_id or page_order' },
+        { error: 'Missing document_id or page_number' },
         { status: 400 },
       );
     }
 
     const supabase = createServiceClient();
-    const result = await reorderPages(supabase, 'proposal', {
-      entityId:  proposal_id,
-      pageOrder: page_order,
+    const result = await deletePage(supabase, 'document', {
+      entityId:   document_id,
+      pageNumber: page_number,
     });
 
     if (!result.success) {
@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      success:     true,
-      reordered:   result.reordered,
-      total_pages: result.totalPages,
+      success:      true,
+      deleted_page: page_number,
+      total_pages:  result.totalPages,
     });
   } catch (err) {
-    console.error('Reorder pages error:', err);
+    console.error('Documents delete page error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
