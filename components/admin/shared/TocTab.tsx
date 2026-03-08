@@ -41,6 +41,12 @@ const entityIdParam = (type: 'proposal' | 'template' | 'document') => {
   return 'document_id';
 };
 
+const pagesApiBase = (type: 'proposal' | 'template' | 'document') => {
+  if (type === 'proposal') return '/api/proposals/pages';
+  if (type === 'template') return '/api/templates/pages';
+  return '/api/documents/pages';
+};
+
 function groupByIndent(items: TocItem[]): ItemGroup[] {
   const groups: ItemGroup[] = [];
   for (const item of items) {
@@ -85,6 +91,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [companyName, setCompanyName] = useState<string | undefined>(undefined);
+  const [tocPageId, setTocPageId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -123,6 +130,10 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
           enabled: boolean;
         }> = pagesRes.ok ? await pagesRes.json() : [];
 
+        // Track the existing toc page row id so we can delete it on toggle-off
+        const existingToc = allPages.find((p) => p.type === 'toc');
+        setTocPageId(existingToc?.id ?? null);
+
         const items: TocItem[] = allPages
           .filter((p) => p.enabled)
           .map((p) => ({
@@ -143,27 +154,65 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
     fetchData();
   }, [entityId, entityType]);
 
-  const save = useCallback(async (newSettings: TocSettings) => {
+  const save = useCallback(async (newSettings: TocSettings, prevEnabled?: boolean) => {
     setSaveStatus('saving');
     try {
       const table = entityTable(entityType);
       const { error } = await supabase.from(table).update({ toc_settings: newSettings }).eq('id', entityId);
       if (error) throw error;
+
+      // Sync the _v2 toc page row when enabled state changes
+      if (prevEnabled !== undefined && prevEnabled !== newSettings.enabled) {
+        const apiBase = pagesApiBase(entityType);
+        const idKey = entityIdParam(entityType);
+
+        if (newSettings.enabled) {
+          // Create the toc row at position 0
+          const res = await fetch(apiBase, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              [idKey]: entityId,
+              type: 'toc',
+              title: newSettings.title || 'Table of Contents',
+              position: 0,
+            }),
+          });
+          if (res.ok) {
+            const newPage = await res.json();
+            setTocPageId(newPage.id ?? null);
+          }
+        } else if (tocPageId) {
+          // Delete the toc row
+          await fetch(apiBase, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [idKey]: entityId, page_id: tocPageId }),
+          });
+          setTocPageId(null);
+        }
+      }
+
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch {
       toast.error('Failed to save table of contents settings');
       setSaveStatus('idle');
     }
-  }, [entityId, entityType, toast]);
+  }, [entityId, entityType, tocPageId, toast]);
 
-  const scheduleSave = useCallback((newSettings: TocSettings) => {
+  const scheduleSave = useCallback((newSettings: TocSettings, prevEnabled?: boolean) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => { save(newSettings); debounceRef.current = null; }, 800);
+    debounceRef.current = setTimeout(() => { save(newSettings, prevEnabled); debounceRef.current = null; }, 800);
   }, [save]);
 
   const updateSettings = useCallback((changes: Partial<TocSettings>) => {
-    setSettings((prev) => { const next = { ...prev, ...changes }; scheduleSave(next); return next; });
+    setSettings((prev) => {
+      const next = { ...prev, ...changes };
+      const prevEnabled = 'enabled' in changes ? prev.enabled : undefined;
+      scheduleSave(next, prevEnabled);
+      return next;
+    });
   }, [scheduleSave]);
 
   const toggleItem = useCallback((itemId: string) => {

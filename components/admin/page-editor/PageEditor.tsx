@@ -156,6 +156,11 @@ export default function PageEditor({
     if (newPage) setSelectedId(newPage.id);
   }, [addPage]);
 
+  const handleAddToc = useCallback(async () => {
+    const newPage = await addPage('toc', { title: 'Table of Contents', position: 0 });
+    if (newPage) setSelectedId(newPage.id);
+  }, [addPage]);
+
   const handleDeletePage = useCallback(async (pageId: string) => {
     const currentIdx = pages.findIndex((p) => p.id === pageId);
     const deleted = await deletePage(pageId);
@@ -198,15 +203,18 @@ export default function PageEditor({
   /* ── Derived: pageUrls for PdfPreviewPanel ───────────────────────────── */
 
   const pageUrlEntries = pdfPages.map((p) => ({
-    id:          p.id,
-    position:    p.position,
-    type:        'pdf' as const,
-    url:         signedUrls[p.id] ?? null,
-    title:       p.title,
-    indent:      p.indent,
-    link_url:    p.link_url ?? undefined,
-    link_label:  p.link_label ?? undefined,
-    payload:     p.payload as Record<string, unknown>,
+    id:                    p.id,
+    position:              p.position,
+    type:                  'pdf' as const,
+    url:                   signedUrls[p.id] ?? null,
+    title:                 p.title,
+    indent:                p.indent,
+    link_url:              p.link_url ?? undefined,
+    link_label:            p.link_label ?? undefined,
+    show_title:            p.show_title,
+    show_member_badge:     p.show_member_badge,
+    prepared_by_member_id: p.prepared_by_member_id,
+    payload:               p.payload as Record<string, unknown>,
   }));
 
   /* ── Derived: entries (PageNameEntry) for PdfPreviewPanel ───────────── */
@@ -224,6 +232,8 @@ export default function PageEditor({
   const pricingExists    = pages.some((p) => p.type === 'pricing');
   const pricingActive    = pricingExists;
   const canAddPricing    = !isDocuments && !pricingExists;
+  const tocExists        = pages.some((p) => p.type === 'toc');
+  const canAddToc        = !isDocuments && !tocExists;
 
   /* ── Done ────────────────────────────────────────────────────────────── */
 
@@ -237,7 +247,7 @@ export default function PageEditor({
   const pdfCount  = pdfPages.length;
   const textCount = pages.filter((p) => p.type === 'text').length;
   const pkgCount  = pages.filter((p) => p.type === 'packages').length;
-  const hasToc    = pages.some((p) => p.type === 'toc');
+  const hasToc    = tocExists;
 
   const summaryParts = [
     `${pdfCount} PDF page${pdfCount !== 1 ? 's' : ''}`,
@@ -312,6 +322,15 @@ export default function PageEditor({
             <FolderOpen size={12} />
             Add Section Header
           </button>
+          {canAddToc && (
+            <button
+              onClick={handleAddToc}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors"
+            >
+              <List size={12} />
+              Add Contents Page
+            </button>
+          )}
         </div>
       )}
 
