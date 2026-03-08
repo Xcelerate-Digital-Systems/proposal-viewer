@@ -363,7 +363,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
       </div>
 
       {settings.enabled ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr] gap-6 items-start">
 
           {/* ── Left: controls ── */}
           <div className="space-y-5">

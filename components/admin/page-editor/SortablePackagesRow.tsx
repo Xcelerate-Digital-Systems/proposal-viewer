@@ -3,9 +3,9 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ArrowLeft, CornerDownRight, Package, Loader2 } from 'lucide-react';
+import { GripVertical, ArrowLeft, CornerDownRight, Package, Loader2, Trash2 } from 'lucide-react';
+import PageLinkInput from '@/components/admin/page-editor/PageLinkInput';
 
-// AFTER
 interface SortablePackagesRowProps {
   id: string;
   title: string;
@@ -16,11 +16,14 @@ interface SortablePackagesRowProps {
   onSelect: () => void;
   onToggleIndent: () => void;
   onRemove?: () => void;
+  linkUrl: string;
+  linkLabel: string;
+  onLinkChange: (url: string, label: string) => void;
   renderInsertAfter?: React.ReactNode;
 }
 
 export default function SortablePackagesRow({
-  id, title, indent, isFirst, isSelected, processing, onSelect, onToggleIndent, onRemove, renderInsertAfter,
+  id, title, indent, isFirst, isSelected, processing, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, renderInsertAfter,
 }: SortablePackagesRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -67,11 +70,32 @@ export default function SortablePackagesRow({
         </button>
         {/* Icon + label */}
         <Package size={14} className="text-[#017C87] shrink-0" />
-        <span className={`text-sm font-medium truncate ${indent ? 'ml-4' : ''} text-[#017C87]`}>
+        <span className={`text-sm font-medium truncate flex-1 ${indent ? 'ml-4' : ''} text-[#017C87]`}>
           {title || 'Packages'}
         </span>
-        <div className="ml-auto shrink-0 w-5 flex items-center justify-center">
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           {processing && <Loader2 size={12} className="animate-spin text-[#017C87]/40" />}
+
+          {/* Page link */}
+          <PageLinkInput
+            linkUrl={linkUrl}
+            linkLabel={linkLabel}
+            onChange={onLinkChange}
+            variant="teal"
+          />
+
+          {/* Remove button */}
+          {onRemove && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Remove packages page"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
         </div>
       </div>
       {renderInsertAfter}

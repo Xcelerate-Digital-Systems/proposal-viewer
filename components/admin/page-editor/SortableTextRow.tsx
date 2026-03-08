@@ -12,6 +12,7 @@ interface SortableTextRowProps {
   indent: number;
   isFirst: boolean;
   isSelected: boolean;
+  saveStatus?: 'idle' | 'saving' | 'saved';
   onSelect: () => void;
   onToggleIndent: () => void;
   onRemove: () => void;
@@ -22,7 +23,7 @@ interface SortableTextRowProps {
   renderInsertAfter?: React.ReactNode;
 }
 
-export default function SortableTextRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, renderInsertAfter }: SortableTextRowProps) {
+export default function SortableTextRow({ id, title, indent, isFirst, isSelected, saveStatus: _saveStatus, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, renderInsertAfter }: SortableTextRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),

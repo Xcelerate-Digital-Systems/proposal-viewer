@@ -3,7 +3,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ArrowLeft, CornerDownRight, DollarSign } from 'lucide-react';
+import { GripVertical, ArrowLeft, CornerDownRight, DollarSign, Trash2 } from 'lucide-react';
 import PageLinkInput from '@/components/admin/page-editor/PageLinkInput';
 
 
@@ -15,6 +15,7 @@ interface SortablePricingRowProps {
   isSelected: boolean;
   onSelect: () => void;
   onToggleIndent: () => void;
+  onRemove: () => void;
   linkUrl: string;
   linkLabel: string;
   onLinkChange: (url: string, label: string) => void;
@@ -22,7 +23,7 @@ interface SortablePricingRowProps {
   renderInsertAfter?: React.ReactNode;
 }
 
-export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, linkUrl, linkLabel, onLinkChange, renderInsertAfter }: SortablePricingRowProps) {
+export default function SortablePricingRow({ id, title, indent, isFirst, isSelected, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, renderInsertAfter }: SortablePricingRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -83,6 +84,15 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
             onChange={onLinkChange}
             variant="teal"
           />
+
+          {/* Remove button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            title="Remove pricing page"
+          >
+            <Trash2 size={12} />
+          </button>
         </div>
       </div>
 

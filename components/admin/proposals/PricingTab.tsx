@@ -3,7 +3,10 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Check, DollarSign, Loader2, Eye } from 'lucide-react';
-import { ProposalPricing, PricingLineItem, PricingOptionalItem, PaymentSchedule, DEFAULT_PAYMENT_SCHEDULE, normalizePaymentSchedule, supabase, } from '@/lib/supabase';
+import {
+  ProposalPricing, PricingLineItem, PricingOptionalItem,
+  PaymentSchedule, DEFAULT_PAYMENT_SCHEDULE, normalizePaymentSchedule, supabase,
+} from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { useToast } from '@/components/ui/Toast';
 import Toggle from '@/components/ui/Toggle';
@@ -14,6 +17,7 @@ import PricingOptionalItems from '../pricing/PricingOptionalItems';
 import PricingTotals from '../pricing/PricingTotals';
 import PricingPaymentSchedule from '../pricing/PricingPaymentSchedule';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
+import SplitPanelLayout from '@/components/admin/shared/SplitPanelLayout';
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -68,12 +72,12 @@ interface PricingTabProps {
 export default function PricingTab({ proposalId }: PricingTabProps) {
   const toast = useToast();
 
-  const [loaded, setLoaded] = useState(false);
-  const [exists, setExists] = useState(false);
-  const [position, setPosition] = useState(-1);
-  const [form, setForm] = useState<PricingFormState>(DEFAULT_PRICING);
+  const [loaded, setLoaded]         = useState(false);
+  const [exists, setExists]         = useState(false);
+  const [position, setPosition]     = useState(-1);
+  const [form, setForm]             = useState<PricingFormState>(DEFAULT_PRICING);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [branding, setBranding]     = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [showPreview, setShowPreview] = useState(true);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -180,7 +184,7 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
     });
   }, [savePricing, position]);
 
-  /* ── Toggle ─────────────────────────────────────────────────── */
+  /* ── Toggle enabled ─────────────────────────────────────────── */
 
   const toggleEnabled = useCallback(async () => {
     const newEnabled = !form.enabled;
@@ -261,7 +265,9 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
             <button
               onClick={() => setShowPreview(!showPreview)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                showPreview ? 'bg-[#017C87]/10 text-[#017C87]' : 'bg-gray-100 text-gray-400 hover:text-gray-600'
+                showPreview
+                  ? 'bg-[#017C87]/10 text-[#017C87]'
+                  : 'bg-gray-100 text-gray-400 hover:text-gray-600'
               }`}
               title={showPreview ? 'Hide preview' : 'Show preview'}
             >
@@ -274,51 +280,47 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
 
       {/* Content */}
       {form.enabled ? (
-        <div className="flex gap-6">
-          {/* Left: Form */}
-          <div className={`flex-1 min-w-0 space-y-6 ${showPreview ? 'max-w-[55%]' : 'max-w-3xl'}`}>
-            <PricingSettings
-              title={form.title}
-              introText={form.introText}
-              taxEnabled={form.taxEnabled}
-              validityDays={form.validityDays}
-              proposalDate={form.proposalDate}
-              onTitleChange={(v) => updateForm({ title: v })}
-              onIntroTextChange={(v) => updateForm({ introText: v })}
-              onTaxEnabledChange={(v) => updateForm({ taxEnabled: v })}
-              onValidityDaysChange={(v) => updateForm({ validityDays: v })}
-              onProposalDateChange={(v) => updateForm({ proposalDate: v })}
-            />
-            <PricingLineItems
-              items={form.items}
-              onChange={(items) => updateForm({ items })}
-            />
-            <PricingOptionalItems
-              items={form.optionalItems}
-              onChange={(optionalItems) => updateForm({ optionalItems })}
-            />
-            <PricingTotals
-              items={form.items}
-              taxEnabled={form.taxEnabled}
-              taxRate={form.taxRate}
-              taxLabel={form.taxLabel}
-            />
-            <PricingPaymentSchedule
-              schedule={form.paymentSchedule}
-              items={form.items}
-              taxEnabled={form.taxEnabled}
-              taxRate={form.taxRate}
-              onChange={(paymentSchedule) => updateForm({ paymentSchedule })}
-            />
-          </div>
-
-          {/* Right: Preview */}
-          {showPreview && (
-            <div className="w-[45%] shrink-0">
-              <PricingPreview pricing={previewPricing} branding={branding} />
-            </div>
-          )}
-        </div>
+        <SplitPanelLayout
+          leftClassName={`space-y-6 ${!showPreview ? 'max-w-3xl' : ''}`}
+          left={
+            <>
+              <PricingSettings
+                title={form.title}
+                introText={form.introText}
+                taxEnabled={form.taxEnabled}
+                validityDays={form.validityDays}
+                proposalDate={form.proposalDate}
+                onTitleChange={(v) => updateForm({ title: v })}
+                onIntroTextChange={(v) => updateForm({ introText: v })}
+                onTaxEnabledChange={(v) => updateForm({ taxEnabled: v })}
+                onValidityDaysChange={(v) => updateForm({ validityDays: v })}
+                onProposalDateChange={(v) => updateForm({ proposalDate: v })}
+              />
+              <PricingLineItems
+                items={form.items}
+                onChange={(items) => updateForm({ items })}
+              />
+              <PricingOptionalItems
+                items={form.optionalItems}
+                onChange={(optionalItems) => updateForm({ optionalItems })}
+              />
+              <PricingTotals
+                items={form.items}
+                taxEnabled={form.taxEnabled}
+                taxRate={form.taxRate}
+                taxLabel={form.taxLabel}
+              />
+              <PricingPaymentSchedule
+                schedule={form.paymentSchedule}
+                items={form.items}
+                taxEnabled={form.taxEnabled}
+                taxRate={form.taxRate}
+                onChange={(paymentSchedule) => updateForm({ paymentSchedule })}
+              />
+            </>
+          }
+          right={showPreview ? <PricingPreview pricing={previewPricing} branding={branding} /> : undefined}
+        />
       ) : (
         <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
           <DollarSign size={24} className="mx-auto text-gray-300 mb-2" />

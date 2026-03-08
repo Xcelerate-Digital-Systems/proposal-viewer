@@ -13,6 +13,7 @@ import {
 } from './CoverEditorTypes';
 import CoverSettingsPanel from './CoverSettingsPanel';
 import CoverPreview from './CoverPreview';
+import SplitPanelLayout from '@/components/admin/shared/SplitPanelLayout';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -88,7 +89,7 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
     setColors((prev) => ({ ...prev, ...partial }));
   };
 
-  /* ── Panel height measurement (same pattern as PackagesTab) ── */
+  /* ── Panel height measurement ───────────────────────────────── */
   const containerRef = useRef<HTMLDivElement>(null);
   const [panelHeight, setPanelHeight] = useState(520);
 
@@ -340,10 +341,12 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
       </div>
 
       {/* ── Two-column split — fixed height, left scrolls ───── */}
-      <div ref={containerRef} className="flex gap-6" style={{ height: panelHeight }}>
-
-        {/* Left: Settings (scrollable) */}
-        <div className="flex-1 min-w-0 overflow-y-auto pr-2">
+      <SplitPanelLayout
+        containerRef={containerRef}
+        panelHeight={panelHeight}
+        leftClassName="overflow-y-auto pr-2"
+        rightClassName="flex flex-col min-h-0"
+        left={
           <CoverSettingsPanel
             type={type}
             cfg={cfg}
@@ -381,10 +384,8 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
             colors={colors}
             onColorsChange={updateColors}
           />
-        </div>
-
-        {/* Right: Live preview — matches page editor frame style */}
-        <div className="flex-1 min-w-0 flex flex-col min-h-0">
+        }
+        right={
           <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
             {/* Header bar */}
             <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
@@ -424,8 +425,8 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
               <span className="text-[10px] text-gray-400">Updates live as you edit</span>
             </div>
           </div>
-        </div>
-      </div>
+        }
+      />
     </div>
   );
 }

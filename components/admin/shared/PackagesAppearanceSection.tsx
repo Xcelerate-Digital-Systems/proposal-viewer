@@ -54,7 +54,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Title colour ──────────────────────────────────── */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-4 py-3 space-y-2 bg-white">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</label>
         <ColorPickerField
           label="Title text colour"
@@ -66,7 +66,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Card Background ───────────────────────────────── */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-4 py-3 space-y-2 bg-white">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Background</label>
         <ColorPickerField
           label="All cards"
@@ -99,7 +99,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Card Text ─────────────────────────────────────── */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-4 py-3 space-y-2 bg-white">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Text</label>
         <ColorPickerField
           label="All cards"
@@ -132,7 +132,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Recommended Badge ─────────────────────────────── */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-4 py-3 space-y-2 bg-white">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Recommended Badge</label>
         <ColorPickerField
           label="Badge text"
@@ -144,7 +144,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Feature Icon ──────────────────────────────────── */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-4 py-3 space-y-2 bg-white">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Feature Icon</label>
         <div className="flex flex-wrap gap-1.5">
           {ICON_OPTIONS.map((opt) => (
@@ -166,7 +166,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Card Shape ────────────────────────────────────── */}
-      <div className="px-4 py-3 space-y-3">
+      <div className="px-4 py-3 space-y-3 bg-white">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Shape</label>
         <div className="space-y-1">
           <label className="text-xs text-gray-600">Border radius</label>
