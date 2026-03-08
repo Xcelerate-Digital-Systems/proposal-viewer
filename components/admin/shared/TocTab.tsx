@@ -198,7 +198,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         const apiBase = pagesApiBase(entityType);
         const idKey = entityIdParam(entityType);
 
-        if (newSettings.enabled) {                    // ← change to: if (newSettings.enabled && !tocPageId) {
+        if (newSettings.enabled && !tocPageId) {
           // Create the toc row (append at end so it doesn't clobber existing positions)
           const res = await fetch(apiBase, {
             method: 'POST',
