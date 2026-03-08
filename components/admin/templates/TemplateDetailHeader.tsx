@@ -16,7 +16,7 @@ import TemplateTabs from './TemplateTabs';
 
 interface TemplateDetailHeaderProps {
   templateId: string;
-  activeTab: 'pages' | 'contents' | 'pricing' | 'packages' | 'cover' | 'design' | 'details';
+  activeTab: 'pages' | 'text-pages' | 'contents' | 'pricing' | 'packages' | 'cover' | 'design' | 'details';
 }
 
 /* ------------------------------------------------------------------ */
@@ -59,20 +59,20 @@ export default function TemplateDetailHeader({
       title: 'Delete Template',
       message: `Delete "${template.name}" and all its pages? This cannot be undone.`,
       confirmLabel: 'Delete',
-      destructive: true 
+      destructive: true,
     });
     if (!ok) return;
 
     // Delete template pages from storage
     const { data: pages } = await supabase
-  .from('template_pages_v2')
-  .select('payload')
-  .eq('template_id', template.id);  // ← template.id, not t.id
+      .from('template_pages_v2')
+      .select('payload')
+      .eq('template_id', template.id);
 
-if (pages && pages.length > 0) {
-  const paths = pages
-    .map((p) => (p.payload as Record<string, unknown>)?.file_path as string | undefined)
-    .filter(Boolean) as string[];
+    if (pages && pages.length > 0) {
+      const paths = pages
+        .map((p) => (p.payload as Record<string, unknown>)?.file_path as string | undefined)
+        .filter(Boolean) as string[];
       if (paths.length > 0) {
         await supabase.storage.from('proposals').remove(paths);
       }

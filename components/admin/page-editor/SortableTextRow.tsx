@@ -23,8 +23,29 @@ interface SortableTextRowProps {
   renderInsertAfter?: React.ReactNode;
 }
 
-export default function SortableTextRow({ id, title, indent, isFirst, isSelected, saveStatus: _saveStatus, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, renderInsertAfter }: SortableTextRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+export default function SortableTextRow({
+  id,
+  title,
+  indent,
+  isFirst,
+  isSelected,
+  onSelect,
+  onToggleIndent,
+  onRemove,
+  linkUrl,
+  linkLabel,
+  onLinkChange,
+  renderInsertAfter,
+}: SortableTextRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -50,9 +71,11 @@ export default function SortableTextRow({ id, title, indent, isFirst, isSelected
         >
           <GripVertical size={14} />
         </button>
+
         {/* Spacer to align with page number column */}
         <span className="w-5 shrink-0" />
-        {/* Indent toggle — aligns with indent button column */}
+
+        {/* Indent toggle */}
         <button
           onClick={(e) => { e.stopPropagation(); onToggleIndent(); }}
           disabled={isFirst}
@@ -67,9 +90,11 @@ export default function SortableTextRow({ id, title, indent, isFirst, isSelected
         >
           {indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
         </button>
+
         {indent > 0 && (
           <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
         )}
+
         <FileText size={14} className="text-[#017C87]/70 shrink-0" />
         <span className="text-sm font-medium text-[#017C87]/70 flex-1 truncate">
           {title || 'Text Page'}
@@ -77,7 +102,6 @@ export default function SortableTextRow({ id, title, indent, isFirst, isSelected
 
         {/* Actions */}
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {/* Page link */}
           {onLinkChange && (
             <PageLinkInput
               linkUrl={linkUrl || ''}
@@ -86,8 +110,6 @@ export default function SortableTextRow({ id, title, indent, isFirst, isSelected
               variant="teal"
             />
           )}
-
-          {/* Remove button */}
           <button
             onClick={(e) => { e.stopPropagation(); onRemove(); }}
             className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"

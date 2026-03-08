@@ -17,7 +17,7 @@ import DocumentTabs from './DocumentTabs';
 
 interface DocumentDetailHeaderProps {
   documentId: string;
-  activeTab: 'pages' | 'contents' | 'cover' | 'design' | 'details';
+  activeTab: 'pages' | 'text-pages' | 'contents' | 'cover' | 'design' | 'details';
   customDomain?: string | null;
 }
 

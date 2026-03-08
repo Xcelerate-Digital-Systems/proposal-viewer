@@ -2,22 +2,24 @@
 'use client';
 
 import Link from 'next/link';
-import { Pencil, DollarSign, Package, Image, Settings, Paintbrush, List } from 'lucide-react';
+import { Pencil, DollarSign, Package, Image, Settings, Paintbrush, List, FileText } from 'lucide-react';
 
 interface ProposalTabsProps {
   proposalId: string;
-  activeTab: 'pages' | 'pricing' | 'packages' | 'contents' | 'cover' | 'design' | 'details';
+  activeTab: 'pages' | 'text-pages' | 'pricing' | 'packages' | 'contents' | 'cover' | 'design' | 'details';
 }
 
 const tabs: { key: string; label: string; icon: typeof Pencil; path: string }[] = [
-  { key: 'pages',    label: 'Pages',    icon: Pencil,      path: 'pages'    },
-  { key: 'design',   label: 'Design',   icon: Paintbrush,  path: 'design'   },
-  { key: 'contents', label: 'Table Of Contents', icon: List,        path: 'contents' },
-  { key: 'pricing',  label: 'Quote/Pricing',  icon: DollarSign,  path: 'pricing'  },
-  { key: 'packages', label: 'Packages', icon: Package,     path: 'packages' },
-  { key: 'cover',    label: 'Cover',    icon: Image,       path: 'cover'    },
-  { key: 'details',  label: 'Details',  icon: Settings,    path: 'details'  },
+  { key: 'pages',      label: 'Pages',            icon: Pencil,     path: 'pages'      },
+  { key: 'contents',   label: 'Table Of Contents', icon: List,       path: 'contents'   },
+  { key: 'design',     label: 'Design',            icon: Paintbrush, path: 'design'     },
+  { key: 'cover',      label: 'Cover Page',        icon: Image,      path: 'cover'      },
+  { key: 'text-pages', label: 'Text Pages',        icon: FileText,   path: 'text-pages' },
+  { key: 'pricing',    label: 'Pricing Page',           icon: DollarSign, path: 'pricing'    },
+  { key: 'packages',   label: 'Package Pages',          icon: Package,    path: 'packages'   },
+  { key: 'details',    label: 'Details',           icon: Settings,   path: 'details'    },
 ];
+
 
 export default function ProposalTabs({ proposalId, activeTab }: ProposalTabsProps) {
   return (

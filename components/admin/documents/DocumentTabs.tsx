@@ -2,19 +2,20 @@
 'use client';
 
 import Link from 'next/link';
-import { Pencil, Image, Settings, Paintbrush, List } from 'lucide-react';
+import { Pencil, Image, Settings, Paintbrush, List, FileText } from 'lucide-react';
 
 interface DocumentTabsProps {
   documentId: string;
-  activeTab: 'pages' | 'contents' | 'cover' | 'design' | 'details';
+  activeTab: 'pages' | 'text-pages' | 'contents' | 'cover' | 'design' | 'details';
 }
 
 const tabs: { key: string; label: string; icon: typeof Pencil; path: string }[] = [
-  { key: 'pages',    label: 'Pages',    icon: Pencil,      path: 'pages'    },
-  { key: 'contents', label: 'Contents', icon: List,        path: 'contents' },
-  { key: 'cover',    label: 'Cover',    icon: Image,       path: 'cover'    },
-  { key: 'design',   label: 'Design',   icon: Paintbrush,  path: 'design'   },
-  { key: 'details',  label: 'Details',  icon: Settings,    path: 'details'  },
+  { key: 'pages',      label: 'Pages',      icon: Pencil,     path: 'pages'      },
+  { key: 'contents',   label: 'Table Of Contents',   icon: List,       path: 'contents'   },
+  { key: 'design',     label: 'Design',     icon: Paintbrush, path: 'design'     },
+  { key: 'cover',      label: 'Cover',      icon: Image,      path: 'cover'      },
+  { key: 'text-pages', label: 'Text Pages', icon: FileText,   path: 'text-pages' },
+  { key: 'details',    label: 'Details',    icon: Settings,   path: 'details'    },
 ];
 
 export default function DocumentTabs({ documentId, activeTab }: DocumentTabsProps) {
