@@ -138,11 +138,10 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                [idKey]: entityId,
-                type: 'toc',
-                title: parsedSettings.title || 'Table of Contents',
-                position: -1, // append at end
-              }),
+              [idKey]: entityId,
+              type: 'toc',
+              title: parsedSettings.title || 'Table of Contents',
+            }),
             });
             if (healRes.ok) {
               const newPage = await healRes.json();
@@ -199,16 +198,16 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         const apiBase = pagesApiBase(entityType);
         const idKey = entityIdParam(entityType);
 
-        if (newSettings.enabled) {
+        if (newSettings.enabled) {                    // ← change to: if (newSettings.enabled && !tocPageId) {
           // Create the toc row (append at end so it doesn't clobber existing positions)
           const res = await fetch(apiBase, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            // AFTER
             body: JSON.stringify({
               [idKey]: entityId,
               type:     'toc',
               title:    newSettings.title || 'Table of Contents',
-              position: -1,
             }),
           });
           if (res.ok) {
