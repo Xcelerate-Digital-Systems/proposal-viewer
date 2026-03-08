@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Users, Crown, Shield, User, MoreVertical,
-  Loader2, Trash2, ChevronDown,
+  Loader2, Trash2,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { InviteManager } from '@/components/admin/InviteManager';
@@ -32,6 +32,7 @@ export default function TeamPage() {
           companyId={auth.companyId!}
           currentRole={auth.teamMember?.role || 'member'}
           isSuperAdmin={auth.isSuperAdmin}
+          accountType={auth.accountType}
         />
       )}
     </AdminLayout>
@@ -42,10 +43,12 @@ function TeamContent({
   companyId,
   currentRole,
   isSuperAdmin,
+  accountType,
 }: {
   companyId: string;
   currentRole: string;
   isSuperAdmin: boolean;
+  accountType: 'agency' | 'client';
 }) {
   const [members, setMembers] = useState<TeamMemberRow[]>([]);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
@@ -134,6 +137,16 @@ function TeamContent({
     }
   };
 
+  // Display label is context-aware: "Agency Owner" vs "Client Owner"
+  const getRoleLabel = (role: string) => {
+    const prefix = accountType === 'client' ? 'Client' : 'Agency';
+    switch (role) {
+      case 'owner': return `${prefix} Owner`;
+      case 'admin': return `${prefix} Admin`;
+      default: return `${prefix} Member`;
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     const styles: Record<string, string> = {
       owner: 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]/20',
@@ -143,10 +156,23 @@ function TeamContent({
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${styles[role] || styles.member}`}>
         {getRoleIcon(role)}
-        <span className="capitalize">{role}</span>
+        <span>{getRoleLabel(role)}</span>
       </span>
     );
   };
+
+  // Role legend descriptions vary by account type
+  const roleLegend = accountType === 'client'
+    ? {
+        owner: 'Full access to this client account. Can manage team, change roles, and manage all proposals and documents.',
+        admin: 'Can invite members, remove members, and manage all proposals and documents.',
+        member: 'Can view and manage proposals and documents. Cannot manage team or invites.',
+      }
+    : {
+        owner: 'Full access. Can manage team, change roles, and manage all proposals, templates, and Creative Review projects.',
+        admin: 'Can invite members, remove members, and manage all proposals, templates, and Creative Review projects.',
+        member: 'Can view and manage proposals. Cannot manage team or invites.',
+      };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-AU', {
@@ -185,8 +211,6 @@ function TeamContent({
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 shadow-sm">
               {members.map((m) => {
                 const isCurrentUser = m.id === currentMemberId;
-                // Owners/super admins can edit anyone except themselves;
-                // admins can edit members (not owners or other admins)
                 const canEditThis =
                   canManage &&
                   !isCurrentUser &&
@@ -293,7 +317,7 @@ function TeamContent({
             </div>
           </div>
 
-          {/* Invite Section - only for owners/admins/super admins */}
+          {/* Invite Section */}
           {canManage && (
             <div>
               <h2 className="text-sm font-medium text-gray-500 mb-3">Invites</h2>
@@ -311,15 +335,15 @@ function TeamContent({
             <div className="space-y-3 text-xs">
               <div className="flex items-start gap-3">
                 <div className="shrink-0 mt-0.5">{getRoleBadge('owner')}</div>
-                <p className="text-gray-400">Full access. Can manage team, change roles, delete company, and manage all proposals.</p>
+                <p className="text-gray-400">{roleLegend.owner}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="shrink-0 mt-0.5">{getRoleBadge('admin')}</div>
-                <p className="text-gray-400">Can invite members, remove members, and manage all proposals.</p>
+                <p className="text-gray-400">{roleLegend.admin}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="shrink-0 mt-0.5">{getRoleBadge('member')}</div>
-                <p className="text-gray-400">Can view and manage proposals. Cannot manage team or invites.</p>
+                <p className="text-gray-400">{roleLegend.member}</p>
               </div>
             </div>
           </div>

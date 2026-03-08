@@ -5,9 +5,15 @@ import { createClient } from '@supabase/supabase-js';
 
 /**
  * Get the authenticated team member and resolve the effective company_id.
- * Supports super admin override via ?company_id= query parameter.
- * Returns { member, companyId } where companyId may differ from member.company_id
- * if the user is a super admin viewing another company.
+ *
+ * Supports two company override modes via ?company_id= query parameter:
+ *  1. Super admin override — can enter any company unconditionally.
+ *  2. Agency override — owners/admins of an agency account can enter any
+ *     client company that has agency_id = their own company_id.
+ *
+ * Returns { member, companyId, accountType } where companyId and accountType
+ * reflect the currently active company (may differ from member.company_id
+ * when an override is active).
  */
 export async function getAuthContext(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
@@ -31,16 +37,60 @@ export async function getAuthContext(req: NextRequest) {
 
   if (!member) return null;
 
-  // Check for super admin company override
+  // Check for company override via query param
   const requestedCompanyId = req.nextUrl.searchParams.get('company_id');
 
   if (requestedCompanyId && requestedCompanyId !== member.company_id) {
-    // Only super admins can view other companies
-    if (!member.is_super_admin) {
-      return null; // Unauthorized
+    // Super admins can enter any company unconditionally
+    if (member.is_super_admin) {
+      const { data: targetCompany } = await supabase
+        .from('companies')
+        .select('account_type')
+        .eq('id', requestedCompanyId)
+        .single();
+
+      return {
+        member,
+        companyId: requestedCompanyId,
+        accountType: (targetCompany?.account_type ?? 'agency') as 'agency' | 'client',
+      };
     }
-    return { member, companyId: requestedCompanyId };
+
+    // Agency owners/admins can enter their own client companies
+    const isAgencyAdmin = member.role === 'owner' || member.role === 'admin';
+    if (isAgencyAdmin) {
+      const { data: targetCompany } = await supabase
+        .from('companies')
+        .select('account_type, agency_id')
+        .eq('id', requestedCompanyId)
+        .single();
+
+      if (
+        targetCompany?.account_type === 'client' &&
+        targetCompany?.agency_id === member.company_id
+      ) {
+        return {
+          member,
+          companyId: requestedCompanyId,
+          accountType: 'client' as const,
+        };
+      }
+    }
+
+    // All other cross-company attempts are unauthorized
+    return null;
   }
 
-  return { member, companyId: member.company_id as string };
+  // No override — resolve own company's account_type
+  const { data: ownCompany } = await supabase
+    .from('companies')
+    .select('account_type')
+    .eq('id', member.company_id)
+    .single();
+
+  return {
+    member,
+    companyId: member.company_id as string,
+    accountType: (ownCompany?.account_type ?? 'agency') as 'agency' | 'client',
+  };
 }

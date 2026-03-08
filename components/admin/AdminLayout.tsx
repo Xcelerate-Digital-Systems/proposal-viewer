@@ -23,8 +23,11 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
               memberRole={auth.teamMember?.role}
               companyId={auth.companyId ?? undefined}
               isSuperAdmin={auth.isSuperAdmin}
+              isAgencyAdmin={auth.isAgencyAdmin}
+              accountType={auth.accountType}
               companyOverride={auth.companyOverride}
               onClearOverride={auth.clearCompanyOverride}
+              onSetOverride={auth.setCompanyOverride}
               onSignOut={auth.signOut}
             />
           )}

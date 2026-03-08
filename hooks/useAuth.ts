@@ -5,34 +5,91 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase, TeamMember } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
-const COMPANY_OVERRIDE_KEY = 'super_admin_company_override';
+// Renamed from 'super_admin_company_override' — agencies also use this mechanism
+const COMPANY_OVERRIDE_KEY = 'company_override';
+
+type AccountType = 'agency' | 'client';
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [teamMember, setTeamMember] = useState<TeamMember | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // account_type of the user's own company (never changes with override)
+  const [ownAccountType, setOwnAccountType] = useState<AccountType>('agency');
+  // account_type of the currently active (possibly overridden) company
+  const [accountType, setAccountType] = useState<AccountType>('agency');
+
   const [companyOverride, setCompanyOverrideState] = useState<{
     companyId: string;
     companyName: string;
   } | null>(null);
 
   // Load override from localStorage on mount
+  // Also migrate old key name transparently
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(COMPANY_OVERRIDE_KEY);
+      const stored =
+        localStorage.getItem(COMPANY_OVERRIDE_KEY) ||
+        localStorage.getItem('super_admin_company_override');
       if (stored) {
         setCompanyOverrideState(JSON.parse(stored));
+        // Ensure it's under the new key
+        localStorage.setItem(COMPANY_OVERRIDE_KEY, stored);
+        localStorage.removeItem('super_admin_company_override');
       }
     } catch {}
   }, []);
 
   const fetchTeamMember = useCallback(async (userId: string) => {
-    const { data } = await supabase
+    const { data: member } = await supabase
       .from('team_members')
       .select('*')
       .eq('user_id', userId)
       .single();
-    setTeamMember(data);
+
+    if (!member) {
+      setTeamMember(null);
+      return;
+    }
+
+    setTeamMember(member);
+
+    // Fetch own company's account_type
+    const { data: ownCompany } = await supabase
+      .from('companies')
+      .select('account_type')
+      .eq('id', member.company_id)
+      .single();
+
+    const ownType = (ownCompany?.account_type as AccountType) ?? 'agency';
+    setOwnAccountType(ownType);
+
+    // Resolve override account_type if one is active
+    try {
+      const stored =
+        localStorage.getItem(COMPANY_OVERRIDE_KEY) ||
+        localStorage.getItem('super_admin_company_override');
+      if (stored) {
+        const override = JSON.parse(stored) as { companyId: string; companyName: string };
+        const isSuperAdmin = member.is_super_admin;
+        const isAgencyAdmin =
+          ownType === 'agency' &&
+          (member.role === 'owner' || member.role === 'admin');
+
+        if (override.companyId !== member.company_id && (isSuperAdmin || isAgencyAdmin)) {
+          const { data: overrideCompany } = await supabase
+            .from('companies')
+            .select('account_type')
+            .eq('id', override.companyId)
+            .single();
+          setAccountType((overrideCompany?.account_type as AccountType) ?? 'agency');
+          return;
+        }
+      }
+    } catch {}
+
+    setAccountType(ownType);
   }, []);
 
   useEffect(() => {
@@ -95,15 +152,19 @@ export function useAuth() {
 
   const signOut = async () => {
     localStorage.removeItem(COMPANY_OVERRIDE_KEY);
+    localStorage.removeItem('super_admin_company_override'); // clean up legacy key
     setCompanyOverrideState(null);
+    setAccountType(ownAccountType);
     await supabase.auth.signOut();
     setSession(null);
     setTeamMember(null);
   };
 
   const updatePreferences = async (prefs: Partial<Pick<TeamMember,
-    'notify_proposal_viewed' | 'notify_proposal_accepted' | 'notify_comment_added' | 'notify_comment_resolved'
-    | 'notify_review_comment_added' | 'notify_review_item_status' | 'name' | 'avatar_path'   
+    | 'notify_proposal_viewed' | 'notify_proposal_accepted'
+    | 'notify_comment_added' | 'notify_comment_resolved'
+    | 'notify_review_comment_added' | 'notify_review_item_status'
+    | 'name' | 'avatar_path'
   >>) => {
     if (!teamMember) return;
     const { error } = await supabase
@@ -116,25 +177,39 @@ export function useAuth() {
     return { error };
   };
 
-  // Super admin: enter another company's account
-  const setCompanyOverride = (companyId: string, companyName: string) => {
+  // Enter another company's account (super admin or agency admin)
+  const setCompanyOverride = async (companyId: string, companyName: string) => {
     const override = { companyId, companyName };
     localStorage.setItem(COMPANY_OVERRIDE_KEY, JSON.stringify(override));
     setCompanyOverrideState(override);
+
+    // Fetch and update accountType for the target company
+    const { data: targetCompany } = await supabase
+      .from('companies')
+      .select('account_type')
+      .eq('id', companyId)
+      .single();
+    setAccountType((targetCompany?.account_type as AccountType) ?? 'agency');
   };
 
-  // Super admin: exit back to own account
+  // Exit back to own account
   const clearCompanyOverride = () => {
     localStorage.removeItem(COMPANY_OVERRIDE_KEY);
     setCompanyOverrideState(null);
+    setAccountType(ownAccountType);
   };
 
   const isSuperAdmin = teamMember?.is_super_admin ?? false;
 
-  // If super admin has an override active, use that company_id — otherwise use their own
-  const effectiveCompanyId = (isSuperAdmin && companyOverride)
-    ? companyOverride.companyId
-    : (teamMember?.company_id ?? null);
+  const isAgencyAdmin =
+    ownAccountType === 'agency' &&
+    (teamMember?.role === 'owner' || teamMember?.role === 'admin');
+
+  // Effective company_id: super admin or agency admin override takes precedence
+  const effectiveCompanyId =
+    companyOverride && (isSuperAdmin || isAgencyAdmin)
+      ? companyOverride.companyId
+      : (teamMember?.company_id ?? null);
 
   return {
     session,
@@ -142,6 +217,9 @@ export function useAuth() {
     companyId: effectiveCompanyId,
     ownCompanyId: teamMember?.company_id ?? null,
     isSuperAdmin,
+    isAgencyAdmin,
+    accountType,        // account_type of the currently active company
+    ownAccountType,     // account_type of the user's own company (unaffected by override)
     companyOverride,
     setCompanyOverride,
     clearCompanyOverride,

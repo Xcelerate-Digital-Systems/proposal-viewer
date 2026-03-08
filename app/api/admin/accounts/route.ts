@@ -8,7 +8,6 @@ const supabaseAdmin = createClient(
 );
 
 async function verifySuperAdmin(req: NextRequest) {
-  // Get the user's auth token from the request
   const authHeader = req.headers.get('authorization');
   if (!authHeader) return null;
 
@@ -16,7 +15,6 @@ async function verifySuperAdmin(req: NextRequest) {
   const { data: { user } } = await supabaseAdmin.auth.getUser(token);
   if (!user) return null;
 
-  // Check if they're a super admin
   const { data: member } = await supabaseAdmin
     .from('team_members')
     .select('*')
@@ -27,82 +25,70 @@ async function verifySuperAdmin(req: NextRequest) {
   return member;
 }
 
-// GET: List all companies with stats
+// GET: List all agency accounts (account_type = 'agency' only)
 export async function GET(req: NextRequest) {
   const admin = await verifySuperAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  // Fetch all companies
   const { data: companies, error } = await supabaseAdmin
     .from('companies')
     .select('*')
+    .eq('account_type', 'agency')
     .order('created_at', { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // For each company, get stats
   const companyIds = companies.map((c: { id: string }) => c.id);
 
-  // Count proposals per company
-  const { data: proposalCounts } = await supabaseAdmin
-    .from('proposals')
-    .select('company_id')
-    .in('company_id', companyIds);
+  const [proposalCounts, memberCounts, recentActivity] = await Promise.all([
+    companyIds.length
+      ? supabaseAdmin.from('proposals').select('company_id').in('company_id', companyIds)
+      : Promise.resolve({ data: [] }),
+    companyIds.length
+      ? supabaseAdmin.from('team_members').select('company_id').in('company_id', companyIds)
+      : Promise.resolve({ data: [] }),
+    companyIds.length
+      ? supabaseAdmin
+          .from('proposals')
+          .select('company_id, updated_at')
+          .in('company_id', companyIds)
+          .order('updated_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
 
-  // Count team members per company
-  const { data: memberCounts } = await supabaseAdmin
-    .from('team_members')
-    .select('company_id')
-    .in('company_id', companyIds);
-
-  // Get most recent proposal activity per company
-  const { data: recentActivity } = await supabaseAdmin
-    .from('proposals')
-    .select('company_id, updated_at')
-    .in('company_id', companyIds)
-    .order('updated_at', { ascending: false });
-
-  // Build stats map
   const stats: Record<string, { proposals: number; members: number; lastActivity: string | null }> = {};
   for (const id of companyIds) {
     stats[id] = { proposals: 0, members: 0, lastActivity: null };
   }
 
-  if (proposalCounts) {
-    for (const row of proposalCounts) {
-      stats[row.company_id].proposals++;
-    }
+  for (const row of (proposalCounts.data ?? [])) {
+    if (stats[row.company_id]) stats[row.company_id].proposals++;
+  }
+  for (const row of (memberCounts.data ?? [])) {
+    if (stats[row.company_id]) stats[row.company_id].members++;
   }
 
-  if (memberCounts) {
-    for (const row of memberCounts) {
-      stats[row.company_id].members++;
-    }
-  }
-
-  if (recentActivity) {
-    const seen = new Set<string>();
-    for (const row of recentActivity) {
-      if (!seen.has(row.company_id)) {
-        stats[row.company_id].lastActivity = row.updated_at;
-        seen.add(row.company_id);
-      }
+  const seen = new Set<string>();
+  for (const row of (recentActivity.data ?? [])) {
+    if (!seen.has(row.company_id)) {
+      if (stats[row.company_id]) stats[row.company_id].lastActivity = row.updated_at;
+      seen.add(row.company_id);
     }
   }
 
   const result = companies.map((c: Record<string, unknown>) => ({
     ...c,
-    stats: stats[c.id as string] || { proposals: 0, members: 0, lastActivity: null },
+    stats: stats[c.id as string] ?? { proposals: 0, members: 0, lastActivity: null },
   }));
 
   return NextResponse.json(result);
 }
 
-// POST: Create a new company
+// POST: Create a new agency account
 export async function POST(req: NextRequest) {
   const admin = await verifySuperAdmin(req);
   if (!admin) {
@@ -115,7 +101,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
   }
 
-  // Check slug is unique
   const { data: existing } = await supabaseAdmin
     .from('companies')
     .select('id')
@@ -128,7 +113,7 @@ export async function POST(req: NextRequest) {
 
   const { data: company, error } = await supabaseAdmin
     .from('companies')
-    .insert({ name, slug })
+    .insert({ name, slug, account_type: 'agency' })
     .select()
     .single();
 
