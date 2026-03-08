@@ -78,8 +78,12 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [companyName, setCompanyName] = useState<string | undefined>(undefined);
-  /** ID of the toc row in _v2 table (null if no row exists) */
-  const [tocPageId, setTocPageId] = useState<string | null>(null);
+  const [tocPageId, setTocPageIdState] = useState<string | null>(null);
+  const tocPageIdRef = useRef<string | null>(null);
+  const setTocPageId = useCallback((id: string | null) => {
+    tocPageIdRef.current = id;
+    setTocPageIdState(id);
+  }, []);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── Load data ───────────────────────────────────────────────── */
@@ -183,55 +187,54 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   /* ── Save ───────────────────────────────────────────────────── */
 
   const save = useCallback(async (newSettings: TocSettings, prevEnabled?: boolean) => {
-    setSaveStatus('saving');
-    try {
-      // Save toc_settings on the entity row
-      const table = entityTable(entityType);
-      const { error } = await supabase
-        .from(table)
-        .update({ toc_settings: newSettings })
-        .eq('id', entityId);
-      if (error) throw error;
+  setSaveStatus('saving');
+  try {
+    const table = entityTable(entityType);
+    const { error } = await supabase
+      .from(table)
+      .update({ toc_settings: newSettings })
+      .eq('id', entityId);
+    if (error) throw error;
 
-      // Sync the _v2 toc page row when enabled state changes
-      if (prevEnabled !== undefined && prevEnabled !== newSettings.enabled) {
-        const apiBase = pagesApiBase(entityType);
-        const idKey = entityIdParam(entityType);
+    // Sync the _v2 toc page row when enabled state changes
+    if (prevEnabled !== undefined && prevEnabled !== newSettings.enabled) {
+      const apiBase = pagesApiBase(entityType);
+      const idKey = entityIdParam(entityType);
+      const currentTocPageId = tocPageIdRef.current; // ← use ref, not state
 
-        if (newSettings.enabled && !tocPageId) {
-          // Create the toc row (append at end so it doesn't clobber existing positions)
-          const res = await fetch(apiBase, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // AFTER
-            body: JSON.stringify({
-              [idKey]: entityId,
-              type:     'toc',
-              title:    newSettings.title || 'Table of Contents',
-            }),
-          });
-          if (res.ok) {
-            const newPage = await res.json();
-            setTocPageId(newPage.id ?? null);
-          }
-        } else if (tocPageId) {
-          // Delete the toc row
-          await fetch(apiBase, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [idKey]: entityId, page_id: tocPageId }),
-          });
-          setTocPageId(null);
+      if (newSettings.enabled && !currentTocPageId) {
+        // Create the toc row
+        const res = await fetch(apiBase, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            [idKey]: entityId,
+            type: 'toc',
+            title: newSettings.title || 'Table of Contents',
+          }),
+        });
+        if (res.ok) {
+          const newPage = await res.json();
+          setTocPageId(newPage.id ?? null);
         }
+      } else if (!newSettings.enabled && currentTocPageId) { // ← was: } else if (tocPageId) {
+        // Delete the toc row
+        await fetch(apiBase, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [idKey]: entityId, page_id: currentTocPageId }),
+        });
+        setTocPageId(null);
       }
-
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch {
-      toast.error('Failed to save table of contents settings');
-      setSaveStatus('idle');
     }
-  }, [entityId, entityType, tocPageId, toast]);
+
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2000);
+  } catch {
+    toast.error('Failed to save table of contents settings');
+    setSaveStatus('idle');
+  }
+}, [entityId, entityType, setTocPageId, toast]);
 
   const scheduleSave = useCallback((newSettings: TocSettings, prevEnabled?: boolean) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

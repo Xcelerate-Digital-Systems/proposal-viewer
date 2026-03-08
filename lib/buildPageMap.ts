@@ -259,6 +259,32 @@ export function buildPageMap(
 
   if (pageOrder && pageOrder.length > 0) {
     sequence = buildFromPageOrder(pageOrder, pricing, textPages, packages, tocSettings);
+
+    // ── Fallback: toc_settings.enabled but page_order had no toc entry ──────
+    // This happens when TocTab enables the TOC after page_order was already
+    // written (the _v2 pages row is created but page_order is not patched).
+    if (tocSettings?.enabled && !sequence.some((s) => s.type === 'toc')) {
+      const pos = tocSettings.position; // 0 = before first PDF, N = after PDF page N, -1 = end
+      if (pos === -1) {
+        sequence.push({ type: 'toc' });
+      } else {
+        // Insert after the Nth pdf virtual page (or at start if pos === 0)
+        let pdfsSeen = 0;
+        let insertAt = 0;
+        for (let i = 0; i < sequence.length; i++) {
+          if (sequence[i].type === 'pdf') {
+            pdfsSeen++;
+            if (pdfsSeen >= pos) {
+              insertAt = i + 1;
+              break;
+            }
+          }
+          insertAt = i + 1;
+        }
+        sequence.splice(insertAt, 0, { type: 'toc' });
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
   } else {
     sequence = buildFromPositions(pdfPageCount, pricing, textPages, packages, tocSettings);
     if (sequence.length === 0) return emptyResult(pdfPageCount);

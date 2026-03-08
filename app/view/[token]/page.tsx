@@ -302,7 +302,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
               style={{ backgroundColor: bgPrimary }}
             >
               <ViewerBackground branding={branding} />
-              <div className="relative">
+              <div className="relative h-full">
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <TextPage
                   textPage={currentTextPage as any}
@@ -319,7 +319,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
               style={{ backgroundColor: bgPrimary }}
             >
               <ViewerBackground branding={branding} />
-              <div className="relative">
+              <div className="relative h-full">
                 <PricingPage
                   pricing={pricing as unknown as ProposalPricing}
                   branding={branding}
@@ -334,7 +334,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
               style={{ backgroundColor: bgPrimary }}
             >
               <ViewerBackground branding={branding} />
-              <div className="relative">
+              <div className="relative h-full">
                 <PackagesPage
                   packages={currentPackages as unknown as ProposalPackages}
                   branding={branding}
