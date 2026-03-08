@@ -220,7 +220,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const {
       title, indent, enabled, link_url, link_label,
-      orientation, show_title, show_member_badge, prepared_by_member_id,
+      orientation, show_title, show_member_badge, show_client_logo, prepared_by_member_id,
       payload, payload_patch,
     } = body;
 
@@ -233,6 +233,7 @@ export async function PUT(req: NextRequest) {
       ...(orientation           !== undefined && { orientation }),
       ...(show_title            !== undefined && { show_title }),
       ...(show_member_badge     !== undefined && { show_member_badge }),
+      ...(show_client_logo      !== undefined && { show_client_logo }),
       ...(prepared_by_member_id !== undefined && { prepared_by_member_id }),
       ...(payload               !== undefined && { payload }),
       ...(payload_patch         !== undefined && { payload_patch }),

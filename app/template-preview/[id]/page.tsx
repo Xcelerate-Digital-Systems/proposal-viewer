@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import { deriveBorderColor } from '@/hooks/useProposal';
+import { supabase } from '@/lib/supabase';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
 import type { ProposalPricing, ProposalPackages } from '@/lib/supabase';
 import CoverPage from '@/components/viewer/CoverPage';
@@ -52,7 +53,22 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
 
   const [showCover, setShowCover] = useState(true);
   const [mobileSidebar, setMobileSidebar] = useState(false);
+  const [clientLogoUrl, setClientLogoUrl] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!template?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
+    const { data } = supabase.storage.from('proposals').getPublicUrl(template.cover_client_logo_path);
+    setClientLogoUrl(data.publicUrl || undefined);
+  }, [template?.cover_client_logo_path]);
+
   const mainRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!template?.cover_client_logo_path) return;
+    const { data } = supabase.storage
+      .from('proposals')
+      .getPublicUrl(template.cover_client_logo_path);
+    if (data?.publicUrl) setClientLogoUrl(data.publicUrl);
+  }, [template?.cover_client_logo_path]);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -320,6 +336,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
                 companyName={branding.name}
                 proposalTitle={template?.name}
                 orientation={pageOrientation}
+                clientLogoUrl={clientLogoUrl}
               />
             </div>
           </div>

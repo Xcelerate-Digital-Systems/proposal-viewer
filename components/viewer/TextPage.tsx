@@ -15,6 +15,7 @@ interface TextPageProps {
   userName?: string;
   proposalTitle?: string;
   orientation?: 'portrait' | 'landscape';
+  clientLogoUrl?: string;
 }
 
 // TipTap JSON node type
@@ -373,7 +374,7 @@ function MemberBadge({
 
 /* ── Main component ──────────────────────────────────────────────── */
 
-export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle, orientation }: TextPageProps) {
+export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle, orientation, clientLogoUrl }: TextPageProps) {
   const isLandscape = orientation === 'landscape';
   const bgColor = branding.text_page_bg_color || branding.bg_secondary || '#141414';
   const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
@@ -387,6 +388,8 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   const doc = textPage.content as TipTapNode;
 
   const showBadge = textPage.show_member_badge && textPage.prepared_by_member_id;
+  const showClientLogo = !!((textPage as { show_client_logo?: boolean }).show_client_logo && clientLogoUrl);
+  const showClientLogoCol = isLandscape && showClientLogo;
 
   return (
     <div
@@ -399,37 +402,64 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
       <div className="w-full h-full">
         {/* Mobile font size caps — body 14px, title 22px on screens < lg */}
         <style>{`@media (max-width: 1023px) { .agv-text-body { font-size: 16px !important; } .agv-text-title { font-size: 22px !important; } }`}</style>
-        {/* Title */}
-        {textPage.title && (textPage.show_title ?? true) && (
-          <div className="mb-6">
-            <h1
-              className="text-2xl sm:text-3xl font-bold tracking-tight agv-text-title"
-              style={{
-                color: headingColor,
-                fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
-                fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
-                ...(branding.title_font_size ? { fontSize: `${branding.title_font_size}px` } : {}),
-              }}
-            >
-              {textPage.title}
-            </h1>
+
+        <div className={showClientLogoCol ? 'flex items-start gap-16' : ''}>
+         {/* ── Main content column ── */}
+          <div className={showClientLogoCol ? 'flex-1 min-w-0' : ''}>
+            {/* Client logo — portrait mode (top of content) */}
+            {showClientLogo && !isLandscape && (
+              <div className="flex justify-end mb-6">
+                <img
+                  src={clientLogoUrl}
+                  alt="Client"
+                  style={{ maxHeight: 64, maxWidth: 180, objectFit: 'contain', opacity: 0.9 }}
+                />
+              </div>
+            )}
+            {/* Title */}
+            {textPage.title && (textPage.show_title ?? true) && (
+              <div className="mb-6">
+                <h1
+                  className="text-2xl sm:text-3xl font-bold tracking-tight agv-text-title"
+                  style={{
+                    color: headingColor,
+                    fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
+                    fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
+                    ...(branding.title_font_size ? { fontSize: `${branding.title_font_size}px` } : {}),
+                  }}
+                >
+                  {textPage.title}
+                </h1>
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="agv-text-body" style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
+              {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
+            </div>
+
+            {/* Member badge at the bottom */}
+            {showBadge && (
+              <MemberBadge
+                memberId={textPage.prepared_by_member_id!}
+                branding={branding}
+                companyName={companyName}
+                fontSize={fontSize}
+              />
+            )}
           </div>
-        )}
 
-        {/* Content */}
-        <div className="agv-text-body" style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
-          {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
+          {/* ── Client logo column (landscape + toggle enabled only) ── */}
+          {showClientLogoCol && (
+            <div className="shrink-0 flex items-start justify-end" style={{ width: 220 }}>
+              <img
+                src={clientLogoUrl}
+                alt="Client"
+                style={{ maxWidth: '100%', maxHeight: 96, objectFit: 'contain', opacity: 0.9 }}
+              />
+            </div>
+          )}
         </div>
-
-        {/* Member badge at the bottom */}
-        {showBadge && (
-          <MemberBadge
-            memberId={textPage.prepared_by_member_id!}
-            branding={branding}
-            companyName={companyName}
-            fontSize={fontSize}
-          />
-        )}
       </div>
     </div>
   );

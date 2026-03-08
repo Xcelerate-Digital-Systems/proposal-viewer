@@ -33,8 +33,9 @@ export default function TextPagePreviewPanel({
   canGoNext,
   companyId: companyIdProp,
 }: TextPagePreviewPanelProps) {
-  const [branding, setBranding]   = useState<CompanyBranding>(DEFAULT_BRANDING);
-  const [proposal, setProposal]   = useState<{ client_name?: string; title?: string } | null>(null);
+  const [branding, setBranding]     = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [proposal, setProposal]     = useState<{ client_name?: string; title?: string } | null>(null);
+  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
   const [previewScale, setPreviewScale] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +55,7 @@ export default function TextPagePreviewPanel({
 
         const { data: prop } = await supabase
           .from('proposals')
-          .select('company_id, client_name, title')
+          .select('company_id, client_name, title, cover_client_logo_path')
           .eq('id', proposalId)
           .single();
 
@@ -66,6 +67,12 @@ export default function TextPagePreviewPanel({
               const data = await res.json();
               setBranding({ ...DEFAULT_BRANDING, ...data });
             }
+          }
+          if (prop.cover_client_logo_path) {
+            const { data: logoData } = supabase.storage
+              .from('proposals')
+              .getPublicUrl(prop.cover_client_logo_path);
+            if (logoData?.publicUrl) setClientLogoUrl(logoData.publicUrl);
           }
         }
       } catch {
@@ -156,7 +163,9 @@ export default function TextPagePreviewPanel({
               clientName={proposal?.client_name}
               companyName={branding.name || undefined}
               proposalTitle={proposal?.title}
+              clientLogoUrl={clientLogoUrl ?? undefined}
             />
+
           </div>
         </div>
 

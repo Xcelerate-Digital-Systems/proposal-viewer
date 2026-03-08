@@ -2,7 +2,7 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
-import { X, FileText, Check, Loader2, User } from 'lucide-react';
+import { X, FileText, Check, Loader2, User, Image } from 'lucide-react';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
 import { TextPageData } from './pageEditorTypes';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
@@ -45,6 +45,10 @@ export default function TextPageEditorModal({
       ...(!newValue ? { prepared_by_member_id: null } : {}),
     });
   }, [page.id, page.show_member_badge, onUpdate]);
+
+  const handleToggleClientLogo = useCallback(() => {
+    onUpdate(page.id, { show_client_logo: !page.show_client_logo });
+  }, [page.id, page.show_client_logo, onUpdate]);
 
   const handleToggleTitle = useCallback(() => {
     onUpdate(page.id, { show_title: !(page.show_title ?? true) });
@@ -177,6 +181,34 @@ export default function TextPageEditorModal({
                 Save and reopen this page to select a team member.
               </p>
             )}
+          </div>
+
+          {/* Client logo toggle */}
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Image size={14} className="text-gray-400" />
+                <span className="text-xs font-medium text-gray-700">Show Client Logo</span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!page.show_client_logo}
+                onClick={handleToggleClientLogo}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
+                  page.show_client_logo ? 'bg-[#017C87]' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
+                    page.show_client_logo ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 leading-relaxed">
+              Displays the client logo. Appears top-right on portrait pages, side column on landscape pages.
+            </p>
           </div>
 
           {/* Rich text editor */}

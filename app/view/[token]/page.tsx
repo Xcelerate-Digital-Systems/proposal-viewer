@@ -19,7 +19,7 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import PageLinkButton from '@/components/viewer/PageLinkButton';
 import ViewerBackground from '@/components/viewer/ViewerBackground';
 import PageNumberBadge from '@/components/viewer/PageNumberBadge';
-import { ProposalPricing, ProposalPackages } from '@/lib/supabase';
+import { ProposalPricing, ProposalPackages, supabase } from '@/lib/supabase';
 
 /* ─── Proposal Viewer Page ────────────────────────────────────────── */
 
@@ -61,6 +61,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   } = useProposal(params.token);
 
   const [showCover, setShowCover] = useState(true);
+  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [mobileSidebar, setMobileSidebar] = useState(false);
@@ -88,6 +89,14 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     const entry = pageUrls[currentPage - 1];
     return entry?.link_url ? { url: entry.link_url, label: entry.link_label ?? undefined } : null;
   }, [pageUrls, currentPage]);
+
+  useEffect(() => {
+    if (!proposal?.cover_client_logo_path) return;
+    const { data } = supabase.storage
+      .from('proposals')
+      .getPublicUrl(proposal.cover_client_logo_path);
+    if (data?.publicUrl) setClientLogoUrl(data.publicUrl);
+  }, [proposal?.cover_client_logo_path]);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -311,6 +320,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
                   branding={branding}
                   companyName={branding.name}
                   proposalTitle={proposal?.title}
+                  clientLogoUrl={clientLogoUrl ?? undefined}
                   orientation={pageOrientation}
                 />
               </div>

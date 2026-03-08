@@ -24,6 +24,7 @@ export interface TextPageData {
   title:                 string;
   show_title:            boolean;
   show_member_badge:     boolean;
+  show_client_logo:      boolean;
   prepared_by_member_id: string | null;
   content:               unknown; // Tiptap JSON
 }

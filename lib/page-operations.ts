@@ -37,6 +37,7 @@ export interface UnifiedPage {
   orientation:           string;
   show_title:            boolean;
   show_member_badge:     boolean;
+  show_client_logo:      boolean;
   prepared_by_member_id: string | null;
   payload:               Record<string, unknown>;
   created_at:            string;
@@ -64,8 +65,9 @@ function rowToUnifiedPage(row: Record<string, unknown>, idColumn: string): Unifi
     orientation:           (row.orientation as string) ?? 'auto',
     show_title:            (row.show_title as boolean) ?? true,
     show_member_badge:     (row.show_member_badge as boolean) ?? false,
+    show_client_logo:      (row.show_client_logo as boolean) ?? false,
     prepared_by_member_id: (row.prepared_by_member_id as string | null) ?? null,
-    payload:               (row.payload as Record<string, unknown>) ?? {},
+    payload:               (row.payload as Record<string, unknown>) ?? null,
     created_at:            row.created_at as string,
     updated_at:            row.updated_at as string,
   };
@@ -142,7 +144,7 @@ export async function getPageUrls(
 
   const { data: rows, error: pagesError } = await supabase
     .from(pagesTable)
-    .select('id, position, type, title, indent, link_url, link_label, show_title, show_member_badge, prepared_by_member_id, payload')
+        .select('id, position, type, title, indent, link_url, link_label, show_title, show_member_badge, show_client_logo, prepared_by_member_id, payload')
     .eq(idColumn, resolvedId)
     .eq('enabled', true)
     .order('position', { ascending: true });
@@ -173,6 +175,7 @@ export async function getPageUrls(
         link_label:            (row.link_label as string) || undefined,
         show_title:            (row.show_title as boolean) ?? true,
         show_member_badge:     (row.show_member_badge as boolean) ?? false,
+        show_client_logo:      (row.show_client_logo as boolean) ?? false,
         prepared_by_member_id: (row.prepared_by_member_id as string | null) ?? null,
         payload,
       };
@@ -301,6 +304,7 @@ export type UpdatePageChanges = Partial<{
   orientation:           string;
   show_title:            boolean;
   show_member_badge:     boolean;
+  show_client_logo:      boolean;
   prepared_by_member_id: string | null;
   payload:               Record<string, unknown>;
   // For partial payload updates — merges into existing payload

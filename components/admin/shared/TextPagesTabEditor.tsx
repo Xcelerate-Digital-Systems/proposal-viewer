@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Check, Loader2, Plus, Trash2, FileText, User } from 'lucide-react';
+import { Check, Loader2, Plus, Trash2, FileText, User, Image } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
@@ -21,6 +21,7 @@ interface RawPage {
   position: number;
   show_title?: boolean;
   show_member_badge?: boolean;
+  show_client_logo?: boolean;
   prepared_by_member_id?: string | null;
   payload: Record<string, unknown>;
 }
@@ -31,6 +32,7 @@ interface TextPageForm {
   enabled: boolean;
   show_title: boolean;
   show_member_badge: boolean;
+  show_client_logo: boolean;
   prepared_by_member_id: string | null;
 }
 
@@ -41,6 +43,7 @@ interface TextPageRecord {
   enabled: boolean;
   show_title: boolean;
   show_member_badge: boolean;
+  show_client_logo: boolean;
   prepared_by_member_id: string | null;
   position: number;
 }
@@ -67,6 +70,7 @@ function rawToRecord(page: RawPage): TextPageRecord {
     enabled:               page.enabled,
     show_title:            page.show_title ?? true,
     show_member_badge:     page.show_member_badge ?? false,
+    show_client_logo:      page.show_client_logo ?? false,
     prepared_by_member_id: page.prepared_by_member_id ?? null,
     position:              page.position,
   };
@@ -79,6 +83,7 @@ function recordToForm(record: TextPageRecord): TextPageForm {
     enabled:               record.enabled,
     show_title:            record.show_title,
     show_member_badge:     record.show_member_badge,
+    show_client_logo:      record.show_client_logo,
     prepared_by_member_id: record.prepared_by_member_id,
   };
 }
@@ -160,6 +165,7 @@ export default function TextPagesTabEditor({
         enabled:               rest.enabled,
         show_title:            rest.show_title,
         show_member_badge:     rest.show_member_badge,
+        show_client_logo:      rest.show_client_logo,
         prepared_by_member_id: rest.prepared_by_member_id,
         payload_patch:         { content },
       }),
@@ -429,10 +435,38 @@ export default function TextPagesTabEditor({
                 )}
               </div>
 
+              {/* Client logo toggle */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Image size={14} className="text-gray-400" />
+                    <span className="text-xs font-medium text-gray-700">Show Client Logo</span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={!!form.show_client_logo}
+                    onClick={() => updateForm({ show_client_logo: !form.show_client_logo })}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
+                      form.show_client_logo ? 'bg-[#017C87]' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
+                        form.show_client_logo ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-relaxed">
+                  Displays the client logo. Appears top-right on portrait pages, side column on landscape pages.
+                </p>
+              </div>
+
               {/* Rich text editor */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Content
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  CONTENT
                 </label>
                 <RichTextEditor
                   content={form.content}

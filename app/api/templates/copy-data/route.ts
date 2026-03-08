@@ -54,8 +54,9 @@ export async function POST(req: NextRequest) {
       link_url:          tp.link_url   ?? null,
       link_label:        tp.link_label ?? null,
       orientation:       tp.orientation ?? 'auto',
-      show_title:        tp.show_title       ?? true,
-      show_member_badge: tp.show_member_badge ?? false,
+      show_title:        tp.show_title        ?? true,
+      show_member_badge: tp.show_member_badge  ?? false,
+      show_client_logo:  tp.show_client_logo   ?? false,
       payload:           tp.payload ?? {},
     }));
 

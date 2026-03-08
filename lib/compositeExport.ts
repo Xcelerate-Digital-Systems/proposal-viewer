@@ -47,6 +47,7 @@ export interface CompositeExportOptions {
   companyName?: string;
   userName?: string;
   proposalTitle?: string;
+  clientLogoUrl?: string;
   onProgress?: (current: number, total: number) => void;
   pageEntries?: PageNameEntry[];
   pricingOrientation?: 'auto' | 'portrait' | 'landscape';
@@ -416,6 +417,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     companyName,
     userName,
     proposalTitle,
+    clientLogoUrl,
     onProgress,
     pageEntries,
     pricingOrientation,
@@ -551,6 +553,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
           companyName,
           userName,
           proposalTitle,
+          clientLogoUrl,
         });
         const textBg = branding.text_page_bg_color || branding.bg_secondary || '#141414';
         await captureAndAddPage(outDoc, element, textBg, pageWidth, pageHeight, undefined, bgImageCtx);
