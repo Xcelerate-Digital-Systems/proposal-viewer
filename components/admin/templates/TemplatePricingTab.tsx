@@ -71,12 +71,13 @@ interface TemplatePricingTabProps {
 export default function TemplatePricingTab({ templateId, companyId }: TemplatePricingTabProps) {
   const toast = useToast();
 
-  const [loaded, setLoaded]         = useState(false);
-  const [exists, setExists]         = useState(false);
-  const [position, setPosition]     = useState(-1);
-  const [form, setForm]             = useState<PricingFormState>(DEFAULT_PRICING);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [branding, setBranding]     = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [loaded, setLoaded]           = useState(false);
+  const [exists, setExists]           = useState(false);
+  const [pageId, setPageId]           = useState<string | null>(null);
+  const [position, setPosition]       = useState(-1);
+  const [form, setForm]               = useState<PricingFormState>(DEFAULT_PRICING);
+  const [saveStatus, setSaveStatus]   = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [branding, setBranding]       = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [showPreview, setShowPreview] = useState(true);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,23 +91,26 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
   useEffect(() => {
     const fetchPricing = async () => {
       try {
-        const res = await fetch(`/api/templates/pricing?template_id=${templateId}`);
+        const res = await fetch(`/api/templates/pages?template_id=${templateId}`);
         if (res.ok) {
-          const data: TemplatePricing | null = await res.json();
+          const allPages = await res.json();
+          const data = allPages.find((p: { type: string }) => p.type === 'pricing') ?? null;
           if (data) {
+            const pl = data.payload ?? {};
             setExists(true);
+            setPageId(data.id);
             setPosition(data.position);
             setForm({
-              enabled: data.enabled,
-              title: data.title,
-              introText: data.intro_text || DEFAULT_INTRO,
-              items: data.items || [],
-              optionalItems: data.optional_items || [],
-              paymentSchedule: data.payment_schedule || DEFAULT_PAYMENT_SCHEDULE,
-              taxEnabled: data.tax_enabled,
-              taxRate: data.tax_rate,
-              taxLabel: data.tax_label,
-              validityDays: data.validity_days,
+              enabled:         data.enabled,
+              title:           data.title,
+              introText:       (pl.intro_text as string) || DEFAULT_INTRO,
+              items:           (pl.items as PricingLineItem[]) || [],
+              optionalItems:   (pl.optional_items as PricingOptionalItem[]) || [],
+              paymentSchedule: (pl.payment_schedule as PaymentSchedule) || DEFAULT_PAYMENT_SCHEDULE,
+              taxEnabled:      (pl.tax_enabled as boolean) ?? true,
+              taxRate:         (pl.tax_rate as number) ?? 10,
+              taxLabel:        (pl.tax_label as string) ?? 'GST (10%)',
+              validityDays:    (pl.validity_days as number) ?? null,
             });
           }
         }
@@ -133,25 +137,25 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
 
   /* ── Save ───────────────────────────────────────────────────── */
 
-  const savePricing = useCallback(async (formData: PricingFormState, pos: number) => {
+  const savePricing = useCallback(async (formData: PricingFormState, id: string) => {
     setSaveStatus('saving');
     try {
-      await fetch('/api/templates/pricing', {
-        method: 'POST',
+      await fetch(`/api/templates/pages?id=${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          template_id: templateId,
           enabled: formData.enabled,
-          position: pos,
-          title: formData.title,
-          intro_text: formData.introText,
-          items: formData.items,
-          optional_items: formData.optionalItems,
-          payment_schedule: formData.paymentSchedule,
-          tax_enabled: formData.taxEnabled,
-          tax_rate: formData.taxRate,
-          tax_label: formData.taxLabel,
-          validity_days: formData.validityDays,
+          title:   formData.title,
+          payload_patch: {
+            intro_text:       formData.introText,
+            items:            formData.items,
+            optional_items:   formData.optionalItems,
+            payment_schedule: formData.paymentSchedule,
+            tax_enabled:      formData.taxEnabled,
+            tax_rate:         formData.taxRate,
+            tax_label:        formData.taxLabel,
+            validity_days:    formData.validityDays,
+          },
         }),
       });
       setSaveStatus('saved');
@@ -160,58 +164,52 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
       toast.error('Failed to save pricing');
       setSaveStatus('idle');
     }
-  }, [templateId, toast]);
+  }, [toast]);
 
   const updateForm = useCallback((changes: Partial<PricingFormState>) => {
     setForm((prev) => {
       const next = { ...prev, ...changes };
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        savePricing(next, position);
+        if (pageId) savePricing(next, pageId);
         debounceRef.current = null;
       }, 800);
       return next;
     });
-  }, [savePricing, position]);
+  }, [savePricing, pageId]);
 
   /* ── Toggle enabled ─────────────────────────────────────────── */
 
   const toggleEnabled = useCallback(async () => {
+    if (!pageId) return; // no pricing page — add one via the page editor
     const newEnabled = !form.enabled;
     const updated = { ...form, enabled: newEnabled };
     setForm(updated);
-
-    if (!exists) {
-      setExists(true);
-      await savePricing(updated, -1);
-      toast.success('Pricing page enabled');
-    } else {
-      await savePricing(updated, position);
-      toast.success(newEnabled ? 'Pricing page enabled' : 'Pricing page disabled');
-    }
-  }, [form, exists, position, savePricing, toast]);
+    await savePricing(updated, pageId);
+    toast.success(newEnabled ? 'Pricing page enabled' : 'Pricing page disabled');
+  }, [form, pageId, savePricing, toast]);
 
   /* ── Build preview data ─────────────────────────────────────── */
 
   const previewPricing: ProposalPricing = {
-    id: 'preview',
-    proposal_id: templateId,
-    company_id: companyId,
-    enabled: form.enabled,
+    id:               'preview',
+    proposal_id:      templateId,
+    company_id:       companyId,
+    enabled:          form.enabled,
     position,
-    indent: 0,
-    title: form.title,
-    intro_text: form.introText,
-    items: form.items,
-    optional_items: form.optionalItems,
+    indent:           0,
+    title:            form.title,
+    intro_text:       form.introText,
+    items:            form.items,
+    optional_items:   form.optionalItems,
     payment_schedule: form.paymentSchedule,
-    tax_enabled: form.taxEnabled,
-    tax_rate: form.taxRate,
-    tax_label: form.taxLabel,
-    validity_days: form.validityDays,
-    proposal_date: new Date().toISOString().split('T')[0],
-    created_at: '',
-    updated_at: '',
+    tax_enabled:      form.taxEnabled,
+    tax_rate:         form.taxRate,
+    tax_label:        form.taxLabel,
+    validity_days:    form.validityDays,
+    proposal_date:    new Date().toISOString().split('T')[0],
+    created_at:       '',
+    updated_at:       '',
   };
 
   /* ── Loading ────────────────────────────────────────────────── */
@@ -240,7 +238,9 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
           <div>
             <h4 className="text-sm font-semibold text-gray-900">Pricing Page</h4>
             <p className="text-xs text-gray-400">
-              {form.enabled ? 'Included in template' : 'Not included in template'}
+              {exists
+                ? form.enabled ? 'Included in template' : 'Not included in template'
+                : 'No pricing page — add one via the page editor'}
             </p>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
               <Check size={12} /> Saved
             </span>
           )}
-          {form.enabled && (
+          {form.enabled && exists && (
             <button
               onClick={() => setShowPreview(!showPreview)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -264,12 +264,18 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
               <Eye size={13} /> Preview
             </button>
           )}
-          <Toggle enabled={form.enabled} onChange={() => toggleEnabled()} />
+          {exists && <Toggle enabled={form.enabled} onChange={() => toggleEnabled()} />}
         </div>
       </div>
 
       {/* Content */}
-      {form.enabled ? (
+      {!exists ? (
+        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+          <DollarSign size={24} className="mx-auto text-gray-300 mb-2" />
+          <p className="text-sm text-gray-400 mb-1">No pricing page found</p>
+          <p className="text-xs text-gray-300">Add a pricing page via the page editor, then return here to configure it</p>
+        </div>
+      ) : form.enabled ? (
         <SplitPanelLayout
           leftClassName={`space-y-6 ${!showPreview ? 'max-w-3xl' : ''}`}
           left={

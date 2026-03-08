@@ -111,23 +111,24 @@ export function useDocument(token: string) {
 
   /* ── Derived state from unified page list ──────────────────────────────── */
 
-  // Sidebar nav entries — section pages become 'group' type
+  const numPages = pageUrls.length;
+  const pdfPageCount = useMemo(() => pageUrls.filter((p) => p.type === 'pdf').length, [pageUrls]);
+
+  const tocSettings = document ? parseTocSettings((document as DocType).toc_settings) : null;
+
+  // Sidebar nav entries — section pages become 'group' type.
+  // For toc rows use tocSettings.title so it matches what's shown on the TOC page.
   const pageEntries: PageNameEntry[] = useMemo(
     () =>
       pageUrls.map((p) => ({
-        name: p.title,
+        name: p.type === 'toc' ? (tocSettings?.title || p.title) : p.title,
         indent: p.indent,
         ...(p.type === 'section' ? { type: 'group' as const } : {}),
         ...(p.link_url ? { link_url: p.link_url } : {}),
         ...(p.link_label ? { link_label: p.link_label } : {}),
       })),
-    [pageUrls],
+    [pageUrls, tocSettings],
   );
-
-  const numPages = pageUrls.length;
-  const pdfPageCount = useMemo(() => pageUrls.filter((p) => p.type === 'pdf').length, [pageUrls]);
-
-  const tocSettings = document ? parseTocSettings((document as DocType).toc_settings) : null;
 
   // Virtual page type helpers
   const isTocPage  = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'toc',  [pageUrls]);
@@ -149,19 +150,21 @@ export function useDocument(token: string) {
     [pageUrls],
   );
 
-  const pageSequence = useMemo(
-    () =>
-      pageUrls.map((p) => {
-        if (p.type === 'pdf') {
-          const pdfIndex = pageUrls.slice(0, pageUrls.indexOf(p) + 1).filter((x) => x.type === 'pdf').length;
-          return { type: 'pdf' as const, pdfPage: pdfIndex };
-        }
-        if (p.type === 'text') return { type: 'text' as const, textPageId: p.id };
-        if (p.type === 'toc')  return { type: 'toc' as const };
-        return { type: 'pdf' as const, pdfPage: 0 };
-      }),
-    [pageUrls],
-  );
+  // hooks/useDocument.ts  ~line 130
+const pageSequence = useMemo(
+  () =>
+    pageUrls.map((p) => {
+      if (p.type === 'pdf') {
+        const pdfIndex = pageUrls.slice(0, pageUrls.indexOf(p) + 1).filter((x) => x.type === 'pdf').length;
+        return { type: 'pdf' as const, pdfPage: pdfIndex };
+      }
+      if (p.type === 'text')    return { type: 'text'    as const, textPageId: p.id };
+      if (p.type === 'toc')     return { type: 'toc'     as const };
+      if (p.type === 'section') return { type: 'section' as const };   // ← ADD THIS LINE
+      return { type: 'pdf' as const, pdfPage: 0 };
+    }),
+  [pageUrls],
+);
 
   const textPages: DocumentTextPage[] = useMemo(
     () =>

@@ -95,12 +95,34 @@ export async function splitProposalPages(
   const getLinkLabel = (pageIndex: number): string | null =>
     (pdfEntries[pageIndex] as { link_label?: string } | undefined)?.link_label ?? null;
 
-  // ── 5. Delete any existing page rows (idempotent re-split) ──────────────────
+  // ── 5. Resolve template-based positions for PDF pages ──────────────────────
+  // If the source file is a template merged PDF (templates/{uuid}/merged.pdf),
+  // look up the pdf row positions from template_pages_v2 so that the new
+  // proposal's pdf rows land at the correct positions — leaving gaps for toc,
+  // text, packages, and pricing rows that copy-data will insert separately.
+  let pdfPositions: number[] | null = null;
+
+  const templateMatch = entity.file_path.match(/^templates\/([0-9a-f-]{36})\//i);
+  if (templateMatch) {
+    const templateId = templateMatch[1];
+    const { data: tmplPdfRows } = await supabase
+      .from('template_pages_v2')
+      .select('position')
+      .eq('template_id', templateId)
+      .eq('type', 'pdf')
+      .order('position', { ascending: true });
+
+    if (tmplPdfRows && tmplPdfRows.length === pageCount) {
+      pdfPositions = (tmplPdfRows as Array<{ position: number }>).map((p) => p.position);
+    }
+  }
+
+  // ── 6. Delete any existing page rows (idempotent re-split) ──────────────────
   if ((existingCount ?? 0) > 0) {
     await supabase.from(pagesTable).delete().eq(idColumn, entityId);
   }
 
-  // ── 6. Split, upload, and collect insert rows ───────────────────────────────
+  // ── 7. Split, upload, and collect insert rows ───────────────────────────────
   const rows: Array<Record<string, unknown>> = [];
 
   for (let i = 0; i < pageCount; i++) {
@@ -130,7 +152,7 @@ export async function splitProposalPages(
     const row: Record<string, unknown> = {
       [idColumn]:  entityId,
       company_id:  entity.company_id,
-      position:    i,
+      position:    pdfPositions ? pdfPositions[i] : i,
       type:        'pdf',
       title:       getLabel(i),
       indent:      getIndent(i),
@@ -145,7 +167,7 @@ export async function splitProposalPages(
     rows.push(row);
   }
 
-  // ── 7. Batch insert ─────────────────────────────────────────────────────────
+  // ── 8. Batch insert ─────────────────────────────────────────────────────────
   if (rows.length > 0) {
     const { error: insertError } = await supabase.from(pagesTable).insert(rows);
     if (insertError) {

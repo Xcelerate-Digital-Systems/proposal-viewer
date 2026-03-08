@@ -21,7 +21,8 @@ export type PageSequenceEntry =
   | { type: 'pricing' }
   | { type: 'packages'; packagesId?: string }
   | { type: 'text'; textPageId: string }
-  | { type: 'toc' };
+  | { type: 'toc' }
+  | { type: 'section' };
 
 interface TocPageProps {
   tocSettings: TocSettings;
@@ -56,11 +57,16 @@ export default function TocPage({
     [tocSettings.excluded_items]
   );
 
-  // Build TOC entries from pageEntries, using pageSequence to determine type for exclusion
+  // Build TOC entries from pageEntries, using pageSequence for exclusion IDs.
+  // pageEntries and pageSequence are parallel arrays — one entry per page row
+  // (in position order). Groups (section rows) appear in both arrays; when we
+  // encounter a group in pageEntries we must also advance seqIdx to consume
+  // the corresponding section entry in pageSequence, otherwise every PDF
+  // entry after a section gets the wrong exclusion ID.
   const entries: TocEntry[] = useMemo(() => {
     const result: TocEntry[] = [];
-    let virtualPage = 0; // 1-indexed virtual page counter (only for non-group entries)
-    let seqIdx = 0;      // index into pageSequence
+    let virtualPage = 0;
+    let seqIdx = 0;
 
     for (let i = 0; i < pageEntries.length; i++) {
       const entry = pageEntries[i];
@@ -71,13 +77,23 @@ export default function TocPage({
         if (virtualPage > numPages) break;
       }
 
-      // Determine the exclusion identifier using the page sequence
       let itemId: string;
+
       if (isGroup) {
         itemId = `group:${entry.name}`;
+        // Consume the corresponding section entry so seqIdx stays in sync
+        // with pageEntries for all subsequent non-group entries.
+        if (seqIdx < pageSequence.length && pageSequence[seqIdx].type === 'section') {
+          seqIdx++;
+        }
       } else if (seqIdx < pageSequence.length) {
         const seq = pageSequence[seqIdx];
-        if (seq.type === 'pdf') {
+
+        if (seq.type === 'toc') {
+          // Skip the TOC page itself — don't list it in the TOC
+          seqIdx++;
+          continue;
+        } else if (seq.type === 'pdf') {
           itemId = `pdf:${seq.pdfPage}`;
         } else if (seq.type === 'pricing') {
           itemId = 'pricing';
@@ -85,10 +101,6 @@ export default function TocPage({
           itemId = seq.packagesId ? `packages:${seq.packagesId}` : 'packages';
         } else if (seq.type === 'text') {
           itemId = `text:${seq.textPageId}`;
-        } else if (seq.type === 'toc') {
-          // Skip the TOC page itself — don't list it in the TOC
-          seqIdx++;
-          continue;
         } else {
           itemId = `pdf:${virtualPage}`;
         }
@@ -100,9 +112,15 @@ export default function TocPage({
       // Skip excluded items
       if (excludedSet.has(itemId)) continue;
 
+      // For groups: use virtualPage+1 (the raw next page, ignoring exclusions)
+      // so the number reflects the actual first child, not the first visible one.
+      const hasNextPage = isGroup
+        ? pageEntries.slice(i + 1).some((e) => e.type !== 'group')
+        : false;
+
       result.push({
         label: entry.name || `Page ${virtualPage}`,
-        pageNumber: isGroup ? 0 : virtualPage,
+        pageNumber: isGroup ? (hasNextPage ? virtualPage + 1 : 0) : virtualPage,
         isGroup,
         indent: entry.indent || 0,
       });
@@ -119,14 +137,27 @@ export default function TocPage({
   const renderEntries = (list: TocEntry[]) =>
     list.map((entry, idx) => {
       if (entry.isGroup) {
+        const prevEntry = list[idx - 1];
+        const topMargin = idx === 0 ? '' : prevEntry?.isGroup ? 'mt-3' : 'mt-6';
+
         return (
-          <div key={`group-${idx}`} className={`${idx > 0 ? 'mt-8' : ''} mb-1`}>
-            <span
-              className="text-xs font-bold uppercase tracking-[0.2em]"
-              style={{ color: subtitleColor, fontFamily: bodyFont }}
-            >
-              {entry.label}
-            </span>
+          <div key={`group-${idx}`} className={`${topMargin} mb-3`}>
+            <div className="flex items-center justify-between">
+              <span
+                className={`font-bold uppercase tracking-[0.2em] ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
+                style={{ color: subtitleColor, fontFamily: headingFont }}
+              >
+                {entry.label}
+              </span>
+              {entry.pageNumber > 0 && (
+                <span
+                  className={`font-bold tabular-nums ml-6 shrink-0 ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
+                  style={{ color: subtitleColor, fontFamily: headingFont }}
+                >
+                  {entry.pageNumber}
+                </span>
+              )}
+            </div>
           </div>
         );
       }
@@ -134,7 +165,7 @@ export default function TocPage({
       return (
         <div
           key={`entry-${idx}`}
-          style={{ paddingLeft: entry.indent > 0 ? '24px' : '0' }}
+          style={{ paddingLeft: entry.indent > 0 ? '20px' : '0' }}
         >
           <div className="flex items-center justify-between py-3">
             <span

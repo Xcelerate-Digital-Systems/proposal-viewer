@@ -58,7 +58,6 @@ function groupItems(items: TocItem[]): ItemGroup[] {
       groups.push({ parent: item, children: [] });
     } else {
       if (groups.length === 0) {
-        // Edge case: indented item with no preceding parent — treat as top-level
         groups.push({ parent: item, children: [] });
       } else {
         groups[groups.length - 1].children.push(item);
@@ -130,34 +129,10 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
 
         // 4. Track the toc row ID (needed for delete-on-disable)
         const existingToc = allPages.find((p) => p.type === 'toc');
-        const resolvedTocId = existingToc?.id ?? null;
-        setTocPageId(resolvedTocId);
+        setTocPageId(existingToc?.id ?? null);
 
-        // 5. Auto-heal: if settings say enabled but no _v2 toc row exists, create it
-        if (parsedSettings.enabled && !resolvedTocId) {
-          try {
-            const apiBase = pagesApiBase(entityType);
-            const idKey = entityIdParam(entityType);
-            const healRes = await fetch(apiBase, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-              [idKey]: entityId,
-              type: 'toc',
-              title: parsedSettings.title || 'Table of Contents',
-            }),
-            });
-            if (healRes.ok) {
-              const newPage = await healRes.json();
-              setTocPageId(newPage.id ?? null);
-            }
-          } catch {
-            // Non-critical — user can toggle off/on to retry
-          }
-        }
-
-        // 6. Build tocItems with IDs that match TocPage's excludedSet format:
-        //    pdf:N (1-indexed virtual pdf count), pricing, packages:{uuid}, text:{uuid}, group:{title}
+        // 5. Build tocItems with IDs that match TocPage's excludedSet format:
+        //    pdf:N (1-indexed), pricing, packages:{uuid}, text:{uuid}, group:{title}
         let pdfCount = 0;
         const items: TocItem[] = allPages
           .filter((p) => p.enabled && p.type !== 'toc')
@@ -166,9 +141,9 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
               pdfCount++;
               return { id: `pdf:${pdfCount}`, label: p.title || `Page ${pdfCount}`, type: 'pdf' as const, indent: p.indent ?? 0 };
             }
-            if (p.type === 'pricing')  return { id: 'pricing',           label: p.title || 'Pricing',   type: 'pricing'  as const, indent: p.indent ?? 0 };
-            if (p.type === 'packages') return { id: `packages:${p.id}`,  label: p.title || 'Packages',  type: 'packages' as const, indent: p.indent ?? 0 };
-            if (p.type === 'text')     return { id: `text:${p.id}`,      label: p.title || 'Untitled',  type: 'text'     as const, indent: p.indent ?? 0 };
+            if (p.type === 'pricing')  return { id: 'pricing',          label: p.title || 'Pricing',  type: 'pricing'  as const, indent: p.indent ?? 0 };
+            if (p.type === 'packages') return { id: `packages:${p.id}`, label: p.title || 'Packages', type: 'packages' as const, indent: p.indent ?? 0 };
+            if (p.type === 'text')     return { id: `text:${p.id}`,     label: p.title || 'Untitled', type: 'text'     as const, indent: p.indent ?? 0 };
             // section → group
             return { id: `group:${p.title}`, label: p.title || 'Section', type: 'group' as const, indent: p.indent ?? 0 };
           });
@@ -187,54 +162,52 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   /* ── Save ───────────────────────────────────────────────────── */
 
   const save = useCallback(async (newSettings: TocSettings, prevEnabled?: boolean) => {
-  setSaveStatus('saving');
-  try {
-    const table = entityTable(entityType);
-    const { error } = await supabase
-      .from(table)
-      .update({ toc_settings: newSettings })
-      .eq('id', entityId);
-    if (error) throw error;
+    setSaveStatus('saving');
+    try {
+      const table = entityTable(entityType);
+      const { error } = await supabase
+        .from(table)
+        .update({ toc_settings: newSettings })
+        .eq('id', entityId);
+      if (error) throw error;
 
-    // Sync the _v2 toc page row when enabled state changes
-    if (prevEnabled !== undefined && prevEnabled !== newSettings.enabled) {
-      const apiBase = pagesApiBase(entityType);
-      const idKey = entityIdParam(entityType);
-      const currentTocPageId = tocPageIdRef.current; // ← use ref, not state
+      // Sync the _v2 toc page row when enabled state changes
+      if (prevEnabled !== undefined && prevEnabled !== newSettings.enabled) {
+        const apiBase = pagesApiBase(entityType);
+        const idKey = entityIdParam(entityType);
+        const currentTocPageId = tocPageIdRef.current;
 
-      if (newSettings.enabled && !currentTocPageId) {
-        // Create the toc row
-        const res = await fetch(apiBase, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            [idKey]: entityId,
-            type: 'toc',
-            title: newSettings.title || 'Table of Contents',
-          }),
-        });
-        if (res.ok) {
-          const newPage = await res.json();
-          setTocPageId(newPage.id ?? null);
+        if (newSettings.enabled && !currentTocPageId) {
+          const res = await fetch(apiBase, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              [idKey]: entityId,
+              type: 'toc',
+              title: newSettings.title || 'Table of Contents',
+            }),
+          });
+          if (res.ok) {
+            const newPage = await res.json();
+            setTocPageId(newPage.id ?? null);
+          }
+        } else if (!newSettings.enabled && currentTocPageId) {
+          await fetch(apiBase, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [idKey]: entityId, page_id: currentTocPageId }),
+          });
+          setTocPageId(null);
         }
-      } else if (!newSettings.enabled && currentTocPageId) { // ← was: } else if (tocPageId) {
-        // Delete the toc row
-        await fetch(apiBase, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ [idKey]: entityId, page_id: currentTocPageId }),
-        });
-        setTocPageId(null);
       }
-    }
 
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 2000);
-  } catch {
-    toast.error('Failed to save table of contents settings');
-    setSaveStatus('idle');
-  }
-}, [entityId, entityType, setTocPageId, toast]);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch {
+      toast.error('Failed to save table of contents settings');
+      setSaveStatus('idle');
+    }
+  }, [entityId, entityType, setTocPageId, toast]);
 
   const scheduleSave = useCallback((newSettings: TocSettings, prevEnabled?: boolean) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -247,7 +220,6 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   const updateSettings = useCallback((changes: Partial<TocSettings>) => {
     setSettings((prev) => {
       const next = { ...prev, ...changes };
-      // Pass the previous enabled value so save() knows whether to create/delete _v2 row
       const prevEnabled = 'enabled' in changes ? prev.enabled : undefined;
       scheduleSave(next, prevEnabled);
       return next;
@@ -294,40 +266,60 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
     return (
       <div
         key={item.id}
-        className={`flex items-center gap-3 py-2.5 pr-4 ${isChild ? 'pl-8' : 'pl-4'} ${
-          isGroup ? 'bg-gray-50' : 'hover:bg-gray-50'
-        } cursor-pointer transition-colors`}
-        onClick={() => !isGroup && toggleItem(item.id)}
+        className={`flex items-center gap-3 py-2.5 pr-4 ${isChild ? 'pl-8' : 'pl-4'} hover:bg-gray-50 cursor-pointer transition-colors`}
+        onClick={() => toggleItem(item.id)}
       >
-        {!isGroup && (
-          <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-            isIncluded ? 'bg-[#017C87] border-[#017C87]' : 'border-gray-300'
-          }`}>
-            {isIncluded && <Check size={10} className="text-white" />}
-          </div>
-        )}
+        {/* Checkbox — all types including section headers */}
+        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+          isIncluded
+            ? isGroup
+              ? 'bg-gray-400 border-gray-400'
+              : 'bg-[#017C87] border-[#017C87]'
+            : 'border-gray-300'
+        }`}>
+          {isIncluded && <Check size={10} className="text-white" />}
+        </div>
+
         <span className={`text-sm truncate ${
-          isGroup ? 'font-medium text-gray-500 text-xs uppercase tracking-wide' : 'text-gray-700'
+          isGroup
+            ? `font-medium text-xs uppercase tracking-wide ${isIncluded ? 'text-gray-500' : 'text-gray-300'}`
+            : isIncluded ? 'text-gray-700' : 'text-gray-300'
         }`}>
           {item.label}
         </span>
-        <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
-          item.type === 'pdf'      ? 'bg-gray-100 text-gray-400'      :
-          item.type === 'text'     ? 'bg-blue-50 text-blue-400'       :
-          item.type === 'pricing'  ? 'bg-green-50 text-green-500'     :
-          item.type === 'packages' ? 'bg-purple-50 text-purple-500'   :
-          'hidden'
-        }`}>
-          {item.type !== 'group' ? item.type : ''}
-        </span>
+
+        {/* Section label badge */}
+        {isGroup ? (
+          <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full shrink-0 bg-gray-100 text-gray-400">
+            section
+          </span>
+        ) : (
+          <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
+            item.type === 'pdf'      ? 'bg-gray-100 text-gray-400'    :
+            item.type === 'text'     ? 'bg-blue-50 text-blue-400'     :
+            item.type === 'pricing'  ? 'bg-green-50 text-green-500'   :
+            item.type === 'packages' ? 'bg-purple-50 text-purple-500' :
+            'hidden'
+          }`}>
+            {item.type}
+          </span>
+        )}
       </div>
     );
   };
 
   /* ── Render ─────────────────────────────────────────────────── */
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-5 h-5 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-5">
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -389,7 +381,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                 <div>
                   <label className="text-sm font-medium text-gray-700">Pages to Include</label>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {includedCount} of {tocItems.length} pages selected
+                    {includedCount} of {tocItems.length} items selected
                   </p>
                   {includedCount > 16 && (
                     <div className="flex items-start gap-1.5 mt-1.5">
