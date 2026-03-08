@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     // Insert all page records
     if (pages.length > 0) {
-      await supabase.from('template_pages').insert(pages);
+      await supabase.from('template_pages_v2').insert(pages);
     }
 
     // Move the original uploaded PDF to the template's merged path

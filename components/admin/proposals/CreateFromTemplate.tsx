@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Check, Loader2 } from 'lucide-react';
-import { supabase, ProposalTemplate, TemplatePage } from '@/lib/supabase';
+import { supabase, ProposalTemplate } from '@/lib/supabase';
 import { FormField } from '@/components/ui/FormField';
 
 interface CreateFromTemplateProps {
@@ -15,7 +15,7 @@ interface CreateFromTemplateProps {
 export default function CreateFromTemplate({ companyId, onBack, onSuccess }: CreateFromTemplateProps) {
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ProposalTemplate | null>(null);
-  const [pages, setPages] = useState<TemplatePage[]>([]);
+  const [pages, setPages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [status, setStatus] = useState('');
@@ -42,11 +42,13 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
   const selectTemplate = async (t: ProposalTemplate) => {
     setSelectedTemplate(t);
 
+    // _v2 uses position + title (not page_number + label)
     const { data } = await supabase
-      .from('template_pages')
+      .from('template_pages_v2')
       .select('*')
       .eq('template_id', t.id)
-      .order('page_number', { ascending: true });
+      .eq('type', 'pdf')
+      .order('position', { ascending: true });
 
     setPages(data || []);
   };
@@ -76,9 +78,9 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       }
 
       // ── 2. Build page_names from template pages + section headers ───
-      // This is passed to the proposal so that splitProposalPages picks
-      // up the correct labels, indents, and link metadata when it creates
-      // proposal_pages rows.
+      // _v2 pages use `title` and `indent` (not `label`).
+      // Non-pdf rows (text, pricing, packages, section, toc) are handled
+      // separately by copy-data, so we only map pdf rows here.
       setStatus('Preparing pages...');
 
       const pageNames: Array<{
@@ -88,10 +90,10 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         link_url?: string;
         link_label?: string;
       }> = pages.map((p) => ({
-        name: p.label,
+        name: p.title ?? `Page ${p.position + 1}`,
         indent: p.indent ?? 0,
-        ...((p as any).link_url   ? { link_url:   (p as any).link_url   } : {}),
-        ...((p as any).link_label ? { link_label: (p as any).link_label } : {}),
+        ...(p.link_url   ? { link_url:   p.link_url   } : {}),
+        ...(p.link_label ? { link_label: p.link_label } : {}),
       }));
 
       // Interleave section header groups from the template.
@@ -121,10 +123,6 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       }
 
       // ── 3. Create proposal + split pages ───────────────────────────
-      // POST /api/proposals inserts the record and immediately calls
-      // splitProposalPages, which downloads selectedTemplate.file_path
-      // (the template's merged PDF) and creates proposal_pages rows.
-      // No separate merge step needed.
       setStatus('Creating proposal...');
 
       const res = await fetch('/api/proposals', {
@@ -136,10 +134,6 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           client_email:    clientEmail.trim()    || null,
           crm_identifier:  crmIdentifier.trim()  || null,
           description:     description.trim()    || null,
-          // file_path points to the template's merged PDF.
-          // splitProposalPages downloads it and creates per-page files.
-          // This path is retained as a legacy fallback; the viewer will
-          // prefer proposal_pages rows once they exist.
           file_path:       selectedTemplate.file_path,
           file_size_bytes: (selectedTemplate as any).file_size_bytes ?? 0,
           page_names:      pageNames,

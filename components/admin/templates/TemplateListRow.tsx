@@ -46,12 +46,14 @@ export default function TemplateListRow({ template: t, onRefresh, onCreatePropos
     if (!ok) return;
 
     const { data: pages } = await supabase
-      .from('template_pages')
-      .select('file_path')
-      .eq('template_id', t.id);
+  .from('template_pages_v2')
+  .select('payload')
+  .eq('template_id', t.id);  // (or template.id in TemplateDetailHeader)
 
-    if (pages && pages.length > 0) {
-      const paths = pages.map((p) => p.file_path).filter(Boolean);
+if (pages && pages.length > 0) {
+  const paths = pages
+    .map((p) => (p.payload as Record<string, unknown>)?.file_path as string | undefined)
+    .filter(Boolean) as string[];
       if (paths.length > 0) {
         await supabase.storage.from('proposals').remove(paths);
       }

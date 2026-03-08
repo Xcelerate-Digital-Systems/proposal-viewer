@@ -65,12 +65,14 @@ export default function TemplateDetailHeader({
 
     // Delete template pages from storage
     const { data: pages } = await supabase
-      .from('template_pages')
-      .select('file_path')
-      .eq('template_id', template.id);
+  .from('template_pages_v2')
+  .select('payload')
+  .eq('template_id', template.id);  // ← template.id, not t.id
 
-    if (pages && pages.length > 0) {
-      const paths = pages.map((p) => p.file_path).filter(Boolean);
+if (pages && pages.length > 0) {
+  const paths = pages
+    .map((p) => (p.payload as Record<string, unknown>)?.file_path as string | undefined)
+    .filter(Boolean) as string[];
       if (paths.length > 0) {
         await supabase.storage.from('proposals').remove(paths);
       }

@@ -34,7 +34,7 @@ export async function splitProposalPages(
   const supabase = createServiceClient();
 
   const tableName    = entityType === 'document' ? 'documents'      : 'proposals';
-  const pagesTable   = entityType === 'document' ? 'document_pages' : 'proposal_pages';
+  const pagesTable   = entityType === 'document' ? 'document_pages_v2' : 'proposal_pages_v2';
   const idColumn     = entityType === 'document' ? 'document_id'    : 'proposal_id';
   const storageDir   = entityType === 'document' ? 'documents'      : 'proposals';
 
@@ -128,12 +128,13 @@ export async function splitProposalPages(
     }
 
     const row: Record<string, unknown> = {
-      [idColumn]:   entityId,
-      company_id:   entity.company_id,
-      page_number:  i + 1,
-      file_path:    pagePath,
-      label:        getLabel(i),
-      indent:       getIndent(i),
+      [idColumn]:  entityId,
+      company_id:  entity.company_id,
+      position:    i,
+      type:        'pdf',
+      title:       getLabel(i),
+      indent:      getIndent(i),
+      payload:     { file_path: pagePath },
     };
 
     const linkUrl   = getLinkUrl(i);

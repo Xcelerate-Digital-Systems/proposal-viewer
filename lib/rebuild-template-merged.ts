@@ -14,7 +14,7 @@ export async function rebuildTemplateMerged(templateId: string): Promise<string 
 
   // 1. Fetch all template pages in order
   const { data: pages, error: pagesError } = await supabase
-    .from('template_pages')
+   .from('template_pages_v2')
     .select('id, page_number, file_path')
     .eq('template_id', templateId)
     .order('page_number', { ascending: true });

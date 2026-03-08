@@ -354,54 +354,39 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
    * page row. Page ID and position are unchanged.
    */
   const replacePdfPage = useCallback(async (pageId: string, file: File): Promise<boolean> => {
-    setProcessing(true);
-    try {
-      const safeName = `page-${Date.now()}.pdf`.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const entityFolder = entityType === 'template' ? 'templates' : entityType === 'document' ? 'documents' : 'proposals';
-      const tempPath = `${entityFolder}/${entityId}/temp/${safeName}`;
+  setProcessing(true);
+  try {
+    // Get current page to find existing file path
+    const currentPage = pages.find((p) => p.id === pageId);
+    const existingPath = currentPage?.payload?.file_path as string | undefined;
 
-      const { error: uploadError } = await supabase.storage
-        .from('proposals')
-        .upload(tempPath, file, { contentType: 'application/pdf', upsert: false });
-
-      if (uploadError) {
-        toast.error('Failed to upload replacement page');
-        return false;
-      }
-
-      const res = await fetch(apiBase, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          op:       'replace_pdf',
-          [idKey]:  entityId,
-          page_id:  pageId,
-          temp_path: tempPath,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.error ?? 'Failed to replace page');
-        return false;
-      }
-
-      // Update payload in local state + refresh signed URL
-      setPages((prev) =>
-        prev.map((p) => p.id !== pageId ? p : { ...p, payload: { ...p.payload, file_path: tempPath } })
-      );
-      const updated = pages.find((p) => p.id === pageId);
-      if (updated) generateSignedUrls([{ ...updated, payload: { ...updated.payload, file_path: tempPath } }]);
-
-      toast.success('Page replaced');
-      return true;
-    } catch {
-      toast.error('Failed to replace page');
+    if (!existingPath) {
+      toast.error('Cannot replace: page has no existing file');
       return false;
-    } finally {
-      setProcessing(false);
     }
-  }, [entityId, entityType, idKey, apiBase, pages, generateSignedUrls, toast]);
+
+    // Overwrite in-place (upsert: true) — same path, new content
+    const { error: uploadError } = await supabase.storage
+      .from('proposals')
+      .upload(existingPath, file, { contentType: 'application/pdf', upsert: true });
+
+    if (uploadError) {
+      toast.error('Failed to upload replacement page');
+      return false;
+    }
+
+    // No DB update needed — path hasn't changed
+    // Just refresh the signed URL (Supabase signed URLs are path-based so a new one is needed)
+    generateSignedUrls([currentPage!]);
+    toast.success('Page replaced');
+    return true;
+  } catch {
+    toast.error('Failed to replace page');
+    return false;
+  } finally {
+    setProcessing(false);
+  }
+}, [entityId, entityType, pages, generateSignedUrls, toast]);
 
   /* ── flushSaves ───────────────────────────────────────────────────────── */
 
