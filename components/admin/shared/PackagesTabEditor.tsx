@@ -16,6 +16,26 @@ import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppeara
 import TierEditor from '@/components/admin/shared/TierEditor';
 
 /* ------------------------------------------------------------------ */
+/*  Internal UnifiedPage shape (API v2 response)                      */
+/* ------------------------------------------------------------------ */
+
+interface UnifiedPage {
+  id: string;
+  entity_id: string;
+  company_id: string;
+  position: number;
+  type: string;
+  title: string;
+  indent: number;
+  enabled: boolean;
+  link_url: string | null;
+  link_label: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -31,6 +51,26 @@ const DEFAULT_TIER: Omit<PackageTier, 'id' | 'sort_order'> = {
   conditions: [],
   features: [],
 };
+
+/** Map a UnifiedPage (v2 API response) → ProposalPackages (internal state shape) */
+function unifiedToProposalPackages(page: UnifiedPage): ProposalPackages {
+  return {
+    id: page.id,
+    proposal_id: page.entity_id,   // holds template_id when used for templates
+    company_id: page.company_id,
+    enabled: page.enabled,
+    position: page.position,
+    sort_order: page.position,
+    indent: page.indent,
+    title: page.title,
+    intro_text: (page.payload.intro_text as string | null) ?? null,
+    packages: (page.payload.packages as PackageTier[]) || [],
+    footer_text: (page.payload.footer_text as string | null) ?? null,
+    styling:    normalizePackageStyling(page.payload.styling as PackageStyling | null),
+    created_at: page.created_at,
+    updated_at: page.updated_at,
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  Form State                                                         */
@@ -70,18 +110,21 @@ function formFromRecord(record: ProposalPackages): PackagesFormState {
 /* ------------------------------------------------------------------ */
 
 export interface PackagesTabEditorProps {
-  /** Base API path, e.g. '/api/proposals/packages' or '/api/templates/packages' */
+  /**
+   * Unified pages API base, e.g. '/api/proposals/pages' or '/api/templates/pages'.
+   * The component filters responses to type='packages' internally.
+   */
   apiBase: string;
-  /** The query/body key for the owning entity, e.g. 'proposal_id' | 'template_id' */
+  /** The FK key for the owning entity in POST/DELETE bodies, e.g. 'proposal_id' | 'template_id' */
   entityKey: 'proposal_id' | 'template_id';
   /** The owning entity's ID */
   entityId: string;
   /**
    * Known company ID (templates pass this directly).
-   * Proposals pass null — it will be resolved from the first fetched page's company_id.
+   * Proposals pass null — resolved from the first fetched page's company_id.
    */
   companyId: string | null;
-  /** Any extra fields to include in the POST body (e.g. { company_id } for templates) */
+  /** Extra fields to include in the POST body (e.g. { company_id } for templates) */
   extraPostFields?: Record<string, string>;
 }
 
@@ -109,7 +152,6 @@ export default function PackagesTabEditor({
   const [showPreview, setShowPreview] = useState(true);
   const [adding, setAdding] = useState(false);
 
-  // Resolved company ID: provided directly (templates) or extracted from fetched data (proposals)
   const [resolvedCompanyId, setResolvedCompanyId] = useState<string | null>(companyId);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -118,34 +160,33 @@ export default function PackagesTabEditor({
 
   const selectedPage = allPages.find(p => p.id === selectedId) ?? null;
 
-  useEffect(() => {
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, []);
-
-  /* ── Measure panel height ───────────────────────────────────── */
+  /* ── Panel height ───────────────────────────────────────────── */
 
   useEffect(() => {
     const measure = () => {
       if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setPanelHeight(Math.max(400, window.innerHeight - rect.top - 32));
+        const top = containerRef.current.getBoundingClientRect().top;
+        setPanelHeight(Math.max(400, window.innerHeight - top - 24));
       }
     };
     measure();
-    const timer = setTimeout(measure, 100);
     window.addEventListener('resize', measure);
-    return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
+    return () => window.removeEventListener('resize', measure);
   }, []);
 
-  /* ── Fetch pages ────────────────────────────────────────────── */
+  /* ── Fetch packages pages ───────────────────────────────────── */
 
   useEffect(() => {
     const fetchPackages = async () => {
       try {
         const res = await fetch(`${apiBase}?${entityKey}=${entityId}`);
         if (res.ok) {
-          const data = await res.json();
-          const pages: ProposalPackages[] = Array.isArray(data) ? data : (data ? [data] : []);
+          // New API returns UnifiedPage[] for ALL types — filter to packages only
+          const allPagesData: UnifiedPage[] = await res.json();
+          const pages = allPagesData
+            .filter((p) => p.type === 'packages')
+            .map(unifiedToProposalPackages);
+
           setAllPages(pages);
           if (pages.length > 0) {
             const first = pages[0];
@@ -153,7 +194,6 @@ export default function PackagesTabEditor({
             setForm(formFromRecord(first));
             setPosition(first.position);
             setExpandedTiers(new Set((first.packages || []).map((p: PackageTier) => p.id)));
-            // Resolve company ID from response if not provided as prop (proposals case)
             if (!companyId && first.company_id) {
               setResolvedCompanyId(first.company_id);
             }
@@ -207,18 +247,22 @@ export default function PackagesTabEditor({
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          enabled: data.enabled,
+          enabled:  data.enabled,
           position: pos,
-          title: data.title,
-          intro_text: data.intro_text,
-          packages: data.packages,
-          footer_text: data.footer_text,
-          styling: data.styling,
+          title:    data.title,
+          // Packages-specific fields go in payload_patch (v2 API convention)
+          payload_patch: {
+            intro_text:  data.intro_text,
+            packages:    data.packages,
+            footer_text: data.footer_text,
+            styling:     data.styling,
+          },
         }),
       });
       if (res.ok) {
-        const updated = await res.json();
-        setAllPages(prev => prev.map(p => p.id === id ? updated : p));
+        const updated: UnifiedPage = await res.json();
+        const pkg = unifiedToProposalPackages(updated);
+        setAllPages(prev => prev.map(p => p.id === id ? pkg : p));
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
@@ -265,19 +309,26 @@ export default function PackagesTabEditor({
         body: JSON.stringify({
           [entityKey]: entityId,
           ...extraPostFields,
+          type:    'packages',
           enabled: true,
-          position: -1,
-          title: 'Your Investment',
-          intro_text: null,
-          packages: [],
-          footer_text: null,
-          styling: DEFAULT_PACKAGE_STYLING,
+          title:   'Your Investment',
+          payload: {
+            intro_text:  null,
+            packages:    [],
+            footer_text: null,
+            styling:     DEFAULT_PACKAGE_STYLING,
+          },
         }),
       });
       if (res.ok) {
-        const created: ProposalPackages = await res.json();
-        setAllPages(prev => [...prev, created]);
-        selectPage(created);
+        const created: UnifiedPage = await res.json();
+        const pkg = unifiedToProposalPackages(created);
+        // Resolve company_id if not yet known
+        if (!resolvedCompanyId && pkg.company_id) {
+          setResolvedCompanyId(pkg.company_id);
+        }
+        setAllPages(prev => [...prev, pkg]);
+        selectPage(pkg);
         toast.success('Packages page added');
       } else {
         toast.error('Failed to add packages page');
@@ -286,183 +337,115 @@ export default function PackagesTabEditor({
       toast.error('Failed to add packages page');
     }
     setAdding(false);
-  }, [apiBase, entityKey, entityId, extraPostFields, selectPage, toast]);
+  }, [apiBase, entityKey, entityId, extraPostFields, resolvedCompanyId, selectPage, toast]);
 
   /* ── Delete page ────────────────────────────────────────────── */
 
   const deletePage = useCallback(async (id: string) => {
     if (!confirm('Delete this packages page? This cannot be undone.')) return;
     try {
-      const res = await fetch(`${apiBase}?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        const remaining = allPages.filter(p => p.id !== id);
-        setAllPages(remaining);
-        if (selectedId === id) {
-          if (remaining.length > 0) {
-            selectPage(remaining[0]);
-          } else {
-            setSelectedId(null);
-            setForm(DEFAULT_FORM);
-          }
-        }
-        toast.success('Packages page deleted');
-      } else {
+      const res = await fetch(apiBase, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [entityKey]: entityId, page_id: id }),
+      });
+      if (!res.ok) {
         toast.error('Failed to delete packages page');
+        return;
       }
     } catch {
       toast.error('Failed to delete packages page');
+      return;
     }
-  }, [apiBase, allPages, selectedId, selectPage, toast]);
 
-  /* ── Tier CRUD ──────────────────────────────────────────────── */
+    setAllPages(prev => {
+      const remaining = prev.filter(p => p.id !== id);
+      if (selectedId === id) {
+        if (remaining.length > 0) selectPage(remaining[0]);
+        else setSelectedId(null);
+      }
+      return remaining;
+    });
+    toast.success('Packages page deleted');
+  }, [apiBase, entityKey, entityId, selectedId, selectPage, toast]);
 
-  const addTier = () => {
-    const id = generateId();
-    const newTier: PackageTier = { ...DEFAULT_TIER, id, sort_order: form.packages.length };
-    setExpandedTiers(prev => { const next = new Set(Array.from(prev)); next.add(id); return next; });
+  /* ── Tier helpers ───────────────────────────────────────────── */
+
+  const addTier = useCallback(() => {
+    const newTier: PackageTier = {
+      ...DEFAULT_TIER,
+      id: generateId(),
+      sort_order: form.packages.length,
+    };
     updateForm({ packages: [...form.packages, newTier] });
-  };
+    setExpandedTiers(prev => new Set(Array.from(prev).concat(newTier.id)));
+  }, [form.packages, updateForm]);
 
-  const removeTier = (tierId: string) => {
-    updateForm({ packages: form.packages.filter(t => t.id !== tierId).map((t, i) => ({ ...t, sort_order: i })) });
-  };
+  const updateTier = useCallback((tierId: string, changes: Partial<PackageTier>) => {
+    updateForm({
+      packages: form.packages.map(t => t.id === tierId ? { ...t, ...changes } : t),
+    });
+  }, [form.packages, updateForm]);
 
-  const updateTier = (tierId: string, changes: Partial<PackageTier>) => {
-    updateForm({ packages: form.packages.map(t => t.id === tierId ? { ...t, ...changes } : t) });
-  };
+  const deleteTier = useCallback((tierId: string) => {
+    updateForm({ packages: form.packages.filter(t => t.id !== tierId) });
+    setExpandedTiers(prev => { const s = new Set(prev); s.delete(tierId); return s; });
+  }, [form.packages, updateForm]);
 
-  const moveTier = (tierId: string, direction: 'up' | 'down') => {
+  const moveTier = useCallback((tierId: string, dir: 'up' | 'down') => {
     const idx = form.packages.findIndex(t => t.id === tierId);
     if (idx < 0) return;
-    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= form.packages.length) return;
-    const arr = [...form.packages];
-    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-    updateForm({ packages: arr.map((t, i) => ({ ...t, sort_order: i })) });
-  };
+    const next = [...form.packages];
+    const swap = dir === 'up' ? idx - 1 : idx + 1;
+    if (swap < 0 || swap >= next.length) return;
+    [next[idx], next[swap]] = [next[swap], next[idx]];
+    updateForm({ packages: next.map((t, i) => ({ ...t, sort_order: i })) });
+  }, [form.packages, updateForm]);
 
-  const toggleExpand = (tierId: string) => {
+  const toggleTierExpanded = useCallback((tierId: string) => {
     setExpandedTiers(prev => {
-      const next = new Set(Array.from(prev));
-      next.has(tierId) ? next.delete(tierId) : next.add(tierId);
-      return next;
+      const s = new Set(prev);
+      if (s.has(tierId)) s.delete(tierId); else s.add(tierId);
+      return s;
     });
-  };
+  }, []);
 
-  /* ── Feature CRUD ───────────────────────────────────────────── */
+  /* ── Preview packages data ──────────────────────────────────── */
 
-  const addFeature = (tierId: string) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { features: [...tier.features, { text: '', bold_prefix: null, children: [] }] });
-  };
+  const previewPackages = selectedPage
+    ? {
+        ...selectedPage,
+        enabled:    form.enabled,
+        title:      form.title,
+        intro_text: form.intro_text,
+        packages:   form.packages,
+        footer_text: form.footer_text,
+        styling:    normalizePackageStyling(form.styling),
+      }
+    : null;
 
-  const updateFeature = (tierId: string, fi: number, changes: Partial<PackageFeature>) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { features: tier.features.map((f, i) => i === fi ? { ...f, ...changes } : f) });
-  };
-
-  const removeFeature = (tierId: string, fi: number) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { features: tier.features.filter((_, i) => i !== fi) });
-  };
-
-  /* ── Condition CRUD ─────────────────────────────────────────── */
-
-  const addCondition = (tierId: string) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { conditions: [...tier.conditions, ''] });
-  };
-
-  const updateCondition = (tierId: string, ci: number, value: string) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { conditions: tier.conditions.map((c, i) => i === ci ? value : c) });
-  };
-
-  const removeCondition = (tierId: string, ci: number) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { conditions: tier.conditions.filter((_, i) => i !== ci) });
-  };
-
-  /* ── Sub-feature (children) CRUD ────────────────────────────── */
-
-  const addChild = (tierId: string, fi: number) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { features: tier.features.map((f, i) => i === fi ? { ...f, children: [...f.children, ''] } : f) });
-  };
-
-  const updateChild = (tierId: string, fi: number, ci: number, value: string) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { features: tier.features.map((f, i) => {
-      if (i !== fi) return f;
-      return { ...f, children: f.children.map((c, j) => j === ci ? value : c) };
-    }) });
-  };
-
-  const removeChild = (tierId: string, fi: number, ci: number) => {
-    const tier = form.packages.find(t => t.id === tierId);
-    if (!tier) return;
-    updateTier(tierId, { features: tier.features.map((f, i) => {
-      if (i !== fi) return f;
-      return { ...f, children: f.children.filter((_, j) => j !== ci) };
-    }) });
-  };
-
-  /* ── Preview data ───────────────────────────────────────────── */
-
-  const previewPackages: ProposalPackages = {
-    id: selectedId || 'preview',
-    proposal_id: entityId,
-    company_id: resolvedCompanyId || '',
-    enabled: form.enabled,
-    position,
-    indent: 0,
-    sort_order: 0,
-    title: form.title,
-    intro_text: form.intro_text,
-    packages: form.packages,
-    footer_text: form.footer_text,
-    styling: form.styling,
-    created_at: '',
-    updated_at: '',
-  };
-
-  /* ── Loading ────────────────────────────────────────────────── */
+  /* ── Render ─────────────────────────────────────────────────── */
 
   if (!loaded) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-5 h-5 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
-          <p className="text-xs text-gray-400">Loading packages...</p>
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 size={18} className="animate-spin text-gray-300" />
       </div>
     );
   }
 
-  /* ── Render ─────────────────────────────────────────────────── */
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="flex flex-col h-full">
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#017C87]/10">
-            <Package size={18} className="text-[#017C87]" />
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900">Packages Pages</h4>
-            <p className="text-xs text-gray-400">
-              {allPages.length === 0 ? 'No packages pages yet' : `${allPages.filter(p => p.enabled).length} of ${allPages.length} enabled`}
-            </p>
-          </div>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">Packages Pages</h3>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {allPages.length === 0
+              ? 'No packages pages yet'
+              : `${allPages.filter(p => p.enabled).length} of ${allPages.length} enabled`}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           {saveStatus === 'saving' && <Loader2 size={14} className="animate-spin text-gray-300" />}
@@ -518,134 +501,154 @@ export default function PackagesTabEditor({
         </button>
       </div>
 
-      {/* Body: editor + preview */}
+      {/* Body: editor + optional preview */}
       <div ref={containerRef} className="flex gap-5" style={{ height: panelHeight }}>
 
         {/* Editor column */}
         {selectedId && selectedPage ? (
-          <div className={`flex-1 min-w-0 overflow-y-auto ${showPreview ? 'max-w-[55%]' : ''}`}>
-            <div className="space-y-6">
-              {/* Status toggle */}
-              <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-0.5">Status</p>
-                    <Toggle enabled={form.enabled} onChange={toggleEnabled} />
-                  </div>
-                </div>
+          <div className={`flex-1 min-w-0 overflow-y-auto ${showPreview ? 'w-[55%]' : 'w-full'}`}>
+
+            {/* Enabled toggle */}
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+              <div>
+                <p className="text-sm font-medium text-gray-700">Show packages page</p>
+                <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
               </div>
-
-              {form.enabled ? (
-                <>
-                  {/* Page settings */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Page Title</label>
-                      <input
-                        type="text"
-                        value={form.title}
-                        onChange={e => updateForm({ title: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
-                        placeholder="Your Investment"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Intro Text (optional)</label>
-                      <textarea
-                        value={form.intro_text || ''}
-                        onChange={e => updateForm({ intro_text: e.target.value || null })}
-                        rows={2}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
-                        placeholder="Choose the package that best suits your needs..."
-                      />
-                    </div>
-                  </div>
-
-                  {/* Package tiers */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Package Tiers</label>
-                      <button
-                        onClick={addTier}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#017C87] bg-[#017C87]/5 hover:bg-[#017C87]/10 transition-colors"
-                      >
-                        <Plus size={12} /> Add Package
-                      </button>
-                    </div>
-
-                    {form.packages.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-8 text-center">
-                        <Package size={20} className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-sm text-gray-400 mb-1">No packages yet</p>
-                        <p className="text-xs text-gray-300">Add a package to get started</p>
-                      </div>
-                    )}
-
-                    {form.packages.map((tier, tierIdx) => (
-                      <TierEditor
-                        key={tier.id}
-                        tier={tier}
-                        tierIdx={tierIdx}
-                        totalTiers={form.packages.length}
-                        isExpanded={expandedTiers.has(tier.id)}
-                        onToggleExpand={() => toggleExpand(tier.id)}
-                        onUpdate={(changes) => updateTier(tier.id, changes)}
-                        onToggleRecommended={() => {
-                          const newRecommended = !tier.is_recommended;
-                          updateForm({
-                            packages: form.packages.map(t => ({
-                              ...t,
-                              is_recommended: t.id === tier.id ? newRecommended : false,
-                            })),
-                          });
-                        }}
-                        onMove={(dir) => moveTier(tier.id, dir)}
-                        onRemove={() => removeTier(tier.id)}
-                        onAddFeature={() => addFeature(tier.id)}
-                        onUpdateFeature={(fi, changes) => updateFeature(tier.id, fi, changes)}
-                        onRemoveFeature={(fi) => removeFeature(tier.id, fi)}
-                        onAddCondition={() => addCondition(tier.id)}
-                        onUpdateCondition={(ci, val) => updateCondition(tier.id, ci, val)}
-                        onRemoveCondition={(ci) => removeCondition(tier.id, ci)}
-                        onAddChild={(fi) => addChild(tier.id, fi)}
-                        onUpdateChild={(fi, ci, val) => updateChild(tier.id, fi, ci, val)}
-                        onRemoveChild={(fi, ci) => removeChild(tier.id, fi, ci)}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Footer text */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Footer Text (optional)</label>
-                    <textarea
-                      value={form.footer_text || ''}
-                      onChange={e => updateForm({ footer_text: e.target.value || null })}
-                      rows={2}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
-                      placeholder="* Terms and conditions apply..."
-                    />
-                  </div>
-
-                  {/* Appearance */}
-                  <PackagesAppearanceSection
-                    styling={form.styling}
-                    tiers={form.packages}
-                    onStylingChange={(styling) => updateForm({ styling })}
-                    onTierChange={(tierId, changes) => {
-                      updateForm({
-                        packages: form.packages.map(t => t.id === tierId ? { ...t, ...changes } : t),
-                      });
-                    }}
-                  />
-                </>
-              ) : (
-                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
-                  <Package size={24} className="mx-auto text-gray-300 mb-2" />
-                  <p className="text-sm text-gray-400 mb-1">Packages page is currently disabled</p>
-                  <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
-                </div>
-              )}
+              <Toggle
+                enabled={form.enabled}
+                onChange={() => toggleEnabled()}
+              />
             </div>
+
+            {form.enabled ? (
+              <div className="space-y-5">
+                {/* Page title */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Page Title</label>
+                  <input
+                    type="text"
+                    value={form.title}
+                    onChange={(e) => updateForm({ title: e.target.value })}
+                    placeholder="Your Investment"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+                  />
+                </div>
+
+                {/* Intro text */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Intro Text</label>
+                  <textarea
+                    value={form.intro_text ?? ''}
+                    onChange={(e) => updateForm({ intro_text: e.target.value || null })}
+                    placeholder="Optional introductory text above the packages…"
+                    rows={2}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
+                  />
+                </div>
+
+                {/* Tier editor */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-gray-600">
+                      Packages ({form.packages.length})
+                    </label>
+                    <button
+                      onClick={addTier}
+                      className="flex items-center gap-1 text-xs font-medium text-[#017C87] hover:text-[#017C87]/80 transition-colors"
+                    >
+                      <Plus size={11} /> Add Package
+                    </button>
+                  </div>
+
+                  {form.packages.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center">
+                      <Package size={20} className="mx-auto text-gray-300 mb-2" />
+                      <p className="text-xs text-gray-400">No packages yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {form.packages.map((tier, idx) => (
+                        <TierEditor
+                          key={tier.id}
+                          tier={tier}
+                          tierIdx={idx}
+                          totalTiers={form.packages.length}
+                          isExpanded={expandedTiers.has(tier.id)}
+                          onToggleExpand={() => toggleTierExpanded(tier.id)}
+                          onUpdate={(changes) => updateTier(tier.id, changes)}
+                          onToggleRecommended={() => updateTier(tier.id, { is_recommended: !tier.is_recommended })}
+                          onMove={(dir) => moveTier(tier.id, dir)}
+                          onRemove={() => deleteTier(tier.id)}
+                          onAddFeature={() => updateTier(tier.id, {
+                            features: [...tier.features, { bold_prefix: null, text: '', children: [] }],
+                          })}
+                          onUpdateFeature={(fi, changes) => {
+                            const next = tier.features.map((f, i) => i === fi ? { ...f, ...changes } : f);
+                            updateTier(tier.id, { features: next });
+                          }}
+                          onRemoveFeature={(fi) => updateTier(tier.id, { features: tier.features.filter((_, i) => i !== fi) })}
+                          onAddCondition={() => updateTier(tier.id, { conditions: [...tier.conditions, ''] })}
+                          onUpdateCondition={(ci, val) => {
+                            const next = [...tier.conditions];
+                            next[ci] = val;
+                            updateTier(tier.id, { conditions: next });
+                          }}
+                          onRemoveCondition={(ci) => updateTier(tier.id, { conditions: tier.conditions.filter((_, i) => i !== ci) })}
+                          onAddChild={(fi) => {
+                            const next = tier.features.map((f, i) => i === fi
+                              ? { ...f, children: [...(f.children ?? []), ''] }
+                              : f
+                            );
+                            updateTier(tier.id, { features: next });
+                          }}
+                          onUpdateChild={(fi, ci, val) => {
+                            const next = tier.features.map((f, i) => {
+                              if (i !== fi) return f;
+                              const ch = [...(f.children ?? [])];
+                              ch[ci] = val;
+                              return { ...f, children: ch };
+                            });
+                            updateTier(tier.id, { features: next });
+                          }}
+                          onRemoveChild={(fi, ci) => {
+                            const next = tier.features.map((f, i) => i !== fi ? f : {
+                              ...f, children: (f.children ?? []).filter((_, j) => j !== ci),
+                            });
+                            updateTier(tier.id, { features: next });
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer text */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Footer Text</label>
+                  <textarea
+                    value={form.footer_text ?? ''}
+                    onChange={(e) => updateForm({ footer_text: e.target.value || null })}
+                    placeholder="Optional footer note below the packages…"
+                    rows={2}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-none"
+                  />
+                </div>
+
+                {/* Appearance */}
+                <PackagesAppearanceSection
+                  styling={form.styling}
+                  tiers={form.packages}
+                  onStylingChange={(newStyling: PackageStyling) => updateForm({ styling: newStyling })}
+                  onTierChange={(tierId: string, changes: Partial<PackageTier>) => updateTier(tierId, changes)}
+                />
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+                <Package size={24} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-sm text-gray-400 mb-1">Packages page is currently disabled</p>
+                <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
@@ -658,7 +661,7 @@ export default function PackagesTabEditor({
         )}
 
         {/* Preview column */}
-        {showPreview && selectedId && form.enabled && (
+        {showPreview && selectedId && form.enabled && previewPackages && (
           <div className="w-[45%] shrink-0">
             <PackagesPreview packages={previewPackages} branding={branding} />
           </div>

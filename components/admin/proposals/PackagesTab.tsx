@@ -10,7 +10,7 @@ interface PackagesTabProps {
 export default function PackagesTab({ proposalId }: PackagesTabProps) {
   return (
     <PackagesTabEditor
-      apiBase="/api/proposals/packages"
+      apiBase="/api/proposals/pages"
       entityKey="proposal_id"
       entityId={proposalId}
       companyId={null} // resolved from fetched page data

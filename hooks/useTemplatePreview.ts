@@ -248,7 +248,7 @@ export function useTemplatePreview(templateId: string) {
   const pricing = useMemo(() => {
     const p = pageUrls.find((x) => x.type === 'pricing');
     if (!p) return null;
-    return { id: p.id, enabled: true, ...p.payload } as Record<string, unknown>;
+    return { id: p.id, enabled: true, title: p.title, position: p.position, indent: p.indent, ...p.payload } as Record<string, unknown>;
   }, [pageUrls]);
 
   const packages = useMemo(

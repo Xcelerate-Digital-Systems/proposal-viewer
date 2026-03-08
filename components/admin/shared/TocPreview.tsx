@@ -77,7 +77,8 @@ export default function TocPreview({ tocSettings, branding, tocItems, companyNam
     return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, []);
 
-  const { pageEntries, pageSequence, numPages } = buildTocPageData(tocItems);
+  const visibleItems = tocItems.filter((item) => !tocSettings.excluded_items.includes(item.id));
+  const { pageEntries, pageSequence, numPages } = buildTocPageData(visibleItems);
   const includedCount = tocItems.filter((item) => !tocSettings.excluded_items.includes(item.id)).length;
 
   return (

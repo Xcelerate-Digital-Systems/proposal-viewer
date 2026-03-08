@@ -84,8 +84,8 @@ export async function getPages(
     .from(pagesTable)
     .select('*')
     .eq(idColumn, entityId)
-    .eq('enabled', true)
     .order('position', { ascending: true });
+
 
   if (error) return { pages: [], error: error.message };
 

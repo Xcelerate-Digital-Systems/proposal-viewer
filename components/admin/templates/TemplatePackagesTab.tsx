@@ -11,7 +11,7 @@ interface TemplatePackagesTabProps {
 export default function TemplatePackagesTab({ templateId, companyId }: TemplatePackagesTabProps) {
   return (
     <PackagesTabEditor
-      apiBase="/api/templates/packages"
+      apiBase="/api/templates/pages"
       entityKey="template_id"
       entityId={templateId}
       companyId={companyId}
