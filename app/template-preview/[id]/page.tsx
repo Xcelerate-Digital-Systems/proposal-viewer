@@ -54,22 +54,15 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
   const [showCover, setShowCover] = useState(true);
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const [clientLogoUrl, setClientLogoUrl] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    if (!template?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
-    const { data } = supabase.storage.from('proposals').getPublicUrl(template.cover_client_logo_path);
-    setClientLogoUrl(data.publicUrl || undefined);
-  }, [template?.cover_client_logo_path]);
+useEffect(() => {
+  if (!template?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
+  supabase.storage
+    .from('proposals')
+    .createSignedUrl(template.cover_client_logo_path, 3600)
+    .then(({ data }) => setClientLogoUrl(data?.signedUrl || undefined));
+}, [template?.cover_client_logo_path]);
 
   const mainRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!template?.cover_client_logo_path) return;
-    const { data } = supabase.storage
-      .from('proposals')
-      .getPublicUrl(template.cover_client_logo_path);
-    if (data?.publicUrl) setClientLogoUrl(data.publicUrl);
-  }, [template?.cover_client_logo_path]);
-
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });

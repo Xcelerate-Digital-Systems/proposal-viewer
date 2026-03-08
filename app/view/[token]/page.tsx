@@ -66,13 +66,10 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const [showComments, setShowComments] = useState(false);
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
-
-  // Virtual page type checks for current page
   const onTocPage      = isTocPage(currentPage);
   const onTextPage     = isTextPage(currentPage);
   const onPricingPage  = isPricingPage(currentPage);
   const onPackagesPage = isPackagesPage(currentPage);
-
   const currentTextPageId  = getTextPageId(currentPage);
   const currentTextPage    = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
   const currentPackagesId  = getPackagesId(currentPage);

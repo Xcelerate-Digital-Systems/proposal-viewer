@@ -95,6 +95,7 @@ export interface ProposalTextPage {
   link_url?: string | null;
   link_label?: string | null;
   show_member_badge?: boolean;
+  show_client_logo: boolean;
   prepared_by_member_id?: string | null;
   show_title?: boolean;
 }
@@ -114,6 +115,7 @@ export interface PageUrlEntry {
   link_label?:           string;
   show_title:            boolean;
   show_member_badge:     boolean;
+  show_client_logo:      boolean;
   prepared_by_member_id: string | null;
   payload:               Record<string, unknown>;
 }
@@ -328,6 +330,7 @@ export function useProposal(token: string) {
           link_label: p.link_label ?? null,
           show_title: p.show_title ?? true,
           show_member_badge: p.show_member_badge ?? false,
+          show_client_logo:  p.show_client_logo  ?? false,
           prepared_by_member_id: p.prepared_by_member_id ?? null,
         })),
     [pageUrls, proposal],
