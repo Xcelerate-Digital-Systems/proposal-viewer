@@ -14,6 +14,7 @@ interface TextPageProps {
   companyName?: string;
   userName?: string;
   proposalTitle?: string;
+  orientation?: 'portrait' | 'landscape';
 }
 
 // TipTap JSON node type
@@ -372,7 +373,8 @@ function MemberBadge({
 
 /* ── Main component ──────────────────────────────────────────────── */
 
-export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle }: TextPageProps) {
+export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle, orientation }: TextPageProps) {
+  const isLandscape = orientation === 'landscape';
   const bgColor = branding.text_page_bg_color || branding.bg_secondary || '#141414';
   const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
   const headingColor = branding.text_page_heading_color || textColor;
@@ -388,8 +390,11 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
 
   return (
     <div
-      className="w-full min-h-full flex flex-col justify-center py-8 lg:py-12 px-16 sm:px-24 lg:px-32"
-      style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgColor }}
+      className={`w-full min-h-full flex flex-col justify-center ${!isLandscape ? 'py-8 lg:py-12 px-16 sm:px-24 lg:px-32' : ''}`}
+      style={{
+        backgroundColor: branding.bg_image_url ? 'transparent' : bgColor,
+        ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
+      }}
     >
       <div className="w-full h-full">
         {/* Mobile font size caps — body 14px, title 22px on screens < lg */}

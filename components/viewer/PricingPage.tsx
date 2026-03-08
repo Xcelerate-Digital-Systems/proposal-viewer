@@ -14,6 +14,7 @@ interface PricingPageProps {
   pricing: ProposalPricing;
   branding: CompanyBranding;
   clientName?: string;
+  orientation?: 'portrait' | 'landscape';
 }
 
 function formatDate(dateStr: string): string {
@@ -50,7 +51,7 @@ const FREQ_LABELS: Record<string, string> = {
   annually: 'year',
 };
 
-export default function PricingPage({ pricing, branding, clientName }: PricingPageProps) {
+export default function PricingPage({ pricing, branding, clientName, orientation }: PricingPageProps) {
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const bgSecondary = branding.bg_secondary || '#141414';
   const accent = branding.accent_color || '#ff6700';
@@ -73,16 +74,21 @@ export default function PricingPage({ pricing, branding, clientName }: PricingPa
     : null;
   const hasPaymentSchedule = ps && (ps.one_off?.enabled || ps.milestones?.enabled || ps.recurring?.enabled);
 
+  const isLandscape = orientation === 'landscape';
+
   return (
     <div
-      className="w-full min-h-full flex items-center justify-center py-8 lg:py-12 px-4 sm:px-6"
-      style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
+      className={`w-full min-h-full flex items-center justify-center ${!isLandscape ? 'py-8 lg:py-12 px-4 sm:px-6' : ''}`}
+      style={{
+        backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary,
+        ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
+      }}
     >
       {/* Mobile font standardisation — title 22px, body 16px below lg breakpoint */}
       <style>{`
         @media (max-width: 1023px) {
-          .agv-pricing-title { font-size: 22px !important; }
-          .agv-pricing-body  { font-size: 16px !important; }
+          .agv-pricing-title { font-size: 20px !important; }
+          .agv-pricing-body  { font-size: 14px !important; }
         }
       `}</style>
 

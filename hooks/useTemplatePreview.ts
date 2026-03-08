@@ -55,6 +55,7 @@ interface TemplateData {
   updated_at: string;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
+  page_orientation: string | null;
 }
 
 /* ─── Hook ───────────────────────────────────────────────────────────────── */

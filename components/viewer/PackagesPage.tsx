@@ -10,6 +10,7 @@ interface PackagesPageProps {
   packages: ProposalPackages;
   branding: CompanyBranding;
   clientName?: string;
+  orientation?: 'portrait' | 'landscape';
 }
 
 function formatPrice(amount: number): string {
@@ -49,7 +50,8 @@ function FeatureIcon({ icon, color, size = 'normal' }: { icon: PackageFeatureIco
 /*  Main PackagesPage                                                  */
 /* ═══════════════════════════════════════════════════════════════════ */
 
-export default function PackagesPage({ packages, branding, clientName }: PackagesPageProps) {
+export default function PackagesPage({ packages, branding, clientName, orientation }: PackagesPageProps) {
+  const isLandscape = orientation === 'landscape';
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const bgSecondary = branding.bg_secondary || '#141414';
   const accent = branding.accent_color || '#ff6700';
@@ -66,15 +68,18 @@ export default function PackagesPage({ packages, branding, clientName }: Package
 
   return (
     <div
-      className="w-full min-h-full flex items-center justify-center py-8 lg:py-12 px-4 sm:px-6"
-      style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
+      className={`w-full min-h-full flex items-center justify-center ${!isLandscape ? 'py-8 lg:py-12 px-4 sm:px-6' : ''}`}
+      style={{
+        backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary,
+        ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
+      }}
     >
       {/* Mobile font standardisation — below lg breakpoint */}
       <style>{`
         @media (max-width: 1023px) {
-          .agv-pkg-title     { font-size: 22px !important; }
+          .agv-pkg-title     { font-size: 20px !important; }
           .agv-pkg-card-name { font-size: 18px !important; }
-          .agv-pkg-price     { font-size: 24px !important; }
+          .agv-pkg-price     { font-size: 20px !important; }
           .agv-pkg-body      { font-size: 16px !important; }
         }
         @media (max-width: 640px) {
@@ -82,7 +87,7 @@ export default function PackagesPage({ packages, branding, clientName }: Package
         }
       `}</style>
 
-      <div className="w-full max-w-[1200px]">
+      <div className={`w-full ${isLandscape ? 'max-w-[900px]' : 'max-w-[1200px]'}`}>
         {/* Title section */}
         <div className="mb-8 text-center">
           <h1
@@ -112,11 +117,6 @@ export default function PackagesPage({ packages, branding, clientName }: Package
         <div
           className="packages-grid grid gap-4 sm:gap-5 mx-auto"
           style={{
-            maxWidth: tiers.length === 1
-              ? '400px'
-              : tiers.length === 2
-                ? '800px'
-                : '1200px',
             gridTemplateColumns: tiers.length === 1
               ? '1fr'
               : tiers.length === 2

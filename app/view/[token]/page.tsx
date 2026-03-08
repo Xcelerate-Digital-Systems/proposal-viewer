@@ -144,6 +144,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const accent      = branding.accent_color  || '#ff6700';
   const border      = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#ffffff';
+  const pageOrientation = proposal?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;
 
   const unresolvedCommentCount = comments.filter((c) => !c.parent_id && !c.resolved_at).length;
 
@@ -292,6 +293,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
                   pageSequence={pageSequence}
                   pageEntries={pageEntries}
                   numPages={numPages}
+                  orientation={pageOrientation}
                 />
               </div>
             </div>
@@ -309,6 +311,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
                   branding={branding}
                   companyName={branding.name}
                   proposalTitle={proposal?.title}
+                  orientation={pageOrientation}
                 />
               </div>
             </div>
@@ -324,6 +327,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
                   pricing={pricing as unknown as ProposalPricing}
                   branding={branding}
                   clientName={proposal?.client_name ?? undefined}
+                  orientation={pageOrientation}
                 />
               </div>
             </div>
@@ -339,6 +343,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
                   packages={currentPackages as unknown as ProposalPackages}
                   branding={branding}
                   clientName={proposal?.client_name ?? undefined}
+                  orientation={pageOrientation}
                 />
               </div>
             </div>

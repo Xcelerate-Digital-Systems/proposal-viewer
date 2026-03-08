@@ -121,6 +121,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
   const accent = branding.accent_color || '#ff6700';
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#fff';
+  const pageOrientation = template?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;
 
   const isSectionPage = pageUrls[currentPage - 1]?.type === 'section';
 
@@ -266,6 +267,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
                 pricing={pricing as unknown as ProposalPricing}
                 branding={branding}
                 clientName="[Client Name]"
+                orientation={pageOrientation}
               />
             </div>
           </div>
@@ -281,6 +283,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
                 packages={currentPackages as unknown as ProposalPackages}
                 branding={branding}
                 clientName="[Client Name]"
+                orientation={pageOrientation}
               />
             </div>
           </div>
@@ -298,6 +301,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
                 pageSequence={pageSequence}
                 pageEntries={pageEntries}
                 numPages={numPages}
+                orientation={pageOrientation}
               />
             </div>
           </div>
@@ -315,6 +319,7 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
                 clientName="[Client Name]"
                 companyName={branding.name}
                 proposalTitle={template?.name}
+                orientation={pageOrientation}
               />
             </div>
           </div>

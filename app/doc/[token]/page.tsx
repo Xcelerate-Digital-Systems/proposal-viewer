@@ -48,18 +48,12 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   const [showCover, setShowCover] = useState(true);
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
-
-  // Is the current virtual page the TOC page?
   const onTocPage = isTocPage(currentPage);
-  // Is the current virtual page a text page?
   const onTextPage = isTextPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
-  // If not a text page, what PDF page should we show?
   const pdfPage = toPdfPage(currentPage);
   const isSectionPage = pageUrls[currentPage - 1]?.type === 'section';
-
-  // Link for the current page — look up directly by virtual page index
   const currentPageLink = useMemo(() => {
     const entry = pageUrls[currentPage - 1];
     return entry?.link_url ? { url: entry.link_url, label: entry.link_label ?? undefined } : null;
@@ -122,6 +116,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   const accent = branding.accent_color || '#ff6700';
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#ffffff';
+  const pageOrientation = doc?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;
 
   // ── Composite PDF download (includes text pages) ───────────────────
   const hasSpecialPages = textPages.length > 0;
@@ -293,6 +288,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
                 pageSequence={pageSequence}
                 pageEntries={pageEntries}
                 numPages={numPages}
+                orientation={pageOrientation}
               />
             </div>
           </div>
@@ -310,6 +306,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
                 branding={branding}
                 companyName={branding.name}
                 proposalTitle={doc?.title}
+                orientation={pageOrientation}
               />
             </div>
           </div>

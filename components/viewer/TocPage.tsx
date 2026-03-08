@@ -30,6 +30,7 @@ interface TocPageProps {
   pageSequence: PageSequenceEntry[];
   numPages: number;
   companyName?: string;
+  orientation?: 'portrait' | 'landscape';
 }
 
 /* ─── Component ──────────────────────────────────────────────────────── */
@@ -41,7 +42,9 @@ export default function TocPage({
   pageSequence,
   numPages,
   companyName,
+  orientation,
 }: TocPageProps) {
+  const isLandscape = orientation === 'landscape';
   const accent = branding.accent_color || '#ff6700';
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const textColor = branding.cover_text_color || '#ffffff';
@@ -160,8 +163,11 @@ export default function TocPage({
 
   return (
     <div
-      className="h-full flex items-center justify-center py-12 px-8 overflow-hidden"
-      style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary }}
+      className={`h-full flex items-center justify-center overflow-hidden ${!isLandscape ? 'py-12 px-8' : ''}`}
+      style={{
+        backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary,
+        ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
+      }}
     >
       <div className="w-full max-w-5xl">
         {/* Title — last word highlighted in accent colour */}
