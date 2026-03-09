@@ -224,12 +224,24 @@ function renderNode(
         </ol>
       );
 
-    case 'listItem':
+    case 'listItem': {
+      // Read font-size and font-weight from node attrs when set via the editor's
+      // FontSizeExtension / FontWeightExtension (they stamp both the inline textStyle
+      // mark AND the listItem node attribute so the bullet/number marker matches).
+      // Fall back to 'inherit' so the parent .agv-text-body branding size is used
+      // when no custom size has been applied.
+      const liStyle: React.CSSProperties = {
+        margin: '0.25em 0',
+        lineHeight: 1.7,
+        fontSize: (node.attrs?.fontSize as string) || 'inherit',
+        ...(node.attrs?.fontWeight ? { fontWeight: Number(node.attrs.fontWeight) } : {}),
+      };
       return (
-        <li key={key} style={{ margin: '0.25em 0', fontSize: 14, lineHeight: 1.7 }}>
+        <li key={key} style={liStyle}>
           {children}
         </li>
       );
+    }
 
     case 'blockquote':
       return (

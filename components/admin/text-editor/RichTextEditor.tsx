@@ -632,6 +632,10 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
         .ProseMirror li {
           margin: 0.25em 0;
         }
+        .ProseMirror li::marker {
+          font-size: inherit;
+          font-weight: inherit;
+        }
         .ProseMirror blockquote {
           border-left: 3px solid #017C87;
           padding-left: 1em;

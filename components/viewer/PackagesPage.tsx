@@ -220,7 +220,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
       )}
 
       {/* Card content */}
-      <div className="p-5 sm:p-6 flex flex-col flex-1">
+      <div className="p-6 sm:p-8 flex flex-col flex-1">
         {/* Package name */}
         <h2
           className="agv-pkg-card-name text-lg sm:text-xl font-bold tracking-tight font-[family-name:var(--font-display)]"

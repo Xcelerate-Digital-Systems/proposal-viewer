@@ -26,8 +26,23 @@ export const FontSizeExtension = Extension.create<FontSizeOptions>({
 
   addGlobalAttributes() {
     return [
+      // Inline mark: applies font-size to the <span> wrapping selected text
       {
         types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element) => element.style.fontSize?.replace(/['"]+/g, '') || null,
+            renderHTML: (attributes) => {
+              if (!attributes.fontSize) return {};
+              return { style: `font-size: ${attributes.fontSize}` };
+            },
+          },
+        },
+      },
+      // Node attribute: applies font-size directly to <li> so ::marker inherits it
+      {
+        types: ['listItem'],
         attributes: {
           fontSize: {
             default: null,
@@ -47,12 +62,21 @@ export const FontSizeExtension = Extension.create<FontSizeOptions>({
       setFontSize:
         (fontSize: string) =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize }).run();
+          return chain()
+            .setMark('textStyle', { fontSize })
+            // Also stamp the attribute on any listItem nodes in the selection
+            // so the <li> element itself carries the size (enables ::marker inheritance)
+            .updateAttributes('listItem', { fontSize })
+            .run();
         },
       unsetFontSize:
         () =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run();
+          return chain()
+            .setMark('textStyle', { fontSize: null })
+            .removeEmptyTextStyle()
+            .updateAttributes('listItem', { fontSize: null })
+            .run();
         },
     };
   },
