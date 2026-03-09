@@ -212,6 +212,7 @@ export default function PageEditor({
     link_label:            p.link_label ?? undefined,
     show_title:            p.show_title,
     show_member_badge:     p.show_member_badge,
+    show_client_logo:      p.show_client_logo ?? false,
     prepared_by_member_id: p.prepared_by_member_id,
     payload:               p.payload as Record<string, unknown>,
   }));

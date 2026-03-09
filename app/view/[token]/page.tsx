@@ -61,7 +61,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   } = useProposal(params.token);
 
   const [showCover, setShowCover] = useState(true);
-  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
+  const [clientLogoUrl, setClientLogoUrl] = useState<string | undefined>(undefined);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [mobileSidebar, setMobileSidebar] = useState(false);
@@ -88,12 +88,12 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   }, [pageUrls, currentPage]);
 
   useEffect(() => {
-    if (!proposal?.cover_client_logo_path) return;
-    const { data } = supabase.storage
-      .from('proposals')
-      .getPublicUrl(proposal.cover_client_logo_path);
-    if (data?.publicUrl) setClientLogoUrl(data.publicUrl);
-  }, [proposal?.cover_client_logo_path]);
+  if (!proposal?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
+  supabase.storage
+    .from('proposals')
+    .createSignedUrl(proposal.cover_client_logo_path, 3600)
+    .then(({ data }) => setClientLogoUrl(data?.signedUrl || undefined));
+}, [proposal?.cover_client_logo_path]);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);

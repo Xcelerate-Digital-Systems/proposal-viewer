@@ -393,7 +393,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
 
   return (
     <div
-      className={`w-full min-h-full flex flex-col justify-center ${!isLandscape ? 'py-8 lg:py-12 px-16 sm:px-24 lg:px-32' : ''}`}
+      className={`w-full min-h-full flex flex-col justify-center relative ${!isLandscape ? 'py-8 lg:py-12 px-16 sm:px-24 lg:px-32' : ''}`}
       style={{
         backgroundColor: branding.bg_image_url ? 'transparent' : bgColor,
         ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
@@ -403,12 +403,12 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
         {/* Mobile font size caps — body 14px, title 22px on screens < lg */}
         <style>{`@media (max-width: 1023px) { .agv-text-body { font-size: 16px !important; } .agv-text-title { font-size: 22px !important; } }`}</style>
 
-        <div className={showClientLogoCol ? 'flex items-start gap-16' : ''}>
+        <div className={showClientLogoCol ? 'flex items-center gap-16' : ''}>
          {/* ── Main content column ── */}
           <div className={showClientLogoCol ? 'flex-1 min-w-0' : ''}>
             {/* Client logo — portrait mode (top of content) */}
             {showClientLogo && !isLandscape && (
-              <div className="flex justify-end mb-6">
+              <div className="absolute right-8 sm:right-16 lg:right-24" style={{ top: '50%', transform: 'translateY(-50%)' }}>
                 <img
                   src={clientLogoUrl}
                   alt="Client"

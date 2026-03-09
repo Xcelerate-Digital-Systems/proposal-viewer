@@ -158,6 +158,7 @@ export default function TextPagePreviewPanel({
                 show_member_badge:     page.show_member_badge,
                 prepared_by_member_id: page.prepared_by_member_id ?? null,
                 show_title:            page.show_title,
+                show_client_logo:      page.show_client_logo ?? false,
               }}
               branding={branding}
               clientName={proposal?.client_name}
