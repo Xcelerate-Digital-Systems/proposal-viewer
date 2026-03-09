@@ -4,13 +4,14 @@ import { getResend, FROM_EMAIL } from './resend';
 import { buildProposalUrl } from './proposal-url';
 import crypto from 'crypto';
 
-type EventType = 'proposal_viewed' | 'proposal_accepted' | 'comment_added' | 'comment_resolved';
+type EventType = 'proposal_viewed' | 'proposal_accepted' | 'proposal_sent' | 'comment_added' | 'comment_resolved';
 type AuthorType = 'team' | 'client';
 
 // Maps event_type to the team_member column that controls it
 const PREF_MAP: Record<EventType, string> = {
   proposal_viewed: 'notify_proposal_viewed',
   proposal_accepted: 'notify_proposal_accepted',
+  proposal_sent: '',           // webhook-only; no team email preference
   comment_added: 'notify_comment_added',
   comment_resolved: 'notify_comment_resolved',
 };
@@ -255,7 +256,7 @@ async function notifyClient(params: ClientNotifyParams): Promise<number> {
 
 // --- Webhook dispatch ---
 
-interface WebhookPayload {
+export interface WebhookPayload {
   event_type: EventType;
   company_id: string;
   custom_domain?: string | null;
@@ -273,7 +274,7 @@ interface WebhookPayload {
   resolved_by?: string;
 }
 
-async function fireWebhooks(payload: WebhookPayload) {
+export async function fireWebhooks(payload: WebhookPayload) {
   const supabase = createServiceClient();
   const { event_type, company_id, custom_domain } = payload;
 

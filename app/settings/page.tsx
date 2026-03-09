@@ -64,6 +64,12 @@ const REVIEW_NOTIFICATION_OPTIONS = [
 
 const WEBHOOK_EVENTS = [
   {
+    key: 'proposal_sent' as const,
+    label: 'Proposal Sent',
+    description: 'Fires when a proposal is marked as sent to a client',
+    icon: Send,
+  },
+  {
     key: 'proposal_viewed' as const,
     label: 'Proposal Viewed',
     description: 'Fires when a client opens a proposal for the first time',

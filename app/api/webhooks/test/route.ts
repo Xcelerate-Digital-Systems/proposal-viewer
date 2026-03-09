@@ -19,6 +19,13 @@ function sampleProposalPayload(eventType: string) {
     },
   };
 
+  if (eventType === 'proposal_sent') {
+    return {
+      ...base,
+      sent_at: new Date().toISOString(),
+    };
+  }
+
   if (eventType === 'comment_added') {
     return {
       ...base,

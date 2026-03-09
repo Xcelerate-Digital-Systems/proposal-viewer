@@ -71,9 +71,18 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
   };
 
   const markAsSent = async () => {
-    await supabase.from('proposals').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', p.id);
-    toast.success('Proposal marked as sent');
-    onRefresh();
+    const res = await fetch('/api/proposals/mark-sent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proposal_id: p.id }),
+    });
+    if (res.ok) {
+      toast.success('Proposal marked as sent');
+      onRefresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error || 'Failed to mark as sent');
+    }
   };
 
   const deleteProposal = async () => {

@@ -140,17 +140,30 @@ export default function TextPagesTabEditor({
     loadPages();
   }, [loadPages]);
 
-  // Sync form when selection changes
+  // Cancel any pending save when the selected page changes (page switch only).
+  // NOTE: intentionally NOT triggered by `pages` changes — that would cancel
+  // in-progress title/field saves because updateForm calls setPages to keep
+  // nav chips in sync, which would re-trigger this effect and kill the timer.
   useEffect(() => {
-    const page = pages.find((p) => p.id === selectedId);
-    if (page) {
-      setForm(recordToForm(page));
-    } else {
-      setForm(null);
-    }
-    // cancel any pending save for the previous page
     if (saveTimer.current) clearTimeout(saveTimer.current);
-  }, [selectedId, pages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  // Sync form when selected page changes.
+  // Depends only on selectedId — not on pages — so that typing in a field
+  // (which updates pages for nav chip sync) does not reset the form mid-edit.
+  useEffect(() => {
+    setPages((currentPages) => {
+      const page = currentPages.find((p) => p.id === selectedId);
+      if (page) {
+        setForm(recordToForm(page));
+      } else {
+        setForm(null);
+      }
+      return currentPages; // no-op on pages state
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   /* ── Autosave ────────────────────────────────────────────────── */
 

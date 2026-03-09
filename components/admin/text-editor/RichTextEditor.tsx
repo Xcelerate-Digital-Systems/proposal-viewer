@@ -22,7 +22,6 @@ import { DynamicFieldExtension, DYNAMIC_FIELDS } from './DynamicFieldExtension';
 import { FontSizeExtension } from './FontSizeExtension';
 import { FontWeightExtension } from './FontWeightExtension';
 
-const FONT_SIZES = ['8', '10', '12', '14', '16', '18', '20', '24', '28', '32', '36'];
 
 const FONT_WEIGHTS = [
   { value: '300', label: 'Light' },
@@ -67,6 +66,47 @@ interface RichTextEditorProps {
   content: unknown; // TipTap JSON
   onUpdate: (content: unknown) => void;
   placeholder?: string;
+}
+
+/* ─── Stable toolbar primitives (defined outside component to keep
+       React from unmounting them on every selection-triggered re-render) ── */
+
+function ToolbarButton({
+  onClick,
+  isActive = false,
+  disabled = false,
+  title,
+  children,
+}: {
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      // preventDefault on mousedown keeps the editor focused so that
+      // isActive() / getAttributes() reflect the correct selection state
+      // when onClick fires the TipTap command.
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`p-2 rounded transition-colors ${
+        isActive
+          ? 'bg-[#017C87]/15 text-[#017C87]'
+          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+      } disabled:opacity-30 disabled:cursor-not-allowed`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Separator() {
+  return <div className="w-px h-6 bg-gray-200 mx-1" />;
 }
 
 export default function RichTextEditor({ content, onUpdate, placeholder }: RichTextEditorProps) {
@@ -188,53 +228,28 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
   // Get current highlight color from selection
   const currentHighlight = editor.getAttributes('highlight')?.color || '';
 
-  const ToolbarButton = ({
-    onClick,
-    isActive = false,
-    disabled = false,
-    title,
-    children,
-  }: {
-    onClick: () => void;
-    isActive?: boolean;
-    disabled?: boolean;
-    title: string;
-    children: React.ReactNode;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={`p-1.5 rounded transition-colors ${
-        isActive
-          ? 'bg-[#017C87]/15 text-[#017C87]'
-          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-      } disabled:opacity-30 disabled:cursor-not-allowed`}
-    >
-      {children}
-    </button>
-  );
-
-  const Separator = () => <div className="w-px h-5 bg-gray-200 mx-0.5" />;
-
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white flex flex-col max-h-[70vh]">
       {/* Toolbar — stays fixed at top */}
-      <div className="shrink-0 flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-200 z-10">
+      <div className="shrink-0 flex flex-wrap items-center gap-1 px-2.5 py-2 bg-gray-50 border-b border-gray-200 z-10">
         {/* Undo/Redo */}
         <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
-          <Undo size={14} />
+          <Undo size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
-          <Redo size={14} />
+          <Redo size={16} />
         </ToolbarButton>
 
         <Separator />
 
-        {/* Font size dropdown */}
-        <select
+        {/* Font size input */}
+        <input
+          type="number"
           value={currentFontSize}
+          min={6}
+          max={96}
+          placeholder="–"
+          title="Font Size"
           onChange={(e) => {
             const val = e.target.value;
             if (val) {
@@ -243,14 +258,14 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
               editor.chain().focus().unsetFontSize().run();
             }
           }}
-          title="Font Size"
-          className="h-7 px-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-[#017C87]"
-        >
-          <option value="">Size</option>
-          {FONT_SIZES.map((size) => (
-            <option key={size} value={size}>{size}px</option>
-          ))}
-        </select>
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              editor.commands.focus();
+            }
+          }}
+          className="h-8 w-16 px-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:border-[#017C87] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
 
         {/* Font weight dropdown */}
         <select
@@ -264,7 +279,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
             }
           }}
           title="Font Weight"
-          className="h-7 px-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-[#017C87]"
+          className="h-8 px-2 text-xs text-gray-600 bg-white border border-gray-200 rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-[#017C87]"
           style={{ fontWeight: currentFontWeight ? Number(currentFontWeight) : undefined }}
         >
           <option value="">Weight</option>
@@ -279,16 +294,16 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
 
         {/* Text formatting */}
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Bold">
-          <Bold size={14} />
+          <Bold size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="Italic">
-          <Italic size={14} />
+          <Italic size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Underline">
-          <Underline size={14} />
+          <Underline size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Strikethrough">
-          <Strikethrough size={14} />
+          <Strikethrough size={16} />
         </ToolbarButton>
 
         <Separator />
@@ -299,14 +314,14 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
             type="button"
             onClick={() => { setShowTextColorPicker(!showTextColorPicker); setShowHighlightPicker(false); }}
             title="Text Color"
-            className={`p-1.5 rounded transition-colors flex items-center gap-0.5 ${
+            className={`p-2 rounded transition-colors flex items-center gap-0.5 ${
               showTextColorPicker
                 ? 'bg-[#017C87]/15 text-[#017C87]'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
             }`}
           >
             <div className="relative">
-              <Palette size={14} />
+              <Palette size={16} />
               {currentTextColor && (
                 <div
                   className="absolute -bottom-0.5 left-0 right-0 h-[3px] rounded-full"
@@ -376,14 +391,14 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
             type="button"
             onClick={() => { setShowHighlightPicker(!showHighlightPicker); setShowTextColorPicker(false); }}
             title="Highlight Color"
-            className={`p-1.5 rounded transition-colors flex items-center gap-0.5 ${
+            className={`p-2 rounded transition-colors flex items-center gap-0.5 ${
               showHighlightPicker
                 ? 'bg-[#017C87]/15 text-[#017C87]'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
             }`}
           >
             <div className="relative">
-              <Highlighter size={14} />
+              <Highlighter size={16} />
               {currentHighlight && (
                 <div
                   className="absolute -bottom-0.5 left-0 right-0 h-[3px] rounded-full"
@@ -438,42 +453,42 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
 
         {/* Headings */}
         <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} title="Heading 1">
-          <Heading1 size={14} />
+          <Heading1 size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title="Heading 2">
-          <Heading2 size={14} />
+          <Heading2 size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} title="Heading 3">
-          <Heading3 size={14} />
+          <Heading3 size={16} />
         </ToolbarButton>
 
         <Separator />
 
         {/* Lists */}
         <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Bullet List">
-          <List size={14} />
+          <List size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Numbered List">
-          <ListOrdered size={14} />
+          <ListOrdered size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Blockquote">
-          <Quote size={14} />
+          <Quote size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule">
-          <Minus size={14} />
+          <Minus size={16} />
         </ToolbarButton>
 
         <Separator />
 
         {/* Alignment */}
         <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('left').run()} isActive={editor.isActive({ textAlign: 'left' })} title="Align Left">
-          <AlignLeft size={14} />
+          <AlignLeft size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('center').run()} isActive={editor.isActive({ textAlign: 'center' })} title="Align Center">
-          <AlignCenter size={14} />
+          <AlignCenter size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })} title="Align Right">
-          <AlignRight size={14} />
+          <AlignRight size={16} />
         </ToolbarButton>
 
         <Separator />
@@ -487,13 +502,13 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
               onChange={(e) => setLinkUrl(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') setLink(); if (e.key === 'Escape') setShowLinkInput(false); }}
               placeholder="https://..."
-              className="text-xs px-2 py-1 border border-gray-200 rounded w-40 focus:outline-none focus:border-[#017C87]"
+              className="text-xs px-2.5 py-1.5 border border-gray-200 rounded w-44 focus:outline-none focus:border-[#017C87]"
               autoFocus
             />
-            <button onClick={setLink} className="text-xs px-2 py-1 bg-[#017C87] text-white rounded hover:bg-[#01434A]">
+            <button onClick={setLink} className="text-xs px-2.5 py-1.5 bg-[#017C87] text-white rounded hover:bg-[#01434A]">
               Set
             </button>
-            <button onClick={() => setShowLinkInput(false)} className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700">
+            <button onClick={() => setShowLinkInput(false)} className="text-xs px-2.5 py-1.5 text-gray-500 hover:text-gray-700">
               ✕
             </button>
           </div>
@@ -508,11 +523,11 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
               isActive={editor.isActive('link')}
               title="Insert Link"
             >
-              <Link size={14} />
+              <Link size={16} />
             </ToolbarButton>
             {editor.isActive('link') && (
               <ToolbarButton onClick={() => editor.chain().focus().unsetLink().run()} title="Remove Link">
-                <Link2Off size={14} />
+                <Link2Off size={16} />
               </ToolbarButton>
             )}
           </>
@@ -525,16 +540,16 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
           <button
             type="button"
             onClick={() => setShowFieldMenu(!showFieldMenu)}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
               showFieldMenu
                 ? 'bg-[#017C87]/15 text-[#017C87]'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
             }`}
             title="Insert Dynamic Field"
           >
-            <Code2 size={13} />
+            <Code2 size={15} />
             <span>Fields</span>
-            <ChevronDown size={11} />
+            <ChevronDown size={13} />
           </button>
 
           {showFieldMenu && (
