@@ -3,7 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
 
 /**
- * Merges all template_pages into a single PDF and stores it as
+ * Merges all template_pages_v2 PDF rows into a single PDF and stores it as
  * proposal_templates.file_path. Call this after any page CRUD
  * operation (add, delete, replace, reorder).
  *
@@ -12,12 +12,17 @@ import { createServiceClient } from '@/lib/supabase-server';
 export async function rebuildTemplateMerged(templateId: string): Promise<string | null> {
   const supabase = createServiceClient();
 
-  // 1. Fetch all template pages in order
+  // 1. Fetch all PDF template pages in order
+  // FIXED: template_pages_v2 uses `position` (not `page_number`) and stores
+  // the file path inside `payload->>'file_path'` (not a top-level column).
+  // Also filter to type='pdf' and enabled=true — only PDF rows have files.
   const { data: pages, error: pagesError } = await supabase
-   .from('template_pages_v2')
-    .select('id, page_number, file_path')
+    .from('template_pages_v2')
+    .select('id, position, payload')
     .eq('template_id', templateId)
-    .order('page_number', { ascending: true });
+    .eq('type', 'pdf')
+    .eq('enabled', true)
+    .order('position', { ascending: true });
 
   if (pagesError) {
     console.error('rebuildTemplateMerged: Failed to fetch pages:', pagesError);
@@ -37,12 +42,19 @@ export async function rebuildTemplateMerged(templateId: string): Promise<string 
   const mergedDoc = await PDFDocument.create();
 
   for (const page of pages) {
+    // FIXED: file path lives in payload.file_path, not page.file_path
+    const filePath = (page.payload as { file_path?: string })?.file_path;
+    if (!filePath) {
+      console.error(`rebuildTemplateMerged: No file_path in payload for page at position ${page.position}`);
+      continue;
+    }
+
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('proposals')
-      .download(page.file_path);
+      .download(filePath);
 
     if (downloadError || !fileData) {
-      console.error(`rebuildTemplateMerged: Failed to download page ${page.page_number}:`, downloadError);
+      console.error(`rebuildTemplateMerged: Failed to download page at position ${page.position}:`, downloadError);
       continue;
     }
 
