@@ -397,83 +397,88 @@ export default function TextPagesTabEditor({
                 />
               </div>
 
-              {/* Member badge section */}
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <User size={14} className="text-gray-400" />
-                    <span className="text-xs font-medium text-gray-700">
-                      Show Member Badge
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={!!form.show_member_badge}
-                    onClick={() =>
-                      updateForm({
-                        show_member_badge:     !form.show_member_badge,
-                        ...(!form.show_member_badge ? {} : { prepared_by_member_id: null }),
-                      })
-                    }
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
-                      form.show_member_badge ? 'bg-[#017C87]' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
-                        form.show_member_badge ? 'translate-x-4' : 'translate-x-0'
+              {/* Member badge + Client logo — side by side */}
+              <div className="grid grid-cols-2 gap-4">
+
+                {/* Member badge card */}
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User size={14} className="text-gray-400" />
+                      <span className="text-xs font-medium text-gray-700">
+                        Show Avatar
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!!form.show_member_badge}
+                      onClick={() =>
+                        updateForm({
+                          show_member_badge:     !form.show_member_badge,
+                          ...(!form.show_member_badge ? {} : { prepared_by_member_id: null }),
+                        })
+                      }
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
+                        form.show_member_badge ? 'bg-[#017C87]' : 'bg-gray-300'
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
+                          form.show_member_badge ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {form.show_member_badge && companyId && (
+                    <div>
+                      <label className="block text-[10px] font-medium text-gray-400 mb-1">
+                        Team Member
+                      </label>
+                      <PreparedBySelector
+                        companyId={companyId}
+                        selectedMemberId={form.prepared_by_member_id ?? null}
+                        onSelect={(id) => updateForm({ prepared_by_member_id: id })}
+                      />
+                    </div>
+                  )}
+
+                  {form.show_member_badge && !companyId && (
+                    <p className="text-[10px] text-gray-400">
+                      Company context required to select a team member.
+                    </p>
+                  )}
                 </div>
 
-                {form.show_member_badge && companyId && (
-                  <div>
-                    <label className="block text-[10px] font-medium text-gray-400 mb-1">
-                      Team Member
-                    </label>
-                    <PreparedBySelector
-                      companyId={companyId}
-                      selectedMemberId={form.prepared_by_member_id ?? null}
-                      onSelect={(id) => updateForm({ prepared_by_member_id: id })}
-                    />
+                {/* Client logo card */}
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Image size={14} className="text-gray-400" />
+                      <span className="text-xs font-medium text-gray-700">Show Client Logo</span>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!!form.show_client_logo}
+                      onClick={() => updateForm({ show_client_logo: !form.show_client_logo })}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
+                        form.show_client_logo ? 'bg-[#017C87]' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
+                          form.show_client_logo ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
                   </div>
-                )}
-
-                {form.show_member_badge && !companyId && (
-                  <p className="text-[10px] text-gray-400">
-                    Company context required to select a team member.
+                  <p className="text-[10px] text-gray-400 leading-relaxed">
+                    Displays the client logo. Appears top-right on portrait pages, side column on landscape pages.
                   </p>
-                )}
-              </div>
-
-              {/* Client logo toggle */}
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Image size={14} className="text-gray-400" />
-                    <span className="text-xs font-medium text-gray-700">Show Client Logo</span>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={!!form.show_client_logo}
-                    onClick={() => updateForm({ show_client_logo: !form.show_client_logo })}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
-                      form.show_client_logo ? 'bg-[#017C87]' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
-                        form.show_client_logo ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
                 </div>
-                <p className="text-[10px] text-gray-400 leading-relaxed">
-                  Displays the client logo. Appears top-right on portrait pages, side column on landscape pages.
-                </p>
+
               </div>
 
               {/* Rich text editor */}

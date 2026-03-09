@@ -210,7 +210,7 @@ function DashboardContent({ companyId, isSuperAdmin }: { companyId: string; isSu
         {/* Section entry cards */}
         <div className={`grid grid-cols-1 ${isSuperAdmin ? 'lg:grid-cols-2' : ''} gap-4 mb-8`}>
           <SectionCard
-            href="/"
+            href="/proposals"
             icon={FileText}
             title="Proposals"
             description="Manage proposals, documents & templates"

@@ -6,6 +6,7 @@ import {
   Bell, Eye, CheckCircle2, MessageSquare, CheckCheck,
   Loader2, Settings, Webhook, Trash2, Copy, Check,
   EyeOff, RefreshCw, Palette, AlertCircle, Send,
+  XCircle, PenLine,
   type LucideIcon,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -40,6 +41,18 @@ const NOTIFICATION_OPTIONS = [
     label: 'Comment Resolved',
     description: 'When a comment is marked as resolved',
     icon: CheckCheck,
+  },
+  {
+    key: 'notify_proposal_accepted' as const,
+    label: 'Proposal Declined',
+    description: 'When a client declines a proposal',
+    icon: XCircle,
+  },
+  {
+    key: 'notify_proposal_accepted' as const,
+    label: 'Changes Requested',
+    description: 'When a client requests revisions on a proposal',
+    icon: PenLine,
   },
 ];
 
@@ -80,6 +93,18 @@ const WEBHOOK_EVENTS = [
     label: 'Proposal Accepted',
     description: 'Fires when a client accepts a proposal',
     icon: CheckCircle2,
+  },
+  {
+    key: 'proposal_declined' as const,
+    label: 'Proposal Declined',
+    description: 'Fires when a client declines a proposal',
+    icon: XCircle,
+  },
+  {
+    key: 'proposal_revision_requested' as const,
+    label: 'Changes Requested',
+    description: 'Fires when a client requests revisions on a proposal',
+    icon: PenLine,
   },
   {
     key: 'comment_added' as const,

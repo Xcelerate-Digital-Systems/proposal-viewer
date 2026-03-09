@@ -60,10 +60,10 @@ const ALL_SECTIONS: SectionDef[] = [
     key: 'proposals',
     label: 'Proposals',
     icon: FileText,
-    defaultHref: '/',
-    matchPaths: ['/', '/proposals', '/documents', '/templates', '/template-preview'],
+    defaultHref: '/proposals',
+    matchPaths: ['/proposals', '/documents', '/templates', '/template-preview'],
     items: [
-      { href: '/', label: 'Proposals', icon: FileText },
+      { href: '/proposals', label: 'Proposals', icon: FileText },
       { href: '/documents', label: 'Documents', icon: Files },
       { href: '/templates', label: 'Templates', icon: LayoutTemplate },
     ],
@@ -296,7 +296,7 @@ export default function AdminSidebar({
     (accountType !== 'agency' && activeSection.key === 'reviews');
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
+    if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   };
 
