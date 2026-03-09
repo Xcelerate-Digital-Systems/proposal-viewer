@@ -106,25 +106,17 @@ export default function CoverPage({
     if (!needsName && !needsAvatar) return;
 
     const resolve = async () => {
-      const { data } = await supabase
-        .from('team_members')
-        .select('name, avatar_path')
-        .eq('id', memberId)
-        .single();
-
-      if (!data) return;
+      // Use API route to bypass RLS — team_members is not readable by anon viewers
+      const res = await fetch(`/api/team-members?id=${memberId}`);
+      if (!res.ok) return;
+      const data = await res.json();
 
       if (needsName && data.name) {
         setResolvedName(data.name);
       }
 
-      if (needsAvatar && data.avatar_path) {
-        const { data: urlData } = await supabase.storage
-          .from('proposals')
-          .createSignedUrl(data.avatar_path, 3600);
-        if (urlData?.signedUrl) {
-          setAvatarUrl(urlData.signedUrl);
-        }
+      if (needsAvatar && data.avatarUrl) {
+        setAvatarUrl(data.avatarUrl);
       }
     };
     resolve();
