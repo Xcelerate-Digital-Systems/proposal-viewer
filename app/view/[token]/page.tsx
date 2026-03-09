@@ -20,6 +20,8 @@ import PageLinkButton from '@/components/viewer/PageLinkButton';
 import ViewerBackground from '@/components/viewer/ViewerBackground';
 import PageNumberBadge from '@/components/viewer/PageNumberBadge';
 import { ProposalPricing, ProposalPackages, supabase } from '@/lib/supabase';
+import FeedbackModal from '@/components/viewer/FeedbackModal';
+
 
 /* ─── Proposal Viewer Page ────────────────────────────────────────── */
 
@@ -37,6 +39,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     brandingLoaded,
     comments,
     accepted,
+    declined,
+    revisionRequested,
     pricing,
     packages,
     textPages,
@@ -54,6 +58,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     pageUrls,
     getPageName,
     acceptProposal,
+    declineProposal,
+    requestRevision,
     submitComment,
     replyToComment,
     resolveComment,
@@ -63,6 +69,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   const [showCover, setShowCover] = useState(true);
   const [clientLogoUrl, setClientLogoUrl] = useState<string | undefined>(undefined);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showDeclineModal,  setShowDeclineModal]  = useState(false);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
@@ -215,6 +223,37 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           postAcceptMessage={proposal.post_accept_message ?? null}
         />
       )}
+      {showDeclineModal && proposal && (
+        <FeedbackModal
+          mode="decline"
+          title={proposal.title}
+          onSubmit={async (name, reason) => {
+            await declineProposal(name, reason);
+            setShowDeclineModal(false);
+          }}
+          onClose={() => setShowDeclineModal(false)}
+          accentColor={accent}
+          bgColor={bgSecondary}
+          textColor={sidebarText}
+          acceptTextColor={branding.accept_text_color || '#ffffff'}
+        />
+      )}
+
+      {showRevisionModal && proposal && (
+        <FeedbackModal
+          mode="revision"
+          title={proposal.title}
+          onSubmit={async (name, notes) => {
+            await requestRevision(name, notes);
+            setShowRevisionModal(false);
+          }}
+          onClose={() => setShowRevisionModal(false)}
+          accentColor={accent}
+          bgColor={bgSecondary}
+          textColor={sidebarText}
+          acceptTextColor={branding.accept_text_color || '#ffffff'}
+        />
+      )}
 
       {/* Mobile header */}
       <div
@@ -266,7 +305,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
         mobileOpen={mobileSidebar}
         onMobileClose={() => setMobileSidebar(false)}
         accepted={accepted}
+        declined={declined}
+        revisionRequested={revisionRequested}
         onAcceptClick={() => setShowAcceptModal(true)}
+        onDeclineClick={() => setShowDeclineModal(true)}
+        onRevisionClick={() => setShowRevisionModal(true)}
         showComments={showComments}
         onToggleComments={() => setShowComments((v) => !v)}
         commentCount={unresolvedCommentCount}

@@ -3,10 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Copy, Check, Trash2, ExternalLink, FileText, Clock, Eye,
-  CheckCircle2, X, FolderOpen,
-} from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, FileText, Clock, Eye, CheckCircle2, X, FolderOpen, PenLine } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -23,7 +20,7 @@ interface ProposalListCardProps {
   customDomain?: string | null;
 }
 
-type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined';
+type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -33,6 +30,7 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
   { value: 'draft',    label: 'Draft',    bg: 'bg-gray-100',     text: 'text-gray-500',    border: 'border-gray-200',    icon: <FileText size={12} /> },
   { value: 'sent',     label: 'Sent',     bg: 'bg-blue-50',      text: 'text-blue-600',    border: 'border-blue-200',    icon: <Clock size={12} /> },
   { value: 'viewed',   label: 'Viewed',   bg: 'bg-amber-50',     text: 'text-amber-600',   border: 'border-amber-200',   icon: <Eye size={12} /> },
+  { value:  'revision_requested', label:  'Changes Requested',   bg:     'bg-amber-50',     text:   'text-amber-600',  border: 'border-amber-200',  icon:   <PenLine size={13} />},
   { value: 'accepted', label: 'Accepted', bg: 'bg-emerald-50',   text: 'text-emerald-600', border: 'border-emerald-200', icon: <CheckCircle2 size={12} /> },
   { value: 'declined', label: 'Declined', bg: 'bg-red-50',       text: 'text-red-500',     border: 'border-red-200',     icon: <X size={12} /> },
 ];

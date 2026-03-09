@@ -2,68 +2,60 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle2, MessageSquare, Building2, X } from 'lucide-react';
+import { CheckCircle2, MessageSquare, XCircle, PenLine } from 'lucide-react';
 import { PageNameEntry } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 import { fontFamily } from '@/lib/google-fonts';
 
 interface SidebarProps {
-  numPages: number;
-  currentPage: number;
-  pageEntries: PageNameEntry[];
-  getPageName: (page: number) => string;
-  onPageSelect: (page: number) => void;
-  branding: CompanyBranding;
-  mobileOpen?: boolean;
-  onMobileClose?: () => void;
+  numPages:          number;
+  currentPage:       number;
+  pageEntries:       PageNameEntry[];
+  getPageName:       (page: number) => string;
+  onPageSelect:      (page: number) => void;
+  branding:          CompanyBranding;
+  mobileOpen?:       boolean;
+  onMobileClose?:    () => void;
   // Optional proposal-specific props — when omitted, bottom actions are hidden
-  accepted?: boolean;
-  onAcceptClick?: () => void;
-  showComments?: boolean;
-  onToggleComments?: () => void;
-  commentCount?: number;
-  acceptButtonText?: string;
+  accepted?:              boolean;
+  declined?:              boolean;
+  revisionRequested?:     boolean;
+  onAcceptClick?:         () => void;
+  onDeclineClick?:        () => void;
+  onRevisionClick?:       () => void;
+  showComments?:          boolean;
+  onToggleComments?:      () => void;
+  commentCount?:          number;
+  acceptButtonText?:      string;
 }
 
 interface NavItem {
-  pageNum: number;
-  name: string;
-  isGroup: boolean; // true = section header only, no navigable page
+  pageNum:  number;
+  name:     string;
+  isGroup:  boolean;
   children: { pageNum: number; name: string }[];
 }
 
-/**
- * Build a navigation tree from the unified page entries.
- *
- * In the v2 architecture every page — PDF, text, pricing, packages, toc, section —
- * is a row in the v2 table. pageEntries maps them 1-for-1, so entry[i] corresponds
- * to virtual page (i+1). We assign pageNum = i+1 directly so that the page numbers
- * passed to onPageSelect match the virtual-page indices used by the viewer.
- *
- * Section entries become isGroup=true headers; their children (indent > 0 entries
- * that follow them) are nested underneath.
- */
-function buildNavTree(entries: PageNameEntry[]): NavItem[] {
+function buildNavTree(entries: PageNameEntry[], numPages: number): NavItem[] {
   const tree: NavItem[] = [];
+  let virtualPage = 0;
 
   for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i];
-    const pageNum = i + 1; // 1-indexed virtual page position
+    const entry   = entries[i];
     const isGroup = entry.type === 'group';
 
+    if (!isGroup) {
+      virtualPage++;
+      if (virtualPage > numPages) break;
+    }
+
     if (entry.indent > 0 && tree.length > 0) {
-      // Nested child — attach to the last top-level parent/group
       if (!isGroup) {
-        tree[tree.length - 1].children.push({ pageNum, name: entry.name });
+        tree[tree.length - 1].children.push({ pageNum: virtualPage, name: entry.name });
       }
     } else {
-      // Top-level: groups use a negative pageNum as a stable key (not navigable)
-      tree.push({
-        pageNum: isGroup ? -(i + 1) : pageNum,
-        name: entry.name,
-        isGroup,
-        children: [],
-      });
+      const pageNum = isGroup ? -(i + 1) : virtualPage;
+      tree.push({ pageNum, name: entry.name, isGroup, children: [] });
     }
   }
 
@@ -80,26 +72,33 @@ export default function Sidebar({
   mobileOpen = false,
   onMobileClose,
   accepted,
+  declined,
+  revisionRequested,
   onAcceptClick,
+  onDeclineClick,
+  onRevisionClick,
   showComments,
   onToggleComments,
   commentCount,
   acceptButtonText,
 }: SidebarProps) {
-  const navTree = buildNavTree(pageEntries);
+  const navTree       = buildNavTree(pageEntries, numPages);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
 
-  const accent = branding.accent_color || '#ff6700';
-  const bgSecondary = branding.bg_secondary || '#141414';
-  const border = deriveBorderColor(bgSecondary);
-  const sidebarText = branding.sidebar_text_color || '#ffffff';
-  const acceptText = branding.accept_text_color || '#ffffff';
+  const accent      = branding.accent_color        || '#ff6700';
+  const bgSecondary = branding.bg_secondary        || '#141414';
+  const border      = deriveBorderColor(bgSecondary);
+  const sidebarText = branding.sidebar_text_color  || '#ffffff';
+  const acceptText  = branding.accept_text_color   || '#ffffff';
+  const label       = acceptButtonText             || 'Approve & Continue';
 
-  const label = acceptButtonText || 'Approve & Continue';
-
+  // Show bottom actions only when the accept handler is wired up (proposals only)
   const showActions = onAcceptClick !== undefined && onToggleComments !== undefined;
 
-  // Auto-expand the group containing the current page, collapse when leaving
+  // Terminal state: prospect has done something — don't show action buttons
+  const terminalState = accepted || declined || revisionRequested;
+
+  // Auto-expand the group containing the current page
   useEffect(() => {
     for (const item of navTree) {
       if (item.children.length > 0) {
@@ -123,9 +122,7 @@ export default function Sidebar({
     if (item.isGroup) {
       const willExpand = expandedGroup !== item.pageNum;
       setExpandedGroup(willExpand ? item.pageNum : null);
-      if (willExpand && item.children.length > 0) {
-        onPageSelect(item.children[0].pageNum);
-      }
+      if (willExpand && item.children.length > 0) onPageSelect(item.children[0].pageNum);
       onMobileClose?.();
     } else {
       onPageSelect(item.pageNum);
@@ -138,87 +135,66 @@ export default function Sidebar({
     onMobileClose?.();
   };
 
-  const isChildActive = (item: NavItem) =>
-    item.children.some((c) => c.pageNum === currentPage);
+  const isChildActive = (item: NavItem) => item.children.some((c) => c.pageNum === currentPage);
 
   const sidebarContent = (
     <>
-      {/* Company logo / name */}
+      {/* Logo / company name */}
       <div className="px-5 py-4 shrink-0 border-b flex items-center justify-between" style={{ borderColor: border }}>
         <div className="min-w-0">
           {branding.logo_url ? (
             <img src={branding.logo_url} alt={branding.name} className="h-6 max-w-[180px] object-contain" />
           ) : branding.name ? (
-            <div className="flex items-center gap-2">
-              <Building2 size={16} className="text-[#555]" />
-              <span className="text-sm font-medium truncate" style={{ color: sidebarText }}>{branding.name}</span>
-            </div>
-          ) : (
-            <img src="/logo-white.svg" alt="Logo" className="h-6" />
-          )}
+            <span
+              className="text-sm font-semibold truncate"
+              style={{ color: sidebarText, fontFamily: fontFamily(branding.font_sidebar) }}
+            >
+              {branding.name}
+            </span>
+          ) : null}
         </div>
-        {onMobileClose && (
-          <button
-            onClick={onMobileClose}
-            className="lg:hidden p-1 text-[#666] hover:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
-        )}
       </div>
 
-      {/* Navigation */}
-      <div
-        className="flex-1 overflow-y-auto tab-sidebar pt-2"
-        style={{
-          fontFamily: fontFamily(branding.font_sidebar),
-          fontWeight: branding.font_sidebar_weight ? Number(branding.font_sidebar_weight) : undefined,
-        }}
-      >
+      {/* Nav tree */}
+      <div className="flex-1 overflow-y-auto py-2 space-y-0.5 px-2">
         {navTree.map((item) => {
-          const hasChildren = item.children.length > 0;
-          const isExpanded = expandedGroup === item.pageNum;
-          const isParentActive = !item.isGroup && currentPage === item.pageNum;
-          const childActive = isChildActive(item);
-          const groupActive = isParentActive || childActive;
+          const hasChildren   = item.children.length > 0;
+          const isExpanded    = expandedGroup === item.pageNum;
+          const isParentActive = item.pageNum === currentPage;
+          const childActive   = isChildActive(item);
+          const groupActive   = isParentActive || childActive;
 
           return (
-            <div key={`${item.pageNum}-${item.isGroup ? 'g' : 'p'}`}>
+            <div key={item.pageNum}>
               <button
                 onClick={() => handleParentClick(item)}
-                className="w-full text-left flex items-center justify-between transition-colors truncate relative"
-                style={{ padding: '10px 20px' }}
+                disabled={item.isGroup && !hasChildren}
+                className="w-full text-left flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors"
+                style={{
+                  backgroundColor: groupActive && !item.isGroup ? `${accent}18` : 'transparent',
+                  color: groupActive
+                    ? sidebarText
+                    : item.isGroup
+                    ? `${sidebarText}55`
+                    : `${sidebarText}99`,
+                  fontFamily: fontFamily(branding.font_sidebar),
+                  fontWeight: isParentActive
+                    ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
+                    : childActive && !isExpanded
+                    ? Math.min(Number(branding.font_sidebar_weight || 400) + 100, 900)
+                    : Number(branding.font_sidebar_weight || 400),
+                  fontSize: item.isGroup ? '10px' : undefined,
+                  textTransform: item.isGroup ? 'uppercase' : undefined,
+                  letterSpacing: item.isGroup ? '0.08em' : undefined,
+                }}
               >
-                <span
-                  className="truncate text-sm"
-                  style={{
-                    color: isParentActive ? sidebarText : `${sidebarText}99`,
-                    fontWeight: isParentActive
-                      ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
-                      : childActive && !isExpanded
-                      ? Math.min(Number(branding.font_sidebar_weight || 400) + 100, 900)
-                      : Number(branding.font_sidebar_weight || 400),
-                  }}
-                >
-                  {item.name}
-                </span>
-
-                {hasChildren ? (
-                  <span
-                    className="shrink-0 ml-2 w-1 h-1 rounded-full transition-opacity"
-                    style={{
-                      backgroundColor: groupActive ? accent : '#555',
-                      opacity: isExpanded ? 1 : 0.7,
-                    }}
-                  />
-                ) : null}
+                <span className="truncate">{item.name}</span>
 
                 {hasChildren && (
                   <span
-                    className="absolute bottom-0 left-5 right-5 h-px transition-opacity"
+                    className="shrink-0 w-1.5 h-1.5 rounded-full ml-2 transition-opacity"
                     style={{
-                      backgroundColor: groupActive ? accent : '#333',
-                      opacity: isExpanded ? 0.4 : 0.15,
+                      backgroundColor: groupActive ? accent : `${sidebarText}40`,
                     }}
                   />
                 )}
@@ -233,6 +209,7 @@ export default function Sidebar({
                       className="w-full text-left pl-4 pr-3 py-2 text-sm transition-colors truncate"
                       style={{
                         color: currentPage === child.pageNum ? sidebarText : `${sidebarText}99`,
+                        fontFamily: fontFamily(branding.font_sidebar),
                         fontWeight: currentPage === child.pageNum
                           ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
                           : Number(branding.font_sidebar_weight || 400),
@@ -248,40 +225,83 @@ export default function Sidebar({
         })}
       </div>
 
-      {/* Bottom actions — only shown for proposals with accept/comments */}
+      {/* Bottom actions — proposals only */}
       {showActions && (
         <div className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
-          {accepted ? (
+          {/* ── Terminal state badges ── */}
+          {accepted && (
             <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/30">
               <CheckCircle2 size={15} />
               Approved
             </div>
-          ) : (
-            <button
-              onClick={onAcceptClick}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: accent, color: acceptText }}
-            >
-              <CheckCircle2 size={15} />
-              {label}
-            </button>
           )}
+
+          {declined && (
+            <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-red-900/20 text-red-400 border border-red-800/30">
+              <XCircle size={15} />
+              Declined
+            </div>
+          )}
+
+          {revisionRequested && (
+            <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-amber-900/20 text-amber-400 border border-amber-800/30">
+              <PenLine size={15} />
+              Changes Requested
+            </div>
+          )}
+
+          {/* ── Action buttons (hidden after any terminal action) ── */}
+          {!terminalState && (
+            <>
+              {/* Primary: Approve */}
+              <button
+                onClick={onAcceptClick}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ backgroundColor: accent, color: acceptText }}
+              >
+                <CheckCircle2 size={15} />
+                {label}
+              </button>
+
+              {/* Secondary: Request Changes + Decline */}
+              <div className="space-y-2">
+                <button
+                  onClick={onRevisionClick}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border hover:bg-amber-900/10"
+                  style={{ borderColor: '#f59e0b60', color: '#f59e0b' }}
+                >
+                  <PenLine size={13} />
+                  Request Changes
+                </button>
+                <button
+                  onClick={onDeclineClick}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border hover:bg-red-900/10"
+                  style={{ borderColor: '#ef444460', color: '#ef4444' }}
+                >
+                  <XCircle size={13} />
+                  Decline
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Comments — always visible */}
           <button
             onClick={onToggleComments}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border"
             style={showComments
               ? { backgroundColor: accent, borderColor: accent, color: acceptText }
-              : { backgroundColor: 'transparent', borderColor: accent, color: accent }
+              : { backgroundColor: 'transparent', borderColor: `${sidebarText}40`, color: sidebarText }
             }
           >
             <MessageSquare size={15} />
-            Comments
+            Comment
             {(commentCount ?? 0) > 0 && (
               <span
                 className="text-xs w-5 h-5 rounded-full flex items-center justify-center"
                 style={showComments
                   ? { backgroundColor: `${acceptText}30`, color: acceptText }
-                  : { backgroundColor: `${accent}25`, color: accent }
+                  : { backgroundColor: `${sidebarText}20`, color: sidebarText }
                 }
               >
                 {commentCount}
@@ -295,7 +315,7 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Desktop sidebar — always visible */}
+      {/* Desktop sidebar */}
       <div
         className="hidden lg:flex w-64 flex-col shrink-0 border-r"
         style={{ backgroundColor: bgSecondary, borderColor: border }}
@@ -303,7 +323,7 @@ export default function Sidebar({
         {sidebarContent}
       </div>
 
-      {/* Mobile sidebar — slide-over drawer */}
+      {/* Mobile slide-over */}
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/60" onClick={onMobileClose} />

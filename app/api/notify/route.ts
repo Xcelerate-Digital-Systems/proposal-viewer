@@ -5,13 +5,23 @@ import { sendNotifications } from '@/lib/notifications';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { event_type, share_token, comment_id, comment_author, comment_content, resolved_by, author_type } = body;
+    const {
+      event_type, share_token, comment_id, comment_author, comment_content,
+      resolved_by, author_type, feedback_text, feedback_by,
+    } = body;
 
     if (!event_type || !share_token) {
       return NextResponse.json({ error: 'Missing event_type or share_token' }, { status: 400 });
     }
 
-    const validEvents = ['proposal_viewed', 'proposal_accepted', 'comment_added', 'comment_resolved'];
+    const validEvents = [
+      'proposal_viewed',
+      'proposal_accepted',
+      'proposal_declined',
+      'proposal_revision_requested',
+      'comment_added',
+      'comment_resolved',
+    ];
     if (!validEvents.includes(event_type)) {
       return NextResponse.json({ error: 'Invalid event_type' }, { status: 400 });
     }
@@ -24,6 +34,8 @@ export async function POST(req: NextRequest) {
       comment_content,
       resolved_by,
       author_type: author_type || 'client',
+      feedback_text,
+      feedback_by,
     });
 
     return NextResponse.json(result);

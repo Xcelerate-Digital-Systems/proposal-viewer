@@ -65,29 +65,23 @@ export default function CoverPage({
     }
   }, [proposal.cover_image_path, resolvedBgUrl]);
 
-  // Fetch signed URL for client logo (skip if pre-resolved)
+  // Fetch client logo via member-badge API → base64 data URL (avoids ERR_BLOCKED_BY_ORB)
   useEffect(() => {
     if (resolvedClientLogoUrl !== undefined) return;
     if (proposal.cover_client_logo_path && proposal.cover_show_client_logo) {
-      supabase.storage
-        .from('proposals')
-        .createSignedUrl(proposal.cover_client_logo_path, 3600)
-        .then(({ data }) => {
-          if (data?.signedUrl) setClientLogoUrl(data.signedUrl);
-        });
+      fetch(`/api/member-badge?path=${encodeURIComponent(proposal.cover_client_logo_path)}`)
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => { if (data?.avatar_url) setClientLogoUrl(data.avatar_url); });
     }
   }, [proposal.cover_client_logo_path, proposal.cover_show_client_logo, resolvedClientLogoUrl]);
 
-  // Fetch signed URL for avatar (skip if pre-resolved)
+  // Fetch avatar via member-badge API → base64 data URL (avoids ERR_BLOCKED_BY_ORB)
   useEffect(() => {
     if (resolvedAvatarUrl !== undefined) return;
     if (proposal.cover_avatar_path && proposal.cover_show_avatar) {
-      supabase.storage
-        .from('proposals')
-        .createSignedUrl(proposal.cover_avatar_path, 3600)
-        .then(({ data }) => {
-          if (data?.signedUrl) setAvatarUrl(data.signedUrl);
-        });
+      fetch(`/api/member-badge?path=${encodeURIComponent(proposal.cover_avatar_path)}`)
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => { if (data?.avatar_url) setAvatarUrl(data.avatar_url); });
     }
   }, [proposal.cover_avatar_path, proposal.cover_show_avatar, resolvedAvatarUrl]);
 
@@ -106,18 +100,12 @@ export default function CoverPage({
     if (!needsName && !needsAvatar) return;
 
     const resolve = async () => {
-      // Use API route to bypass RLS — team_members is not readable by anon viewers
-      const res = await fetch(`/api/team-members?id=${memberId}`);
+      const res = await fetch(`/api/member-badge?member_id=${memberId}`);
       if (!res.ok) return;
       const data = await res.json();
 
-      if (needsName && data.name) {
-        setResolvedName(data.name);
-      }
-
-      if (needsAvatar && data.avatarUrl) {
-        setAvatarUrl(data.avatarUrl);
-      }
+      if (needsName && data.name) setResolvedName(data.name);
+      if (needsAvatar && data.avatar_url) setAvatarUrl(data.avatar_url);
     };
     resolve();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -241,7 +229,7 @@ export default function CoverPage({
             <img
               src={branding.logo_url}
               alt={branding.name}
-              className="h-7 sm:h-8 md:h-10 max-w-[180px] object-contain"
+              className="h-7 sm:h-8 md:h-10 max-w-[180px] object-contain object-left"
             />
           ) : branding.name ? (
             <div className="flex items-center gap-2">
@@ -264,7 +252,7 @@ export default function CoverPage({
           <img
             src={clientLogoUrl}
             alt="Client"
-            className="h-8 sm:h-9 md:h-10 max-w-[180px] object-contain mb-5 opacity-90"
+            className="h-8 sm:h-9 md:h-10 max-w-[180px] object-contain object-left mb-5 opacity-90"
           />
         )}
 

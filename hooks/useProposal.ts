@@ -130,6 +130,8 @@ export function useProposal(token: string) {
   const [notFound, setNotFound] = useState(false);
   const [comments, setComments] = useState<ProposalComment[]>([]);
   const [accepted, setAccepted] = useState(false);
+  const [declined, setDeclined] = useState(false);
+  const [revisionRequested, setRevisionRequested] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [isTeamPreview, setIsTeamPreview] = useState(false);
@@ -149,6 +151,8 @@ export function useProposal(token: string) {
 
     setProposal(data);
     if (data.status === 'accepted') setAccepted(true);
+    if (data.status === 'declined') setDeclined(true);
+    if (data.status === 'revision_requested') setRevisionRequested(true);
 
     // Fetch company branding
     try {
@@ -369,6 +373,47 @@ export function useProposal(token: string) {
     notify({ event_type: 'proposal_accepted', share_token: token });
   };
 
+
+const declineProposal = async (name: string, reason: string) => {
+    if (!proposal) return;
+    await supabase
+      .from('proposals')
+      .update({
+        status:           'declined',
+        declined_at:      new Date().toISOString(),
+        declined_by_name: name,
+        decline_reason:   reason,
+      })
+      .eq('id', proposal.id);
+    setDeclined(true);
+    notify({
+      event_type:    'proposal_declined',
+      share_token:   token,
+      feedback_text: reason,
+      feedback_by:   name,
+    });
+  };
+
+  const requestRevision = async (name: string, notes: string) => {
+    if (!proposal) return;
+    await supabase
+      .from('proposals')
+      .update({
+        status:                       'revision_requested',
+        revision_requested_at:        new Date().toISOString(),
+        revision_requested_by_name:   name,
+        revision_notes:               notes,
+      })
+      .eq('id', proposal.id);
+    setRevisionRequested(true);
+    notify({
+      event_type:    'proposal_revision_requested',
+      share_token:   token,
+      feedback_text: notes,
+      feedback_by:   name,
+    });
+  };
+
   const submitComment = async (authorName: string, content: string, pageNumber: number) => {
     if (!proposal) return;
     const authorType = isTeamPreview ? 'team' : 'client';
@@ -436,7 +481,7 @@ export function useProposal(token: string) {
   return {
     proposal,
     creatorName: proposal?.created_by_name || null,
-    pdfUrl: null, // v2: per-page URLs only
+    pdfUrl: null,
     pageUrls,
     numPages,
     pdfPageCount,
@@ -447,6 +492,8 @@ export function useProposal(token: string) {
     pageEntries,
     comments,
     accepted,
+    declined,
+    revisionRequested,
     branding,
     brandingLoaded,
     pricing,
@@ -465,6 +512,8 @@ export function useProposal(token: string) {
     onDocumentLoadSuccess,
     getPageName,
     acceptProposal,
+    declineProposal,
+    requestRevision,
     submitComment,
     replyToComment,
     resolveComment,

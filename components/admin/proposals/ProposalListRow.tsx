@@ -3,10 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Copy, Check, Trash2, ExternalLink, FileText, Clock, Eye,
-  CheckCircle2, X,
-} from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, FileText, Clock, Eye, CheckCircle2, X, PenLine } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -30,6 +27,7 @@ const statusConfig: Record<string, { icon: React.ReactNode; bg: string; text: st
   draft:    { icon: <FileText size={12} />,    bg: 'bg-gray-100',   text: 'text-gray-500',    label: 'Draft' },
   sent:     { icon: <Clock size={12} />,       bg: 'bg-blue-50',    text: 'text-blue-600',    label: 'Sent' },
   viewed:   { icon: <Eye size={12} />,         bg: 'bg-amber-50',   text: 'text-amber-600',   label: 'Viewed' },
+  revision_requested: { icon:  <PenLine size={12} />, bg:    'bg-amber-50', text:  'text-amber-600', label: 'Changes Requested'},
   accepted: { icon: <CheckCircle2 size={12} />,bg: 'bg-emerald-50', text: 'text-emerald-600', label: 'Accepted' },
   declined: { icon: <X size={12} />,           bg: 'bg-red-50',     text: 'text-red-500',     label: 'Declined' },
 };

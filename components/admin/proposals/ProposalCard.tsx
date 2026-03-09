@@ -2,10 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Link2, Eye, CheckCircle2, Clock, FileText, Copy, Check,
-  Trash2, X, Pencil, Image, DollarSign, ExternalLink, Settings,
-} from 'lucide-react';
+import { Link2, Eye, CheckCircle2, Clock, FileText, Copy, Check, Trash2, X, Pencil, Image, DollarSign, ExternalLink, Settings, PenLine } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -29,6 +26,7 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; label
   draft: { icon: <FileText size={14} />, color: 'bg-gray-100 text-gray-500', label: 'Draft' },
   sent: { icon: <Clock size={14} />, color: 'bg-blue-50 text-blue-600', label: 'Sent' },
   viewed: { icon: <Eye size={14} />, color: 'bg-amber-50 text-amber-600', label: 'Viewed' },
+  revision_requested: { icon:  <PenLine size={14} />, color: 'bg-amber-50 text-amber-600', label: 'Changes Requested',},
   accepted: { icon: <CheckCircle2 size={14} />, color: 'bg-emerald-50 text-emerald-600', label: 'Accepted' },
   declined: { icon: <X size={14} />, color: 'bg-red-50 text-red-500', label: 'Declined' },
 };

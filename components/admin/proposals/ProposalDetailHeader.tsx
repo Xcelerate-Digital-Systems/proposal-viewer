@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, Link2, ExternalLink, Trash2,
-  FileText, Clock, Eye, CheckCircle2, X,
-} from 'lucide-react';
+  FileText, Clock, Eye, CheckCircle2, X, PenLine } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -19,7 +18,7 @@ import ProposalTabs from './ProposalTabs';
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined';
+type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
 
 interface ProposalDetailHeaderProps {
   proposalId: string;
@@ -56,6 +55,15 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
     border: 'border-amber-200',
     icon: <Eye size={13} />,
   },
+  {
+    value:  'revision_requested',
+    label:  'Changes Requested',
+    bg:     'bg-amber-50',
+    text:   'text-amber-600',
+    border: 'border-amber-200',
+    icon:   <PenLine size={13} />,   // size={12} in ListCard
+  },
+
   {
     value: 'accepted',
     label: 'Accepted',
