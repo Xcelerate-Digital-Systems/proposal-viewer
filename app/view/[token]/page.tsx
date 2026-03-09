@@ -318,7 +318,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
                   <TextPage
                     textPage={currentTextPage as any}
                     branding={branding}
+                    clientName={proposal?.client_name ?? undefined}
                     companyName={branding.name}
+                    userName={proposal?.created_by_name ?? undefined}
                     proposalTitle={proposal?.title}
                     clientLogoUrl={clientLogoUrl ?? undefined}
                     orientation={pageOrientation}
