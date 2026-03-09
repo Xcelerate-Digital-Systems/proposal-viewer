@@ -122,7 +122,7 @@ export function useTemplatePreview(templateId: string) {
 
       // 3. Fetch all pages from v2 table, sign PDF page URLs client-side
       try {
-        const pagesRes = await fetch(`/api/templates/pages?template_id=${templateId}`);
+        const pagesRes = await fetch(`/api/templates/pages?template_id=${templateId}`, { cache: 'no-store' });
         if (pagesRes.ok) {
           const rawPages: Array<{
             id: string;

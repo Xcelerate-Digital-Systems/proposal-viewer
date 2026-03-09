@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error }, { status: 500 });
     }
 
-    return NextResponse.json(pages);
+    return NextResponse.json(pages, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (err) {
     console.error('Template pages GET error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

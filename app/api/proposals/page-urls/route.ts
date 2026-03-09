@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: result.error }, { status });
     }
 
-    return NextResponse.json({ pages: result.pages });
+    return NextResponse.json({ pages: result.pages }, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (err) {
     console.error('page-urls route error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

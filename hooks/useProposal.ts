@@ -212,7 +212,7 @@ export function useProposal(token: string) {
 
     // Fetch all pages (unified v2 — all types, signed URLs included)
     try {
-      const pageUrlRes = await fetch(`/api/proposals/page-urls?share_token=${token}`);
+      const pageUrlRes = await fetch(`/api/proposals/page-urls?share_token=${token}`, { cache: 'no-store' });
       if (pageUrlRes.ok) {
         const pageUrlData = await pageUrlRes.json();
         const pages: PageUrlEntry[] = pageUrlData.pages ?? [];

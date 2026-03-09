@@ -97,7 +97,7 @@ export function useDocument(token: string) {
 
       // 3. Fetch all pages (unified v2 — signed URLs included)
       try {
-        const pageUrlRes = await fetch(`/api/documents/page-urls?share_token=${token}`);
+        const pageUrlRes = await fetch(`/api/documents/page-urls?share_token=${token}`, { cache: 'no-store' });
         if (pageUrlRes.ok) {
           const pageUrlData = await pageUrlRes.json();
           const pages: PageUrlEntry[] = pageUrlData.pages ?? [];
