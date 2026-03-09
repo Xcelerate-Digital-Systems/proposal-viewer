@@ -266,71 +266,75 @@ useEffect(() => {
         {/* Conditionally render PDF, Pricing, Packages, TOC, or Text page */}
         {onPricingPage && pricing ? (
           <div
-            ref={mainRef}
-            className="flex-1 overflow-auto relative"
+            className="flex-1 relative"
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative h-full">
-              <PricingPage
-                pricing={pricing as unknown as ProposalPricing}
-                branding={branding}
-                clientName="[Client Name]"
-                orientation={pageOrientation}
-              />
+            <div ref={mainRef} className="absolute inset-0 overflow-auto">
+              <div className="relative min-h-full">
+                <PricingPage
+                  pricing={pricing as unknown as ProposalPricing}
+                  branding={branding}
+                  clientName="[Client Name]"
+                  orientation={pageOrientation}
+                />
+              </div>
             </div>
           </div>
         ) : onPackagesPage && currentPackages ? (
           <div
-            ref={mainRef}
-            className="flex-1 overflow-auto relative"
+            className="flex-1 relative"
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative h-full">
-              <PackagesPage
-                packages={currentPackages as unknown as ProposalPackages}
-                branding={branding}
-                clientName="[Client Name]"
-                orientation={pageOrientation}
-              />
+            <div ref={mainRef} className="absolute inset-0 overflow-auto">
+              <div className="relative min-h-full">
+                <PackagesPage
+                  packages={currentPackages as unknown as ProposalPackages}
+                  branding={branding}
+                  clientName="[Client Name]"
+                  orientation={pageOrientation}
+                />
+              </div>
             </div>
           </div>
         ) : onTocPage && tocSettings ? (
           <div
-            ref={mainRef}
-            className="flex-1 overflow-auto relative"
+            className="flex-1 relative"
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative h-full">
-              <TocPage
-                branding={branding}
-                tocSettings={tocSettings}
-                pageSequence={pageSequence}
-                pageEntries={pageEntries}
-                numPages={numPages}
-                orientation={pageOrientation}
-              />
+            <div ref={mainRef} className="absolute inset-0 overflow-auto">
+              <div className="relative min-h-full">
+                <TocPage
+                  branding={branding}
+                  tocSettings={tocSettings}
+                  pageSequence={pageSequence}
+                  pageEntries={pageEntries}
+                  numPages={numPages}
+                  orientation={pageOrientation}
+                />
+              </div>
             </div>
           </div>
         ) : onTextPage && currentTextPage ? (
           <div
-            ref={mainRef}
-            className="flex-1 overflow-auto relative"
+            className="flex-1 relative"
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative h-full">
-              <TextPage
-                textPage={currentTextPage}
-                branding={branding}
-                clientName="[Client Name]"
-                companyName={branding.name}
-                proposalTitle={template?.name}
-                orientation={pageOrientation}
-                clientLogoUrl={clientLogoUrl}
-              />
+            <div ref={mainRef} className="absolute inset-0 overflow-auto">
+              <div className="relative min-h-full">
+                <TextPage
+                  textPage={currentTextPage}
+                  branding={branding}
+                  clientName="[Client Name]"
+                  companyName={branding.name}
+                  proposalTitle={template?.name}
+                  orientation={pageOrientation}
+                  clientLogoUrl={clientLogoUrl}
+                />
+              </div>
             </div>
           </div>
         ) : (

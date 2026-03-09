@@ -124,7 +124,6 @@ export default function DocumentViewerPage({ params }: { params: { token: string
 
   const handleCompositeDownload = useCallback(async () => {
     if (!pdfUrl) throw new Error('No PDF URL available');
-    // Build text page orientation map
     const entityOrientation = doc?.page_orientation || 'auto';
     const textPageOrientations: Record<string, 'auto' | 'portrait' | 'landscape'> = Object.fromEntries(
       textPages.map(tp => [tp.id, entityOrientation])
@@ -276,38 +275,40 @@ export default function DocumentViewerPage({ params }: { params: { token: string
         {/* Conditionally render TOC, Text page, or PDF */}
         {onTocPage && tocSettings ? (
           <div
-            ref={mainRef}
-            className="flex-1 overflow-auto relative"
+            className="flex-1 relative"
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative h-full">
-              <TocPage
-                branding={branding}
-                tocSettings={tocSettings}
-                pageSequence={pageSequence}
-                pageEntries={pageEntries}
-                numPages={numPages}
-                orientation={pageOrientation}
-              />
+            <div ref={mainRef} className="absolute inset-0 overflow-auto">
+              <div className="relative min-h-full">
+                <TocPage
+                  branding={branding}
+                  tocSettings={tocSettings}
+                  pageSequence={pageSequence}
+                  pageEntries={pageEntries}
+                  numPages={numPages}
+                  orientation={pageOrientation}
+                />
+              </div>
             </div>
           </div>
         ) : onTextPage && currentTextPage ? (
           <div
-            ref={mainRef}
-            className="flex-1 overflow-auto relative"
+            className="flex-1 relative"
             style={{ backgroundColor: bgPrimary }}
           >
             <ViewerBackground branding={branding} />
-            <div className="relative">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              <TextPage
-                textPage={currentTextPage as any}
-                branding={branding}
-                companyName={branding.name}
-                proposalTitle={doc?.title}
-                orientation={pageOrientation}
-              />
+            <div ref={mainRef} className="absolute inset-0 overflow-auto">
+              <div className="relative min-h-full">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <TextPage
+                  textPage={currentTextPage as any}
+                  branding={branding}
+                  companyName={branding.name}
+                  proposalTitle={doc?.title}
+                  orientation={pageOrientation}
+                />
+              </div>
             </div>
           </div>
         ) : (

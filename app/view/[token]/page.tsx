@@ -286,72 +286,78 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           )}
 
           {onTocPage && tocSettings ? (
+            // Outer div holds the static background; inner scroll container sits on top.
+            // This prevents the background from cutting off on long / scrollable pages.
             <div
-              ref={mainRef}
-              className="flex-1 overflow-auto relative"
+              className="flex-1 relative"
               style={{ backgroundColor: bgPrimary }}
             >
               <ViewerBackground branding={branding} />
-              <div className="relative h-full">
-                <TocPage
-                  branding={branding}
-                  tocSettings={tocSettings}
-                  pageSequence={pageSequence}
-                  pageEntries={pageEntries}
-                  numPages={numPages}
-                  orientation={pageOrientation}
-                />
+              <div ref={mainRef} className="absolute inset-0 overflow-auto">
+                <div className="relative min-h-full">
+                  <TocPage
+                    branding={branding}
+                    tocSettings={tocSettings}
+                    pageSequence={pageSequence}
+                    pageEntries={pageEntries}
+                    numPages={numPages}
+                    orientation={pageOrientation}
+                  />
+                </div>
               </div>
             </div>
           ) : onTextPage && currentTextPage ? (
             <div
-              ref={mainRef}
-              className="flex-1 overflow-auto relative"
+              className="flex-1 relative"
               style={{ backgroundColor: bgPrimary }}
             >
               <ViewerBackground branding={branding} />
-              <div className="relative h-full">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <TextPage
-                  textPage={currentTextPage as any}
-                  branding={branding}
-                  companyName={branding.name}
-                  proposalTitle={proposal?.title}
-                  clientLogoUrl={clientLogoUrl ?? undefined}
-                  orientation={pageOrientation}
-                />
+              <div ref={mainRef} className="absolute inset-0 overflow-auto">
+                <div className="relative min-h-full">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <TextPage
+                    textPage={currentTextPage as any}
+                    branding={branding}
+                    companyName={branding.name}
+                    proposalTitle={proposal?.title}
+                    clientLogoUrl={clientLogoUrl ?? undefined}
+                    orientation={pageOrientation}
+                  />
+                </div>
               </div>
             </div>
           ) : onPricingPage && pricing ? (
             <div
-              ref={mainRef}
-              className="flex-1 overflow-auto relative"
+              className="flex-1 relative"
               style={{ backgroundColor: bgPrimary }}
             >
               <ViewerBackground branding={branding} />
-              <div className="relative h-full">
-                <PricingPage
-                  pricing={pricing as unknown as ProposalPricing}
-                  branding={branding}
-                  clientName={proposal?.client_name ?? undefined}
-                  orientation={pageOrientation}
-                />
+              <div ref={mainRef} className="absolute inset-0 overflow-auto">
+                <div className="relative min-h-full">
+                  <PricingPage
+                    pricing={pricing as unknown as ProposalPricing}
+                    branding={branding}
+                    clientName={proposal?.client_name ?? undefined}
+                    orientation={pageOrientation}
+                  />
+                </div>
               </div>
             </div>
           ) : onPackagesPage && currentPackages ? (
             <div
-              ref={mainRef}
-              className="flex-1 overflow-auto relative"
+              className="flex-1 relative"
               style={{ backgroundColor: bgPrimary }}
             >
               <ViewerBackground branding={branding} />
-              <div className="relative h-full">
-                <PackagesPage
-                  packages={currentPackages as unknown as ProposalPackages}
-                  branding={branding}
-                  clientName={proposal?.client_name ?? undefined}
-                  orientation={pageOrientation}
-                />
+              <div ref={mainRef} className="absolute inset-0 overflow-auto">
+                <div className="relative min-h-full">
+                  <PackagesPage
+                    packages={currentPackages as unknown as ProposalPackages}
+                    branding={branding}
+                    clientName={proposal?.client_name ?? undefined}
+                    orientation={pageOrientation}
+                  />
+                </div>
               </div>
             </div>
           ) : (
