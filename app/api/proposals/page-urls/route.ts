@@ -1,5 +1,6 @@
 // app/api/proposals/page-urls/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_noStore as noStore } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getPageUrls, PageUrlEntry } from '@/lib/page-operations';
 
@@ -10,6 +11,7 @@ const NO_CACHE = { 'Cache-Control': 'no-store, no-cache, must-revalidate' };
 type PageUrlsResult = { pages: PageUrlEntry[]; fallback: boolean; error?: string };
 
 export async function GET(req: NextRequest) {
+  noStore(); // Prevent Next.js Data Cache from caching Supabase fetch calls
   try {
     const { searchParams } = req.nextUrl;
     const shareToken = searchParams.get('share_token');
