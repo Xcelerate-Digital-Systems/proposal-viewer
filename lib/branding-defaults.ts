@@ -1,5 +1,5 @@
 // lib/branding-defaults.ts
-import type { CompanyBranding } from '@/hooks/useProposal';
+import type { CompanyBranding } from '@/lib/types/branding';
 
 /**
  * Default branding values used across admin components and viewer hooks.
