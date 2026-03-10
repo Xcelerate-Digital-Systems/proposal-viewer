@@ -43,6 +43,7 @@ export const DEFAULT_BRANDING: CompanyBranding = {
   text_page_layout: 'contained',
   bg_image_url: null,
   bg_image_overlay_opacity: 0.85,
+  bg_image_blur: 0,
   page_num_circle_color: null,
   page_num_text_color: null,
 };
