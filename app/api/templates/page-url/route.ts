@@ -1,4 +1,4 @@
-// app/api/documents/page-urls/route.ts
+// app/api/templates/page-urls/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase-server';
@@ -14,18 +14,17 @@ export async function GET(req: NextRequest) {
   noStore(); // Prevent Next.js Data Cache from caching Supabase fetch calls
   try {
     const { searchParams } = req.nextUrl;
-    const shareToken = searchParams.get('share_token');
-    const entityId   = searchParams.get('entity_id');
+    const entityId = searchParams.get('entity_id');
 
-    if (!shareToken && !entityId) {
+    if (!entityId) {
       return NextResponse.json(
-        { error: 'Provide either share_token or entity_id' },
+        { error: 'entity_id is required' },
         { status: 400, headers: NO_CACHE },
       );
     }
 
     const supabase = createServiceClient();
-    const result = await getPageUrls(supabase, 'document', { entityId, shareToken }) as PageUrlsResult;
+    const result = await getPageUrls(supabase, 'template', { entityId }) as PageUrlsResult;
 
     if (result.error && !result.fallback) {
       const status = result.error === 'Not found' ? 404 : 500;
@@ -37,7 +36,7 @@ export async function GET(req: NextRequest) {
       { headers: NO_CACHE },
     );
   } catch (err) {
-    console.error('Documents page-urls route error:', err);
+    console.error('Templates page-urls route error:', err);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: NO_CACHE },

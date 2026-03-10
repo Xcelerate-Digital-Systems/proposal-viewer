@@ -1,5 +1,6 @@
 // app/api/templates/pages/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_noStore as noStore } from 'next/cache';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
 import {
@@ -17,6 +18,7 @@ export const dynamic = 'force-dynamic';
 /* ─── GET — fetch all pages for a template ───────────────────────────────── */
 
 export async function GET(req: NextRequest) {
+  noStore(); // Prevent Next.js Data Cache from caching Supabase fetch calls
   try {
     const supabase = createServiceClient();
     const templateId = req.nextUrl.searchParams.get('template_id');

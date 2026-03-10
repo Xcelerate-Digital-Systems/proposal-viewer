@@ -120,50 +120,12 @@ export function useTemplatePreview(templateId: string) {
       } catch { /* Non-critical */ }
       setBrandingLoaded(true);
 
-      // 3. Fetch all pages from v2 table, sign PDF page URLs client-side
+      // 3. Fetch all pages — server-side signing via page-urls route (same pattern as proposals/documents)
       try {
-        const pagesRes = await fetch(`/api/templates/pages?template_id=${templateId}`, { cache: 'no-store' });
+        const pagesRes = await fetch(`/api/templates/page-urls?entity_id=${templateId}`, { cache: 'no-store' });
         if (pagesRes.ok) {
-          const rawPages: Array<{
-            id: string;
-            position: number;
-            type: string;
-            title: string;
-            indent: number;
-            link_url: string | null;
-            link_label: string | null;
-            payload: Record<string, unknown>;
-          }> = await pagesRes.json();
-
-          // Sign URLs for PDF pages in parallel
-          const signed = await Promise.all(
-            rawPages.map(async (p) => {
-              let url: string | null = null;
-              if (p.type === 'pdf' && p.payload?.file_path) {
-                const { data } = await supabase.storage
-                  .from('proposals')
-                  .createSignedUrl(p.payload.file_path as string, 3600);
-                url = data?.signedUrl ?? null;
-              }
-              return {
-                id: p.id,
-                position: p.position,
-                type: p.type as PageUrlEntry['type'],
-                url,
-                title: p.title,
-                indent: p.indent,
-                link_url: p.link_url ?? undefined,
-                link_label: p.link_label ?? undefined,
-                show_title: (p as Record<string, unknown>).show_title as boolean ?? true,
-                show_member_badge: (p as Record<string, unknown>).show_member_badge as boolean ?? false,
-                show_client_logo:  (p as Record<string, unknown>).show_client_logo  as boolean ?? false,
-                prepared_by_member_id: (p as Record<string, unknown>).prepared_by_member_id as string | null ?? null,
-                payload: p.payload,
-              };
-            }),
-          );
-
-          setPageUrls(signed);
+          const pageUrlData = await pagesRes.json();
+          setPageUrls(pageUrlData.pages ?? []);
         }
       } catch { /* Non-critical */ }
 
