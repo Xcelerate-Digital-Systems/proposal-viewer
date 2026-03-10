@@ -74,6 +74,7 @@ export function useDocument(token: string) {
             if (bgUrlData?.publicUrl) data.bg_image_url = bgUrlData.publicUrl;
             data.bg_image_overlay_opacity =
               doc.bg_image_overlay_opacity ?? data.bg_image_overlay_opacity ?? 0.85;
+            data.bg_image_blur = doc.bg_image_blur ?? 0;
           }
 
           if (doc.text_page_bg_color != null) data.text_page_bg_color = doc.text_page_bg_color;

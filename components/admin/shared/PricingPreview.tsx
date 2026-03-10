@@ -32,8 +32,7 @@ export default function PricingPreview({ pricing, branding }: PricingPreviewProp
   return (
     <div
       ref={containerRef}
-      className="flex flex-col min-h-0 sticky top-0 self-start"
-      style={{ maxHeight: 'calc(100vh - 200px)' }}
+      className="flex flex-col h-full min-h-0"
     >
       <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
         {/* Header bar */}

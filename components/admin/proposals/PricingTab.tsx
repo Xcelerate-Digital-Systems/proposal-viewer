@@ -83,8 +83,22 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /* ── Panel height measurement (matches DesignTab / PackagesTab) ─ */
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [panelHeight, setPanelHeight] = useState(520);
+
   useEffect(() => {
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    const measure = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setPanelHeight(Math.max(400, window.innerHeight - rect.top - 32));
+      }
+    };
+    measure();
+    const timer = setTimeout(measure, 100);
+    window.addEventListener('resize', measure);
+    return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
   }, []);
 
   /* ── Fetch pricing ──────────────────────────────────────────── */
@@ -287,7 +301,10 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
         </div>
       ) : form.enabled ? (
         <SplitPanelLayout
-          leftClassName={`space-y-6 ${!showPreview ? 'max-w-3xl' : ''}`}
+          containerRef={containerRef}
+          panelHeight={panelHeight}
+          leftClassName={`overflow-y-auto space-y-6 pr-2 ${!showPreview ? 'max-w-3xl' : ''}`}
+          rightClassName="flex flex-col"
           left={
             <>
               <PricingSettings

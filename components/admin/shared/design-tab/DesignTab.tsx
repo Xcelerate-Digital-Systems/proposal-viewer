@@ -24,6 +24,7 @@ interface DesignTabProps {
   companyId: string;
   initialBgImagePath: string | null;
   initialBgImageOverlayOpacity: number | null;
+  initialBgImageBlur?: number | null;
   initialPageOrientation?: PageOrientation;
   companyBgPrimary?: string;
   onSave?: () => void;
@@ -52,6 +53,7 @@ export default function DesignTab({
   companyId,
   initialBgImagePath,
   initialBgImageOverlayOpacity,
+  initialBgImageBlur,
   initialPageOrientation = 'portrait',
   companyBgPrimary = '#0f0f0f',
   onSave,
@@ -82,6 +84,7 @@ export default function DesignTab({
   const [overlayOpacity, setOverlayOpacity] = useState<number>(
     initialBgImageOverlayOpacity ?? 0.85
   );
+  const [bgImageBlur, setBgImageBlur] = useState<number>(initialBgImageBlur ?? 0);
   const [uploading, setUploading] = useState(false);
 
   const [companyBgImageUrl, setCompanyBgImageUrl] = useState<string | null>(null);
@@ -216,6 +219,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     } else {
       payload.bg_image_path = bgImagePath;
       payload.bg_image_overlay_opacity = overlayOpacity;
+      payload.bg_image_blur = bgImageBlur || null;
     }
     payload.text_page_bg_color = tpBgColor;
     payload.text_page_text_color = tpTextColor;
@@ -233,7 +237,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     setTimeout(() => setSaveStatus('idle'), 2000);
     onSave?.();
   }, [
-    bgMode, bgImagePath, overlayOpacity, pageOrientation,
+    bgMode, bgImagePath, overlayOpacity, bgImageBlur, pageOrientation,
     tpBgColor, tpTextColor, tpHeadingColor,
     titleFontFamily, titleFontWeight, titleFontSize,
     pageNumCircleColor, pageNumTextColor,
@@ -252,7 +256,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   useEffect(() => {
     if (!initializedRef.current) { initializedRef.current = true; return; }
     scheduleSave(800);
-  }, [bgMode, bgImagePath, overlayOpacity, pageOrientation]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [bgMode, bgImagePath, overlayOpacity, bgImageBlur, pageOrientation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Autosave: text page state
   useEffect(() => {
@@ -339,6 +343,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       uploading={uploading}
       overlayOpacity={overlayOpacity}
       setOverlayOpacity={setOverlayOpacity}
+      bgImageBlur={bgImageBlur}
+      setBgImageBlur={setBgImageBlur}
       companyBgPrimary={companyBgPrimary}
       previewImageUrl={previewImageUrl}
       previewOpacity={previewOpacity}

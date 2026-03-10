@@ -9,7 +9,6 @@ import {
 import ViewerStylePreview, { ViewerStylePreviewTabs } from './ViewerStylePreview';
 import type { TabKey } from './ViewerStylePreview';
 import FontSelect from '@/components/admin/shared/FontSelect';
-import ColorRow from './ColorRow';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import {
   EntityType, PageOrientation, TextPageDefaults,
@@ -34,6 +33,8 @@ interface ViewerStyleSectionProps {
   uploading: boolean;
   overlayOpacity: number;
   setOverlayOpacity: (v: number) => void;
+  bgImageBlur: number;
+  setBgImageBlur: (v: number) => void;
   companyBgPrimary: string;
   previewImageUrl: string | null;
   previewOpacity: number;
@@ -79,6 +80,8 @@ export default function ViewerStyleSection({
   uploading,
   overlayOpacity,
   setOverlayOpacity,
+  bgImageBlur,
+  setBgImageBlur,
   companyBgPrimary,
   previewImageUrl,
   previewOpacity,
@@ -269,6 +272,21 @@ export default function ViewerStyleSection({
                     />
                   </div>
 
+                  {/* Blur intensity */}
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Blur — {bgImageBlur > 0 ? `${bgImageBlur}px` : 'Off'}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      value={bgImageBlur}
+                      onChange={(e) => setBgImageBlur(parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87]"
+                    />
+                  </div>
+
                   <button
                     onClick={onBgResetToCompany}
                     className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#017C87] transition-colors mt-1"
@@ -320,9 +338,9 @@ export default function ViewerStyleSection({
 
             {/* ── Text Page Colors ──────────────────────────────── */}
             <div className="space-y-4">
-              <ColorRow label="Background Color" value={tpBgColor} onChange={setTpBgColor} />
-              <ColorRow label="Text Color" value={tpTextColor} onChange={setTpTextColor} />
-              <ColorRow label="Heading Color" value={tpHeadingColor} onChange={setTpHeadingColor} />
+              <ColorPickerField label="Background Color" value={tpBgColor} fallback={companyDefaults.bg_color} onChange={setTpBgColor} />
+              <ColorPickerField label="Text Color" value={tpTextColor} fallback={companyDefaults.text_color} onChange={setTpTextColor} />
+              <ColorPickerField label="Heading Color" value={tpHeadingColor} fallback={companyDefaults.heading_color || companyDefaults.text_color} onChange={setTpHeadingColor} />
 
               <button
                 onClick={onTpResetToCompany}

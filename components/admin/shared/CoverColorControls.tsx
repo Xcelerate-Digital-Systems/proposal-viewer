@@ -1,7 +1,7 @@
 // components/admin/shared/CoverColorControls.tsx
 'use client';
 
-import ColorRow from '@/components/admin/company/ColorRow';
+import ColorPickerField from '@/components/ui/ColorPickerField';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -147,15 +147,17 @@ export default function CoverColorControls({
       <div>
         <label className="block text-xs text-gray-400 mb-2">Background Colors</label>
         <div className="space-y-2">
-          <ColorRow
-            label={coverBgStyle === 'gradient' ? 'Gradient start' : 'Background color'}
-            value={coverBgColor1} disabled={false}
-            onChange={(v) => onChange({ coverBgColor1: v })}
-          />
+          <ColorPickerField
+              label={coverBgStyle === 'gradient' ? 'Gradient start' : 'Background color'}
+              value={coverBgColor1}
+              fallback="#0f0f0f"
+              onChange={(v) => onChange({ coverBgColor1: v })}
+            />
           {coverBgStyle === 'gradient' && (
-            <ColorRow
+            <ColorPickerField
               label="Gradient end"
-              value={coverBgColor2} disabled={false}
+              value={coverBgColor2}
+              fallback="#141414"
               onChange={(v) => onChange({ coverBgColor2: v })}
             />
           )}
@@ -184,8 +186,8 @@ export default function CoverColorControls({
       <div className="pt-4 border-t border-gray-100">
         <label className="block text-xs text-gray-400 mb-2">Text Colors</label>
         <div className="space-y-2">
-          <ColorRow label="Title text" value={coverTextColor} disabled={false} onChange={(v) => onChange({ coverTextColor: v })} />
-          <ColorRow label="Subtitle text" value={coverSubtitleColor} disabled={false} onChange={(v) => onChange({ coverSubtitleColor: v })} />
+          <ColorPickerField label="Title text" value={coverTextColor} fallback="#ffffff" onChange={(v) => onChange({ coverTextColor: v })} />
+          <ColorPickerField label="Subtitle text" value={coverSubtitleColor} fallback="#ffffffb3" onChange={(v) => onChange({ coverSubtitleColor: v })} />
         </div>
       </div>
 
@@ -193,8 +195,8 @@ export default function CoverColorControls({
       <div className="pt-4 border-t border-gray-100">
         <label className="block text-xs text-gray-400 mb-2">Button Colors</label>
         <div className="space-y-2">
-          <ColorRow label="Button background" value={coverButtonBg} disabled={false} onChange={(v) => onChange({ coverButtonBg: v })} />
-          <ColorRow label="Button text" value={coverButtonTextColor}  disabled={false} onChange={(v) => onChange({ coverButtonTextColor: v })} />
+          <ColorPickerField label="Button background" value={coverButtonBg} fallback="#ff6700" onChange={(v) => onChange({ coverButtonBg: v })} />
+          <ColorPickerField label="Button text" value={coverButtonTextColor} fallback="#ffffff" onChange={(v) => onChange({ coverButtonTextColor: v })} />
         </div>
       </div>
     </div>

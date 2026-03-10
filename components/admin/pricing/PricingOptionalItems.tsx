@@ -4,6 +4,7 @@
 import { useCallback } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { PricingOptionalItem, generateItemId } from '@/lib/supabase';
+import CurrencyInput from '@/components/ui/CurrencyInput';
 
 interface PricingOptionalItemsProps {
   items: PricingOptionalItem[];
@@ -58,18 +59,12 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
               placeholder="Extra description"
               className="flex-1 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#017C87]/30"
             />
-            <div className="relative w-28">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
-              <input
-                type="number"
-                value={item.amount || ''}
-                onChange={(e) => updateItem(item.id, 'amount', parseFloat(e.target.value) || 0)}
-                placeholder="0.00"
-                min={0}
-                step={0.01}
-                className="w-full pl-5 pr-2 py-1.5 rounded border border-gray-200 text-sm text-right focus:outline-none focus:ring-1 focus:ring-[#017C87]/30"
-              />
-            </div>
+            <CurrencyInput
+              value={item.amount}
+              onChange={(val) => updateItem(item.id, 'amount', val)}
+              size="sm"
+              className="w-28"
+            />
             <button
               onClick={() => removeItem(item.id)}
               className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"

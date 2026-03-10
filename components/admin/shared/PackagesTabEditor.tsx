@@ -432,7 +432,7 @@ export default function PackagesTabEditor({
   }
 
   return (
-    <div className="flex flex-col h-full">
+   <div className="bg-white rounded-xl border border-gray-200 p-6">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-3">

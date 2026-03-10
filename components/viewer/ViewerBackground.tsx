@@ -23,7 +23,12 @@ export default function ViewerBackground({ branding, className = '' }: ViewerBac
       {/* Background image layer */}
       <div
         className={`absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none ${className}`}
-        style={{ backgroundImage: `url(${branding.bg_image_url})` }}
+        style={{
+          backgroundImage: `url(${branding.bg_image_url})`,
+          filter: branding.bg_image_blur ? `blur(${branding.bg_image_blur}px)` : undefined,
+          // Scale slightly to prevent blur-edge fringing
+          transform: branding.bg_image_blur ? 'scale(1.05)' : undefined,
+        }}
       />
       {/* Color overlay layer */}
       <div

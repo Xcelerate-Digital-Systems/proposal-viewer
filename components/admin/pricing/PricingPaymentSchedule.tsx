@@ -12,6 +12,7 @@ import {
   generateItemId, milestoneAmount, milestoneTotalPercent, milestoneTotalFixed,
 } from '@/lib/supabase';
 import Toggle from '@/components/ui/Toggle';
+import CurrencyInput from '@/components/ui/CurrencyInput';
 
 interface PricingPaymentScheduleProps {
   schedule: PaymentSchedule;
@@ -192,17 +193,11 @@ export default function PricingPaymentSchedule({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Amount ($)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={s.one_off.amount}
-                      onChange={(e) => updateOneOff({ amount: parseFloat(e.target.value) || 0 })}
-                      className={`w-full pl-8 pr-3 py-2 rounded-md border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 ${tealFocus}`}
-                    />
-                  </div>
+                  <CurrencyInput
+                    value={s.one_off.amount}
+                    onChange={(val) => updateOneOff({ amount: val })}
+                    size="md"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Note</label>
@@ -286,17 +281,11 @@ export default function PricingPaymentSchedule({
                           <option value="fixed">Fixed Amount</option>
                         </select>
                         <div className="relative flex-1">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-                            {payment.type === 'percentage' ? '%' : '$'}
-                          </span>
-                          <input
-                            type="number"
-                            min={0}
-                            max={payment.type === 'percentage' ? 100 : undefined}
-                            step={payment.type === 'percentage' ? 5 : 0.01}
+                          <CurrencyInput
                             value={payment.value}
-                            onChange={(e) => updateMilestonePayment(payment.id, { value: parseFloat(e.target.value) || 0 })}
-                            className={`w-full pl-7 pr-2.5 py-1.5 rounded border border-gray-200 bg-white text-gray-900 text-xs focus:outline-none focus:ring-2 ${tealFocus}`}
+                            onChange={(val) => updateMilestonePayment(payment.id, { value: val })}
+                            prefix={payment.type === 'percentage' ? '%' : '$'}
+                            size="sm"
                           />
                         </div>
                         {projectTotal > 0 && (
@@ -403,17 +392,11 @@ export default function PricingPaymentSchedule({
                 <div className="flex gap-3">
                   <div className="flex-1">
                     <label className="block text-xs font-medium text-gray-500 mb-1">Amount ($)</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        value={s.recurring.amount}
-                        onChange={(e) => updateRecurring({ amount: parseFloat(e.target.value) || 0 })}
-                        className={`w-full pl-8 pr-3 py-2 rounded-md border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 ${tealFocus}`}
-                      />
-                    </div>
+                    <CurrencyInput
+                      value={s.recurring.amount}
+                      onChange={(val) => updateRecurring({ amount: val })}
+                      size="md"
+                    />
                   </div>
                   <div className="w-44">
                     <label className="block text-xs font-medium text-gray-500 mb-1">Frequency</label>

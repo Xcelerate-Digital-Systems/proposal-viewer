@@ -35,7 +35,7 @@ export default function SplitPanelLayout({
       className={`flex ${gap}`}
       style={panelHeight ? { height: panelHeight } : undefined}
     >
-      <div className={`${right ? 'w-[65%]' : 'flex-1'} min-w-0 ${leftClassName}`}>
+      <div className={`${right ? 'w-[65%] px-2' : 'flex-1'} min-w-0 ${leftClassName}`}>
         {left}
       </div>
       {right && (

@@ -155,6 +155,7 @@ export type Proposal = {
   cover_show_prepared_by: boolean;
   bg_image_path: string | null;
   bg_image_overlay_opacity: number | null;
+  bg_image_blur: number | null;
   company_id: string;
   created_at: string;
   updated_at: string;
@@ -174,7 +175,6 @@ export type Proposal = {
   text_page_border_color: string | null;
   text_page_border_radius: string | null;
   text_page_layout: string | null;
-  
 };
 
 export type Document = {
@@ -203,6 +203,7 @@ export type Document = {
   cover_show_date: boolean;
   bg_image_path: string | null;
   bg_image_overlay_opacity: number | null;
+  bg_image_blur: number | null;
   company_id: string;
   created_at: string;
   updated_at: string;
@@ -269,6 +270,7 @@ export type ProposalTemplate = {
   section_headers: PageNameEntry[] | null;
   bg_image_path: string | null;
   bg_image_overlay_opacity: number | null;
+  bg_image_blur: number | null;
   company_id: string;
   created_at: string;
   updated_at: string;

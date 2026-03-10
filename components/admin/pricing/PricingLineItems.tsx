@@ -4,6 +4,7 @@
 import { useCallback } from 'react';
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { PricingLineItem, generateItemId, pricingSubtotal } from '@/lib/supabase';
+import CurrencyInput from '@/components/ui/CurrencyInput';
 
 interface PricingLineItemsProps {
   items: PricingLineItem[];
@@ -86,19 +87,13 @@ export default function PricingLineItems({ items, onChange }: PricingLineItemsPr
                 />
               </div>
               <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
-                  <input
-                    type="number"
-                    value={item.amount || ''}
-                    onChange={(e) => updateItem(item.id, 'amount', parseFloat(e.target.value) || 0)}
-                    onBlur={recalcPercentages}
-                    placeholder="0.00"
-                    min={0}
-                    step={0.01}
-                    className="w-full pl-5 pr-2 py-1.5 rounded border border-gray-200 text-sm text-right focus:outline-none focus:ring-1 focus:ring-[#017C87]/30"
-                  />
-                </div>
+                <CurrencyInput
+                  value={item.amount}
+                  onChange={(val) => updateItem(item.id, 'amount', val)}
+                  onBlur={recalcPercentages}
+                  size="sm"
+                  className="flex-1"
+                />
                 <span className="text-xs text-gray-400 w-12 text-right">
                   {subtotal > 0 ? `${Math.round((item.amount / subtotal) * 100)}%` : '—'}
                 </span>

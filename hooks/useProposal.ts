@@ -59,6 +59,7 @@ export type CompanyBranding = {
   text_page_layout: 'contained' | 'full';
   bg_image_url: string | null;
   bg_image_overlay_opacity: number;
+  bg_image_blur: number;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
 };
@@ -167,6 +168,7 @@ export function useProposal(token: string) {
           if (bgUrlData?.publicUrl) brandingData.bg_image_url = bgUrlData.publicUrl;
           brandingData.bg_image_overlay_opacity =
             data.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
+          brandingData.bg_image_blur = data.bg_image_blur ?? 0;
         }
 
         if (data.text_page_bg_color != null) brandingData.text_page_bg_color = data.text_page_bg_color;
