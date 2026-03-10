@@ -95,13 +95,13 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     return entry?.link_url ? { url: entry.link_url, label: entry.link_label ?? undefined } : null;
   }, [pageUrls, currentPage]);
 
+  // Fetch via API proxy → base64 data URL (avoids ERR_BLOCKED_BY_ORB on raw signed URLs)
   useEffect(() => {
-  if (!proposal?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
-  supabase.storage
-    .from('proposals')
-    .createSignedUrl(proposal.cover_client_logo_path, 3600)
-    .then(({ data }) => setClientLogoUrl(data?.signedUrl || undefined));
-}, [proposal?.cover_client_logo_path]);
+    if (!proposal?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
+    fetch(`/api/member-badge?path=${encodeURIComponent(proposal.cover_client_logo_path)}`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => { if (data?.avatar_url) setClientLogoUrl(data.avatar_url); });
+  }, [proposal?.cover_client_logo_path]);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
