@@ -8,6 +8,7 @@ import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewBoa
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useGuestIdentity } from '@/hooks/useGuestIdentity';
+import { isValidHttpUrl } from '@/lib/sanitize';
 import { usePinFeedback } from '@/hooks/usePinFeedback';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
@@ -227,7 +228,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   // ══════════════════════════════════════════════════════════════════
 
   // Determine back action: board mode → back to board, ?back= param → external back link
-  const backAction = urlBack
+  const backAction = urlBack && isValidHttpUrl(urlBack)
   ? { label: 'Back to Board', onClick: () => { window.location.href = urlBack; } }
   : isBoardMode
     ? { label: 'Back to Board', onClick: () => setShowBoardView(true) }

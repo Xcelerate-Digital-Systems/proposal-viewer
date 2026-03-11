@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase, type WebhookEndpoint } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { isValidWebhookUrl } from '@/lib/sanitize';
 
 interface WebhookEventCardProps {
   eventKey: string;
@@ -88,10 +89,8 @@ export default function WebhookEventCard({
       return;
     }
 
-    try {
-      new URL(url);
-    } catch {
-      toast.error('Please enter a valid URL');
+    if (!isValidWebhookUrl(url.trim())) {
+      toast.error('Please enter a valid public URL (http or https)');
       return;
     }
 

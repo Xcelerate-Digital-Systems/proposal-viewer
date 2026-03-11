@@ -6,6 +6,7 @@ import { ExternalLink, MessageSquare, X, Check, Loader2, ArrowRight, Calendar, C
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { inputClassName } from '@/components/ui/FormField';
+import { isValidHttpUrl } from '@/lib/sanitize';
 
 type PostAcceptAction = 'redirect' | 'message' | null;
 
@@ -67,11 +68,18 @@ export default function PostAcceptSection({
   ) => {
     setSaveStatus('saving');
     try {
+      const trimmedUrl = currentUrl.trim() || null;
+      if (currentAction === 'redirect' && trimmedUrl && !isValidHttpUrl(trimmedUrl)) {
+        setSaveStatus('idle');
+        toast.error('Redirect URL must start with http:// or https://');
+        return;
+      }
+
       const { error } = await supabase
         .from(table)
         .update({
           post_accept_action: currentAction,
-          post_accept_redirect_url: currentAction === 'redirect' ? (currentUrl.trim() || null) : null,
+          post_accept_redirect_url: currentAction === 'redirect' ? trimmedUrl : null,
           post_accept_message: currentAction === 'message' ? (currentMessage.trim() || null) : null,
         })
         .eq('id', entityId);

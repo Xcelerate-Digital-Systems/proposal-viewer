@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import crypto from 'crypto';
+import { isValidWebhookUrl } from '@/lib/sanitize';
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
@@ -130,6 +131,10 @@ export async function POST(req: NextRequest) {
     const payload = isReview
       ? sampleReviewPayload(endpoint.event_type)
       : sampleProposalPayload(endpoint.event_type);
+
+    if (!isValidWebhookUrl(endpoint.url)) {
+      return NextResponse.json({ error: 'Webhook URL is invalid or points to a private address' }, { status: 400 });
+    }
 
     const body = JSON.stringify(payload);
 

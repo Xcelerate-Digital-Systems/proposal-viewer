@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getResend, FROM_EMAIL } from '@/lib/resend';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import crypto from 'crypto';
+import { isValidWebhookUrl } from '@/lib/sanitize';
 
 type ReviewEventType = 'review_comment_added' | 'review_comment_resolved' | 'review_item_approved' | 'review_item_revision_needed';
 
@@ -242,6 +243,11 @@ async function fireReviewWebhooks(payload: {
 
   for (const webhook of webhooks) {
     try {
+      if (!isValidWebhookUrl(webhook.url)) {
+        console.warn(`Skipping review webhook with invalid/private URL: ${webhook.url}`);
+        continue;
+      }
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'User-Agent': 'AgencyViz-Webhooks/1.0',

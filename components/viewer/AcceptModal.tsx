@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { CheckCircle2, X, Loader2, ExternalLink } from 'lucide-react';
 import { deriveBorderColor } from '@/hooks/useProposal';
+import { isValidHttpUrl } from '@/lib/sanitize';
 
 type PostAcceptAction = 'redirect' | 'message' | null;
 
@@ -50,7 +51,7 @@ export default function AcceptModal({
     await onAccept(name);
 
     // Handle post-accept action
-    if (postAcceptAction === 'redirect' && postAcceptRedirectUrl) {
+    if (postAcceptAction === 'redirect' && postAcceptRedirectUrl && isValidHttpUrl(postAcceptRedirectUrl)) {
       setRedirecting(true);
       setAccepting(false);
       // Brief delay so the client sees the redirect message
@@ -90,7 +91,7 @@ export default function AcceptModal({
               Redirecting you to the next step…
             </p>
           </div>
-          {postAcceptRedirectUrl && (
+          {postAcceptRedirectUrl && isValidHttpUrl(postAcceptRedirectUrl) && (
             <a
               href={postAcceptRedirectUrl}
               className="flex items-center gap-1.5 text-xs underline opacity-50 hover:opacity-80 transition-opacity"

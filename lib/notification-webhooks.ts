@@ -5,6 +5,7 @@ import { createServiceClient } from './supabase-server';
 import { buildProposalUrl } from './proposal-url';
 import crypto from 'crypto';
 import type { WebhookPayload } from './notification-types';
+import { isValidWebhookUrl } from './sanitize';
 
 export type { WebhookPayload };
 
@@ -48,6 +49,11 @@ export async function fireWebhooks(payload: WebhookPayload) {
 
   for (const webhook of webhooks) {
     try {
+      if (!isValidWebhookUrl(webhook.url)) {
+        console.warn(`Skipping webhook with invalid/private URL: ${webhook.url}`);
+        continue;
+      }
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'User-Agent':   'AgencyViz-Webhooks/1.0',
