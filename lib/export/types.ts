@@ -35,6 +35,9 @@ export interface DominantPageSize {
   orientation: 'portrait' | 'landscape';
 }
 
+/** Pre-fetched member badge data for PDF export, keyed by member ID */
+export type MemberBadgeMap = Record<string, { name: string; avatar_url: string | null }>;
+
 // ── Main options type ────────────────────────────────────────────────
 
 export interface CompositeExportOptions {
@@ -55,6 +58,8 @@ export interface CompositeExportOptions {
   getPackagesId: (vp: number) => string | null;
   branding: CompanyBranding;
   clientName?: string;
+  /** Signed URL for the client logo — converted to a data URL internally for export. */
+  clientLogoUrl?: string | null;
   companyName?: string;
   userName?: string;
   proposalTitle?: string;

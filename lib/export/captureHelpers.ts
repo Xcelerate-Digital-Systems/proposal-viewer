@@ -5,7 +5,6 @@ import { PDFDocument } from 'pdf-lib';
 import html2canvas from 'html2canvas';
 import { createRoot } from 'react-dom/client';
 import { createElement } from 'react';
-import type { CompanyBranding } from '@/hooks/useProposal';
 import { BASE_CAPTURE_WIDTH, type BgImageCtx } from './types';
 
 /**
@@ -15,7 +14,7 @@ export async function preloadImageAsDataUrl(url: string): Promise<string | null>
   try {
     const response = await fetch(url, { mode: 'cors' });
     if (!response.ok) {
-      console.warn('[compositeExport] Failed to fetch background image:', response.status, url);
+      console.warn('[compositeExport] Failed to fetch image:', response.status, url);
       return null;
     }
     const blob = await response.blob();
@@ -23,51 +22,30 @@ export async function preloadImageAsDataUrl(url: string): Promise<string | null>
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = () => {
-        console.warn('[compositeExport] Failed to read background image as data URL');
+        console.warn('[compositeExport] Failed to read image as data URL');
         resolve(null);
       };
       reader.readAsDataURL(blob);
     });
   } catch (err) {
-    console.warn('[compositeExport] Failed to preload background image:', err);
+    console.warn('[compositeExport] Failed to preload image:', err);
     return null;
   }
 }
 
 /**
- * Inject background image + overlay layers into a container element.
- */
-export function injectBackgroundLayers(
-  container: HTMLElement,
-  branding: CompanyBranding,
-  dataUrl: string,
-): void {
-  const imgEl = document.createElement('img');
-  imgEl.src = dataUrl;
-  imgEl.style.position = 'absolute';
-  imgEl.style.top = '0';
-  imgEl.style.left = '0';
-  imgEl.style.width = '100%';
-  imgEl.style.height = '100%';
-  imgEl.style.objectFit = 'cover';
-  imgEl.style.objectPosition = 'center';
-  imgEl.style.pointerEvents = 'none';
-  container.appendChild(imgEl);
-
-  const overlayLayer = document.createElement('div');
-  overlayLayer.style.position = 'absolute';
-  overlayLayer.style.top = '0';
-  overlayLayer.style.left = '0';
-  overlayLayer.style.width = '100%';
-  overlayLayer.style.height = '100%';
-  overlayLayer.style.backgroundColor = branding.bg_primary || '#0f0f0f';
-  overlayLayer.style.opacity = String(branding.bg_image_overlay_opacity ?? 0.85);
-  overlayLayer.style.pointerEvents = 'none';
-  container.appendChild(overlayLayer);
-}
-
-/**
- * Render a React element offscreen, capture with html2canvas, clean up.
+ * Render a React element offscreen, capture with html2canvas, then composite.
+ *
+ * Background strategy — canvas compositing (NOT DOM injection):
+ *   1. Capture the component with backgroundColor: null (transparent).
+ *      Components already render transparent outer wrappers when
+ *      branding.bg_image_url is set, so the transparent pixels let
+ *      the composited background show through.
+ *   2. Build a final canvas: bg image fill → colour overlay → component on top.
+ *
+ * Why not DOM injection? html2canvas doesn't reliably capture position:absolute
+ * children inside an off-screen position:fixed container. Canvas 2D compositing
+ * is deterministic and always works.
  */
 export async function captureComponent(
   element: React.ReactElement,
@@ -80,6 +58,7 @@ export async function captureComponent(
   const captureWidth = Math.max(baseWidth, Math.round(baseWidth * (targetAspect / 1.0)));
   const captureHeight = Math.round(captureWidth / targetAspect);
 
+  // ── 1. Render component offscreen ───────────────────────────────
   const container = document.createElement('div');
   container.style.position = 'fixed';
   container.style.left = '-9999px';
@@ -87,12 +66,9 @@ export async function captureComponent(
   container.style.width = `${captureWidth}px`;
   container.style.height = `${captureHeight}px`;
   container.style.overflow = 'hidden';
-  container.style.backgroundColor = bgColor;
+  // Always transparent — background is composited in step 2
+  container.style.backgroundColor = 'transparent';
   document.body.appendChild(container);
-
-  if (bgImage) {
-    injectBackgroundLayers(container, bgImage.branding, bgImage.dataUrl);
-  }
 
   const root = createRoot(container);
 
@@ -105,22 +81,69 @@ export async function captureComponent(
     );
   });
 
-  await new Promise((r) => setTimeout(r, 100));
+  // Allow fonts/images inside the component to finish rendering
+  await new Promise((r) => setTimeout(r, 150));
 
-  const canvas = await html2canvas(container, {
-    backgroundColor: bgColor,
+  // Wait for any <img> elements (e.g. client logo data URLs) to fully decode.
+  // React sets src synchronously but decode is async — html2canvas will miss
+  // images that haven't painted yet even after the 150ms settle.
+  const imgs = Array.from(container.querySelectorAll('img'));
+  await Promise.all(
+    imgs.map(
+      (img) =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise<void>((res) => {
+              img.onload = () => res();
+              img.onerror = () => res(); // don't block export on a broken image
+            }),
+    ),
+  );
+
+  // Capture with transparent background
+  const componentCanvas = await html2canvas(container, {
+    backgroundColor: null,
     width: captureWidth,
     scale: 2,
     useCORS: true,
     logging: false,
   });
 
-  const dataUrl = canvas.toDataURL('image/png');
-
   root.unmount();
   document.body.removeChild(container);
 
-  return dataUrl;
+  // ── 2. Composite onto final canvas ──────────────────────────────
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = componentCanvas.width;
+  finalCanvas.height = componentCanvas.height;
+  const ctx = finalCanvas.getContext('2d')!;
+
+  if (bgImage) {
+    // Layer 1: background image stretched to fill
+    const bgImg = new Image();
+    await new Promise<void>((resolve) => {
+      bgImg.onload = () => resolve();
+      bgImg.onerror = () => resolve(); // don't block export on a broken image
+      bgImg.src = bgImage.dataUrl;
+    });
+    ctx.drawImage(bgImg, 0, 0, finalCanvas.width, finalCanvas.height);
+
+    // Layer 2: colour overlay at configured opacity
+    const overlayOpacity = bgImage.branding.bg_image_overlay_opacity ?? 0.85;
+    ctx.globalAlpha = overlayOpacity;
+    ctx.fillStyle = bgImage.branding.bg_primary || '#0f0f0f';
+    ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+    ctx.globalAlpha = 1.0;
+  } else {
+    // No bg image — fill with solid background colour
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+  }
+
+  // Layer 3: component content — transparent areas let the bg show through
+  ctx.drawImage(componentCanvas, 0, 0);
+
+  return finalCanvas.toDataURL('image/png');
 }
 
 /**

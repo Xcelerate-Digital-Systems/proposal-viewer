@@ -6,17 +6,19 @@ import { User } from 'lucide-react';
 import { CompanyBranding, deriveBorderColor, ProposalTextPage } from '@/hooks/useProposal';
 import { resolveDynamicField } from '@/components/admin/text-editor/DynamicFieldExtension';
 import { fontFamily } from '@/lib/google-fonts';
+import type { MemberBadgeMap } from '@/lib/export/types';
 
 interface TextPageProps {
-  textPage: ProposalTextPage;
-  branding: CompanyBranding;
-  clientName?: string;
-  companyName?: string;
-  userName?: string;
-  proposalTitle?: string;
-  orientation?: 'portrait' | 'landscape';
-  clientLogoUrl?: string;
-}
+   textPage: ProposalTextPage;
+   branding: CompanyBranding;
+   clientName?: string;
+   companyName?: string;
+   userName?: string;
+   proposalTitle?: string;
+   orientation?: 'portrait' | 'landscape';
+   clientLogoUrl?: string;
+   memberBadgeData?: MemberBadgeMap;
+ }
 
 // TipTap JSON node type
 interface TipTapMark {
@@ -303,19 +305,20 @@ function MemberBadge({
   branding,
   companyName,
   fontSize,
+  staticData,
 }: {
   memberId: string;
   branding: CompanyBranding;
   companyName?: string;
   fontSize: number;
+  staticData?: { name: string; avatar_url: string | null } | null;
 }) {
-  const [name, setName] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(staticData?.name ?? null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(staticData?.avatar_url ?? null);
 
   useEffect(() => {
+    if (staticData) return; // skip fetch — static data already initialised state
     const resolve = async () => {
-      // Use the API route — direct supabase queries on team_members are blocked
-      // by RLS for the unauthenticated anon key used in the client-facing viewer.
       const res = await fetch(`/api/member-badge?member_id=${memberId}`, {
         cache: 'no-store',
       });
@@ -325,7 +328,7 @@ function MemberBadge({
       if (data.avatar_url) setAvatarUrl(data.avatar_url);
     };
     resolve();
-  }, [memberId]);
+  }, [memberId, staticData]);
 
   if (!name) return null;
 
@@ -386,7 +389,7 @@ function MemberBadge({
 
 /* ── Main component ──────────────────────────────────────────────── */
 
-export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle, orientation, clientLogoUrl }: TextPageProps) {
+export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle, orientation, clientLogoUrl, memberBadgeData }: TextPageProps) {
   const isLandscape = orientation === 'landscape';
   const bgColor = branding.text_page_bg_color || branding.bg_secondary || '#141414';
   const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
@@ -452,13 +455,14 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
 
             {/* Member badge at the bottom */}
             {showBadge && (
-              <MemberBadge
-                memberId={textPage.prepared_by_member_id!}
-                branding={branding}
-                companyName={companyName}
-                fontSize={fontSize}
-              />
-            )}
+               <MemberBadge
+                 memberId={textPage.prepared_by_member_id!}
+                 branding={branding}
+                 companyName={companyName}
+                 fontSize={fontSize}
+               staticData={memberBadgeData?.[textPage.prepared_by_member_id!]}
+               />
+             )}
           </div>
 
           {/* ── Client logo column (landscape + toggle enabled only) ── */}

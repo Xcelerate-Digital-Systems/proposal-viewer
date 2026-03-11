@@ -78,19 +78,65 @@ export async function resolveCoverData(proposal: Proposal): Promise<CoverData> {
 
 /**
  * Load all per-page PDFs in parallel.
- * Returns a Map from 1-based page number → loaded PDFDocument.
+ * Keys by sequential 1-based index to match toPdfPage() output —
+ * NOT entry.position, which is the virtual page position and may be offset
+ * by non-PDF pages (TOC, text pages, etc.).
  */
 export async function loadPerPageDocs(
   pageUrls: PageUrlEntry[],
 ): Promise<Map<number, PDFDocument>> {
+  const pdfEntries = pageUrls.filter((e) => e.url !== null && e.type === 'pdf');
+
   const entries = await Promise.all(
-    pageUrls
-      .filter((entry) => entry.url !== null && entry.type === 'pdf')
-      .map(async (entry) => {
-        const bytes = await fetch(entry.url as string).then((r) => r.arrayBuffer());
-        const doc = await PDFDocument.load(bytes);
-        return [entry.position, doc] as [number, PDFDocument];
-      }),
+    pdfEntries.map(async (entry, index) => {
+      const bytes = await fetch(entry.url as string).then((r) => r.arrayBuffer());
+      const doc = await PDFDocument.load(bytes);
+      return [index + 1, doc] as [number, PDFDocument];
+    }),
   );
   return new Map(entries);
+}
+
+/**
+ * Pre-fetch member badge data (name + avatar data URL) for all text pages
+ * that have show_member_badge enabled.
+ *
+ * MemberBadge uses useEffect+fetch internally, which won't resolve before
+ * html2canvas fires. Pre-fetching here and passing static data as a prop
+ * lets the badge render synchronously at capture time.
+ */
+export async function prefetchMemberBadgeData(
+  textPageIds: string[],
+  getTextPage: (id: string) => { show_member_badge?: boolean; prepared_by_member_id?: string | null } | undefined,
+): Promise<Record<string, { name: string; avatar_url: string | null }>> {
+  const memberIds = new Set<string>();
+
+  for (const id of textPageIds) {
+    const page = getTextPage(id);
+    if (page?.show_member_badge && page.prepared_by_member_id) {
+      memberIds.add(page.prepared_by_member_id);
+    }
+  }
+
+  if (memberIds.size === 0) return {};
+
+  const results = await Promise.all(
+    Array.from(memberIds).map(async (memberId) => {
+      try {
+        const res = await fetch(`/api/member-badge?member_id=${memberId}`, { cache: 'no-store' });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data.name) return null;
+        return [memberId, { name: data.name as string, avatar_url: (data.avatar_url as string | null) ?? null }] as const;
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  const map: Record<string, { name: string; avatar_url: string | null }> = {};
+  for (const entry of results) {
+    if (entry) map[entry[0]] = entry[1];
+  }
+  return map;
 }

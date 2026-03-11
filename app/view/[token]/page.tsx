@@ -143,6 +143,7 @@ const handleCompositeDownload = useCallback(async () => {
     getPackagesId,
     branding,
     clientName: proposal?.client_name ?? undefined,
+    clientLogoUrl: clientLogoUrl ?? null,
     companyName: branding.name,
     userName: proposal?.created_by_name ?? undefined,
     proposalTitle: proposal?.title,
@@ -159,7 +160,7 @@ const handleCompositeDownload = useCallback(async () => {
   });
 }, [pdfUrl, pageUrls, proposal, numPages, isPricingPage, isPackagesPage, isTextPage,
     getTextPageId, toPdfPage, getTextPage, pricing, packages, getPackagesId,
-    branding, textPages, pageEntries, isTocPage, tocSettings, pageSequence]);
+    branding, clientLogoUrl, textPages, pageEntries, isTocPage, tocSettings, pageSequence]);
 
   // Keyboard navigation
   useEffect(() => {
