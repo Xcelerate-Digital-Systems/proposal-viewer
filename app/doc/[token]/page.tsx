@@ -123,33 +123,39 @@ useEffect(() => {
   const hasSpecialPages = textPages.length > 0;
   const noPricing = useCallback(() => false, []);
 
-  const handleCompositeDownload = useCallback(async () => {
-    if (!pdfUrl) throw new Error('No PDF URL available');
-    const entityOrientation = doc?.page_orientation || 'auto';
-    const textPageOrientations: Record<string, 'auto' | 'portrait' | 'landscape'> = Object.fromEntries(
-      textPages.map(tp => [tp.id, entityOrientation])
-    );
-    return exportCompositePdf({
-      pdfUrl,
-      title: doc?.title || 'document',
-      numPages,
-      isPricingPage: noPricing,
-      isTextPage,
-      getTextPageId,
-      toPdfPage,
-      getTextPage,
-      pricing: null,
-      branding,
-      companyName: branding.name,
-      proposalTitle: doc?.title,
-      textPageOrientations,
-      isPackagesPage: () => false,
-      packages: [],
-      getPackagesId: () => null,
-      proposal: null,
-      includeCover: false,
-    });
-  }, [pdfUrl, doc, numPages, noPricing, isTextPage, getTextPageId, toPdfPage, getTextPage, branding, textPages]);
+const handleCompositeDownload = useCallback(async () => {
+  if (!pdfUrl && pageUrls.length === 0) throw new Error('No PDF data available');
+  const entityOrientation = doc?.page_orientation || 'auto';
+  const textPageOrientations: Record<string, 'auto' | 'portrait' | 'landscape'> = Object.fromEntries(
+    textPages.map(tp => [tp.id, entityOrientation])
+  );
+  return exportCompositePdf({
+    pdfUrl,
+    pageUrls,
+    title: doc?.title || 'document',
+    numPages,
+    isPricingPage: () => false,
+    isPackagesPage: () => false,
+    isTextPage,
+    getTextPageId,
+    toPdfPage,
+    getTextPage,
+    pricing: null,
+    packages: [],
+    getPackagesId: () => null,
+    branding,
+    companyName: branding.name,
+    proposalTitle: doc?.title,
+    textPageOrientations,
+    pageEntries,
+    isTocPage,
+    tocSettings,
+    pageSequence,
+    proposal: null,
+    includeCover: false,
+  });
+}, [pdfUrl, pageUrls, doc, numPages, isTextPage, getTextPageId, toPdfPage, getTextPage,
+    branding, textPages, pageEntries, isTocPage, tocSettings, pageSequence]);
 
   // ── Early returns AFTER all hooks ──────────────────────────────────
 

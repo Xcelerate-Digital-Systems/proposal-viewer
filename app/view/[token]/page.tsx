@@ -21,6 +21,7 @@ import ViewerBackground from '@/components/viewer/ViewerBackground';
 import PageNumberBadge from '@/components/viewer/PageNumberBadge';
 import { ProposalPricing, ProposalPackages, supabase } from '@/lib/supabase';
 import FeedbackModal from '@/components/viewer/FeedbackModal';
+import { exportCompositePdf } from '@/lib/compositeExport';
 
 
 /* ─── Proposal Viewer Page ────────────────────────────────────────── */
@@ -122,6 +123,43 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       setShowCover(false);
     }
   }, [proposal]);
+
+const handleCompositeDownload = useCallback(async () => {
+  if (!pdfUrl && pageUrls.length === 0) throw new Error('No PDF data available');
+  const entityOrientation = proposal?.page_orientation || 'auto';
+  return exportCompositePdf({
+    pdfUrl,
+    pageUrls,
+    title: proposal?.title || 'proposal',
+    numPages,
+    isPricingPage,
+    isPackagesPage,
+    isTextPage,
+    getTextPageId,
+    toPdfPage,
+    getTextPage,
+    pricing: pricing as ProposalPricing | null,
+    packages: packages as ProposalPackages[],
+    getPackagesId,
+    branding,
+    clientName: proposal?.client_name ?? undefined,
+    companyName: branding.name,
+    userName: proposal?.created_by_name ?? undefined,
+    proposalTitle: proposal?.title,
+    pricingOrientation: entityOrientation,
+    textPageOrientations: Object.fromEntries(
+      textPages.map(tp => [tp.id, entityOrientation])
+    ),
+    pageEntries,
+    isTocPage,
+    tocSettings,
+    pageSequence,
+    proposal: proposal as any,
+    includeCover: true,
+  });
+}, [pdfUrl, pageUrls, proposal, numPages, isPricingPage, isPackagesPage, isTextPage,
+    getTextPageId, toPdfPage, getTextPage, pricing, packages, getPackagesId,
+    branding, textPages, pageEntries, isTocPage, tocSettings, pageSequence]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -436,6 +474,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             bgColor={bgSecondary}
             borderColor={border}
             accentColor={accent}
+            onCompositeDownload={pageUrls.length > 0 ? handleCompositeDownload : undefined}
           />
         </div>
 
