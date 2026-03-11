@@ -135,14 +135,6 @@ export default function FloatingToolbar({
         title="Download">
         {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
       </button>
-      <button onClick={handlePrint}
-        className="hidden sm:block p-1.5 sm:p-2 transition-colors rounded-lg"
-        style={btnStyle}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        title="Print">
-        <Printer size={18} />
-      </button>
     </div>
   );
 }
