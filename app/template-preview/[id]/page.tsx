@@ -74,7 +74,7 @@ useEffect(() => {
       const next = currentPage < numPages ? currentPage + 1 : currentPage - 1;
       goToPage(next);
     }
-  }, [pageUrls, currentPage, numPages, goToPage]);
+  }, [pageUrls, currentPage, pageUrls.length, goToPage]);
 
   // Current page state
   const onPricingPage = isPricingPage(currentPage);
@@ -101,7 +101,7 @@ useEffect(() => {
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
         e.preventDefault();
-        if (currentPage < numPages) goToPage(currentPage + 1);
+        if (currentPage < pageUrls.length) goToPage(currentPage + 1);
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         if (currentPage > 1) goToPage(currentPage - 1);
@@ -110,7 +110,7 @@ useEffect(() => {
         goToPage(1);
       } else if (e.key === 'End') {
         e.preventDefault();
-        goToPage(numPages);
+        goToPage(pageUrls.length);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

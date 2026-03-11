@@ -112,7 +112,7 @@ export function useDocument(token: string) {
 
   /* ── Derived state from unified page list ──────────────────────────────── */
 
-  const numPages = pageUrls.length;
+  const numPages = useMemo(() => pageUrls.filter((p) => p.type !== 'section').length, [pageUrls]);
   const pdfPageCount = useMemo(() => pageUrls.filter((p) => p.type === 'pdf').length, [pageUrls]);
 
   const tocSettings = document ? parseTocSettings((document as DocType).toc_settings) : null;

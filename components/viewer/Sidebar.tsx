@@ -36,26 +36,22 @@ interface NavItem {
   children: { pageNum: number; name: string }[];
 }
 
-function buildNavTree(entries: PageNameEntry[], numPages: number): NavItem[] {
+// pageNum always mirrors the viewer's currentPage (1-based pageUrls index).
+// Groups use a negative key so they never collide with real page numbers.
+function buildNavTree(entries: PageNameEntry[]): NavItem[] {
   const tree: NavItem[] = [];
-  let virtualPage = 0;
 
   for (let i = 0; i < entries.length; i++) {
-    const entry   = entries[i];
+    const entry = entries[i];
     const isGroup = entry.type === 'group';
-
-    if (!isGroup) {
-      virtualPage++;
-      if (virtualPage > numPages) break;
-    }
+    const rawPageNum = i + 1;
 
     if (entry.indent > 0 && tree.length > 0) {
       if (!isGroup) {
-        tree[tree.length - 1].children.push({ pageNum: virtualPage, name: entry.name });
+        tree[tree.length - 1].children.push({ pageNum: rawPageNum, name: entry.name });
       }
     } else {
-      const pageNum = isGroup ? -(i + 1) : virtualPage;
-      tree.push({ pageNum, name: entry.name, isGroup, children: [] });
+      tree.push({ pageNum: isGroup ? -rawPageNum : rawPageNum, name: entry.name, isGroup, children: [] });
     }
   }
 
@@ -82,7 +78,7 @@ export default function Sidebar({
   commentCount,
   acceptButtonText,
 }: SidebarProps) {
-  const navTree       = buildNavTree(pageEntries, numPages);
+  const navTree = buildNavTree(pageEntries);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
 
   const accent      = branding.accent_color        || '#ff6700';
@@ -174,8 +170,6 @@ export default function Sidebar({
                   backgroundColor: groupActive && !item.isGroup ? `${accent}18` : 'transparent',
                   color: groupActive
                     ? sidebarText
-                    : item.isGroup
-                    ? `${sidebarText}55`
                     : `${sidebarText}99`,
                   fontFamily: fontFamily(branding.font_sidebar),
                   fontWeight: isParentActive
@@ -183,9 +177,6 @@ export default function Sidebar({
                     : childActive && !isExpanded
                     ? Math.min(Number(branding.font_sidebar_weight || 400) + 100, 900)
                     : Number(branding.font_sidebar_weight || 400),
-                  fontSize: item.isGroup ? '10px' : undefined,
-                  textTransform: item.isGroup ? 'uppercase' : undefined,
-                  letterSpacing: item.isGroup ? '0.08em' : undefined,
                 }}
               >
                 <span className="truncate">{item.name}</span>

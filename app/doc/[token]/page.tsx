@@ -65,12 +65,13 @@ export default function DocumentViewerPage({ params }: { params: { token: string
   }, [setCurrentPage]);
 
   // Auto-skip section pages — they are sidebar group headers, not renderable pages
-  useEffect(() => {
-    if (isSectionPage && numPages > 0) {
-      const next = currentPage < numPages ? currentPage + 1 : currentPage - 1;
-      goToPage(next);
-    }
-  }, [isSectionPage, currentPage, numPages, goToPage]);
+  // Auto-skip section pages — they are sidebar group headers, not renderable pages
+useEffect(() => {
+  if (isSectionPage && pageUrls.length > 0) {
+    const next = currentPage < pageUrls.length ? currentPage + 1 : currentPage - 1;
+    goToPage(next);
+  }
+}, [isSectionPage, currentPage, pageUrls.length, goToPage]);
 
   // Dismiss cover state when cover isn't enabled so keyboard nav works
   useEffect(() => {
@@ -87,7 +88,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
         e.preventDefault();
-        if (currentPage < numPages) goToPage(currentPage + 1);
+        if (currentPage < pageUrls.length) goToPage(currentPage + 1);
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         if (currentPage > 1) goToPage(currentPage - 1);
@@ -96,7 +97,7 @@ export default function DocumentViewerPage({ params }: { params: { token: string
         goToPage(1);
       } else if (e.key === 'End') {
         e.preventDefault();
-        goToPage(numPages);
+        goToPage(pageUrls.length);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

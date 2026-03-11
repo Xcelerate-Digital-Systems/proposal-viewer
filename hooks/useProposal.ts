@@ -196,7 +196,10 @@ export function useProposal(token: string) {
     [pageUrls],
   );
 
-  const numPages = pageUrls.length;
+  const numPages = useMemo(
+    () => pageUrls.filter((p) => p.type !== 'section').length,
+    [pageUrls],
+  );
 
   // Virtual page type helpers
   const isPricingPage  = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'pricing',  [pageUrls]);

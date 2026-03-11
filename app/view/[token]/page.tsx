@@ -110,11 +110,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
 
   // Auto-skip section pages
   useEffect(() => {
-    if (isSectionPage && numPages > 0) {
-      const next = currentPage < numPages ? currentPage + 1 : currentPage - 1;
-      goToPage(next);
-    }
-  }, [isSectionPage, currentPage, numPages, goToPage]);
+  if (isSectionPage && pageUrls.length > 0) {
+    const next = currentPage < pageUrls.length ? currentPage + 1 : currentPage - 1;
+    goToPage(next);
+  }
+}, [isSectionPage, currentPage, pageUrls.length, goToPage]);
 
   // Dismiss cover when not enabled
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
         e.preventDefault();
-        if (currentPage < numPages) goToPage(currentPage + 1);
+        if (currentPage < pageUrls.length) goToPage(currentPage + 1);
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         if (currentPage > 1) goToPage(currentPage - 1);
@@ -140,7 +140,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
         goToPage(1);
       } else if (e.key === 'End') {
         e.preventDefault();
-        goToPage(numPages);
+        goToPage(pageUrls.length);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -282,8 +282,8 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             {numPages > 0 && ` · ${currentPage}/${numPages}`}
           </span>
           <button
-            onClick={() => currentPage < numPages && goToPage(currentPage + 1)}
-            disabled={currentPage >= numPages}
+           onClick={() => currentPage < pageUrls.length && goToPage(currentPage + 1)}
+            disabled={currentPage >= pageUrls.length}
             className="p-1.5 rounded-lg transition-opacity disabled:opacity-20"
             style={{ color: sidebarText }}
           >
@@ -432,7 +432,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             currentPage={currentPage}
             numPages={numPages}
             onPrevPage={() => goToPage(Math.max(1, currentPage - 1))}
-            onNextPage={() => goToPage(Math.min(numPages, currentPage + 1))}
+            onNextPage={() => goToPage(Math.min(pageUrls.length, currentPage + 1))}
             bgColor={bgSecondary}
             borderColor={border}
             accentColor={accent}
