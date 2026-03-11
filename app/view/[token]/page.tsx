@@ -1,224 +1,37 @@
 // app/view/[token]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import Sidebar from '@/components/viewer/Sidebar';
-import { useProposal, deriveBorderColor } from '@/hooks/useProposal';
 import CoverPage from '@/components/viewer/CoverPage';
-import PdfViewer from '@/components/viewer/PdfViewer';
-import TextPage from '@/components/viewer/TextPage';
-import TocPage from '@/components/viewer/TocPage';
-import PricingPage from '@/components/viewer/PricingPage';
-import PackagesPage from '@/components/viewer/PackagesPage';
-import AcceptModal from '@/components/viewer/AcceptModal';
 import CommentsPanel from '@/components/viewer/CommentsPanel';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import PageLinkButton from '@/components/viewer/PageLinkButton';
-import ViewerBackground from '@/components/viewer/ViewerBackground';
 import PageNumberBadge from '@/components/viewer/PageNumberBadge';
-import { ProposalPricing, ProposalPackages, supabase } from '@/lib/supabase';
-import FeedbackModal from '@/components/viewer/FeedbackModal';
-import { exportCompositePdf } from '@/lib/compositeExport';
-
-
-/* ─── Proposal Viewer Page ────────────────────────────────────────── */
+import ViewerModals from '@/components/viewer/ViewerModals';
+import ViewerPageContent from '@/components/viewer/ViewerPageContent';
+import { useViewerPage } from '@/components/viewer/useViewerPage';
 
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
-  const {
-    proposal,
-    pdfUrl,
-    numPages,
-    currentPage,
-    setCurrentPage,
-    loading,
-    notFound,
-    pageEntries,
-    branding,
-    brandingLoaded,
-    comments,
-    accepted,
-    declined,
-    revisionRequested,
-    pricing,
-    packages,
-    textPages,
-    isPricingPage,
-    isPackagesPage,
-    isTocPage,
-    isTextPage,
-    getPackagesId,
-    getTextPageId,
-    getTextPage,
-    toPdfPage,
-    tocSettings,
-    pageSequence,
-    onDocumentLoadSuccess,
-    pageUrls,
-    getPageName,
-    acceptProposal,
-    declineProposal,
-    requestRevision,
-    submitComment,
-    replyToComment,
-    resolveComment,
-    unresolveComment,
-  } = useProposal(params.token);
+  const v = useViewerPage(params.token);
 
-  const [showCover, setShowCover] = useState(true);
-  const [clientLogoUrl, setClientLogoUrl] = useState<string | undefined>(undefined);
-  const [showAcceptModal, setShowAcceptModal] = useState(false);
-  const [showDeclineModal,  setShowDeclineModal]  = useState(false);
-  const [showRevisionModal, setShowRevisionModal] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [mobileSidebar, setMobileSidebar] = useState(false);
-  const mainRef = useRef<HTMLDivElement>(null);
-  const onTocPage      = isTocPage(currentPage);
-  const onTextPage     = isTextPage(currentPage);
-  const onPricingPage  = isPricingPage(currentPage);
-  const onPackagesPage = isPackagesPage(currentPage);
-  const currentTextPageId  = getTextPageId(currentPage);
-  const currentTextPage    = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
-  const currentPackagesId  = getPackagesId(currentPage);
-  const currentPackages    = currentPackagesId
-    ? packages.find((p: Record<string, unknown>) => p.id === currentPackagesId)
-    : null;
+  // ── Early returns (after all hooks) ──────────────────────────────────
 
-  // PDF page index (only meaningful for pdf-type pages)
-  const pdfPage = toPdfPage(currentPage);
-
-  // Per-page link
-  const isSectionPage = pageUrls[currentPage - 1]?.type === 'section';
-  const currentPageLink = useMemo(() => {
-    const entry = pageUrls[currentPage - 1];
-    return entry?.link_url ? { url: entry.link_url, label: entry.link_label ?? undefined } : null;
-  }, [pageUrls, currentPage]);
-
-  // Fetch via API proxy → base64 data URL (avoids ERR_BLOCKED_BY_ORB on raw signed URLs)
-  useEffect(() => {
-    if (!proposal?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
-    fetch(`/api/member-badge?path=${encodeURIComponent(proposal.cover_client_logo_path)}`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data?.avatar_url) setClientLogoUrl(data.avatar_url); });
-  }, [proposal?.cover_client_logo_path]);
-
-  const goToPage = useCallback((page: number) => {
-    setCurrentPage(page);
-    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setCurrentPage]);
-
-  // Auto-skip section pages
-  useEffect(() => {
-  if (isSectionPage && pageUrls.length > 0) {
-    const next = currentPage < pageUrls.length ? currentPage + 1 : currentPage - 1;
-    goToPage(next);
-  }
-}, [isSectionPage, currentPage, pageUrls.length, goToPage]);
-
-  // Dismiss cover when not enabled
-  useEffect(() => {
-    if (proposal && !proposal.cover_enabled) {
-      setShowCover(false);
-    }
-  }, [proposal]);
-
-const handleCompositeDownload = useCallback(async () => {
-  if (!pdfUrl && pageUrls.length === 0) throw new Error('No PDF data available');
-  const entityOrientation = proposal?.page_orientation || 'auto';
-  return exportCompositePdf({
-    pdfUrl,
-    pageUrls,
-    title: proposal?.title || 'proposal',
-    numPages,
-    isPricingPage,
-    isPackagesPage,
-    isTextPage,
-    getTextPageId,
-    toPdfPage,
-    getTextPage,
-    pricing: pricing as ProposalPricing | null,
-    packages: packages as ProposalPackages[],
-    getPackagesId,
-    branding,
-    clientName: proposal?.client_name ?? undefined,
-    clientLogoUrl: clientLogoUrl ?? null,
-    companyName: branding.name,
-    userName: proposal?.created_by_name ?? undefined,
-    proposalTitle: proposal?.title,
-    pricingOrientation: entityOrientation,
-    textPageOrientations: Object.fromEntries(
-      textPages.map(tp => [tp.id, entityOrientation])
-    ),
-    pageEntries,
-    isTocPage,
-    tocSettings,
-    pageSequence,
-    proposal: proposal as any,
-    includeCover: true,
-  });
-}, [pdfUrl, pageUrls, proposal, numPages, isPricingPage, isPackagesPage, isTextPage,
-    getTextPageId, toPdfPage, getTextPage, pricing, packages, getPackagesId,
-    branding, clientLogoUrl, textPages, pageEntries, isTocPage, tocSettings, pageSequence]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    if (showCover) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
-        e.preventDefault();
-        if (currentPage < pageUrls.length) goToPage(currentPage + 1);
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (currentPage > 1) goToPage(currentPage - 1);
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        goToPage(1);
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        goToPage(pageUrls.length);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, numPages, goToPage, showCover]);
-
-  // Tab title
-  useEffect(() => {
-    if (proposal) document.title = proposal.title;
-    return () => { document.title = 'Proposal Viewer'; };
-  }, [proposal]);
-
-  const bgPrimary   = branding.bg_primary    || '#0f0f0f';
-  const bgSecondary = branding.bg_secondary  || '#141414';
-  const accent      = branding.accent_color  || '#ff6700';
-  const border      = deriveBorderColor(bgSecondary);
-  const sidebarText = branding.sidebar_text_color || '#ffffff';
-  const pageOrientation = proposal?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;
-
-  const unresolvedCommentCount = comments.filter((c) => !c.parent_id && !c.resolved_at).length;
-
-  // ── Early returns AFTER all hooks ──────────────────────────────────
-
-  if (!brandingLoaded) {
+  if (!v.brandingLoaded) {
     return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
   }
 
-  if (loading) {
-    return <ViewerLoader branding={branding} loading={true} label="Loading proposal…" />;
+  if (v.loading) {
+    return <ViewerLoader branding={v.branding} loading={true} label="Loading proposal…" />;
   }
 
-  if (notFound) {
+  if (v.notFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: bgPrimary }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: v.bgPrimary }}>
         <div className="text-center">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: bgSecondary }}
-          >
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: v.bgSecondary }}>
             <FileText size={28} className="text-[#444]" />
           </div>
           <h2 className="text-xl font-semibold text-white mb-2">Proposal Not Found</h2>
@@ -228,274 +41,160 @@ const handleCompositeDownload = useCallback(async () => {
     );
   }
 
-  // Cover page
-  if (showCover && proposal?.cover_enabled) {
+  if (v.showCover && v.proposal?.cover_enabled) {
     return (
       <>
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
+        <GoogleFontLoader fonts={[v.branding.font_heading, v.branding.font_body, v.branding.font_sidebar, v.branding.title_font_family]} />
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <CoverPage proposal={proposal as any} branding={branding} onStart={() => setShowCover(false)} />
+        <CoverPage proposal={v.proposal as any} branding={v.branding} onStart={() => v.setShowCover(false)} />
       </>
     );
   }
 
+  // ── Main viewer ────────────────────────────────────────────────────────
+
   return (
     <div
       className="flex flex-col lg:flex-row overflow-hidden"
-      style={{ backgroundColor: bgPrimary, height: '100dvh' }}
+      style={{ backgroundColor: v.bgPrimary, height: '100dvh' }}
     >
-      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
+      <GoogleFontLoader fonts={[v.branding.font_heading, v.branding.font_body, v.branding.font_sidebar, v.branding.title_font_family]} />
 
-      {/* Accept modal */}
-      {showAcceptModal && proposal && (
-        <AcceptModal
-          title={proposal.title}
-          onAccept={async (name) => { await acceptProposal(name); }}
-          onClose={() => setShowAcceptModal(false)}
-          accentColor={accent}
-          bgColor={bgSecondary}
-          textColor={sidebarText}
-          acceptTextColor={branding.accept_text_color || '#ffffff'}
-          buttonText={proposal.accept_button_text ?? undefined}
-          postAcceptAction={(proposal.post_accept_action as 'redirect' | 'message' | null) ?? null}
-          postAcceptRedirectUrl={proposal.post_accept_redirect_url ?? null}
-          postAcceptMessage={proposal.post_accept_message ?? null}
-        />
-      )}
-      {showDeclineModal && proposal && (
-        <FeedbackModal
-          mode="decline"
-          title={proposal.title}
-          onSubmit={async (name, reason) => {
-            await declineProposal(name, reason);
-            setShowDeclineModal(false);
-          }}
-          onClose={() => setShowDeclineModal(false)}
-          accentColor={accent}
-          bgColor={bgSecondary}
-          textColor={sidebarText}
-          acceptTextColor={branding.accept_text_color || '#ffffff'}
-        />
-      )}
-
-      {showRevisionModal && proposal && (
-        <FeedbackModal
-          mode="revision"
-          title={proposal.title}
-          onSubmit={async (name, notes) => {
-            await requestRevision(name, notes);
-            setShowRevisionModal(false);
-          }}
-          onClose={() => setShowRevisionModal(false)}
-          accentColor={accent}
-          bgColor={bgSecondary}
-          textColor={sidebarText}
-          acceptTextColor={branding.accept_text_color || '#ffffff'}
+      {/* Modals */}
+      {v.proposal && (
+        <ViewerModals
+          proposal={v.proposal as Record<string, unknown>}
+          accent={v.accent}
+          bgSecondary={v.bgSecondary}
+          sidebarText={v.sidebarText}
+          acceptTextColor={v.branding.accept_text_color || '#ffffff'}
+          showAcceptModal={v.showAcceptModal}
+          onCloseAccept={() => v.setShowAcceptModal(false)}
+          onAccept={async (name) => { await v.acceptProposal(name); }}
+          showDeclineModal={v.showDeclineModal}
+          onCloseDecline={() => v.setShowDeclineModal(false)}
+          onDecline={async (name, reason) => { await v.declineProposal(name, reason); v.setShowDeclineModal(false); }}
+          showRevisionModal={v.showRevisionModal}
+          onCloseRevision={() => v.setShowRevisionModal(false)}
+          onRevision={async (name, notes) => { await v.requestRevision(name, notes); v.setShowRevisionModal(false); }}
         />
       )}
 
       {/* Mobile header */}
       <div
         className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
-        style={{ backgroundColor: bgSecondary, borderColor: border }}
+        style={{ backgroundColor: v.bgSecondary, borderColor: v.border }}
       >
-        <button
-          onClick={() => setMobileSidebar(true)}
-          className="p-2 transition-opacity hover:opacity-70 rounded-lg"
-          style={{ color: sidebarText }}
-        >
+        <button onClick={() => v.setMobileSidebar(true)} className="p-2 transition-opacity hover:opacity-70 rounded-lg" style={{ color: v.sidebarText }}>
           <Menu size={20} />
         </button>
-
         <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
-          <button
-            onClick={() => currentPage > 1 && goToPage(currentPage - 1)}
-            disabled={currentPage <= 1}
-            className="p-1.5 rounded-lg transition-opacity disabled:opacity-20"
-            style={{ color: sidebarText }}
-          >
+          <button onClick={() => v.currentPage > 1 && v.goToPage(v.currentPage - 1)} disabled={v.currentPage <= 1} className="p-1.5 rounded-lg transition-opacity disabled:opacity-20" style={{ color: v.sidebarText }}>
             <ChevronLeft size={18} />
           </button>
-          <span className="text-xs truncate px-1" style={{ color: sidebarText, opacity: 0.55 }}>
-            {getPageName(currentPage)}
-            {numPages > 0 && ` · ${currentPage}/${numPages}`}
+          <span className="text-xs truncate px-1" style={{ color: v.sidebarText, opacity: 0.55 }}>
+            {v.getPageName(v.currentPage)}
+            {v.numPages > 0 && ` · ${v.currentPage}/${v.numPages}`}
           </span>
-          <button
-           onClick={() => currentPage < pageUrls.length && goToPage(currentPage + 1)}
-            disabled={currentPage >= pageUrls.length}
-            className="p-1.5 rounded-lg transition-opacity disabled:opacity-20"
-            style={{ color: sidebarText }}
-          >
+          <button onClick={() => v.currentPage < v.pageUrls.length && v.goToPage(v.currentPage + 1)} disabled={v.currentPage >= v.pageUrls.length} className="p-1.5 rounded-lg transition-opacity disabled:opacity-20" style={{ color: v.sidebarText }}>
             <ChevronRight size={18} />
           </button>
         </div>
-
         <div className="w-10" />
       </div>
 
       {/* Sidebar */}
       <Sidebar
-        numPages={numPages}
-        currentPage={currentPage}
-        pageEntries={pageEntries}
-        getPageName={getPageName}
-        onPageSelect={goToPage}
-        branding={branding}
-        mobileOpen={mobileSidebar}
-        onMobileClose={() => setMobileSidebar(false)}
-        accepted={accepted}
-        declined={declined}
-        revisionRequested={revisionRequested}
-        onAcceptClick={() => setShowAcceptModal(true)}
-        onDeclineClick={() => setShowDeclineModal(true)}
-        onRevisionClick={() => setShowRevisionModal(true)}
-        showComments={showComments}
-        onToggleComments={() => setShowComments((v) => !v)}
-        commentCount={unresolvedCommentCount}
-        acceptButtonText={proposal?.accept_button_text ?? undefined}
+        numPages={v.numPages}
+        currentPage={v.currentPage}
+        pageEntries={v.pageEntries}
+        getPageName={v.getPageName}
+        onPageSelect={v.goToPage}
+        branding={v.branding}
+        mobileOpen={v.mobileSidebar}
+        onMobileClose={() => v.setMobileSidebar(false)}
+        accepted={v.accepted}
+        declined={v.declined}
+        revisionRequested={v.revisionRequested}
+        onAcceptClick={() => v.setShowAcceptModal(true)}
+        onDeclineClick={() => v.setShowDeclineModal(true)}
+        onRevisionClick={() => v.setShowRevisionModal(true)}
+        showComments={v.showComments}
+        onToggleComments={() => v.setShowComments((prev) => !prev)}
+        commentCount={v.unresolvedCommentCount}
+        acceptButtonText={v.proposal?.accept_button_text ?? undefined}
       />
 
       {/* Main content area */}
       <div className="flex-1 flex min-w-0 relative overflow-hidden">
-        {/* Page content */}
         <div className="flex-1 flex flex-col min-w-0 relative">
-          {currentPageLink && (
-            <PageLinkButton
-              url={currentPageLink.url}
-              label={currentPageLink.label}
-              accentColor={accent}
-            />
+          {v.currentPageLink && (
+            <PageLinkButton url={v.currentPageLink.url} label={v.currentPageLink.label} accentColor={v.accent} />
           )}
 
-          {onTocPage && tocSettings ? (
-            // Outer div holds the static background; inner scroll container sits on top.
-            // This prevents the background from cutting off on long / scrollable pages.
-            <div
-              className="flex-1 relative"
-              style={{ backgroundColor: bgPrimary }}
-            >
-              <ViewerBackground branding={branding} />
-              <div ref={mainRef} className="absolute inset-0 overflow-auto">
-                <div className="relative min-h-full">
-                  <TocPage
-                    branding={branding}
-                    tocSettings={tocSettings}
-                    pageSequence={pageSequence}
-                    pageEntries={pageEntries}
-                    numPages={numPages}
-                    orientation={pageOrientation}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : onTextPage && currentTextPage ? (
-            <div
-              className="flex-1 relative"
-              style={{ backgroundColor: bgPrimary }}
-            >
-              <ViewerBackground branding={branding} />
-              <div ref={mainRef} className="absolute inset-0 overflow-auto">
-                <div className="relative min-h-full">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  <TextPage
-                    textPage={currentTextPage as any}
-                    branding={branding}
-                    clientName={proposal?.client_name ?? undefined}
-                    companyName={branding.name}
-                    userName={proposal?.created_by_name ?? undefined}
-                    proposalTitle={proposal?.title}
-                    clientLogoUrl={clientLogoUrl ?? undefined}
-                    orientation={pageOrientation}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : onPricingPage && pricing ? (
-            <div
-              className="flex-1 relative"
-              style={{ backgroundColor: bgPrimary }}
-            >
-              <ViewerBackground branding={branding} />
-              <div ref={mainRef} className="absolute inset-0 overflow-auto">
-                <div className="relative min-h-full">
-                  <PricingPage
-                    pricing={pricing as unknown as ProposalPricing}
-                    branding={branding}
-                    clientName={proposal?.client_name ?? undefined}
-                    orientation={pageOrientation}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : onPackagesPage && currentPackages ? (
-            <div
-              className="flex-1 relative"
-              style={{ backgroundColor: bgPrimary }}
-            >
-              <ViewerBackground branding={branding} />
-              <div ref={mainRef} className="absolute inset-0 overflow-auto">
-                <div className="relative min-h-full">
-                  <PackagesPage
-                    packages={currentPackages as unknown as ProposalPackages}
-                    branding={branding}
-                    clientName={proposal?.client_name ?? undefined}
-                    orientation={pageOrientation}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <PdfViewer
-              pdfUrl={pdfUrl}
-              currentPage={pdfPage}
-              onLoadSuccess={onDocumentLoadSuccess}
-              scrollRef={mainRef}
-              bgColor={bgPrimary}
-              accentColor={accent}
-              branding={branding}
-              pageUrls={pageUrls.filter((p) => p.type === 'pdf')}
-            />
-          )}
+          <ViewerPageContent
+            branding={v.branding}
+            bgPrimary={v.bgPrimary}
+            pageOrientation={v.pageOrientation}
+            scrollRef={v.mainRef}
+            onTocPage={v.onTocPage}
+            onTextPage={v.onTextPage}
+            onPricingPage={v.onPricingPage}
+            onPackagesPage={v.onPackagesPage}
+            tocSettings={v.tocSettings}
+            pageSequence={v.pageSequence}
+            pageEntries={v.pageEntries}
+            numPages={v.numPages}
+            currentTextPage={v.currentTextPage as Record<string, unknown> | undefined}
+            pricing={v.pricing}
+            currentPackages={v.currentPackages}
+            pdfUrl={v.pdfUrl}
+            pdfPage={v.pdfPage}
+            onLoadSuccess={v.onDocumentLoadSuccess}
+            accentColor={v.accent}
+            pageUrls={v.pageUrls}
+            proposal={v.proposal as Record<string, unknown> | null}
+            clientLogoUrl={v.clientLogoUrl}
+          />
 
           <PageNumberBadge
-            currentPage={currentPage}
-            totalPages={numPages}
-            accentColor={accent}
-            circleColor={branding.page_num_circle_color ?? undefined}
-            textColor={branding.page_num_text_color ?? undefined}
+            currentPage={v.currentPage}
+            totalPages={v.numPages}
+            accentColor={v.accent}
+            circleColor={v.branding.page_num_circle_color ?? undefined}
+            textColor={v.branding.page_num_text_color ?? undefined}
           />
 
           <FloatingToolbar
-            pdfUrl={pdfUrl}
-            title={proposal?.title || ''}
-            currentPage={currentPage}
-            numPages={numPages}
-            onPrevPage={() => goToPage(Math.max(1, currentPage - 1))}
-            onNextPage={() => goToPage(Math.min(pageUrls.length, currentPage + 1))}
-            bgColor={bgSecondary}
-            borderColor={border}
-            accentColor={accent}
-            onCompositeDownload={pageUrls.length > 0 ? handleCompositeDownload : undefined}
+            pdfUrl={v.pdfUrl}
+            title={v.proposal?.title || ''}
+            currentPage={v.currentPage}
+            numPages={v.numPages}
+            onPrevPage={() => v.goToPage(Math.max(1, v.currentPage - 1))}
+            onNextPage={() => v.goToPage(Math.min(v.pageUrls.length, v.currentPage + 1))}
+            bgColor={v.bgSecondary}
+            borderColor={v.border}
+            accentColor={v.accent}
+            onCompositeDownload={v.pageUrls.length > 0 ? v.handleCompositeDownload : undefined}
           />
         </div>
 
-        {/* Comments panel (desktop: inline; mobile: overlay inside CommentsPanel) */}
-        {showComments && (
+        {v.showComments && (
           <CommentsPanel
-            comments={comments}
-            currentPage={currentPage}
-            getPageName={getPageName}
-            onGoToPage={goToPage}
-            onSubmit={submitComment}
-            onReply={replyToComment}
-            onResolve={resolveComment}
-            onUnresolve={unresolveComment}
-            onClose={() => setShowComments(false)}
-            accentColor={accent}
-            acceptTextColor={branding.accept_text_color || '#ffffff'}
-            textColor={sidebarText}
-            bgPrimary={bgPrimary}
-            bgSecondary={bgSecondary}
+            comments={v.comments}
+            currentPage={v.currentPage}
+            getPageName={v.getPageName}
+            onGoToPage={v.goToPage}
+            onSubmit={v.submitComment}
+            onReply={v.replyToComment}
+            onResolve={v.resolveComment}
+            onUnresolve={v.unresolveComment}
+            onClose={() => v.setShowComments(false)}
+            accentColor={v.accent}
+            acceptTextColor={v.branding.accept_text_color || '#ffffff'}
+            textColor={v.sidebarText}
+            bgPrimary={v.bgPrimary}
+            bgSecondary={v.bgSecondary}
           />
         )}
       </div>

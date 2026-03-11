@@ -1,15 +1,12 @@
 // app/company/page.tsx
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Building2, Upload, Trash2, Loader2,
-  Check, Globe, Link2, Image as ImageIcon,
-} from 'lucide-react';
+import { Building2, Check, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { supabase } from '@/lib/supabase';
 import CustomDomainManager from '@/components/admin/CustomDomainManager';
-import { CompanyData, isValidHex6, isValidHex6or8 } from '@/lib/company-utils';
+import { isValidHex6 } from '@/lib/company-utils';
+import { useCompanySettings } from '@/components/admin/company/useCompanySettings';
+import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
 import ViewerPreview from '@/components/admin/company/ViewerPreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
@@ -24,290 +21,9 @@ export default function CompanySettingsPage() {
 }
 
 function CompanySettingsContent({ companyId }: { companyId: string }) {
-  const [company, setCompany] = useState<CompanyData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [accentColor, setAccentColor] = useState('#ff6700');
-  const [bgPrimary, setBgPrimary] = useState('#0f0f0f');
-  const [bgSecondary, setBgSecondary] = useState('#141414');
-  const [sidebarTextColor, setSidebarTextColor] = useState('#ffffff');
-  const [acceptTextColor, setAcceptTextColor] = useState('#ffffff');
-  const [website, setWebsite] = useState('');
-  const [logoUploading, setLogoUploading] = useState(false);
-  // ── Background image state ──
-  const [bgImagePath, setBgImagePath] = useState<string | null>(null);
-  const [bgImageUrl, setBgImageUrl] = useState<string | null>(null);
-  const [bgImageUploading, setBgImageUploading] = useState(false);
-  const [bgImageOverlayOpacity, setBgImageOverlayOpacity] = useState(0.85);
-  // ── Font state ──
-  const [fontHeading, setFontHeading] = useState<string | null>(null);
-  const [fontBody, setFontBody] = useState<string | null>(null);
-  const [fontSidebar, setFontSidebar] = useState<string | null>(null);
-  const [fontHeadingWeight, setFontHeadingWeight] = useState<string | null>(null);
-  const [fontBodyWeight, setFontBodyWeight] = useState<string | null>(null);
-  const [fontSidebarWeight, setFontSidebarWeight] = useState<string | null>(null);
-  const [fontsSaved, setFontsSaved] = useState(false);
+  const s = useCompanySettings(companyId);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const isOwner = company?.current_role === 'owner';
-
-  const getAuthHeaders = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return { 'Authorization': `Bearer ${session?.access_token}` };
-  };
-
-  const fetchCompany = useCallback(async () => {
-    if (!companyId) return;
-    try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/company?company_id=${companyId}`, { headers });
-      const data = await res.json();
-      if (res.ok) {
-        setCompany(data);
-        setName(data.name);
-        setSlug(data.slug);
-        setAccentColor(data.accent_color || '#ff6700');
-        setBgPrimary(data.bg_primary || '#0f0f0f');
-        setBgSecondary(data.bg_secondary || '#141414');
-        setSidebarTextColor(data.sidebar_text_color || '#ffffff');
-        setAcceptTextColor(data.accept_text_color || '#ffffff');
-        setWebsite(data.website || '');
-        setFontHeading(data.font_heading || null);
-        setFontBody(data.font_body || null);
-        setFontSidebar(data.font_sidebar || null);
-        setFontHeadingWeight(data.font_heading_weight || null);
-        setFontBodyWeight(data.font_body_weight || null);
-        setFontSidebarWeight(data.font_sidebar_weight || null);
-        // ── Background image ──
-        setBgImagePath(data.bg_image_path || null);
-        setBgImageOverlayOpacity(data.bg_image_overlay_opacity ?? 0.85);
-        if (data.bg_image_path) {
-          const { data: bgUrl } = supabase.storage
-            .from('company-assets')
-            .getPublicUrl(data.bg_image_path);
-          setBgImageUrl(bgUrl?.publicUrl || null);
-        } else {
-          setBgImageUrl(null);
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId]);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchCompany();
-  }, [fetchCompany]);
-
-  const showFeedback = (msg: string, isError = false) => {
-    if (isError) { setError(msg); setSuccess(''); }
-    else { setSuccess(msg); setError(''); }
-    setTimeout(() => { setError(''); setSuccess(''); }, 3000);
-  };
-
-  const handleSaveField = async (field: string, value: string) => {
-    if (!isOwner) return;
-    setSaving(field);
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: value }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      showFeedback('Saved');
-    }
-    setSaving(null);
-  };
-
-  const handleSaveColors = async () => {
-    if (!isOwner) return;
-    setSaving('colors');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accent_color: accentColor,
-        bg_primary: bgPrimary,
-        bg_secondary: bgSecondary,
-        sidebar_text_color: sidebarTextColor,
-        accept_text_color: acceptTextColor,
-        bg_image_overlay_opacity: bgImageOverlayOpacity,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      showFeedback('Branding saved');
-    }
-    setSaving(null);
-  };
-
-  const handleSaveFonts = async () => {
-    if (!isOwner) return;
-    setSaving('fonts');
-    setError('');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        font_heading: fontHeading,
-        font_body: fontBody,
-        font_sidebar: fontSidebar,
-        font_heading_weight: fontHeadingWeight,
-        font_body_weight: fontBodyWeight,
-        font_sidebar_weight: fontSidebarWeight,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save fonts', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      setFontsSaved(true);
-      setTimeout(() => setFontsSaved(false), 2000);
-    }
-    setSaving(null);
-  };
-
-  // Autosave fonts — debounce 800ms after any font change
-  const fontsChanged =
-    fontHeading !== (company?.font_heading || null) ||
-    fontBody !== (company?.font_body || null) ||
-    fontSidebar !== (company?.font_sidebar || null) ||
-    fontHeadingWeight !== (company?.font_heading_weight || null) ||
-    fontBodyWeight !== (company?.font_body_weight || null) ||
-    fontSidebarWeight !== (company?.font_sidebar_weight || null);
-
-  useEffect(() => {
-    if (!fontsChanged || !isOwner || !company) return;
-    const timer = setTimeout(() => {
-      handleSaveFonts();
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [fontHeading, fontBody, fontSidebar, fontHeadingWeight, fontBodyWeight, fontSidebarWeight]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setLogoUploading(true);
-    const headers = await getAuthHeaders();
-    const formData = new FormData();
-    formData.append('logo', file);
-    const res = await fetch(`/api/company/logo?company_id=${companyId}`, { method: 'POST', headers, body: formData });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Upload failed', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, logo_path: data.logo_path, logo_url: `${data.logo_url}?t=${Date.now()}` } : prev);
-      showFeedback('Logo uploaded');
-    }
-    setLogoUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleLogoRemove = async () => {
-    if (!confirm('Remove company logo?')) return;
-    setLogoUploading(true);
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company/logo?company_id=${companyId}`, { method: 'DELETE', headers });
-    if (res.ok) {
-      setCompany(prev => prev ? { ...prev, logo_path: null, logo_url: null } : prev);
-      showFeedback('Logo removed');
-    }
-    setLogoUploading(false);
-  };
-
-  // ── Background image handlers ──
-
-  const handleBgImageUpload = async (file: File) => {
-    if (!isOwner) return;
-    setBgImageUploading(true);
-    try {
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const safeName = `bg-image.${ext}`.replace(/[^a-zA-Z0-9._-]/g, '');
-      const storagePath = `${companyId}/bg-image/${safeName}`;
-
-      // Remove old image if exists
-      if (bgImagePath) {
-        await supabase.storage.from('company-assets').remove([bgImagePath]);
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('company-assets')
-        .upload(storagePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Save path to DB
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/company?company_id=${companyId}`, {
-        method: 'PATCH',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bg_image_path: storagePath }),
-      });
-
-      if (!res.ok) throw new Error('Failed to save');
-
-      setBgImagePath(storagePath);
-      const { data: urlData } = supabase.storage
-        .from('company-assets')
-        .getPublicUrl(storagePath);
-      setBgImageUrl(urlData?.publicUrl || null);
-      setCompany(prev => prev ? { ...prev, bg_image_path: storagePath } : prev);
-      showFeedback('Background image uploaded');
-    } catch (err) {
-      console.error(err);
-      showFeedback('Failed to upload background image', true);
-    } finally {
-      setBgImageUploading(false);
-    }
-  };
-
-  const handleBgImageRemove = async () => {
-    if (!isOwner || !bgImagePath) return;
-    try {
-      await supabase.storage.from('company-assets').remove([bgImagePath]);
-
-      const headers = await getAuthHeaders();
-      await fetch(`/api/company?company_id=${companyId}`, {
-        method: 'PATCH',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bg_image_path: null }),
-      });
-
-      setBgImagePath(null);
-      setBgImageUrl(null);
-      setCompany(prev => prev ? { ...prev, bg_image_path: null } : prev);
-      showFeedback('Background image removed');
-    } catch (err) {
-      console.error(err);
-      showFeedback('Failed to remove background image', true);
-    }
-  };
-
-  const colorsChanged =
-    accentColor !== (company?.accent_color || '#ff6700') ||
-    bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
-    bgSecondary !== (company?.bg_secondary || '#141414') ||
-    sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
-    acceptTextColor !== (company?.accept_text_color || '#ffffff') ||
-    bgImageOverlayOpacity !== (company?.bg_image_overlay_opacity ?? 0.85);
-
-  if (loading) {
+  if (s.loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 size={24} className="animate-spin text-gray-300" />
@@ -317,8 +33,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
 
   return (
     <div className="px-6 lg:px-10 py-8">
-      {/* Load selected Google Fonts for previews */}
-      <GoogleFontLoader fonts={[fontHeading, fontBody, fontSidebar]} />
+      <GoogleFontLoader fonts={[s.fontHeading, s.fontBody, s.fontSidebar]} />
 
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
@@ -328,180 +43,105 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Company Settings</h1>
           <p className="text-sm text-gray-400">
-            {isOwner ? 'Manage your company profile and branding' : 'View company profile'}
+            {s.isOwner ? 'Manage your company profile and branding' : 'View company profile'}
           </p>
         </div>
       </div>
 
       {/* Feedback */}
-      {error && (
-        <div className="mb-4 text-xs text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{error}</div>
+      {s.error && (
+        <div className="mb-4 text-xs text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{s.error}</div>
       )}
-      {success && (
+      {s.success && (
         <div className="mb-4 text-xs text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-lg flex items-center gap-1.5">
-          <Check size={12} /> {success}
+          <Check size={12} /> {s.success}
         </div>
       )}
 
-      {/* Single column layout */}
       <div className="space-y-5">
 
-        {/* ─── Company Profile (Logo + Name + Slug + Website) ─── */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-5">
-            <Building2 size={15} className="text-gray-400" />
-            <span className="text-sm font-medium text-gray-500">Company Profile</span>
-          </div>
-
-          <div className="flex items-start gap-6 mb-5">
-            {/* Logo */}
-            <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
-              {company?.logo_url ? (
-                <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
-              ) : (
-                <Building2 size={28} className="text-gray-200" />
-              )}
-            </div>
-            {isOwner && (
-              <div className="space-y-2 pt-1">
-                <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={handleLogoUpload} className="hidden" />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={logoUploading}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 text-sm text-gray-600 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
-                >
-                  {logoUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                  Upload Logo
-                </button>
-                {company?.logo_url && (
-                  <button onClick={handleLogoRemove} disabled={logoUploading} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:text-red-600 transition-colors">
-                    <Trash2 size={14} /> Remove
-                  </button>
-                )}
-                <p className="text-xs text-gray-400">PNG, JPEG, SVG, or WebP. Max 2MB.</p>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            {/* Company Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1.5">Company Name</label>
-              <div className="flex gap-2">
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={!isOwner}
-                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-                {isOwner && name !== company?.name && (
-                  <button onClick={() => handleSaveField('name', name)} disabled={saving === 'name' || !name.trim()}
-                    className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                    {saving === 'name' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* URL Slug */}
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <Link2 size={14} className="text-gray-400" />
-                <label className="text-sm font-medium text-gray-500">URL Slug</label>
-              </div>
-              <div className="flex gap-2">
-                <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} disabled={!isOwner}
-                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 font-mono placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-                {isOwner && slug !== company?.slug && (
-                  <button onClick={() => handleSaveField('slug', slug)} disabled={saving === 'slug' || slug.length < 2}
-                    className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                    {saving === 'slug' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Lowercase letters, numbers, and hyphens only.</p>
-            </div>
-
-            {/* Website */}
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <Globe size={14} className="text-gray-400" />
-                <label className="text-sm font-medium text-gray-500">Website</label>
-              </div>
-              <div className="flex gap-2">
-                <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://yourcompany.com" disabled={!isOwner}
-                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed" />
-                {isOwner && website !== (company?.website || '') && (
-                  <button onClick={() => handleSaveField('website', website)} disabled={saving === 'website'}
-                    className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors">
-                    {saving === 'website' ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Company Profile */}
+        <CompanyProfileCard
+          company={s.company}
+          isOwner={s.isOwner}
+          saving={s.saving}
+          name={s.name}
+          setName={s.setName}
+          slug={s.slug}
+          setSlug={s.setSlug}
+          website={s.website}
+          setWebsite={s.setWebsite}
+          onSaveField={s.handleSaveField}
+          logoUploading={s.logoUploading}
+          fileInputRef={s.fileInputRef}
+          onLogoUpload={s.handleLogoUpload}
+          onLogoRemove={s.handleLogoRemove}
+        />
 
         {/* Custom Domain */}
-        <CustomDomainManager companyId={companyId} isOwner={isOwner} />
+        <CustomDomainManager companyId={companyId} isOwner={s.isOwner} />
 
-        {/* Viewer Colors — side-by-side with preview */}
+        {/* Viewer Colors */}
         <ViewerColorsSection
-          isOwner={isOwner}
-          saving={saving}
-          colorsChanged={colorsChanged}
-          accentColor={accentColor}
-          setAccentColor={setAccentColor}
-          bgPrimary={bgPrimary}
-          setBgPrimary={setBgPrimary}
-          bgSecondary={bgSecondary}
-          setBgSecondary={setBgSecondary}
-          sidebarTextColor={sidebarTextColor}
-          setSidebarTextColor={setSidebarTextColor}
-          acceptTextColor={acceptTextColor}
-          setAcceptTextColor={setAcceptTextColor}
-          onSave={handleSaveColors}
-          bgImageUrl={bgImageUrl}
-          bgImageUploading={bgImageUploading}
-          bgImageOverlayOpacity={bgImageOverlayOpacity}
-          setBgImageOverlayOpacity={setBgImageOverlayOpacity}
-          onBgImageUpload={handleBgImageUpload}
-          onBgImageRemove={handleBgImageRemove}
+          isOwner={s.isOwner}
+          saving={s.saving}
+          colorsChanged={s.colorsChanged}
+          accentColor={s.accentColor}
+          setAccentColor={s.setAccentColor}
+          bgPrimary={s.bgPrimary}
+          setBgPrimary={s.setBgPrimary}
+          bgSecondary={s.bgSecondary}
+          setBgSecondary={s.setBgSecondary}
+          sidebarTextColor={s.sidebarTextColor}
+          setSidebarTextColor={s.setSidebarTextColor}
+          acceptTextColor={s.acceptTextColor}
+          setAcceptTextColor={s.setAcceptTextColor}
+          onSave={s.handleSaveColors}
+          bgImageUrl={s.bgImageUrl}
+          bgImageUploading={s.bgImageUploading}
+          bgImageOverlayOpacity={s.bgImageOverlayOpacity}
+          setBgImageOverlayOpacity={s.setBgImageOverlayOpacity}
+          onBgImageUpload={s.handleBgImageUpload}
+          onBgImageRemove={s.handleBgImageRemove}
         >
           <p className="text-xs text-gray-400 mb-3">This is how your proposals will appear to clients.</p>
           <ViewerPreview
-            accent={isValidHex6(accentColor) ? accentColor : '#ff6700'}
-            bgPrimary={isValidHex6(bgPrimary) ? bgPrimary : '#0f0f0f'}
-            bgSecondary={isValidHex6(bgSecondary) ? bgSecondary : '#141414'}
-            sidebarTextColor={isValidHex6(sidebarTextColor) ? sidebarTextColor : '#ffffff'}
-            acceptTextColor={isValidHex6(acceptTextColor) ? acceptTextColor : '#ffffff'}
-            logoUrl={company?.logo_url || null}
-            companyName={name}
-            fontSidebar={fontSidebar}
-            fontSidebarWeight={fontSidebarWeight}
-            bgImageUrl={bgImageUrl}
-            bgImageOverlayOpacity={bgImageOverlayOpacity}
+            accent={isValidHex6(s.accentColor) ? s.accentColor : '#ff6700'}
+            bgPrimary={isValidHex6(s.bgPrimary) ? s.bgPrimary : '#0f0f0f'}
+            bgSecondary={isValidHex6(s.bgSecondary) ? s.bgSecondary : '#141414'}
+            sidebarTextColor={isValidHex6(s.sidebarTextColor) ? s.sidebarTextColor : '#ffffff'}
+            acceptTextColor={isValidHex6(s.acceptTextColor) ? s.acceptTextColor : '#ffffff'}
+            logoUrl={s.company?.logo_url || null}
+            companyName={s.name}
+            fontSidebar={s.fontSidebar}
+            fontSidebarWeight={s.fontSidebarWeight}
+            bgImageUrl={s.bgImageUrl}
+            bgImageOverlayOpacity={s.bgImageOverlayOpacity}
           />
         </ViewerColorsSection>
 
-        {/* Viewer Fonts — standalone (affects all previews) */}
+        {/* Viewer Fonts */}
         <ViewerFontsSection
-          isOwner={isOwner}
-          saving={saving}
-          fontsChanged={fontsChanged}
-          fontHeading={fontHeading}
-          setFontHeading={setFontHeading}
-          fontBody={fontBody}
-          setFontBody={setFontBody}
-          fontSidebar={fontSidebar}
-          setFontSidebar={setFontSidebar}
-          fontHeadingWeight={fontHeadingWeight}
-          setFontHeadingWeight={setFontHeadingWeight}
-          fontBodyWeight={fontBodyWeight}
-          setFontBodyWeight={setFontBodyWeight}
-          fontSidebarWeight={fontSidebarWeight}
-          setFontSidebarWeight={setFontSidebarWeight}
-          onSave={handleSaveFonts}
-          lastSaved={fontsSaved}
+          isOwner={s.isOwner}
+          saving={s.saving}
+          fontsChanged={s.fontsChanged}
+          fontHeading={s.fontHeading}
+          setFontHeading={s.setFontHeading}
+          fontBody={s.fontBody}
+          setFontBody={s.setFontBody}
+          fontSidebar={s.fontSidebar}
+          setFontSidebar={s.setFontSidebar}
+          fontHeadingWeight={s.fontHeadingWeight}
+          setFontHeadingWeight={s.setFontHeadingWeight}
+          fontBodyWeight={s.fontBodyWeight}
+          setFontBodyWeight={s.setFontBodyWeight}
+          fontSidebarWeight={s.fontSidebarWeight}
+          setFontSidebarWeight={s.setFontSidebarWeight}
+          onSave={s.handleSaveFonts}
+          lastSaved={s.fontsSaved}
         />
 
-        {!isOwner && (
+        {!s.isOwner && (
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
             <p className="text-sm text-gray-400">Only the company owner can edit these settings.</p>
           </div>

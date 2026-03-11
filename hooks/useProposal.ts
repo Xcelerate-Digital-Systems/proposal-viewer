@@ -4,21 +4,12 @@
 // Re-export so existing `import { CompanyBranding } from '@/hooks/useProposal'` keeps working
 export type { CompanyBranding } from '@/lib/types/branding';
 export { deriveBorderColor, deriveSurfaceColor } from '@/lib/types/branding';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, Proposal, ProposalComment, TocSettings, parseTocSettings, PageNameEntry, } from '@/lib/supabase';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase, Proposal, ProposalComment } from '@/lib/supabase';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import type { CompanyBranding } from '@/lib/types/branding';
-
-// Fire-and-forget notification — doesn't block UI
-function notify(payload: Record<string, string | undefined>) {
-  fetch('/api/notify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).catch(() => {});
-}
-
-
+import { useProposalDerived } from './useProposalDerived';
+import { createProposalActions } from './useProposalActions';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -40,10 +31,6 @@ export interface ProposalTextPage {
   show_title?: boolean;
 }
 
-/**
- * Unified page entry returned by /api/proposals/page-urls.
- * Covers all page types — PDF pages have a signed `url`.
- */
 export interface PageUrlEntry {
   id:                    string;
   position:              number;
@@ -152,16 +139,21 @@ export function useProposal(token: string) {
         company_id: data.company_id,
       });
 
-      if (isFirstView) notify({ event_type: 'proposal_viewed', share_token: token });
+      if (isFirstView) {
+        fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_type: 'proposal_viewed', share_token: token }),
+        }).catch(() => {});
+      }
     }
 
-    // Fetch all pages (unified v2 — all types, signed URLs included)
+    // Fetch all pages (unified v2)
     try {
       const pageUrlRes = await fetch(`/api/proposals/page-urls?share_token=${token}`, { cache: 'no-store' });
       if (pageUrlRes.ok) {
         const pageUrlData = await pageUrlRes.json();
-        const pages: PageUrlEntry[] = pageUrlData.pages ?? [];
-        setPageUrls(pages);
+        setPageUrls(pageUrlData.pages ?? []);
       }
     } catch { /* Non-critical */ }
 
@@ -181,287 +173,32 @@ export function useProposal(token: string) {
     fetchProposal();
   }, [fetchProposal]);
 
-  /* ── Derived state from unified page list ──────────────────────────────── */
+  // Derived page state
+  const derived = useProposalDerived(pageUrls, proposal);
 
-  // Sidebar nav entries — section pages become 'group' type
-  const pageEntries: PageNameEntry[] = useMemo(
-    () =>
-      pageUrls.map((p) => ({
-        name: p.title,
-        indent: p.indent,
-        ...(p.type === 'section' ? { type: 'group' as const } : {}),
-        ...(p.link_url ? { link_url: p.link_url } : {}),
-        ...(p.link_label ? { link_label: p.link_label } : {}),
-      })),
-    [pageUrls],
-  );
-
-  const numPages = useMemo(
-    () => pageUrls.filter((p) => p.type !== 'section').length,
-    [pageUrls],
-  );
-
-  // Virtual page type helpers
-  const isPricingPage  = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'pricing',  [pageUrls]);
-  const isPackagesPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'packages', [pageUrls]);
-  const isTocPage      = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'toc',      [pageUrls]);
-  const isTextPage     = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'text',     [pageUrls]);
-
-  const getPackagesId = useCallback(
-    (vp: number): string | null => pageUrls[vp - 1]?.type === 'packages' ? pageUrls[vp - 1].id : null,
-    [pageUrls],
-  );
-  const getTextPageId = useCallback(
-    (vp: number): string | null => pageUrls[vp - 1]?.type === 'text' ? pageUrls[vp - 1].id : null,
-    [pageUrls],
-  );
-  const toPdfPage = useCallback(
-    (vp: number): number => {
-      // Count how many PDF pages precede this virtual page
-      let pdfCount = 0;
-      for (let i = 0; i < vp - 1 && i < pageUrls.length; i++) {
-        if (pageUrls[i].type === 'pdf') pdfCount++;
-      }
-      return pageUrls[vp - 1]?.type === 'pdf' ? pdfCount + 1 : -1;
-    },
-    [pageUrls],
-  );
-
-  // Virtual page sequence (for viewer components that expect it)
-  const pageSequence = useMemo(
-    () =>
-      pageUrls.map((p) => {
-        if (p.type === 'pdf') {
-          // Count PDF pages up to this one for pdfPage index
-          const pdfIndex = pageUrls.slice(0, pageUrls.indexOf(p) + 1).filter((x) => x.type === 'pdf').length;
-          return { type: 'pdf' as const, pdfPage: pdfIndex };
-        }
-        if (p.type === 'text') return { type: 'text' as const, textPageId: p.id };
-        if (p.type === 'pricing') return { type: 'pricing' as const };
-        if (p.type === 'packages') return { type: 'packages' as const, packagesId: p.id };
-        if (p.type === 'toc') return { type: 'toc' as const };
-        return { type: 'pdf' as const, pdfPage: 0 }; // section — shouldn't reach viewer
-      }),
-    [pageUrls],
-  );
-
-  // Backward-compat: extract pricing/packages/textPages from payloads for viewer components
-  const pricing = useMemo(() => {
-    const p = pageUrls.find((x) => x.type === 'pricing');
-    if (!p) return null;
-    return { id: p.id, enabled: true, title: p.title, position: p.position, indent: p.indent, ...p.payload } as Record<string, unknown>;
-  }, [pageUrls]);
-
-  const packages = useMemo(
-    () =>
-      pageUrls
-        .filter((x) => x.type === 'packages')
-        .map((p) => ({ id: p.id, enabled: true, title: p.title, indent: p.indent, ...p.payload })),
-    [pageUrls],
-  );
-
-  const textPages: ProposalTextPage[] = useMemo(
-    () =>
-      pageUrls
-        .filter((x) => x.type === 'text')
-        .map((p) => ({
-          id: p.id,
-          proposal_id: proposal?.id ?? '',
-          company_id: proposal?.company_id ?? '',
-          enabled: true,
-          position: p.position,
-          title: p.title,
-          content: p.payload.content ?? null,
-          sort_order: p.position,
-          indent: p.indent,
-          link_url: p.link_url ?? null,
-          link_label: p.link_label ?? null,
-          show_title: p.show_title ?? true,
-          show_member_badge: p.show_member_badge ?? false,
-          show_client_logo:  p.show_client_logo  ?? false,
-          prepared_by_member_id: p.prepared_by_member_id ?? null,
-        })),
-    [pageUrls, proposal],
-  );
-
-  const tocSettings = proposal ? parseTocSettings(proposal.toc_settings) : null;
-
-  // pdfPageCount = number of PDF pages in the sequence
-  const pdfPageCount = useMemo(() => pageUrls.filter((p) => p.type === 'pdf').length, [pageUrls]);
-
-  const getPageName = (pageNum: number) => pageEntries[pageNum - 1]?.name || `Page ${pageNum}`;
-
-  const getTextPage = useCallback(
-    (textPageId: string): ProposalTextPage | undefined => textPages.find((tp) => tp.id === textPageId),
-    [textPages],
-  );
-
-  const refreshComments = async () => {
-    if (!proposal) return;
-    const { data } = await supabase
-      .from('proposal_comments')
-      .select('*')
-      .eq('proposal_id', proposal.id)
-      .eq('is_internal', false)
-      .order('created_at', { ascending: true });
-    setComments(data || []);
-  };
-
-  const acceptProposal = async (name: string) => {
-    if (!proposal) return;
-    await supabase
-      .from('proposals')
-      .update({ status: 'accepted', accepted_at: new Date().toISOString(), accepted_by_name: name })
-      .eq('id', proposal.id);
-    setAccepted(true);
-    notify({ event_type: 'proposal_accepted', share_token: token });
-  };
-
-
-const declineProposal = async (name: string, reason: string) => {
-    if (!proposal) return;
-    await supabase
-      .from('proposals')
-      .update({
-        status:           'declined',
-        declined_at:      new Date().toISOString(),
-        declined_by_name: name,
-        decline_reason:   reason,
-      })
-      .eq('id', proposal.id);
-    setDeclined(true);
-    notify({
-      event_type:    'proposal_declined',
-      share_token:   token,
-      feedback_text: reason,
-      feedback_by:   name,
-    });
-  };
-
-  const requestRevision = async (name: string, notes: string) => {
-    if (!proposal) return;
-    await supabase
-      .from('proposals')
-      .update({
-        status:                       'revision_requested',
-        revision_requested_at:        new Date().toISOString(),
-        revision_requested_by_name:   name,
-        revision_notes:               notes,
-      })
-      .eq('id', proposal.id);
-    setRevisionRequested(true);
-    notify({
-      event_type:    'proposal_revision_requested',
-      share_token:   token,
-      feedback_text: notes,
-      feedback_by:   name,
-    });
-  };
-
-  const submitComment = async (authorName: string, content: string, pageNumber: number) => {
-    if (!proposal) return;
-    const authorType = isTeamPreview ? 'team' : 'client';
-    const { data: newComment } = await supabase
-      .from('proposal_comments')
-      .insert({
-        proposal_id: proposal.id,
-        author_name: authorName,
-        author_type: authorType,
-        content,
-        page_number: pageNumber,
-        is_internal: false,
-        company_id: proposal.company_id,
-      })
-      .select('id')
-      .single();
-    await refreshComments();
-    notify({ event_type: 'comment_added', share_token: token, comment_id: newComment?.id, comment_author: authorName, comment_content: content, author_type: authorType });
-  };
-
-  const replyToComment = async (parentId: string, authorName: string, content: string) => {
-    if (!proposal) return;
-    const authorType = isTeamPreview ? 'team' : 'client';
-    const parent = comments.find((c) => c.id === parentId);
-    const { data: newReply } = await supabase
-      .from('proposal_comments')
-      .insert({
-        proposal_id: proposal.id,
-        author_name: authorName,
-        author_type: authorType,
-        content,
-        page_number: parent?.page_number || null,
-        is_internal: false,
-        parent_id: parentId,
-        company_id: proposal.company_id,
-      })
-      .select('id')
-      .single();
-    await refreshComments();
-    notify({ event_type: 'comment_added', share_token: token, comment_id: newReply?.id, comment_author: authorName, comment_content: content, author_type: authorType });
-  };
-
-  const resolveComment = async (commentId: string, resolvedBy: string) => {
-    const authorType = isTeamPreview ? 'team' : 'client';
-    await supabase
-      .from('proposal_comments')
-      .update({ resolved_at: new Date().toISOString(), resolved_by: resolvedBy })
-      .eq('id', commentId);
-    await refreshComments();
-    notify({ event_type: 'comment_resolved', share_token: token, comment_id: commentId, resolved_by: resolvedBy, author_type: authorType });
-  };
-
-  const unresolveComment = async (commentId: string) => {
-    await supabase
-      .from('proposal_comments')
-      .update({ resolved_at: null, resolved_by: null })
-      .eq('id', commentId);
-    await refreshComments();
-  };
-
-  const onDocumentLoadSuccess = useCallback((_: { numPages: number }) => {
-    // No-op in v2: page count comes from pageUrls.length, not PDF metadata
-  }, []);
+  // Action handlers
+  const actions = createProposalActions({
+    proposal, token, comments, isTeamPreview,
+    setAccepted, setDeclined, setRevisionRequested, setComments,
+  });
 
   return {
     proposal,
     creatorName: proposal?.created_by_name || null,
     pdfUrl: null,
     pageUrls,
-    numPages,
-    pdfPageCount,
     currentPage,
     setCurrentPage,
     loading,
     notFound,
-    pageEntries,
     comments,
     accepted,
     declined,
     revisionRequested,
     branding,
     brandingLoaded,
-    pricing,
-    packages,
-    textPages,
-    isPricingPage,
-    isPackagesPage,
-    getPackagesId,
-    isTocPage,
-    isTextPage,
-    tocSettings,
-    pageSequence,
-    getTextPageId,
-    toPdfPage,
-    getTextPage,
-    onDocumentLoadSuccess,
-    getPageName,
-    acceptProposal,
-    declineProposal,
-    requestRevision,
-    submitComment,
-    replyToComment,
-    resolveComment,
-    unresolveComment,
+    ...derived,
+    ...actions,
   };
 }
 
