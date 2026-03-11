@@ -14,7 +14,7 @@ interface UploadModalProps {
 }
 
 const formatSize = (bytes: number | null) => {
-  if (!bytes) return '\u2014';
+  if (!bytes) return '—';
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
@@ -26,20 +26,24 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [status, setStatus] = useState('');
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
     setUploading(true);
     setUploadProgress(0);
+    setStatus('Uploading PDF...');
 
     const { supabase } = await import('@/lib/supabase');
 
     try {
-      // Sanitize filename: remove special chars that Supabase storage rejects (|, #, ?, etc.)
+      // Sanitize filename: remove special chars that Supabase storage rejects
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const filePath = `${Date.now()}-${safeName}`;
+      // ── FIX: use proposals/ prefix so splitProposalPages can find the file ──
+      const filePath = `proposals/${Date.now()}-${safeName}`;
 
+      // Step 1: Upload PDF directly to storage (bypasses Vercel 4.5 MB body limit)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener('progress', (ev) => {
@@ -58,6 +62,9 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
         xhr.setRequestHeader('x-upsert', 'true');
         xhr.send(file);
       });
+
+      setStatus('Creating proposal...');
+
       // Get current user's name from team_members
       const { data: sessionData } = await supabase.auth.getSession();
       let creatorName: string | null = null;
@@ -70,22 +77,29 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
         creatorName = member?.name || null;
       }
 
-      const { error: dbError } = await supabase.from('proposals').insert({
-        title: form.title,
-        client_name: form.client_name,
-        client_email: form.client_email || null,
-        crm_identifier: form.crm_identifier || null,
-        description: form.description || null,
-        file_path: filePath,
-        file_size_bytes: file.size,
-        status: 'draft',
-        page_names: [],
-        company_id: companyId,
-        created_by_name: creatorName,
-        prepared_by: creatorName,
+      // ── FIX: call /api/proposals instead of direct DB insert so that
+      //    splitProposalPages runs and proposal_pages_v2 rows get created ──
+      const res = await fetch('/api/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:           form.title,
+          client_name:     form.client_name,
+          client_email:    form.client_email    || null,
+          crm_identifier:  form.crm_identifier  || null,
+          description:     form.description     || null,
+          file_path:       filePath,
+          file_size_bytes: file.size,
+          company_id:      companyId,
+          created_by_name: creatorName,
+          prepared_by:     creatorName,
+        }),
       });
 
-      if (dbError) throw dbError;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `Server error: ${res.status}`);
+      }
 
       onSuccess();
       onClose();
@@ -94,6 +108,7 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
       toast.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
+      setStatus('');
     }
   };
 
@@ -170,13 +185,15 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
             {uploading && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">Uploading...</span>
-                  <span className="text-[#017C87] font-medium">{uploadProgress}%</span>
+                  <span className="text-gray-500">{status || 'Uploading...'}</span>
+                  {status === 'Uploading PDF...' && (
+                    <span className="text-[#017C87] font-medium">{uploadProgress}%</span>
+                  )}
                 </div>
                 <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#017C87] rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${uploadProgress}%` }}
+                    style={{ width: status === 'Uploading PDF...' ? `${uploadProgress}%` : '100%' }}
                   />
                 </div>
               </div>
