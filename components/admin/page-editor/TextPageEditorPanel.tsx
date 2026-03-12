@@ -86,7 +86,7 @@ export default function TextPageEditorPanel({
               value={page.title}
               onChange={handleTitleChange}
               placeholder="e.g. Executive Summary, Welcome, Terms & Conditions"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#017C87] focus:ring-1 focus:ring-[#017C87]/20"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20"
             />
           </div>
 

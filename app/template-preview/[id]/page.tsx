@@ -127,7 +127,7 @@ useEffect(() => {
 
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const bgSecondary = branding.bg_secondary || '#141414';
-  const accent = branding.accent_color || '#ff6700';
+  const accent = branding.accent_color || '#01434A';
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#fff';
   const pageOrientation = template?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;

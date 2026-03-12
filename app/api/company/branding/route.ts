@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       name: company.name,
       logo_url,
-      accent_color: company.accent_color || '#ff6700',
+      accent_color: company.accent_color || '#01434A',
       website: company.website,
       bg_primary: company.bg_primary || '#0f0f0f',
       bg_secondary: company.bg_secondary || '#141414',
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       cover_bg_color_2: company.cover_bg_color_2 || '#141414',
       cover_text_color: company.cover_text_color || '#ffffff',
       cover_subtitle_color: company.cover_subtitle_color || '#ffffffb3',
-      cover_button_bg: company.cover_button_bg || '#ff6700',
+      cover_button_bg: company.cover_button_bg || '#01434A',
       cover_button_text: company.cover_button_text || '#ffffff',
       cover_overlay_opacity: parseFloat(company.cover_overlay_opacity) || 0.65,
       cover_gradient_type: company.cover_gradient_type || 'linear',

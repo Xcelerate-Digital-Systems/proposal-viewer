@@ -49,7 +49,7 @@ export const FALLBACK_DEFAULTS: TextPageDefaults = {
   border_enabled: true,
   border_color: '',
   border_radius: '12',
-  accent_color: '#ff6700',
+  accent_color: '#01434A',
   sidebar_text_color: '#ffffff',
   bg_secondary: '#141414',
   cover_text_color: '#ffffff',

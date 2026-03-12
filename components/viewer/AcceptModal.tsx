@@ -26,7 +26,7 @@ export default function AcceptModal({
   title,
   onAccept,
   onClose,
-  accentColor = '#ff6700',
+  accentColor = '#01434A',
   bgColor = '#141414',
   textColor = '#ffffff',
   acceptTextColor = '#ffffff',

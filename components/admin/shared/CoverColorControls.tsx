@@ -51,7 +51,7 @@ export default function CoverColorControls({
             onClick={() => onChange({ coverBgStyle: 'gradient' })}
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
               coverBgStyle === 'gradient'
-                ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                ? 'border-teal bg-teal/5 text-teal'
                 : 'border-gray-200 text-gray-500 hover:border-gray-300'
             }`}
           >
@@ -74,7 +74,7 @@ export default function CoverColorControls({
             onClick={() => onChange({ coverBgStyle: 'solid' })}
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
               coverBgStyle === 'solid'
-                ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                ? 'border-teal bg-teal/5 text-teal'
                 : 'border-gray-200 text-gray-500 hover:border-gray-300'
             }`}
           >
@@ -97,7 +97,7 @@ export default function CoverColorControls({
                 onClick={() => onChange({ coverGradientType: type })}
                 className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
                   coverGradientType === type
-                    ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                    ? 'border-teal bg-teal/5 text-teal'
                     : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}
               >
@@ -132,7 +132,7 @@ export default function CoverColorControls({
                 onClick={() => onChange({ coverGradientAngle: deg })}
                 className={`px-2.5 py-1 rounded-md text-xs transition-all ${
                   coverGradientAngle === deg
-                    ? 'text-[#017C87] bg-[#017C87]/10 font-medium'
+                    ? 'text-teal bg-teal/10 font-medium'
                     : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                 }`}
               >
@@ -175,7 +175,7 @@ export default function CoverColorControls({
           max="100"
           value={Math.round(coverOverlayOpacity * 100)}
           onChange={(e) => onChange({ coverOverlayOpacity: parseInt(e.target.value) / 100 })}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87]"
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
         />
         <p className="text-xs text-gray-400 mt-1">
           Controls how much the background color shows over uploaded cover images.
@@ -195,7 +195,7 @@ export default function CoverColorControls({
       <div className="pt-4 border-t border-gray-100">
         <label className="block text-xs text-gray-400 mb-2">Button Colors</label>
         <div className="space-y-2">
-          <ColorPickerField label="Button background" value={coverButtonBg} fallback="#ff6700" onChange={(v) => onChange({ coverButtonBg: v })} />
+          <ColorPickerField label="Button background" value={coverButtonBg} fallback="#01434A" onChange={(v) => onChange({ coverButtonBg: v })} />
           <ColorPickerField label="Button text" value={coverButtonTextColor} fallback="#ffffff" onChange={(v) => onChange({ coverButtonTextColor: v })} />
         </div>
       </div>

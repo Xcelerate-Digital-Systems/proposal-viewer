@@ -127,7 +127,7 @@ function FeedbackContent({ projectId, companyId }: { projectId: string; companyI
         item_url: item?.url || null,
         reply_count: replies.length,
         screenshot_url: (c as Record<string, unknown>).screenshot_url as string | null,
-        annotation_data: (c as Record<string, unknown>).annotation_data,
+        annotation_data: ((c as Record<string, unknown>).annotation_data as Record<string, unknown> | null) ?? null,
       };
     });
   }, [allComments, items]);
@@ -202,7 +202,7 @@ function FeedbackContent({ projectId, companyId }: { projectId: string; companyI
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           </div>
         ) : enrichedComments.length === 0 ? (
           <div className="text-center py-20">
@@ -305,13 +305,13 @@ function FeedbackRow({ comment, onClick }: { comment: CommentWithItem; onClick: 
       className="w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-gray-50 transition-colors"
     >
       {/* Thread number badge */}
-      <div className="w-8 h-8 rounded-lg bg-[#017C87]/10 flex items-center justify-center shrink-0 mt-0.5">
+      <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center shrink-0 mt-0.5">
         {comment.thread_number ? (
-          <span className="text-xs font-bold text-[#017C87]">
+          <span className="text-xs font-bold text-teal">
             #{comment.thread_number}
           </span>
         ) : (
-          <MessageSquare size={14} className="text-[#017C87]" />
+          <MessageSquare size={14} className="text-teal" />
         )}
       </div>
 
@@ -330,7 +330,7 @@ function FeedbackRow({ comment, onClick }: { comment: CommentWithItem; onClick: 
           {comment.reply_count > 0 && (
             <>
               <span>·</span>
-              <span className="text-[#017C87]">
+              <span className="text-teal">
                 {comment.reply_count} {comment.reply_count === 1 ? 'reply' : 'replies'}
               </span>
             </>
@@ -377,7 +377,7 @@ function FeedbackModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             {comment.thread_number && (
-              <span className="px-2 py-0.5 rounded-md bg-[#017C87]/10 text-xs font-bold text-[#017C87]">
+              <span className="px-2 py-0.5 rounded-md bg-teal/10 text-xs font-bold text-teal">
                 #{comment.thread_number}
               </span>
             )}
@@ -521,7 +521,7 @@ function FeedbackModal({
                     href={comment.item_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-[#017C87] hover:text-[#015c64] transition-colors truncate max-w-full"
+                    className="inline-flex items-center gap-1.5 text-xs text-teal hover:text-[#015c64] transition-colors truncate max-w-full"
                   >
                     <ExternalLink size={11} className="shrink-0" />
                     <span className="truncate">{comment.item_url}</span>

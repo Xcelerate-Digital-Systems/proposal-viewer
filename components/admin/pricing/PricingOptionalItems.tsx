@@ -39,7 +39,7 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
         <label className="text-sm font-medium text-gray-700">Optional Extras</label>
         <button
           onClick={addItem}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
         >
           <Plus size={12} /> Add Extra
         </button>
@@ -57,7 +57,7 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
               value={item.label}
               onChange={(e) => updateItem(item.id, 'label', e.target.value)}
               placeholder="Extra description"
-              className="flex-1 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#017C87]/30"
+              className="flex-1 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
             <CurrencyInput
               value={item.amount}

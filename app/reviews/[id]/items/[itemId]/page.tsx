@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, type ReviewProject, type ReviewItem, type ReviewComment } from '@/lib/supabase';
+import { supabase, type ReviewProject, type ReviewItem, type ReviewComment, type ReviewCommentReaction } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import ReviewDetailView from '@/components/reviews/ReviewDetailView';
@@ -74,6 +74,7 @@ function ItemViewerContent({
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [comments, setComments] = useState<ReviewComment[]>([]);
   const [allProjectComments, setAllProjectComments] = useState<Pick<ReviewComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]>([]);
+  const [reactions, setReactions] = useState<ReviewCommentReaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
@@ -136,15 +137,56 @@ function ItemViewerContent({
     setAllProjectComments(data || []);
   }, [projectId]);
 
+  const fetchReactions = useCallback(async () => {
+    // Fetch reactions for all comments on this item
+    const { data: itemComments } = await supabase
+      .from('review_comments')
+      .select('id')
+      .eq('review_item_id', itemId);
+
+    if (!itemComments?.length) return;
+
+    const commentIds = itemComments.map((c) => c.id);
+    const { data } = await supabase
+      .from('review_comment_reactions')
+      .select('*')
+      .in('review_comment_id', commentIds)
+      .order('created_at', { ascending: true });
+
+    setReactions(data || []);
+  }, [itemId]);
+
+  const toggleReaction = useCallback(async (commentId: string, emoji: string) => {
+    const res = await fetch(`/api/review-comments/${commentId}/reactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        emoji,
+        author_name: authorName,
+        author_user_id: session?.user?.id || null,
+      }),
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      if (result.action === 'added') {
+        setReactions((prev) => [...prev, result.reaction]);
+      } else {
+        setReactions((prev) => prev.filter((r) => r.id !== result.id));
+      }
+    }
+  }, [authorName, session?.user?.id]);
+
   useEffect(() => {
     fetchProject();
     fetchItems();
     fetchComments();
     fetchAllProjectComments();
-  }, [fetchProject, fetchItems, fetchComments, fetchAllProjectComments]);
+    fetchReactions();
+  }, [fetchProject, fetchItems, fetchComments, fetchAllProjectComments, fetchReactions]);
 
   // ── Submit comment ──
-  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string) => {
+  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }) => {
     if (!content.trim()) return;
 
     const currentItem = items.find((i) => i.id === reviewItemId) || null;
@@ -168,9 +210,15 @@ function ItemViewerContent({
       author_user_id: session?.user?.id || null,
       author_type: 'team',
       content: content.trim(),
-      comment_type: pinX != null ? 'pin' : 'general',
+      comment_type: highlightData ? 'text_highlight' : annotationData ? (annotationData as Record<string, unknown>).type as string : (pinX != null ? 'pin' : 'general'),
       pin_x: pinX ?? null,
       pin_y: pinY ?? null,
+      annotation_data: annotationData || null,
+      screenshot_url: screenshotUrl || null,
+      highlight_start: highlightData?.start ?? null,
+      highlight_end: highlightData?.end ?? null,
+      highlight_text: highlightData?.text ?? null,
+      highlight_element_path: highlightData?.elementPath ?? null,
     };
 
     const { data, error } = await supabase
@@ -262,7 +310,7 @@ function ItemViewerContent({
   if (loading || !project) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
       </div>
     );
   }
@@ -283,6 +331,7 @@ function ItemViewerContent({
       onItemChange={handleItemChange}
       onFilterChange={handleFilterChange}
       shareToken={project.share_token || ''}
+      companyId={companyId}
       backAction={{
         label: project.title || 'Back',
         onClick: () => router.push(`/reviews/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`),

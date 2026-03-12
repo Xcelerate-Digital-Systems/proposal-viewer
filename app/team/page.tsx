@@ -131,9 +131,9 @@ function TeamContent({
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'owner': return <Crown size={14} className="text-[#017C87]" />;
-      case 'admin': return <Shield size={14} className="text-[#017C87]/70" />;
-      default: return <User size={14} className="text-gray-400" />;
+      case 'owner': return <Crown size={14} className="text-teal" />;
+      case 'admin': return <Shield size={14} className="text-teal/70" />;
+      default: return <User size={14} className="text-faint" />;
     }
   };
 
@@ -149,9 +149,9 @@ function TeamContent({
 
   const getRoleBadge = (role: string) => {
     const styles: Record<string, string> = {
-      owner: 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]/20',
-      admin: 'bg-[#017C87]/5 text-[#017C87] border-[#017C87]/10',
-      member: 'bg-gray-50 text-gray-500 border-gray-200',
+      owner: 'bg-teal/10 text-teal border-teal/20',
+      admin: 'bg-teal/5 text-teal border-teal/10',
+      member: 'bg-surface text-muted border-edge',
     };
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${styles[role] || styles.member}`}>
@@ -186,29 +186,29 @@ function TeamContent({
     <div className="px-6 lg:px-10 py-8 max-w-3xl">
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-[#017C87]/10 rounded-xl flex items-center justify-center">
-          <Users size={20} className="text-[#017C87]" />
+        <div className="w-10 h-10 bg-teal-tint rounded-[14px] flex items-center justify-center">
+          <Users size={20} className="text-teal" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Team</h1>
+          <h1 className="text-xl font-semibold text-ink">Team</h1>
           {company && (
-            <p className="text-sm text-gray-400">{company.name}</p>
+            <p className="text-sm text-faint">{company.name}</p>
           )}
         </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={24} className="animate-spin text-gray-300" />
+          <Loader2 size={24} className="animate-spin text-faint" />
         </div>
       ) : (
         <div className="space-y-8">
           {/* Members List */}
           <div>
-            <h2 className="text-sm font-medium text-gray-500 mb-3">
+            <h2 className="text-sm font-medium text-muted mb-3">
               Members ({members.length})
             </h2>
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 shadow-sm">
+            <div className="bg-white border border-edge rounded-[14px] overflow-hidden divide-y divide-edge">
               {members.map((m) => {
                 const isCurrentUser = m.id === currentMemberId;
                 const canEditThis =
@@ -223,21 +223,21 @@ function TeamContent({
                     className="flex items-center justify-between px-5 py-4 relative"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 bg-gray-50 rounded-full flex items-center justify-center shrink-0 border border-gray-200">
-                        <span className="text-sm font-medium text-gray-500">
+                      <div className="w-9 h-9 bg-surface rounded-full flex items-center justify-center shrink-0 border border-edge">
+                        <span className="text-sm font-medium text-muted">
                           {m.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-sm font-medium text-ink truncate">
                             {m.name}
                             {isCurrentUser && (
-                              <span className="text-xs text-gray-300 ml-1.5">(you)</span>
+                              <span className="text-xs text-faint ml-1.5">(you)</span>
                             )}
                           </p>
                         </div>
-                        <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                        <p className="text-xs text-faint truncate">{m.email}</p>
                       </div>
                     </div>
 
@@ -246,13 +246,13 @@ function TeamContent({
 
                       {actionLoading === m.id ? (
                         <div className="w-8 h-8 flex items-center justify-center">
-                          <Loader2 size={14} className="animate-spin text-gray-300" />
+                          <Loader2 size={14} className="animate-spin text-faint" />
                         </div>
                       ) : canEditThis ? (
                         <div className="relative">
                           <button
                             onClick={() => setActionMenuId(showMenu ? null : m.id)}
-                            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface text-faint hover:text-muted transition-colors"
                           >
                             <MoreVertical size={14} />
                           </button>
@@ -263,13 +263,13 @@ function TeamContent({
                                 className="fixed inset-0 z-40"
                                 onClick={() => setActionMenuId(null)}
                               />
-                              <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+                              <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-edge rounded-lg shadow-lg py-1 min-w-[160px]">
                                 {(isOwner || isSuperAdmin) && (
                                   <>
                                     {m.role !== 'owner' && (
                                       <button
                                         onClick={() => handleChangeRole(m.id, 'owner')}
-                                        className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"
+                                        className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
                                       >
                                         <Crown size={14} />
                                         Make Owner
@@ -278,7 +278,7 @@ function TeamContent({
                                     {m.role !== 'admin' && (
                                       <button
                                         onClick={() => handleChangeRole(m.id, 'admin')}
-                                        className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"
+                                        className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
                                       >
                                         <Shield size={14} />
                                         Make Admin
@@ -287,13 +287,13 @@ function TeamContent({
                                     {m.role !== 'member' && (
                                       <button
                                         onClick={() => handleChangeRole(m.id, 'member')}
-                                        className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"
+                                        className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
                                       >
                                         <User size={14} />
                                         Make Member
                                       </button>
                                     )}
-                                    <div className="border-t border-gray-100 my-1" />
+                                    <div className="border-t border-edge my-1" />
                                   </>
                                 )}
                                 <button
@@ -320,7 +320,7 @@ function TeamContent({
           {/* Invite Section */}
           {canManage && (
             <div>
-              <h2 className="text-sm font-medium text-gray-500 mb-3">Invites</h2>
+              <h2 className="text-sm font-medium text-muted mb-3">Invites</h2>
               <InviteManager
                 companyId={companyId}
                 currentRole={currentRole}
@@ -330,20 +330,20 @@ function TeamContent({
           )}
 
           {/* Role Legend */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <h3 className="text-sm font-medium text-gray-500 mb-3">Role Permissions</h3>
+          <div className="bg-white border border-edge rounded-[14px] p-5 ">
+            <h3 className="text-sm font-medium text-muted mb-3">Role Permissions</h3>
             <div className="space-y-3 text-xs">
               <div className="flex items-start gap-3">
                 <div className="shrink-0 mt-0.5">{getRoleBadge('owner')}</div>
-                <p className="text-gray-400">{roleLegend.owner}</p>
+                <p className="text-faint">{roleLegend.owner}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="shrink-0 mt-0.5">{getRoleBadge('admin')}</div>
-                <p className="text-gray-400">{roleLegend.admin}</p>
+                <p className="text-faint">{roleLegend.admin}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="shrink-0 mt-0.5">{getRoleBadge('member')}</div>
-                <p className="text-gray-400">{roleLegend.member}</p>
+                <p className="text-faint">{roleLegend.member}</p>
               </div>
             </div>
           </div>

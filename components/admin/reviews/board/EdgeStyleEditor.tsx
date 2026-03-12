@@ -61,7 +61,7 @@ export default function EdgeStyleEditor({
           value={label}
           onChange={(e) => onLabelChange(e.target.value)}
           placeholder="e.g. Clicks CTA, Submits form..."
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] mb-3"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal mb-3"
           autoFocus
           onKeyDown={(e) => {
             if (e.key === 'Enter') onSave();
@@ -94,7 +94,7 @@ export default function EdgeStyleEditor({
               type="checkbox"
               checked={dashed}
               onChange={(e) => onDashedChange(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-gray-300 text-[#017C87] focus:ring-[#017C87]/20"
+              className="w-3.5 h-3.5 rounded border-gray-300 text-teal focus:ring-teal/20"
             />
             <span className="text-xs text-gray-600">Dashed</span>
           </label>
@@ -103,7 +103,7 @@ export default function EdgeStyleEditor({
               type="checkbox"
               checked={animated}
               onChange={(e) => onAnimatedChange(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-gray-300 text-[#017C87] focus:ring-[#017C87]/20"
+              className="w-3.5 h-3.5 rounded border-gray-300 text-teal focus:ring-teal/20"
             />
             <span className="text-xs text-gray-600">Animated</span>
           </label>
@@ -156,7 +156,7 @@ export default function EdgeStyleEditor({
             </button>
             <button
               onClick={onSave}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-[#017C87] hover:bg-[#01434A] rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-teal hover:bg-[#01434A] rounded-lg transition-colors"
             >
               Save
             </button>

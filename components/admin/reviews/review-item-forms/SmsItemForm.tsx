@@ -48,7 +48,7 @@ export default function SmsItemForm({ onSubmit, onBack, onCancel, uploading, onP
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Appointment Reminder SMS"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             autoFocus
           />
         </div>
@@ -62,7 +62,7 @@ export default function SmsItemForm({ onSubmit, onBack, onCancel, uploading, onP
             onChange={(e) => setSmsBody(e.target.value)}
             rows={5}
             placeholder="Your SMS message text…"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] resize-y min-h-[100px]"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-y min-h-[100px]"
           />
           <p className="text-[10px] mt-1" style={{ color: smsBody.length > 160 ? '#f59e0b' : '#9ca3af' }}>
             {smsBody.length} / 160 characters

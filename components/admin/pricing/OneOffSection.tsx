@@ -53,7 +53,7 @@ export default function OneOffSection({ oneOff, onUpdate }: OneOffSectionProps) 
             />
           </div>
           {oneOff.amount > 0 && (
-            <div className="flex items-center justify-between px-3 py-2 rounded-md bg-[#017C87]/5 text-sm">
+            <div className="flex items-center justify-between px-3 py-2 rounded-md bg-teal/5 text-sm">
               <span className="text-gray-500">{oneOff.label}</span>
               <span className={`font-semibold ${TEAL_TEXT}`}>{formatAUD(oneOff.amount)}</span>
             </div>

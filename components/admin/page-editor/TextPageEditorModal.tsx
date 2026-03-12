@@ -119,8 +119,8 @@ export default function TextPageEditorModal({
                   role="switch"
                   aria-checked={page.show_title ?? true}
                   onClick={handleToggleTitle}
-                  className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
-                    (page.show_title ?? true) ? 'bg-[#017C87]' : 'bg-gray-300'
+                  className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
+                    (page.show_title ?? true) ? 'bg-teal' : 'bg-gray-300'
                   }`}
                 >
                   <span
@@ -136,7 +136,7 @@ export default function TextPageEditorModal({
               value={page.title}
               onChange={handleTitleChange}
               placeholder="e.g. Executive Summary, Welcome, Terms & Conditions"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#017C87] focus:ring-1 focus:ring-[#017C87]/20"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20"
             />
           </div>
 
@@ -152,8 +152,8 @@ export default function TextPageEditorModal({
                 role="switch"
                 aria-checked={!!page.show_member_badge}
                 onClick={handleToggleBadge}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
-                  page.show_member_badge ? 'bg-[#017C87]' : 'bg-gray-300'
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
+                  page.show_member_badge ? 'bg-teal' : 'bg-gray-300'
                 }`}
               >
                 <span
@@ -195,8 +195,8 @@ export default function TextPageEditorModal({
                 role="switch"
                 aria-checked={!!page.show_client_logo}
                 onClick={handleToggleClientLogo}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
-                  page.show_client_logo ? 'bg-[#017C87]' : 'bg-gray-300'
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
+                  page.show_client_logo ? 'bg-teal' : 'bg-gray-300'
                 }`}
               >
                 <span
@@ -231,7 +231,7 @@ export default function TextPageEditorModal({
         <div className="shrink-0 px-5 py-3 border-t border-gray-200 flex items-center justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#017C87] hover:bg-[#015F68] transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-teal hover:bg-[#015F68] transition-colors"
           >
             Done
           </button>

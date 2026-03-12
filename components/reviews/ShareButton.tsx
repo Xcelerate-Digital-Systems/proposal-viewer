@@ -146,7 +146,7 @@ export default function ShareButton({
         className={`
           flex items-center gap-1.5 px-3 py-2 text-sm font-medium border transition-colors
           ${isActive
-            ? 'text-[#017C87] border-[#017C87]/30 bg-[#017C87]/5 hover:bg-[#017C87]/10'
+            ? 'text-teal border-teal/30 bg-teal/5 hover:bg-teal/10'
             : 'text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}
           ${isActive ? 'rounded-l-lg border-r-0' : 'rounded-lg'}
         `}
@@ -167,7 +167,7 @@ export default function ShareButton({
       {isActive && (
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="flex items-center px-1.5 py-2 rounded-r-lg border border-[#017C87]/30 bg-[#017C87]/5 hover:bg-[#017C87]/10 text-[#017C87] transition-colors"
+          className="flex items-center px-1.5 py-2 rounded-r-lg border border-teal/30 bg-teal/5 hover:bg-teal/10 text-teal transition-colors"
         >
           <ChevronDown size={12} />
         </button>

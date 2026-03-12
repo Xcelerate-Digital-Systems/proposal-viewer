@@ -34,7 +34,7 @@ const ACTION_OPTIONS: {
     value: 'redirect',
     label: 'Redirect to URL',
     description: 'Send client to a payment link, calendar, or any page',
-    icon: <ExternalLink size={15} className="text-[#017C87]" />,
+    icon: <ExternalLink size={15} className="text-teal" />,
   },
   {
     value: 'message',
@@ -126,8 +126,8 @@ export default function PostAcceptSection({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#017C87]/10">
-            <ArrowRight size={16} className="text-[#017C87]" />
+          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-teal/10">
+            <ArrowRight size={16} className="text-teal" />
           </div>
           <div>
             <h4 className="text-sm font-semibold text-gray-900">After Acceptance</h4>
@@ -158,7 +158,7 @@ export default function PostAcceptSection({
               onClick={() => handleActionChange(opt.value)}
               className={`flex flex-col items-start gap-1.5 p-3 rounded-lg border text-left transition-all ${
                 selected
-                  ? 'border-[#017C87]/40 bg-[#017C87]/5 ring-1 ring-[#017C87]/20'
+                  ? 'border-teal/40 bg-teal/5 ring-1 ring-teal/20'
                   : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
               }`}
             >

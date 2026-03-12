@@ -33,7 +33,7 @@ export default function CommentsPanel({
   onResolve,
   onUnresolve,
   onClose,
-  accentColor = '#ff6700',
+  accentColor = '#01434A',
   acceptTextColor = '#ffffff',
   textColor = '#ffffff',
   bgPrimary = '#0f0f0f',

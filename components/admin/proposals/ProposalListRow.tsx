@@ -24,12 +24,12 @@ interface ProposalListRowProps {
 /* ------------------------------------------------------------------ */
 
 const statusConfig: Record<string, { icon: React.ReactNode; bg: string; text: string; label: string }> = {
-  draft:    { icon: <FileText size={12} />,    bg: 'bg-gray-100',   text: 'text-gray-500',    label: 'Draft' },
-  sent:     { icon: <Clock size={12} />,       bg: 'bg-blue-50',    text: 'text-blue-600',    label: 'Sent' },
-  viewed:   { icon: <Eye size={12} />,         bg: 'bg-amber-50',   text: 'text-amber-600',   label: 'Viewed' },
-  revision_requested: { icon:  <PenLine size={12} />, bg:    'bg-amber-50', text:  'text-amber-600', label: 'Changes Requested'},
-  accepted: { icon: <CheckCircle2 size={12} />,bg: 'bg-emerald-50', text: 'text-emerald-600', label: 'Accepted' },
-  declined: { icon: <X size={12} />,           bg: 'bg-red-50',     text: 'text-red-500',     label: 'Declined' },
+  draft:    { icon: <FileText size={12} />,    bg: 'bg-surface',    text: 'text-muted',   label: 'Draft' },
+  sent:     { icon: <Clock size={12} />,       bg: 'bg-teal-tint',    text: 'text-teal',   label: 'Sent' },
+  viewed:   { icon: <Eye size={12} />,         bg: 'bg-[#FFF8E1]',    text: 'text-[#E6A817]',   label: 'Viewed' },
+  revision_requested: { icon: <PenLine size={12} />, bg: 'bg-[#FFF8E1]', text: 'text-[#E6A817]', label: 'Changes Requested' },
+  accepted: { icon: <CheckCircle2 size={12} />,bg: 'bg-[#E8F5E9]',    text: 'text-[#2E7D32]',   label: 'Accepted' },
+  declined: { icon: <X size={12} />,           bg: 'bg-red-50',        text: 'text-red-500',     label: 'Declined' },
 };
 
 const formatDate = (date: string | null) => {
@@ -90,7 +90,7 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain }
   return (
     <div
       onClick={() => router.push(`/proposals/${p.id}/pages`)}
-      className="flex items-center gap-4 px-4 py-3 bg-white rounded-xl border border-gray-200 hover:border-gray-300 shadow-sm cursor-pointer transition-colors group"
+      className="flex items-center gap-4 px-4 py-3 bg-white rounded-[12px] border border-edge hover:border-edge-hover cursor-pointer transition-colors group"
     >
       {/* Status badge */}
       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium shrink-0 ${sc.bg} ${sc.text}`}>
@@ -100,21 +100,21 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain }
 
       {/* Title + client */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-medium text-gray-900 truncate group-hover:text-[#017C87] transition-colors">
+        <h3 className="text-sm font-medium text-ink truncate group-hover:text-teal transition-colors">
           {p.title}
         </h3>
         {p.client_name && (
-          <p className="text-xs text-gray-400 truncate">{p.client_name}</p>
+          <p className="text-xs text-faint truncate">{p.client_name}</p>
         )}
       </div>
 
       {/* Page count */}
-      <span className="text-xs text-gray-400 shrink-0 hidden sm:block w-16 text-right">
+      <span className="text-xs text-faint shrink-0 hidden sm:block w-16 text-right">
         {pageCount} page{pageCount !== 1 ? 's' : ''}
       </span>
 
       {/* Date */}
-      <span className="text-xs text-gray-400 shrink-0 hidden md:block w-16 text-right">
+      <span className="text-xs text-faint shrink-0 hidden md:block w-16 text-right">
         {formatDate(p.created_at)}
       </span>
 
@@ -122,23 +122,23 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain }
       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={copyLink}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors"
           title="Copy link"
         >
-          {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+          {copied ? <Check size={14} className="text-[#2E7D32]" /> : <Copy size={14} />}
         </button>
         <a
           href={`/view/${p.share_token}`}
           target="_blank"
           onClick={(e) => e.stopPropagation()}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors"
           title="Preview"
         >
           <ExternalLink size={14} />
         </a>
         <button
           onClick={deleteProposal}
-          className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+          className="p-1.5 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
           title="Delete"
         >
           <Trash2 size={14} />

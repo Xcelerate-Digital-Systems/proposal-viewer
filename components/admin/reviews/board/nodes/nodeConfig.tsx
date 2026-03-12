@@ -45,14 +45,14 @@ export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
         id="left"
         type="target"
         position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-gray-300 !border-2 !border-white hover:!bg-[#017C87] transition-colors !-left-1.5"
+        className="!w-2.5 !h-2.5 !bg-gray-300 !border-2 !border-white hover:!bg-teal transition-colors !-left-1.5"
         isConnectable={!readOnly}
       />
       <Handle
         id="right"
         type="source"
         position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-gray-300 !border-2 !border-white hover:!bg-[#017C87] transition-colors !-right-1.5"
+        className="!w-2.5 !h-2.5 !bg-gray-300 !border-2 !border-white hover:!bg-teal transition-colors !-right-1.5"
         isConnectable={!readOnly}
       />
     </>
@@ -100,7 +100,7 @@ export function ViewButton({ id, onNavigate }: { id: string; onNavigate?: (id: s
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onNavigate?.(id); }}
-      className="flex items-center gap-1 text-[10px] font-medium text-[#017C87] hover:text-[#01434A] transition-colors"
+      className="flex items-center gap-1 text-[10px] font-medium text-teal hover:text-[#01434A] transition-colors"
     >
       <Eye size={10} />
       View
@@ -131,7 +131,7 @@ export function CardShell({
       <div
         className={`
           w-[220px] bg-white rounded-xl shadow-sm border transition-all
-          ${selected ? 'border-[#017C87] shadow-md ring-2 ring-[#017C87]/20' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}
+          ${selected ? 'border-teal shadow-md ring-2 ring-teal/20' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}
           ${!readOnly ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
         `}
         onClick={readOnly ? handleClick : undefined}
@@ -184,7 +184,9 @@ export const NODE_LAYOUTS: Record<string, NodeLayout> = {
   webpage: 'card',
   image: 'card',
   video: 'card',
+  pdf: 'card',
   email: 'icon',
   sms: 'icon',
   ad: 'icon',
+  google_ad: 'icon',
 };

@@ -33,7 +33,7 @@ export default function PdfViewer({
   onLoadSuccess,
   scrollRef,
   bgColor = '#0f0f0f',
-  accentColor = '#ff6700',
+  accentColor = '#01434A',
   branding,
 }: PdfViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);

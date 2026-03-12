@@ -218,7 +218,7 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
     return (
       <div className="flex items-center justify-center py-16">
         <div className="flex flex-col items-center gap-2">
-          <div className="w-5 h-5 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           <p className="text-xs text-gray-400">Loading pricing...</p>
         </div>
       </div>
@@ -232,8 +232,8 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
       {/* Toggle header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#017C87]/10">
-            <DollarSign size={18} className="text-[#017C87]" />
+          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-teal/10">
+            <DollarSign size={18} className="text-teal" />
           </div>
           <div>
             <h4 className="text-sm font-semibold text-gray-900">Pricing Page</h4>
@@ -256,7 +256,7 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
               onClick={() => setShowPreview(!showPreview)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 showPreview
-                  ? 'bg-[#017C87]/10 text-[#017C87]'
+                  ? 'bg-teal/10 text-teal'
                   : 'bg-gray-100 text-gray-400 hover:text-gray-600'
               }`}
               title={showPreview ? 'Hide preview' : 'Show preview'}

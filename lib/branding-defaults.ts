@@ -8,7 +8,7 @@ import type { CompanyBranding } from '@/lib/types/branding';
 export const DEFAULT_BRANDING: CompanyBranding = {
   name: '',
   logo_url: null,
-  accent_color: '#ff6700',
+  accent_color: '#01434A',
   website: null,
   bg_primary: '#0f0f0f',
   bg_secondary: '#141414',
@@ -19,7 +19,7 @@ export const DEFAULT_BRANDING: CompanyBranding = {
   cover_bg_color_2: '#141414',
   cover_text_color: '#ffffff',
   cover_subtitle_color: '#ffffffb3',
-  cover_button_bg: '#ff6700',
+  cover_button_bg: '#01434A',
   cover_button_text: '#ffffff',
   cover_overlay_opacity: 0.65,
   cover_gradient_type: 'linear',

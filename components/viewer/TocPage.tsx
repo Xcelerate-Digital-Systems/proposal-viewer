@@ -46,7 +46,7 @@ export default function TocPage({
   orientation,
 }: TocPageProps) {
   const isLandscape = orientation === 'landscape';
-  const accent = branding.accent_color || '#ff6700';
+  const accent = branding.accent_color || '#01434A';
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const textColor = branding.cover_text_color || '#ffffff';
   const subtitleColor = branding.cover_subtitle_color || '#ffffffb3';

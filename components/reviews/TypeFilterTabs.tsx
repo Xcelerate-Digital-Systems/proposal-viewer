@@ -65,7 +65,7 @@ export default function TypeFilterTabs({
         onClick={() => onFilterChange(null)}
         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
           !typeFilter
-            ? 'bg-[#017C87]/10 text-[#017C87]'
+            ? 'bg-teal/10 text-teal'
             : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
         }`}
       >
@@ -77,7 +77,7 @@ export default function TypeFilterTabs({
           onClick={() => onFilterChange(t)}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
             typeFilter === t
-              ? 'bg-[#017C87]/10 text-[#017C87]'
+              ? 'bg-teal/10 text-teal'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
           }`}
         >

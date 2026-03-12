@@ -11,12 +11,16 @@ import {
   CheckCircle2,
   Clock,
   Code2,
+  FileText,
 } from 'lucide-react';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/reviews/AdMockupPreview';
 import EmailMockupPreview from '@/components/admin/reviews/EmailMockupPreview';
 import SmsMockupPreview from '@/components/admin/reviews/SmsMockupPreview';
+import GoogleAdMockupPreview from '@/components/admin/reviews/GoogleAdMockupPreview';
 import PinOverlay from './PinOverlay';
+import { HighlightOverlay } from '@/components/reviews/feedback';
 import type { ReviewItem, ReviewComment } from '@/lib/supabase';
+import type { GoogleAdFormat } from '@/lib/types/review';
 
 /* ================================================================== */
 /*  Types                                                              */
@@ -42,6 +46,12 @@ interface ItemContentViewProps {
   shareToken?: string;
   /** Empty state text */
   emptyText?: string;
+  /** Text highlight comments for email/SMS content */
+  highlightComments?: ReviewComment[];
+  /** Currently highlighted comment ID */
+  highlightedCommentId?: string | null;
+  /** Click a text highlight → navigate to comment */
+  onHighlightClick?: (commentId: string) => void;
 }
 
 /* ================================================================== */
@@ -59,6 +69,9 @@ export default function ItemContentView({
   renderWebpage,
   shareToken,
   emptyText = 'No preview available',
+  highlightComments = [],
+  highlightedCommentId,
+  onHighlightClick,
 }: ItemContentViewProps) {
   if (!item) {
     return (
@@ -74,23 +87,177 @@ export default function ItemContentView({
   const isWebpage = item.type === 'webpage';
   const imageUrl = item.image_url || item.screenshot_url;
 
-  // Email items — render the email mockup preview
+  // Email items — render the email mockup preview with pin overlay
   if (isEmail) {
     return (
-      <EmailContentView
-        item={item}
-      />
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-2xl mx-auto"
+        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        onClick={onImageClick}
+      >
+        <EmailContentView item={item} />
+        <PinOverlay
+          pinComments={pinComments}
+          pendingPin={pendingPin}
+          onPinClick={onPinClick}
+        />
+        <HighlightOverlay
+          containerRef={containerRef as React.RefObject<HTMLElement>}
+          highlightComments={highlightComments}
+          highlightedCommentId={highlightedCommentId}
+          onHighlightClick={onHighlightClick}
+        />
+      </div>
     );
   }
-  // SMS items — render the SMS mockup preview
+
+  // SMS items — render the SMS mockup preview with pin overlay
   if (item.type === 'sms') {
     return (
-      <div className="w-full max-w-md mx-auto">
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-md mx-auto"
+        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        onClick={onImageClick}
+      >
         <SmsMockupPreview
           body={item.sms_body || ''}
           senderName="Your Brand"
           client="imessage"
           showClientToggle
+        />
+        <PinOverlay
+          pinComments={pinComments}
+          pendingPin={pendingPin}
+          onPinClick={onPinClick}
+        />
+        <HighlightOverlay
+          containerRef={containerRef as React.RefObject<HTMLElement>}
+          highlightComments={highlightComments}
+          highlightedCommentId={highlightedCommentId}
+          onHighlightClick={onHighlightClick}
+        />
+      </div>
+    );
+  }
+
+  // Video items — render video player with pin overlay
+  if (item.type === 'video') {
+    const videoSrc = item.video_url || item.image_url || '';
+    const isYouTube = /youtube\.com|youtu\.be/.test(videoSrc);
+    const isVimeo = /vimeo\.com/.test(videoSrc);
+    const youtubeId = videoSrc.match(/(?:youtu\.be\/|v=)([\w-]+)/)?.[1];
+    const vimeoId = videoSrc.match(/vimeo\.com\/(\d+)/)?.[1];
+
+    return (
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-3xl mx-auto"
+        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        onClick={onImageClick}
+      >
+        {isYouTube && youtubeId ? (
+          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+            <iframe
+              src={`https://www.youtube.com/embed/${youtubeId}`}
+              className="absolute inset-0 w-full h-full rounded-lg"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        ) : isVimeo && vimeoId ? (
+          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+            <iframe
+              src={`https://player.vimeo.com/video/${vimeoId}`}
+              className="absolute inset-0 w-full h-full rounded-lg"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        ) : videoSrc ? (
+          <video
+            src={videoSrc}
+            controls
+            className="w-full max-h-[calc(100dvh-120px)] rounded-lg"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <FileText size={40} className="mb-3" />
+            <p className="text-sm">No video source available</p>
+          </div>
+        )}
+        <PinOverlay
+          pinComments={pinComments}
+          pendingPin={pendingPin}
+          onPinClick={onPinClick}
+        />
+      </div>
+    );
+  }
+
+  // PDF items — render PDF embed with pin overlay
+  if (item.type === 'pdf') {
+    const pdfSrc = item.pdf_url || item.image_url || '';
+
+    return (
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-3xl mx-auto"
+        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        onClick={onImageClick}
+      >
+        {pdfSrc ? (
+          <iframe
+            src={pdfSrc}
+            className="w-full rounded-lg border border-gray-200"
+            style={{ height: 'calc(100dvh - 120px)' }}
+            title={item.title}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <FileText size={40} className="mb-3" />
+            <p className="text-sm">No PDF available</p>
+          </div>
+        )}
+        <PinOverlay
+          pinComments={pinComments}
+          pendingPin={pendingPin}
+          onPinClick={onPinClick}
+        />
+      </div>
+    );
+  }
+
+  // Google Ad items — render Google Ad mockup with pin overlay
+  if (item.type === 'google_ad') {
+    return (
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-2xl mx-auto"
+        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        onClick={onImageClick}
+      >
+        <GoogleAdMockupPreview
+          format={(item.google_ad_format as GoogleAdFormat) || 'search'}
+          headline={item.google_ad_headline || item.ad_headline || ''}
+          description1={item.google_ad_description1 || ''}
+          description2={item.google_ad_description2 || ''}
+          displayUrl={item.google_ad_display_url || 'www.example.com'}
+          finalUrl={item.google_ad_final_url || ''}
+          creativeUrl={item.ad_creative_url || ''}
+          showFormatToggle
+        />
+        <PinOverlay
+          pinComments={pinComments}
+          pendingPin={pendingPin}
+          onPinClick={onPinClick}
+        />
+        <HighlightOverlay
+          containerRef={containerRef as React.RefObject<HTMLElement>}
+          highlightComments={highlightComments}
+          highlightedCommentId={highlightedCommentId}
+          onHighlightClick={onHighlightClick}
         />
       </div>
     );
@@ -146,6 +313,12 @@ export default function ItemContentView({
           pinComments={pinComments}
           pendingPin={pendingPin}
           onPinClick={onPinClick}
+        />
+        <HighlightOverlay
+          containerRef={containerRef as React.RefObject<HTMLElement>}
+          highlightComments={highlightComments}
+          highlightedCommentId={highlightedCommentId}
+          onHighlightClick={onHighlightClick}
         />
       </div>
     );
@@ -230,8 +403,8 @@ function WebpageEmbedView({
       <div className="w-full max-w-lg space-y-6">
         {/* Header */}
         <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-4">
-            <Globe size={24} className="text-[#017C87]" />
+          <div className="w-14 h-14 rounded-2xl bg-teal/10 flex items-center justify-center mx-auto mb-4">
+            <Globe size={24} className="text-teal" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1">
             Feedback Widget
@@ -284,7 +457,7 @@ function WebpageEmbedView({
             </label>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
             >
               {copied ? (
                 <>
@@ -306,7 +479,7 @@ function WebpageEmbedView({
             <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
               {scriptTag || '/* Missing share token or item ID */'}
             </pre>
-            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-[#017C87]/30 transition-colors" />
+            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
           </div>
         </div>
 
@@ -317,7 +490,7 @@ function WebpageEmbedView({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#017C87] hover:bg-[#015c64] transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-teal hover:bg-[#015c64] transition-colors"
             >
               <ExternalLink size={14} />
               Open Page

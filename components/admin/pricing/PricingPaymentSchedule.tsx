@@ -34,7 +34,7 @@ export default function PricingPaymentSchedule({
           <Wallet size={16} className={h.hasAny ? TEAL_TEXT : 'text-gray-400'} />
           <span className="text-sm font-semibold text-gray-900">Payment Schedule</span>
           {h.hasAny && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#017C87]/10 text-[#017C87] font-medium">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal/10 text-teal font-medium">
               Active
             </span>
           )}

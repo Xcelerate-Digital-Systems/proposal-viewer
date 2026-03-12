@@ -54,7 +54,7 @@ export default function ReviewBoardViewer({
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
-  const accent = branding.accent_color || '#ff6700';
+  const accent = branding.accent_color || '#01434A';
 
   // Only items that are placed on the board
   const placedItems = useMemo(

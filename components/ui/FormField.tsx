@@ -8,7 +8,7 @@ import React from 'react';
 /* ------------------------------------------------------------------ */
 
 export const inputClassName =
-  'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400';
+  'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400';
 
 /* ------------------------------------------------------------------ */
 /*  Field config type — reusable across all entity forms               */

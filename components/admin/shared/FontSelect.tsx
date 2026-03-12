@@ -51,7 +51,7 @@ export function WeightPicker({
         value={current}
         onChange={(e) => onChange(e.target.value === '400' ? null : e.target.value)}
         disabled={disabled}
-        className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         style={{ fontWeight: Number(current) }}
       >
         {options.map((w) => (
@@ -212,7 +212,7 @@ export default function FontSelect({
                   placeholder="Search fonts..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 placeholder:text-gray-400"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400"
                   autoFocus
                 />
                 {/* Category tabs */}
@@ -224,7 +224,7 @@ export default function FontSelect({
                       onClick={() => setCategory(cat.key)}
                       className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                         category === cat.key
-                          ? 'bg-[#017C87] text-white'
+                          ? 'bg-teal text-white'
                           : 'text-gray-400 hover:bg-gray-100'
                       }`}
                     >
@@ -246,7 +246,7 @@ export default function FontSelect({
                     setSearch('');
                   }}
                   className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors border-b border-gray-50 ${
-                    !value ? 'bg-[#017C87]/5 text-[#017C87] font-medium' : 'text-gray-500'
+                    !value ? 'bg-teal/5 text-teal font-medium' : 'text-gray-500'
                   }`}
                 >
                   System default
@@ -262,7 +262,7 @@ export default function FontSelect({
                       setSearch('');
                     }}
                     className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center justify-between ${
-                      value === font.family ? 'bg-[#017C87]/5' : ''
+                      value === font.family ? 'bg-teal/5' : ''
                     }`}
                   >
                     <span

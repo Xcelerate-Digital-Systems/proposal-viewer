@@ -175,7 +175,7 @@ export default function ColorPickerField({
                       }}
                       className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${
                         displayColor.toLowerCase() === c
-                          ? 'border-[#017C87] ring-2 ring-[#017C87]/20'
+                          ? 'border-teal ring-2 ring-teal/20'
                           : 'border-gray-200 hover:border-gray-400'
                       }`}
                       style={{ backgroundColor: c }}
@@ -188,7 +188,7 @@ export default function ColorPickerField({
 
             {/* Hex input */}
             <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus-within:border-[#017C87] focus-within:ring-2 focus-within:ring-[#017C87]/10 transition-all">
+              <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/10 transition-all">
                 <span className="text-[10px] text-gray-400 font-mono">#</span>
                 <input
                   type="text"
@@ -211,7 +211,7 @@ export default function ColorPickerField({
             {/* Done button */}
             <button
               onClick={handleClose}
-              className="w-full mt-2.5 py-1.5 text-[11px] font-medium text-[#017C87] bg-[#017C87]/5 rounded-lg hover:bg-[#017C87]/10 transition-colors"
+              className="w-full mt-2.5 py-1.5 text-[11px] font-medium text-teal bg-teal/5 rounded-lg hover:bg-teal/10 transition-colors"
             >
               Done
             </button>

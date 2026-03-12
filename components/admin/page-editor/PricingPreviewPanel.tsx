@@ -106,7 +106,7 @@ export default function PricingPreviewPanel({
               <ChevronRight size={14} />
             </button>
           </div>
-          <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
+          <span className="text-xs text-teal font-medium flex items-center gap-1">
             <DollarSign size={11} />
             {pricing.title}
           </span>

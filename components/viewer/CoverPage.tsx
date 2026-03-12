@@ -136,7 +136,7 @@ export default function CoverPage({
   const bgColor2 = proposal.cover_bg_color_2 || branding.cover_bg_color_2 || '#141414';
   const textColor = proposal.cover_text_color || branding.cover_text_color || '#ffffff';
   const subtitleColor = proposal.cover_subtitle_color || branding.cover_subtitle_color || '#ffffffb3';
-  const btnBg = proposal.cover_button_bg || branding.cover_button_bg || '#ff6700';
+  const btnBg = proposal.cover_button_bg || branding.cover_button_bg || '#01434A';
   const btnText = proposal.cover_button_text_color || branding.cover_button_text || '#ffffff';
   const overlayOpacity = proposal.cover_overlay_opacity ?? branding.cover_overlay_opacity ?? 0.65;
   const gradientType = proposal.cover_gradient_type || branding.cover_gradient_type || 'linear';

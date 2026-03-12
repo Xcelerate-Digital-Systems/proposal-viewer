@@ -150,7 +150,7 @@ export default function DocumentDetailHeader({
           <a
             href={`/doc/${doc.share_token}`}
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-[#017C87] hover:bg-[#017C87]/5 border border-[#017C87]/20 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-teal hover:bg-teal/5 border border-teal/20 transition-colors"
           >
             <ExternalLink size={14} />
             Preview

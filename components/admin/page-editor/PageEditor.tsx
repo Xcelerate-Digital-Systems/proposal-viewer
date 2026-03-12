@@ -123,7 +123,7 @@ export default function PageEditor({
           )}
           <button
             onClick={handleDone}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#017C87] text-white hover:bg-[#017C87]/90 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-teal text-white hover:bg-teal/90 transition-colors"
           >
             <Check size={12} />
             Done
@@ -160,7 +160,7 @@ export default function PageEditor({
             {(processing || isReordering) && (
               <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
-                  <Loader2 size={14} className="animate-spin text-[#017C87]" />
+                  <Loader2 size={14} className="animate-spin text-teal" />
                   <span className="text-xs font-medium text-gray-600">Processing…</span>
                 </div>
               </div>

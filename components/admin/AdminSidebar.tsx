@@ -122,14 +122,26 @@ export default function AdminSidebar({
 
   const renderTopLevelNav = () => (
     <>
+      {/* WORKSPACE section */}
+      <div className="px-3 pt-1 pb-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[3px] text-[#8AD9D1]/50">
+          Workspace
+        </span>
+      </div>
       <div className="space-y-0.5">
         {renderNavLink({ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard })}
-      </div>
-      <div className="my-2 mx-3 border-t border-[#01434A]" />
-      <div className="space-y-0.5">
         {visibleSections.map(renderSectionEntry)}
       </div>
-      <div className="my-2 mx-3 border-t border-[#01434A]" />
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* ACCOUNT section */}
+      <div className="px-3 pt-1 pb-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[3px] text-[#8AD9D1]/50">
+          Account
+        </span>
+      </div>
       <div className="space-y-0.5">
         {showClients && renderNavLink({ href: '/clients', label: 'Clients', icon: UserSquare2 })}
         {STANDALONE_ITEMS.map((item) => renderNavLink(item))}
@@ -196,7 +208,7 @@ export default function AdminSidebar({
         </div>
       )}
 
-      <nav className="flex-1 px-2 py-3 overflow-y-auto">
+      <nav className="flex-1 px-2 py-3 overflow-y-auto flex flex-col">
         {isTopLevel
           ? renderTopLevelNav()
           : activeSection && renderSectionNav(activeSection)

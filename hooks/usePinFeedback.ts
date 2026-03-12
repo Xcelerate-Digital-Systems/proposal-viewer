@@ -5,28 +5,32 @@ import { useState, useCallback, useRef } from 'react';
 import { type FeedbackMode } from '@/components/reviews/feedback';
 
 /**
- * Manages pin feedback state: mode toggling, pending pin coordinates,
- * and image click-to-pin handler.
- * Replaces identical logic duplicated across review/project/admin item detail pages.
+ * Manages pin feedback state and drawing tool modes.
+ * Pin placement is always active by default — clicking content places a pin
+ * unless a drawing tool (arrow/box/text) is active.
  */
 export function usePinFeedback() {
   const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('idle');
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
-  // Click on image/ad to place a pin (only active in pin mode)
+  // Whether pin placement is active (always on unless a drawing tool is selected)
+  const pinActive = feedbackMode === 'idle' || feedbackMode === 'pin';
+
+  // Click on content to place a pin (always active unless drawing tool is selected)
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (feedbackMode !== 'pin') return;
+    if (!pinActive) return;
+    // Ignore clicks on existing pin markers
+    if ((e.target as HTMLElement).closest('[data-pin-marker]')) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setPendingPin({ x, y });
-    setFeedbackMode('idle');
-  }, [feedbackMode]);
+  }, [pinActive]);
 
-  // Clicking an existing pin — surface for parent to open comments
-  const handlePinClick = useCallback(() => {
-    // Parent typically calls setShowComments(true) in response
+  // Clicking an existing pin — parent uses this to scroll to comment
+  const handlePinClick = useCallback((_commentId?: string) => {
+    // Parent typically calls setShowComments(true) + setHighlightedCommentId in response
   }, []);
 
   // Cancel pending pin placement
@@ -34,10 +38,10 @@ export function usePinFeedback() {
     setPendingPin(null);
   }, []);
 
-  // Change feedback mode, clearing pin if switching away from pin mode
+  // Change feedback mode (for drawing tools), clearing pending pin
   const changeFeedbackMode = useCallback((mode: FeedbackMode) => {
     setFeedbackMode(mode);
-    if (mode !== 'pin') setPendingPin(null);
+    setPendingPin(null);
   }, []);
 
   // Reset state (e.g. when navigating to a different item)
@@ -49,6 +53,7 @@ export function usePinFeedback() {
   return {
     feedbackMode,
     setFeedbackMode,
+    pinActive,
     pendingPin,
     setPendingPin,
     imageContainerRef,

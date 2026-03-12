@@ -79,10 +79,10 @@ export default function BoardSidebar({
                 <button
                   key={item.id}
                   onClick={() => onPlaceItem(item.id)}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-white border border-gray-200 hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-all text-left group"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-white border border-gray-200 hover:border-teal/40 hover:bg-teal/5 transition-all text-left group"
                 >
                   {/* Type icon */}
-                  <div className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 shrink-0 group-hover:bg-[#017C87]/10 group-hover:text-[#017C87] transition-colors">
+                  <div className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 shrink-0 group-hover:bg-teal/10 group-hover:text-teal transition-colors">
                     {TYPE_ICONS[item.type] || <Eye size={13} />}
                   </div>
 
@@ -100,7 +100,7 @@ export default function BoardSidebar({
                   <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[item.status]}`} />
 
                   {/* Add icon */}
-                  <Plus size={14} className="text-gray-300 group-hover:text-[#017C87] transition-colors shrink-0" />
+                  <Plus size={14} className="text-gray-300 group-hover:text-teal transition-colors shrink-0" />
                 </button>
               ))}
             </div>

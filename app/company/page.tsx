@@ -26,7 +26,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
   if (s.loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 size={24} className="animate-spin text-gray-300" />
+        <Loader2 size={24} className="animate-spin text-faint" />
       </div>
     );
   }
@@ -37,12 +37,12 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
 
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-[#017C87]/10 rounded-xl flex items-center justify-center">
-          <Building2 size={20} className="text-[#017C87]" />
+        <div className="w-10 h-10 bg-teal-tint rounded-xl flex items-center justify-center">
+          <Building2 size={20} className="text-teal" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Company Settings</h1>
-          <p className="text-sm text-gray-400">
+          <h1 className="text-xl font-semibold text-ink">Company Settings</h1>
+          <p className="text-sm text-muted">
             {s.isOwner ? 'Manage your company profile and branding' : 'View company profile'}
           </p>
         </div>
@@ -50,10 +50,10 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
 
       {/* Feedback */}
       {s.error && (
-        <div className="mb-4 text-xs text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{s.error}</div>
+        <div className="mb-4 text-xs text-red-600 bg-red-50 px-4 py-2.5 rounded-[10px]">{s.error}</div>
       )}
       {s.success && (
-        <div className="mb-4 text-xs text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-lg flex items-center gap-1.5">
+        <div className="mb-4 text-xs text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-[10px] flex items-center gap-1.5">
           <Check size={12} /> {s.success}
         </div>
       )}
@@ -104,9 +104,9 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           onBgImageUpload={s.handleBgImageUpload}
           onBgImageRemove={s.handleBgImageRemove}
         >
-          <p className="text-xs text-gray-400 mb-3">This is how your proposals will appear to clients.</p>
+          <p className="text-xs text-faint mb-3">This is how your proposals will appear to clients.</p>
           <ViewerPreview
-            accent={isValidHex6(s.accentColor) ? s.accentColor : '#ff6700'}
+            accent={isValidHex6(s.accentColor) ? s.accentColor : '#01434A'}
             bgPrimary={isValidHex6(s.bgPrimary) ? s.bgPrimary : '#0f0f0f'}
             bgSecondary={isValidHex6(s.bgSecondary) ? s.bgSecondary : '#141414'}
             sidebarTextColor={isValidHex6(s.sidebarTextColor) ? s.sidebarTextColor : '#ffffff'}
@@ -142,8 +142,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
         />
 
         {!s.isOwner && (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-            <p className="text-sm text-gray-400">Only the company owner can edit these settings.</p>
+          <div className="bg-surface border border-edge rounded-[14px] p-4 text-center">
+            <p className="text-sm text-faint">Only the company owner can edit these settings.</p>
           </div>
         )}
       </div>

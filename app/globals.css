@@ -11,10 +11,10 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Clash Grotesk', sans-serif;
-  --font-display: 'Clash Grotesk', sans-serif;
+  --font-sans: 'Outfit', 'Clash Grotesk', sans-serif;
+  --font-display: 'Outfit', 'Clash Grotesk', sans-serif;
   --brand-dark: #0f0f0f;
-  --brand-accent: #ff6700;
+  --brand-accent: #01434A;
   --brand-accent-hover: #e85d00;
   --brand-surface: #1a1a1a;
   --brand-surface-light: #222222;

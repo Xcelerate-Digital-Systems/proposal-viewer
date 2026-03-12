@@ -81,7 +81,7 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
     coverOverlayOpacity: entity.cover_overlay_opacity ?? 0.65,
     coverTextColor: entity.cover_text_color || '#ffffff',
     coverSubtitleColor: entity.cover_subtitle_color || '#ffffffb3',
-    coverButtonBg: entity.cover_button_bg || '#ff6700',
+    coverButtonBg: entity.cover_button_bg || '#01434A',
     coverButtonTextColor: entity.cover_button_text_color || '#ffffff',
   });
 
@@ -390,7 +390,7 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
             {/* Header bar */}
             <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
               <span className="text-xs text-gray-500 font-medium">Cover Page</span>
-              <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
+              <span className="text-xs text-teal font-medium flex items-center gap-1">
                 <Layout size={11} />
                 Live Preview
               </span>

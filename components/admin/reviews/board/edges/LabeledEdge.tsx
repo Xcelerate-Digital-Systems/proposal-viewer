@@ -98,7 +98,7 @@ function LabeledEdgeComponent({
                 px-2.5 py-1 rounded-md text-[11px] font-medium leading-tight
                 border shadow-sm cursor-pointer transition-all
                 ${selected
-                  ? 'bg-[#017C87]/10 border-[#017C87]/30 text-[#017C87]'
+                  ? 'bg-teal/10 border-teal/30 text-teal'
                   : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-600'
                 }
               `}

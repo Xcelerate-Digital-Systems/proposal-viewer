@@ -28,7 +28,7 @@ export default function SMSNode({
             className={`
               w-[72px] h-[72px] rounded-full flex items-center justify-center
               border-2 transition-all shadow-sm bg-green-50 text-green-600
-              ${selected ? 'border-[#017C87] shadow-lg ring-2 ring-[#017C87]/20' : 'border-green-200 hover:shadow-md'}
+              ${selected ? 'border-teal shadow-lg ring-2 ring-teal/20' : 'border-green-200 hover:shadow-md'}
             `}
           >
             <Smartphone size={28} strokeWidth={1.5} />

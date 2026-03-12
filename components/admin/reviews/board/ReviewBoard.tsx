@@ -171,8 +171,8 @@ export default function ReviewBoard({
           {board.placedItems.length === 0 && board.boardNotes.length === 0 && (
             <Panel position="top-center" className="!top-16">
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5 max-w-sm text-center">
-                <div className="w-10 h-10 rounded-lg bg-[#017C87]/10 flex items-center justify-center mx-auto mb-3">
-                  <MousePointer size={18} className="text-[#017C87]" />
+                <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center mx-auto mb-3">
+                  <MousePointer size={18} className="text-teal" />
                 </div>
                 <p className="text-sm font-medium text-gray-700 mb-1">
                   Build your funnel board

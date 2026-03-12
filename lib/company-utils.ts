@@ -76,7 +76,7 @@ export function hexToRgba(hex: string, alpha: number): string {
 }
 
 export const ACCENT_PRESETS = [
-  '#ff6700', '#ef4444', '#f59e0b', '#22c55e',
+  '#01434A', '#ef4444', '#f59e0b', '#22c55e',
   '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4',
 ];
 

@@ -202,13 +202,13 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
 
   if (loading) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <div className="bg-white border border-edge rounded-[14px] p-5 ">
         <div className="flex items-center gap-2 mb-3">
-          <Link2 size={14} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-500">Custom Domain</span>
+          <Link2 size={14} className="text-faint" />
+          <span className="text-sm font-medium text-muted">Custom Domain</span>
         </div>
         <div className="flex items-center justify-center py-6">
-          <Loader2 size={16} className="animate-spin text-gray-300" />
+          <Loader2 size={16} className="animate-spin text-faint" />
         </div>
       </div>
     );
@@ -222,12 +222,12 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
   const effectiveDns = dnsInstructions;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <div className="bg-white border border-edge rounded-[14px] p-5 ">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Link2 size={14} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-500">Custom Domain</span>
+          <Link2 size={14} className="text-faint" />
+          <span className="text-sm font-medium text-muted">Custom Domain</span>
         </div>
         {hasDomain && (
           <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -244,8 +244,8 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
         )}
       </div>
 
-      <p className="text-xs text-gray-400 mb-4">
-        Use your own domain for proposal links, e.g. <span className="text-gray-500">proposals.yourcompany.com</span>
+      <p className="text-xs text-faint mb-4">
+        Use your own domain for proposal links, e.g. <span className="text-muted">proposals.yourcompany.com</span>
       </p>
 
       {/* Domain input */}
@@ -256,7 +256,7 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
           onChange={(e) => setDomainInput(e.target.value)}
           placeholder="proposals.yourcompany.com"
           disabled={!isOwner || saving}
-          className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {isOwner && (
           <>
@@ -264,7 +264,7 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
               <button
                 onClick={handleAddDomain}
                 disabled={saving || !domainInput.trim()}
-                className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors whitespace-nowrap"
+                className="px-4 py-2 bg-teal text-white text-sm rounded-lg hover:bg-teal-hover disabled:opacity-50 transition-colors whitespace-nowrap"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : 'Connect'}
               </button>
@@ -305,13 +305,13 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
               </thead>
               <tbody>
                 <tr>
-                  <td className="px-3 py-2 font-mono text-gray-700">{effectiveDns.type}</td>
-                  <td className="px-3 py-2 font-mono text-gray-700">{effectiveDns.name}</td>
-                  <td className="px-3 py-2 font-mono text-gray-700">{effectiveDns.value}</td>
+                  <td className="px-3 py-2 font-mono text-ink">{effectiveDns.type}</td>
+                  <td className="px-3 py-2 font-mono text-ink">{effectiveDns.name}</td>
+                  <td className="px-3 py-2 font-mono text-ink">{effectiveDns.value}</td>
                   <td className="px-3 py-2">
                     <button
                       onClick={() => handleCopy(effectiveDns.value, 'dns')}
-                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="p-1 text-faint hover:text-muted transition-colors"
                       title="Copy value"
                     >
                       {copied === 'dns' ? <CheckCircle2 size={13} className="text-green-500" /> : <Copy size={13} />}
@@ -339,13 +339,13 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
                   <tbody>
                     {domainState.vercel_status.verification.map((v, i) => (
                       <tr key={i}>
-                        <td className="px-3 py-2 font-mono text-gray-700">{v.type}</td>
-                        <td className="px-3 py-2 font-mono text-gray-700 break-all">{v.domain}</td>
-                        <td className="px-3 py-2 font-mono text-gray-700 break-all max-w-[200px] truncate">{v.value}</td>
+                        <td className="px-3 py-2 font-mono text-ink">{v.type}</td>
+                        <td className="px-3 py-2 font-mono text-ink break-all">{v.domain}</td>
+                        <td className="px-3 py-2 font-mono text-ink break-all max-w-[200px] truncate">{v.value}</td>
                         <td className="px-3 py-2">
                           <button
                             onClick={() => handleCopy(v.value, `txt-${i}`)}
-                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            className="p-1 text-faint hover:text-muted transition-colors"
                             title="Copy value"
                           >
                             {copied === `txt-${i}` ? <CheckCircle2 size={13} className="text-green-500" /> : <Copy size={13} />}
@@ -387,7 +387,7 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
             href={`https://${domainState?.custom_domain}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-[#017C87] hover:underline"
+            className="inline-flex items-center gap-1 text-xs text-teal hover:underline"
           >
             Visit domain <ExternalLink size={11} />
           </a>
@@ -399,7 +399,7 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
         <button
           onClick={handleRemove}
           disabled={removing}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-faint hover:text-red-500 transition-colors"
         >
           {removing ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
           Remove custom domain
@@ -407,7 +407,7 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
       )}
 
       {!isOwner && !hasDomain && (
-        <p className="text-xs text-gray-400">Only the company owner can configure a custom domain.</p>
+        <p className="text-xs text-faint">Only the company owner can configure a custom domain.</p>
       )}
     </div>
   );

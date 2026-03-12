@@ -94,9 +94,15 @@ export function useReviewItemSubmit({
           ...payload,
         };
 
-        // For ads, also set ad_creative_url to the uploaded image
+        // Set type-specific URL fields based on the uploaded file
         if (payload.type === 'ad') {
           fullPayload.ad_creative_url = imageUrl;
+        } else if (payload.type === 'google_ad') {
+          fullPayload.ad_creative_url = imageUrl;
+        } else if (payload.type === 'video') {
+          fullPayload.video_url = imageUrl;
+        } else if (payload.type === 'pdf') {
+          fullPayload.pdf_url = imageUrl;
         }
 
         const { error: insertError } = await supabase

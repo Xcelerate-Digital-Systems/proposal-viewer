@@ -19,10 +19,10 @@ export const frequencyLabel = (f: string) =>
 
 // Teal shades used across all sub-components
 export const TEAL = '#017C87';
-export const TEAL_BORDER = 'border-[#017C87]/30';
-export const TEAL_BG = 'bg-[#017C87]/[0.02]';
-export const TEAL_TEXT = 'text-[#017C87]';
-export const TEAL_FOCUS = 'focus:ring-[#017C87]/20 focus:border-[#017C87]/40';
+export const TEAL_BORDER = 'border-teal/30';
+export const TEAL_BG = 'bg-teal/[0.02]';
+export const TEAL_TEXT = 'text-teal';
+export const TEAL_FOCUS = 'focus:ring-teal/20 focus:border-teal/40';
 
 export function usePricingSchedule(
   schedule: PaymentSchedule,

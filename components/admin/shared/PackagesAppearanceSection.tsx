@@ -45,7 +45,7 @@ export default function PackagesAppearanceSection({
         {!isDefault(styling) && (
           <button
             onClick={resetAll}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-[#017C87] transition-colors"
+            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-teal transition-colors"
           >
             <RotateCcw size={10} />
             Reset to defaults
@@ -153,7 +153,7 @@ export default function PackagesAppearanceSection({
               onClick={() => update({ feature_icon: opt.key })}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors ${
                 styling.feature_icon === opt.key
-                  ? 'border-[#017C87] bg-[#017C87]/5 text-[#017C87]'
+                  ? 'border-teal bg-teal/5 text-teal'
                   : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
               }`}
               title={opt.label}
@@ -178,7 +178,7 @@ export default function PackagesAppearanceSection({
               step={1}
               value={styling.border_radius}
               onChange={(e) => update({ border_radius: Number(e.target.value) })}
-              className="flex-1 h-1 accent-[#017C87]"
+              className="flex-1 h-1 accent-teal"
             />
             <span className="text-[10px] text-gray-500 font-mono w-[32px] text-right">
               {styling.border_radius}px
@@ -195,7 +195,7 @@ export default function PackagesAppearanceSection({
               step={1}
               value={styling.border_width}
               onChange={(e) => update({ border_width: Number(e.target.value) })}
-              className="flex-1 h-1 accent-[#017C87]"
+              className="flex-1 h-1 accent-teal"
             />
             <span className="text-[10px] text-gray-500 font-mono w-[32px] text-right">
               {styling.border_width}px

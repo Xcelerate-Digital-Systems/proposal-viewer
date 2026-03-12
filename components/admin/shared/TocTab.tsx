@@ -274,7 +274,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
           isIncluded
             ? isGroup
               ? 'bg-gray-400 border-gray-400'
-              : 'bg-[#017C87] border-[#017C87]'
+              : 'bg-teal border-teal'
             : 'border-gray-300'
         }`}>
           {isIncluded && <Check size={10} className="text-white" />}
@@ -313,7 +313,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-5 h-5 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
       </div>
     );
   }
@@ -325,7 +325,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            <List size={15} className="text-[#017C87]" />
+            <List size={15} className="text-teal" />
             Table of Contents
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
@@ -344,7 +344,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
           <button
             onClick={() => updateSettings({ enabled: !settings.enabled })}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-              settings.enabled ? 'bg-[#017C87]' : 'bg-gray-200'
+              settings.enabled ? 'bg-teal' : 'bg-gray-200'
             }`}
           >
             <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
@@ -371,7 +371,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                 value={settings.title}
                 onChange={(e) => updateSettings({ title: e.target.value })}
                 placeholder="Table of Contents"
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
               />
             </div>
 
@@ -394,7 +394,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                 </div>
                 <button
                   onClick={toggleAll}
-                  className="text-xs font-medium text-[#017C87] hover:text-[#017C87]/80 transition-colors shrink-0 ml-4"
+                  className="text-xs font-medium text-teal hover:text-teal/80 transition-colors shrink-0 ml-4"
                 >
                   {allIncluded ? 'Deselect All' : 'Select All'}
                 </button>

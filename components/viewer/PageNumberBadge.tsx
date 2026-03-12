@@ -15,7 +15,7 @@ interface PageNumberBadgeProps {
 export default function PageNumberBadge({
   currentPage,
   totalPages,
-  accentColor = '#ff6700',
+  accentColor = '#01434A',
   circleColor,
   textColor = '#ffffff',
 }: PageNumberBadgeProps) {

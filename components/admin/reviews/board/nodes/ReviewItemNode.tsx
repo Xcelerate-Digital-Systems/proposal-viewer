@@ -13,6 +13,8 @@ import VideoNode from './VideoNode';
 import EmailNode from './EmailNode';
 import SMSNode from './SMSNode';
 import FacebookNode from './FacebookNode';
+import GoogleAdNode from './GoogleAdNode';
+import PdfNode from './PdfNode';
 
 /* ─── Node data interface ──────────────────────────────────────── */
 
@@ -31,6 +33,8 @@ const NODE_COMPONENTS: Record<string, React.ComponentType<NodeItemProps>> = {
   email: EmailNode,
   sms: SMSNode,
   ad: FacebookNode,
+  google_ad: GoogleAdNode,
+  pdf: PdfNode,
 };
 
 /* ─── Dispatcher ───────────────────────────────────────────────── */

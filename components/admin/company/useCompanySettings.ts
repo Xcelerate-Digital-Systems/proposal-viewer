@@ -27,7 +27,7 @@ export function useCompanySettings(companyId: string) {
   const [website, setWebsite] = useState('');
 
   // Color fields
-  const [accentColor, setAccentColor]           = useState('#ff6700');
+  const [accentColor, setAccentColor]           = useState('#01434A');
   const [bgPrimary, setBgPrimary]               = useState('#0f0f0f');
   const [bgSecondary, setBgSecondary]           = useState('#141414');
   const [sidebarTextColor, setSidebarTextColor] = useState('#ffffff');
@@ -74,7 +74,7 @@ export function useCompanySettings(companyId: string) {
         setCompany(data);
         setName(data.name);
         setSlug(data.slug);
-        setAccentColor(data.accent_color || '#ff6700');
+        setAccentColor(data.accent_color || '#01434A');
         setBgPrimary(data.bg_primary || '#0f0f0f');
         setBgSecondary(data.bg_secondary || '#141414');
         setSidebarTextColor(data.sidebar_text_color || '#ffffff');
@@ -305,7 +305,7 @@ export function useCompanySettings(companyId: string) {
   /* ── Derived ───────────────────────────────────────────────── */
 
   const colorsChanged =
-    accentColor !== (company?.accent_color || '#ff6700') ||
+    accentColor !== (company?.accent_color || '#01434A') ||
     bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
     bgSecondary !== (company?.bg_secondary || '#141414') ||
     sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||

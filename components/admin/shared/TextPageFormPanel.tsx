@@ -47,8 +47,8 @@ export default function TextPageFormPanel({ form, companyId, onUpdate }: TextPag
                   role="switch"
                   aria-checked={form.show_title}
                   onClick={() => onUpdate({ show_title: !form.show_title })}
-                  className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
-                    form.show_title ? 'bg-[#017C87]' : 'bg-gray-300'
+                  className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
+                    form.show_title ? 'bg-teal' : 'bg-gray-300'
                   }`}
                 >
                   <span
@@ -64,7 +64,7 @@ export default function TextPageFormPanel({ form, companyId, onUpdate }: TextPag
               value={form.title}
               onChange={(e) => onUpdate({ title: e.target.value })}
               placeholder="e.g. Executive Summary, Welcome, Terms & Conditions"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#017C87] focus:ring-1 focus:ring-[#017C87]/20"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20"
             />
           </div>
 
@@ -90,8 +90,8 @@ export default function TextPageFormPanel({ form, companyId, onUpdate }: TextPag
                       ...(!form.show_member_badge ? {} : { prepared_by_member_id: null }),
                     })
                   }
-                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
-                    form.show_member_badge ? 'bg-[#017C87]' : 'bg-gray-300'
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
+                    form.show_member_badge ? 'bg-teal' : 'bg-gray-300'
                   }`}
                 >
                   <span
@@ -134,8 +134,8 @@ export default function TextPageFormPanel({ form, companyId, onUpdate }: TextPag
                   role="switch"
                   aria-checked={!!form.show_client_logo}
                   onClick={() => onUpdate({ show_client_logo: !form.show_client_logo })}
-                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 ${
-                    form.show_client_logo ? 'bg-[#017C87]' : 'bg-gray-300'
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
+                    form.show_client_logo ? 'bg-teal' : 'bg-gray-300'
                   }`}
                 >
                   <span

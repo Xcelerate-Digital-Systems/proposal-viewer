@@ -63,7 +63,7 @@ function DesignContent({ proposalId, companyId }: { proposalId: string; companyI
   if (loading || !proposal) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
       </div>
     );
   }

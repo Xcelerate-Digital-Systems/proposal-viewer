@@ -82,7 +82,7 @@ export default function CurrencyInput({
         }}
         className={[
           'w-full pl-7 pr-2.5 rounded border border-gray-200 text-right',
-          'focus:outline-none focus:ring-1 focus:ring-[#017C87]/30 focus:border-[#017C87]/40',
+          'focus:outline-none focus:ring-1 focus:ring-teal/30 focus:border-teal/40',
           'placeholder:text-gray-300',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           styles.input,

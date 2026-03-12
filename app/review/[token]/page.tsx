@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Image as ImageIcon, ArrowLeft, Monitor } from 'lucide-react';
-import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
+import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewCommentReaction, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useGuestIdentity } from '@/hooks/useGuestIdentity';
@@ -28,6 +28,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [boardEdges, setBoardEdges] = useState<ReviewBoardEdge[]>([]);
   const [boardNotes, setBoardNotes] = useState<ReviewBoardNote[]>([]);
+  const [reactions, setReactions] = useState<ReviewCommentReaction[]>([]);
   const [showBoardView, setShowBoardView] = useState(true);
   const [viewMode, setViewMode] = useState<'project' | 'item'>('project');
   const [initialItemId, setInitialItemId] = useState<string | null>(null);
@@ -113,7 +114,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   }, [project]);
 
   // ── Submit comment via API ──
-  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string) => {
+  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }) => {
     if (!guestName.trim()) return;
     saveGuestIdentity(guestName);
 
@@ -121,10 +122,16 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       review_item_id: reviewItemId,
       author_name: guestName.trim(),
       content: content.trim(),
-      comment_type: pinX != null ? 'pin' : 'general',
+      comment_type: highlightData ? 'text_highlight' : annotationData ? (annotationData as Record<string, unknown>).type as string : (pinX != null ? 'pin' : 'general'),
       pin_x: pinX ?? null,
       pin_y: pinY ?? null,
       parent_comment_id: parentId || null,
+      annotation_data: annotationData || null,
+      screenshot_url: screenshotUrl || null,
+      highlight_start: highlightData?.start ?? null,
+      highlight_end: highlightData?.end ?? null,
+      highlight_text: highlightData?.text ?? null,
+      highlight_element_path: highlightData?.elementPath ?? null,
     };
 
     const res = await fetch(`/api/review/${params.token}/comments`, {
@@ -139,6 +146,24 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       setPendingPin(null);
     }
   };
+
+  // ── Toggle reaction ──
+  const toggleReaction = useCallback(async (commentId: string, emoji: string) => {
+    if (!guestName.trim()) return;
+    const res = await fetch(`/api/review-comments/${commentId}/reactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emoji, author_name: guestName.trim() }),
+    });
+    if (res.ok) {
+      const result = await res.json();
+      if (result.action === 'added') {
+        setReactions((prev) => [...prev, result.reaction]);
+      } else {
+        setReactions((prev) => prev.filter((r) => r.id !== result.id));
+      }
+    }
+  }, [guestName]);
 
   // ── Board → item detail navigation ──
   const handleBoardItemClick = useCallback((itemId: string) => {
@@ -248,6 +273,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       onGuestNameChange={setGuestName}
       onSubmitComment={submitComment}
       shareToken={params.token}
+      companyId={project?.company_id}
       backAction={backAction}
     />
   );

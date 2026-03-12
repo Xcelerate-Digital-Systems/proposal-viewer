@@ -28,7 +28,7 @@ export default function PricingSettings({
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Project Investment"
-          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
+          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
         />
       </div>
 
@@ -39,7 +39,7 @@ export default function PricingSettings({
           value={introText}
           onChange={(e) => onIntroTextChange(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 resize-none"
+          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 resize-none"
         />
       </div>
 
@@ -51,7 +51,7 @@ export default function PricingSettings({
             type="date"
             value={proposalDate ?? ''}
             onChange={(e) => onProposalDateChange(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
           />
         </div>
         <div>
@@ -62,7 +62,7 @@ export default function PricingSettings({
             onChange={(e) => onValidityDaysChange(e.target.value ? parseInt(e.target.value) : null)}
             placeholder="30"
             min={1}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
           />
         </div>
       </div>
@@ -75,7 +75,7 @@ export default function PricingSettings({
         </div>
         <button
           onClick={() => onTaxEnabledChange(!taxEnabled)}
-          className={`relative w-10 h-5 rounded-full transition-colors ${taxEnabled ? 'bg-[#017C87]' : 'bg-gray-200'}`}
+          className={`relative w-10 h-5 rounded-full transition-colors ${taxEnabled ? 'bg-teal' : 'bg-gray-200'}`}
         >
           <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${taxEnabled ? 'left-5' : 'left-0.5'}`} />
         </button>

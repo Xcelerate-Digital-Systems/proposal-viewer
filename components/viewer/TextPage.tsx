@@ -395,7 +395,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
   const headingColor = branding.text_page_heading_color || textColor;
   const fontSize = parseInt(branding.text_page_font_size || '14', 10);
-  const accent = branding.accent_color || '#ff6700';
+  const accent = branding.accent_color || '#01434A';
   const border = deriveBorderColor(bgColor);
   const muted = `${textColor}99`;
 

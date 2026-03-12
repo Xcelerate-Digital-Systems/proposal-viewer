@@ -35,19 +35,19 @@ interface TeamMemberManagerProps {
 const getRoleIcon = (role: string) => {
   switch (role) {
     case 'owner':
-      return <Crown size={12} className="text-[#017C87]" />;
+      return <Crown size={12} className="text-teal" />;
     case 'admin':
-      return <Shield size={12} className="text-[#017C87]/70" />;
+      return <Shield size={12} className="text-teal/70" />;
     default:
-      return <User size={12} className="text-gray-400" />;
+      return <User size={12} className="text-faint" />;
   }
 };
 
 const getRoleBadge = (role: string) => {
   const styles: Record<string, string> = {
-    owner: 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]/20',
-    admin: 'bg-[#017C87]/5 text-[#017C87] border-[#017C87]/10',
-    member: 'bg-gray-50 text-gray-500 border-gray-200',
+    owner: 'bg-teal/10 text-teal border-teal/20',
+    admin: 'bg-teal/5 text-teal border-teal/10',
+    member: 'bg-surface text-muted border-edge',
   };
   return (
     <span
@@ -177,14 +177,14 @@ function MemberRow({
               <img
                 src={avatarUrl}
                 alt={member.name}
-                className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                className="w-10 h-10 rounded-full object-cover border border-edge"
               />
               {canEdit && (
                 <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
                   <button
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading}
-                    className="p-1 text-white hover:text-gray-200 transition-colors"
+                    className="p-1 text-white hover:text-white/70 transition-colors"
                     title="Change photo"
                   >
                     <Camera size={12} />
@@ -203,7 +203,7 @@ function MemberRow({
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="w-10 h-10 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-[#017C87]/30 hover:text-[#017C87] transition-colors disabled:opacity-50"
+              className="w-10 h-10 rounded-full border-2 border-dashed border-edge flex items-center justify-center text-faint hover:border-teal/30 hover:text-teal transition-colors disabled:opacity-50"
               title="Upload photo"
             >
               {uploading ? (
@@ -213,8 +213,8 @@ function MemberRow({
               )}
             </button>
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center">
-              <span className="text-sm font-medium text-gray-400">
+            <div className="w-10 h-10 rounded-full bg-surface border border-edge flex items-center justify-center">
+              <span className="text-sm font-medium text-faint">
                 {member.name.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -242,13 +242,13 @@ function MemberRow({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
+              className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
             />
             {nameChanged && (
               <button
                 onClick={handleSaveName}
                 disabled={savingName}
-                className="shrink-0 px-3 py-1.5 bg-[#017C87] text-white text-xs rounded-md hover:bg-[#01434A] disabled:opacity-50 transition-colors flex items-center gap-1"
+                className="shrink-0 px-3 py-1.5 bg-teal text-white text-xs rounded-md hover:bg-teal-hover disabled:opacity-50 transition-colors flex items-center gap-1"
               >
                 {savingName ? (
                   <Loader2 size={12} className="animate-spin" />
@@ -260,16 +260,16 @@ function MemberRow({
             )}
           </div>
         ) : (
-          <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+          <p className="text-sm font-medium text-ink truncate">{member.name}</p>
         )}
-        <p className="text-xs text-gray-400 truncate mt-0.5">{member.email}</p>
+        <p className="text-xs text-faint truncate mt-0.5">{member.email}</p>
       </div>
 
       {/* Role badge + current user tag */}
       <div className="shrink-0 flex items-center gap-2">
         {getRoleBadge(member.role)}
         {isCurrentUser && (
-          <span className="text-[10px] text-gray-300 font-medium">(you)</span>
+          <span className="text-[10px] text-faint font-medium">(you)</span>
         )}
       </div>
     </div>
@@ -348,16 +348,16 @@ export default function TeamMemberManager({
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-2 mb-4 group"
       >
-        <div className="w-8 h-8 bg-[#017C87]/10 rounded-lg flex items-center justify-center">
-          <Users size={16} className="text-[#017C87]" />
+        <div className="w-8 h-8 bg-teal-tint rounded-lg flex items-center justify-center">
+          <Users size={16} className="text-teal" />
         </div>
         <div className="text-left">
-          <h2 className="text-sm font-semibold text-gray-900">Team Profiles</h2>
-          <p className="text-xs text-gray-400">
+          <h2 className="text-sm font-semibold text-ink">Team Profiles</h2>
+          <p className="text-xs text-faint">
             Update names and photos for your team members
           </p>
         </div>
-        <div className="ml-auto text-gray-300 group-hover:text-gray-400 transition-colors">
+        <div className="ml-auto text-faint group-hover:text-faint transition-colors">
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </button>
@@ -366,10 +366,10 @@ export default function TeamMemberManager({
         <>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 size={20} className="animate-spin text-gray-300" />
+              <Loader2 size={20} className="animate-spin text-faint" />
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+            <div className="bg-white border border-edge rounded-[14px] overflow-hidden  divide-y divide-edge">
               {otherMembers.map((m) => (
                 <MemberRow
                   key={m.id}

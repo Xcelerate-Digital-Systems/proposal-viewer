@@ -20,8 +20,10 @@ export type ReviewProject = {
   updated_at: string;
 };
 
-export type ReviewItemType = 'webpage' | 'email' | 'ad' | 'image' | 'video' | 'sms';
+export type ReviewItemType = 'webpage' | 'email' | 'ad' | 'image' | 'video' | 'sms' | 'google_ad' | 'pdf';
 export type ReviewItemStatus = 'draft' | 'in_review' | 'approved' | 'revision_needed';
+
+export type GoogleAdFormat = 'search' | 'display';
 
 export type ReviewItem = {
   id: string;
@@ -33,16 +35,30 @@ export type ReviewItem = {
   url: string | null;
   screenshot_url: string | null;
   html_content: string | null;
+  // Meta ad fields
   ad_headline: string | null;
   ad_copy: string | null;
   ad_cta: string | null;
   ad_creative_url: string | null;
   ad_platform: string | null;
+  // Email fields
   email_subject: string | null;
   email_preheader: string | null;
   email_body: string | null;
+  // SMS fields
   sms_body: string | null;
+  // Image/media fields
   image_url: string | null;
+  video_url: string | null;
+  pdf_url: string | null;
+  // Google Ad fields
+  google_ad_format: GoogleAdFormat | null;
+  google_ad_headline: string | null;
+  google_ad_description1: string | null;
+  google_ad_description2: string | null;
+  google_ad_display_url: string | null;
+  google_ad_final_url: string | null;
+  // Meta
   status: ReviewItemStatus;
   version: number;
   created_by: string | null;
@@ -74,11 +90,30 @@ export type ReviewComment = {
   highlight_end: number | null;
   highlight_text: string | null;
   highlight_element_path: string | null;
+  annotation_data: Record<string, unknown> | null;
+  attachments: ReviewCommentAttachment[];
+  screenshot_url: string | null;
   resolved: boolean;
   resolved_by: string | null;
   resolved_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type ReviewCommentAttachment = {
+  url: string;
+  name: string;
+  type: string; // MIME type
+  size: number; // bytes
+};
+
+export type ReviewCommentReaction = {
+  id: string;
+  review_comment_id: string;
+  emoji: string;
+  author_name: string;
+  author_user_id: string | null;
+  created_at: string;
 };
 
 // ─── Board / Whiteboard types ─────────────────────────────────────────────────

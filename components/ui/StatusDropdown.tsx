@@ -102,13 +102,13 @@ export default function StatusDropdown<T extends string = string>({
                 setOpen(false);
               }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                value === opt.value ? 'text-[#017C87] font-medium' : 'text-gray-700'
+                value === opt.value ? 'text-teal font-medium' : 'text-gray-700'
               }`}
             >
               {opt.icon}
               {opt.label}
               {value === opt.value && (
-                <CheckCircle2 size={11} className="ml-auto text-[#017C87]" />
+                <CheckCircle2 size={11} className="ml-auto text-teal" />
               )}
             </button>
           ))}

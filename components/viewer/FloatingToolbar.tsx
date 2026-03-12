@@ -27,7 +27,7 @@ export default function FloatingToolbar({
   onNextPage,
   bgColor = '#1a1a1a',
   borderColor = '#2a2a2a',
-  accentColor = '#ff6700',
+  accentColor = '#01434A',
   onCompositeDownload,
 }: FloatingToolbarProps) {
   const [downloading, setDownloading] = useState(false);

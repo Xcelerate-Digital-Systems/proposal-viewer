@@ -21,7 +21,7 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
         {one_off.enabled && one_off.amount > 0 && (
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#017C87]" />
+              <div className="w-2 h-2 rounded-full bg-teal" />
               <div>
                 <span className="text-gray-700">{one_off.label}</span>
                 {one_off.note && (
@@ -56,7 +56,7 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
         {recurring.enabled && recurring.amount > 0 && (
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#017C87]" />
+              <div className="w-2 h-2 rounded-full bg-teal" />
               <div>
                 <span className="text-gray-700">{recurring.label}</span>
                 {recurring.note && (

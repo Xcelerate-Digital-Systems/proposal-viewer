@@ -51,7 +51,7 @@ export default function SortablePdfRow({
     <div ref={setNodeRef} style={style}>
       <div
         className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors border border-dashed ${
-          isSelected ? 'bg-[#017C87]/10 border-[#017C87]/40 ring-1 ring-[#017C87]/30' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+          isSelected ? 'bg-teal/10 border-teal/40 ring-1 ring-teal/30' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
         }`}
         onClick={onSelect}
       >
@@ -75,7 +75,7 @@ export default function SortablePdfRow({
             index === 0
               ? 'text-gray-200 cursor-not-allowed'
               : page.indent
-              ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
+              ? 'text-teal bg-teal/10 hover:bg-teal/20'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
           }`}
         >
@@ -83,7 +83,7 @@ export default function SortablePdfRow({
         </button>
 
         {page.indent > 0 && (
-          <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
+          <span className="text-[10px] text-teal/50 shrink-0">SUB</span>
         )}
 
         {/* Label */}
@@ -93,7 +93,7 @@ export default function SortablePdfRow({
             value={page.title}
             onChange={(e) => onUpdate({ title: e.target.value })}
             onFocus={onSelect}
-            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-teal/40 placeholder:text-gray-400"
             placeholder={`Page ${visualNum}`}
           />
         </div>
@@ -119,7 +119,7 @@ export default function SortablePdfRow({
             className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
               processing
                 ? 'text-gray-200 border-gray-100 cursor-not-allowed'
-                : 'text-[#017C87] border-[#017C87]/25 hover:bg-[#017C87]/5 hover:border-[#017C87]/40 cursor-pointer'
+                : 'text-teal border-teal/25 hover:bg-teal/5 hover:border-teal/40 cursor-pointer'
             }`}
             title="Replace page PDF"
           >

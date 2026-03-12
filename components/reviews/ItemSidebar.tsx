@@ -155,7 +155,7 @@ export default function ItemSidebar({
   const bg = isAdmin ? undefined : bgColor;
   const border = isAdmin ? undefined : borderColor;
   const text = isAdmin ? '#111827' : (textColor || '#ffffff');
-  const accent = isAdmin ? '#017C87' : (accentColor || '#ff6700');
+  const accent = isAdmin ? '#017C87' : (accentColor || '#01434A');
 
   return (
     <aside
@@ -220,7 +220,7 @@ export default function ItemSidebar({
                 className={
                   isAdmin
                     ? `w-full text-left rounded-lg p-2 transition-colors ${
-                        isActive ? 'bg-[#017C87]/8 ring-1 ring-[#017C87]/20' : 'hover:bg-gray-50'
+                        isActive ? 'bg-teal/8 ring-1 ring-teal/20' : 'hover:bg-gray-50'
                       }`
                     : 'w-full text-left rounded-lg p-2 transition-colors'
                 }

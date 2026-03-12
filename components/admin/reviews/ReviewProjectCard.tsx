@@ -48,25 +48,25 @@ const projectStatusOptions: StatusOption<ProjectStatus>[] = [
   {
     value: 'active',
     label: 'Active',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
+    bg: 'bg-[#E8F5E9]',
+    text: 'text-[#2E7D32]',
+    border: 'border-[#C8E6C9]',
     icon: <CheckCircle2 size={12} />,
   },
   {
     value: 'completed',
     label: 'Completed',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    border: 'border-blue-200',
+    bg: 'bg-teal-tint',
+    text: 'text-teal',
+    border: 'border-[#B2DFDB]',
     icon: <Check size={12} />,
   },
   {
     value: 'archived',
     label: 'Archived',
-    bg: 'bg-gray-100',
-    text: 'text-gray-500',
-    border: 'border-gray-200',
+    bg: 'bg-surface',
+    text: 'text-muted',
+    border: 'border-edge',
     icon: <AlertCircle size={12} />,
   },
 ];
@@ -202,18 +202,18 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors flex flex-col">
+      <div className="bg-white rounded-[14px] border border-edge hover:border-edge-hover transition-colors flex flex-col">
         {/* ─── Visual header — click to open ──────────────────── */}
         <button
           onClick={() => router.push(`/reviews/${project.id}`)}
-          className="w-full aspect-[4/3] rounded-t-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-5 border-b border-gray-100"
+          className="w-full aspect-[4/3] rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-surface flex flex-col items-center justify-center p-5 border-b border-edge"
         >
           {itemStats.total > 0 ? (
             <div className="w-full flex flex-col items-center gap-3">
               {/* Large item count */}
               <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl font-bold text-gray-800">{itemStats.total}</span>
-                <span className="text-sm text-gray-400 font-medium">item{itemStats.total !== 1 ? 's' : ''}</span>
+                <span className="text-3xl font-bold text-ink">{itemStats.total}</span>
+                <span className="text-sm text-faint font-medium">item{itemStats.total !== 1 ? 's' : ''}</span>
               </div>
 
               {/* Progress bar */}
@@ -230,14 +230,14 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
               {/* Mini legend */}
               <div className="flex items-center gap-3 flex-wrap justify-center">
                 {itemStats.approved > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
+                  <span className="flex items-center gap-1 text-[10px] text-[#2E7D32] font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     {itemStats.approved} approved
                   </span>
                 )}
                 {itemStats.in_review > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] text-blue-600 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  <span className="flex items-center gap-1 text-[10px] text-teal font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal" />
                     {itemStats.in_review} in review
                   </span>
                 )}
@@ -248,8 +248,8 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
                   </span>
                 )}
                 {itemStats.draft > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+                  <span className="flex items-center gap-1 text-[10px] text-faint font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-edge-hover" />
                     {itemStats.draft} draft
                   </span>
                 )}
@@ -257,7 +257,7 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
 
               {/* Comment count */}
               {commentStats.total > 0 && (
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-1">
+                <div className="flex items-center gap-1.5 text-[11px] text-faint mt-1">
                   <MessageSquareText size={11} />
                   <span>
                     {commentStats.total} comment{commentStats.total !== 1 ? 's' : ''}
@@ -270,15 +270,15 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
             </div>
           ) : (
             <div className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-2">
-                <FolderOpen size={22} className="text-[#017C87]" />
+              <div className="w-12 h-12 rounded-xl bg-teal-tint flex items-center justify-center mx-auto mb-2">
+                <FolderOpen size={22} className="text-teal" />
               </div>
-              <p className="text-xs text-gray-400">No items yet</p>
+              <p className="text-xs text-faint">No items yet</p>
             </div>
           )}
 
           {/* Date overlay */}
-          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-400 border border-gray-200/60">
+          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-faint border border-edge">
             {formatDate(project.created_at)}
           </span>
         </button>
@@ -287,7 +287,7 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
         <div className="p-3.5 flex-1 flex flex-col min-w-0">
           {/* Title */}
           <h3
-            className="text-sm font-semibold font-[family-name:var(--font-display)] text-gray-900 truncate cursor-pointer hover:text-[#017C87] transition-colors mb-1"
+            className="text-[15px] font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
             onClick={() => router.push(`/reviews/${project.id}`)}
           >
             {project.title}
@@ -295,7 +295,7 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
 
           {/* Client / description */}
           {(project.client_name || project.description) && (
-            <p className="text-[11px] text-gray-400 truncate mb-2.5">
+            <p className="text-[12px] text-faint truncate mb-2.5">
               {project.client_name}
               {project.client_name && project.description && ' · '}
               {project.description}
@@ -315,20 +315,20 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
           <div className="flex-1" />
 
           {/* ─── Actions ────────────────────────────────────────── */}
-          <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3.5 px-3.5">
+          <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3.5 px-3.5">
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => router.push(`/reviews/${project.id}`)}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal-tint transition-colors"
               >
                 <Eye size={12} />
                 View
               </button>
               <button
                 onClick={copyLink}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface transition-colors"
               >
-                {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                {copied ? <Check size={12} className="text-[#2E7D32]" /> : <Copy size={12} />}
                 {copied ? 'Copied' : 'Link'}
               </button>
             </div>
@@ -336,7 +336,7 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
             <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors"
               >
                 <MoreHorizontal size={14} />
               </button>
@@ -344,10 +344,10 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[140px]">
+                  <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-xl border border-edge shadow-lg py-1 min-w-[140px]">
                     <button
                       onClick={openEditModal}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-surface"
                     >
                       <Pencil size={14} />
                       Edit
@@ -355,12 +355,12 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
                     <a
                       href={`/review/${project.share_token}`}
                       target="_blank"
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-surface"
                     >
                       <ExternalLink size={14} />
                       Preview
                     </a>
-                    <div className="border-t border-gray-100 my-1" />
+                    <div className="border-t border-edge my-1" />
                     <button
                       onClick={() => { setShowMenu(false); handleDelete(); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -381,45 +381,45 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowEdit(false)} />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)]">
+            <h3 className="text-base font-semibold text-ink">
               Edit Project
             </h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Title</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">Title</label>
               <input
                 type="text"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors bg-white"
+                className="w-full px-3.5 py-2.5 border border-edge rounded-[10px] text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors bg-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">Description</label>
               <textarea
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 rows={2}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors resize-none bg-white"
+                className="w-full px-3.5 py-2.5 border border-edge rounded-[10px] text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors resize-none bg-white"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Client Name</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">Client Name</label>
                 <input
                   type="text"
                   value={editClientName}
                   onChange={(e) => setEditClientName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors bg-white"
+                  className="w-full px-3.5 py-2.5 border border-edge rounded-[10px] text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors bg-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Client Email</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">Client Email</label>
                 <input
                   type="email"
                   value={editClientEmail}
                   onChange={(e) => setEditClientEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors bg-white"
+                  className="w-full px-3.5 py-2.5 border border-edge rounded-[10px] text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors bg-white"
                 />
               </div>
             </div>
@@ -427,14 +427,14 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={() => setShowEdit(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-muted hover:text-ink hover:bg-surface rounded-[10px] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveEdit}
                 disabled={!editTitle.trim() || saving}
-                className="px-4 py-2 bg-[#017C87] text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-teal text-white text-sm font-medium rounded-[10px] hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Saving…' : 'Save Changes'}
               </button>

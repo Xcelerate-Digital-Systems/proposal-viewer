@@ -130,7 +130,7 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
             onClick={() => setTab('upload')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
               tab === 'upload'
-                ? 'text-[#017C87] border-b-2 border-[#017C87] -mb-px'
+                ? 'text-teal border-b-2 border-teal -mb-px'
                 : 'text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -141,7 +141,7 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
             onClick={() => setTab('template')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
               tab === 'template'
-                ? 'text-[#017C87] border-b-2 border-[#017C87] -mb-px'
+                ? 'text-teal border-b-2 border-teal -mb-px'
                 : 'text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -160,10 +160,10 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-colors">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
                 {file ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <FileText size={20} className="text-[#017C87]" />
+                    <FileText size={20} className="text-teal" />
                     <span className="font-medium text-gray-900">{file.name}</span>
                     <span className="text-gray-400">({formatSize(file.size)})</span>
                   </div>
@@ -187,12 +187,12 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500">{status || 'Uploading...'}</span>
                   {status === 'Uploading PDF...' && (
-                    <span className="text-[#017C87] font-medium">{uploadProgress}%</span>
+                    <span className="text-teal font-medium">{uploadProgress}%</span>
                   )}
                 </div>
                 <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#017C87] rounded-full transition-all duration-300 ease-out"
+                    className="h-full bg-teal rounded-full transition-all duration-300 ease-out"
                     style={{ width: status === 'Uploading PDF...' ? `${uploadProgress}%` : '100%' }}
                   />
                 </div>
@@ -202,7 +202,7 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
             <button
               type="submit"
               disabled={uploading || !file}
-              className="w-full bg-[#017C87] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? 'Creating proposal...' : 'Create Proposal'}
             </button>

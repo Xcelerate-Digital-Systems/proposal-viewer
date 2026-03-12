@@ -245,7 +245,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
               <button
                 key={t.id}
                 onClick={() => selectTemplate(t)}
-                className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-[#017C87]/40 hover:bg-[#017C87]/5 transition-all"
+                className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-teal/40 hover:bg-teal/5 transition-all"
               >
                 <div className="text-sm font-medium text-gray-900">{t.name}</div>
                 {t.description && (
@@ -274,8 +274,8 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       </button>
 
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-7 h-7 rounded-lg bg-[#017C87]/10 flex items-center justify-center">
-          <Check size={13} className="text-[#017C87]" />
+        <div className="w-7 h-7 rounded-lg bg-teal/10 flex items-center justify-center">
+          <Check size={13} className="text-teal" />
         </div>
         <div>
           <div className="text-sm font-medium text-gray-900">{selectedTemplate.name}</div>
@@ -319,7 +319,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
         <button
           type="submit"
           disabled={creating || !title.trim() || !clientName.trim()}
-          className="w-full bg-[#017C87] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {creating ? (
             <>

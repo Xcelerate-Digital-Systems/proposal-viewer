@@ -81,7 +81,7 @@ function ToolbarButton({
       title={title}
       className={`p-2 rounded transition-colors ${
         isActive
-          ? 'bg-[#017C87]/15 text-[#017C87]'
+          ? 'bg-teal/15 text-teal'
           : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
@@ -124,7 +124,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
       FontSizeExtension,
       FontWeightExtension,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      TiptapLink.configure({ openOnClick: false, HTMLAttributes: { class: 'text-[#017C87] underline' } }),
+      TiptapLink.configure({ openOnClick: false, HTMLAttributes: { class: 'text-teal underline' } }),
       DynamicFieldExtension,
     ],
     content: content as Record<string, unknown>,
@@ -213,7 +213,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
             else editor.chain().focus().unsetFontSize().run();
           }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editor.commands.focus(); } }}
-          className="h-8 w-16 px-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:border-[#017C87] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="h-8 w-16 px-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:border-teal [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
 
         {/* Font weight */}
@@ -225,7 +225,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
             else editor.chain().focus().unsetFontWeight().run();
           }}
           title="Font Weight"
-          className="h-8 px-2 text-xs text-gray-600 bg-white border border-gray-200 rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-[#017C87]"
+          className="h-8 px-2 text-xs text-gray-600 bg-white border border-gray-200 rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-teal"
           style={{ fontWeight: currentFontWeight ? Number(currentFontWeight) : undefined }}
         >
           <option value="">Weight</option>
@@ -338,10 +338,10 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
               onChange={(e) => setLinkUrl(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') setLink(); if (e.key === 'Escape') setShowLinkInput(false); }}
               placeholder="https://..."
-              className="text-xs px-2.5 py-1.5 border border-gray-200 rounded w-44 focus:outline-none focus:border-[#017C87]"
+              className="text-xs px-2.5 py-1.5 border border-gray-200 rounded w-44 focus:outline-none focus:border-teal"
               autoFocus
             />
-            <button onClick={setLink} className="text-xs px-2.5 py-1.5 bg-[#017C87] text-white rounded hover:bg-[#01434A]">Set</button>
+            <button onClick={setLink} className="text-xs px-2.5 py-1.5 bg-teal text-white rounded hover:bg-[#01434A]">Set</button>
             <button onClick={() => setShowLinkInput(false)} className="text-xs px-2.5 py-1.5 text-gray-500 hover:text-gray-700">✕</button>
           </div>
         ) : (

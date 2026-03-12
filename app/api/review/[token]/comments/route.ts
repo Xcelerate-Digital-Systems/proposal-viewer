@@ -28,6 +28,13 @@ export async function POST(
       pin_x,
       pin_y,
       parent_comment_id,
+      attachments,
+      annotation_data,
+      screenshot_url,
+      highlight_start,
+      highlight_end,
+      highlight_text,
+      highlight_element_path,
     } = body;
 
     if (!review_item_id || !author_name || !content || !comment_type) {
@@ -94,6 +101,13 @@ export async function POST(
         comment_type,
         pin_x: pin_x ?? null,
         pin_y: pin_y ?? null,
+        attachments: attachments || [],
+        annotation_data: annotation_data || null,
+        screenshot_url: screenshot_url || null,
+        highlight_start: highlight_start ?? null,
+        highlight_end: highlight_end ?? null,
+        highlight_text: highlight_text ?? null,
+        highlight_element_path: highlight_element_path ?? null,
       })
       .select()
       .single();

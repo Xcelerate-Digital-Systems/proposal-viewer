@@ -41,7 +41,7 @@ export default function PackagesPreview({ packages, branding }: PackagesPreviewP
         {/* Header bar */}
         <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
           <span className="text-xs text-gray-500 font-medium">Live Preview</span>
-          <span className="text-xs text-[#017C87] font-medium flex items-center gap-1">
+          <span className="text-xs text-teal font-medium flex items-center gap-1">
             <Package size={11} /> {packages.title}
           </span>
         </div>

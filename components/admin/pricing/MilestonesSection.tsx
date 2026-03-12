@@ -41,7 +41,7 @@ export default function MilestonesSection({
           {milestones.payments.map((payment, idx) => {
             const amt = milestoneAmount(payment, projectTotal);
             return (
-              <div key={payment.id} className="rounded-md border border-[#017C87]/15 bg-white p-3 space-y-2.5">
+              <div key={payment.id} className="rounded-md border border-teal/15 bg-white p-3 space-y-2.5">
                 {/* Header row */}
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-bold ${TEAL_TEXT} w-5 shrink-0 text-center`}>{idx + 1}</span>
@@ -107,7 +107,7 @@ export default function MilestonesSection({
           <button
             type="button"
             onClick={onAdd}
-            className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-dashed border-[#017C87]/30 ${TEAL_TEXT} text-xs font-medium hover:bg-[#017C87]/[0.03] transition-colors`}
+            className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-dashed border-teal/30 ${TEAL_TEXT} text-xs font-medium hover:bg-teal/[0.03] transition-colors`}
           >
             <Plus size={14} />
             Add Payment

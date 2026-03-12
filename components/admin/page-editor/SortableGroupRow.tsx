@@ -50,8 +50,8 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
       <div
         className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 cursor-pointer transition-colors border border-dashed ${
           isSelected
-            ? 'bg-[#017C87]/5 border-[#017C87]/40 ring-1 ring-[#017C87]/20'
-            : 'border-[#017C87]/20 hover:bg-[#017C87]/5'
+            ? 'bg-teal/5 border-teal/40 ring-1 ring-teal/20'
+            : 'border-teal/20 hover:bg-teal/5'
         }`}
         onClick={onSelect}
       >
@@ -59,15 +59,15 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
         <button
           {...attributes}
           {...listeners}
-          className="shrink-0 p-0.5 text-[#017C87]/40 hover:text-[#017C87] cursor-grab active:cursor-grabbing touch-none"
+          className="shrink-0 p-0.5 text-teal/40 hover:text-teal cursor-grab active:cursor-grabbing touch-none"
         >
           <GripVertical size={14} />
         </button>
         {/* Spacer to align with page number column */}
         <span className="w-5 shrink-0" />
         {/* Icon — aligns with indent button column */}
-        <div className="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-[#017C87]/10">
-          <FolderOpen size={13} className="text-[#017C87]" />
+        <div className="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-teal/10">
+          <FolderOpen size={13} className="text-teal" />
         </div>
 
         {editing ? (
@@ -81,16 +81,16 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
                 if (e.key === 'Escape') { setEditValue(name); setEditing(false); }
               }}
               onBlur={handleSave}
-              className="flex-1 text-sm font-medium text-[#017C87] bg-white border border-[#017C87]/30 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-[#017C87]/40"
+              className="flex-1 text-sm font-medium text-teal bg-white border border-teal/30 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-teal/40"
             />
           </div>
         ) : (
-          <span className="text-sm font-medium text-[#017C87] flex-1 truncate uppercase tracking-wider text-xs">
+          <span className="text-sm font-medium text-teal flex-1 truncate uppercase tracking-wider text-xs">
             {name || 'Section Header'}
           </span>
         )}
 
-        <span className="text-[9px] font-medium text-[#017C87]/50 uppercase tracking-wider shrink-0">
+        <span className="text-[9px] font-medium text-teal/50 uppercase tracking-wider shrink-0">
           Section
         </span>
 
@@ -103,7 +103,7 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
             setEditValue(name);
             setEditing(true);
           }}
-          className="shrink-0 p-1 text-gray-300 hover:text-[#017C87] transition-colors rounded"
+          className="shrink-0 p-1 text-gray-300 hover:text-teal transition-colors rounded"
           title="Rename section"
         >
           <Pencil size={11} />

@@ -83,7 +83,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
       <div
         className={`
           rounded-lg shadow-sm transition-all relative group
-          ${selected ? 'shadow-md ring-2 ring-[#017C87]/20' : 'hover:shadow-md'}
+          ${selected ? 'shadow-md ring-2 ring-teal/20' : 'hover:shadow-md'}
           ${!readOnly ? 'cursor-grab active:cursor-grabbing' : ''}
         `}
         style={{

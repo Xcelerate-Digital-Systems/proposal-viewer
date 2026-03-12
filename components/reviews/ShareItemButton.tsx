@@ -106,7 +106,7 @@ export default function ShareItemButton({
       className={`
         flex items-center gap-1 rounded-lg font-medium border transition-colors
         ${shareToken
-          ? 'text-[#017C87] border-[#017C87]/30 bg-[#017C87]/5 hover:bg-[#017C87]/10'
+          ? 'text-teal border-teal/30 bg-teal/5 hover:bg-teal/10'
           : 'text-gray-400 border-gray-200 hover:text-gray-600 hover:bg-gray-50'}
         ${isSmall ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1.5 text-xs'}
       `}

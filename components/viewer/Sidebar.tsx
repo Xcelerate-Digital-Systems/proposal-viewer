@@ -81,7 +81,7 @@ export default function Sidebar({
   const navTree = buildNavTree(pageEntries);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
 
-  const accent      = branding.accent_color        || '#ff6700';
+  const accent      = branding.accent_color        || '#01434A';
   const bgSecondary = branding.bg_secondary        || '#141414';
   const border      = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color  || '#ffffff';

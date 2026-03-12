@@ -8,6 +8,7 @@ import {
 import type { ReviewProject, ReviewItem, ReviewComment } from '@/lib/supabase';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { usePinFeedback } from '@/hooks/usePinFeedback';
+import { useScreenshotCapture } from '@/hooks/useScreenshotCapture';
 import { useCommentFilters } from '@/hooks/useCommentFilters';
 import { useBrandingColors } from '@/hooks/useBrandingColors';
 import { fontFamily } from '@/lib/google-fonts';
@@ -15,8 +16,11 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import ItemSidebar from '@/components/reviews/ItemSidebar';
+import PinCommentPopover from '@/components/reviews/PinCommentPopover';
 import WebpageClientPlaceholder from '@/components/reviews/WebpageClientPlaceholder';
-import { FeedbackToolbar, FeedbackModeBar } from '@/components/reviews/feedback';
+import { FeedbackToolbar, FeedbackModeBar, DrawingOverlay, HighlightOverlay } from '@/components/reviews/feedback';
+import type { AnnotationData } from '@/components/reviews/feedback';
+import { useTextHighlight, type TextHighlightData } from '@/hooks/useTextHighlight';
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 
@@ -53,8 +57,8 @@ interface ReviewDetailViewProps {
   onGuestNameChange?: (name: string) => void;
 
   // ── Callbacks ──
-  /** Submit a new comment. Called with (reviewItemId, content, pinX?, pinY?, parentId?) */
-  onSubmitComment: (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string) => Promise<void>;
+  /** Submit a new comment */
+  onSubmitComment: (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }) => Promise<void>;
   /** Resolve a comment (admin only) */
   onResolveComment?: (commentId: string) => Promise<void>;
   /** Unresolve a comment (admin only) */
@@ -73,6 +77,10 @@ interface ReviewDetailViewProps {
   // ── Admin extras ──
   /** Render function for header-right actions (share button, external link, etc.) */
   renderHeaderActions?: (currentItem: ReviewItem | null) => React.ReactNode;
+
+  // ── Attachments ──
+  /** Company ID — needed for attachment uploads */
+  companyId?: string;
 
   // ── Comments updated externally (e.g. after submit in parent) ──
   /** Updated comments array — when parent manages comment state */
@@ -103,6 +111,7 @@ export default function ReviewDetailView({
   backAction,
   shareToken,
   renderHeaderActions,
+  companyId,
 }: ReviewDetailViewProps) {
   const isAdmin = mode === 'admin';
   const isClient = mode === 'client';
@@ -123,10 +132,48 @@ export default function ReviewDetailView({
 
   // ── Feedback hooks ──
   const {
-    feedbackMode, pendingPin, setPendingPin, imageContainerRef,
+    feedbackMode, pinActive, pendingPin, setPendingPin, imageContainerRef,
     handleImageClick: baseHandleImageClick, handleCancelPin,
     changeFeedbackMode, resetFeedback,
   } = usePinFeedback();
+
+  // ── Screenshot capture ──
+  const { capture: captureScreenshot } = useScreenshotCapture({
+    shareToken,
+    itemId: selectedItemId,
+  });
+  const [pendingScreenshotUrl, setPendingScreenshotUrl] = useState<string | null>(null);
+
+  // ── Drawing annotation state ──
+  const [pendingAnnotation, setPendingAnnotation] = useState<AnnotationData | null>(null);
+
+  // Filter annotation comments (have annotation_data)
+  const annotationComments = useMemo(
+    () => comments.filter((c) =>
+      c.review_item_id === selectedItemId &&
+      (c as unknown as Record<string, unknown>).annotation_data != null
+    ),
+    [comments, selectedItemId]
+  );
+
+  // Handle annotation completion from DrawingOverlay
+  const handleAnnotationComplete = useCallback(
+    (pinX: number, pinY: number, annotation: AnnotationData) => {
+      setPendingPin({ x: pinX, y: pinY });
+      setPendingAnnotation(annotation);
+      setShowComments(true);
+      changeFeedbackMode('idle');
+    },
+    [setPendingPin, changeFeedbackMode]
+  );
+
+  const [pendingHighlight, setPendingHighlight] = useState<TextHighlightData | null>(null);
+
+  // ── Pin popover state ──
+  const [popoverCommentId, setPopoverCommentId] = useState<string | null>(null);
+
+  // ── Pin-to-comment scroll state ──
+  const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
 
   // ── Derived data ──
   const availableTypes = useMemo(() => {
@@ -145,12 +192,41 @@ export default function ReviewDetailView({
       || null;
   }, [filteredItems, items, selectedItemId]);
 
+  // ── Text highlight state (available for all content types) ──
+  const { selection: textSelection, clearSelection: clearTextSelection } = useTextHighlight({
+    containerRef: imageContainerRef as React.RefObject<HTMLElement>,
+    enabled: feedbackMode === 'idle',
+  });
+
+  // Filter text_highlight comments
+  const highlightComments = useMemo(
+    () => comments.filter((c) =>
+      c.review_item_id === selectedItemId && c.comment_type === 'text_highlight'
+    ),
+    [comments, selectedItemId]
+  );
+
+  // Auto-open comment form when text is selected — no extra button needed
+  useEffect(() => {
+    if (textSelection) {
+      setPendingHighlight(textSelection);
+      setShowComments(true);
+      clearTextSelection();
+    }
+  }, [textSelection, clearTextSelection]);
+
   const handleSubmitComment = useCallback(
     async (content: string, pinX?: number, pinY?: number, parentId?: string) => {
       if (!selectedItemId) return;
-      await onSubmitComment(selectedItemId, content, pinX, pinY, parentId);
+      const highlight = pendingHighlight
+        ? { text: pendingHighlight.text, start: pendingHighlight.startOffset, end: pendingHighlight.endOffset, elementPath: pendingHighlight.elementPath }
+        : undefined;
+      await onSubmitComment(selectedItemId, content, pinX, pinY, parentId, pendingAnnotation || undefined, pendingScreenshotUrl || undefined, highlight);
+      setPendingAnnotation(null);
+      setPendingScreenshotUrl(null);
+      setPendingHighlight(null);
     },
-    [selectedItemId, onSubmitComment]
+    [selectedItemId, onSubmitComment, pendingAnnotation, pendingScreenshotUrl, pendingHighlight]
   );
 
   const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
@@ -185,15 +261,41 @@ export default function ReviewDetailView({
     }
   }, [initialTypeFilter]);
 
-  // ── Pin click → also open comments ──
+  // ── Pin click → always open comments when pin is placed ──
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     baseHandleImageClick(e);
-    if (feedbackMode === 'pin') setShowComments(true);
-  }, [baseHandleImageClick, feedbackMode]);
+    if (pinActive) {
+      setShowComments(true);
+      // Auto-capture screenshot of the content area
+      captureScreenshot(imageContainerRef.current).then((url) => {
+        if (url) setPendingScreenshotUrl(url);
+      });
+    }
+  }, [baseHandleImageClick, pinActive, captureScreenshot, imageContainerRef]);
 
-  const handlePinClick = useCallback(() => {
-    setShowComments(true);
+  // ── Existing pin clicked → show popover ──
+  const handlePinClick = useCallback((commentId?: string) => {
+    if (commentId) {
+      setPopoverCommentId((prev) => prev === commentId ? null : commentId);
+    }
   }, []);
+
+  // ── Reply via popover ──
+  const handlePopoverReply = useCallback(async (content: string, parentId: string) => {
+    if (!selectedItemId) return;
+    await onSubmitComment(selectedItemId, content, undefined, undefined, parentId);
+  }, [selectedItemId, onSubmitComment]);
+
+  // Find the comment for the popover
+  const popoverComment = useMemo(
+    () => popoverCommentId ? comments.find((c) => c.id === popoverCommentId) || null : null,
+    [popoverCommentId, comments]
+  );
+
+  // Close popover when item changes
+  useEffect(() => {
+    setPopoverCommentId(null);
+  }, [selectedItemId]);
 
   // ── Navigate items ──
   const goToItem = useCallback((idx: number) => {
@@ -278,7 +380,7 @@ export default function ReviewDetailView({
             <div className={`flex-1 relative ${isWebpageItem ? 'overflow-auto' : 'overflow-auto flex items-center justify-center p-8'} bg-gray-50`}>
               <ItemContentView
                 item={selectedItem}
-                placingPin={feedbackMode === 'pin'}
+                placingPin={pinActive}
                 pendingPin={pendingPin}
                 pinComments={pinComments}
                 onImageClick={handleImageClick}
@@ -286,15 +388,45 @@ export default function ReviewDetailView({
                 containerRef={imageContainerRef}
                 shareToken={shareToken || ''}
                 renderWebpage={isClient ? (item) => <WebpageClientPlaceholder item={item} /> : undefined}
+                highlightComments={highlightComments}
+                highlightedCommentId={highlightedCommentId}
+                onHighlightClick={handlePinClick}
               />
 
-              <FeedbackToolbar
+              <DrawingOverlay
                 mode={feedbackMode}
-                onModeChange={changeFeedbackMode}
+                containerRef={imageContainerRef}
+                onAnnotationComplete={handleAnnotationComplete}
+                annotationComments={annotationComments}
+                highlightedCommentId={highlightedCommentId}
+                onAnnotationClick={handlePinClick}
+              />
+
+              {/* Pin comment popover */}
+              {popoverComment && popoverComment.pin_x != null && popoverComment.pin_y != null && (
+                <PinCommentPopover
+                  comment={popoverComment}
+                  replies={getReplies(popoverComment.id)}
+                  pinX={popoverComment.pin_x}
+                  pinY={popoverComment.pin_y}
+                  containerRef={imageContainerRef}
+                  onClose={() => setPopoverCommentId(null)}
+                  onReply={handlePopoverReply}
+                  onResolve={onResolveComment}
+                  onUnresolve={onUnresolveComment}
+                  authorName={isAdmin ? authorName : undefined}
+                  guestName={isClient ? guestName : undefined}
+                  onNameChange={isClient ? onGuestNameChange : undefined}
+                />
+              )}
+
+
+              <FeedbackToolbar
                 onToggleComments={() => setShowComments(!showComments)}
                 commentsOpen={showComments}
                 unresolvedCount={unresolvedComments.length}
-                hidePinTool={isWebpageItem}
+                mode={feedbackMode}
+                onModeChange={changeFeedbackMode}
                 className="absolute top-4 right-4"
               />
             </div>
@@ -305,6 +437,8 @@ export default function ReviewDetailView({
               getReplies={getReplies}
               hasComments={topLevelComments.length > 0}
               pendingPin={pendingPin}
+              highlightCommentId={highlightedCommentId}
+              pendingHighlightText={pendingHighlight?.text}
               onSubmitComment={handleSubmitComment}
               onCancelPin={handleCancelPin}
               onClose={() => setShowComments(false)}
@@ -313,6 +447,7 @@ export default function ReviewDetailView({
               onNameChange={isClient ? onGuestNameChange : undefined}
               onResolve={onResolveComment}
               onUnresolve={onUnresolveComment}
+              companyId={companyId}
               closable={false}
               className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white`}
             />
@@ -411,7 +546,7 @@ export default function ReviewDetailView({
             </div>
           </div>
 
-          {/* Mode bar — appears when pin mode is active */}
+          {/* Mode bar — appears when a drawing tool is active */}
           <FeedbackModeBar
             mode={feedbackMode}
             onCancel={() => changeFeedbackMode('idle')}
@@ -425,7 +560,7 @@ export default function ReviewDetailView({
           >
             <ItemContentView
               item={selectedItem}
-              placingPin={feedbackMode === 'pin'}
+              placingPin={pinActive}
               pendingPin={pendingPin}
               pinComments={pinComments}
               onImageClick={handleImageClick}
@@ -434,15 +569,45 @@ export default function ReviewDetailView({
               shareToken={shareToken || ''}
               renderWebpage={isClient ? (item) => <WebpageClientPlaceholder item={item} /> : undefined}
               emptyText="No items to review"
+              highlightComments={highlightComments}
+              highlightedCommentId={highlightedCommentId}
+              onHighlightClick={handlePinClick}
             />
 
-            <FeedbackToolbar
+            <DrawingOverlay
               mode={feedbackMode}
-              onModeChange={changeFeedbackMode}
+              containerRef={imageContainerRef}
+              onAnnotationComplete={handleAnnotationComplete}
+              annotationComments={annotationComments}
+              highlightedCommentId={highlightedCommentId}
+              onAnnotationClick={handlePinClick}
+            />
+
+            {/* Pin comment popover */}
+            {popoverComment && popoverComment.pin_x != null && popoverComment.pin_y != null && (
+              <PinCommentPopover
+                comment={popoverComment}
+                replies={getReplies(popoverComment.id)}
+                pinX={popoverComment.pin_x}
+                pinY={popoverComment.pin_y}
+                containerRef={imageContainerRef}
+                onClose={() => setPopoverCommentId(null)}
+                onReply={handlePopoverReply}
+                onResolve={onResolveComment}
+                onUnresolve={onUnresolveComment}
+                authorName={isAdmin ? authorName : undefined}
+                guestName={isClient ? guestName : undefined}
+                onNameChange={isClient ? onGuestNameChange : undefined}
+              />
+            )}
+
+
+            <FeedbackToolbar
               onToggleComments={() => setShowComments(!showComments)}
               commentsOpen={showComments}
               unresolvedCount={unresolvedComments.length}
-              hidePinTool={isWebpageItem}
+              mode={feedbackMode}
+              onModeChange={changeFeedbackMode}
               className="absolute top-4 right-4"
             />
           </div>
@@ -456,6 +621,8 @@ export default function ReviewDetailView({
             getReplies={getReplies}
             hasComments={topLevelComments.length > 0}
             pendingPin={pendingPin}
+            highlightCommentId={highlightedCommentId}
+            pendingHighlightText={pendingHighlight?.text}
             onSubmitComment={handleSubmitComment}
             onCancelPin={handleCancelPin}
             onClose={() => setShowComments(false)}
@@ -464,6 +631,7 @@ export default function ReviewDetailView({
             onNameChange={isClient ? onGuestNameChange : undefined}
             onResolve={onResolveComment}
             onUnresolve={onUnresolveComment}
+            companyId={companyId}
             className="w-[340px] shrink-0 border-l border-gray-200 bg-white flex flex-col"
           />
         )}

@@ -68,7 +68,7 @@ export default function ImageItemForm({ onSubmit, onBack, onCancel, uploading }:
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Homepage Hero Banner"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors"
+          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors"
           autoFocus
         />
       </div>
@@ -96,7 +96,7 @@ export default function ImageItemForm({ onSubmit, onBack, onCancel, uploading }:
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:border-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+            className="w-full border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:border-teal hover:bg-teal/5 transition-colors"
           >
             <Upload size={24} className="mx-auto mb-2 text-gray-400" />
             <p className="text-sm font-medium text-gray-600">Click to upload</p>

@@ -235,8 +235,8 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
             </div>
           ) : (
             <div className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#017C87]/10 flex items-center justify-center mx-auto">
-                <Globe size={22} className="text-[#017C87]" />
+              <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center mx-auto">
+                <Globe size={22} className="text-teal" />
               </div>
               {item.widget_installed_at ? (
                 <div className="flex items-center gap-1 justify-center mt-2.5">
@@ -254,8 +254,8 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
             {/* Mini email header bar */}
             <div className="px-3 pt-3 pb-2 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-5 h-5 rounded-full bg-[#017C87]/15 flex items-center justify-center shrink-0">
-                  <Mail size={10} className="text-[#017C87]" />
+                <div className="w-5 h-5 rounded-full bg-teal/15 flex items-center justify-center shrink-0">
+                  <Mail size={10} className="text-teal" />
                 </div>
                 <span className="text-[10px] text-gray-400 truncate">Your Brand</span>
               </div>
@@ -279,8 +279,8 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
           </div>
         ) : item.type === 'sms' ? (
           <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-[#017C87]/10 flex items-center justify-center mx-auto">
-              <Smartphone size={22} className="text-[#017C87]" />
+            <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center mx-auto">
+              <Smartphone size={22} className="text-teal" />
             </div>
             <p className="text-xs text-gray-500 font-medium mt-2.5 truncate px-4 max-w-full">
               {item.sms_body ? `${item.sms_body.slice(0, 30)}…` : 'SMS'}
@@ -332,7 +332,7 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
                   if (e.key === 'Enter') handleSaveTitle();
                   if (e.key === 'Escape') { setEditing(false); setEditTitle(item.title); }
                 }}
-                className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] min-w-0"
+                className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal min-w-0"
                 autoFocus
               />
               <button
@@ -346,7 +346,7 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
           ) : (
             <div className="flex items-center gap-1 min-w-0">
               <h4
-                className="text-sm font-semibold text-gray-900 truncate cursor-pointer hover:text-[#017C87] transition-colors"
+                className="text-sm font-semibold text-gray-900 truncate cursor-pointer hover:text-teal transition-colors"
                 onClick={() => onOpenViewer(item.id)}
               >
                 {item.title}
@@ -388,7 +388,7 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
         <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3.5 px-3.5">
           <button
             onClick={() => onOpenViewer(item.id)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
           >
             <Eye size={13} />
             View

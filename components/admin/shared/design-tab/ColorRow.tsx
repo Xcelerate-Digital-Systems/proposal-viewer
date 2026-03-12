@@ -31,7 +31,7 @@ export default function ColorRow({ label, value, onChange, disabled }: ColorRowP
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           placeholder="#000000"
-          className="w-[90px] px-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30 disabled:bg-gray-50 disabled:text-gray-400"
+          className="w-[90px] px-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30 disabled:bg-gray-50 disabled:text-gray-400"
         />
       </div>
     </div>

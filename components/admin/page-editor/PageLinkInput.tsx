@@ -26,10 +26,10 @@ export default function PageLinkInput({ linkUrl, linkLabel, onChange, variant = 
         title={hasLink ? 'Edit external link' : 'Add external link'}
         className={`shrink-0 p-1.5 rounded-md flex items-center justify-center border transition-colors ${
           hasLink
-            ? 'text-[#017C87] bg-[#017C87]/10 border-[#017C87]/30 hover:bg-[#017C87]/20'
+            ? 'text-teal bg-teal/10 border-teal/30 hover:bg-teal/20'
             : teal
-            ? 'text-[#017C87]/40 border-transparent hover:text-[#017C87] hover:bg-[#017C87]/10'
-            : 'text-gray-300 border-gray-100 hover:text-[#017C87] hover:border-[#017C87]/25 hover:bg-[#017C87]/5'
+            ? 'text-teal/40 border-transparent hover:text-teal hover:bg-teal/10'
+            : 'text-gray-300 border-gray-100 hover:text-teal hover:border-teal/25 hover:bg-teal/5'
         }`}
       >
         <Link2 size={13} />
@@ -39,8 +39,8 @@ export default function PageLinkInput({ linkUrl, linkLabel, onChange, variant = 
       {expanded && (
         <div className="mt-1.5 ml-0 p-2.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <Link2 size={11} className="text-[#017C87]" />
-            <span className="text-[10px] font-semibold text-[#017C87] uppercase tracking-wide">External Link</span>
+            <Link2 size={11} className="text-teal" />
+            <span className="text-[10px] font-semibold text-teal uppercase tracking-wide">External Link</span>
             {hasLink && (
               <button
                 onClick={() => { onChange('', ''); }}
@@ -55,14 +55,14 @@ export default function PageLinkInput({ linkUrl, linkLabel, onChange, variant = 
             value={linkUrl}
             onChange={(e) => onChange(e.target.value, linkLabel)}
             placeholder="https://example.com/resource"
-            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-xs focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-xs focus:outline-none focus:border-teal/40 placeholder:text-gray-400"
           />
           <input
             type="text"
             value={linkLabel}
             onChange={(e) => onChange(linkUrl, e.target.value)}
             placeholder="Button label (e.g. View Case Study)"
-            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-xs focus:outline-none focus:border-[#017C87]/40 placeholder:text-gray-400"
+            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-xs focus:outline-none focus:border-teal/40 placeholder:text-gray-400"
           />
         </div>
       )}

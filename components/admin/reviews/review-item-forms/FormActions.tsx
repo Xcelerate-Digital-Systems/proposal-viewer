@@ -39,7 +39,7 @@ export default function FormActions({
             onClick={previewToggle.onToggle}
             className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
               previewToggle.visible
-                ? 'bg-[#017C87]/10 text-[#017C87] border-[#017C87]'
+                ? 'bg-teal/10 text-teal border-teal'
                 : 'text-gray-500 border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -58,7 +58,7 @@ export default function FormActions({
         <button
           type="submit"
           disabled={disabled}
-          className="px-5 py-2.5 bg-[#017C87] text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-5 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {uploading ? 'Uploading…' : 'Add Item'}
         </button>

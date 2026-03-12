@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText, LayoutGrid, List } from 'lucide-react';
+import { Plus, FileText, LayoutGrid, List, Search } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
@@ -29,6 +29,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const [showUpload, setShowUpload] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Restore view preference
   useEffect(() => {
@@ -72,59 +73,78 @@ function ProposalsContent({ companyId }: { companyId: string }) {
     fetchCustomDomain();
   }, [fetchProposals, fetchCustomDomain]);
 
+  const filtered = searchQuery
+    ? proposals.filter((p) =>
+        (p.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (p.client_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+      )
+    : proposals;
+
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky page header */}
-      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-8 pb-4 border-b border-gray-200 lg:border-b-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)]">
-              Proposals
-            </h1>
-            <p className="text-sm text-gray-400 mt-0.5">
-              {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* View toggle */}
-            <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
-              <button
-                onClick={() => toggleViewMode('grid')}
-                className={`p-1.5 rounded-md transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-gray-100 text-gray-700'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-                title="Grid view"
-              >
-                <LayoutGrid size={16} />
-              </button>
-              <button
-                onClick={() => toggleViewMode('list')}
-                className={`p-1.5 rounded-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-gray-100 text-gray-700'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-                title="List view"
-              >
-                <List size={16} />
-              </button>
-            </div>
+      {/* Header */}
+      <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-6 flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-semibold text-ink">
+            Proposals
+          </h1>
+          <p className="text-sm text-muted mt-1">
+            {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
+          </p>
+        </div>
 
+        <div className="flex items-center gap-3">
+          {/* View toggle */}
+          <div className="flex items-center bg-surface rounded-[10px] p-1 gap-0.5">
             <button
-              onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+              onClick={() => toggleViewMode('grid')}
+              className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-white shadow-sm text-ink'
+                  : 'text-faint hover:text-muted'
+              }`}
+              title="Grid view"
             >
-              <Plus size={16} />
-              New Proposal
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              onClick={() => toggleViewMode('list')}
+              className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
+                viewMode === 'list'
+                  ? 'bg-white shadow-sm text-ink'
+                  : 'text-faint hover:text-muted'
+              }`}
+              title="List view"
+            >
+              <List size={16} />
             </button>
           </div>
+
+          {/* Search */}
+          <div className="hidden md:flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2.5 w-[200px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
+            <Search size={16} className="text-faint shrink-0" />
+            <input
+              type="text"
+              placeholder="Search proposals..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+            />
+          </div>
+
+          {/* New proposal */}
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+          >
+            <Plus size={16} />
+            New Proposal
+          </button>
         </div>
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 px-6 lg:px-10 pb-8 pt-4 lg:pt-0">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
         {showUpload && (
           <UploadModal
             companyId={companyId}
@@ -135,19 +155,31 @@ function ProposalsContent({ companyId }: { companyId: string }) {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 && searchQuery ? (
+          <div className="text-center py-20">
+            <Search size={28} className="text-faint mx-auto mb-3" />
+            <p className="text-sm text-muted">No proposals matching &ldquo;{searchQuery}&rdquo;</p>
           </div>
         ) : proposals.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FileText size={28} className="text-gray-300" />
+            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <FileText size={28} className="text-faint" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-500 mb-1">No proposals yet</h3>
-            <p className="text-sm text-gray-400">Upload your first proposal to get started</p>
+            <h3 className="text-lg font-semibold text-muted mb-1">No proposals yet</h3>
+            <p className="text-sm text-faint">Upload your first proposal to get started</p>
+            <button
+              onClick={() => setShowUpload(true)}
+              className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            >
+              <Plus size={16} />
+              New Proposal
+            </button>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-            {proposals.map((p) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((p) => (
               <ProposalListCard
                 key={p.id}
                 proposal={p}
@@ -157,8 +189,8 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             ))}
           </div>
         ) : (
-          <div className="space-y-2 mt-4">
-            {proposals.map((p) => (
+          <div className="space-y-2">
+            {filtered.map((p) => (
               <ProposalListRow
                 key={p.id}
                 proposal={p}

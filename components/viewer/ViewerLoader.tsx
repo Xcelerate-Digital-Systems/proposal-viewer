@@ -24,7 +24,7 @@ export default function ViewerLoader({ branding, loading, label, minDisplayTime 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const bgColor = branding.bg_secondary || branding.bg_primary || '#0f0f0f';
-  const accent = branding.accent_color || '#ff6700';
+  const accent = branding.accent_color || '#01434A';
   const textColor = branding.sidebar_text_color || '#ffffff';
 
   // Enforce minimum display time

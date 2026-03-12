@@ -12,7 +12,7 @@ export default function DynamicFieldNodeView({ node }: NodeViewProps) {
   return (
     <NodeViewWrapper as="span" className="inline">
       <span
-        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-[#017C87]/10 text-[#017C87] border border-[#017C87]/20 cursor-default select-none whitespace-nowrap align-baseline"
+        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-teal/10 text-teal border border-teal/20 cursor-default select-none whitespace-nowrap align-baseline"
         contentEditable={false}
         title={fieldDef?.description}
       >

@@ -85,7 +85,7 @@ export default function TierEditor({
                 <label className="block text-[10px] font-medium text-gray-400 mb-1.5">Package Name</label>
                 <input type="text" value={tier.name} onChange={e => onUpdate({ name: e.target.value })}
                   placeholder="Starter"
-                  className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]" />
+                  className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
               </div>
               <div>
                 <label className="block text-[10px] font-medium text-gray-400 mb-1.5">Price</label>
@@ -97,13 +97,13 @@ export default function TierEditor({
                 <label className="block text-[10px] font-medium text-gray-400 mb-1.5">Price Prefix</label>
                 <input type="text" value={tier.price_prefix} onChange={e => onUpdate({ price_prefix: e.target.value })}
                   placeholder="FROM"
-                  className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]" />
+                  className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
               </div>
               <div>
                 <label className="block text-[10px] font-medium text-gray-400 mb-1.5">Price Suffix</label>
                 <input type="text" value={tier.price_suffix} onChange={e => onUpdate({ price_suffix: e.target.value })}
                   placeholder="/month"
-                  className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]" />
+                  className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
               </div>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function TierEditor({
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Conditions / Notes</label>
               <button onClick={onAddCondition}
-                className="flex items-center gap-1 px-2 py-0.5 rounded border border-[#017C87]/30 text-xs text-[#017C87] hover:bg-[#017C87]/5 hover:border-[#017C87] transition-colors">
+                className="flex items-center gap-1 px-2 py-0.5 rounded border border-teal/30 text-xs text-teal hover:bg-teal/5 hover:border-teal transition-colors">
                 <Plus size={11} /> Add
               </button>
             </div>
@@ -132,7 +132,7 @@ export default function TierEditor({
               <div key={ci} className="flex gap-2">
                 <input type="text" value={condition} onChange={e => onUpdateCondition(ci, e.target.value)}
                   placeholder="* Minimum 3 month contract"
-                  className="flex-1 px-2.5 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#017C87]/20" />
+                  className="flex-1 px-2.5 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-teal/20" />
                 <button onClick={() => onRemoveCondition(ci)}
                   className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
                   <Trash2 size={10} />
@@ -146,7 +146,7 @@ export default function TierEditor({
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Features</label>
               <button onClick={onAddFeature}
-                className="flex items-center gap-1 px-2 py-0.5 rounded border border-[#017C87]/30 text-xs text-[#017C87] hover:bg-[#017C87]/5 hover:border-[#017C87] transition-colors">
+                className="flex items-center gap-1 px-2 py-0.5 rounded border border-teal/30 text-xs text-teal hover:bg-teal/5 hover:border-teal transition-colors">
                 <Plus size={11} /> Add
               </button>
             </div>
@@ -155,10 +155,10 @@ export default function TierEditor({
                 <div className="flex gap-2">
                   <input type="text" value={feature.bold_prefix || ''} onChange={e => onUpdateFeature(fi, { bold_prefix: e.target.value || null })}
                     placeholder="Bold prefix"
-                    className="w-28 px-2.5 py-2.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#017C87]/20" />
+                    className="w-28 px-2.5 py-2.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-teal/20" />
                   <input type="text" value={feature.text} onChange={e => onUpdateFeature(fi, { text: e.target.value })}
                     placeholder="Feature description"
-                    className="flex-1 px-2.5 py-2.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#017C87]/20" />
+                    className="flex-1 px-2.5 py-2.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-teal/20" />
                   <button onClick={() => onAddChild(fi)} title="Add sub-feature"
                     className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-gray-500 transition-colors">
                     <Plus size={11} />
@@ -172,7 +172,7 @@ export default function TierEditor({
                   <div key={ci} className="flex gap-2 pl-4">
                     <input type="text" value={child} onChange={e => onUpdateChild(fi, ci, e.target.value)}
                       placeholder="Sub-feature"
-                      className="flex-1 px-2.5 py-2.5 rounded border border-gray-100 text-xs focus:outline-none focus:ring-1 focus:ring-[#017C87]/20 bg-gray-50" />
+                      className="flex-1 px-2.5 py-2.5 rounded border border-gray-100 text-xs focus:outline-none focus:ring-1 focus:ring-teal/20 bg-gray-50" />
                     <button onClick={() => onRemoveChild(fi, ci)}
                       className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
                       <Trash2 size={10} />

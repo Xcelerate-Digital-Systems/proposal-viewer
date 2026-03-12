@@ -23,7 +23,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   if (auth.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-6 h-6 text-[#017C87] animate-spin" />
+        <Loader2 className="w-6 h-6 text-teal animate-spin" />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 // components/admin/templates/TemplateListCard.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, ExternalLink, Eye, FolderOpen, Plus } from 'lucide-react';
 import { supabase, type ProposalTemplate } from '@/lib/supabase';
@@ -26,6 +27,26 @@ const formatDate = (date: string | null) => {
   return new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
+function buildCoverBg(t: ProposalTemplate): { backgroundColor?: string; backgroundImage?: string } {
+  const style = t.cover_bg_style || 'gradient';
+  const c1 = t.cover_bg_color_1 || '#0f0f0f';
+  const c2 = t.cover_bg_color_2 || '#141414';
+  if (style === 'solid') return { backgroundColor: c1 };
+  const type = t.cover_gradient_type || 'linear';
+  const angle = t.cover_gradient_angle ?? 135;
+  if (type === 'radial') return { backgroundImage: `radial-gradient(circle, ${c1}, ${c2})` };
+  if (type === 'conic') return { backgroundImage: `conic-gradient(from ${angle}deg, ${c1}, ${c2})` };
+  return { backgroundImage: `linear-gradient(${angle}deg, ${c1}, ${c2})` };
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -34,6 +55,21 @@ export default function TemplateListCard({ template: t, onRefresh, onCreatePropo
   const router = useRouter();
   const confirm = useConfirm();
   const toast = useToast();
+
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (t.cover_enabled && t.cover_image_path) {
+      supabase.storage
+        .from('proposals')
+        .createSignedUrl(t.cover_image_path, 3600)
+        .then(({ data }) => {
+          if (data?.signedUrl) setCoverImageUrl(data.signedUrl);
+        });
+    }
+  }, [t.cover_enabled, t.cover_image_path]);
+
+  const hasCover = t.cover_enabled;
 
   const deleteTemplate = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,60 +111,99 @@ if (pages && pages.length > 0) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors flex flex-col">
+    <div className="bg-white rounded-[14px] border border-edge hover:border-edge-hover transition-colors flex flex-col">
       {/* ─── Visual header — click to open ──────────────────── */}
       <button
         onClick={() => router.push(`/templates/${t.id}/pages`)}
-        className="w-full aspect-[4/3] rounded-t-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-5 border-b border-gray-100"
+        className="w-full aspect-[4/3] rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative border-b border-edge"
+        style={hasCover ? { backgroundColor: t.cover_bg_color_1 || '#0f0f0f' } : undefined}
       >
-        {t.page_count > 0 ? (
-          <div className="w-full flex flex-col items-center gap-3">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-bold text-gray-800">{t.page_count}</span>
-              <span className="text-sm text-gray-400 font-medium">page{t.page_count !== 1 ? 's' : ''}</span>
+        {hasCover ? (
+          <>
+            <div className="absolute inset-0" style={buildCoverBg(t)} />
+            {coverImageUrl && (
+              <>
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${coverImageUrl})` }}
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundColor: hexToRgba(
+                      t.cover_bg_color_1 || '#0f0f0f',
+                      t.cover_overlay_opacity ?? 0.65
+                    ),
+                  }}
+                />
+              </>
+            )}
+            <div className="absolute inset-0 flex flex-col justify-end p-4">
+              <h4
+                className="text-sm font-semibold leading-snug line-clamp-2"
+                style={{ color: t.cover_text_color || '#ffffff' }}
+              >
+                {t.name}
+              </h4>
+              {t.description && (
+                <p
+                  className="text-[11px] mt-1 opacity-70 truncate"
+                  style={{ color: t.cover_subtitle_color || t.cover_text_color || '#ffffff' }}
+                >
+                  {t.description}
+                </p>
+              )}
             </div>
-          </div>
+          </>
         ) : (
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-2">
-              <FolderOpen size={22} className="text-[#017C87]" />
-            </div>
-            <p className="text-xs text-gray-400">No pages yet</p>
+          <div className="absolute inset-0 bg-surface flex flex-col items-center justify-center p-5">
+            {t.page_count > 0 ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-bold text-ink">{t.page_count}</span>
+                  <span className="text-sm text-faint font-medium">page{t.page_count !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-xl bg-teal-tint flex items-center justify-center mx-auto mb-2">
+                  <FolderOpen size={22} className="text-teal" />
+                </div>
+                <p className="text-xs text-faint">No pages yet</p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Date overlay */}
-        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-400 border border-gray-200/60">
+        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-faint border border-edge">
           {formatDate(t.created_at)}
         </span>
       </button>
 
       {/* ─── Card body ──────────────────────────────────────── */}
       <div className="p-3.5 flex-1 flex flex-col min-w-0">
-        {/* Name */}
         <h3
-          className="text-sm font-semibold font-[family-name:var(--font-display)] text-gray-900 truncate cursor-pointer hover:text-[#017C87] transition-colors mb-1"
+          className="text-[15px] font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
           onClick={() => router.push(`/templates/${t.id}/pages`)}
         >
           {t.name}
         </h3>
 
-        {/* Description */}
         {t.description && (
-          <p className="text-[11px] text-gray-400 truncate mb-2.5">
+          <p className="text-[12px] text-faint truncate mb-2.5">
             {t.description}
           </p>
         )}
 
-        {/* Spacer */}
         <div className="flex-1" />
 
         {/* ─── Actions ────────────────────────────────────────── */}
-        <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3.5 px-3.5">
+        <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3.5 px-3.5">
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => router.push(`/templates/${t.id}/pages`)}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal-tint transition-colors"
             >
               <Eye size={12} />
               Open
@@ -137,7 +212,7 @@ if (pages && pages.length > 0) {
               href={`/template-preview/${t.id}`}
               target="_blank"
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface transition-colors"
             >
               <ExternalLink size={12} />
               Preview
@@ -145,7 +220,7 @@ if (pages && pages.length > 0) {
             {onCreateProposal && (
               <button
                 onClick={(e) => { e.stopPropagation(); onCreateProposal(t.id); }}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface transition-colors"
               >
                 <Plus size={12} />
                 Use
@@ -155,7 +230,7 @@ if (pages && pages.length > 0) {
 
           <button
             onClick={deleteTemplate}
-            className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="p-1.5 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
             title="Delete template"
           >
             <Trash2 size={14} />

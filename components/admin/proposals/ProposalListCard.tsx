@@ -1,7 +1,7 @@
 // components/admin/proposals/ProposalListCard.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, Check, Trash2, ExternalLink, FileText, Clock, Eye, CheckCircle2, X, FolderOpen, PenLine } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
@@ -27,12 +27,12 @@ type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_reque
 /* ------------------------------------------------------------------ */
 
 const statusOptions: StatusOption<ProposalStatus>[] = [
-  { value: 'draft',    label: 'Draft',    bg: 'bg-gray-100',     text: 'text-gray-500',    border: 'border-gray-200',    icon: <FileText size={12} /> },
-  { value: 'sent',     label: 'Sent',     bg: 'bg-blue-50',      text: 'text-blue-600',    border: 'border-blue-200',    icon: <Clock size={12} /> },
-  { value: 'viewed',   label: 'Viewed',   bg: 'bg-amber-50',     text: 'text-amber-600',   border: 'border-amber-200',   icon: <Eye size={12} /> },
-  { value:  'revision_requested', label:  'Changes Requested',   bg:     'bg-amber-50',     text:   'text-amber-600',  border: 'border-amber-200',  icon:   <PenLine size={13} />},
-  { value: 'accepted', label: 'Accepted', bg: 'bg-emerald-50',   text: 'text-emerald-600', border: 'border-emerald-200', icon: <CheckCircle2 size={12} /> },
-  { value: 'declined', label: 'Declined', bg: 'bg-red-50',       text: 'text-red-500',     border: 'border-red-200',     icon: <X size={12} /> },
+  { value: 'draft',    label: 'Draft',    bg: 'bg-surface',    text: 'text-muted',   border: 'border-edge',   icon: <FileText size={12} /> },
+  { value: 'sent',     label: 'Sent',     bg: 'bg-teal-tint',    text: 'text-teal',   border: 'border-teal/20',icon: <Clock size={12} /> },
+  { value: 'viewed',   label: 'Viewed',   bg: 'bg-[#FFF8E1]',    text: 'text-[#E6A817]',   border: 'border-[#E6A817]/20',icon: <Eye size={12} /> },
+  { value: 'revision_requested', label: 'Changes Requested', bg: 'bg-[#FFF8E1]', text: 'text-[#E6A817]', border: 'border-[#E6A817]/20', icon: <PenLine size={13} /> },
+  { value: 'accepted', label: 'Accepted', bg: 'bg-[#E8F5E9]',    text: 'text-[#2E7D32]',   border: 'border-[#2E7D32]/20',icon: <CheckCircle2 size={12} /> },
+  { value: 'declined', label: 'Declined', bg: 'bg-red-50',        text: 'text-red-500',     border: 'border-red-200',     icon: <X size={12} /> },
 ];
 
 const formatDate = (date: string | null) => {
@@ -55,6 +55,26 @@ const getPageCount = (p: Proposal): number => {
   return 0;
 };
 
+function buildCoverBg(p: Proposal): { backgroundColor?: string; backgroundImage?: string } {
+  const style = p.cover_bg_style || 'gradient';
+  const c1 = p.cover_bg_color_1 || '#0f0f0f';
+  const c2 = p.cover_bg_color_2 || '#141414';
+  if (style === 'solid') return { backgroundColor: c1 };
+  const type = p.cover_gradient_type || 'linear';
+  const angle = p.cover_gradient_angle ?? 135;
+  if (type === 'radial') return { backgroundImage: `radial-gradient(circle, ${c1}, ${c2})` };
+  if (type === 'conic') return { backgroundImage: `conic-gradient(from ${angle}deg, ${c1}, ${c2})` };
+  return { backgroundImage: `linear-gradient(${angle}deg, ${c1}, ${c2})` };
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -65,8 +85,22 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain 
   const toast = useToast();
   const [copied, setCopied] = useState(false);
 
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (p.cover_enabled && p.cover_image_path) {
+      supabase.storage
+        .from('proposals')
+        .createSignedUrl(p.cover_image_path, 3600)
+        .then(({ data }) => {
+          if (data?.signedUrl) setCoverImageUrl(data.signedUrl);
+        });
+    }
+  }, [p.cover_enabled, p.cover_image_path]);
+
   const pageCount = getPageCount(p);
   const size = formatSize(p.file_size_bytes);
+  const hasCover = p.cover_enabled;
 
   const copyLink = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -112,60 +146,101 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain 
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors flex flex-col">
+    <div className="bg-white rounded-[14px] border border-edge hover:border-edge-hover transition-colors flex flex-col">
       {/* ─── Visual header — click to open ──────────────────── */}
       <button
         onClick={() => router.push(`/proposals/${p.id}/pages`)}
-        className="w-full aspect-[4/3] rounded-t-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-5 border-b border-gray-100"
+        className="w-full aspect-[4/3] rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative border-b border-edge"
+        style={hasCover ? { backgroundColor: p.cover_bg_color_1 || '#0f0f0f' } : undefined}
       >
-        {pageCount > 0 ? (
-          <div className="w-full flex flex-col items-center gap-3">
-            {/* Large page count */}
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-bold text-gray-800">{pageCount}</span>
-              <span className="text-sm text-gray-400 font-medium">page{pageCount !== 1 ? 's' : ''}</span>
-            </div>
+        {hasCover ? (
+          <>
+            {/* Background gradient / solid */}
+            <div className="absolute inset-0" style={buildCoverBg(p)} />
 
-            {/* File size */}
-            {size && (
-              <span className="text-xs text-gray-400">{size}</span>
+            {/* Background image */}
+            {coverImageUrl && (
+              <>
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${coverImageUrl})` }}
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundColor: hexToRgba(
+                      p.cover_bg_color_1 || '#0f0f0f',
+                      p.cover_overlay_opacity ?? 0.65
+                    ),
+                  }}
+                />
+              </>
             )}
-          </div>
-        ) : (
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-[#017C87]/10 flex items-center justify-center mx-auto mb-2">
-              <FolderOpen size={22} className="text-[#017C87]" />
+
+            {/* Mini cover content */}
+            <div className="absolute inset-0 flex flex-col justify-end p-4">
+              <h4
+                className="text-sm font-semibold leading-snug line-clamp-2"
+                style={{ color: p.cover_text_color || '#ffffff' }}
+              >
+                {p.title}
+              </h4>
+              {p.client_name && (
+                <p
+                  className="text-[11px] mt-1 opacity-70 truncate"
+                  style={{ color: p.cover_subtitle_color || p.cover_text_color || '#ffffff' }}
+                >
+                  {p.client_name}
+                </p>
+              )}
             </div>
-            <p className="text-xs text-gray-400">No pages yet</p>
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-surface flex flex-col items-center justify-center p-5">
+            {pageCount > 0 ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-bold text-ink">{pageCount}</span>
+                  <span className="text-sm text-faint font-medium">page{pageCount !== 1 ? 's' : ''}</span>
+                </div>
+                {size && (
+                  <span className="text-xs text-faint">{size}</span>
+                )}
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-xl bg-teal-tint flex items-center justify-center mx-auto mb-2">
+                  <FolderOpen size={22} className="text-teal" />
+                </div>
+                <p className="text-xs text-faint">No pages yet</p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Date overlay */}
-        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-400 border border-gray-200/60">
+        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-faint border border-edge">
           {formatDate(p.created_at)}
         </span>
       </button>
 
       {/* ─── Card body ──────────────────────────────────────── */}
       <div className="p-3.5 flex-1 flex flex-col min-w-0">
-        {/* Title */}
         <h3
-          className="text-sm font-semibold font-[family-name:var(--font-display)] text-gray-900 truncate cursor-pointer hover:text-[#017C87] transition-colors mb-1"
+          className="text-[15px] font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
           onClick={() => router.push(`/proposals/${p.id}/pages`)}
         >
           {p.title}
         </h3>
 
-        {/* Client / description */}
         {(p.client_name || p.description) && (
-          <p className="text-[11px] text-gray-400 truncate mb-2.5">
+          <p className="text-[12px] text-faint truncate mb-2.5">
             {p.client_name}
             {p.client_name && p.description && ' · '}
             {p.description}
           </p>
         )}
 
-        {/* Status dropdown */}
         <div className="mb-3" onClick={(e) => e.stopPropagation()}>
           <StatusDropdown
             value={p.status as ProposalStatus}
@@ -174,31 +249,30 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain 
           />
         </div>
 
-        {/* Spacer */}
         <div className="flex-1" />
 
         {/* ─── Actions ────────────────────────────────────────── */}
-        <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3.5 px-3.5">
+        <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3.5 px-3.5">
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => router.push(`/proposals/${p.id}/pages`)}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal-tint transition-colors"
             >
               <Eye size={12} />
               Open
             </button>
             <button
               onClick={copyLink}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface transition-colors"
             >
-              {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+              {copied ? <Check size={12} className="text-[#2E7D32]" /> : <Copy size={12} />}
               {copied ? 'Copied' : 'Link'}
             </button>
             <a
               href={`/view/${p.share_token}`}
               target="_blank"
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface transition-colors"
             >
               <ExternalLink size={12} />
               Preview
@@ -207,7 +281,7 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain 
 
           <button
             onClick={deleteProposal}
-            className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="p-1.5 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
             title="Delete proposal"
           >
             <Trash2 size={14} />

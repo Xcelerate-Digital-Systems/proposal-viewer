@@ -260,7 +260,7 @@ function ItemsContent({
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setShowAddItem(true)}
-                  className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+                  className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
                 >
                   <Plus size={16} />
                   Add Item
@@ -293,7 +293,7 @@ function ItemsContent({
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-20">
@@ -306,7 +306,7 @@ function ItemsContent({
             </p>
             <button
               onClick={() => setShowAddItem(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#017C87] text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors"
             >
               <Plus size={16} />
               Add First Item

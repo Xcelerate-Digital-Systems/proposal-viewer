@@ -39,7 +39,7 @@ export default function WebpageItemForm({ onSubmit, onBack, onCancel, uploading 
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Staging Site Homepage"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors"
+          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors"
           autoFocus
         />
       </div>
@@ -53,7 +53,7 @@ export default function WebpageItemForm({ onSubmit, onBack, onCancel, uploading 
           value={webpageUrl}
           onChange={(e) => setWebpageUrl(e.target.value)}
           placeholder="https://staging.example.com"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87] transition-colors"
+          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors"
         />
         <p className="text-xs text-gray-400 mt-1.5">
           The page where you&apos;ll embed the feedback widget
@@ -62,8 +62,8 @@ export default function WebpageItemForm({ onSubmit, onBack, onCancel, uploading 
 
       <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#017C87]/10 flex items-center justify-center shrink-0 mt-0.5">
-            <Globe size={16} className="text-[#017C87]" />
+          <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center shrink-0 mt-0.5">
+            <Globe size={16} className="text-teal" />
           </div>
           <div>
             <p className="text-xs font-medium text-gray-700">How it works</p>

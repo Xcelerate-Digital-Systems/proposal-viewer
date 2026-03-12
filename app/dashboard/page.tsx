@@ -4,8 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  FileText, MessageSquareText, MessageCircle, CheckCircle2, Clock,
-  ChevronRight, Image, AlertCircle, type LucideIcon,
+  FileText, MessageCircle, CheckCircle2, Layers, TrendingUp, Timer,
+  Search, Bell, Plus, type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -14,103 +14,143 @@ export default function DashboardPage() {
   return (
     <AdminLayout>
       {(auth) => (
-        <DashboardContent companyId={auth.companyId!} isSuperAdmin={auth.isSuperAdmin} />
+        <DashboardContent
+          companyId={auth.companyId!}
+          isSuperAdmin={auth.isSuperAdmin}
+          memberName={auth.teamMember?.name}
+          accountType={auth.accountType}
+        />
       )}
     </AdminLayout>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Stats card                                                         */
+/*  Stat card — large number with icon badge                           */
 /* ------------------------------------------------------------------ */
 
 interface StatCardProps {
   label: string;
   value: string | number;
   icon: LucideIcon;
-  subtitle?: string;
-  accentColor?: string;
+  iconBg: string;
+  iconColor: string;
+  footer?: React.ReactNode;
 }
 
-function StatCard({ label, value, icon: Icon, subtitle, accentColor = '#017C87' }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, iconBg, iconColor, footer }: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-start gap-4">
-      <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-        style={{ backgroundColor: `${accentColor}12` }}
-      >
-        <Icon size={20} style={{ color: accentColor }} />
+    <div className="bg-white rounded-[14px] border border-edge p-6 flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: iconBg }}
+        >
+          <Icon size={14} style={{ color: iconColor }} />
+        </div>
+        <span className="text-[13px] font-medium text-muted">{label}</span>
       </div>
-      <div className="min-w-0">
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm text-gray-500">{label}</p>
-        {subtitle && (
-          <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
-        )}
+      <p className="text-[32px] font-bold text-ink leading-none">{value}</p>
+      {footer && <div>{footer}</div>}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Recent proposal row                                                */
+/* ------------------------------------------------------------------ */
+
+interface ProposalRowProps {
+  name: string;
+  meta: string;
+  status: 'accepted' | 'viewed' | 'draft' | 'pending' | 'needs_review';
+  isLast?: boolean;
+}
+
+const STATUS_CONFIG = {
+  accepted:     { label: 'Accepted',     bg: '#E8F5E9', color: '#2E7D32', dot: '#2E7D32' },
+  viewed:       { label: 'Viewed',       bg: '#E6F5F3', color: '#017C87', dot: '#017C87' },
+  draft:        { label: 'Draft',        bg: '#F5F4F2', color: '#8A8A8A', dot: '#ABABAB' },
+  pending:      { label: 'Pending',      bg: '#FFF8E1', color: '#E6A817', dot: '#E6A817' },
+  needs_review: { label: 'Needs Review', bg: '#FFF8E1', color: '#E6A817', dot: '#E6A817' },
+} as const;
+
+function ProposalRow({ name, meta, status, isLast }: ProposalRowProps) {
+  const cfg = STATUS_CONFIG[status];
+  return (
+    <div className={`flex items-center gap-3.5 px-6 py-3.5 ${!isLast ? 'border-b border-edge' : ''}`}>
+      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cfg.dot }} />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-ink truncate">{name}</p>
+        <p className="text-xs text-muted">{meta}</p>
+      </div>
+      <span
+        className="text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0"
+        style={{ backgroundColor: cfg.bg, color: cfg.color }}
+      >
+        {cfg.label}
+      </span>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Activity item                                                      */
+/* ------------------------------------------------------------------ */
+
+interface ActivityItemProps {
+  initials: string;
+  avatarBg: string;
+  avatarColor: string;
+  text: string;
+  time: string;
+  isLast?: boolean;
+}
+
+function ActivityItem({ initials, avatarBg, avatarColor, text, time, isLast }: ActivityItemProps) {
+  return (
+    <div className={`flex items-start gap-3 px-6 py-4 ${!isLast ? 'border-b border-edge' : ''}`}>
+      <div
+        className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
+        style={{ backgroundColor: avatarBg }}
+      >
+        <span className="text-[10px] font-semibold" style={{ color: avatarColor }}>{initials}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] text-ink leading-relaxed">{text}</p>
+        <p className="text-[11px] text-faint mt-1">{time}</p>
       </div>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Section card (entry point to Proposals / Creative Review)          */
+/*  Quick action item (client view)                                    */
 /* ------------------------------------------------------------------ */
 
-interface SectionCardProps {
-  href: string;
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  stats: { label: string; value: string | number; color?: string }[];
-  loading?: boolean;
+interface QuickActionProps {
+  number: string;
+  numBg: string;
+  numColor: string;
+  text: string;
+  time: string;
+  isLast?: boolean;
 }
 
-function SectionCard({ href, icon: Icon, title, description, stats, loading }: SectionCardProps) {
+function QuickAction({ number, numBg, numColor, text, time, isLast }: QuickActionProps) {
   return (
-    <Link
-      href={href}
-      className="block bg-white rounded-xl border border-gray-200 p-6 hover:border-[#017C87]/30 hover:shadow-md transition-all group"
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#017C87]/10 flex items-center justify-center">
-            <Icon size={20} className="text-[#017C87]" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)]">
-              {title}
-            </h3>
-            <p className="text-sm text-gray-400">{description}</p>
-          </div>
-        </div>
-        <ChevronRight
-          size={18}
-          className="text-gray-300 group-hover:text-[#017C87] transition-colors mt-1"
-        />
+    <div className={`flex items-start gap-3 px-6 py-4 ${!isLast ? 'border-b border-edge' : ''}`}>
+      <div
+        className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
+        style={{ backgroundColor: numBg }}
+      >
+        <span className="text-[10px] font-semibold" style={{ color: numColor }}>{number}</span>
       </div>
-
-      {loading ? (
-        <div className="flex gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="space-y-1">
-              <div className="h-5 w-8 bg-gray-100 rounded animate-pulse" />
-              <div className="h-3 w-16 bg-gray-50 rounded animate-pulse" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex gap-6">
-          {stats.map((stat) => (
-            <div key={stat.label}>
-              <p className={`text-lg font-bold ${stat.color || 'text-gray-900'}`}>
-                {stat.value}
-              </p>
-              <p className="text-xs text-gray-400">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </Link>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] text-ink leading-relaxed">{text}</p>
+        <p className="text-[11px] text-faint mt-1">{time}</p>
+      </div>
+    </div>
   );
 }
 
@@ -118,45 +158,62 @@ function SectionCard({ href, icon: Icon, title, description, stats, loading }: S
 /*  Dashboard content                                                  */
 /* ------------------------------------------------------------------ */
 
-function DashboardContent({ companyId, isSuperAdmin }: { companyId: string; isSuperAdmin?: boolean }) {
+interface DashboardContentProps {
+  companyId: string;
+  isSuperAdmin?: boolean;
+  memberName?: string;
+  accountType?: 'agency' | 'client';
+}
+
+function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: DashboardContentProps) {
   const [loading, setLoading] = useState(true);
   const [proposalStats, setProposalStats] = useState({
-    total: 0,
-    accepted: 0,
-    comments: 0,
-    unresolvedComments: 0,
+    total: 0, accepted: 0, comments: 0, unresolvedComments: 0,
   });
   const [reviewStats, setReviewStats] = useState({
-    projects: 0,
-    items: 0,
-    comments: 0,
-    unresolvedComments: 0,
+    projects: 0, items: 0, comments: 0, unresolvedComments: 0,
   });
+  const [recentProposals, setRecentProposals] = useState<
+    { id: string; title: string; recipient_name?: string; accepted_at?: string; viewed_at?: string; created_at: string }[]
+  >([]);
+
+  const firstName = memberName?.split(' ')[0] || 'there';
+  const isClient = accountType === 'client';
 
   const fetchStats = useCallback(async () => {
     if (!companyId) return;
 
     try {
-      // ── Proposal stats ──
+      // Proposal stats
       const { data: proposals } = await supabase
         .from('proposals')
-        .select('id, accepted_at')
-        .eq('company_id', companyId);
+        .select('id, title, recipient_name, accepted_at, viewed_at, created_at')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
 
+      const allProposals = proposals || [];
+      setProposalStats({
+        total: allProposals.length,
+        accepted: allProposals.filter((p) => p.accepted_at).length,
+        comments: 0,
+        unresolvedComments: 0,
+      });
+      setRecentProposals(allProposals.slice(0, 4));
+
+      // Comments
       const { data: propComments } = await supabase
         .from('proposal_comments')
         .select('id, resolved_at')
         .eq('company_id', companyId)
         .is('parent_id', null);
 
-      setProposalStats({
-        total: proposals?.length || 0,
-        accepted: proposals?.filter((p) => p.accepted_at).length || 0,
+      setProposalStats((prev) => ({
+        ...prev,
         comments: propComments?.length || 0,
         unresolvedComments: propComments?.filter((c) => !c.resolved_at).length || 0,
-      });
+      }));
 
-      // ── Review stats (super admin only) ──
+      // Review stats (super admin only)
       if (isSuperAdmin) {
         const { data: reviewProjects } = await supabase
           .from('review_projects')
@@ -193,119 +250,292 @@ function DashboardContent({ companyId, isSuperAdmin }: { companyId: string; isSu
     fetchStats();
   }, [fetchStats]);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const getProposalStatus = (p: typeof recentProposals[0]): ProposalRowProps['status'] => {
+    if (p.accepted_at) return 'accepted';
+    if (p.viewed_at) return 'viewed';
+    return 'draft';
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const totalThreads = proposalStats.unresolvedComments + (isSuperAdmin ? reviewStats.unresolvedComments : 0);
+
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky page header */}
-      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-8 pb-4 border-b border-gray-200 lg:border-b-0">
-        <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)]">
-          Dashboard
-        </h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Overview of your proposals{isSuperAdmin ? ' and creative review activity' : ''}
-        </p>
-      </div>
-
-      {/* Scrollable content */}
-      <div className="flex-1 px-6 lg:px-10 pb-8 pt-4 lg:pt-0">
-        {/* Section entry cards */}
-        <div className={`grid grid-cols-1 ${isSuperAdmin ? 'lg:grid-cols-2' : ''} gap-4 mb-8`}>
-          <SectionCard
-            href="/proposals"
-            icon={FileText}
-            title="Proposals"
-            description="Manage proposals, documents & templates"
-            loading={loading}
-            stats={[
-              { label: 'Proposals', value: proposalStats.total },
-              { label: 'Accepted', value: proposalStats.accepted, color: 'text-emerald-600' },
-              {
-                label: 'Open comments',
-                value: proposalStats.unresolvedComments,
-                color: proposalStats.unresolvedComments > 0 ? 'text-amber-600' : 'text-gray-900',
-              },
-            ]}
-          />
-
-          {isSuperAdmin && (
-            <SectionCard
-              href="/reviews"
-              icon={MessageSquareText}
-              title="Creative Review"
-              description="Share assets & collect visual feedback"
-              loading={loading}
-              stats={[
-                { label: 'Projects', value: reviewStats.projects },
-                { label: 'Items', value: reviewStats.items },
-                {
-                  label: 'Open comments',
-                  value: reviewStats.unresolvedComments,
-                  color: reviewStats.unresolvedComments > 0 ? 'text-amber-600' : 'text-gray-900',
-                },
-              ]}
-            />
-          )}
+      {/* Header */}
+      <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-6 flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-semibold text-ink">
+            {getGreeting()}, {firstName}
+          </h1>
+          <p className="text-sm text-muted mt-1">
+            {isClient
+              ? `You have ${proposalStats.total - proposalStats.accepted} proposals waiting for your review.`
+              : `Here\u2019s what\u2019s happening with your proposals today.`}
+          </p>
         </div>
 
-        {/* Quick stats */}
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">
-          At a glance
-        </h2>
-        {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 h-[88px] animate-pulse">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100" />
-                  <div className="space-y-2 flex-1">
-                    <div className="h-6 w-12 bg-gray-100 rounded" />
-                    <div className="h-4 w-24 bg-gray-50 rounded" />
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="hidden md:flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2.5 w-[220px]">
+            <Search size={16} className="text-faint" />
+            <span className="text-[13px] text-faint">Search...</span>
           </div>
-        ) : (
-          <div className={`grid grid-cols-2 ${isSuperAdmin ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-4`}>
-            <StatCard
-              label="Total Proposals"
-              value={proposalStats.total}
-              icon={FileText}
-            />
-            <StatCard
-              label="Accepted"
-              value={proposalStats.accepted}
-              icon={CheckCircle2}
-              accentColor="#059669"
-            />
-            {isSuperAdmin && (
-              <StatCard
-                label="Review Items"
-                value={reviewStats.items}
-                icon={Image}
-              />
-            )}
-            <StatCard
-              label="Open Threads"
-              value={proposalStats.unresolvedComments + (isSuperAdmin ? reviewStats.unresolvedComments : 0)}
-              icon={proposalStats.unresolvedComments + (isSuperAdmin ? reviewStats.unresolvedComments : 0) > 0 ? AlertCircle : MessageCircle}
-              accentColor={proposalStats.unresolvedComments + (isSuperAdmin ? reviewStats.unresolvedComments : 0) > 0 ? '#F59E0B' : '#017C87'}
-              subtitle={proposalStats.unresolvedComments + (isSuperAdmin ? reviewStats.unresolvedComments : 0) > 0 ? 'Needs attention' : 'All clear'}
-            />
-          </div>
-        )}
+          <button className="w-[38px] h-[38px] rounded-[10px] border border-[#E8E8E8] bg-white flex items-center justify-center hover:bg-surface transition-colors">
+            <Bell size={18} className="text-muted" />
+          </button>
+          {!isClient && (
+            <Link
+              href="/proposals"
+              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            >
+              <Plus size={16} />
+              New Proposal
+            </Link>
+          )}
+        </div>
+      </div>
 
-        {/* Activity feed placeholder */}
-        <div className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">
-            Recent Activity
-          </h2>
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
-              <Clock size={20} className="text-gray-300" />
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+        <div className="flex flex-col gap-8">
+          {/* Stats row */}
+          {loading ? (
+            <div className={`grid grid-cols-2 ${isSuperAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
+              {Array.from({ length: isSuperAdmin ? 4 : 3 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-[14px] border border-edge p-6 h-[120px] animate-pulse">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-surface" />
+                    <div className="h-4 w-24 bg-surface rounded" />
+                  </div>
+                  <div className="h-8 w-12 bg-surface rounded" />
+                </div>
+              ))}
             </div>
-            <p className="text-sm text-gray-400">
-              Proposal views, comments, and review activity will appear here.
-            </p>
+          ) : (
+            <div className={`grid grid-cols-2 ${isSuperAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
+              <StatCard
+                label={isClient ? 'Active Proposals' : 'Total Proposals'}
+                value={proposalStats.total}
+                icon={FileText}
+                iconBg="#E6F5F3"
+                iconColor="#017C87"
+                footer={
+                  isClient ? (
+                    <div className="flex items-center gap-1">
+                      <Timer size={14} className="text-teal" />
+                      <span className="text-xs font-medium text-teal">
+                        {proposalStats.total - proposalStats.accepted} awaiting your review
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <TrendingUp size={14} className="text-[#2E7D32]" />
+                      <span className="text-xs font-medium text-[#2E7D32]">Active</span>
+                    </div>
+                  )
+                }
+              />
+              <StatCard
+                label={isClient ? 'Reviewed' : 'Accepted'}
+                value={proposalStats.accepted}
+                icon={CheckCircle2}
+                iconBg="#E8F5E9"
+                iconColor="#2E7D32"
+                footer={
+                  <span className="text-xs font-medium text-faint">
+                    {proposalStats.total > 0
+                      ? `${Math.round((proposalStats.accepted / proposalStats.total) * 100)}% acceptance rate`
+                      : 'No proposals yet'}
+                  </span>
+                }
+              />
+              <StatCard
+                label={isClient ? 'Pending Feedback' : 'Open Comments'}
+                value={totalThreads}
+                icon={MessageCircle}
+                iconBg="#FFF8E1"
+                iconColor="#E6A817"
+                footer={
+                  totalThreads > 0 ? (
+                    <span className="text-xs font-medium text-[#E6A817]">
+                      {isClient ? 'Action needed' : `${proposalStats.unresolvedComments} need response`}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-medium text-faint">All clear</span>
+                  )
+                }
+              />
+              {isSuperAdmin && (
+                <StatCard
+                  label="Review Items"
+                  value={reviewStats.items}
+                  icon={Layers}
+                  iconBg="#E6F5F3"
+                  iconColor="#017C87"
+                  footer={
+                    <span className="text-xs font-medium text-faint">
+                      Across {reviewStats.projects} project{reviewStats.projects !== 1 ? 's' : ''}
+                    </span>
+                  }
+                />
+              )}
+            </div>
+          )}
+
+          {/* Bottom row: Recent Proposals + Activity/Quick Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 min-h-0">
+            {/* Recent Proposals */}
+            <div className="bg-white rounded-[14px] border border-edge flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
+                <h2 className="text-[15px] font-semibold text-ink">
+                  {isClient ? 'Your Proposals' : 'Recent Proposals'}
+                </h2>
+                <Link href="/proposals" className="text-[13px] font-medium text-teal hover:underline">
+                  View all
+                </Link>
+              </div>
+              {loading ? (
+                <div className="p-6 space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 animate-pulse">
+                      <div className="w-2 h-2 rounded-full bg-edge" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-4 w-48 bg-surface rounded" />
+                        <div className="h-3 w-32 bg-surface rounded" />
+                      </div>
+                      <div className="h-5 w-16 bg-surface rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : recentProposals.length > 0 ? (
+                <div className="flex-1">
+                  {recentProposals.map((p, i) => (
+                    <ProposalRow
+                      key={p.id}
+                      name={p.title || 'Untitled Proposal'}
+                      meta={
+                        isClient
+                          ? `From your agency \u00b7 ${formatDate(p.created_at)}`
+                          : p.recipient_name
+                            ? `Sent to ${p.recipient_name} \u00b7 ${formatDate(p.created_at)}`
+                            : `Created ${formatDate(p.created_at)}`
+                      }
+                      status={isClient
+                        ? (p.accepted_at ? 'accepted' : 'needs_review')
+                        : getProposalStatus(p)
+                      }
+                      isLast={i === recentProposals.length - 1}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+                  <FileText size={24} className="text-faint mb-2" />
+                  <p className="text-sm text-muted">No proposals yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* Activity (agency) / Quick Actions (client) */}
+            <div className="bg-white rounded-[14px] border border-edge flex flex-col overflow-hidden">
+              <div className="px-6 py-4 border-b border-edge">
+                <h2 className="text-[15px] font-semibold text-ink">
+                  {isClient ? 'Quick Actions' : 'Activity'}
+                </h2>
+              </div>
+              {loading ? (
+                <div className="p-6 space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-start gap-3 animate-pulse">
+                      <div className="w-[30px] h-[30px] rounded-full bg-surface shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-4 w-full bg-surface rounded" />
+                        <div className="h-3 w-20 bg-surface rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : isClient ? (
+                <div className="flex-1">
+                  {recentProposals.filter((p) => !p.accepted_at).length > 0 ? (
+                    recentProposals
+                      .filter((p) => !p.accepted_at)
+                      .slice(0, 3)
+                      .map((p, i, arr) => (
+                        <QuickAction
+                          key={p.id}
+                          number={String(i + 1)}
+                          numBg={i === 0 ? '#E6F5F3' : i === 1 ? '#FFF8E1' : '#E8F5E9'}
+                          numColor={i === 0 ? '#017C87' : i === 1 ? '#E6A817' : '#2E7D32'}
+                          text={`Review & respond to ${p.title || 'Untitled Proposal'}`}
+                          time={`Sent ${formatDate(p.created_at)}`}
+                          isLast={i === arr.length - 1}
+                        />
+                      ))
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+                      <CheckCircle2 size={24} className="text-[#2E7D32] mb-2" />
+                      <p className="text-sm text-muted">All caught up!</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1">
+                  {recentProposals.length > 0 ? (
+                    <>
+                      {recentProposals.slice(0, 3).map((p, i, arr) => {
+                        const colors = [
+                          { bg: '#E8D5F5', color: '#7C3AED' },
+                          { bg: '#D5E8F5', color: '#2563EB' },
+                          { bg: '#F5E8D5', color: '#D97706' },
+                        ];
+                        const c = colors[i % colors.length];
+                        const initials = p.recipient_name
+                          ? p.recipient_name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+                          : '??';
+                        const action = p.accepted_at
+                          ? `${p.recipient_name || 'Client'} accepted ${p.title}`
+                          : p.viewed_at
+                            ? `${p.recipient_name || 'Client'} viewed ${p.title}`
+                            : `${p.title} was created`;
+                        return (
+                          <ActivityItem
+                            key={p.id}
+                            initials={initials}
+                            avatarBg={c.bg}
+                            avatarColor={c.color}
+                            text={action}
+                            time={formatDate(p.created_at)}
+                            isLast={i === Math.min(arr.length, 3) - 1}
+                          />
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+                      <MessageCircle size={24} className="text-faint mb-2" />
+                      <p className="text-sm text-muted">Activity will appear here</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

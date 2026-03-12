@@ -1,53 +1,69 @@
 // components/reviews/feedback/FeedbackToolbar.tsx
 'use client';
 
-import { MapPin, MessageSquare } from 'lucide-react';
+import { MessageSquare, MoveUpRight, Square, Type } from 'lucide-react';
 
-export type FeedbackMode = 'idle' | 'pin';
+/** Pin is always active by default. Drawing tools override pin mode when selected. */
+export type FeedbackMode = 'idle' | 'pin' | 'arrow' | 'box' | 'text' | 'screenshot';
 
 interface FeedbackToolbarProps {
-  /** Current active mode */
-  mode: FeedbackMode;
-  /** Callback when a tool is clicked */
-  onModeChange: (mode: FeedbackMode) => void;
   /** Toggle comments panel */
   onToggleComments: () => void;
   /** Whether comments panel is open */
   commentsOpen: boolean;
   /** Number of unresolved comments */
   unresolvedCount: number;
-  /** Hide pin tool (e.g. for webpage items) */
-  hidePinTool?: boolean;
+
+  /** Current feedback mode */
+  mode?: FeedbackMode;
+  /** Change feedback mode (for drawing tools) */
+  onModeChange?: (mode: FeedbackMode) => void;
+
   /** Additional className for positioning */
   className?: string;
 }
 
 export default function FeedbackToolbar({
-  mode,
-  onModeChange,
   onToggleComments,
   commentsOpen,
   unresolvedCount,
-  hidePinTool = false,
+  mode = 'idle',
+  onModeChange,
   className = '',
 }: FeedbackToolbarProps) {
+  const handleToolClick = (tool: FeedbackMode) => {
+    if (!onModeChange) return;
+    onModeChange(mode === tool ? 'idle' : tool);
+  };
+
   return (
     <div
       className={`flex flex-col items-center gap-1 bg-white rounded-xl shadow-lg border border-gray-200 p-1.5 z-30 ${className}`}
     >
-      {/* Pin tool */}
-      {!hidePinTool && (
-        <ToolButton
-          active={mode === 'pin'}
-          onClick={() => onModeChange(mode === 'pin' ? 'idle' : 'pin')}
-          tooltip="Pin Comment"
-          icon={<MapPin size={18} />}
-        />
-      )}
+      {/* Drawing tools */}
+      {onModeChange && (
+        <>
+          <ToolButton
+            active={mode === 'arrow'}
+            onClick={() => handleToolClick('arrow')}
+            tooltip="Arrow"
+            icon={<MoveUpRight size={18} />}
+          />
+          <ToolButton
+            active={mode === 'box'}
+            onClick={() => handleToolClick('box')}
+            tooltip="Rectangle"
+            icon={<Square size={18} />}
+          />
+          <ToolButton
+            active={mode === 'text'}
+            onClick={() => handleToolClick('text')}
+            tooltip="Text"
+            icon={<Type size={18} />}
+          />
 
-      {/* Separator */}
-      {!hidePinTool && (
-        <div className="w-6 h-px bg-gray-200 my-0.5" />
+          <div className="w-5 h-px bg-gray-200 my-0.5" />
+        </>
       )}
 
       {/* Comments */}
@@ -82,7 +98,7 @@ function ToolButton({
       onClick={onClick}
       className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors group ${
         active
-          ? 'bg-[#017C87] text-white shadow-sm'
+          ? 'bg-teal text-white shadow-sm'
           : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
       }`}
       title={tooltip}
@@ -94,8 +110,8 @@ function ToolButton({
         <span
           className={`absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-bold px-1 ${
             active
-              ? 'bg-white text-[#017C87]'
-              : 'bg-[#017C87] text-white'
+              ? 'bg-white text-teal'
+              : 'bg-teal text-white'
           }`}
         >
           {badge > 99 ? '99+' : badge}

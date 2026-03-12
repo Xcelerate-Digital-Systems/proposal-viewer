@@ -1,7 +1,8 @@
 // components/reviews/comments/CommentsPanel.tsx
 'use client';
 
-import { MapPin, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { MapPin, X, Highlighter } from 'lucide-react';
 import type { ReviewComment } from '@/lib/supabase';
 import PendingPinForm from './PendingPinForm';
 import GeneralCommentForm from './GeneralCommentForm';
@@ -19,6 +20,8 @@ interface CommentsPanelProps {
   hasComments: boolean;
   /** Currently placing a new pin */
   pendingPin: { x: number; y: number } | null;
+  /** Comment ID to scroll to and highlight (set when a pin marker is clicked) */
+  highlightCommentId?: string | null;
   /** Callback to submit a comment */
   onSubmitComment: (content: string, pinX?: number, pinY?: number, parentId?: string) => Promise<void>;
   /** Callback to cancel pending pin */
@@ -40,6 +43,13 @@ interface CommentsPanelProps {
   /** Unresolve callback — if provided, reopen button appears on resolved threads */
   onUnresolve?: (commentId: string) => Promise<void>;
 
+  // Attachments
+  /** Company ID for attachment uploads */
+  companyId?: string;
+
+  /** Highlighted text from a text selection (shown above the pending form) */
+  pendingHighlightText?: string;
+
   /** Desktop: static panel. Mobile: full-screen overlay. Default classes handle both. */
   className?: string;
   /** Whether the panel shows a close button. Defaults to true. */
@@ -52,6 +62,7 @@ export default function CommentsPanel({
   getReplies,
   hasComments,
   pendingPin,
+  highlightCommentId,
   onSubmitComment,
   onCancelPin,
   onClose,
@@ -60,9 +71,24 @@ export default function CommentsPanel({
   onUnresolve,
   guestName,
   onNameChange,
+  companyId,
+  pendingHighlightText,
   className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col border-l border-gray-200 bg-white',
   closable = true,
 }: CommentsPanelProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to highlighted comment when a pin marker is clicked
+  useEffect(() => {
+    if (!highlightCommentId || !scrollContainerRef.current) return;
+    const el = scrollContainerRef.current.querySelector(
+      `[data-comment-id="${highlightCommentId}"]`
+    );
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightCommentId]);
+
   return (
     <div className={className}>
       {/* Header */}
@@ -84,18 +110,42 @@ export default function CommentsPanel({
       </div>
 
       {/* Threads */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        {/* Pending pin form */}
-        {pendingPin && (
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        {/* Pending pin form (only for actual pin placements, not highlights) */}
+        {pendingPin && !pendingHighlightText && (
           <PendingPinForm
             authorName={authorName}
             guestName={guestName}
             onNameChange={onNameChange}
+            companyId={companyId}
             onSubmit={async (content) => {
               await onSubmitComment(content, pendingPin.x, pendingPin.y);
             }}
             onCancel={onCancelPin}
           />
+        )}
+
+        {/* Pending highlight form (no pin needed — the highlight is visible on the content) */}
+        {pendingHighlightText && (
+          <div>
+            <div className="mb-2 px-3 py-2 rounded-lg bg-teal/5 border border-teal/20">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Highlighter size={10} className="text-teal" />
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-teal">Highlighted text</p>
+              </div>
+              <p className="text-xs text-gray-700 italic line-clamp-3">&ldquo;{pendingHighlightText}&rdquo;</p>
+            </div>
+            <PendingPinForm
+              authorName={authorName}
+              guestName={guestName}
+              onNameChange={onNameChange}
+              companyId={companyId}
+              onSubmit={async (content) => {
+                await onSubmitComment(content);
+              }}
+              onCancel={onCancelPin}
+            />
+          </div>
         )}
 
         {/* Unresolved threads */}
@@ -112,6 +162,7 @@ export default function CommentsPanel({
             }}
             onResolve={onResolve ? () => onResolve(c.id) : undefined}
             onUnresolve={onUnresolve ? () => onUnresolve(c.id) : undefined}
+            highlighted={highlightCommentId === c.id}
           />
         ))}
 
@@ -123,11 +174,11 @@ export default function CommentsPanel({
         />
 
         {/* Empty state */}
-        {!hasComments && !pendingPin && (
+        {!hasComments && !pendingPin && !pendingHighlightText && (
           <div className="text-center py-8">
             <MapPin size={24} className="mx-auto mb-2 text-gray-200" />
             <p className="text-xs text-gray-400">
-              Use the pin tool to place feedback on the content, or leave a general comment below.
+              Click anywhere on the content to leave a comment, or use the form below.
             </p>
           </div>
         )}
@@ -138,6 +189,7 @@ export default function CommentsPanel({
         authorName={authorName}
         guestName={guestName}
         onNameChange={onNameChange}
+        companyId={companyId}
         onSubmit={async (content) => {
           await onSubmitComment(content);
         }}

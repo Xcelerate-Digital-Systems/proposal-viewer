@@ -140,7 +140,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
                 onClick={() => toggleTab(tab.key)}
                 className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                   activeTab === tab.key
-                    ? 'border-[#017C87] text-[#017C87]'
+                    ? 'border-teal text-teal'
                     : 'border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200'
                 }`}
               >
@@ -173,7 +173,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
             <a
               href={`/view/${p.share_token}`}
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
             >
               <ExternalLink size={13} />
               Preview

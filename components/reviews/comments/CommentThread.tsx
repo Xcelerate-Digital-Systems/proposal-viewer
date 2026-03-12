@@ -2,9 +2,47 @@
 'use client';
 
 import { useState } from 'react';
-import { CornerDownRight, Send, CheckCircle2, RotateCcw } from 'lucide-react';
+import { CornerDownRight, Send, CheckCircle2, RotateCcw, ExternalLink, FileText } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
-import type { ReviewComment } from '@/lib/supabase';
+import type { ReviewComment, ReviewCommentAttachment } from '@/lib/supabase';
+import EmojiPicker from './EmojiPicker';
+
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+function AttachmentList({ attachments }: { attachments?: ReviewCommentAttachment[] }) {
+  if (!attachments || attachments.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1.5">
+      {attachments.map((a, i) => {
+        const isImage = IMAGE_TYPES.includes(a.type);
+        return isImage ? (
+          <a
+            key={i}
+            href={a.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-16 h-16 rounded-lg border border-gray-200 overflow-hidden hover:border-teal/40 transition-colors"
+          >
+            <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
+          </a>
+        ) : (
+          <a
+            key={i}
+            href={a.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 hover:border-teal/40 transition-colors"
+          >
+            <FileText size={10} className="text-gray-400 shrink-0" />
+            <span className="text-[10px] text-gray-600 truncate max-w-[100px]">{a.name}</span>
+            <ExternalLink size={8} className="text-gray-300 shrink-0" />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
 interface CommentThreadProps {
   comment: ReviewComment;
@@ -22,6 +60,9 @@ interface CommentThreadProps {
   // Resolution — provide callbacks to enable resolve/reopen buttons
   onResolve?: () => Promise<void>;
   onUnresolve?: () => Promise<void>;
+
+  /** When true, show a temporary highlight ring (e.g. when scrolled to via pin click) */
+  highlighted?: boolean;
 }
 
 export default function CommentThread({
@@ -33,6 +74,7 @@ export default function CommentThread({
   onNameChange,
   onResolve,
   onUnresolve,
+  highlighted = false,
 }: CommentThreadProps) {
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -56,11 +98,16 @@ export default function CommentThread({
   const isTeam = comment.author_type === 'team';
 
   return (
-    <div className="rounded-lg bg-gray-50 p-3">
+    <div
+      data-comment-id={comment.id}
+      className={`rounded-lg bg-gray-50 p-3 transition-all duration-300 ${
+        highlighted ? 'ring-2 ring-teal ring-offset-1' : ''
+      }`}
+    >
       {/* Pin badge */}
       {comment.comment_type === 'pin' && comment.thread_number && (
         <div className="flex items-center gap-1.5 mb-2">
-          <span className="w-5 h-5 rounded-full bg-[#017C87] text-white flex items-center justify-center text-[10px] font-bold">
+          <span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold">
             {comment.thread_number}
           </span>
           <span className="text-[10px] uppercase tracking-wider text-gray-400">Pin</span>
@@ -71,7 +118,7 @@ export default function CommentThread({
       <div className="flex items-start gap-2">
         <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
           isTeam
-            ? 'bg-[#017C87]/10 text-[#017C87]'
+            ? 'bg-teal/10 text-teal'
             : 'bg-gray-100 text-gray-500'
         }`}>
           {comment.author_name.charAt(0).toUpperCase()}
@@ -80,13 +127,19 @@ export default function CommentThread({
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-gray-900">{comment.author_name}</span>
             {isTeam && (
-              <span className="text-[9px] font-medium uppercase bg-[#017C87]/10 text-[#017C87] px-1.5 py-0.5 rounded">
+              <span className="text-[9px] font-medium uppercase bg-teal/10 text-teal px-1.5 py-0.5 rounded">
                 Team
               </span>
             )}
             <span className="text-[10px] text-gray-400">{timeAgo(comment.created_at)}</span>
           </div>
+          {comment.comment_type === 'text_highlight' && comment.highlight_text && (
+            <div className="mt-1 mb-1 px-2 py-1.5 rounded bg-teal/5 border-l-2 border-teal/40">
+              <p className="text-[10px] text-teal italic line-clamp-2">&ldquo;{comment.highlight_text}&rdquo;</p>
+            </div>
+          )}
           <p className="text-xs text-gray-600 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
+          <AttachmentList attachments={comment.attachments} />
         </div>
       </div>
 
@@ -99,7 +152,7 @@ export default function CommentThread({
               <div key={r.id} className="flex items-start gap-2">
                 <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
                   rIsTeam
-                    ? 'bg-[#017C87]/10 text-[#017C87]'
+                    ? 'bg-teal/10 text-teal'
                     : 'bg-gray-100 text-gray-400'
                 }`}>
                   {r.author_name.charAt(0).toUpperCase()}
@@ -108,13 +161,14 @@ export default function CommentThread({
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-medium text-gray-900">{r.author_name}</span>
                     {rIsTeam && (
-                      <span className="text-[8px] font-medium uppercase bg-[#017C87]/10 text-[#017C87] px-1 py-0.5 rounded">
+                      <span className="text-[8px] font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">
                         Team
                       </span>
                     )}
                     <span className="text-[10px] text-gray-400">{timeAgo(r.created_at)}</span>
                   </div>
                   <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">{r.content}</p>
+                  <AttachmentList attachments={r.attachments} />
                 </div>
               </div>
             );
@@ -162,22 +216,25 @@ export default function CommentThread({
               value={guestName || ''}
               onChange={(e) => onNameChange?.(e.target.value)}
               placeholder="Your name"
-              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
+              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             />
           )}
-          <div className="flex gap-1.5">
-            <input
-              type="text"
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              placeholder="Write a reply…"
-              autoFocus
-              className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-[11px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]"
-            />
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 flex items-center gap-1 rounded-lg border border-gray-200 focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Write a reply…"
+                autoFocus
+                className="flex-1 px-2.5 py-1.5 text-[11px] text-gray-900 bg-transparent focus:outline-none"
+              />
+              <EmojiPicker onSelect={(emoji) => setReplyText((prev) => prev + emoji)} />
+            </div>
             <button
               type="submit"
               disabled={replyDisabled}
-              className="p-1.5 rounded-lg bg-[#017C87] text-white disabled:opacity-40 hover:bg-[#01434A] transition-colors"
+              className="p-1.5 rounded-lg bg-teal text-white disabled:opacity-40 hover:bg-[#01434A] transition-colors"
             >
               <Send size={11} />
             </button>

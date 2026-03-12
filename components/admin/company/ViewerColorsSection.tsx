@@ -56,17 +56,17 @@ export default function ViewerColorsSection({
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <div className="bg-white border border-edge rounded-[14px] p-5 ">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Palette size={15} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-500">Viewer Colors</span>
+          <Palette size={15} className="text-faint" />
+          <span className="text-sm font-medium text-muted">Viewer Colors</span>
         </div>
         {isOwner && colorsChanged && (
           <button
             onClick={onSave}
             disabled={saving === 'colors' || !/^#[0-9a-fA-F]{6}$/.test(accentColor) || !/^#[0-9a-fA-F]{6}$/.test(bgPrimary) || !/^#[0-9a-fA-F]{6}$/.test(bgSecondary) || !/^#[0-9a-fA-F]{6}$/.test(sidebarTextColor) || !/^#[0-9a-fA-F]{6}$/.test(acceptTextColor)}
-            className="px-4 py-1.5 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
+            className="px-4 py-1.5 bg-teal text-white text-sm rounded-lg hover:bg-teal-hover disabled:opacity-50 transition-colors"
           >
             {saving === 'colors' ? <Loader2 size={14} className="animate-spin" /> : 'Save Colors'}
           </button>
@@ -78,13 +78,13 @@ export default function ViewerColorsSection({
         <div>
           {/* Accent color */}
           <div className="mb-4">
-            <label className="block text-xs text-gray-400 mb-2">Accent Color</label>
+            <label className="block text-xs text-faint mb-2">Accent Color</label>
             <ColorRow label="Buttons, links, highlights" value={accentColor} onChange={setAccentColor} disabled={!isOwner} />
           </div>
 
           {/* Background colors */}
           <div className="mb-4">
-            <label className="block text-xs text-gray-400 mb-2">Background Colors</label>
+            <label className="block text-xs text-faint mb-2">Background Colors</label>
             <div className="space-y-2">
               <ColorRow label="Main background" value={bgPrimary} onChange={setBgPrimary} disabled={!isOwner} />
               <ColorRow label="Sidebar / panels" value={bgSecondary} onChange={setBgSecondary} disabled={!isOwner} />
@@ -92,16 +92,16 @@ export default function ViewerColorsSection({
           </div>
 
           {/* Background image */}
-          <div className="mb-4 pt-4 border-t border-gray-100">
-            <label className="block text-xs text-gray-400 mb-2">Background Image (optional)</label>
-            <p className="text-xs text-gray-400 mb-3">
+          <div className="mb-4 pt-4 border-t border-edge">
+            <label className="block text-xs text-faint mb-2">Background Image (optional)</label>
+            <p className="text-xs text-faint mb-3">
               Upload a texture or pattern to display behind PDF pages. The main background color is overlaid on top.
             </p>
 
             {bgImageUrl ? (
               <div className="flex items-start gap-3">
                 <div
-                  className="w-20 h-14 rounded-lg border border-gray-200 bg-cover bg-center shrink-0"
+                  className="w-20 h-14 rounded-lg border border-edge bg-cover bg-center shrink-0"
                   style={{ backgroundImage: `url(${bgImageUrl})` }}
                 />
                 <div className="space-y-1.5">
@@ -110,7 +110,7 @@ export default function ViewerColorsSection({
                       <button
                         onClick={() => fileRef.current?.click()}
                         disabled={bgImageUploading}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted bg-surface border border-edge rounded-lg hover:bg-edge disabled:opacity-50 transition-colors"
                       >
                         {bgImageUploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                         Replace
@@ -131,7 +131,7 @@ export default function ViewerColorsSection({
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={bgImageUploading}
-                  className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#017C87]/40 hover:text-[#017C87] transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-edge text-faint hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
                 >
                   {bgImageUploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
                   <span className="text-xs font-medium">Upload background image</span>
@@ -154,7 +154,7 @@ export default function ViewerColorsSection({
             {/* Overlay opacity — only show when image is set */}
             {bgImageUrl && (
               <div className="mt-3">
-                <label className="block text-xs text-gray-400 mb-1">
+                <label className="block text-xs text-faint mb-1">
                   Color Overlay Opacity — {Math.round(bgImageOverlayOpacity * 100)}%
                 </label>
                 <input
@@ -164,9 +164,9 @@ export default function ViewerColorsSection({
                   value={Math.round(bgImageOverlayOpacity * 100)}
                   onChange={(e) => setBgImageOverlayOpacity(parseInt(e.target.value) / 100)}
                   disabled={!isOwner}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87] disabled:cursor-not-allowed"
+                  className="w-full h-2 bg-edge rounded-lg appearance-none cursor-pointer accent-teal disabled:cursor-not-allowed"
                 />
-                <p className="text-[10px] text-gray-400 mt-1">
+                <p className="text-[10px] text-faint mt-1">
                   Controls how much the main background color shows over the image. Higher = more color, less image.
                 </p>
               </div>
@@ -174,8 +174,8 @@ export default function ViewerColorsSection({
           </div>
 
           {/* Text colors */}
-          <div className="pt-4 border-t border-gray-100">
-            <label className="block text-xs text-gray-400 mb-2">Text Colors</label>
+          <div className="pt-4 border-t border-edge">
+            <label className="block text-xs text-faint mb-2">Text Colors</label>
             <div className="space-y-2">
               <ColorRow label="Sidebar nav text" value={sidebarTextColor} onChange={setSidebarTextColor} disabled={!isOwner} />
               <ColorRow label="Accept button text" value={acceptTextColor} onChange={setAcceptTextColor} disabled={!isOwner} />

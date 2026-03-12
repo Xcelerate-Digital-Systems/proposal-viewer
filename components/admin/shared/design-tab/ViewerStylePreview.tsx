@@ -412,7 +412,7 @@ export function ViewerStylePreviewTabs({
             onClick={() => onTabChange(tab.key)}
             className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors ${
               isActive
-                ? 'bg-[#017C87]/10 text-[#017C87]'
+                ? 'bg-teal/10 text-teal'
                 : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
             }`}
           >

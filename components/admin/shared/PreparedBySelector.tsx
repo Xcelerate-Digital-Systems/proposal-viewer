@@ -75,7 +75,7 @@ export default function PreparedBySelector({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 transition-colors"
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
       >
         {loading ? (
           <Loader2 size={14} className="animate-spin text-gray-400" />
@@ -134,7 +134,7 @@ export default function PreparedBySelector({
                     setOpen(false);
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                    m.id === selectedMemberId ? 'bg-[#017C87]/5' : ''
+                    m.id === selectedMemberId ? 'bg-teal/5' : ''
                   }`}
                 >
                   {m.avatar_url ? (
@@ -153,7 +153,7 @@ export default function PreparedBySelector({
                     <div className="text-xs text-gray-400 truncate">{m.email}</div>
                   </div>
                   {m.id === selectedMemberId && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#017C87] shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-teal shrink-0" />
                   )}
                 </button>
               ))

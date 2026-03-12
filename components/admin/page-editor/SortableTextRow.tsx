@@ -58,8 +58,8 @@ export default function SortableTextRow({
       <div
         className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 cursor-pointer transition-colors border border-dashed ${
           isSelected
-            ? 'bg-[#017C87]/5 border-[#017C87]/40 ring-1 ring-[#017C87]/20'
-            : 'border-[#017C87]/20 hover:bg-[#017C87]/5'
+            ? 'bg-teal/5 border-teal/40 ring-1 ring-teal/20'
+            : 'border-teal/20 hover:bg-teal/5'
         }`}
         onClick={onSelect}
       >
@@ -67,7 +67,7 @@ export default function SortableTextRow({
         <button
           {...attributes}
           {...listeners}
-          className="shrink-0 p-0.5 text-[#017C87]/40 hover:text-[#017C87] cursor-grab active:cursor-grabbing touch-none"
+          className="shrink-0 p-0.5 text-teal/40 hover:text-teal cursor-grab active:cursor-grabbing touch-none"
         >
           <GripVertical size={14} />
         </button>
@@ -84,19 +84,19 @@ export default function SortableTextRow({
             isFirst
               ? 'text-gray-200 cursor-not-allowed'
               : indent
-              ? 'text-[#017C87] bg-[#017C87]/10 hover:bg-[#017C87]/20'
-              : 'text-[#017C87]/40 hover:text-[#017C87] hover:bg-[#017C87]/10'
+              ? 'text-teal bg-teal/10 hover:bg-teal/20'
+              : 'text-teal/40 hover:text-teal hover:bg-teal/10'
           }`}
         >
           {indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
         </button>
 
         {indent > 0 && (
-          <span className="text-[10px] text-[#017C87]/50 shrink-0">SUB</span>
+          <span className="text-[10px] text-teal/50 shrink-0">SUB</span>
         )}
 
-        <FileText size={14} className="text-[#017C87]/70 shrink-0" />
-        <span className="text-sm font-medium text-[#017C87]/70 flex-1 truncate">
+        <FileText size={14} className="text-teal/70 shrink-0" />
+        <span className="text-sm font-medium text-teal/70 flex-1 truncate">
           {title || 'Text Page'}
         </span>
 

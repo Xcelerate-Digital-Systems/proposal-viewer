@@ -39,25 +39,25 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
   return (
     <div className="mt-8">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 bg-[#017C87]/10 rounded-lg flex items-center justify-center">
-          <Webhook size={16} className="text-[#017C87]" />
+        <div className="w-8 h-8 bg-teal-tint rounded-lg flex items-center justify-center">
+          <Webhook size={16} className="text-teal" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Webhooks</h2>
-          <p className="text-xs text-gray-400">Send HTTP POST requests when events occur</p>
+          <h2 className="text-sm font-semibold text-ink">Webhooks</h2>
+          <p className="text-xs text-faint">Send HTTP POST requests when events occur</p>
         </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 size={16} className="animate-spin text-gray-300" />
+          <Loader2 size={16} className="animate-spin text-faint" />
         </div>
       ) : (
         <div className={`grid gap-4 ${isSuperAdmin ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
           {/* Proposal webhooks */}
           <div className="space-y-3">
             <div className="mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-faint px-1">
                 Proposal Events
               </span>
             </div>
@@ -79,10 +79,10 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
           {isSuperAdmin && (
             <div className="space-y-3">
               <div className="mb-1 flex items-center gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-faint px-1">
                   Creative Review Events
                 </span>
-                <span className="text-[9px] font-semibold uppercase tracking-wider bg-[#017C87]/10 text-[#017C87] px-1.5 py-0.5 rounded">
+                <span className="text-[9px] font-semibold uppercase tracking-wider bg-teal/10 text-teal px-1.5 py-0.5 rounded">
                   Creative Review
                 </span>
               </div>
@@ -103,8 +103,8 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
         </div>
       )}
 
-      <p className="text-xs text-gray-400 mt-4 px-1">
-        Each event can have its own endpoint URL. If a signing secret is set, requests include an <code className="text-gray-500">X-Webhook-Signature</code> header with an HMAC-SHA256 signature.
+      <p className="text-xs text-faint mt-4 px-1">
+        Each event can have its own endpoint URL. If a signing secret is set, requests include an <code className="text-muted">X-Webhook-Signature</code> header with an HMAC-SHA256 signature.
       </p>
     </div>
   );

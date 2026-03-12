@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Image, Globe, Mail, Megaphone, Smartphone, type LucideIcon } from 'lucide-react';
+import { X, Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, type LucideIcon } from 'lucide-react';
 import { type ReviewItemType } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useReviewItemSubmit } from './review-item-forms/useReviewItemSubmit';
@@ -11,6 +11,9 @@ import AdItemForm from './review-item-forms/AdItemForm';
 import EmailItemForm from './review-item-forms/EmailItemForm';
 import SmsItemForm from './review-item-forms/SmsItemForm';
 import WebpageItemForm from './review-item-forms/WebpageItemForm';
+import VideoItemForm from './review-item-forms/VideoItemForm';
+import PdfItemForm from './review-item-forms/PdfItemForm';
+import GoogleAdItemForm from './review-item-forms/GoogleAdItemForm';
 
 /* ─── Types ────────────────────────────────────────────────────── */
 
@@ -25,19 +28,24 @@ interface AddReviewItemModalProps {
 
 const typeOptions: { value: ReviewItemType; label: string; icon: LucideIcon; description: string; enabled: boolean }[] = [
   { value: 'image', label: 'Image', icon: Image, description: 'Upload a design, screenshot, or photo', enabled: true },
-  { value: 'ad', label: 'Ad Creative', icon: Megaphone, description: 'Facebook / Instagram ad mockup', enabled: true },
+  { value: 'video', label: 'Video', icon: Video, description: 'YouTube, Vimeo, or upload a video file', enabled: true },
+  { value: 'ad', label: 'Meta Ad', icon: Megaphone, description: 'Facebook / Instagram ad mockup', enabled: true },
+  { value: 'google_ad', label: 'Google Ad', icon: Search, description: 'Google Search or Display ad mockup', enabled: true },
   { value: 'email', label: 'Email', icon: Mail, description: 'Subject line, preheader & body text', enabled: true },
   { value: 'sms', label: 'SMS', icon: Smartphone, description: 'Text message preview with character count', enabled: true },
+  { value: 'pdf', label: 'PDF', icon: FileText, description: 'Upload a PDF document for review', enabled: true },
   { value: 'webpage', label: 'Web Page', icon: Globe, description: 'Add a URL and embed a feedback widget', enabled: true },
 ];
 
-const TITLES: Record<ReviewItemType, string> = {
+const TITLES: Partial<Record<ReviewItemType, string>> = {
   image: 'Upload Image',
-  ad: 'New Ad Mockup',
+  video: 'New Video',
+  ad: 'New Meta Ad Mockup',
+  google_ad: 'New Google Ad',
   email: 'New Email Review',
   sms: 'New SMS Review',
+  pdf: 'Upload PDF',
   webpage: 'New Web Page',
-  video: 'New Video',
 };
 
 /* ─── Component ────────────────────────────────────────────────── */
@@ -92,7 +100,7 @@ export default function AddReviewItemModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <h2 className="text-lg font-semibold text-gray-900 font-[family-name:var(--font-display)]">
-            {step === 'type' ? 'Add Item' : TITLES[itemType]}
+            {step === 'type' ? 'Add Item' : (TITLES[itemType] || 'New Item')}
           </h2>
           <button
             onClick={onClose}
@@ -113,16 +121,16 @@ export default function AddReviewItemModal({
                   onClick={() => handleTypeSelect(opt.value, opt.enabled)}
                   className={`w-full flex items-center gap-4 p-4 rounded-lg border text-left transition-colors ${
                     opt.enabled
-                      ? 'border-gray-200 hover:border-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
+                      ? 'border-gray-200 hover:border-teal hover:bg-teal/5 cursor-pointer'
                       : 'border-gray-100 opacity-50 cursor-not-allowed'
                   }`}
                 >
                   <div
                     className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      opt.enabled ? 'bg-[#017C87]/10' : 'bg-gray-100'
+                      opt.enabled ? 'bg-teal/10' : 'bg-gray-100'
                     }`}
                   >
-                    <Icon size={20} className={opt.enabled ? 'text-[#017C87]' : 'text-gray-400'} />
+                    <Icon size={20} className={opt.enabled ? 'text-teal' : 'text-gray-400'} />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">{opt.label}</p>
@@ -149,6 +157,15 @@ export default function AddReviewItemModal({
         )}
         {step === 'details' && itemType === 'sms' && (
           <SmsItemForm onSubmit={submitPayload} onBack={handleBack} onCancel={onClose} uploading={uploading} onPreviewChange={handlePreviewChange} />
+        )}
+        {step === 'details' && itemType === 'video' && (
+          <VideoItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} />
+        )}
+        {step === 'details' && itemType === 'google_ad' && (
+          <GoogleAdItemForm onSubmit={submitWithFile} onSubmitPayload={submitPayload} onBack={handleBack} onCancel={onClose} uploading={uploading} onPreviewChange={handlePreviewChange} />
+        )}
+        {step === 'details' && itemType === 'pdf' && (
+          <PdfItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} />
         )}
         {step === 'details' && itemType === 'webpage' && (
           <WebpageItemForm onSubmit={submitPayload} onBack={handleBack} onCancel={onClose} uploading={uploading} />

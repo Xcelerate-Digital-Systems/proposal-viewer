@@ -16,16 +16,16 @@ export default function ColorRow({ label, value, onChange, disabled }: ColorRowP
         value={value.slice(0, 7)}
         onChange={(e) => !disabled && onChange(e.target.value)}
         disabled={disabled}
-        className="w-8 h-8 rounded cursor-pointer border border-gray-200 bg-transparent disabled:cursor-not-allowed shrink-0"
+        className="w-8 h-8 rounded cursor-pointer border border-edge bg-transparent disabled:cursor-not-allowed shrink-0"
       />
       <input
         type="text"
         value={value}
         onChange={(e) => !disabled && e.target.value.length <= 9 && onChange(e.target.value)}
         disabled={disabled}
-        className="w-24 px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-24 px-2.5 py-1.5 rounded-lg bg-surface border border-edge text-xs text-ink font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed"
       />
-      <span className="text-xs text-gray-400">{label}</span>
+      <span className="text-xs text-faint">{label}</span>
     </div>
   );
 }

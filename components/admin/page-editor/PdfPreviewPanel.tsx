@@ -93,7 +93,7 @@ export default function PdfPreviewPanel({
         className="flex-1 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center"
       >
         <div className="flex flex-col items-center gap-2">
-          <div className="w-5 h-5 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           <p className="text-xs text-gray-400">Loading PDF...</p>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function PdfPreviewPanel({
                   <ChevronRight size={14} />
                 </button>
               </div>
-              <span className="text-xs text-[#017C87] font-medium truncate ml-2">
+              <span className="text-xs text-teal font-medium truncate ml-2">
                 {/* In per-page mode prefer the label from pageUrls; fall back to entries */}
                 {isPerPage
                   ? (pageUrls[selectedPdfIndex]?.title || entries[selectedPdfIndex]?.name || '')

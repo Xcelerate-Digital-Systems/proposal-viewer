@@ -98,8 +98,8 @@ export default function InsertPageMenu({
           disabled
             ? 'text-gray-300 cursor-not-allowed'
             : open
-            ? 'text-[#017C87] bg-[#017C87]/10'
-            : 'text-gray-400 hover:text-[#017C87] hover:bg-[#017C87]/5 cursor-pointer'
+            ? 'text-teal bg-teal/10'
+            : 'text-gray-400 hover:text-teal hover:bg-teal/5 cursor-pointer'
         }`}
         title={isStart ? 'Insert page at start' : 'Insert page here'}
       >
@@ -141,7 +141,7 @@ export default function InsertPageMenu({
             onClick={handleTextPage}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors text-left"
           >
-            <FileText size={14} className="text-[#017C87]/60 shrink-0" />
+            <FileText size={14} className="text-teal/60 shrink-0" />
             <div>
               <div className="font-medium">Text Page</div>
               <div className="text-[10px] text-gray-400 mt-0.5">Rich text content page</div>
@@ -155,7 +155,7 @@ export default function InsertPageMenu({
               onClick={handlePricingPage}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors text-left"
             >
-              <DollarSign size={14} className="text-[#017C87]/60 shrink-0" />
+              <DollarSign size={14} className="text-teal/60 shrink-0" />
               <div>
                 <div className="font-medium">Pricing Page</div>
                 <div className="text-[10px] text-gray-400 mt-0.5">Add investment breakdown</div>

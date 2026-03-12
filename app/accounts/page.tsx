@@ -31,7 +31,7 @@ export default function AccountsPage() {
         if (!auth.isSuperAdmin) {
           return (
             <div className="flex items-center justify-center h-screen">
-              <p className="text-gray-400">Access denied</p>
+              <p className="text-faint">Access denied</p>
             </div>
           );
         }
@@ -89,16 +89,16 @@ function AccountsContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)]">
+          <h1 className="text-xl font-semibold text-ink font-[family-name:var(--font-display)]">
             Accounts
           </h1>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <p className="text-sm text-faint mt-0.5">
             {companies.length} account{companies.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+          className="flex items-center gap-2 bg-teal text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
         >
           <Plus size={16} />
           New Account
@@ -108,18 +108,18 @@ function AccountsContent() {
       {/* Loading */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
         </div>
       ) : companies.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Building2 size={28} className="text-gray-300" />
+          <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Building2 size={28} className="text-faint" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-500 mb-1">No accounts yet</h3>
-          <p className="text-sm text-gray-400 mb-6">Create your first client account to get started.</p>
+          <h3 className="text-lg font-semibold text-muted mb-1">No accounts yet</h3>
+          <p className="text-sm text-faint mb-6">Create your first client account to get started.</p>
           <button
             onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 bg-[#017C87] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+            className="inline-flex items-center gap-2 bg-teal text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
           >
             <Plus size={16} />
             New Account
@@ -131,7 +131,7 @@ function AccountsContent() {
           {companies.map((company) => (
             <div
               key={company.id}
-              className="bg-white border border-gray-200 rounded-xl shadow-sm hover:border-gray-300 hover:shadow-md transition-all group flex flex-col"
+              className="bg-white border border-edge rounded-[14px]  hover:border-edge-hover  transition-all group flex flex-col"
             >
               {/* Card header */}
               <div className="p-5 flex-1">
@@ -147,35 +147,35 @@ function AccountsContent() {
                     {company.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-gray-900 truncate">{company.name}</h3>
-                    <p className="text-xs text-gray-400 truncate mt-0.5">{company.slug}</p>
+                    <h3 className="text-sm font-semibold text-ink truncate">{company.name}</h3>
+                    <p className="text-xs text-faint truncate mt-0.5">{company.slug}</p>
                   </div>
                 </div>
 
                 {/* Stats row */}
-                <div className="flex items-center gap-4 text-xs text-gray-400">
+                <div className="flex items-center gap-4 text-xs text-faint">
                   <div className="flex items-center gap-1.5" title="Proposals">
-                    <FileText size={13} className="text-gray-300" />
+                    <FileText size={13} className="text-faint" />
                     <span>{company.stats.proposals}</span>
                   </div>
                   <div className="flex items-center gap-1.5" title="Team members">
-                    <Users size={13} className="text-gray-300" />
+                    <Users size={13} className="text-faint" />
                     <span>{company.stats.members}</span>
                   </div>
                   <div className="flex items-center gap-1.5" title="Last activity">
-                    <Clock size={13} className="text-gray-300" />
+                    <Clock size={13} className="text-faint" />
                     <span>{formatDate(company.stats.lastActivity)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Card footer */}
-              <div className="px-5 py-3 border-t border-gray-100">
+              <div className="px-5 py-3 border-t border-edge">
                 <button
                   onClick={() => handleEnter(company)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                    bg-gray-50 text-gray-500 border border-gray-200
-                    hover:bg-[#017C87]/10 hover:text-[#017C87] hover:border-[#017C87]/30
+                    bg-surface text-muted border border-edge
+                    hover:bg-teal/10 hover:text-teal hover:border-teal/30
                     transition-all"
                 >
                   <LogIn size={14} />
@@ -257,11 +257,11 @@ function CreateAccountModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white border border-edge rounded-2xl shadow-lg w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-base font-semibold text-gray-900">New Account</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
+          <h2 className="text-base font-semibold text-ink">New Account</h2>
+          <button onClick={onClose} className="text-faint hover:text-muted transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -269,27 +269,27 @@ function CreateAccountModal({
         {/* Body */}
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Company Name</label>
+            <label className="block text-xs font-medium text-muted mb-1.5">Company Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Acme Plumbing"
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
+              className="w-full bg-surface border border-edge rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Slug</label>
+            <label className="block text-xs font-medium text-muted mb-1.5">Slug</label>
             <input
               type="text"
               value={slug}
               onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
               placeholder="acme-plumbing"
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
+              className="w-full bg-surface border border-edge rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
             />
-            <p className="text-xs text-gray-400 mt-1">Used for internal identification</p>
+            <p className="text-xs text-faint mt-1">Used for internal identification</p>
           </div>
 
           {error && (
@@ -300,17 +300,17 @@ function CreateAccountModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-edge">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            className="px-4 py-2 text-sm text-muted hover:text-ink transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!name.trim() || !slug.trim() || saving}
-            className="flex items-center gap-2 bg-[#017C87] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-teal text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             Create Account

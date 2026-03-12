@@ -118,7 +118,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           </div>
         ) : webpageItems.length === 0 ? (
           <div className="text-center py-20">
@@ -131,7 +131,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
             </p>
             <Link
               href={`/reviews/${projectId}/items`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#017C87] text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors"
             >
               <Plus size={16} />
               Add Items
@@ -196,8 +196,8 @@ function WebpageSetupCard({ item, shareToken }: { item: ReviewItem; shareToken: 
       {/* Header row */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-[#017C87]/10 flex items-center justify-center shrink-0">
-            <Globe size={18} className="text-[#017C87]" />
+          <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center shrink-0">
+            <Globe size={18} className="text-teal" />
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-gray-900 truncate">{item.title}</h3>
@@ -206,7 +206,7 @@ function WebpageSetupCard({ item, shareToken }: { item: ReviewItem; shareToken: 
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-gray-400 hover:text-[#017C87] truncate block transition-colors"
+                className="text-xs text-gray-400 hover:text-teal truncate block transition-colors"
               >
                 {item.url}
               </a>
@@ -245,7 +245,7 @@ function WebpageSetupCard({ item, shareToken }: { item: ReviewItem; shareToken: 
           </label>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-[#017C87] hover:bg-[#017C87]/5 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
           >
             {copied ? (
               <>
@@ -267,7 +267,7 @@ function WebpageSetupCard({ item, shareToken }: { item: ReviewItem; shareToken: 
           <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
             {scriptTag || '/* Missing share token or item ID */'}
           </pre>
-          <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-[#017C87]/30 transition-colors" />
+          <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
         </div>
         <p className="text-xs text-gray-400">
           Add this to the <code className="font-mono text-gray-500">&lt;head&gt;</code> tag of your page.
@@ -281,7 +281,7 @@ function WebpageSetupCard({ item, shareToken }: { item: ReviewItem; shareToken: 
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#017C87] hover:text-[#015c64] transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-teal hover:text-[#015c64] transition-colors"
           >
             <ExternalLink size={12} />
             Open Page

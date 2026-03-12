@@ -32,7 +32,7 @@ export default function DynamicFieldMenu({ isOpen, onToggle, onClose, onInsert }
         onClick={onToggle}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
           isOpen
-            ? 'bg-[#017C87]/15 text-[#017C87]'
+            ? 'bg-teal/15 text-teal'
             : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
         }`}
         title="Insert Dynamic Field"
@@ -57,7 +57,7 @@ export default function DynamicFieldMenu({ isOpen, onToggle, onClose, onInsert }
                 <span className="text-sm text-gray-700">{f.label}</span>
                 <p className="text-[10px] text-gray-400">{f.description}</p>
               </div>
-              <span className="text-[10px] text-[#017C87] font-mono bg-[#017C87]/5 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-teal font-mono bg-teal/5 px-1.5 py-0.5 rounded">
                 {'{' + f.field + '}'}
               </span>
             </button>

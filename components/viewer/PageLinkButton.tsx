@@ -10,7 +10,7 @@ interface PageLinkButtonProps {
   accentColor?: string;
 }
 
-export default function PageLinkButton({ url, label, accentColor = '#ff6700' }: PageLinkButtonProps) {
+export default function PageLinkButton({ url, label, accentColor = '#01434A' }: PageLinkButtonProps) {
   const [visible, setVisible] = useState(false);
 
   // Animate in on mount / when url changes

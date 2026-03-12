@@ -172,7 +172,7 @@ function BoardContent({
 
                 <button
                   onClick={() => setShowAddItem(true)}
-                  className="flex items-center gap-2 bg-[#017C87] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+                  className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
                 >
                   <Plus size={16} />
                   Add Item
@@ -205,7 +205,7 @@ function BoardContent({
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-[#017C87] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           </div>
         ) : (
           <ReviewBoard

@@ -15,7 +15,7 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
   return (
     <AuthGuard>
       {(auth) => (
-        <div className="flex h-dvh bg-gray-50 overflow-hidden">
+        <div className="flex h-dvh bg-ivory overflow-hidden">
           {!collapseSidebar && (
             <AdminSidebar
               memberName={auth.teamMember?.name}

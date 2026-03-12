@@ -11,7 +11,7 @@ import { type CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 export function useBrandingColors(branding: CompanyBranding) {
   return useMemo(() => ({
     bgSecondary: branding.bg_secondary || '#141414',
-    accent: branding.accent_color || '#ff6700',
+    accent: branding.accent_color || '#01434A',
     border: deriveBorderColor(branding.bg_secondary || '#141414'),
     sidebarText: branding.sidebar_text_color || '#ffffff',
   }), [branding.bg_secondary, branding.accent_color, branding.sidebar_text_color]);

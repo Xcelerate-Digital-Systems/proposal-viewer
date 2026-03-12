@@ -172,12 +172,12 @@ export default function ViewerStyleSection({
                     onClick={() => setPageOrientation(opt.key)}
                     className={`flex items-center gap-2 px-3 py-2 text-xs rounded-lg border transition-colors ${
                       pageOrientation === opt.key
-                        ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
+                        ? 'bg-teal/10 border-teal/40 text-teal font-medium'
                         : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
                     }`}
                   >
                     <span className={`w-3.5 h-4 rounded-sm border-2 flex-shrink-0 ${
-                      pageOrientation === opt.key ? 'border-[#017C87]' : 'border-gray-300'
+                      pageOrientation === opt.key ? 'border-teal' : 'border-gray-300'
                     } ${opt.key === 'landscape' ? 'w-4 h-3.5' : ''}`} />
                     {opt.label}
                   </button>
@@ -199,7 +199,7 @@ export default function ViewerStyleSection({
                     onClick={() => setBgMode(mode)}
                     className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
                       bgMode === mode
-                        ? 'bg-[#017C87]/10 border-[#017C87]/40 text-[#017C87] font-medium'
+                        ? 'bg-teal/10 border-teal/40 text-teal font-medium'
                         : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
                     }`}
                   >
@@ -238,7 +238,7 @@ export default function ViewerStyleSection({
                     <button
                       onClick={() => fileRef.current?.click()}
                       disabled={uploading}
-                      className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#017C87]/40 hover:text-[#017C87] transition-colors disabled:opacity-50 mb-3"
+                      className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50 mb-3"
                     >
                       {uploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
                       <span className="text-xs font-medium">Upload background image</span>
@@ -268,7 +268,7 @@ export default function ViewerStyleSection({
                       max="100"
                       value={Math.round(overlayOpacity * 100)}
                       onChange={(e) => setOverlayOpacity(parseInt(e.target.value) / 100)}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87]"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
                     />
                   </div>
 
@@ -283,13 +283,13 @@ export default function ViewerStyleSection({
                       max="20"
                       value={bgImageBlur}
                       onChange={(e) => setBgImageBlur(parseInt(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#017C87]"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
                     />
                   </div>
 
                   <button
                     onClick={onBgResetToCompany}
-                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#017C87] transition-colors mt-1"
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors mt-1"
                   >
                     <RotateCcw size={12} />
                     Reset to company default
@@ -320,7 +320,7 @@ export default function ViewerStyleSection({
                 <select
                   value={titleFontSize}
                   onChange={(e) => setTitleFontSize(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#017C87]/30"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30"
                 >
                   <option value="">Default</option>
                   <option value="20">20px — Small</option>
@@ -344,7 +344,7 @@ export default function ViewerStyleSection({
 
               <button
                 onClick={onTpResetToCompany}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#017C87] transition-colors"
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
               >
                 <RotateCcw size={12} />
                 Reset colours to company defaults

@@ -75,7 +75,7 @@ export default function TextPagesTabEditor({
             onClick={() => setSelectedId(page.id)}
             className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors border text-xs font-medium ${
               selectedId === page.id
-                ? 'bg-[#017C87]/10 border-[#017C87]/30 text-[#017C87]'
+                ? 'bg-teal/10 border-teal/30 text-teal'
                 : 'border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -103,7 +103,7 @@ export default function TextPagesTabEditor({
         <button
           onClick={addPage}
           disabled={adding}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-teal border border-dashed border-teal/30 hover:bg-teal/5 transition-colors disabled:opacity-50"
         >
           {adding ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
           Add Page

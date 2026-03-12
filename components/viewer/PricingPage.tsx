@@ -54,7 +54,7 @@ const FREQ_LABELS: Record<string, string> = {
 export default function PricingPage({ pricing, branding, clientName, orientation }: PricingPageProps) {
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const bgSecondary = branding.bg_secondary || '#141414';
-  const accent = branding.accent_color || '#ff6700';
+  const accent = branding.accent_color || '#01434A';
   const textColor = branding.sidebar_text_color || '#ffffff';
   const border = deriveBorderColor(bgSecondary);
   const surface = deriveSurfaceColor(bgPrimary, bgSecondary);

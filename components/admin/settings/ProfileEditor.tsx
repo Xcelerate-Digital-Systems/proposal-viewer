@@ -90,8 +90,8 @@ export default function ProfileEditor({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-      <h2 className="text-sm font-medium text-gray-500 mb-4">Profile</h2>
+    <div className="bg-white border border-edge rounded-[14px] p-5 ">
+      <h2 className="text-sm font-medium text-muted mb-4">Profile</h2>
 
       <div className="flex items-start gap-5">
         {/* Avatar */}
@@ -102,14 +102,14 @@ export default function ProfileEditor({
                 <img
                   src={avatarUrl}
                   alt="Profile"
-                  className="w-16 h-16 rounded-full object-cover border-2 border-gray-100"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-edge"
                 />
                 {/* Hover overlay */}
                 <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                   <button
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading}
-                    className="p-1.5 text-white hover:text-gray-200 transition-colors"
+                    className="p-1.5 text-white hover:text-white/70 transition-colors"
                     title="Change photo"
                   >
                     <Camera size={14} />
@@ -127,7 +127,7 @@ export default function ProfileEditor({
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
-                className="w-16 h-16 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-[#017C87]/30 hover:text-[#017C87] transition-colors disabled:opacity-50"
+                className="w-16 h-16 rounded-full border-2 border-dashed border-edge flex items-center justify-center text-faint hover:border-teal/30 hover:text-teal transition-colors disabled:opacity-50"
                 title="Upload photo"
               >
                 {uploading ? (
@@ -148,32 +148,32 @@ export default function ProfileEditor({
               }}
             />
           </div>
-          <p className="text-[10px] text-gray-400 text-center mt-1.5 max-w-[64px]">
+          <p className="text-[10px] text-faint text-center mt-1.5 max-w-[64px]">
             {avatarUrl ? 'Hover to edit' : 'Add photo'}
           </p>
         </div>
 
         {/* Name */}
         <div className="flex-1 min-w-0">
-          <label className="block text-sm font-medium text-gray-500 mb-1.5">Display Name</label>
+          <label className="block text-sm font-medium text-muted mb-1.5">Display Name</label>
           <div className="flex gap-2">
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017C87]/20 focus:border-[#017C87]/40"
+              className="flex-1 px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
             />
             {nameChanged && (
               <button
                 onClick={handleSaveName}
                 disabled={saving}
-                className="px-4 py-2 bg-[#017C87] text-white text-sm rounded-lg hover:bg-[#01434A] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 bg-teal text-white text-sm rounded-lg hover:bg-teal-hover disabled:opacity-50 transition-colors"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-1.5">
+          <p className="text-xs text-faint mt-1.5">
             This name and photo will appear on proposal cover pages when you&apos;re selected as the author.
           </p>
         </div>

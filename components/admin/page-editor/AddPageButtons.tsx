@@ -17,7 +17,7 @@ interface AddPageButtonsProps {
 }
 
 const btnClass =
-  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#017C87] border border-dashed border-[#017C87]/30 hover:bg-[#017C87]/5 hover:border-[#017C87]/50 transition-colors';
+  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-teal border border-dashed border-teal/30 hover:bg-teal/5 hover:border-teal/50 transition-colors';
 
 export default function AddPageButtons({
   isDocuments,

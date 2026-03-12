@@ -47,13 +47,13 @@ function SettingsContent({ auth }: {
     <div className="px-6 lg:px-10 py-8 max-w-5xl">
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-[#017C87]/10 rounded-xl flex items-center justify-center">
-          <Settings size={20} className="text-[#017C87]" />
+        <div className="w-10 h-10 bg-teal-tint rounded-[14px] flex items-center justify-center">
+          <Settings size={20} className="text-teal" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
-          <p className="text-sm text-gray-400">
-            Signed in as <span className="text-gray-500">{teamMember?.email}</span>
+          <h1 className="text-xl font-semibold text-ink">Settings</h1>
+          <p className="text-sm text-faint">
+            Signed in as <span className="text-muted">{teamMember?.email}</span>
           </p>
         </div>
       </div>
@@ -80,12 +80,12 @@ function SettingsContent({ auth }: {
       {/* Notifications */}
       <div className="mt-8">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 bg-[#017C87]/10 rounded-lg flex items-center justify-center">
-            <Bell size={16} className="text-[#017C87]" />
+          <div className="w-8 h-8 bg-teal-tint rounded-lg flex items-center justify-center">
+            <Bell size={16} className="text-teal" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
-            <p className="text-xs text-gray-400">Email alerts for events across your workspace</p>
+            <h2 className="text-sm font-semibold text-ink">Notifications</h2>
+            <p className="text-xs text-faint">Email alerts for events across your workspace</p>
           </div>
         </div>
 
