@@ -136,6 +136,7 @@ export default function PackagesPage({ packages, branding, clientName, orientati
               border={border}
               surface={surface}
               styling={styling}
+              branding={branding}
             />
           ))}
         </div>
@@ -165,9 +166,10 @@ interface PackageCardProps {
   border: string;
   surface: string;
   styling: PackageStyling;
+  branding: CompanyBranding;
 }
 
-function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, border, surface, styling }: PackageCardProps) {
+function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, border, surface, styling, branding }: PackageCardProps) {
   const tierAccent = tier.highlight_color || accent;
 
   const cardBg = styling.card_bg_independent && tier.card_bg_color
@@ -223,8 +225,12 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
       <div className="p-6 sm:p-8 flex flex-col flex-1">
         {/* Package name */}
         <h2
-          className="agv-pkg-card-name text-lg sm:text-xl font-bold tracking-tight font-[family-name:var(--font-display)]"
-          style={{ color: cardText }}
+          className="agv-pkg-card-name text-lg sm:text-xl tracking-tight"
+          style={{
+            color: cardText,
+            fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
+            fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
+          }}
         >
           {tier.name}
         </h2>
@@ -241,8 +247,12 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
           )}
           <div className="flex items-baseline gap-0.5">
             <span
-              className="agv-pkg-price text-2xl sm:text-3xl font-bold tracking-tight"
-              style={{ color: tierAccent }}
+              className="agv-pkg-price text-2xl sm:text-3xl tracking-tight"
+              style={{
+                color: tierAccent,
+                fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
+                fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
+              }}
             >
               {formatPrice(tier.price)}
             </span>
