@@ -206,9 +206,12 @@ export default function PageEditor({
                           key={page.id}
                           id={page.id}
                           name={page.title}
+                          indent={page.indent}
+                          isFirst={visualIdx === 0}
                           isSelected={selectedId === page.id}
                           onSelect={() => setSelectedId(page.id)}
                           onRename={(name) => updatePage(page.id, { title: name })}
+                          onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
                           onRemove={() => handleDeletePage(page.id)}
                         />
                       );

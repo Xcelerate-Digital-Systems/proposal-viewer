@@ -4,18 +4,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, FolderOpen, Trash2, Pencil } from 'lucide-react';
+import { GripVertical, FolderOpen, Trash2, Pencil, ArrowLeft, CornerDownRight } from 'lucide-react';
 
 interface SortableGroupRowProps {
   id: string;
   name: string;
+  indent: number;
+  isFirst: boolean;
   isSelected: boolean;
   onSelect: () => void;
   onRename: (name: string) => void;
+  onToggleIndent: () => void;
   onRemove: () => void;
 }
 
-export default function SortableGroupRow({ id, name, isSelected, onSelect, onRename, onRemove }: SortableGroupRowProps) {
+export default function SortableGroupRow({ id, name, indent, isFirst, isSelected, onSelect, onRename, onToggleIndent, onRemove }: SortableGroupRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(name);
@@ -65,7 +68,26 @@ export default function SortableGroupRow({ id, name, isSelected, onSelect, onRen
         </button>
         {/* Spacer to align with page number column */}
         <span className="w-5 shrink-0" />
-        {/* Icon — aligns with indent button column */}
+        {/* Indent toggle */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleIndent(); }}
+          disabled={isFirst}
+          title={indent ? 'Remove indent' : 'Indent under parent'}
+          className={`shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors ${
+            isFirst
+              ? 'text-gray-200 cursor-not-allowed'
+              : indent
+              ? 'text-teal bg-teal/10 hover:bg-teal/20'
+              : 'text-teal/40 hover:text-teal hover:bg-teal/10'
+          }`}
+        >
+          {indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
+        </button>
+
+        {indent > 0 && (
+          <span className="text-[10px] text-teal/50 shrink-0">SUB</span>
+        )}
+
         <div className="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-teal/10">
           <FolderOpen size={13} className="text-teal" />
         </div>
