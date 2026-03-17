@@ -1,0 +1,254 @@
+// app/ads/[trackerId]/page.tsx
+'use client';
+
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Plus, ArrowLeft, Search, Filter, Target } from 'lucide-react';
+import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
+import { supabase, type AdTracker } from '@/lib/supabase';
+import AdCreativesTable from '@/components/admin/ads/AdCreativesTable';
+import AdCreativeForm from '@/components/admin/ads/AdCreativeForm';
+import QuickCreateModal from '@/components/admin/ads/QuickCreateModal';
+import AdFilterBar from '@/components/admin/ads/AdFilterBar';
+import StandardsPanel from '@/components/admin/ads/StandardsPanel';
+import type { AdAccountStandards, TrackerStandards } from '@/lib/types/ads';
+
+export default function TrackerDetailPage() {
+  return (
+    <AdminLayout>
+      {(auth) => <TrackerDetail companyId={auth.companyId!} />}
+    </AdminLayout>
+  );
+}
+
+function TrackerDetail({ companyId }: { companyId: string }) {
+  const params = useParams();
+  const router = useRouter();
+  const trackerId = params.trackerId as string;
+
+  const [tracker, setTracker] = useState<AdTracker | null>(null);
+  const [trackerLoading, setTrackerLoading] = useState(true);
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showStandards, setShowStandards] = useState(false);
+  const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [filters, setFilters] = useState<AdCreativeFilters>({
+    tracker_id: trackerId,
+    sort_by: 'sort_order',
+    sort_dir: 'asc',
+  });
+
+  // Merge search into filters with debounce
+  const activeFilters = useMemo(
+    () => ({ ...filters, search: searchQuery || undefined }),
+    [filters, searchQuery]
+  );
+
+  const {
+    creatives, pagination, loading,
+    fetchCreatives, createCreative, updateCreative, deleteCreative,
+  } = useAdCreatives(companyId, activeFilters);
+
+  // Fetch tracker info
+  const fetchTracker = useCallback(async () => {
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    if (!token) return;
+
+    const res = await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json();
+    if (json.success) setTracker(json.data);
+    setTrackerLoading(false);
+  }, [trackerId, companyId]);
+
+  // Fetch account standards
+  const fetchAccountStandards = useCallback(async () => {
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    if (!token) return;
+    const res = await fetch(`/api/ads/standards?company_id=${companyId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json();
+    if (json.success) setAccountStandards(json.data);
+  }, [companyId]);
+
+  useEffect(() => {
+    fetchTracker();
+    fetchAccountStandards();
+  }, [fetchTracker, fetchAccountStandards]);
+
+  const handleSort = (column: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      sort_by: column,
+      sort_dir: prev.sort_by === column && prev.sort_dir === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  if (trackerLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!tracker) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3">
+        <p className="text-sm text-muted">Tracker not found</p>
+        <button onClick={() => router.push('/ads')} className="text-sm text-teal hover:underline">
+          Back to trackers
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-5">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push('/ads')}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-semibold text-ink truncate">{tracker.name}</h1>
+            <p className="text-sm text-muted mt-0.5">
+              {pagination.total} creative{pagination.total !== 1 ? 's' : ''}
+              {tracker.client_name && ` · ${tracker.client_name}`}
+              {tracker.description && ` · ${tracker.description}`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="hidden md:flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2.5 w-[200px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
+              <Search size={16} className="text-faint shrink-0" />
+              <input
+                type="text"
+                placeholder="Search ads..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+              />
+            </div>
+
+            {/* Standards */}
+            <button
+              onClick={() => setShowStandards(true)}
+              className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center bg-surface text-muted hover:text-ink transition-all"
+              title="Performance Standards"
+            >
+              <Target size={16} />
+            </button>
+
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`w-[34px] h-[34px] rounded-[10px] flex items-center justify-center transition-all ${
+                showFilters
+                  ? 'bg-teal text-white'
+                  : 'bg-surface text-muted hover:text-ink'
+              }`}
+            >
+              <Filter size={16} />
+            </button>
+
+            {/* New creative */}
+            <button
+              onClick={() => setShowQuickCreate(true)}
+              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            >
+              <Plus size={16} />
+              New Creative
+            </button>
+          </div>
+        </div>
+
+        {/* Filter bar */}
+        {showFilters && (
+          <AdFilterBar
+            filters={filters}
+            onChange={(f) => setFilters({ ...filters, ...f })}
+          />
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="flex-1 overflow-hidden">
+        <AdCreativesTable
+          creatives={creatives}
+          loading={loading}
+          sortBy={filters.sort_by || 'sort_order'}
+          sortDir={filters.sort_dir || 'asc'}
+          companyId={companyId}
+          onSort={handleSort}
+          onEdit={(id) => setEditingId(id)}
+          onDelete={deleteCreative}
+          accountStandards={accountStandards}
+          trackerStandards={tracker?.standards || {}}
+        />
+      </div>
+
+      {/* Quick create modal */}
+      {showQuickCreate && (
+        <QuickCreateModal
+          onClose={() => setShowQuickCreate(false)}
+          onCreate={async (data) => {
+            const result = await createCreative({ ...data, tracker_id: trackerId });
+            if (!result.error) setShowQuickCreate(false);
+            return result;
+          }}
+        />
+      )}
+
+      {/* Standards panel */}
+      {showStandards && tracker && (
+        <StandardsPanel
+          trackerId={trackerId}
+          companyId={companyId}
+          trackerStandards={tracker.standards || {}}
+          onClose={() => setShowStandards(false)}
+          onSaveTracker={async (standards) => {
+            const token = (await supabase.auth.getSession()).data.session?.access_token;
+            if (!token) return;
+            await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
+              method: 'PATCH',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ standards }),
+            });
+            setTracker({ ...tracker, standards });
+            fetchAccountStandards();
+          }}
+        />
+      )}
+
+      {/* Full edit panel */}
+      {editingId && (
+        <AdCreativeForm
+          trackerId={trackerId}
+          companyId={companyId}
+          editingId={editingId}
+          onClose={() => setEditingId(null)}
+          onSave={async (data) => {
+            const result = await updateCreative(editingId, data);
+            if (!result.error) {
+              setEditingId(null);
+              fetchCreatives();
+            }
+            return result;
+          }}
+        />
+      )}
+    </div>
+  );
+}

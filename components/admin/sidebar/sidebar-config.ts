@@ -3,7 +3,7 @@
 
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
-  Palette, Bell, Users,
+  Palette, Bell, Users, Megaphone,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -47,6 +47,16 @@ export const ALL_SECTIONS: SectionDef[] = [
     matchPaths: ['/reviews'],
     items: [
       { href: '/reviews', label: 'Projects', icon: MessageSquareText },
+    ],
+  },
+  {
+    key: 'ads',
+    label: 'Ad Tracker',
+    icon: Megaphone,
+    defaultHref: '/ads',
+    matchPaths: ['/ads'],
+    items: [
+      { href: '/ads', label: 'Campaigns', icon: Megaphone },
     ],
   },
 ];
