@@ -1,18 +1,10 @@
-@font-face {
-  font-family: 'Clash Grotesk';
-  src: url('/fonts/ClashGrotesk-Variable.woff2') format('woff2');
-  font-weight: 200 700;
-  font-display: swap;
-  font-style: normal;
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Outfit', 'Clash Grotesk', sans-serif;
-  --font-display: 'Outfit', 'Clash Grotesk', sans-serif;
+  --font-sans: 'Manrope', sans-serif;
+  --font-display: 'Manrope', sans-serif;
   --brand-dark: #0f0f0f;
   --brand-accent: #01434A;
   --brand-accent-hover: #e85d00;
