@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowLeft, Search, Filter, Target } from 'lucide-react';
+import { Plus, ArrowLeft, Search, Filter, Target, BookOpen } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase, type AdTracker } from '@/lib/supabase';
@@ -12,6 +12,7 @@ import AdCreativeForm from '@/components/admin/ads/AdCreativeForm';
 import QuickCreateModal from '@/components/admin/ads/QuickCreateModal';
 import AdFilterBar from '@/components/admin/ads/AdFilterBar';
 import StandardsPanel from '@/components/admin/ads/StandardsPanel';
+import NamingLegendPanel from '@/components/admin/ads/NamingLegendPanel';
 import type { AdAccountStandards, TrackerStandards } from '@/lib/types/ads';
 
 export default function TrackerDetailPage() {
@@ -33,6 +34,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showStandards, setShowStandards] = useState(false);
+  const [showNamingLegend, setShowNamingLegend] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -142,6 +144,15 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               />
             </div>
 
+            {/* Naming Legend */}
+            <button
+              onClick={() => setShowNamingLegend(true)}
+              className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center bg-surface text-muted hover:text-ink transition-all"
+              title="Ad Naming Convention"
+            >
+              <BookOpen size={16} />
+            </button>
+
             {/* Standards */}
             <button
               onClick={() => setShowStandards(true)}
@@ -209,6 +220,11 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             return result;
           }}
         />
+      )}
+
+      {/* Naming legend panel */}
+      {showNamingLegend && (
+        <NamingLegendPanel onClose={() => setShowNamingLegend(false)} />
       )}
 
       {/* Standards panel */}
