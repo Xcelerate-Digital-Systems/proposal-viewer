@@ -10,6 +10,7 @@ import {
   deletePage,
   insertPdfPage,
   replacePdfPage,
+  type PageType,
 } from '@/lib/page-operations';
 import { rebuildTemplateMerged } from '@/lib/rebuild-template-merged';
 
@@ -60,7 +61,10 @@ export async function POST(req: NextRequest) {
     return handlePdfUpload(req);
   }
 
-  return handleJsonAdd(req);
+  // Peek at op before routing
+  const body = await req.json();
+  if (body.op === 'insert_pdf') return handleInsertPdf(body);
+  return handleJsonAdd(body);
 }
 
 async function handlePdfUpload(req: NextRequest) {
@@ -138,11 +142,65 @@ async function handlePdfUpload(req: NextRequest) {
   }
 }
 
-async function handleJsonAdd(req: NextRequest) {
+async function handleInsertPdf(body: Record<string, unknown>) {
   try {
     const supabase = createServiceClient();
-    const body = await req.json();
-    const { template_id, company_id, type, position, title, payload, ...meta } = body;
+    const { template_id, company_id, after_position, temp_path } = body;
+
+    if (!template_id || !temp_path) {
+      return NextResponse.json({ error: 'template_id and temp_path are required' }, { status: 400 });
+    }
+
+    let resolvedCompanyId = company_id as string | undefined;
+    if (!resolvedCompanyId) {
+      const { data: template } = await supabase
+        .from('proposal_templates')
+        .select('company_id')
+        .eq('id', template_id)
+        .single();
+      resolvedCompanyId = template?.company_id;
+    }
+
+    if (!resolvedCompanyId) {
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+    }
+
+    const afterPos = typeof after_position === 'number' ? after_position : -1;
+
+    const { page, totalPages, error } = await insertPdfPage(supabase, 'template', {
+      entityId:      template_id as string,
+      companyId:     resolvedCompanyId,
+      afterPosition: afterPos,
+      tempPath:      temp_path as string,
+    });
+
+    if (!page) {
+      return NextResponse.json({ error: error ?? 'Insert failed' }, { status: 500 });
+    }
+
+    // Rebuild merged PDF so template preview stays in sync
+    try {
+      await rebuildTemplateMerged(template_id as string);
+    } catch (err) {
+      console.error('Non-fatal: failed to rebuild merged PDF after page add:', err);
+    }
+
+    return NextResponse.json({ success: true, page, totalPages });
+  } catch (err) {
+    console.error('Template pages insert_pdf error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+async function handleJsonAdd(body: Record<string, unknown>) {
+  try {
+    const supabase = createServiceClient();
+    const template_id  = body.template_id as string | undefined;
+    const company_id   = body.company_id  as string | undefined;
+    const type         = body.type        as string | undefined;
+    const position     = body.position    as number | undefined;
+    const title        = body.title       as string | undefined;
+    const payload      = body.payload     as Record<string, unknown> | undefined;
 
     if (!template_id || !type) {
       return NextResponse.json({ error: 'template_id and type are required' }, { status: 400 });
@@ -165,17 +223,17 @@ async function handleJsonAdd(req: NextRequest) {
 
     const { page, error } = await addPage(supabase, 'template', {
       entityId:         template_id,
-      companyId:        resolvedCompanyId,
-      type,
+      companyId:        resolvedCompanyId!,
+      type:             type as PageType,
       position,
       title,
       payload:          payload ?? {},
-      indent:           meta.indent,
-      linkUrl:          meta.link_url ?? null,
-      linkLabel:        meta.link_label ?? null,
-      orientation:      meta.orientation,
-      showTitle:        meta.show_title,
-      showMemberBadge:  meta.show_member_badge,
+      indent:           body.indent           as number | undefined,
+      linkUrl:          (body.link_url        as string | null) ?? null,
+      linkLabel:        (body.link_label      as string | null) ?? null,
+      orientation:      body.orientation      as string | undefined,
+      showTitle:        body.show_title       as boolean | undefined,
+      showMemberBadge:  body.show_member_badge as boolean | undefined,
     });
 
     if (!page) {
