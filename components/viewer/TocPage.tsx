@@ -197,7 +197,7 @@ export default function TocPage({
       className={`h-full flex items-center justify-center overflow-hidden ${!isLandscape ? 'py-12 px-8' : ''}`}
       style={{
         backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary,
-        ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
+        ...(isLandscape && { paddingTop: 'clamp(32px, 8vh, 128px)', paddingBottom: 'clamp(24px, 5vh, 64px)', paddingLeft: 'clamp(20px, 10vw, 168px)', paddingRight: 'clamp(20px, 10vw, 168px)' }),
       }}
     >
       <div className="w-full max-w-5xl">

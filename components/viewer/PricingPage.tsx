@@ -85,7 +85,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
       className={`w-full min-h-full flex items-center justify-center ${!isLandscape ? 'py-8 lg:py-12 px-4 sm:px-6' : ''}`}
       style={{
         backgroundColor: branding.bg_image_url ? 'transparent' : bgPrimary,
-        ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
+        ...(isLandscape && { paddingTop: 'clamp(32px, 8vh, 128px)', paddingBottom: 'clamp(24px, 5vh, 64px)', paddingLeft: 'clamp(20px, 10vw, 168px)', paddingRight: 'clamp(20px, 10vw, 168px)' }),
       }}
     >
       {/* Mobile font standardisation — title 22px, body 16px below lg breakpoint */}

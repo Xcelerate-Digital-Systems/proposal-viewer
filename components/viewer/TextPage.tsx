@@ -412,7 +412,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
       className={`w-full min-h-full flex flex-col justify-center relative ${!isLandscape ? 'py-8 lg:py-12 px-6 sm:px-16 lg:px-32' : ''}`}
       style={{
         backgroundColor: branding.bg_image_url ? 'transparent' : bgColor,
-        ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
+        ...(isLandscape && { paddingTop: 'clamp(32px, 8vh, 128px)', paddingBottom: 'clamp(24px, 5vh, 64px)', paddingLeft: 'clamp(20px, 10vw, 168px)', paddingRight: 'clamp(20px, 10vw, 168px)' }),
       }}
     >
       <div className="w-full h-full">
