@@ -175,9 +175,10 @@ function renderNode(
     case 'heading': {
       const level = node.attrs?.level || 1;
       const sizes: Record<number, number> = { 1: 24, 2: 20, 3: 17 };
-      const weights: Record<number, number> = { 1: 700, 2: 600, 3: 600 };
       const margins: Record<number, string> = { 1: '1em 0 0.5em', 2: '0.8em 0 0.4em', 3: '0.6em 0 0.3em' };
       const Tag = `h${level}` as 'h1' | 'h2' | 'h3';
+      const headingWeight = Number(branding.title_font_weight || branding.font_heading_weight || '700');
+      const w = level === 1 ? headingWeight : Math.min(headingWeight, 600);
       return (
         <Tag
           key={key}
@@ -185,10 +186,10 @@ function renderNode(
             ...baseStyle,
             color: textColor,
             fontSize: sizes[level as number] || 20,
-            fontWeight: weights[level as number] || 600,
+            fontWeight: w,
             margin: margins[level as number] || '0.8em 0 0.4em',
             lineHeight: 1.3,
-            fontFamily: fontFamily(branding.font_heading, 'system-ui, sans-serif'),
+            fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
           }}
         >
           {children}
@@ -408,7 +409,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
 
   return (
     <div
-      className={`w-full min-h-full flex flex-col justify-center relative ${!isLandscape ? 'py-8 lg:py-12 px-16 sm:px-24 lg:px-32' : ''}`}
+      className={`w-full min-h-full flex flex-col justify-center relative ${!isLandscape ? 'py-8 lg:py-12 px-6 sm:px-16 lg:px-32' : ''}`}
       style={{
         backgroundColor: branding.bg_image_url ? 'transparent' : bgColor,
         ...(isLandscape && { paddingTop: 128, paddingBottom: 64, paddingLeft: 168, paddingRight: 168 }),
@@ -416,7 +417,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
     >
       <div className="w-full h-full">
         {/* Mobile font size caps — body 14px, title 22px on screens < lg */}
-        <style>{`@media (max-width: 1023px) { .agv-text-body { font-size: 16px !important; } .agv-text-title { font-size: 22px !important; } }`}</style>
+        <style>{`@media (max-width: 1023px) { .agv-text-body { font-size: 14px !important; } .agv-text-title { font-size: 20px !important; } }`}</style>
 
         <div className={showClientLogoCol ? 'flex items-center gap-16' : ''}>
          {/* ── Main content column ── */}

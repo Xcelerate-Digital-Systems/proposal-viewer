@@ -1,7 +1,7 @@
 // components/viewer/CoverPage.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2 } from 'lucide-react';
 import { Proposal, supabase } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
@@ -185,16 +185,30 @@ export default function CoverPage({
   // Has date row?
   const hasDateRow = showDate && proposal.cover_date;
 
+  const animStyle: React.CSSProperties = hideButton ? {} : {
+    animation: 'cover-bg-pan 15s ease-out both',
+    willChange: 'transform',
+  };
+
   return (
     <div
-      className={`${hideButton ? 'w-full h-full' : 'h-screen w-screen'} flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      className={`${hideButton ? 'w-full h-full' : 'h-dvh w-screen'} flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
       style={{ backgroundColor: bgColor1 }}
     >
+      {!hideButton && (
+        <style>{`
+          @keyframes cover-bg-pan {
+            from { transform: scale(1.08); }
+            to   { transform: scale(1);    }
+          }
+        `}</style>
+      )}
+
       {/* Background: either uploaded image or the branding bg */}
       {bgUrl ? (
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${bgUrl})` }}
+          style={{ backgroundImage: `url(${bgUrl})`, ...animStyle }}
         />
       ) : (
         <div
@@ -202,6 +216,7 @@ export default function CoverPage({
           style={{
             backgroundColor: baseBg,
             backgroundImage: baseBgImage,
+            ...animStyle,
           }}
         />
       )}
@@ -222,44 +237,54 @@ export default function CoverPage({
       )}
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col justify-between h-full px-6 py-8 sm:px-10 sm:py-10 md:px-16 md:py-14">
-        {/* Company logo / name */}
-        <div className="flex items-center gap-3">
-          {branding.logo_url ? (
+      <div className="relative z-10 flex flex-col justify-between h-full px-6 py-6 sm:px-10 sm:py-10 md:px-16 md:py-14">
+        {/* Top bar: company logo + client logo (mobile only, right-aligned) */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {branding.logo_url ? (
+              <img
+                src={branding.logo_url}
+                alt={branding.name}
+                className="h-7 sm:h-8 md:h-10 max-w-[180px] object-contain object-left"
+              />
+            ) : branding.name ? (
+              <div className="flex items-center gap-2">
+                <Building2 size={18} style={{ color: subtitleColor }} />
+                <span
+                  className="text-sm font-medium tracking-wide"
+                  style={{ color: textColor, opacity: 0.9, fontFamily: fontFamily(branding.font_heading) }}
+                >
+                  {branding.name}
+                </span>
+              </div>
+            ) : null}
+          </div>
+          {/* Client logo — mobile: top right. Hidden on md+ (shown above title instead) */}
+          {showClientLogo && clientLogoUrl && (
             <img
-              src={branding.logo_url}
-              alt={branding.name}
-              className="h-7 sm:h-8 md:h-10 max-w-[180px] object-contain object-left"
+              src={clientLogoUrl}
+              alt="Client"
+              className="md:hidden h-7 max-w-[120px] object-contain opacity-90"
             />
-          ) : branding.name ? (
-            <div className="flex items-center gap-2">
-              <Building2 size={18} style={{ color: subtitleColor }} />
-              <span
-                className="text-sm font-medium tracking-wide"
-                style={{ color: textColor, opacity: 0.9, fontFamily: fontFamily(branding.font_heading) }}
-              >
-                {branding.name}
-              </span>
-            </div>
-          ) : null}
+          )}
         </div>
 
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Client logo (above title) */}
+        {/* Client logo (above title) — desktop only */}
         {showClientLogo && clientLogoUrl && (
           <img
             src={clientLogoUrl}
             alt="Client"
-            className="h-8 sm:h-9 md:h-10 max-w-[180px] object-contain object-left mb-5 opacity-90"
+            className="hidden md:block h-9 md:h-10 max-w-[180px] object-contain object-left mb-5 opacity-90"
           />
         )}
 
         {/* Title + meta + CTA */}
         <div className="max-w-2xl">
           <h1
-            className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight mb-3"
+            className="text-2xl sm:text-4xl md:text-5xl font-semibold leading-tight mb-3"
             style={{ color: textColor, fontFamily: fontFamily(branding.font_heading), fontWeight: branding.font_heading_weight || undefined }}
           >
             {proposal.title}
