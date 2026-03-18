@@ -2,59 +2,70 @@
 'use client';
 
 import { useEffect } from 'react';
+import { buildGoogleFontsUrl, buildFontshareUrl } from '@/lib/google-fonts';
 
 interface GoogleFontLoaderProps {
   fonts: (string | null | undefined)[];
 }
 
 /**
- * Injects a Google Fonts <link> into <head> for the given font families.
- * Requests each font with the full variable weight axis (100..900) so any
- * branding-configured weight is always available — on both the main domain
- * and custom domains where no other font loading occurs.
+ * Injects font <link> tags into <head> for the given font families.
+ * - Google Fonts families are loaded via fonts.googleapis.com
+ * - Fontshare families (e.g. Clash Grotesk) are loaded via api.fontshare.com
+ * - Fonts marked local: true with no fontshare slug are skipped (expected via @font-face)
+ *
+ * Previously used an inline buildFontUrl that sent ALL fonts (including local-only ones
+ * like Clash Grotesk) to Google Fonts, which returned 400 and caused the entire
+ * font request to fail — leaving everything falling back to the body default.
  */
-function buildFontUrl(fonts: (string | null | undefined)[]): string | null {
-  const families = Array.from(new Set(fonts.filter(Boolean) as string[]));
-  if (families.length === 0) return null;
-
-  const params = families
-    .map((f) => `family=${encodeURIComponent(f)}:ital,wght@0,100..900;1,100..900`)
-    .join('&');
-
-  return `https://fonts.googleapis.com/css2?${params}&display=swap`;
-}
-
 export default function GoogleFontLoader({ fonts }: GoogleFontLoaderProps) {
   const cacheKey = fonts.filter(Boolean).sort().join(',');
 
   useEffect(() => {
-    const url = buildFontUrl(fonts);
-    if (!url) return;
+    const googleUrl = buildGoogleFontsUrl(fonts);
+    const fontshareUrl = buildFontshareUrl(fonts);
 
-    // Avoid duplicate links
-    if (document.querySelector(`link[data-agv-fonts="${cacheKey}"]`)) return;
+    if (!googleUrl && !fontshareUrl) return;
 
-    const preconnect = document.createElement('link');
-    preconnect.rel = 'preconnect';
-    preconnect.href = 'https://fonts.googleapis.com';
-    document.head.appendChild(preconnect);
+    const injected: HTMLLinkElement[] = [];
 
-    const preconnectStatic = document.createElement('link');
-    preconnectStatic.rel = 'preconnect';
-    preconnectStatic.href = 'https://fonts.gstatic.com';
-    preconnectStatic.crossOrigin = 'anonymous';
-    document.head.appendChild(preconnectStatic);
+    if (googleUrl) {
+      const preconnect = document.createElement('link');
+      preconnect.rel = 'preconnect';
+      preconnect.href = 'https://fonts.googleapis.com';
+      document.head.appendChild(preconnect);
+      injected.push(preconnect);
 
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = url;
-    link.dataset.agvFonts = cacheKey;
-    document.head.appendChild(link);
+      const preconnectStatic = document.createElement('link');
+      preconnectStatic.rel = 'preconnect';
+      preconnectStatic.href = 'https://fonts.gstatic.com';
+      preconnectStatic.crossOrigin = 'anonymous';
+      document.head.appendChild(preconnectStatic);
+      injected.push(preconnectStatic);
+
+      if (!document.querySelector(`link[data-agv-gfonts="${cacheKey}"]`)) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = googleUrl;
+        link.dataset.agvGfonts = cacheKey;
+        document.head.appendChild(link);
+        injected.push(link);
+      }
+    }
+
+    if (fontshareUrl && !document.querySelector(`link[data-agv-fontshare="${cacheKey}"]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = fontshareUrl;
+      link.dataset.agvFontshare = cacheKey;
+      document.head.appendChild(link);
+      injected.push(link);
+    }
 
     return () => {
-      document.head.removeChild(link);
-      document.head.removeChild(preconnect);
-      document.head.removeChild(preconnectStatic);
+      injected.forEach((el) => {
+        if (document.head.contains(el)) document.head.removeChild(el);
+      });
     };
   }, [cacheKey]); // eslint-disable-line react-hooks/exhaustive-deps
 

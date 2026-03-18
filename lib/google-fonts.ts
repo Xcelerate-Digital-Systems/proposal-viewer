@@ -5,6 +5,7 @@ export interface FontOption {
   category: 'serif' | 'sans-serif' | 'display' | 'handwriting' | 'monospace';
   weights?: string[]; // defaults to ['400','500','600','700']
   local?: boolean;    // true = already loaded via @font-face, skip Google Fonts URL
+  fontshare?: string; // Fontshare slug — loaded via Fontshare CDN instead of Google Fonts
 }
 
 /**
@@ -13,7 +14,7 @@ export interface FontOption {
  */
 export const GOOGLE_FONTS: FontOption[] = [
   // ── Local (bundled with app via @font-face) ────────────
-  { family: 'Clash Grotesk', category: 'sans-serif', weights: ['200', '300', '400', '500', '600', '700'], local: true },
+  { family: 'Clash Grotesk', category: 'sans-serif', weights: ['200', '300', '400', '500', '600', '700'], local: true, fontshare: 'clash-grotesk' },
 
   // ── Sans-Serif ─────────────────────────────────────────
   { family: 'Inter', category: 'sans-serif' },
@@ -171,6 +172,30 @@ export function buildGoogleFontsUrl(fonts: (string | null | undefined)[]): strin
   });
 
   return `https://fonts.googleapis.com/css2?${families.join('&')}&display=swap`;
+}
+
+/**
+ * Build a Fontshare URL for any fonts in the list that have a fontshare slug.
+ * Returns null if none of the requested fonts are on Fontshare.
+ */
+export function buildFontshareUrl(fonts: (string | null | undefined)[]): string | null {
+  const unique = Array.from(new Set(fonts.filter(Boolean))) as string[];
+  if (unique.length === 0) return null;
+
+  const fontshareFonts = unique
+    .map((f) => GOOGLE_FONTS.find((g) => g.family === f))
+    .filter((entry): entry is FontOption => !!entry?.fontshare);
+
+  if (fontshareFonts.length === 0) return null;
+
+  const params = fontshareFonts
+    .map((entry) => {
+      const weights = (entry.weights || ['400', '500', '600', '700']).join(',');
+      return `f[]=${entry.fontshare}@${weights}`;
+    })
+    .join('&');
+
+  return `https://api.fontshare.com/v2/css?${params}&display=swap`;
 }
 
 /**

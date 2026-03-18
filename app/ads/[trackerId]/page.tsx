@@ -1,9 +1,9 @@
 // app/ads/[trackerId]/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowLeft, Search, Filter, Target, BookOpen } from 'lucide-react';
+import { Plus, ArrowLeft, Search, Filter, Target, BookOpen, Pencil, Check, X } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase, type AdTracker } from '@/lib/supabase';
@@ -37,6 +37,10 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [showNamingLegend, setShowNamingLegend] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const [filters, setFilters] = useState<AdCreativeFilters>({
     tracker_id: trackerId,
@@ -84,6 +88,37 @@ function TrackerDetail({ companyId }: { companyId: string }) {
     fetchAccountStandards();
   }, [fetchTracker, fetchAccountStandards]);
 
+  const startEditingName = () => {
+    setNameValue(tracker?.name ?? '');
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.select(), 0);
+  };
+
+  const cancelEditingName = () => {
+    setEditingName(false);
+    setNameValue('');
+  };
+
+  const saveTrackerName = async () => {
+    if (!nameValue.trim() || nameValue.trim() === tracker?.name) {
+      cancelEditingName();
+      return;
+    }
+    setNameSaving(true);
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    if (token) {
+      const res = await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameValue.trim() }),
+      });
+      const json = await res.json();
+      if (json.success) setTracker(json.data);
+    }
+    setNameSaving(false);
+    setEditingName(false);
+  };
+
   const handleSort = (column: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -123,7 +158,45 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             <ArrowLeft size={18} />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-semibold text-ink truncate">{tracker.name}</h1>
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveTrackerName();
+                    if (e.key === 'Escape') cancelEditingName();
+                  }}
+                  className="text-xl font-semibold text-ink bg-surface border border-edge rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-teal/30 min-w-0 w-full max-w-sm"
+                  disabled={nameSaving}
+                  autoFocus
+                />
+                <button
+                  onClick={saveTrackerName}
+                  disabled={nameSaving}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-teal hover:bg-teal/10 transition-colors shrink-0"
+                >
+                  <Check size={15} />
+                </button>
+                <button
+                  onClick={cancelEditingName}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors shrink-0"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={startEditingName}
+                className="group flex items-center gap-1.5 text-left"
+                title="Edit campaign name"
+              >
+                <h1 className="text-xl font-semibold text-ink truncate">{tracker.name}</h1>
+                <Pencil size={14} className="text-faint opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+              </button>
+            )}
             <p className="text-sm text-muted mt-0.5">
               {pagination.total} creative{pagination.total !== 1 ? 's' : ''}
               {tracker.client_name && ` · ${tracker.client_name}`}
