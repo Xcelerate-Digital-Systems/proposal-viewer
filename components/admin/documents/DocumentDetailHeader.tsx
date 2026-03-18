@@ -95,7 +95,7 @@ export default function DocumentDetailHeader({
 
   if (loading || !doc) {
     return (
-      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
+      <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
         <div className="inline-flex items-center gap-1.5 text-sm text-gray-400 mb-3">
           <ArrowLeft size={14} />
           All Documents
@@ -112,7 +112,7 @@ export default function DocumentDetailHeader({
   /* ── Render ─────────────────────────────────────────────────── */
 
   return (
-    <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
+    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
       {/* Back link */}
       <Link
         href="/documents"

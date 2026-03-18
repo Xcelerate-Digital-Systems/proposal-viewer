@@ -1,9 +1,13 @@
 // components/admin/shared/TextPagesTabEditor.tsx
 'use client';
 
-import { Check, Loader2, Plus, Trash2, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Loader2, Plus, Trash2, FileText, Settings } from 'lucide-react';
 import { useTextPagesEditor } from './useTextPagesEditor';
-import TextPageFormPanel from './TextPageFormPanel';
+import InlineTextPageCanvas from './InlineTextPageCanvas';
+import TextPageSettingsSidebar from './TextPageSettingsSidebar';
+import { CompanyBranding } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 
@@ -30,6 +34,18 @@ export default function TextPagesTabEditor({
     adding, loaded, addPage, deletePage,
   } = useTextPagesEditor({ apiBase, entityKey, entityId, extraPostFields });
 
+  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Fetch branding so canvas matches viewer
+  useEffect(() => {
+    if (!companyId) return;
+    fetch(`/api/company/branding?company_id=${companyId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setBranding({ ...DEFAULT_BRANDING, ...data }); })
+      .catch(() => {/* use defaults */});
+  }, [companyId]);
+
   /* ── Loading ───────────────────────────────────────────────────────────── */
 
   if (!loaded) {
@@ -43,7 +59,7 @@ export default function TextPagesTabEditor({
   /* ── Render ────────────────────────────────────────────────────────────── */
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col h-full">
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-3">
@@ -63,6 +79,19 @@ export default function TextPagesTabEditor({
             <span className="flex items-center gap-1 text-xs text-emerald-500">
               <Check size={12} /> Saved
             </span>
+          )}
+          {selectedId && form && (
+            <button
+              onClick={() => setShowSettings((v) => !v)}
+              title="Page Settings"
+              className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+                showSettings
+                  ? 'bg-teal/10 text-teal'
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Settings size={14} />
+            </button>
           )}
         </div>
       </div>
@@ -112,11 +141,26 @@ export default function TextPagesTabEditor({
 
       {/* ── Editor ────────────────────────────────────────────── */}
       {selectedId && form ? (
-        <TextPageFormPanel
-          form={form}
-          companyId={companyId}
-          onUpdate={updateForm}
-        />
+        <div className="flex gap-0 flex-1 min-h-0">
+          {/* Canvas fills available space */}
+          <div className="flex-1 min-w-0">
+            <InlineTextPageCanvas
+              form={form}
+              branding={branding}
+              onUpdate={(content) => updateForm({ content })}
+            />
+          </div>
+
+          {/* Settings sidebar */}
+          {showSettings && (
+            <TextPageSettingsSidebar
+              form={form}
+              companyId={companyId}
+              onUpdate={updateForm}
+              onClose={() => setShowSettings(false)}
+            />
+          )}
+        </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">

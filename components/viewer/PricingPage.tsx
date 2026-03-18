@@ -66,6 +66,10 @@ export default function PricingPage({ pricing, branding, clientName, orientation
   const muted = `${textColor}99`;
   const faint = `${textColor}55`;
 
+  const brandFont = fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif');
+  const brandWeight = Number(branding.title_font_weight || branding.font_heading_weight || '700');
+  const bodyFont = fontFamily(branding.font_body, 'system-ui, sans-serif');
+
   const itemTax = (amount: number) =>
     pricing.tax_enabled ? Math.round(amount * (pricing.tax_rate / 100) * 100) / 100 : 0;
 
@@ -99,7 +103,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
         {/* Header accent bar */}
         <div className="h-1" style={{ backgroundColor: accent }} />
 
-        <div className="p-6 sm:p-8 lg:p-10">
+        <div className="p-6 sm:p-8 lg:p-10" style={{ fontFamily: bodyFont }}>
           {/* Title */}
           <div className="mb-6">
             <h1
@@ -210,8 +214,12 @@ export default function PricingPage({ pricing, branding, clientName, orientation
           {hasPaymentSchedule && ps && (
             <div className="mb-8">
               <h3
-                className="text-sm font-semibold mb-3 uppercase tracking-wider"
-                style={{ color: faint }}
+                className="text-sm mb-3 uppercase tracking-wider"
+                style={{
+                  color: faint,
+                  fontFamily: brandFont,
+                  fontWeight: brandWeight,
+                }}
               >
                 Payment Schedule
               </h3>
@@ -231,7 +239,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                         style={{ backgroundColor: accent }}
                       />
                       <div className="min-w-0">
-                        <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
+                        <span className="agv-pricing-body text-sm" style={{ color: textColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                           {ps.one_off.label}
                         </span>
                         {ps.one_off.note && (
@@ -241,7 +249,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                         )}
                       </div>
                     </div>
-                    <span className="agv-pricing-body text-sm font-bold shrink-0 ml-4" style={{ color: accent }}>
+                    <span className="agv-pricing-body text-sm shrink-0 ml-4" style={{ color: accent, fontFamily: brandFont, fontWeight: brandWeight }}>
                       {formatAUD(ps.one_off.amount)}
                     </span>
                   </div>
@@ -269,7 +277,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                               style={{ backgroundColor: accent, opacity }}
                             />
                             <div className="min-w-0">
-                              <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
+                              <span className="agv-pricing-body text-sm" style={{ color: textColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                                 {payment.label}
                               </span>
                               {payment.note && (
@@ -280,8 +288,8 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                             </div>
                           </div>
                           <span
-                            className="agv-pricing-body text-sm font-bold shrink-0 ml-4"
-                            style={{ color: idx === 0 ? accent : textColor }}
+                            className="agv-pricing-body text-sm shrink-0 ml-4"
+                            style={{ color: idx === 0 ? accent : textColor, fontFamily: brandFont, fontWeight: brandWeight }}
                           >
                             {formatAUD(amt)}
                           </span>
@@ -317,11 +325,11 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           })}
                         </div>
                         <div className="flex justify-between mt-1.5">
-                          <span className="text-[10px]" style={{ color: faint }}>
+                          <span className="text-[10px]" style={{ color: faint, fontFamily: brandFont }}>
                             {ps.milestones.payments[0]?.label} — {formatAUD(milestoneAmount(ps.milestones.payments[0], total))}
                           </span>
                           {ps.milestones.payments.length > 1 && (
-                            <span className="text-[10px]" style={{ color: faint }}>
+                            <span className="text-[10px]" style={{ color: faint, fontFamily: brandFont }}>
                               {ps.milestones.payments[ps.milestones.payments.length - 1]?.label} — {formatAUD(milestoneAmount(ps.milestones.payments[ps.milestones.payments.length - 1], total))}
                             </span>
                           )}
@@ -337,7 +345,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
                       <div className="min-w-0">
-                        <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
+                        <span className="agv-pricing-body text-sm" style={{ color: textColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                           {ps.recurring.label}
                         </span>
                         {ps.recurring.note && (
@@ -347,7 +355,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                         )}
                       </div>
                     </div>
-                    <span className="agv-pricing-body text-sm font-bold shrink-0 ml-4" style={{ color: accent }}>
+                    <span className="agv-pricing-body text-sm shrink-0 ml-4" style={{ color: accent, fontFamily: brandFont, fontWeight: brandWeight }}>
                       {formatAUD(ps.recurring.amount)}/{FREQ_LABELS[ps.recurring.frequency] || ps.recurring.frequency}
                     </span>
                   </div>
@@ -359,7 +367,14 @@ export default function PricingPage({ pricing, branding, clientName, orientation
           {/* Optional extras */}
           {pricing.optional_items.length > 0 && (
             <div className="mb-8">
-              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: faint }}>
+              <h3
+                className="text-sm mb-3 uppercase tracking-wider"
+                style={{
+                  color: faint,
+                  fontFamily: brandFont,
+                  fontWeight: brandWeight,
+                }}
+              >
                 Optional Extras
               </h3>
               <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${border}` }}>

@@ -65,6 +65,7 @@ export default function PackagesPage({ packages, branding, clientName, orientati
   const styling = normalizePackageStyling(packages.styling);
   const titleColor = styling.title_color || textColor;
   const tiers = [...(packages.packages ?? [])]; // Order preserved from DB — sort_order within JSONB tiers is not reliably maintained by the editor
+  const bodyFont = fontFamily(branding.font_body, 'system-ui, sans-serif');
 
   return (
     <div
@@ -102,12 +103,12 @@ export default function PackagesPage({ packages, branding, clientName, orientati
             {packages.title}
           </h1>
           {clientName && (
-            <p className="agv-pkg-body text-sm mt-1.5" style={{ color: muted }}>
+            <p className="agv-pkg-body text-sm mt-1.5" style={{ color: muted, fontFamily: bodyFont }}>
               Prepared for {clientName}
             </p>
           )}
           {packages.intro_text && (
-            <p className="agv-pkg-body text-sm leading-relaxed mt-4 max-w-[700px] mx-auto" style={{ color: muted }}>
+            <p className="agv-pkg-body text-sm leading-relaxed mt-4 max-w-[700px] mx-auto" style={{ color: muted, fontFamily: bodyFont }}>
               {packages.intro_text}
             </p>
           )}
@@ -144,7 +145,7 @@ export default function PackagesPage({ packages, branding, clientName, orientati
         {/* Footer text */}
         {packages.footer_text && (
           <div className="mt-6 text-center">
-            <p className="text-xs leading-relaxed" style={{ color: faint }}>
+            <p className="text-xs leading-relaxed" style={{ color: faint, fontFamily: bodyFont }}>
               {packages.footer_text}
             </p>
           </div>
@@ -171,6 +172,7 @@ interface PackageCardProps {
 
 function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, border, surface, styling, branding }: PackageCardProps) {
   const tierAccent = tier.highlight_color || accent;
+  const bodyFont = fontFamily(branding.font_body, 'system-ui, sans-serif');
 
   const cardBg = styling.card_bg_independent && tier.card_bg_color
     ? tier.card_bg_color
@@ -222,7 +224,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
       )}
 
       {/* Card content */}
-      <div className="p-6 sm:p-8 flex flex-col flex-1">
+      <div className="p-6 sm:p-8 flex flex-col flex-1" style={{ fontFamily: bodyFont }}>
         {/* Package name */}
         <h2
           className="agv-pkg-card-name text-lg sm:text-xl tracking-tight"
@@ -297,6 +299,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
               accent={tierAccent}
               surface={surface}
               featureIcon={styling.feature_icon}
+              boldFontWeight={Number(branding.title_font_weight || branding.font_heading_weight || '700')}
             />
           ))}
         </div>
@@ -315,9 +318,10 @@ interface FeatureItemProps {
   accent: string;
   surface: string;
   featureIcon: PackageFeatureIcon;
+  boldFontWeight: number;
 }
 
-function FeatureItem({ feature, textColor, muted, faint, accent, surface, featureIcon }: FeatureItemProps) {
+function FeatureItem({ feature, textColor, muted, faint, accent, surface, featureIcon, boldFontWeight }: FeatureItemProps) {
   const hasChildren = feature.children.length > 0;
 
   return (
@@ -327,7 +331,7 @@ function FeatureItem({ feature, textColor, muted, faint, accent, surface, featur
         <span className="agv-pkg-body text-sm leading-relaxed" style={{ color: textColor }}>
           {feature.bold_prefix ? (
             <>
-              <strong className="font-semibold">{feature.bold_prefix}</strong>
+              <strong style={{ fontWeight: boldFontWeight }}>{feature.bold_prefix}</strong>
               {feature.text.startsWith(feature.bold_prefix)
                 ? feature.text.slice(feature.bold_prefix.length)
                 : ` ${feature.text}`}
