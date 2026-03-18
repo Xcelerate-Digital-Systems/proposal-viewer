@@ -163,6 +163,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             accentColor={v.accent}
             circleColor={v.branding.page_num_circle_color ?? undefined}
             textColor={v.branding.page_num_text_color ?? undefined}
+            font={v.branding.font_body}
           />
 
           <FloatingToolbar

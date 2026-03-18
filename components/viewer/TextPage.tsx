@@ -138,7 +138,7 @@ function renderNode(
   if (node.type === 'dynamicField') {
     const resolved = resolveDynamicField(node.attrs?.field as string || '', context);
     return (
-      <span key={key} style={{ color: textColor }}>
+      <span key={key} style={{ color: textColor, fontSize: 'inherit', fontFamily: 'inherit', fontWeight: 'inherit' }}>
         {resolved}
       </span>
     );

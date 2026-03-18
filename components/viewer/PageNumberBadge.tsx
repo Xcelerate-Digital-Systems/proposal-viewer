@@ -1,6 +1,8 @@
 // components/viewer/PageNumberBadge.tsx
 'use client';
 
+import { fontFamily as resolveFontFamily } from '@/lib/google-fonts';
+
 interface PageNumberBadgeProps {
   currentPage: number;
   totalPages: number;
@@ -10,6 +12,8 @@ interface PageNumberBadgeProps {
   circleColor?: string;
   /** Override colour for the page number text (default: #ffffff) */
   textColor?: string;
+  /** Branded body font name (e.g. branding.font_body) */
+  font?: string | null;
 }
 
 export default function PageNumberBadge({
@@ -18,8 +22,10 @@ export default function PageNumberBadge({
   accentColor = '#01434A',
   circleColor,
   textColor = '#ffffff',
+  font,
 }: PageNumberBadgeProps) {
   const bg = circleColor ?? accentColor;
+  const ff = resolveFontFamily(font, 'system-ui, sans-serif');
 
   return (
     <div className="absolute bottom-0 right-0 z-10 pointer-events-none select-none">
@@ -37,8 +43,8 @@ export default function PageNumberBadge({
           }}
         />
         <span
-          className="relative font-bold text-md"
-          style={{ color: textColor }}
+          className="relative font-bold"
+          style={{ color: textColor, fontSize: 13, fontFamily: ff }}
         >
           {currentPage}
         </span>

@@ -336,6 +336,7 @@ const handleCompositeDownload = useCallback(async () => {
          accentColor={accent}
          circleColor={branding.page_num_circle_color ?? undefined}
          textColor={branding.page_num_text_color ?? undefined}
+         font={branding.font_body}
        />
         <FloatingToolbar
           pdfUrl={pdfUrl}
