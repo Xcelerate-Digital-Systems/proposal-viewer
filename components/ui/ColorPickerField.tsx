@@ -15,7 +15,6 @@ let recentListeners: Set<() => void> = new Set();
 function addRecentColor(color: string) {
   const hex = color.toLowerCase();
   recentColors = [hex, ...recentColors.filter((c) => c !== hex)].slice(0, MAX_RECENT);
-  // Notify all mounted instances
   recentListeners.forEach((fn) => fn());
 }
 
@@ -32,6 +31,35 @@ function useRecentColors(): string[] {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Branding colours — set once from company settings, shared globally */
+/* ------------------------------------------------------------------ */
+
+let brandingColors: string[] = [];
+let brandingListeners: Set<() => void> = new Set();
+
+export function setBrandingColors(colors: string[]) {
+  // Deduplicate and normalise
+  const seen = new Set<string>();
+  brandingColors = colors
+    .filter(Boolean)
+    .map((c) => c.toLowerCase())
+    .filter((c) => { if (seen.has(c)) return false; seen.add(c); return true; });
+  brandingListeners.forEach((fn) => fn());
+}
+
+function useBrandingColors(): string[] {
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const listener = () => forceUpdate((v) => v + 1);
+    brandingListeners.add(listener);
+    return () => { brandingListeners.delete(listener); };
+  }, []);
+
+  return brandingColors;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Props                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -43,6 +71,11 @@ interface ColorPickerFieldProps {
   onReset?: () => void;
   /** Optional description shown below the label */
   hint?: string;
+  disabled?: boolean;
+  /** Renders only the swatch button + popover, no label/hex/reset chrome */
+  swatchOnly?: boolean;
+  /** Open the picker immediately on mount (used when adding a new swatch) */
+  defaultOpen?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -56,11 +89,15 @@ export default function ColorPickerField({
   onChange,
   onReset,
   hint,
+  disabled,
+  swatchOnly,
+  defaultOpen,
 }: ColorPickerFieldProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen ?? false);
   const [hexInput, setHexInput] = useState('');
   const popoverRef = useRef<HTMLDivElement>(null);
   const recent = useRecentColors();
+  const branding = useBrandingColors();
 
   const displayColor = value || fallback;
   const isCustom = !!value;
@@ -101,6 +138,80 @@ export default function ColorPickerField({
     setOpen(false);
   };
 
+  if (swatchOnly) {
+    return (
+      <div className="relative" ref={popoverRef}>
+        <button
+          onClick={() => !disabled && setOpen(!open)}
+          disabled={disabled}
+          className={`w-9 h-9 rounded-xl border-2 transition-all shadow-sm ${
+            disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-md active:scale-95 cursor-pointer'
+          } border-gray-200`}
+          style={{ backgroundColor: displayColor }}
+          title={disabled ? displayColor : `${displayColor} — click to change`}
+        >
+          <span className="sr-only">{displayColor}</span>
+        </button>
+
+        {open && (
+          <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-xl border border-gray-200 shadow-xl shadow-black/10 p-3 w-[220px]">
+            <div className="relative w-full h-32 rounded-lg overflow-hidden border border-gray-100 mb-3">
+              <input
+                type="color"
+                value={displayColor}
+                onChange={(e) => { applyColor(e.target.value); setHexInput(e.target.value); }}
+                className="absolute inset-0 w-full h-full cursor-pointer border-0 p-0"
+                style={{ appearance: 'none', WebkitAppearance: 'none' }}
+              />
+              <style>{`
+                input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+                input[type="color"]::-webkit-color-swatch { border: none; border-radius: 0; }
+                input[type="color"]::-moz-color-swatch { border: none; border-radius: 0; }
+              `}</style>
+            </div>
+            {branding.length > 0 && (
+              <div className="mb-3">
+                <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Brand</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {branding.map((c) => (
+                    <button key={c} onClick={() => { applyColor(c); setHexInput(c); }}
+                      className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${displayColor.toLowerCase() === c ? 'border-teal ring-2 ring-teal/20' : 'border-gray-200 hover:border-gray-400'}`}
+                      style={{ backgroundColor: c }} title={c} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {recent.length > 0 && (
+              <div className="mb-3">
+                <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Recent</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {recent.map((c) => (
+                    <button key={c} onClick={() => { applyColor(c); setHexInput(c); }}
+                      className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${displayColor.toLowerCase() === c ? 'border-teal ring-2 ring-teal/20' : 'border-gray-200 hover:border-gray-400'}`}
+                      style={{ backgroundColor: c }} title={c} />
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/10 transition-all">
+                <span className="text-[10px] text-gray-400 font-mono">#</span>
+                <input type="text" value={hexInput.replace('#', '')}
+                  onChange={(e) => setHexInput(`#${e.target.value.replace('#', '')}`)}
+                  onBlur={handleHexSubmit} onKeyDown={(e) => { if (e.key === 'Enter') handleHexSubmit(); }}
+                  maxLength={6} className="flex-1 bg-transparent text-xs font-mono text-gray-700 outline-none w-0" placeholder="000000" />
+              </div>
+              <div className="w-8 h-8 rounded-lg border border-gray-200 shrink-0" style={{ backgroundColor: displayColor }} />
+            </div>
+            <button onClick={handleClose} className="w-full mt-2.5 py-1.5 text-[11px] font-medium text-teal bg-teal/5 rounded-lg hover:bg-teal/10 transition-colors">
+              Done
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between group">
       <div className="flex-1 min-w-0">
@@ -111,14 +222,15 @@ export default function ColorPickerField({
       <div className="relative flex items-center gap-1.5" ref={popoverRef}>
         {/* Swatch button */}
         <button
-          onClick={() => setOpen(!open)}
+          onClick={() => !disabled && setOpen(!open)}
+          disabled={disabled}
           className={`
             w-8 h-8 rounded-lg border-2 transition-all shadow-sm
-            hover:scale-105 hover:shadow-md active:scale-95
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-md active:scale-95 cursor-pointer'}
             ${isCustom ? 'border-gray-300' : 'border-gray-200 border-dashed'}
           `}
           style={{ backgroundColor: displayColor }}
-          title={`${displayColor} — click to change`}
+          title={disabled ? displayColor : `${displayColor} — click to change`}
         >
           <span className="sr-only">{displayColor}</span>
         </button>
@@ -160,6 +272,31 @@ export default function ColorPickerField({
                 input[type="color"]::-moz-color-swatch { border: none; border-radius: 0; }
               `}</style>
             </div>
+
+            {/* Brand colours */}
+            {branding.length > 0 && (
+              <div className="mb-3">
+                <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Brand</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {branding.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => {
+                        applyColor(c);
+                        setHexInput(c);
+                      }}
+                      className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${
+                        displayColor.toLowerCase() === c
+                          ? 'border-teal ring-2 ring-teal/20'
+                          : 'border-gray-200 hover:border-gray-400'
+                      }`}
+                      style={{ backgroundColor: c }}
+                      title={c}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Recently used colours */}
             {recent.length > 0 && (

@@ -40,6 +40,7 @@ export type CompanyData = {
   text_page_layout?: 'contained' | 'full';
   bg_image_path: string | null;
   bg_image_overlay_opacity: number | null;
+  brand_colors?: string[];
 };
 /**
  * Derive a border color by lightening the secondary bg.

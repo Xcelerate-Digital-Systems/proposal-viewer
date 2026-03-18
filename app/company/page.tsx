@@ -10,6 +10,7 @@ import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
 import ViewerPreview from '@/components/admin/company/ViewerPreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
+import BrandColorsSection from '@/components/admin/company/BrandColorsSection';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 
 export default function CompanySettingsPage() {
@@ -78,8 +79,37 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           onLogoRemove={s.handleLogoRemove}
         />
 
-        {/* Custom Domain */}
-        <CustomDomainManager companyId={companyId} isOwner={s.isOwner} />
+        {/* Brand Colors + Fonts — side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <BrandColorsSection
+            isOwner={s.isOwner}
+            saving={s.saving}
+            brandColors={s.brandColors}
+            setBrandColors={s.setBrandColors}
+            lastSaved={s.brandColorsSaved}
+            saveError={s.brandColorsError}
+          />
+
+          <ViewerFontsSection
+            isOwner={s.isOwner}
+            saving={s.saving}
+            fontsChanged={s.fontsChanged}
+            fontHeading={s.fontHeading}
+            setFontHeading={s.setFontHeading}
+            fontBody={s.fontBody}
+            setFontBody={s.setFontBody}
+            fontSidebar={s.fontSidebar}
+            setFontSidebar={s.setFontSidebar}
+            fontHeadingWeight={s.fontHeadingWeight}
+            setFontHeadingWeight={s.setFontHeadingWeight}
+            fontBodyWeight={s.fontBodyWeight}
+            setFontBodyWeight={s.setFontBodyWeight}
+            fontSidebarWeight={s.fontSidebarWeight}
+            setFontSidebarWeight={s.setFontSidebarWeight}
+            onSave={s.handleSaveFonts}
+            lastSaved={s.fontsSaved}
+          />
+        </div>
 
         {/* Viewer Colors */}
         <ViewerColorsSection
@@ -120,26 +150,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           />
         </ViewerColorsSection>
 
-        {/* Viewer Fonts */}
-        <ViewerFontsSection
-          isOwner={s.isOwner}
-          saving={s.saving}
-          fontsChanged={s.fontsChanged}
-          fontHeading={s.fontHeading}
-          setFontHeading={s.setFontHeading}
-          fontBody={s.fontBody}
-          setFontBody={s.setFontBody}
-          fontSidebar={s.fontSidebar}
-          setFontSidebar={s.setFontSidebar}
-          fontHeadingWeight={s.fontHeadingWeight}
-          setFontHeadingWeight={s.setFontHeadingWeight}
-          fontBodyWeight={s.fontBodyWeight}
-          setFontBodyWeight={s.setFontBodyWeight}
-          fontSidebarWeight={s.fontSidebarWeight}
-          setFontSidebarWeight={s.setFontSidebarWeight}
-          onSave={s.handleSaveFonts}
-          lastSaved={s.fontsSaved}
-        />
+        {/* Custom Domain */}
+        <CustomDomainManager companyId={companyId} isOwner={s.isOwner} />
 
         {!s.isOwner && (
           <div className="bg-surface border border-edge rounded-[14px] p-4 text-center">

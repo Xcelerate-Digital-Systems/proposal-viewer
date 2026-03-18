@@ -3,7 +3,7 @@
 
 import { ReactNode, useRef, useState } from 'react';
 import { Loader2, Palette, Upload, Trash2, ImageIcon } from 'lucide-react';
-import ColorRow from './ColorRow';
+import ColorPickerField from '@/components/ui/ColorPickerField';
 
 interface ViewerColorsSectionProps {
   isOwner: boolean;
@@ -79,15 +79,15 @@ export default function ViewerColorsSection({
           {/* Accent color */}
           <div className="mb-4">
             <label className="block text-xs text-faint mb-2">Accent Color</label>
-            <ColorRow label="Buttons, links, highlights" value={accentColor} onChange={setAccentColor} disabled={!isOwner} />
+            <ColorPickerField label="Buttons, links, highlights" value={accentColor} fallback="#01434A" onChange={setAccentColor} disabled={!isOwner} />
           </div>
 
           {/* Background colors */}
           <div className="mb-4">
             <label className="block text-xs text-faint mb-2">Background Colors</label>
             <div className="space-y-2">
-              <ColorRow label="Main background" value={bgPrimary} onChange={setBgPrimary} disabled={!isOwner} />
-              <ColorRow label="Sidebar / panels" value={bgSecondary} onChange={setBgSecondary} disabled={!isOwner} />
+              <ColorPickerField label="Main background" value={bgPrimary} fallback="#0f0f0f" onChange={setBgPrimary} disabled={!isOwner} />
+              <ColorPickerField label="Sidebar / panels" value={bgSecondary} fallback="#141414" onChange={setBgSecondary} disabled={!isOwner} />
             </div>
           </div>
 
@@ -177,8 +177,8 @@ export default function ViewerColorsSection({
           <div className="pt-4 border-t border-edge">
             <label className="block text-xs text-faint mb-2">Text Colors</label>
             <div className="space-y-2">
-              <ColorRow label="Sidebar nav text" value={sidebarTextColor} onChange={setSidebarTextColor} disabled={!isOwner} />
-              <ColorRow label="Accept button text" value={acceptTextColor} onChange={setAcceptTextColor} disabled={!isOwner} />
+              <ColorPickerField label="Sidebar nav text" value={sidebarTextColor} fallback="#ffffff" onChange={setSidebarTextColor} disabled={!isOwner} />
+              <ColorPickerField label="Accept button text" value={acceptTextColor} fallback="#ffffff" onChange={setAcceptTextColor} disabled={!isOwner} />
             </div>
           </div>
         </div>
