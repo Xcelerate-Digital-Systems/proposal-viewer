@@ -144,15 +144,15 @@ export default function TocPage({
           <div key={`group-${idx}`} className={`${topMargin} mb-3`}>
             <div className="flex items-center justify-between">
               <span
-                className={`font-bold uppercase tracking-[0.2em] ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
-                style={{ color: subtitleColor, fontFamily: headingFont }}
+                className={`uppercase tracking-[0.2em] ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
+                style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_sidebar_weight || 400) }}
               >
                 {entry.label}
               </span>
               {entry.pageNumber > 0 && (
                 <span
-                  className={`font-bold tabular-nums ml-6 shrink-0 ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
-                  style={{ color: subtitleColor, fontFamily: headingFont }}
+                  className={`tabular-nums ml-6 shrink-0 ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
+                  style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_sidebar_weight || 400) }}
                 >
                   {entry.pageNumber}
                 </span>
@@ -169,15 +169,15 @@ export default function TocPage({
         >
           <div className="flex items-center justify-between py-3">
             <span
-              className={`font-bold uppercase tracking-wide ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
-              style={{ color: textColor, fontFamily: headingFont }}
+              className={`uppercase tracking-wide ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
+              style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_sidebar_weight || 400) }}
             >
               {entry.label}
             </span>
 
             <span
-              className={`font-bold tabular-nums ml-6 shrink-0 ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
-              style={{ color: textColor, fontFamily: headingFont }}
+              className={`tabular-nums ml-6 shrink-0 ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
+              style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_sidebar_weight || 400) }}
             >
               {entry.pageNumber}
             </span>
