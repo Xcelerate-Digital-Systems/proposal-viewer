@@ -258,16 +258,14 @@ export default function Sidebar({
               <div className="space-y-2">
                 <button
                   onClick={onRevisionClick}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border hover:bg-amber-900/10"
-                  style={{ borderColor: '#f59e0b60', color: '#f59e0b' }}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors bg-white border border-gray-300 text-gray-800 hover:bg-gray-50"
                 >
                   <PenLine size={13} />
                   Request Changes
                 </button>
                 <button
                   onClick={onDeclineClick}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border hover:bg-red-900/10"
-                  style={{ borderColor: '#ef444460', color: '#ef4444' }}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors bg-white border border-gray-300 text-gray-800 hover:bg-gray-50"
                 >
                   <XCircle size={13} />
                   Decline
@@ -279,22 +277,12 @@ export default function Sidebar({
           {/* Comments — always visible */}
           <button
             onClick={onToggleComments}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border"
-            style={showComments
-              ? { backgroundColor: accent, borderColor: accent, color: acceptText }
-              : { backgroundColor: 'transparent', borderColor: `${sidebarText}40`, color: sidebarText }
-            }
+            className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors bg-white border border-gray-300 text-gray-800 hover:bg-gray-50 ${showComments ? 'ring-2 ring-gray-400 ring-offset-1' : ''}`}
           >
             <MessageSquare size={15} />
             Comment
             {(commentCount ?? 0) > 0 && (
-              <span
-                className="text-xs w-5 h-5 rounded-full flex items-center justify-center"
-                style={showComments
-                  ? { backgroundColor: `${acceptText}30`, color: acceptText }
-                  : { backgroundColor: `${sidebarText}20`, color: sidebarText }
-                }
-              >
+              <span className="text-xs w-5 h-5 rounded-full flex items-center justify-center bg-gray-200 text-gray-700">
                 {commentCount}
               </span>
             )}
