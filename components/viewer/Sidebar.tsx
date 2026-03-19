@@ -258,14 +258,16 @@ export default function Sidebar({
               <div className="space-y-2">
                 <button
                   onClick={onRevisionClick}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors bg-white border border-gray-300 text-gray-800 hover:bg-gray-50"
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
+                  style={{ color: sidebarText, border: `1px solid ${sidebarText}60`, backgroundColor: 'transparent' }}
                 >
                   <PenLine size={13} />
                   Request Changes
                 </button>
                 <button
                   onClick={onDeclineClick}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors bg-white border border-gray-300 text-gray-800 hover:bg-gray-50"
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
+                  style={{ color: sidebarText, border: `1px solid ${sidebarText}60`, backgroundColor: 'transparent' }}
                 >
                   <XCircle size={13} />
                   Decline
@@ -277,12 +279,20 @@ export default function Sidebar({
           {/* Comments — always visible */}
           <button
             onClick={onToggleComments}
-            className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors bg-white border border-gray-300 text-gray-800 hover:bg-gray-50 ${showComments ? 'ring-2 ring-gray-400 ring-offset-1' : ''}`}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
+            style={{
+              color: sidebarText,
+              border: `1px solid ${sidebarText}60`,
+              backgroundColor: showComments ? `${sidebarText}15` : 'transparent',
+            }}
           >
             <MessageSquare size={15} />
             Comment
             {(commentCount ?? 0) > 0 && (
-              <span className="text-xs w-5 h-5 rounded-full flex items-center justify-center bg-gray-200 text-gray-700">
+              <span
+                className="text-xs w-5 h-5 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: `${sidebarText}25`, color: sidebarText }}
+              >
                 {commentCount}
               </span>
             )}
