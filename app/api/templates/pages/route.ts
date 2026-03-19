@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
   // Peek at op before routing
   const body = await req.json();
   if (body.op === 'insert_pdf') return handleInsertPdf(body);
+  if (body.op === 'replace_pdf') return handleReplacePdf(body);
   return handleJsonAdd(body);
 }
 
@@ -188,6 +189,38 @@ async function handleInsertPdf(body: Record<string, unknown>) {
     return NextResponse.json({ success: true, page, totalPages });
   } catch (err) {
     console.error('Template pages insert_pdf error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+async function handleReplacePdf(body: Record<string, unknown>) {
+  try {
+    const supabase = createServiceClient();
+    const { template_id, page_id, temp_path } = body;
+
+    if (!page_id || !temp_path) {
+      return NextResponse.json({ error: 'page_id and temp_path are required' }, { status: 400 });
+    }
+
+    const { success, error } = await replacePdfPage(supabase, 'template', {
+      pageId:   page_id as string,
+      tempPath: temp_path as string,
+    });
+
+    if (!success) {
+      return NextResponse.json({ error: error ?? 'Replace failed' }, { status: 500 });
+    }
+
+    // Rebuild merged PDF so template preview stays in sync
+    try {
+      await rebuildTemplateMerged(template_id as string);
+    } catch (err) {
+      console.error('Non-fatal: failed to rebuild merged PDF after page replace:', err);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Template pages replace_pdf error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

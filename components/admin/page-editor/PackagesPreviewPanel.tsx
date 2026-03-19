@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight, Package, ExternalLink } from 'lucide-react';
 import { ProposalPackages, normalizePackageStyling } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import PackagesPage from '@/components/viewer/PackagesPage';
+import ViewerBackground from '@/components/viewer/ViewerBackground';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import { UnifiedPage } from '@/lib/page-operations';
 
@@ -117,7 +119,11 @@ export default function PackagesPreviewPanel({
               height: `${100 / previewScale}%`,
             }}
           >
-            <PackagesPage packages={packages} branding={branding} />
+            <GoogleFontLoader fonts={[branding.font_body, branding.font_heading, branding.title_font_family]} />
+            <div className="relative w-full min-h-full" style={{ backgroundColor: branding.bg_primary || '#0f0f0f' }}>
+              <ViewerBackground branding={branding} />
+              <PackagesPage packages={packages} branding={branding} />
+            </div>
           </div>
         </div>
 

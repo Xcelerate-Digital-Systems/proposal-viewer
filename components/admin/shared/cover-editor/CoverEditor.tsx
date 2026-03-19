@@ -49,9 +49,10 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initializedRef = useRef(false);
 
-  /* ── Company logo state (for preview) ──────────────────────── */
+  /* ── Company logo + branding state (for preview) ───────────── */
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string>('');
+  const [headingFont, setHeadingFont] = useState<string | null>(null);
 
   /* ── Client logo state ─────────────────────────────────────── */
   const [clientLogoPath, setClientLogoPath] = useState(entity.cover_client_logo_path || '');
@@ -115,12 +116,13 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
     const fetchCompanyLogo = async () => {
       const { data } = await supabase
         .from('companies')
-        .select('name, logo_path')
+        .select('name, logo_path, font_heading, title_font_family')
         .eq('id', entity.company_id)
         .single();
 
       if (data) {
         setCompanyName(data.name || '');
+        setHeadingFont(data.font_heading || data.title_font_family || null);
         if (data.logo_path) {
           const { data: urlData } = supabase.storage
             .from('company-assets')
@@ -409,6 +411,7 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
                   imageUrl={imageUrl}
                   companyLogoUrl={companyLogoUrl}
                   companyName={companyName}
+                  headingFont={headingFont}
                   showClientLogo={showClientLogo}
                   clientLogoUrl={clientLogoUrl}
                   showDate={showDate}

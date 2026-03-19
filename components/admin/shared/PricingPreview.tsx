@@ -6,6 +6,8 @@ import { DollarSign } from 'lucide-react';
 import { ProposalPricing } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import PricingPage from '@/components/viewer/PricingPage';
+import ViewerBackground from '@/components/viewer/ViewerBackground';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 
 interface PricingPreviewProps {
   pricing: ProposalPricing;
@@ -54,7 +56,11 @@ export default function PricingPreview({ pricing, branding }: PricingPreviewProp
               height: `${100 / previewScale}%`,
             }}
           >
-            <PricingPage pricing={pricing} branding={branding} />
+            <GoogleFontLoader fonts={[branding.font_body, branding.font_heading, branding.title_font_family]} />
+            <div className="relative w-full min-h-full" style={{ backgroundColor: branding.bg_primary || '#0f0f0f' }}>
+              <ViewerBackground branding={branding} />
+              <PricingPage pricing={pricing} branding={branding} />
+            </div>
           </div>
         </div>
 

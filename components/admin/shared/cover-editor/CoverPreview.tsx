@@ -4,6 +4,8 @@
 import { EyeOff, Building2 } from 'lucide-react';
 import { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import { EntityConfig, ResolvedMember, hexToRgba, buildGradient } from './CoverEditorTypes';
+import { fontFamily } from '@/lib/google-fonts';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 
 interface CoverPreviewProps {
   cfg: EntityConfig;
@@ -18,6 +20,7 @@ interface CoverPreviewProps {
   /* Company branding */
   companyLogoUrl: string | null;
   companyName: string;
+  headingFont?: string | null;
   /* Client logo */
   showClientLogo: boolean;
   clientLogoUrl: string | null;
@@ -40,6 +43,7 @@ export default function CoverPreview({
   imageUrl,
   companyLogoUrl,
   companyName,
+  headingFont,
   showClientLogo,
   clientLogoUrl,
   showDate,
@@ -73,11 +77,14 @@ export default function CoverPreview({
         )
     : undefined;
 
+  const resolvedHeadingFont = fontFamily(headingFont, undefined);
+
   return (
     <div
       className="rounded-lg overflow-hidden relative w-full h-full"
       style={{ backgroundColor: colors.coverBgColor1 }}
     >
+      {headingFont && <GoogleFontLoader fonts={[headingFont]} />}
       {/* Background layer */}
       {imageUrl ? (
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }} />
@@ -126,8 +133,8 @@ export default function CoverPreview({
           )}
 
           <h2
-            className="text-lg font-semibold leading-tight mb-0.5 font-[family-name:var(--font-display)]"
-            style={{ color: colors.coverTextColor }}
+            className="text-lg font-semibold leading-tight mb-0.5"
+            style={{ color: colors.coverTextColor, fontFamily: resolvedHeadingFont || undefined }}
           >
             {displayTitle}
           </h2>
