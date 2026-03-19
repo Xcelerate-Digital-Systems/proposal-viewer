@@ -51,7 +51,7 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-800">Packages Pages</h3>
           <p className="text-xs text-gray-400 mt-0.5">
@@ -82,41 +82,39 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
         </div>
       </div>
 
-      {/* Page navigation bar */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* Page navigation tabs */}
+      <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto mb-5">
         {editor.allPages.map((page) => (
           <button
             key={page.id}
             onClick={() => editor.selectPage(page)}
-            className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors border text-xs font-medium ${
+            className={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
               editor.selectedId === page.id
-                ? 'bg-teal/10 border-teal/30 text-teal'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? 'text-teal border-b-2 border-teal -mb-px bg-teal/5'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-b-2 border-transparent -mb-px'
             }`}
           >
-            <span className="truncate max-w-[140px]">{page.title || 'Untitled'}</span>
-            {!page.enabled && <span className="text-[10px] opacity-50 ml-0.5">(off)</span>}
+            <Package size={13} className="shrink-0 opacity-70" />
+            <span className="truncate max-w-[160px]">{page.title || 'Untitled'}</span>
+            {!page.enabled && <span className="text-[10px] opacity-40 ml-0.5">(off)</span>}
             <span
               role="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                editor.deletePage(page.id);
-              }}
-              className="opacity-0 group-hover:opacity-100 ml-0.5 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
+              onClick={(e) => { e.stopPropagation(); editor.deletePage(page.id); }}
+              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
             >
-              <Trash2 size={10} />
+              <Trash2 size={11} />
             </span>
           </button>
         ))}
         {editor.allPages.length === 0 && (
-          <span className="text-xs text-gray-400">No pages yet — add one to get started</span>
+          <span className="px-4 py-2.5 text-xs text-gray-400">No pages yet — add one to get started</span>
         )}
         <button
           onClick={editor.addPage}
           disabled={editor.adding}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-teal border border-dashed border-teal/30 hover:bg-teal/5 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-teal hover:bg-teal/5 transition-colors disabled:opacity-50 shrink-0 border-b-2 border-transparent -mb-px"
         >
-          {editor.adding ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+          {editor.adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
           Add Page
         </button>
       </div>
