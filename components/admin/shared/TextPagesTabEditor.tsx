@@ -114,35 +114,35 @@ export default function TextPagesTabEditor({
         </div>
       </div>
 
-      {/* ── Page navigation chips ──────────────────────────────── */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
+      {/* ── Page navigation tabs ───────────────────────────────── */}
+      <div className="flex items-end gap-0 mb-0 border-b border-gray-200 overflow-x-auto">
         {pages.map((page) => (
           <button
             key={page.id}
             onClick={() => setSelectedId(page.id)}
-            className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors border text-xs font-medium ${
+            className={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
               selectedId === page.id
-                ? 'bg-teal/10 border-teal/30 text-teal'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? 'text-teal border-b-2 border-teal -mb-px bg-teal/5'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-b-2 border-transparent -mb-px'
             }`}
           >
-            <FileText size={11} className="shrink-0 opacity-60" />
-            <span className="truncate max-w-[140px]">{page.title || 'Untitled'}</span>
+            <FileText size={13} className="shrink-0 opacity-70" />
+            <span className="truncate max-w-[160px]">{page.title || 'Untitled'}</span>
             {!page.enabled && (
-              <span className="text-[10px] opacity-50 ml-0.5">(off)</span>
+              <span className="text-[10px] opacity-40 ml-0.5">(off)</span>
             )}
             <span
               role="button"
               onClick={(e) => { e.stopPropagation(); deletePage(page.id); }}
-              className="opacity-0 group-hover:opacity-100 ml-0.5 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
+              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
             >
-              <Trash2 size={10} />
+              <Trash2 size={11} />
             </span>
           </button>
         ))}
 
         {pages.length === 0 && (
-          <span className="text-xs text-gray-400">
+          <span className="px-4 py-2.5 text-sm text-gray-400">
             No text pages yet — add one to get started
           </span>
         )}
@@ -150,12 +150,13 @@ export default function TextPagesTabEditor({
         <button
           onClick={addPage}
           disabled={adding}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-teal border border-dashed border-teal/30 hover:bg-teal/5 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-teal hover:bg-teal/5 transition-colors disabled:opacity-50 shrink-0 border-b-2 border-transparent -mb-px"
         >
-          {adding ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+          {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
           Add Page
         </button>
       </div>
+      <div className="mb-4" />
 
       {/* ── Editor ────────────────────────────────────────────── */}
       {selectedId && form ? (
