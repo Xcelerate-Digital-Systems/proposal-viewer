@@ -266,7 +266,10 @@ export default function ViewerStyleSection({
             )}
           </div>
 
-          <div className="border-t border-gray-100" />
+        </div>
+
+        {/* ── RIGHT: Font + Colors ──────────────────────────── */}
+        <div className="space-y-5">
 
           {/* Page Title Font */}
           <div className="space-y-3">
@@ -302,10 +305,7 @@ export default function ViewerStyleSection({
             </div>
           </div>
 
-        </div>
-
-        {/* ── RIGHT: Colors ─────────────────────────────────── */}
-        <div className="space-y-5">
+          <div className="border-t border-gray-100" />
 
           {/* Text Page Colors */}
           <div className="space-y-4">
