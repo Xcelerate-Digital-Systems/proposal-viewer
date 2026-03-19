@@ -26,7 +26,7 @@ export default function DynamicFieldMenu({ isOpen, onToggle, onClose, onInsert }
   }, [onClose]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative shrink-0" ref={ref}>
       <button
         type="button"
         onClick={onToggle}

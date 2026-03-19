@@ -17,6 +17,7 @@ import { FontWeightExtension } from '@/components/admin/text-editor/FontWeightEx
 import RichTextToolbar from '@/components/admin/text-editor/RichTextToolbar';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 import { fontFamily } from '@/lib/google-fonts';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import type { TextPageForm } from './useTextPagesEditor';
 import '@/components/admin/text-editor/rich-text-editor.css';
 
@@ -36,10 +37,15 @@ export default function InlineTextPageCanvas({ form, branding, onUpdate }: Inlin
   const border       = deriveBorderColor(bgColor);
   const muted        = `${textColor}99`;
 
-  const bodyFont     = fontFamily(branding.font_body, 'system-ui, sans-serif');
-  const headingFont  = fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif');
+  const bodyFont      = fontFamily(branding.font_body, 'system-ui, sans-serif');
+  const headingFont   = fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif');
   const headingWeight = Number(branding.title_font_weight || branding.font_heading_weight || '700');
-  const h2Weight     = Math.min(headingWeight, 600);
+  const h2Weight      = Math.min(headingWeight, 600);
+
+  // Background image (mirrors ViewerBackground logic)
+  const hasBgImage     = !!branding.bg_image_url;
+  const overlayOpacity = branding.bg_image_overlay_opacity ?? 0.85;
+  const bgBlur         = branding.bg_image_blur ?? 0;
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -74,96 +80,127 @@ export default function InlineTextPageCanvas({ form, branding, onUpdate }: Inlin
   }, [editor, form.content]);
 
   return (
-    <div className="flex flex-col rounded-xl" style={{ border: `1px solid ${border}` }}>
-      {/* Toolbar — no overflow-hidden so dropdowns can escape the container */}
-      {editor && (
-        <div className="shrink-0 relative z-10">
-          <RichTextToolbar editor={editor} className="rounded-t-xl" />
-        </div>
-      )}
+    <>
+      {/* Load branded fonts into the page so the editor renders them */}
+      <GoogleFontLoader fonts={[branding.font_body, branding.font_heading, branding.title_font_family]} />
 
-      {/* Brand-styled canvas — overflow-hidden here clips background to rounded bottom corners only */}
-      <div className="tp-canvas relative overflow-hidden rounded-b-xl" style={{ backgroundColor: bgColor }}>
-        <style>{`
-          .tp-canvas .ProseMirror {
-            color: ${textColor};
-            font-family: ${bodyFont};
-            font-size: ${fontSize}px;
-            line-height: 1.8;
-            min-height: 420px;
-            padding: 40px 64px 56px;
-          }
-          .tp-canvas .ProseMirror p {
-            color: ${textColor};
-            line-height: 1.8;
-            margin: 0.5em 0;
-          }
-          .tp-canvas .ProseMirror h1 {
-            color: ${headingColor};
-            font-family: ${headingFont};
-            font-weight: ${headingWeight};
-            font-size: 24px;
-            margin: 1em 0 0.5em;
-            line-height: 1.3;
-          }
-          .tp-canvas .ProseMirror h2 {
-            color: ${headingColor};
-            font-family: ${headingFont};
-            font-weight: ${h2Weight};
-            font-size: 20px;
-            margin: 0.8em 0 0.4em;
-            line-height: 1.3;
-          }
-          .tp-canvas .ProseMirror h3 {
-            color: ${headingColor};
-            font-family: ${headingFont};
-            font-weight: ${h2Weight};
-            font-size: 17px;
-            margin: 0.6em 0 0.3em;
-            line-height: 1.3;
-          }
-          .tp-canvas .ProseMirror ul,
-          .tp-canvas .ProseMirror ol { color: ${textColor}; }
-          .tp-canvas .ProseMirror blockquote {
-            border-left-color: ${accent};
-            color: ${muted};
-          }
-          .tp-canvas .ProseMirror hr { border-top-color: ${border}; }
-          .tp-canvas .ProseMirror a { color: ${accent}; }
-          .tp-canvas .ProseMirror code {
-            background: ${textColor}10;
-            color: ${textColor};
-          }
-          .tp-canvas .ProseMirror pre {
-            background: ${textColor}08;
-            border: 1px solid ${border};
-            color: ${textColor};
-          }
-          .tp-canvas .ProseMirror p.is-editor-empty:first-child::before {
-            color: ${textColor}35;
-          }
-        `}</style>
-
-        {/* Page title preview (non-editable — edit in settings panel) */}
-        {form.show_title && form.title && (
-          <div style={{ padding: '40px 64px 0' }}>
-            <h1
-              style={{
-                color: headingColor,
-                fontFamily: headingFont,
-                fontWeight: headingWeight,
-                fontSize: 28,
-                lineHeight: 1.3,
-                marginBottom: '0.5em',
-              }}
-            >
-              {form.title}
-            </h1>
+      <div className="flex flex-col h-full rounded-xl" style={{ border: `1px solid ${border}` }}>
+        {/* Toolbar — shrink-0 so it stays at top while canvas scrolls */}
+        {editor && (
+          <div className="shrink-0 relative z-10">
+            <RichTextToolbar editor={editor} className="rounded-t-xl" />
           </div>
         )}
 
-        <EditorContent editor={editor} />
+        {/* Brand-styled canvas — flex-1 fills remaining height, content scrolls inside */}
+        <div
+          className="tp-canvas relative overflow-hidden rounded-b-xl flex-1"
+          style={{ backgroundColor: hasBgImage ? (branding.bg_primary || '#0f0f0f') : bgColor }}
+        >
+          {/* Background image + overlay — absolute, not part of scroll flow */}
+          {hasBgImage && (
+            <>
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+                style={{
+                  backgroundImage: `url(${branding.bg_image_url})`,
+                  filter: bgBlur ? `blur(${bgBlur}px)` : undefined,
+                  transform: bgBlur ? 'scale(1.05)' : undefined,
+                }}
+              />
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{ backgroundColor: branding.bg_primary || '#0f0f0f', opacity: overlayOpacity }}
+              />
+            </>
+          )}
+
+          <style>{`
+            .tp-canvas .ProseMirror {
+              color: ${textColor};
+              font-family: ${bodyFont};
+              font-size: ${fontSize}px;
+              line-height: 1.8;
+              min-height: 420px;
+              padding: 40px 64px 56px;
+            }
+            .tp-canvas .ProseMirror p {
+              color: ${textColor};
+              line-height: 1.8;
+              margin: 0.5em 0;
+            }
+            .tp-canvas .ProseMirror h1 {
+              color: ${headingColor};
+              font-family: ${headingFont};
+              font-weight: ${headingWeight};
+              font-size: 24px;
+              margin: 1em 0 0.5em;
+              line-height: 1.3;
+            }
+            .tp-canvas .ProseMirror h2 {
+              color: ${headingColor};
+              font-family: ${headingFont};
+              font-weight: ${h2Weight};
+              font-size: 20px;
+              margin: 0.8em 0 0.4em;
+              line-height: 1.3;
+            }
+            .tp-canvas .ProseMirror h3 {
+              color: ${headingColor};
+              font-family: ${headingFont};
+              font-weight: ${h2Weight};
+              font-size: 17px;
+              margin: 0.6em 0 0.3em;
+              line-height: 1.3;
+            }
+            .tp-canvas .ProseMirror ul,
+            .tp-canvas .ProseMirror ol { color: ${textColor}; }
+            .tp-canvas .ProseMirror blockquote {
+              border-left-color: ${accent};
+              color: ${muted};
+            }
+            .tp-canvas .ProseMirror hr { border-top-color: ${border}; }
+            .tp-canvas .ProseMirror a { color: ${accent}; }
+            .tp-canvas .ProseMirror code {
+              background: ${textColor}10;
+              color: ${textColor};
+            }
+            .tp-canvas .ProseMirror pre {
+              background: ${textColor}08;
+              border: 1px solid ${border};
+              color: ${textColor};
+            }
+            .tp-canvas .ProseMirror p.is-editor-empty:first-child::before {
+              color: ${textColor}35;
+            }
+          `}</style>
+
+          {/* Scroll container — sits above bg layers, content scrolls within canvas bounds */}
+          <div className="absolute inset-0 overflow-y-auto">
+            <div className="relative">
+              {/* Page title preview (non-editable — edit in settings panel) */}
+              {form.show_title && form.title && (
+                <div style={{ padding: '40px 64px 0' }}>
+                  <h1
+                    style={{
+                      color: headingColor,
+                      fontFamily: headingFont,
+                      fontWeight: headingWeight,
+                      fontSize: 28,
+                      lineHeight: 1.3,
+                      marginBottom: '0.5em',
+                    }}
+                  >
+                    {form.title}
+                  </h1>
+                </div>
+              )}
+
+              <EditorContent editor={editor} />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

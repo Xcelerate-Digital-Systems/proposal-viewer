@@ -1,7 +1,7 @@
 // components/admin/shared/TextPageSettingsSidebar.tsx
 'use client';
 
-import { X, User, Image } from 'lucide-react';
+import { User, Image } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
 import type { TextPageForm } from './useTextPagesEditor';
@@ -10,26 +10,19 @@ interface TextPageSettingsSidebarProps {
   form: TextPageForm;
   companyId: string | null;
   onUpdate: (changes: Partial<TextPageForm>) => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export default function TextPageSettingsSidebar({
   form,
   companyId,
   onUpdate,
-  onClose,
 }: TextPageSettingsSidebarProps) {
   return (
     <div className="w-72 shrink-0 border-l border-gray-200 bg-white flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-200 shrink-0">
+      <div className="px-4 py-3.5 border-b border-gray-200 shrink-0">
         <span className="text-sm font-semibold text-gray-800">Page Settings</span>
-        <button
-          onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-        >
-          <X size={15} />
-        </button>
       </div>
 
       <div className="p-4 space-y-5 flex-1">

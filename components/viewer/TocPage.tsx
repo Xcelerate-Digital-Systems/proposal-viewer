@@ -50,7 +50,7 @@ export default function TocPage({
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const textColor = branding.cover_text_color || '#ffffff';
   const subtitleColor = branding.cover_subtitle_color || '#ffffffb3';
-  const headingFont = fontFamily(branding.title_font_family || branding.font_heading);
+  const headingFont = fontFamily(branding.font_heading || branding.title_font_family);
   const bodyFont = fontFamily(branding.font_body);
   const excludedSet = useMemo(
     () => new Set(tocSettings.excluded_items),
@@ -145,14 +145,14 @@ export default function TocPage({
             <div className="flex items-center justify-between">
               <span
                 className={`uppercase tracking-[0.2em] ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
-                style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_sidebar_weight || 400) }}
+                style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_heading_weight || 600) }}
               >
                 {entry.label}
               </span>
               {entry.pageNumber > 0 && (
                 <span
                   className={`tabular-nums ml-6 shrink-0 ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
-                  style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_sidebar_weight || 400) }}
+                  style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_heading_weight || 600) }}
                 >
                   {entry.pageNumber}
                 </span>
@@ -170,14 +170,14 @@ export default function TocPage({
           <div className="flex items-center justify-between py-3">
             <span
               className={`uppercase tracking-wide ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
-              style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_sidebar_weight || 400) }}
+              style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_heading_weight || 600) }}
             >
               {entry.label}
             </span>
 
             <span
               className={`tabular-nums ml-6 shrink-0 ${isTwoCol ? 'text-xs md:text-sm' : 'text-sm md:text-base'}`}
-              style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_sidebar_weight || 400) }}
+              style={{ color: textColor, fontFamily: headingFont, fontWeight: Number(branding.font_heading_weight || 600) }}
             >
               {entry.pageNumber}
             </span>

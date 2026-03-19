@@ -156,14 +156,25 @@ function renderNode(
     case 'doc':
       return <>{children}</>;
 
-    case 'paragraph':
+    case 'paragraph': {
+      // Lift the first textStyle fontSize from a text child onto the <p> so
+      // sibling dynamicField atoms (which can't carry marks) inherit the
+      // same size instead of falling back to the .agv-text-body default.
+      const paragraphFontSize = node.content?.reduce<string | undefined>((found, child) => {
+        if (found) return found;
+        if (child.type === 'text' && child.marks) {
+          const ts = child.marks.find((m) => m.type === 'textStyle');
+          if (ts?.attrs?.fontSize) return ts.attrs.fontSize as string;
+        }
+        return found;
+      }, undefined);
       return (
         <p
           key={key}
           style={{
             ...baseStyle,
             color: textColor,
-            fontSize: 'inherit',
+            fontSize: paragraphFontSize || 'inherit',
             lineHeight: 1.8,
             margin: '0.5em 0',
           }}
@@ -171,6 +182,7 @@ function renderNode(
           {children || '\u00A0'}
         </p>
       );
+    }
 
     case 'heading': {
       const level = node.attrs?.level || 1;
@@ -415,7 +427,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
         ...(isLandscape && { paddingTop: 'clamp(32px, 8vh, 128px)', paddingBottom: 'clamp(24px, 5vh, 64px)', paddingLeft: 'clamp(20px, 10vw, 168px)', paddingRight: 'clamp(20px, 10vw, 168px)' }),
       }}
     >
-      <div className="w-full h-full">
+      <div className="w-full">
         {/* Mobile font size caps — body 14px, title 22px on screens < lg */}
         <style>{`@media (max-width: 1023px) { .agv-text-body { font-size: 14px !important; } .agv-text-title { font-size: 20px !important; } }`}</style>
 

@@ -2,12 +2,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, Loader2, Plus, Trash2, FileText, Settings } from 'lucide-react';
+import { Check, Loader2, Plus, Trash2, FileText } from 'lucide-react';
 import { useTextPagesEditor } from './useTextPagesEditor';
 import InlineTextPageCanvas from './InlineTextPageCanvas';
 import TextPageSettingsSidebar from './TextPageSettingsSidebar';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
+import { supabase } from '@/lib/supabase';
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 
@@ -35,16 +36,46 @@ export default function TextPagesTabEditor({
   } = useTextPagesEditor({ apiBase, entityKey, entityId, extraPostFields });
 
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
-  const [showSettings, setShowSettings] = useState(false);
 
-  // Fetch branding so canvas matches viewer
+  // Fetch branding (company base + entity-level overrides) so canvas matches viewer
   useEffect(() => {
     if (!companyId) return;
-    fetch(`/api/company/branding?company_id=${companyId}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data) setBranding({ ...DEFAULT_BRANDING, ...data }); })
-      .catch(() => {/* use defaults */});
-  }, [companyId]);
+    const load = async () => {
+      // 1. Company branding base
+      const r = await fetch(`/api/company/branding?company_id=${companyId}`);
+      if (!r.ok) return;
+      const merged: CompanyBranding = { ...DEFAULT_BRANDING, ...(await r.json()) };
+
+      // 2. Entity-level design overrides (proposal or template)
+      const entityTable = entityKey === 'proposal_id' ? 'proposals' : 'templates';
+      const { data: entity } = await supabase
+        .from(entityTable)
+        .select('text_page_bg_color, text_page_text_color, text_page_heading_color, title_font_family, title_font_weight, title_font_size, bg_image_path, bg_image_overlay_opacity, bg_image_blur')
+        .eq('id', entityId)
+        .single();
+
+      if (entity) {
+        if (entity.text_page_bg_color != null) merged.text_page_bg_color = entity.text_page_bg_color;
+        if (entity.text_page_text_color != null) merged.text_page_text_color = entity.text_page_text_color;
+        if (entity.text_page_heading_color != null) merged.text_page_heading_color = entity.text_page_heading_color;
+        if (entity.title_font_family != null) merged.title_font_family = entity.title_font_family;
+        if (entity.title_font_weight != null) merged.title_font_weight = entity.title_font_weight;
+        if (entity.title_font_size != null) merged.title_font_size = entity.title_font_size;
+        // Entity bg image overrides company bg image
+        if (entity.bg_image_path) {
+          const { data: bgUrlData } = supabase.storage
+            .from('company-assets')
+            .getPublicUrl(entity.bg_image_path);
+          if (bgUrlData?.publicUrl) merged.bg_image_url = bgUrlData.publicUrl;
+          merged.bg_image_overlay_opacity = entity.bg_image_overlay_opacity ?? merged.bg_image_overlay_opacity ?? 0.85;
+          merged.bg_image_blur = entity.bg_image_blur ?? 0;
+        }
+      }
+
+      setBranding(merged);
+    };
+    load().catch(() => {/* use defaults */});
+  }, [companyId, entityId, entityKey]);
 
   /* ── Loading ───────────────────────────────────────────────────────────── */
 
@@ -79,19 +110,6 @@ export default function TextPagesTabEditor({
             <span className="flex items-center gap-1 text-xs text-emerald-500">
               <Check size={12} /> Saved
             </span>
-          )}
-          {selectedId && form && (
-            <button
-              onClick={() => setShowSettings((v) => !v)}
-              title="Page Settings"
-              className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
-                showSettings
-                  ? 'bg-teal/10 text-teal'
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Settings size={14} />
-            </button>
           )}
         </div>
       </div>
@@ -141,7 +159,7 @@ export default function TextPagesTabEditor({
 
       {/* ── Editor ────────────────────────────────────────────── */}
       {selectedId && form ? (
-        <div className="flex gap-0 flex-1 min-h-0">
+        <div className="flex gap-4 flex-1 min-h-0">
           {/* Canvas fills available space */}
           <div className="flex-1 min-w-0">
             <InlineTextPageCanvas
@@ -151,15 +169,12 @@ export default function TextPagesTabEditor({
             />
           </div>
 
-          {/* Settings sidebar */}
-          {showSettings && (
-            <TextPageSettingsSidebar
-              form={form}
-              companyId={companyId}
-              onUpdate={updateForm}
-              onClose={() => setShowSettings(false)}
-            />
-          )}
+          {/* Settings sidebar — always visible */}
+          <TextPageSettingsSidebar
+            form={form}
+            companyId={companyId}
+            onUpdate={updateForm}
+          />
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
