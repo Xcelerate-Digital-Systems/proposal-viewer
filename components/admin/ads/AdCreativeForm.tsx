@@ -230,31 +230,66 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // ─── Image upload ──────────────────────────────────────────────────────────
+  // ─── Image upload (direct to Supabase, bypasses Vercel payload limit) ─────
   const handleFileUpload = async (file: File) => {
     if (!editingId) return;
+
+    // 50MB limit for videos
+    if (file.size > 50 * 1024 * 1024) {
+      setError('File too large (max 50MB)');
+      return;
+    }
+
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+      'video/mp4', 'video/quicktime', 'video/webm',
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file type. Accepted: JPEG, PNG, WebP, GIF, MP4, MOV, WebM');
+      return;
+    }
+
     setUploading(true);
+    setError(null);
 
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    if (!token) { setUploading(false); return; }
+    const ext = file.name.split('.').pop() || 'bin';
+    const path = `ad-creatives/${companyId}/${editingId}-${Date.now()}.${ext}`;
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('creative_id', editingId);
-    formData.append('company_id', companyId);
+    const { error: uploadError } = await supabase.storage
+      .from('company-assets')
+      .upload(path, file, {
+        contentType: file.type,
+        cacheControl: '31536000',
+        upsert: true,
+      });
 
-    const res = await fetch('/api/ads/creatives/upload', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+    if (uploadError) {
+      console.error('Ad creative upload error:', uploadError);
+      setError('Upload failed');
+      setUploading(false);
+      return;
+    }
 
-    const json = await res.json();
+    const { data: urlData } = supabase.storage
+      .from('company-assets')
+      .getPublicUrl(path);
+
+    // Update the creative's image_url in the database
+    const { error: updateError } = await supabase
+      .from('ad_creatives')
+      .update({ image_url: urlData.publicUrl })
+      .eq('id', editingId)
+      .eq('company_id', companyId);
+
     setUploading(false);
 
-    if (json.success && json.url) {
-      setForm((prev) => ({ ...prev, image_url: json.url }));
+    if (updateError) {
+      console.error('Update image_url error:', updateError);
+      setError('Uploaded but failed to save URL');
+      return;
     }
+
+    setForm((prev) => ({ ...prev, image_url: urlData.publicUrl }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
