@@ -115,7 +115,7 @@ if (pages && pages.length > 0) {
       {/* ─── Visual header — click to open ──────────────────── */}
       <button
         onClick={() => router.push(`/templates/${t.id}/pages`)}
-        className="w-full aspect-[4/3] rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative border-b border-edge"
+        className="w-full aspect-[16/10] rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative border-b border-edge"
         style={hasCover ? { backgroundColor: t.cover_bg_color_1 || '#0f0f0f' } : undefined}
       >
         {hasCover ? (

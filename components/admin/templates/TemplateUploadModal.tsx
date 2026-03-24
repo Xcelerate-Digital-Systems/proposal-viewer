@@ -2,7 +2,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Upload, FileText, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
 
@@ -18,6 +20,7 @@ const formatSize = (bytes: number) => {
 };
 
 export default function TemplateUploadModal({ companyId, onClose, onSuccess }: TemplateUploadModalProps) {
+  const router = useRouter();
   const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -28,9 +31,33 @@ export default function TemplateUploadModal({ companyId, onClose, onSuccess }: T
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !name.trim()) return;
+    if (!name.trim()) return;
 
     setUploading(true);
+
+    // No PDF — create a blank template and navigate to it
+    if (!file) {
+      setStatus('Creating template...');
+      const { data, error } = await supabase
+        .from('proposal_templates')
+        .insert({ name: name.trim(), description: description.trim() || null, company_id: companyId })
+        .select('id')
+        .single();
+
+      if (error || !data) {
+        toast.error('Failed to create template.');
+        setUploading(false);
+        setStatus('');
+        return;
+      }
+
+      toast.success('Template created!');
+      onSuccess();
+      router.push(`/templates/${data.id}/pages`);
+      return;
+    }
+
+    // PDF flow — upload then split
     setUploadProgress(0);
     setStatus('Uploading PDF...');
 
@@ -116,7 +143,7 @@ export default function TemplateUploadModal({ companyId, onClose, onSuccess }: T
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">PDF File <span className="text-gray-400 font-normal">(optional)</span></label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
               {file ? (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -128,7 +155,7 @@ export default function TemplateUploadModal({ companyId, onClose, onSuccess }: T
                 <div className="flex flex-col items-center gap-2">
                   <Upload size={24} className="text-gray-300" />
                   <span className="text-sm text-gray-400">Click to upload PDF</span>
-                  <span className="text-xs text-gray-300">Each page becomes a reusable template page</span>
+                  <span className="text-xs text-gray-300">Or skip to create a blank template</span>
                 </div>
               )}
               <input
@@ -163,7 +190,7 @@ export default function TemplateUploadModal({ companyId, onClose, onSuccess }: T
 
           <button
             type="submit"
-            disabled={uploading || !file || !name.trim()}
+            disabled={uploading || !name.trim()}
             className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {uploading ? 'Processing...' : 'Create Template'}

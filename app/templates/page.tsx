@@ -157,7 +157,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             </button>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((t) => (
               <TemplateListCard
                 key={t.id}
