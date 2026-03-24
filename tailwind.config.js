@@ -16,8 +16,8 @@ module.exports = {
         faint: '#ABABAB',
         edge: '#EFEFEF',
         'edge-hover': '#D5D5D5',
-        surface: '#F5F4F2',
-        ivory: '#FCFBF9',
+        surface: '#F5F5F5',
+        ivory: '#FFFFFF',
         teal: {
           DEFAULT: '#017C87',
           hover: '#016670',

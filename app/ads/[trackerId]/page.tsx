@@ -8,12 +8,15 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase, type AdTracker } from '@/lib/supabase';
 import AdCreativesTable from '@/components/admin/ads/AdCreativesTable';
-import AdCreativeForm from '@/components/admin/ads/AdCreativeForm';
 import QuickCreateModal from '@/components/admin/ads/QuickCreateModal';
 import AdFilterBar from '@/components/admin/ads/AdFilterBar';
 import StandardsPanel from '@/components/admin/ads/StandardsPanel';
 import NamingLegendPanel from '@/components/admin/ads/NamingLegendPanel';
+import ReferenceTabContent from '@/components/admin/ads/ReferenceTabContent';
+import type { TabType } from '@/components/admin/ads/ReferenceTabContent';
 import type { AdAccountStandards, TrackerStandards } from '@/lib/types/ads';
+
+type TrackerTab = 'creatives' | TabType;
 
 export default function TrackerDetailPage() {
   return (
@@ -31,12 +34,12 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [tracker, setTracker] = useState<AdTracker | null>(null);
   const [trackerLoading, setTrackerLoading] = useState(true);
   const [showQuickCreate, setShowQuickCreate] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showStandards, setShowStandards] = useState(false);
   const [showNamingLegend, setShowNamingLegend] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<TrackerTab>('creatives');
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [nameSaving, setNameSaving] = useState(false);
@@ -149,7 +152,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-5">
+      <div className="border-b border-edge bg-white px-6 lg:px-10 py-5">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push('/ads')}
@@ -259,28 +262,55 @@ function TrackerDetail({ companyId }: { companyId: string }) {
         </div>
 
         {/* Filter bar */}
-        {showFilters && (
+        {showFilters && activeTab === 'creatives' && (
           <AdFilterBar
             filters={filters}
             onChange={(f) => setFilters({ ...filters, ...f })}
           />
         )}
+
+        {/* Tab navigation */}
+        <div className="flex items-center gap-1 mt-4 -mb-[1px]">
+          {([
+            { key: 'creatives', label: 'Creatives' },
+            { key: 'angles', label: 'Angles Menu' },
+            { key: 'formats', label: 'Creative Formats' },
+            { key: 'awareness', label: 'Awareness Level' },
+            { key: 'sophistication', label: 'Market Sophistication' },
+          ] as { key: TrackerTab; label: string }[]).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 text-[13px] font-medium rounded-t-lg border border-b-0 transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-white text-ink border-edge'
+                  : 'bg-transparent text-muted border-transparent hover:text-ink hover:bg-surface/50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Table */}
+      {/* Content area */}
       <div className="flex-1 overflow-hidden">
-        <AdCreativesTable
-          creatives={creatives}
-          loading={loading}
-          sortBy={filters.sort_by || 'sort_order'}
-          sortDir={filters.sort_dir || 'asc'}
-          companyId={companyId}
-          onSort={handleSort}
-          onEdit={(id) => setEditingId(id)}
-          onDelete={deleteCreative}
-          accountStandards={accountStandards}
-          trackerStandards={tracker?.standards || {}}
-        />
+        {activeTab === 'creatives' ? (
+          <AdCreativesTable
+            creatives={creatives}
+            loading={loading}
+            sortBy={filters.sort_by || 'sort_order'}
+            sortDir={filters.sort_dir || 'asc'}
+            companyId={companyId}
+            onSort={handleSort}
+            onEdit={(id) => router.push(`/ads/${trackerId}/${id}`)}
+            onDelete={deleteCreative}
+            accountStandards={accountStandards}
+            trackerStandards={tracker?.standards || {}}
+          />
+        ) : (
+          <ReferenceTabContent type={activeTab} />
+        )}
       </div>
 
       {/* Quick create modal */}
@@ -321,23 +351,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
         />
       )}
 
-      {/* Full edit panel */}
-      {editingId && (
-        <AdCreativeForm
-          trackerId={trackerId}
-          companyId={companyId}
-          editingId={editingId}
-          onClose={() => setEditingId(null)}
-          onSave={async (data) => {
-            const result = await updateCreative(editingId, data);
-            if (!result.error) {
-              setEditingId(null);
-              fetchCreatives();
-            }
-            return result;
-          }}
-        />
-      )}
     </div>
   );
 }

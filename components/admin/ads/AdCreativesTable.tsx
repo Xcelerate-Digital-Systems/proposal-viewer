@@ -48,6 +48,9 @@ type ColumnDef = {
   suffix?: string;
   prefix?: string;
   maxWidth?: string;
+  minWidth?: string;
+  groupIdx?: number;
+  firstInGroup?: boolean; // true on the first column of each group (for left border)
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -72,43 +75,64 @@ const WINNER_COLORS: Record<string, string> = {
 const toOpts = (arr: { value: string; label: string; description?: string }[]): SelectOption[] =>
   arr.map((a) => ({ value: a.value, label: a.label, description: 'description' in a ? (a as { description?: string }).description : undefined }));
 
+// Column groups for the grouped header row
+const COLUMN_GROUPS: { label: string; colSpan: number }[] = [
+  { label: 'Ad Details', colSpan: 2 },
+  { label: 'Step 1: Ad Strategy', colSpan: 5 },
+  { label: 'Step 2: Who is the audience', colSpan: 3 },
+  { label: 'Step 3: Where is the ad going', colSpan: 2 },
+  { label: 'Step 4: How will you execute the ad', colSpan: 7 },
+  { label: 'Step 5: Results & Learnings', colSpan: 8 },
+];
+
 const COLUMNS: ColumnDef[] = [
-  { key: '_thumb', label: '', cellType: 'thumbnail' },
-  { key: 'ad_name', label: 'Ad Name', sortable: true, cellType: 'text', maxWidth: '220px' },
-  { key: 'status', label: 'Status', sortable: true, cellType: 'badge', options: toOpts(AD_CREATIVE_STATUSES), badgeColors: STATUS_COLORS },
-  { key: 'iteration_type', label: 'Type', cellType: 'select', options: toOpts(AD_ITERATION_TYPES) },
-  { key: 'media_type', label: 'Media', cellType: 'select', options: toOpts(AD_MEDIA_TYPES) },
-  { key: 'signal', label: 'Signal', cellType: 'select', options: toOpts(AD_SIGNALS) },
-  { key: 'angle_family', label: 'Angle Family', cellType: 'select', options: toOpts(AD_ANGLE_FAMILIES) },
-  { key: 'angle_idea', label: 'Angle Idea', cellType: 'text', maxWidth: '150px' },
-  { key: 'creative_style', label: 'Style', cellType: 'select', options: toOpts(AD_CREATIVE_STYLES) },
-  { key: 'creative_format', label: 'Format', cellType: 'select', options: toOpts(AD_CREATIVE_FORMATS) },
-  { key: 'target_market', label: 'Target Market', cellType: 'text', maxWidth: '150px' },
-  { key: 'awareness_level', label: 'Awareness', cellType: 'select', options: toOpts(AWARENESS_LEVELS) },
-  { key: 'market_sophistication', label: 'Sophistication', cellType: 'select', options: toOpts(MARKET_SOPHISTICATION_LEVELS) },
-  { key: 'offer_variant', label: 'Offer', cellType: 'text', maxWidth: '150px' },
-  { key: 'lander_variant', label: 'Lander', cellType: 'text', maxWidth: '150px' },
-  { key: 'winner', label: 'Winner', sortable: true, cellType: 'badge', options: toOpts(AD_WINNER_STATUSES), badgeColors: WINNER_COLORS },
-  { key: 'launch_date', label: 'Launch', sortable: true, cellType: 'date' },
-  { key: 'creative_lifespan_days', label: 'Lifespan', cellType: 'number', suffix: 'd' },
-  { key: 'hook_rate', label: 'Hook %', sortable: true, cellType: 'number', suffix: '%' },
-  { key: 'hold_rate', label: 'Hold %', sortable: true, cellType: 'number', suffix: '%' },
-  { key: 'uctr', label: 'UCTR', sortable: true, cellType: 'number' },
-  { key: 'cvr', label: 'CVR', sortable: true, cellType: 'number' },
-  { key: 'cpl', label: 'CPL', sortable: true, cellType: 'number', prefix: '$' },
-  { key: '_links', label: 'Links', cellType: 'readonly' },
-  { key: '_copy', label: 'Copy', cellType: 'readonly' },
+  // Group 0 — Ad Details
+  { key: '_thumb', label: '', cellType: 'thumbnail', groupIdx: 0 },
+  { key: 'ad_name', label: 'Ad Name', sortable: true, cellType: 'text', maxWidth: '280px', minWidth: '180px', groupIdx: 0 },
+  // Group 1 — Step 1: Ad Strategy
+  { key: 'signal', label: 'Signal', cellType: 'select', options: toOpts(AD_SIGNALS), minWidth: '130px', groupIdx: 1, firstInGroup: true },
+  { key: 'hypothesis', label: 'Hypothesis', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 1 },
+  { key: 'ad_concept', label: 'Ad Concept', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 1 },
+  { key: 'angle_family', label: 'Angle Family', cellType: 'select', options: toOpts(AD_ANGLE_FAMILIES), minWidth: '140px', groupIdx: 1 },
+  { key: 'angle_idea', label: 'Angle Idea', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 1 },
+  // Group 2 — Step 2: Who is the audience
+  { key: 'target_market', label: 'Target Market', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 2, firstInGroup: true },
+  { key: 'awareness_level', label: 'Awareness', cellType: 'select', options: toOpts(AWARENESS_LEVELS), minWidth: '130px', groupIdx: 2 },
+  { key: 'market_sophistication', label: 'Sophistication', cellType: 'select', options: toOpts(MARKET_SOPHISTICATION_LEVELS), minWidth: '140px', groupIdx: 2 },
+  // Group 3 — Step 3: Where is the ad going
+  { key: 'offer_variant', label: 'Offer', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 3, firstInGroup: true },
+  { key: 'lander_variant', label: 'Lander', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 3 },
+  // Group 4 — Step 4: How will you execute the ad
+  { key: 'iteration_type', label: 'Type', cellType: 'select', options: toOpts(AD_ITERATION_TYPES), minWidth: '110px', groupIdx: 4, firstInGroup: true },
+  { key: 'media_type', label: 'Media', cellType: 'select', options: toOpts(AD_MEDIA_TYPES), minWidth: '110px', groupIdx: 4 },
+  { key: 'creative_style', label: 'Style', cellType: 'select', options: toOpts(AD_CREATIVE_STYLES), minWidth: '120px', groupIdx: 4 },
+  { key: 'creative_format', label: 'Format', cellType: 'select', options: toOpts(AD_CREATIVE_FORMATS), minWidth: '130px', groupIdx: 4 },
+  { key: 'status', label: 'Status', sortable: true, cellType: 'badge', options: toOpts(AD_CREATIVE_STATUSES), badgeColors: STATUS_COLORS, minWidth: '110px', groupIdx: 4 },
+  { key: '_links', label: 'Links', cellType: 'readonly', minWidth: '80px', groupIdx: 4 },
+  { key: '_copy', label: 'Copy', cellType: 'readonly', minWidth: '70px', groupIdx: 4 },
+  // Group 5 — Step 5: Results & Learnings
+  { key: 'winner', label: 'Winner', sortable: true, cellType: 'badge', options: toOpts(AD_WINNER_STATUSES), badgeColors: WINNER_COLORS, minWidth: '110px', groupIdx: 5, firstInGroup: true },
+  { key: 'launch_date', label: 'Launch', sortable: true, cellType: 'date', minWidth: '110px', groupIdx: 5 },
+  { key: 'creative_lifespan_days', label: 'Lifespan', cellType: 'number', suffix: 'd', minWidth: '90px', groupIdx: 5 },
+  { key: 'hook_rate', label: 'Hook %', sortable: true, cellType: 'number', suffix: '%', minWidth: '90px', groupIdx: 5 },
+  { key: 'hold_rate', label: 'Hold %', sortable: true, cellType: 'number', suffix: '%', minWidth: '90px', groupIdx: 5 },
+  { key: 'uctr', label: 'UCTR', sortable: true, cellType: 'number', minWidth: '80px', groupIdx: 5 },
+  { key: 'cvr', label: 'CVR', sortable: true, cellType: 'number', minWidth: '80px', groupIdx: 5 },
+  { key: 'cpl', label: 'CPL', sortable: true, cellType: 'number', prefix: '$', minWidth: '80px', groupIdx: 5 },
 ];
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-function SortHeader({ label, column, sortBy, sortDir, onSort }: {
-  label: string; column: string; sortBy: string; sortDir: string; onSort: (c: string) => void;
+const GROUP_BORDER = 'border-l-2 border-l-edge-hover';
+
+function SortHeader({ label, column, sortBy, sortDir, onSort, firstInGroup, minWidth }: {
+  label: string; column: string; sortBy: string; sortDir: string; onSort: (c: string) => void; firstInGroup?: boolean; minWidth?: string;
 }) {
   const active = sortBy === column;
   return (
     <th
-      className="px-3 py-3 text-left text-[11px] font-semibold text-muted uppercase tracking-wider cursor-pointer hover:text-ink select-none whitespace-nowrap"
+      className={`px-3 py-3 text-left text-[11px] font-semibold text-muted uppercase tracking-wider cursor-pointer hover:text-ink select-none whitespace-nowrap ${firstInGroup ? GROUP_BORDER : ''}`}
+      style={minWidth ? { minWidth } : undefined}
       onClick={() => onSort(column)}
     >
       <span className="inline-flex items-center gap-1">
@@ -120,14 +144,18 @@ function SortHeader({ label, column, sortBy, sortDir, onSort }: {
 }
 
 function ColHeader({ col, sortBy, sortDir, onSort }: { col: ColumnDef; sortBy: string; sortDir: string; onSort: (c: string) => void }) {
+  const border = col.firstInGroup ? GROUP_BORDER : '';
   if (col.cellType === 'thumbnail') {
-    return <th className="px-2 py-3 w-[68px]" />;
+    return <th className={`px-2 py-3 w-[68px] ${border}`} />;
   }
   if (col.sortable) {
-    return <SortHeader label={col.label} column={col.key} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />;
+    return <SortHeader label={col.label} column={col.key} sortBy={sortBy} sortDir={sortDir} onSort={onSort} firstInGroup={col.firstInGroup} minWidth={col.minWidth} />;
   }
   return (
-    <th className="px-3 py-3 text-left text-[11px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap">
+    <th
+      className={`px-3 py-3 text-left text-[11px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap ${border}`}
+      style={col.minWidth ? { minWidth: col.minWidth } : undefined}
+    >
       {col.label}
     </th>
   );
@@ -228,12 +256,13 @@ export default function AdCreativesTable({
 
   const renderCell = (c: AdCreativeWithVariants, col: ColumnDef) => {
     const raw = getValue(c, col.key);
+    const gb = col.firstInGroup ? GROUP_BORDER : '';
 
     // Thumbnail column
     if (col.cellType === 'thumbnail') {
       const isVideo = c.image_url && /\.(mp4|mov|webm)$/i.test(c.image_url);
       return (
-        <td key={col.key} className="px-2 py-1.5 w-[68px]">
+        <td key={col.key} className={`px-2 py-1.5 w-[68px] ${gb}`}>
           {c.image_url ? (
             <div className="w-[52px] h-[52px] rounded-lg overflow-hidden bg-surface">
               {isVideo ? (
@@ -254,7 +283,7 @@ export default function AdCreativesTable({
     // Special readonly columns
     if (col.key === '_links') {
       return (
-        <td key={col.key} className="px-3 py-2.5">
+        <td key={col.key} className={`px-3 py-2.5 ${gb}`}>
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {c.brief_link ? (
               <a href={c.brief_link} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">
@@ -273,7 +302,7 @@ export default function AdCreativesTable({
 
     if (col.key === '_copy') {
       return (
-        <td key={col.key} className="px-3 py-2.5 text-[13px] text-muted">
+        <td key={col.key} className={`px-3 py-2.5 text-[13px] text-muted ${gb}`}>
           {c.ad_copy_variants?.length || 0}
         </td>
       );
@@ -282,7 +311,7 @@ export default function AdCreativesTable({
     // Badge cells
     if (col.cellType === 'badge') {
       return (
-        <td key={col.key} className="px-3 py-2.5">
+        <td key={col.key} className={`px-3 py-2.5 ${gb}`}>
           <BadgeDisplay value={raw as string | null} map={col.options!} colors={col.badgeColors!} />
         </td>
       );
@@ -291,7 +320,7 @@ export default function AdCreativesTable({
     // Select cells
     if (col.cellType === 'select') {
       return (
-        <td key={col.key} className="px-3 py-2.5">
+        <td key={col.key} className={`px-3 py-2.5 ${gb}`}>
           <SelectDisplay value={raw as string | null} options={col.options!} />
         </td>
       );
@@ -301,7 +330,7 @@ export default function AdCreativesTable({
     if (col.cellType === 'text') {
       const strVal = (raw as string) || '';
       return (
-        <td key={col.key} className={`px-3 py-2.5 ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ''}`}>
+        <td key={col.key} className={`px-3 py-2.5 ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ''} ${gb}`}>
           {col.key === 'ad_name' ? (
             <>
               <span className="text-[13px] font-medium text-ink truncate block">{strVal || '—'}</span>
@@ -324,7 +353,7 @@ export default function AdCreativesTable({
       else if (col.key === 'cpl') meetsStandard = checkStandard(numVal, trackerStandards?.cpl_target, true);
 
       return (
-        <td key={col.key} className="px-3 py-2.5 whitespace-nowrap">
+        <td key={col.key} className={`px-3 py-2.5 whitespace-nowrap ${gb}`}>
           <NumberDisplay value={numVal} prefix={col.prefix} suffix={col.suffix} meetsStandard={meetsStandard} />
         </td>
       );
@@ -334,19 +363,33 @@ export default function AdCreativesTable({
     if (col.cellType === 'date') {
       const dateVal = raw as string | null;
       return (
-        <td key={col.key} className="px-3 py-2.5 text-[13px] text-muted whitespace-nowrap">
+        <td key={col.key} className={`px-3 py-2.5 text-[13px] text-muted whitespace-nowrap ${gb}`}>
           {dateVal ? new Date(dateVal).toLocaleDateString() : <span className="text-faint">—</span>}
         </td>
       );
     }
 
-    return <td key={col.key} className="px-3 py-2.5 text-[13px] text-muted">—</td>;
+    return <td key={col.key} className={`px-3 py-2.5 text-[13px] text-muted ${gb}`}>—</td>;
   };
 
   return (
     <div className="h-full overflow-auto">
-      <table className="w-full min-w-[1600px]">
-        <thead className="bg-ivory border-b border-edge sticky top-0 z-10">
+      <table className="w-full min-w-[2200px]">
+        <thead className="bg-white border-b border-edge sticky top-0 z-10">
+          {/* Group header row */}
+          <tr>
+            {COLUMN_GROUPS.map((group, i) => (
+              <th
+                key={i}
+                colSpan={group.colSpan}
+                className={`px-3 py-2.5 text-left text-[11px] font-bold text-ink uppercase tracking-wider bg-white ${i > 0 ? GROUP_BORDER : ''}`}
+              >
+                {group.label}
+              </th>
+            ))}
+            <th className="w-10 bg-white" />
+          </tr>
+          {/* Individual column headers */}
           <tr>
             {columns.map((col) => (
               <ColHeader key={col.key} col={col} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
@@ -359,7 +402,7 @@ export default function AdCreativesTable({
             <tr
               key={c.id}
               onClick={() => onEdit(c.id)}
-              className="hover:bg-surface/50 transition-colors group cursor-pointer"
+              className="bg-white hover:bg-surface/50 transition-colors group cursor-pointer"
             >
               {columns.map((col) => renderCell(c, col))}
 
