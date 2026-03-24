@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
       .insert({
         name: template_name,
         description: template_description || null,
-        page_count: pageCount,
         company_id,
       })
       .select()
