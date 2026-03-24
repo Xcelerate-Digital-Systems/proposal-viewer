@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload all pages in parallel (batches of 5 to avoid overwhelming storage)
-    const pages: { template_id: string; page_number: number; file_path: string; label: string; company_id: string }[] = [];
+    const pages: { template_id: string; position: number; type: string; title: string; enabled: boolean; orientation: string; payload: Record<string, string>; company_id: string }[] = [];
     const BATCH_SIZE = 5;
 
     for (let batch = 0; batch < pageUploads.length; batch += BATCH_SIZE) {
@@ -85,9 +85,12 @@ export async function POST(req: NextRequest) {
         if (result.status === 'fulfilled') {
           pages.push({
             template_id: template.id,
-            page_number: result.value.index + 1,
-            file_path: result.value.path,
-            label: `Page ${result.value.index + 1}`,
+            position: result.value.index,
+            type: 'pdf',
+            title: `Page ${result.value.index + 1}`,
+            enabled: true,
+            orientation: 'auto',
+            payload: { file_path: result.value.path },
             company_id,
           });
         }
