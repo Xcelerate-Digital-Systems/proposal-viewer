@@ -3,20 +3,21 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowLeft, Search, Filter, Target, BookOpen, Pencil, Check, X } from 'lucide-react';
+import { Plus, ArrowLeft, Search, Filter, BookOpen, Pencil, Check, X } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase, type AdTracker } from '@/lib/supabase';
 import AdCreativesTable from '@/components/admin/ads/AdCreativesTable';
 import QuickCreateModal from '@/components/admin/ads/QuickCreateModal';
 import AdFilterBar from '@/components/admin/ads/AdFilterBar';
-import StandardsPanel from '@/components/admin/ads/StandardsPanel';
 import NamingLegendPanel from '@/components/admin/ads/NamingLegendPanel';
 import ReferenceTabContent from '@/components/admin/ads/ReferenceTabContent';
 import type { TabType } from '@/components/admin/ads/ReferenceTabContent';
+import StandardsTab from '@/components/admin/ads/StandardsTab';
+import TargetMarketsTab from '@/components/admin/ads/TargetMarketsTab';
 import type { AdAccountStandards, TrackerStandards } from '@/lib/types/ads';
 
-type TrackerTab = 'creatives' | TabType;
+type TrackerTab = 'creatives' | 'standards' | 'target_markets' | TabType;
 
 export default function TrackerDetailPage() {
   return (
@@ -35,7 +36,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [trackerLoading, setTrackerLoading] = useState(true);
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [showStandards, setShowStandards] = useState(false);
   const [showNamingLegend, setShowNamingLegend] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -229,15 +229,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               <BookOpen size={16} />
             </button>
 
-            {/* Standards */}
-            <button
-              onClick={() => setShowStandards(true)}
-              className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center bg-surface text-muted hover:text-ink transition-all"
-              title="Performance Standards"
-            >
-              <Target size={16} />
-            </button>
-
             {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -273,6 +264,8 @@ function TrackerDetail({ companyId }: { companyId: string }) {
         <div className="flex items-center gap-1 mt-4 -mb-[1px]">
           {([
             { key: 'creatives', label: 'Creatives' },
+            { key: 'standards', label: 'Standards' },
+            { key: 'target_markets', label: 'Target Markets' },
             { key: 'angles', label: 'Angles Menu' },
             { key: 'formats', label: 'Creative Formats' },
             { key: 'awareness', label: 'Awareness Level' },
@@ -294,7 +287,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden overflow-y-auto">
         {activeTab === 'creatives' ? (
           <AdCreativesTable
             creatives={creatives}
@@ -308,6 +301,25 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             accountStandards={accountStandards}
             trackerStandards={tracker?.standards || {}}
           />
+        ) : activeTab === 'standards' ? (
+          <StandardsTab
+            trackerId={trackerId}
+            companyId={companyId}
+            trackerStandards={tracker?.standards || {}}
+            onSaveTracker={async (standards) => {
+              const token = (await supabase.auth.getSession()).data.session?.access_token;
+              if (!token) return;
+              await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ standards }),
+              });
+              setTracker({ ...tracker!, standards });
+              fetchAccountStandards();
+            }}
+          />
+        ) : activeTab === 'target_markets' ? (
+          <TargetMarketsTab companyId={companyId} />
         ) : (
           <ReferenceTabContent type={activeTab} />
         )}
@@ -328,27 +340,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
       {/* Naming legend panel */}
       {showNamingLegend && (
         <NamingLegendPanel onClose={() => setShowNamingLegend(false)} />
-      )}
-
-      {/* Standards panel */}
-      {showStandards && tracker && (
-        <StandardsPanel
-          trackerId={trackerId}
-          companyId={companyId}
-          trackerStandards={tracker.standards || {}}
-          onClose={() => setShowStandards(false)}
-          onSaveTracker={async (standards) => {
-            const token = (await supabase.auth.getSession()).data.session?.access_token;
-            if (!token) return;
-            await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
-              method: 'PATCH',
-              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ standards }),
-            });
-            setTracker({ ...tracker, standards });
-            fetchAccountStandards();
-          }}
-        />
       )}
 
     </div>

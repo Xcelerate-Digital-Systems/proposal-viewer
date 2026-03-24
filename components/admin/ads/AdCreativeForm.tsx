@@ -174,7 +174,23 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
   const [error, setError] = useState<string | null>(null);
   const [referenceTab, setReferenceTab] = useState<TabType | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [targetMarketOptions, setTargetMarketOptions] = useState<{ value: string; label: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Fetch target market options
+  useEffect(() => {
+    (async () => {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) return;
+      const res = await fetch(`/api/ads/target-markets?company_id=${companyId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) {
+        setTargetMarketOptions(json.data.map((m: { name: string }) => ({ value: m.name, label: m.name })));
+      }
+    })();
+  }, [companyId]);
 
   // Load existing creative for editing
   const loadCreative = useCallback(async () => {
@@ -599,8 +615,15 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
 
               {/* Audience (right) */}
               <Section title="Audience">
-                <Field label="Target Market" hint="Who is the ad targeting?">
-                  <input type="text" value={form.target_market} onChange={(e) => updateField('target_market', e.target.value)} placeholder="e.g., Women Coach & Consultant Broad" className={inputClass} />
+                <Field label="Target Market" hint="Who is the ad targeting? Select or type a custom market">
+                  <CustomSelect
+                    value={form.target_market}
+                    options={targetMarketOptions}
+                    onChange={(v) => updateField('target_market', v)}
+                    placeholder="Select or type a market..."
+                    searchable
+                    creatable
+                  />
                 </Field>
                 <Field label="Awareness Level" hint="Choose which stage they are at">
                   <CustomSelect

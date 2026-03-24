@@ -139,6 +139,15 @@ export type AdCreativeFormat = {
   created_at: string;
 };
 
+export type AdTargetMarket = {
+  id: string;
+  company_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+};
+
 // ─── Extended types (with relations) ─────────────────────────────────────────
 
 export type AdCreativeWithVariants = AdCreative & {

@@ -19,6 +19,7 @@ type Props = {
   placeholder?: string;
   searchable?: boolean;
   clearable?: boolean;
+  creatable?: boolean;
 };
 
 export default function CustomSelect({
@@ -28,6 +29,7 @@ export default function CustomSelect({
   placeholder = 'Select...',
   searchable = false,
   clearable = true,
+  creatable = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -93,7 +95,7 @@ export default function CustomSelect({
     }
   }, [open, searchable]);
 
-  const current = options.find((o) => o.value === value);
+  const current = options.find((o) => o.value === value) || (creatable && value ? { value, label: value } : undefined);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return options;
@@ -143,10 +145,20 @@ export default function CustomSelect({
 
       {/* Options */}
       <div className="max-h-[240px] overflow-y-auto py-1">
-        {filtered.length === 0 ? (
+        {filtered.length === 0 && !creatable ? (
           <p className="px-3 py-2 text-[12px] text-faint text-center">No results</p>
         ) : (
-          filtered.map((opt) => {
+          <>
+          {creatable && search.trim() && !options.some((o) => o.label.toLowerCase() === search.trim().toLowerCase()) && (
+            <button
+              type="button"
+              onClick={() => handleSelect(search.trim())}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-[13px] text-teal hover:bg-teal/5 transition-colors"
+            >
+              <span className="font-medium">Create &ldquo;{search.trim()}&rdquo;</span>
+            </button>
+          )}
+          {filtered.map((opt) => {
             const selected = opt.value === value;
             return (
               <button
@@ -187,6 +199,8 @@ export default function CustomSelect({
               </button>
             );
           })
+        }
+        </>
         )}
       </div>
     </div>,
