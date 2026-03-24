@@ -51,6 +51,7 @@ type FormData = {
   status: string;
   brief_link: string;
   creative_link: string;
+  ad_copy_link: string;
   winner: string;
   launch_date: string;
   analysis_date: string;
@@ -78,7 +79,7 @@ const INITIAL_FORM: FormData = {
   target_market: '', awareness_level: '', market_sophistication: '',
   offer_variant: '', lander_variant: '',
   iteration_type: '', media_type: '', creative_style: '', creative_format: '',
-  video_hooks: '', status: 'draft', brief_link: '', creative_link: '',
+  video_hooks: '', status: 'draft', brief_link: '', creative_link: '', ad_copy_link: '',
   winner: '', launch_date: '', analysis_date: '', kill_date: '',
   creative_lifespan_days: '', hook_rate: '', hold_rate: '', uctr: '', cvr: '',
   cpl: '', cpl_label: 'CPL', next_action: '',
@@ -228,6 +229,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
       status: c.status || 'draft',
       brief_link: c.brief_link || '',
       creative_link: c.creative_link || '',
+      ad_copy_link: c.ad_copy_link || '',
       winner: c.winner || '',
       launch_date: c.launch_date || '',
       analysis_date: c.analysis_date || '',
@@ -396,6 +398,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
       status: form.status,
       brief_link: form.brief_link || null,
       creative_link: form.creative_link || null,
+      ad_copy_link: form.ad_copy_link || null,
       winner: form.winner || null,
       launch_date: form.launch_date || null,
       analysis_date: form.analysis_date || null,
@@ -683,12 +686,15 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                     <input type="text" value={form.video_hooks} onChange={(e) => updateField('video_hooks', e.target.value)} placeholder="What is the hook of the video?" className={inputClass} />
                   </Field>
                 )}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <Field label="Brief Link" hint="Link to the brief or task">
                     <input type="url" value={form.brief_link} onChange={(e) => updateField('brief_link', e.target.value)} placeholder="Link to brief" className={inputClass} />
                   </Field>
                   <Field label="Creative Link" hint="Canva or Frame.io link">
                     <input type="url" value={form.creative_link} onChange={(e) => updateField('creative_link', e.target.value)} placeholder="Canva or Frame.io link" className={inputClass} />
+                  </Field>
+                  <Field label="Ad Copy Link" hint="Google doc link">
+                    <input type="url" value={form.ad_copy_link} onChange={(e) => updateField('ad_copy_link', e.target.value)} placeholder="Google doc link" className={inputClass} />
                   </Field>
                 </div>
                 <div className="flex items-center gap-4 pt-1">

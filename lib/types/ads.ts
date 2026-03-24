@@ -82,6 +82,7 @@ export type AdCreative = {
   status: AdCreativeStatus;
   brief_link: string | null;
   creative_link: string | null;
+  ad_copy_link: string | null;
   // Results
   winner: AdWinnerStatus | null;
   launch_date: string | null;

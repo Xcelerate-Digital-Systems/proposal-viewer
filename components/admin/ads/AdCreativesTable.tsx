@@ -320,20 +320,24 @@ export default function AdCreativesTable({
 
     if (col.key === '_ad_copy_link') {
       return (
-        <td key={col.key} className={`px-3 py-2.5 text-[13px] text-muted ${gb}`}>
-          <span className="text-faint">—</span>
+        <td key={col.key} className={`px-3 py-2.5 ${gb}`} onClick={(e) => e.stopPropagation()}>
+          {c.ad_copy_link ? (
+            <a href={c.ad_copy_link} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">
+              <ExternalLink size={12} />
+            </a>
+          ) : <span className="text-faint">—</span>}
         </td>
       );
     }
 
-    // Copy variant columns
+    // Copy variant columns — truncate to 2 lines max
     if (col.key === '_headline' || col.key === '_primary_text' || col.key === '_description' || col.key === '_cta') {
       const typeMap: Record<string, string> = { _headline: 'headline', _primary_text: 'primary_text', _description: 'description', _cta: 'cta' };
       const variant = c.ad_copy_variants?.find((v) => v.variant_type === typeMap[col.key]);
       return (
-        <td key={col.key} className={`px-3 py-2.5 ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ''} ${gb}`}>
+        <td key={col.key} className={`px-3 py-2.5 ${gb}`} style={col.maxWidth ? { maxWidth: col.maxWidth } : undefined}>
           {variant?.content ? (
-            <span className="text-[13px] text-muted truncate block">{variant.content}</span>
+            <span className="text-[13px] text-muted block overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} title={variant.content}>{variant.content}</span>
           ) : (
             <span className="text-faint">—</span>
           )}
