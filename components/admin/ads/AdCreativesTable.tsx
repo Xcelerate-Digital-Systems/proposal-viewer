@@ -41,6 +41,7 @@ type CellType = 'text' | 'select' | 'badge' | 'number' | 'date' | 'link' | 'read
 type ColumnDef = {
   key: string;
   label: string;
+  hint?: string;
   sortable?: boolean;
   cellType: CellType;
   options?: SelectOption[];
@@ -81,64 +82,75 @@ const COLUMN_GROUPS: { label: string; colSpan: number }[] = [
   { label: 'Step 1: Ad Strategy', colSpan: 5 },
   { label: 'Step 2: Who is the audience', colSpan: 3 },
   { label: 'Step 3: Where is the ad going', colSpan: 2 },
-  { label: 'Step 4: How will you execute the ad', colSpan: 7 },
-  { label: 'Step 5: Results & Learnings', colSpan: 8 },
+  { label: 'Step 4: How will you execute the ad', colSpan: 8 },
+  { label: 'Content', colSpan: 4 },
+  { label: 'Step 5: Results & Learnings', colSpan: 11 },
 ];
 
 const COLUMNS: ColumnDef[] = [
   // Group 0 — Ad Details
   { key: '_thumb', label: '', cellType: 'thumbnail', groupIdx: 0 },
-  { key: 'ad_name', label: 'Ad Name', sortable: true, cellType: 'text', maxWidth: '280px', minWidth: '180px', groupIdx: 0 },
+  { key: 'ad_name', label: 'Ad Name', hint: 'Use the naming convention', sortable: true, cellType: 'text', maxWidth: '280px', minWidth: '180px', groupIdx: 0 },
   // Group 1 — Step 1: Ad Strategy
-  { key: 'signal', label: 'Signal', cellType: 'select', options: toOpts(AD_SIGNALS), minWidth: '130px', groupIdx: 1, firstInGroup: true },
-  { key: 'hypothesis', label: 'Hypothesis', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 1 },
-  { key: 'ad_concept', label: 'Ad Concept', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 1 },
-  { key: 'angle_family', label: 'Angle Family', cellType: 'select', options: toOpts(AD_ANGLE_FAMILIES), minWidth: '140px', groupIdx: 1 },
-  { key: 'angle_idea', label: 'Angle Idea', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 1 },
+  { key: 'signal', label: 'Signal', hint: 'Where does the data come from?', cellType: 'select', options: toOpts(AD_SIGNALS), minWidth: '130px', groupIdx: 1, firstInGroup: true },
+  { key: 'hypothesis', label: 'Hypothesis', hint: 'Links one data insight to one predicted ad outcome', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 1 },
+  { key: 'ad_concept', label: 'Ad Concept', hint: 'Overall idea of the ad in 1-2 sentences', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 1 },
+  { key: 'angle_family', label: 'Angle Family', hint: 'See the reference sheet if unsure', cellType: 'select', options: toOpts(AD_ANGLE_FAMILIES), minWidth: '140px', groupIdx: 1 },
+  { key: 'angle_idea', label: 'Angle Idea', hint: 'Categorisation for data analysis & brainstorming', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 1 },
   // Group 2 — Step 2: Who is the audience
-  { key: 'target_market', label: 'Target Market', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 2, firstInGroup: true },
-  { key: 'awareness_level', label: 'Awareness', cellType: 'select', options: toOpts(AWARENESS_LEVELS), minWidth: '130px', groupIdx: 2 },
-  { key: 'market_sophistication', label: 'Sophistication', cellType: 'select', options: toOpts(MARKET_SOPHISTICATION_LEVELS), minWidth: '140px', groupIdx: 2 },
+  { key: 'target_market', label: 'Target Market', hint: 'Choose or add to drop down', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 2, firstInGroup: true },
+  { key: 'awareness_level', label: 'Awareness Level', hint: 'Choose which stage they are at', cellType: 'select', options: toOpts(AWARENESS_LEVELS), minWidth: '140px', groupIdx: 2 },
+  { key: 'market_sophistication', label: 'Market Sophistication', hint: 'Choose which stage they are at', cellType: 'select', options: toOpts(MARKET_SOPHISTICATION_LEVELS), minWidth: '160px', groupIdx: 2 },
   // Group 3 — Step 3: Where is the ad going
-  { key: 'offer_variant', label: 'Offer', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 3, firstInGroup: true },
-  { key: 'lander_variant', label: 'Lander', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 3 },
+  { key: 'offer_variant', label: 'Offer Variant', hint: 'Which offer will the ad go to?', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 3, firstInGroup: true },
+  { key: 'lander_variant', label: 'Lander Variant', hint: 'Which landing page will the ad go to?', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 3 },
   // Group 4 — Step 4: How will you execute the ad
-  { key: 'iteration_type', label: 'Type', cellType: 'select', options: toOpts(AD_ITERATION_TYPES), minWidth: '110px', groupIdx: 4, firstInGroup: true },
-  { key: 'media_type', label: 'Media', cellType: 'select', options: toOpts(AD_MEDIA_TYPES), minWidth: '110px', groupIdx: 4 },
-  { key: 'creative_style', label: 'Style', cellType: 'select', options: toOpts(AD_CREATIVE_STYLES), minWidth: '120px', groupIdx: 4 },
-  { key: 'creative_format', label: 'Format', cellType: 'select', options: toOpts(AD_CREATIVE_FORMATS), minWidth: '130px', groupIdx: 4 },
-  { key: 'status', label: 'Status', sortable: true, cellType: 'badge', options: toOpts(AD_CREATIVE_STATUSES), badgeColors: STATUS_COLORS, minWidth: '110px', groupIdx: 4 },
-  { key: '_links', label: 'Links', cellType: 'readonly', minWidth: '80px', groupIdx: 4 },
-  { key: '_copy', label: 'Copy', cellType: 'readonly', minWidth: '70px', groupIdx: 4 },
-  // Group 5 — Step 5: Results & Learnings
-  { key: 'winner', label: 'Winner', sortable: true, cellType: 'badge', options: toOpts(AD_WINNER_STATUSES), badgeColors: WINNER_COLORS, minWidth: '110px', groupIdx: 5, firstInGroup: true },
-  { key: 'launch_date', label: 'Launch', sortable: true, cellType: 'date', minWidth: '110px', groupIdx: 5 },
-  { key: 'creative_lifespan_days', label: 'Lifespan', cellType: 'number', suffix: 'd', minWidth: '90px', groupIdx: 5 },
-  { key: 'hook_rate', label: 'Hook %', sortable: true, cellType: 'number', suffix: '%', minWidth: '90px', groupIdx: 5 },
-  { key: 'hold_rate', label: 'Hold %', sortable: true, cellType: 'number', suffix: '%', minWidth: '90px', groupIdx: 5 },
-  { key: 'uctr', label: 'UCTR', sortable: true, cellType: 'number', minWidth: '80px', groupIdx: 5 },
-  { key: 'cvr', label: 'CVR', sortable: true, cellType: 'number', minWidth: '80px', groupIdx: 5 },
-  { key: 'cpl', label: 'CPL', sortable: true, cellType: 'number', prefix: '$', minWidth: '80px', groupIdx: 5 },
+  { key: 'iteration_type', label: 'Type', hint: 'New ad or iteration on winning ad', cellType: 'select', options: toOpts(AD_ITERATION_TYPES), minWidth: '110px', groupIdx: 4, firstInGroup: true },
+  { key: 'media_type', label: 'Media', hint: 'Still vs video', cellType: 'select', options: toOpts(AD_MEDIA_TYPES), minWidth: '110px', groupIdx: 4 },
+  { key: 'creative_style', label: 'Creative Style', hint: 'How will the platform read the creative type', cellType: 'select', options: toOpts(AD_CREATIVE_STYLES), minWidth: '130px', groupIdx: 4 },
+  { key: 'creative_format', label: 'Creative Format', hint: 'Helps with brainstorming & data analysis', cellType: 'select', options: toOpts(AD_CREATIVE_FORMATS), minWidth: '140px', groupIdx: 4 },
+  { key: 'video_hooks', label: 'Video Hooks', hint: 'What is the hook of the video?', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 4 },
+  { key: 'status', label: 'Status', hint: 'What is the status of the ad?', sortable: true, cellType: 'badge', options: toOpts(AD_CREATIVE_STATUSES), badgeColors: STATUS_COLORS, minWidth: '110px', groupIdx: 4 },
+  { key: '_links', label: 'Links', hint: 'Brief & creative links', cellType: 'readonly', minWidth: '80px', groupIdx: 4 },
+  { key: '_ad_copy_link', label: 'Ad Copy', hint: 'Google doc link', cellType: 'readonly', minWidth: '80px', groupIdx: 4 },
+  // Group 5 — Content
+  { key: '_headline', label: 'Headline', cellType: 'readonly', minWidth: '140px', maxWidth: '200px', groupIdx: 5, firstInGroup: true },
+  { key: '_primary_text', label: 'Primary Text', cellType: 'readonly', minWidth: '160px', maxWidth: '240px', groupIdx: 5 },
+  { key: '_description', label: 'Description', cellType: 'readonly', minWidth: '140px', maxWidth: '200px', groupIdx: 5 },
+  { key: '_cta', label: 'CTA', cellType: 'readonly', minWidth: '100px', groupIdx: 5 },
+  // Group 6 — Step 5: Results & Learnings
+  { key: 'winner', label: 'Winner?', hint: 'After 7 days, what was the outcome?', sortable: true, cellType: 'badge', options: toOpts(AD_WINNER_STATUSES), badgeColors: WINNER_COLORS, minWidth: '110px', groupIdx: 6, firstInGroup: true },
+  { key: 'launch_date', label: 'Launch Date', hint: 'When it went live', sortable: true, cellType: 'date', minWidth: '110px', groupIdx: 6 },
+  { key: 'analysis_date', label: 'Analysis Date', cellType: 'date', minWidth: '110px', groupIdx: 6 },
+  { key: 'kill_date', label: 'Kill Date', hint: 'When did we turn off the ad?', cellType: 'date', minWidth: '110px', groupIdx: 6 },
+  { key: 'creative_lifespan_days', label: 'Creative Lifespan', hint: 'How long did the ad run for?', cellType: 'number', suffix: 'd', minWidth: '100px', groupIdx: 6 },
+  { key: 'hook_rate', label: 'Hook Rate', hint: '30%+', sortable: true, cellType: 'number', suffix: '%', minWidth: '90px', groupIdx: 6 },
+  { key: 'hold_rate', label: 'Hold Rate', hint: '10%+', sortable: true, cellType: 'number', suffix: '%', minWidth: '90px', groupIdx: 6 },
+  { key: 'uctr', label: 'UCTR', hint: '1.25%+', sortable: true, cellType: 'number', minWidth: '80px', groupIdx: 6 },
+  { key: 'cvr', label: 'CVR', hint: 'Conversions / clicks', sortable: true, cellType: 'number', minWidth: '80px', groupIdx: 6 },
+  { key: 'cpl', label: 'CPL/Metric', sortable: true, cellType: 'number', prefix: '$', minWidth: '90px', groupIdx: 6 },
+  { key: 'next_action', label: 'Next Action / Learning', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 6 },
 ];
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 const GROUP_BORDER = 'border-l-2 border-l-edge-hover';
 
-function SortHeader({ label, column, sortBy, sortDir, onSort, firstInGroup, minWidth }: {
-  label: string; column: string; sortBy: string; sortDir: string; onSort: (c: string) => void; firstInGroup?: boolean; minWidth?: string;
+function SortHeader({ label, hint, column, sortBy, sortDir, onSort, firstInGroup, minWidth }: {
+  label: string; hint?: string; column: string; sortBy: string; sortDir: string; onSort: (c: string) => void; firstInGroup?: boolean; minWidth?: string;
 }) {
   const active = sortBy === column;
   return (
     <th
-      className={`px-3 py-3 text-left text-[11px] font-semibold text-muted uppercase tracking-wider cursor-pointer hover:text-ink select-none whitespace-nowrap ${firstInGroup ? GROUP_BORDER : ''}`}
+      className={`px-3 py-2 text-left cursor-pointer hover:text-ink select-none ${firstInGroup ? GROUP_BORDER : ''}`}
       style={minWidth ? { minWidth } : undefined}
       onClick={() => onSort(column)}
     >
-      <span className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap">
         {label}
         {active && (sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
       </span>
+      {hint && <span className="block text-[10px] text-faint font-normal normal-case tracking-normal mt-0.5 leading-tight">{hint}</span>}
     </th>
   );
 }
@@ -146,17 +158,18 @@ function SortHeader({ label, column, sortBy, sortDir, onSort, firstInGroup, minW
 function ColHeader({ col, sortBy, sortDir, onSort }: { col: ColumnDef; sortBy: string; sortDir: string; onSort: (c: string) => void }) {
   const border = col.firstInGroup ? GROUP_BORDER : '';
   if (col.cellType === 'thumbnail') {
-    return <th className={`px-2 py-3 w-[68px] ${border}`} />;
+    return <th className={`px-2 py-2 w-[68px] ${border}`} />;
   }
   if (col.sortable) {
-    return <SortHeader label={col.label} column={col.key} sortBy={sortBy} sortDir={sortDir} onSort={onSort} firstInGroup={col.firstInGroup} minWidth={col.minWidth} />;
+    return <SortHeader label={col.label} hint={col.hint} column={col.key} sortBy={sortBy} sortDir={sortDir} onSort={onSort} firstInGroup={col.firstInGroup} minWidth={col.minWidth} />;
   }
   return (
     <th
-      className={`px-3 py-3 text-left text-[11px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap ${border}`}
+      className={`px-3 py-2 text-left ${border}`}
       style={col.minWidth ? { minWidth: col.minWidth } : undefined}
     >
-      {col.label}
+      <span className="text-[11px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap">{col.label}</span>
+      {col.hint && <span className="block text-[10px] text-faint font-normal normal-case tracking-normal mt-0.5 leading-tight">{col.hint}</span>}
     </th>
   );
 }
@@ -305,10 +318,25 @@ export default function AdCreativesTable({
       );
     }
 
-    if (col.key === '_copy') {
+    if (col.key === '_ad_copy_link') {
       return (
         <td key={col.key} className={`px-3 py-2.5 text-[13px] text-muted ${gb}`}>
-          {c.ad_copy_variants?.length || 0}
+          <span className="text-faint">—</span>
+        </td>
+      );
+    }
+
+    // Copy variant columns
+    if (col.key === '_headline' || col.key === '_primary_text' || col.key === '_description' || col.key === '_cta') {
+      const typeMap: Record<string, string> = { _headline: 'headline', _primary_text: 'primary_text', _description: 'description', _cta: 'cta' };
+      const variant = c.ad_copy_variants?.find((v) => v.variant_type === typeMap[col.key]);
+      return (
+        <td key={col.key} className={`px-3 py-2.5 ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ''} ${gb}`}>
+          {variant?.content ? (
+            <span className="text-[13px] text-muted truncate block">{variant.content}</span>
+          ) : (
+            <span className="text-faint">—</span>
+          )}
         </td>
       );
     }
@@ -379,7 +407,7 @@ export default function AdCreativesTable({
 
   return (
     <div className="h-full overflow-auto">
-      <table className="w-full min-w-[2200px]">
+      <table className="w-full min-w-[3200px]">
         <thead className="bg-white border-b border-edge sticky top-0 z-10">
           {/* Group header row */}
           <tr>
