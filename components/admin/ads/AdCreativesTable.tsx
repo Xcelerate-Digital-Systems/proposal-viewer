@@ -185,9 +185,14 @@ function TextDisplay({ value, maxWidth }: { value: string | null; maxWidth?: str
 function NumberDisplay({ value, prefix, suffix, meetsStandard }: { value: number | null; prefix?: string; suffix?: string; meetsStandard?: boolean | null }) {
   if (value === null || value === undefined) return <span className="text-faint">—</span>;
   let colorClass = 'text-ink';
-  if (meetsStandard === true) colorClass = 'text-green-600';
-  if (meetsStandard === false) colorClass = 'text-red-500';
-  return <span className={`text-[13px] ${colorClass} tabular-nums`}>{prefix}{value}{suffix}</span>;
+  let bgClass = '';
+  if (meetsStandard === true) { colorClass = 'text-green-700'; bgClass = 'bg-green-50 border border-green-100'; }
+  if (meetsStandard === false) { colorClass = 'text-red-600'; bgClass = 'bg-red-50 border border-red-100'; }
+  return (
+    <span className={`text-[13px] ${colorClass} tabular-nums ${bgClass ? `inline-block px-2 py-0.5 rounded-md ${bgClass}` : ''}`}>
+      {prefix}{value}{suffix}
+    </span>
+  );
 }
 
 function SelectDisplay({ value, options }: { value: string | null; options: SelectOption[] }) {
@@ -262,9 +267,9 @@ export default function AdCreativesTable({
     if (col.cellType === 'thumbnail') {
       const isVideo = c.image_url && /\.(mp4|mov|webm)$/i.test(c.image_url);
       return (
-        <td key={col.key} className={`px-2 py-1.5 w-[68px] ${gb}`}>
+        <td key={col.key} className={`px-2 py-1.5 w-[166px] ${gb}`}>
           {c.image_url ? (
-            <div className="w-[52px] h-[52px] rounded-lg overflow-hidden bg-surface">
+            <div className="w-[150px] h-[150px] rounded-lg overflow-hidden bg-surface">
               {isVideo ? (
                 <video src={c.image_url} className="w-full h-full object-cover" muted />
               ) : (
@@ -272,8 +277,8 @@ export default function AdCreativesTable({
               )}
             </div>
           ) : (
-            <div className="w-[52px] h-[52px] rounded-lg bg-surface border border-dashed border-edge flex items-center justify-center">
-              <Megaphone size={16} className="text-faint" />
+            <div className="w-[150px] h-[150px] rounded-lg bg-surface border border-dashed border-edge flex items-center justify-center">
+              <Megaphone size={20} className="text-faint" />
             </div>
           )}
         </td>

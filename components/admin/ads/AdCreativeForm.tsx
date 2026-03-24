@@ -2,9 +2,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Plus, Trash2, ChevronDown, ChevronRight, BookOpen, ImagePlus, Loader2, Upload } from 'lucide-react';
-import ReferenceModal from './ReferenceModal';
-import type { ReferenceType } from './ReferenceModal';
+import { X, Plus, Trash2, BookOpen, ImagePlus, Loader2, Upload } from 'lucide-react';
+import ReferenceTabContent from './ReferenceTabContent';
+import type { TabType } from './ReferenceTabContent';
 import CustomSelect from './CustomSelect';
 import { supabase } from '@/lib/supabase';
 import type { AdCopyVariant, AdCopyVariantType } from '@/lib/types/ads';
@@ -15,11 +15,11 @@ import {
   AD_MEDIA_TYPES,
   AWARENESS_LEVELS,
   MARKET_SOPHISTICATION_LEVELS,
-  AD_COPY_VARIANT_TYPES,
   AD_SIGNALS,
   AD_ANGLE_FAMILIES,
   AD_CREATIVE_STYLES,
   AD_CREATIVE_FORMATS,
+  AD_ANGLE_IDEAS,
 } from '@/lib/ad-tracker/constants';
 
 type Props = {
@@ -87,12 +87,34 @@ const INITIAL_FORM: FormData = {
 // Map constants into CustomSelect option shapes
 const signalOptions = AD_SIGNALS.map((s) => ({ value: s.value, label: s.label }));
 const angleFamilyOptions = AD_ANGLE_FAMILIES.map((af) => ({ value: af.value, label: af.label, description: af.description }));
+const angleIdeaOptions = AD_ANGLE_IDEAS.map((ai) => ({ value: ai.value, label: ai.label }));
 const creativeStyleOptions = AD_CREATIVE_STYLES.map((cs) => ({ value: cs.value, label: cs.label }));
 const creativeFormatOptions = AD_CREATIVE_FORMATS.map((cf) => ({ value: cf.value, label: cf.label }));
 const awarenessOptions = AWARENESS_LEVELS.map((al) => ({ value: al.value, label: al.label, description: al.description }));
 const sophisticationOptions = MARKET_SOPHISTICATION_LEVELS.map((ms) => ({ value: ms.value, label: ms.label, description: ms.description }));
 const iterationOptions = AD_ITERATION_TYPES.map((t) => ({ value: t.value, label: t.label }));
 const mediaOptions = AD_MEDIA_TYPES.map((t) => ({ value: t.value, label: t.label }));
+
+const META_CTA_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Apply Now', label: 'Apply Now' },
+  { value: 'Book Now', label: 'Book Now' },
+  { value: 'Contact Us', label: 'Contact Us' },
+  { value: 'Download', label: 'Download' },
+  { value: 'Get Offer', label: 'Get Offer' },
+  { value: 'Get Quote', label: 'Get Quote' },
+  { value: 'Get Showtimes', label: 'Get Showtimes' },
+  { value: 'Learn More', label: 'Learn More' },
+  { value: 'Listen Now', label: 'Listen Now' },
+  { value: 'Order Now', label: 'Order Now' },
+  { value: 'Request Time', label: 'Request Time' },
+  { value: 'See Menu', label: 'See Menu' },
+  { value: 'Send Message', label: 'Send Message' },
+  { value: 'Shop Now', label: 'Shop Now' },
+  { value: 'Sign Up', label: 'Sign Up' },
+  { value: 'Subscribe', label: 'Subscribe' },
+  { value: 'Watch More', label: 'Watch More' },
+  { value: 'WhatsApp Message', label: 'WhatsApp Message' },
+];
 
 const STATUS_COLORS: Record<string, string> = {
   draft: '#9ca3af', briefed: '#3b82f6', in_production: '#a855f7',
@@ -106,20 +128,15 @@ const WINNER_COLORS: Record<string, string> = {
 };
 const winnerOptions = AD_WINNER_STATUSES.map((w) => ({ value: w.value, label: w.label, color: WINNER_COLORS[w.value] }));
 
-function Section({ title, open, onToggle, children }: {
-  title: string; open: boolean; onToggle: () => void; children: React.ReactNode;
+function Section({ title, children }: {
+  title: string; open?: boolean; onToggle?: () => void; children: React.ReactNode;
 }) {
   return (
     <div className="border border-edge rounded-xl overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 bg-surface/50 hover:bg-surface text-left transition-colors"
-      >
+      <div className="px-4 py-3 bg-surface/50">
         <span className="text-[13px] font-semibold text-ink">{title}</span>
-        {open ? <ChevronDown size={16} className="text-muted" /> : <ChevronRight size={16} className="text-muted" />}
-      </button>
-      {open && <div className="px-4 py-4 space-y-3">{children}</div>}
+      </div>
+      <div className="px-4 py-4 space-y-3">{children}</div>
     </div>
   );
 }
@@ -152,11 +169,10 @@ const inputClass = 'w-full px-3 py-2 bg-surface border border-edge rounded-lg te
 export default function AdCreativeForm({ trackerId, companyId, editingId, onClose, onSave }: Props) {
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
-  const [sections, setSections] = useState({ strategy: true, audience: false, destination: false, execution: true, copy: false, results: false });
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editingId);
   const [error, setError] = useState<string | null>(null);
-  const [referenceOpen, setReferenceOpen] = useState<ReferenceType | null>(null);
+  const [referenceTab, setReferenceTab] = useState<TabType | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -299,16 +315,35 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
   };
 
   // ─── Copy variants ────────────────────────────────────────────────────────
-  const addVariant = () => {
+  const VARIANT_GROUPS: { type: AdCopyVariantType; title: string; prefix: string }[] = [
+    { type: 'headline', title: 'Headline', prefix: 'H' },
+    { type: 'primary_text', title: 'Primary Text', prefix: 'P' },
+    { type: 'description', title: 'Description', prefix: 'D' },
+    { type: 'cta', title: 'CTA', prefix: 'CTA' },
+  ];
+
+  const addVariant = (type: AdCopyVariantType) => {
+    const group = VARIANT_GROUPS.find((g) => g.type === type)!;
+    const count = variants.filter((v) => v.variant_type === type).length;
+    const num = String(count + 1).padStart(2, '0');
     setVariants((prev) => [
       ...prev,
-      { variant_type: 'headline', label: `HEADLINE ${prev.filter(v => v.variant_type === 'headline').length + 1}`.padStart(2, '0'), content: '' },
+      { variant_type: type, label: `${group.prefix}${num}`, content: '' },
     ]);
-    setSections((prev) => ({ ...prev, copy: true }));
   };
 
   const removeVariant = (index: number) => {
-    setVariants((prev) => prev.filter((_, i) => i !== index));
+    setVariants((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      // Re-number labels within each type group
+      const counts: Record<string, number> = {};
+      return updated.map((v) => {
+        const group = VARIANT_GROUPS.find((g) => g.type === v.variant_type);
+        if (!group) return v;
+        counts[v.variant_type] = (counts[v.variant_type] || 0) + 1;
+        return { ...v, label: `${group.prefix}${String(counts[v.variant_type]).padStart(2, '0')}` };
+      });
+    });
   };
 
   const updateVariant = (index: number, field: keyof VariantDraft, value: string) => {
@@ -367,28 +402,67 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
     }
   };
 
-  const toggle = (key: keyof typeof sections) => {
-    setSections((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   const isVideo = form.image_url && /\.(mp4|mov|webm)$/i.test(form.image_url);
 
   return (
-    <div className="bg-white w-full max-w-4xl mx-auto flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge shrink-0">
-          <h2 className="text-base font-semibold text-ink">
+    <div className="bg-white w-full flex flex-col h-full">
+        {/* Header — title + reference tabs in one row */}
+        <div className="shrink-0 border-b border-edge flex items-center px-6 py-3 gap-4">
+          <button
+            type="button"
+            onClick={() => setReferenceTab(null)}
+            className={`text-[13px] font-semibold whitespace-nowrap px-3 py-1.5 rounded-md transition-colors ${
+              !referenceTab
+                ? 'bg-teal/10 text-teal'
+                : 'text-muted hover:text-ink hover:bg-edge/50'
+            }`}
+          >
             {editingId ? 'Edit Creative' : 'New Creative'}
-          </h2>
+          </button>
+          <div className="w-px h-5 bg-edge" />
+          {(['angles', 'formats', 'awareness', 'sophistication'] as TabType[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setReferenceTab(referenceTab === tab ? null : tab)}
+              className={`text-[13px] font-medium whitespace-nowrap px-3 py-1.5 rounded-md transition-colors ${
+                referenceTab === tab
+                  ? 'bg-teal/10 text-teal'
+                  : 'text-muted hover:text-ink hover:bg-edge/50'
+              }`}
+            >
+              {tab === 'angles' ? 'Angles Menu' : tab === 'formats' ? 'Creative Formats' : tab === 'awareness' ? 'Awareness Levels' : 'Market Sophistication'}
+            </button>
+          ))}
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-faint hover:text-muted hover:bg-surface"
+            className="ml-auto w-8 h-8 rounded-lg flex items-center justify-center text-faint hover:text-muted hover:bg-surface shrink-0"
           >
             <X size={18} />
           </button>
         </div>
 
-        {loadingEdit ? (
+        {/* Reference panel — replaces the form area when active */}
+        {referenceTab ? (
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-6 py-4 border-b border-edge bg-surface/30 flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-ink">
+                {referenceTab === 'angles' ? 'Angles Menu' : referenceTab === 'formats' ? 'Creative Formats' : referenceTab === 'awareness' ? 'Awareness Levels' : 'Market Sophistication'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setReferenceTab(null)}
+                className="text-[12px] font-medium text-teal hover:text-teal-hover transition-colors"
+              >
+                Back to Form
+              </button>
+            </div>
+            <div className="px-6 py-6">
+              <ReferenceTabContent type={referenceTab} />
+            </div>
+          </div>
+        ) : loadingEdit ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
           </div>
@@ -441,7 +515,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
 
               {/* Name + key info */}
               <div className="flex-1 min-w-0 space-y-3">
-                <Field label="Ad Name *">
+                <Field label="Ad Name *" hint="Use the naming convention e.g. MIRROR - C01 - H01 - D01 - IMG01.a">
                   <input
                     type="text"
                     value={form.ad_name}
@@ -451,11 +525,11 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                     autoFocus
                   />
                 </Field>
-                <Field label="Ad Concept">
+                <Field label="Ad Concept" hint="What is the overall idea of the ad in 1-2 sentences?">
                   <textarea value={form.ad_concept} onChange={(e) => updateField('ad_concept', e.target.value)} placeholder="Overall idea of the ad in 1-2 sentences" rows={2} className={inputClass + ' resize-none'} />
                 </Field>
                 <div className="grid grid-cols-3 gap-3">
-                  <Field label="Status">
+                  <Field label="Status" hint="What is the status of the ad?">
                     <CustomSelect
                       value={form.status}
                       options={statusOptions}
@@ -464,7 +538,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                       clearable={false}
                     />
                   </Field>
-                  <Field label="Type">
+                  <Field label="Type" hint="New ad or iteration on a winning ad">
                     <CustomSelect
                       value={form.iteration_type}
                       options={iterationOptions}
@@ -472,7 +546,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                       placeholder="Select..."
                     />
                   </Field>
-                  <Field label="Media">
+                  <Field label="Media" hint="Still image or video">
                     <CustomSelect
                       value={form.media_type}
                       options={mediaOptions}
@@ -484,11 +558,11 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
               </div>
             </div>
 
-            {/* ─── Sections ─────────────────────────────────────────────────── */}
-            <div className="p-6 space-y-4">
-              {/* Strategy Section */}
-              <Section title="Strategy" open={sections.strategy} onToggle={() => toggle('strategy')}>
-                <Field label="Signal">
+            {/* ─── 2-Column Grid ────────────────────────────────────────────── */}
+            <div className="p-6 grid grid-cols-2 gap-4">
+              {/* Strategy (left) */}
+              <Section title="Strategy">
+                <Field label="Signal" hint="Where does the data come from? Can choose multiple">
                   <CustomSelect
                     value={form.signal}
                     options={signalOptions}
@@ -496,11 +570,11 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                     placeholder="Where does the data come from?"
                   />
                 </Field>
-                <Field label="Hypothesis">
+                <Field label="Hypothesis" hint="A good hypothesis links one data insight to one predicted ad outcome">
                   <textarea value={form.hypothesis} onChange={(e) => updateField('hypothesis', e.target.value)} placeholder="Links one data insight to one predicted ad outcome" rows={2} className={inputClass + ' resize-none'} />
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Angle Family">
+                  <Field label="Angle Family" hint="See the reference sheet if unsure">
                     <CustomSelect
                       value={form.angle_family}
                       options={angleFamilyOptions}
@@ -508,61 +582,62 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                       placeholder="Select angle..."
                     />
                   </Field>
-                  <Field label="Angle Idea">
-                    <input type="text" value={form.angle_idea} onChange={(e) => updateField('angle_idea', e.target.value)} placeholder="e.g., Real-Math, Gain/Benefit" className={inputClass} />
+                  <Field label="Angle Idea" hint="Choose a categorisation for easy data analysis. Can also help for brainstorming">
+                    <CustomSelect
+                      value={form.angle_idea}
+                      options={angleIdeaOptions}
+                      onChange={(v) => updateField('angle_idea', v)}
+                      placeholder="Select idea..."
+                      searchable
+                    />
                   </Field>
                 </div>
                 <div className="flex items-center gap-4 pt-1">
-                  <ReferenceLink label="Signal Reference" onClick={() => setReferenceOpen('signals')} />
-                  <ReferenceLink label="Angle Families" onClick={() => setReferenceOpen('angle_families')} />
+                  <ReferenceLink label="Angles Menu" onClick={() => setReferenceTab(referenceTab === 'angles' ? null : 'angles')} />
                 </div>
               </Section>
 
-              {/* Audience Section */}
-              <Section title="Audience" open={sections.audience} onToggle={() => toggle('audience')}>
-                <Field label="Target Market">
+              {/* Audience (right) */}
+              <Section title="Audience">
+                <Field label="Target Market" hint="Who is the ad targeting?">
                   <input type="text" value={form.target_market} onChange={(e) => updateField('target_market', e.target.value)} placeholder="e.g., Women Coach & Consultant Broad" className={inputClass} />
                 </Field>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Awareness Level">
-                    <CustomSelect
-                      value={form.awareness_level}
-                      options={awarenessOptions}
-                      onChange={(v) => updateField('awareness_level', v)}
-                      placeholder="Select level..."
-                    />
-                  </Field>
-                  <Field label="Market Sophistication">
-                    <CustomSelect
-                      value={form.market_sophistication}
-                      options={sophisticationOptions}
-                      onChange={(v) => updateField('market_sophistication', v)}
-                      placeholder="Select level..."
-                    />
-                  </Field>
-                </div>
+                <Field label="Awareness Level" hint="Choose which stage they are at">
+                  <CustomSelect
+                    value={form.awareness_level}
+                    options={awarenessOptions}
+                    onChange={(v) => updateField('awareness_level', v)}
+                    placeholder="Select level..."
+                  />
+                </Field>
+                <Field label="Market Sophistication" hint="Choose which stage they are at">
+                  <CustomSelect
+                    value={form.market_sophistication}
+                    options={sophisticationOptions}
+                    onChange={(v) => updateField('market_sophistication', v)}
+                    placeholder="Select level..."
+                  />
+                </Field>
                 <div className="flex items-center gap-4 pt-1">
-                  <ReferenceLink label="Awareness Levels" onClick={() => setReferenceOpen('awareness')} />
-                  <ReferenceLink label="Market Sophistication" onClick={() => setReferenceOpen('sophistication')} />
+                  <ReferenceLink label="Awareness Levels" onClick={() => setReferenceTab(referenceTab === 'awareness' ? null : 'awareness')} />
+                  <ReferenceLink label="Market Sophistication" onClick={() => setReferenceTab(referenceTab === 'sophistication' ? null : 'sophistication')} />
                 </div>
               </Section>
 
-              {/* Destination Section */}
-              <Section title="Destination" open={sections.destination} onToggle={() => toggle('destination')}>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Offer Variant">
-                    <input type="text" value={form.offer_variant} onChange={(e) => updateField('offer_variant', e.target.value)} placeholder="Which offer will the ad go to?" className={inputClass} />
-                  </Field>
-                  <Field label="Lander Variant">
-                    <input type="text" value={form.lander_variant} onChange={(e) => updateField('lander_variant', e.target.value)} placeholder="Which landing page?" className={inputClass} />
-                  </Field>
-                </div>
+              {/* Destination (left) */}
+              <Section title="Destination">
+                <Field label="Offer Variant" hint="Which offer will the ad go to?">
+                  <input type="text" value={form.offer_variant} onChange={(e) => updateField('offer_variant', e.target.value)} placeholder="Which offer will the ad go to?" className={inputClass} />
+                </Field>
+                <Field label="Lander Variant" hint="Which landing page will the ad go to?">
+                  <input type="text" value={form.lander_variant} onChange={(e) => updateField('lander_variant', e.target.value)} placeholder="Which landing page?" className={inputClass} />
+                </Field>
               </Section>
 
-              {/* Execution Section */}
-              <Section title="Execution" open={sections.execution} onToggle={() => toggle('execution')}>
+              {/* Execution (right) */}
+              <Section title="Execution">
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Creative Style">
+                  <Field label="Creative Style" hint="How the platform reads the type of creative">
                     <CustomSelect
                       value={form.creative_style}
                       options={creativeStyleOptions}
@@ -570,7 +645,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                       placeholder="Select style..."
                     />
                   </Field>
-                  <Field label="Creative Format">
+                  <Field label="Creative Format" hint="Helps with brainstorming and data analysis">
                     <CustomSelect
                       value={form.creative_format}
                       options={creativeFormatOptions}
@@ -581,76 +656,83 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                   </Field>
                 </div>
                 {form.media_type === 'video' && (
-                  <Field label="Video Hooks">
+                  <Field label="Video Hooks" hint="What is the hook of the video?">
                     <input type="text" value={form.video_hooks} onChange={(e) => updateField('video_hooks', e.target.value)} placeholder="What is the hook of the video?" className={inputClass} />
                   </Field>
                 )}
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Brief Link">
+                  <Field label="Brief Link" hint="Link to the brief or task">
                     <input type="url" value={form.brief_link} onChange={(e) => updateField('brief_link', e.target.value)} placeholder="Link to brief" className={inputClass} />
                   </Field>
-                  <Field label="Creative Link">
+                  <Field label="Creative Link" hint="Canva or Frame.io link">
                     <input type="url" value={form.creative_link} onChange={(e) => updateField('creative_link', e.target.value)} placeholder="Canva or Frame.io link" className={inputClass} />
                   </Field>
                 </div>
                 <div className="flex items-center gap-4 pt-1">
-                  <ReferenceLink label="Creative Styles" onClick={() => setReferenceOpen('creative_styles')} />
-                  <ReferenceLink label="Creative Formats" onClick={() => setReferenceOpen('creative_formats')} />
+                  <ReferenceLink label="Creative Formats" onClick={() => setReferenceTab(referenceTab === 'formats' ? null : 'formats')} />
                 </div>
               </Section>
 
-              {/* Copy Variants Section */}
-              <Section title={`Ad Copy (${variants.length} variant${variants.length !== 1 ? 's' : ''})`} open={sections.copy} onToggle={() => toggle('copy')}>
-                {variants.map((v, i) => (
-                  <div key={i} className="border border-edge rounded-lg p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={v.variant_type}
-                        onChange={(e) => updateVariant(i, 'variant_type', e.target.value)}
-                        className="bg-surface border border-edge rounded-md px-2 py-1 text-[12px] text-ink outline-none"
-                      >
-                        {AD_COPY_VARIANT_TYPES.map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="text"
-                        value={v.label}
-                        onChange={(e) => updateVariant(i, 'label', e.target.value)}
-                        placeholder="Label (e.g., HEADLINE 01)"
-                        className="flex-1 bg-surface border border-edge rounded-md px-2 py-1 text-[12px] text-ink placeholder-faint outline-none"
+              {/* Content (left) */}
+              <Section title="Content">
+                {VARIANT_GROUPS.map((group) => {
+                  const match = variants.find((v) => v.variant_type === group.type);
+                  const idx = match ? variants.indexOf(match) : -1;
+
+                  if (group.type === 'cta') {
+                    return (
+                      <Field key={group.type} label={group.title} hint="Meta standard CTA button text">
+                        <CustomSelect
+                          value={match?.content || ''}
+                          options={META_CTA_OPTIONS}
+                          onChange={(v) => {
+                            if (idx >= 0) {
+                              updateVariant(idx, 'content', v);
+                            } else {
+                              setVariants((prev) => [
+                                ...prev,
+                                { variant_type: group.type, label: `${group.prefix}01`, content: v },
+                              ]);
+                            }
+                          }}
+                          placeholder="Select CTA..."
+                          searchable
+                        />
+                      </Field>
+                    );
+                  }
+
+                  return (
+                    <Field key={group.type} label={group.title} hint={
+                      group.type === 'headline' ? 'The main attention-grabbing line' :
+                      group.type === 'primary_text' ? 'The main body copy of the ad' :
+                      'Supporting text shown below the headline'
+                    }>
+                      <textarea
+                        value={match?.content || ''}
+                        onChange={(e) => {
+                          if (idx >= 0) {
+                            updateVariant(idx, 'content', e.target.value);
+                          } else {
+                            setVariants((prev) => [
+                              ...prev,
+                              { variant_type: group.type, label: `${group.prefix}01`, content: e.target.value },
+                            ]);
+                          }
+                        }}
+                        placeholder={`Enter ${group.title.toLowerCase()} copy...`}
+                        rows={group.type === 'primary_text' ? 3 : 2}
+                        className={inputClass + ' resize-none text-[12px]'}
                       />
-                      <button
-                        type="button"
-                        onClick={() => removeVariant(i)}
-                        className="w-7 h-7 rounded-md flex items-center justify-center text-faint hover:text-red-500 hover:bg-red-50"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                    <textarea
-                      value={v.content}
-                      onChange={(e) => updateVariant(i, 'content', e.target.value)}
-                      placeholder="Enter the copy text..."
-                      rows={3}
-                      className={inputClass + ' resize-none text-[12px]'}
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addVariant}
-                  className="flex items-center gap-2 text-[13px] text-teal hover:text-teal-hover font-medium"
-                >
-                  <Plus size={14} />
-                  Add Copy Variant
-                </button>
+                    </Field>
+                  );
+                })}
               </Section>
 
-              {/* Results Section */}
-              <Section title="Results" open={sections.results} onToggle={() => toggle('results')}>
+              {/* Results (right) */}
+              <Section title="Results">
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Winner?">
+                  <Field label="Winner?" hint="After 7 days, what was the outcome?">
                     <CustomSelect
                       value={form.winner}
                       options={winnerOptions}
@@ -658,52 +740,52 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                       placeholder="Not assessed"
                     />
                   </Field>
-                  <Field label="Lifespan (days)">
+                  <Field label="Lifespan (days)" hint="How long did the ad run for?">
                     <input type="number" value={form.creative_lifespan_days} onChange={(e) => updateField('creative_lifespan_days', e.target.value)} className={inputClass} />
                   </Field>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <Field label="Launch Date">
+                  <Field label="Launch Date" hint="When it went live">
                     <input type="date" value={form.launch_date} onChange={(e) => updateField('launch_date', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label="Analysis Date">
+                  <Field label="Analysis Date" hint="When to review performance">
                     <input type="date" value={form.analysis_date} onChange={(e) => updateField('analysis_date', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label="Kill Date">
+                  <Field label="Kill Date" hint="When did we turn off the ad?">
                     <input type="date" value={form.kill_date} onChange={(e) => updateField('kill_date', e.target.value)} className={inputClass} />
                   </Field>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <Field label="Hook Rate %" hint="% of people who watched past 3 seconds">
+                  <Field label="Hook Rate %" hint="% watched past 3s">
                     <input type="number" step="0.01" value={form.hook_rate} onChange={(e) => updateField('hook_rate', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label="Hold Rate %" hint="% of people who watched past the midpoint">
+                  <Field label="Hold Rate %" hint="% watched past midpoint">
                     <input type="number" step="0.01" value={form.hold_rate} onChange={(e) => updateField('hold_rate', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label="UCTR %" hint="Unique click-through rate (unique clicks / reach)">
+                  <Field label="UCTR %" hint="Unique clicks / reach">
                     <input type="number" step="0.0001" value={form.uctr} onChange={(e) => updateField('uctr', e.target.value)} className={inputClass} />
                   </Field>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <Field label="CVR" hint="Conversion rate (conversions / clicks)">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="CVR" hint="Conversions / clicks">
                     <input type="number" step="0.0001" value={form.cvr} onChange={(e) => updateField('cvr', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label={form.cpl_label || 'CPL'}>
+                  <Field label={form.cpl_label || 'CPL'} hint="Cost per lead or chosen metric">
                     <input type="number" step="0.01" value={form.cpl} onChange={(e) => updateField('cpl', e.target.value)} className={inputClass} />
                   </Field>
                 </div>
-                <Field label="Next Action / Learning">
+                <Field label="Next Action / Learning" hint="What did you learn? What's next?">
                   <textarea value={form.next_action} onChange={(e) => updateField('next_action', e.target.value)} placeholder="What did you learn? What's next?" rows={2} className={inputClass + ' resize-none'} />
                 </Field>
               </Section>
 
-              {error && <p className="text-[13px] text-red-600">{error}</p>}
+              {error && <p className="col-span-2 text-[13px] text-red-600">{error}</p>}
             </div>
           </form>
         )}
 
         {/* Footer */}
-        {!loadingEdit && (
+        {!loadingEdit && !referenceTab && (
           <div className="flex items-center gap-3 px-6 py-4 border-t border-edge shrink-0">
             <button
               type="button"
@@ -721,9 +803,6 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
             </button>
           </div>
         )}
-      {referenceOpen && (
-        <ReferenceModal type={referenceOpen} onClose={() => setReferenceOpen(null)} />
-      )}
     </div>
   );
 }

@@ -146,6 +146,24 @@ export const AD_CREATIVE_FORMATS: { value: string; label: string }[] = [
   { value: 'gif', label: 'Gif' },
 ];
 
+// ─── Angle Ideas ────────────────────────────────────────────────────────────
+
+export const AD_ANGLE_IDEAS: { value: string; label: string }[] = [
+  { value: '3_step_system', label: '3-Step System' },
+  { value: 'before_after', label: 'Before & After' },
+  { value: 'case_study', label: 'Case Study' },
+  { value: 'direct_to_offer', label: 'Direct To Offer' },
+  { value: 'existing_pain', label: 'Existing Pain' },
+  { value: 'explain_like_five', label: 'Explain It Like I\'m Five' },
+  { value: 'gain_benefit', label: 'Gain / Benefit' },
+  { value: 'hidden_mechanism', label: 'Hidden Mechanism' },
+  { value: 'real_math', label: 'Real-Math' },
+  { value: 'reclaim_control', label: 'Reclaim Control' },
+  { value: 'screenshot_proof', label: 'Screenshot Proof' },
+  { value: 'testimonial_proof', label: 'Testimonial Proof' },
+  { value: 'wrong_belief', label: 'Wrong Belief' },
+];
+
 // ─── Copy Variant Types ──────────────────────────────────────────────────────
 
 export const AD_COPY_VARIANT_TYPES: { value: AdCopyVariantType; label: string }[] = [
