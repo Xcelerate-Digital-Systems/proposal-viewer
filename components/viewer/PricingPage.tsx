@@ -141,6 +141,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 className="flex items-center gap-4 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-t-lg"
                 style={{ backgroundColor: surface, color: faint }}
               >
+                <span className="w-28 shrink-0">Stage</span>
                 <span className="flex-1">Description</span>
                 {pricing.qty_enabled && (
                   <>
@@ -170,27 +171,31 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center gap-4 px-4 py-3.5"
+                      className="flex items-start gap-4 px-4 py-3.5"
                       style={{
                         borderBottom: `1px solid ${border}`,
                         backgroundColor: idx % 2 === 1 ? `${surface}80` : 'transparent',
                       }}
                     >
-                      <div className="flex-1 min-w-0">
-                        <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
-                          {item.label}
-                        </span>
+                      <div className="w-28 shrink-0">
                         {item.description && (
-                          <span className="text-xs ml-2" style={{ color: muted }}>
+                          <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
                             {item.description}
                           </span>
                         )}
                         {hasDiscount && (
                           <span
-                            className="ml-2 text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                            className="mt-1 block text-[11px] font-semibold px-1.5 py-0.5 rounded w-fit"
                             style={{ backgroundColor: `${accent}20`, color: accent }}
                           >
                             {item.discount_pct}% off
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {item.label && (
+                          <span className="agv-pricing-body text-sm" style={{ color: muted }}>
+                            {item.label}
                           </span>
                         )}
                       </div>

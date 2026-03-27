@@ -93,7 +93,7 @@ export default function PricingLineItems({ items, onChange, qtyEnabled = false, 
                     value={item.description}
                     onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                     placeholder={`Stage ${String(idx + 1).padStart(2, '0')}`}
-                    className="w-24 px-2 py-1.5 rounded border border-gray-200 text-xs text-gray-500 focus:outline-none focus:ring-1 focus:ring-teal/30"
+                    className="w-28 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
                   />
                   <input
                     type="text"
