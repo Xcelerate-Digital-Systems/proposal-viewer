@@ -47,14 +47,20 @@ export default function PricingPanel({
           taxEnabled={pricingForm.taxEnabled}
           validityDays={pricingForm.validityDays}
           proposalDate={pricingForm.proposalDate}
+          qtyEnabled={pricingForm.qtyEnabled}
+          qtyLabel={pricingForm.qtyLabel}
           onTitleChange={(v) => onUpdate({ title: v })}
           onIntroTextChange={(v) => onUpdate({ introText: v })}
           onTaxEnabledChange={(v) => onUpdate({ taxEnabled: v })}
           onValidityDaysChange={(v) => onUpdate({ validityDays: v })}
           onProposalDateChange={(v) => onUpdate({ proposalDate: v })}
+          onQtyEnabledChange={(v) => onUpdate({ qtyEnabled: v })}
+          onQtyLabelChange={(v) => onUpdate({ qtyLabel: v })}
         />
         <PricingLineItems
           items={pricingForm.items}
+          qtyEnabled={pricingForm.qtyEnabled}
+          qtyLabel={pricingForm.qtyLabel}
           onChange={(items) => onUpdate({ items })}
         />
         <PricingOptionalItems

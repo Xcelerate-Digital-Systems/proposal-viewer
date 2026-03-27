@@ -11,8 +11,11 @@ export type PricingLineItem = {
   label: string;
   description: string;
   percentage: number;
-  amount: number;
+  amount: number;        // always the line total (= qty × unit_price when qty is enabled)
   sort_order: number;
+  qty?: number;          // optional quantity; only used when pricing.qty_enabled is true
+  unit_price?: number;   // per-unit rate; amount is derived from qty × unit_price
+  discount_pct?: number; // 0–100 percentage discount applied to amount
 };
 
 export type PricingOptionalItem = {
@@ -21,6 +24,7 @@ export type PricingOptionalItem = {
   description: string;
   amount: number;
   sort_order: number;
+  discount_pct?: number; // 0–100 percentage discount applied to amount
 };
 
 export type MilestonePayment = {
@@ -140,6 +144,9 @@ export type ProposalPricing = {
   validity_days: number | null;
   indent: number;
   proposal_date: string | null;
+  qty_enabled?: boolean;  // show Qty + Rate columns in viewer and editor
+  qty_label?: string;     // column header label for quantities (default: "Qty")
+  footer_note?: string | null; // optional note shown below the line items table
   created_at: string;
   updated_at: string;
 };
@@ -148,9 +155,25 @@ export type TemplatePricing = Omit<ProposalPricing, 'proposal_id' | 'proposal_da
   template_id: string;
 };
 
-/** Helper: compute subtotal from line items */
+/** Helper: effective amount for a single item after discount */
+export function effectiveItemAmount(item: PricingLineItem | PricingOptionalItem): number {
+  const pct = item.discount_pct ?? 0;
+  return pct > 0 ? Math.round(item.amount * (1 - pct / 100) * 100) / 100 : item.amount;
+}
+
+/** Helper: compute subtotal from line items (pre-discount, base amounts) */
 export function pricingSubtotal(items: PricingLineItem[]): number {
-  return items.reduce((sum, item) => sum + item.amount, 0);
+  return (items ?? []).reduce<number>((sum, item) => sum + item.amount, 0);
+}
+
+/** Helper: compute effective subtotal after per-item discounts */
+export function pricingEffectiveSubtotal(items: PricingLineItem[]): number {
+  return (items ?? []).reduce<number>((sum, item) => sum + effectiveItemAmount(item), 0);
+}
+
+/** Helper: total discount savings across all line items */
+export function pricingTotalDiscount(items: PricingLineItem[]): number {
+  return Math.round((pricingSubtotal(items) - pricingEffectiveSubtotal(items)) * 100) / 100;
 }
 
 /** Helper: compute tax amount */

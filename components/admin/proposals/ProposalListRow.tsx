@@ -89,7 +89,7 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain }
 
   return (
     <div
-      onClick={() => router.push(`/proposals/${p.id}/pages`)}
+      onClick={() => router.push(p.entity_type === 'quote' ? `/proposals/${p.id}/quote-pricing` : `/proposals/${p.id}/pages`)}
       className="flex items-center gap-4 px-4 py-3 bg-white rounded-[12px] border border-edge hover:border-edge-hover cursor-pointer transition-colors group"
     >
       {/* Status badge */}
@@ -97,6 +97,13 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain }
         {sc.icon}
         {sc.label}
       </span>
+
+      {/* Quote badge */}
+      {p.entity_type === 'quote' && (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+          Quote
+        </span>
+      )}
 
       {/* Title + client */}
       <div className="flex-1 min-w-0">
@@ -108,9 +115,9 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain }
         )}
       </div>
 
-      {/* Page count */}
+      {/* Page count (proposals only) */}
       <span className="text-xs text-faint shrink-0 hidden sm:block w-16 text-right">
-        {pageCount} page{pageCount !== 1 ? 's' : ''}
+        {p.entity_type === 'quote' ? 'Quote' : `${pageCount} page${pageCount !== 1 ? 's' : ''}`}
       </span>
 
       {/* Date */}

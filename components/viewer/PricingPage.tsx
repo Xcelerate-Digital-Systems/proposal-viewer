@@ -3,8 +3,8 @@
 
 import {
   ProposalPricing, PaymentSchedule, MilestonePayment,
-  formatAUD, pricingSubtotal, pricingTax,
-  normalizePaymentSchedule, milestoneAmount,
+  formatAUD, pricingEffectiveSubtotal, pricingSubtotal, pricingTotalDiscount, pricingTax,
+  normalizePaymentSchedule, milestoneAmount, effectiveItemAmount,
 } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor, deriveSurfaceColor } from '@/hooks/useProposal';
 import { fontFamily } from '@/lib/google-fonts';
@@ -59,7 +59,9 @@ export default function PricingPage({ pricing, branding, clientName, orientation
   const border = deriveBorderColor(bgSecondary);
   const surface = deriveSurfaceColor(bgPrimary, bgSecondary);
 
-  const subtotal = pricingSubtotal(pricing.items);
+  const baseSubtotal = pricingSubtotal(pricing.items);
+  const totalDiscount = pricingTotalDiscount(pricing.items);
+  const subtotal = pricingEffectiveSubtotal(pricing.items);
   const tax = pricing.tax_enabled ? pricingTax(subtotal, pricing.tax_rate) : 0;
   const total = subtotal + tax;
 
@@ -132,7 +134,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
           )}
 
           {/* Line items table */}
-          {pricing.items.length > 0 && (
+          {(pricing.items ?? []).length > 0 && (
             <div className="mb-6">
               {/* Table header */}
               <div
@@ -140,7 +142,15 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 style={{ backgroundColor: surface, color: faint }}
               >
                 <span className="flex-1">Description</span>
-                <span className="w-24 text-right shrink-0">Amount</span>
+                {pricing.qty_enabled && (
+                  <>
+                    <span className="w-16 text-right shrink-0">{pricing.qty_label || 'Qty'}</span>
+                    <span className="w-24 text-right shrink-0">Rate</span>
+                  </>
+                )}
+                {!pricing.qty_enabled && (
+                  <span className="w-24 text-right shrink-0">Amount</span>
+                )}
                 {pricing.tax_enabled && (
                   <span className="w-24 text-right shrink-0">{pricing.tax_label.split('(')[0].trim()}</span>
                 )}
@@ -150,10 +160,13 @@ export default function PricingPage({ pricing, branding, clientName, orientation
               </div>
 
               {/* Rows */}
-              {pricing.items
+              {(pricing.items ?? [])
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((item, idx) => {
-                  const gst = itemTax(item.amount);
+                  const effective = effectiveItemAmount(item);
+                  const hasDiscount = (item.discount_pct ?? 0) > 0;
+                  const gst = itemTax(effective);
+                  const unitPrice = item.unit_price ?? item.amount;
                   return (
                     <div
                       key={item.id}
@@ -172,28 +185,69 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                             {item.description}
                           </span>
                         )}
+                        {hasDiscount && (
+                          <span
+                            className="ml-2 text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                            style={{ backgroundColor: `${accent}20`, color: accent }}
+                          >
+                            {item.discount_pct}% off
+                          </span>
+                        )}
                       </div>
-                      <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
-                        {formatAUD(item.amount)}
-                      </span>
+                      {pricing.qty_enabled && (
+                        <>
+                          <span className="agv-pricing-body w-16 text-right shrink-0 text-sm" style={{ color: muted }}>
+                            {item.qty ?? 1}
+                          </span>
+                          <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
+                            {hasDiscount ? (
+                              <span className="line-through opacity-50">{formatAUD(unitPrice)}</span>
+                            ) : formatAUD(unitPrice)}
+                          </span>
+                        </>
+                      )}
+                      {!pricing.qty_enabled && (
+                        <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
+                          {hasDiscount ? (
+                            <span className="line-through opacity-50">{formatAUD(item.amount)}</span>
+                          ) : formatAUD(item.amount)}
+                        </span>
+                      )}
                       {pricing.tax_enabled && (
                         <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
                           {formatAUD(gst)}
                         </span>
                       )}
                       <span className="agv-pricing-body w-28 text-right shrink-0 text-sm font-medium" style={{ color: textColor }}>
-                        {formatAUD(pricing.tax_enabled ? item.amount + gst : item.amount)}
+                        {formatAUD(pricing.tax_enabled ? effective + gst : effective)}
                       </span>
                     </div>
                   );
                 })}
 
-              {/* Subtotal / Tax / Total */}
+              {/* Subtotal / Discount / Tax / Total */}
               <div className="rounded-b-lg overflow-hidden" style={{ backgroundColor: surface }}>
-                <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                  <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
-                  <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
-                </div>
+                {totalDiscount > 0 ? (
+                  <>
+                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                      <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
+                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: muted, textDecoration: 'line-through' }}>{formatAUD(baseSubtotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                      <span className="agv-pricing-body text-sm font-medium" style={{ color: accent }}>Discount savings</span>
+                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: accent }}>−{formatAUD(totalDiscount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                      <span className="agv-pricing-body text-sm" style={{ color: muted }}>After discount</span>
+                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                    <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
+                    <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
+                  </div>
+                )}
                 {pricing.tax_enabled && (
                   <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
                     <span className="agv-pricing-body text-sm" style={{ color: muted }}>{pricing.tax_label}</span>
@@ -208,6 +262,13 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Footer note */}
+          {pricing.footer_note && (
+            <p className="agv-pricing-body text-xs leading-relaxed mb-6 italic" style={{ color: muted }}>
+              {pricing.footer_note}
+            </p>
           )}
 
           {/* ─── Payment Schedule ──────────────────────────────────── */}
@@ -365,7 +426,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
           )}
 
           {/* Optional extras */}
-          {pricing.optional_items.length > 0 && (
+          {(pricing.optional_items ?? []).length > 0 && (
             <div className="mb-8">
               <h3
                 className="text-sm mb-3 uppercase tracking-wider"
@@ -378,28 +439,47 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 Optional Extras
               </h3>
               <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${border}` }}>
-                {pricing.optional_items
+                {(pricing.optional_items ?? [])
                   .sort((a, b) => a.sort_order - b.sort_order)
-                  .map((item, idx) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between px-4 py-3"
-                      style={{
-                        borderBottom: idx < pricing.optional_items.length - 1 ? `1px solid ${border}` : undefined,
-                        backgroundColor: idx % 2 === 0 ? 'transparent' : `${surface}80`,
-                      }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>{item.label}</span>
-                        {item.description && (
-                          <span className="text-xs ml-2" style={{ color: muted }}>{item.description}</span>
-                        )}
+                  .map((item, idx) => {
+                    const effectiveOpt = effectiveItemAmount(item);
+                    const hasOptDiscount = (item.discount_pct ?? 0) > 0;
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between px-4 py-3"
+                        style={{
+                          borderBottom: idx < (pricing.optional_items ?? []).length - 1 ? `1px solid ${border}` : undefined,
+                          backgroundColor: idx % 2 === 0 ? 'transparent' : `${surface}80`,
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>{item.label}</span>
+                          {item.description && (
+                            <span className="text-xs ml-2" style={{ color: muted }}>{item.description}</span>
+                          )}
+                          {hasOptDiscount && (
+                            <span
+                              className="ml-2 text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                              style={{ backgroundColor: `${accent}20`, color: accent }}
+                            >
+                              {item.discount_pct}% off
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0 ml-4">
+                          {hasOptDiscount && (
+                            <span className="agv-pricing-body text-xs block line-through" style={{ color: muted }}>
+                              {formatAUD(item.amount)}
+                            </span>
+                          )}
+                          <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
+                            {formatAUD(effectiveOpt)}
+                          </span>
+                        </div>
                       </div>
-                      <span className="agv-pricing-body text-sm font-medium shrink-0 ml-4" style={{ color: textColor }}>
-                        {formatAUD(item.amount)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           )}

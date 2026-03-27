@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   PaymentSchedule, MilestonePayment, PricingLineItem,
-  pricingSubtotal, pricingTax, formatAUD,
+  pricingEffectiveSubtotal, pricingTax, formatAUD,
   generateItemId, milestoneAmount, milestoneTotalPercent, milestoneTotalFixed,
 } from '@/lib/supabase';
 
@@ -46,7 +46,7 @@ export function usePricingSchedule(
     s.one_off.enabled || s.milestones.enabled || s.recurring.enabled
   );
 
-  const subtotal = pricingSubtotal(items);
+  const subtotal = pricingEffectiveSubtotal(items);
   const tax = taxEnabled ? pricingTax(subtotal, taxRate) : 0;
   const projectTotal = subtotal + tax;
 

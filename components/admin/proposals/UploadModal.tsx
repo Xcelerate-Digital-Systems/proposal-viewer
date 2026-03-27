@@ -2,7 +2,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileText, X, LayoutTemplate } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Upload, FileText, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
 import CreateFromTemplate from './CreateFromTemplate';
@@ -11,6 +12,7 @@ interface UploadModalProps {
   companyId: string;
   onClose: () => void;
   onSuccess: () => void;
+  initialTab?: 'upload' | 'template' | 'quote';
 }
 
 const formatSize = (bytes: number | null) => {
@@ -19,10 +21,18 @@ const formatSize = (bytes: number | null) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export default function UploadModal({ companyId, onClose, onSuccess }: UploadModalProps) {
+const modalTitles = {
+  upload:   'New Proposal',
+  template: 'From Template',
+  quote:    'New Quote',
+};
+
+export default function UploadModal({ companyId, onClose, onSuccess, initialTab = 'upload' }: UploadModalProps) {
+  const router = useRouter();
   const toast = useToast();
-  const [tab, setTab] = useState<'upload' | 'template'>('upload');
+  const mode = initialTab;
   const [form, setForm] = useState({ title: '', client_name: '', client_email: '', crm_identifier: '', description: '' });
+  const [quoteForm, setQuoteForm] = useState({ title: '', client_name: '', client_email: '' });
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -38,12 +48,9 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
     const { supabase } = await import('@/lib/supabase');
 
     try {
-      // Sanitize filename: remove special chars that Supabase storage rejects
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      // ── FIX: use proposals/ prefix so splitProposalPages can find the file ──
       const filePath = `proposals/${Date.now()}-${safeName}`;
 
-      // Step 1: Upload PDF directly to storage (bypasses Vercel 4.5 MB body limit)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener('progress', (ev) => {
@@ -65,7 +72,6 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
 
       setStatus('Creating proposal...');
 
-      // Get current user's name from team_members
       const { data: sessionData } = await supabase.auth.getSession();
       let creatorName: string | null = null;
       if (sessionData?.session?.user?.id) {
@@ -77,8 +83,6 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
         creatorName = member?.name || null;
       }
 
-      // ── FIX: call /api/proposals instead of direct DB insert so that
-      //    splitProposalPages runs and proposal_pages_v2 rows get created ──
       const res = await fetch('/api/proposals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -112,45 +116,74 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
     }
   };
 
+  const handleCreateQuote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quoteForm.title || !quoteForm.client_name) return;
+    setUploading(true);
+    setStatus('Creating quote...');
+
+    const { supabase } = await import('@/lib/supabase');
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      let creatorName: string | null = null;
+      if (sessionData?.session?.user?.id) {
+        const { data: member } = await supabase
+          .from('team_members')
+          .select('name')
+          .eq('user_id', sessionData.session.user.id)
+          .single();
+        creatorName = member?.name || null;
+      }
+
+      const res = await fetch('/api/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:           quoteForm.title,
+          client_name:     quoteForm.client_name,
+          client_email:    quoteForm.client_email || null,
+          company_id:      companyId,
+          created_by_name: creatorName,
+          prepared_by:     creatorName,
+          entity_type:     'quote',
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+      onSuccess();
+      onClose();
+      router.push(`/proposals/${data.proposal_id}/quote-pricing`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to create quote. Please try again.');
+    } finally {
+      setUploading(false);
+      setStatus('');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200">
+
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-gray-900">
-            New Proposal
+            {modalTitles[mode]}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setTab('upload')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-              tab === 'upload'
-                ? 'text-teal border-b-2 border-teal -mb-px'
-                : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <Upload size={15} />
-            Upload PDF
-          </button>
-          <button
-            onClick={() => setTab('template')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-              tab === 'template'
-                ? 'text-teal border-b-2 border-teal -mb-px'
-                : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <LayoutTemplate size={15} />
-            From Template
-          </button>
-        </div>
-
-        {tab === 'upload' ? (
+        {/* Content — no tabs, just the right form */}
+        {mode === 'upload' && (
           <form onSubmit={handleUpload} className="p-6 space-y-4">
             <FormFields
               fields={fieldsByType.proposal}
@@ -207,15 +240,71 @@ export default function UploadModal({ companyId, onClose, onSuccess }: UploadMod
               {uploading ? 'Creating proposal...' : 'Create Proposal'}
             </button>
           </form>
-        ) : (
+        )}
+
+        {mode === 'template' && (
           <div className="p-6">
             <CreateFromTemplate
               companyId={companyId}
-              onBack={() => setTab('upload')}
+              onBack={onClose}
               onSuccess={() => { onSuccess(); onClose(); }}
             />
           </div>
         )}
+
+        {mode === 'quote' && (
+          <form onSubmit={handleCreateQuote} className="p-6 space-y-4">
+            <p className="text-sm text-gray-500">
+              Create a quick quote to send pricing to a client. You can add line items and payment terms after creation.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Quote Title <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={quoteForm.title}
+                onChange={(e) => setQuoteForm({ ...quoteForm, title: e.target.value })}
+                placeholder="e.g. Website Redesign Quote"
+                required
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={quoteForm.client_name}
+                onChange={(e) => setQuoteForm({ ...quoteForm, client_name: e.target.value })}
+                placeholder="e.g. Acme Corp"
+                required
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client Email <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="email"
+                value={quoteForm.client_email}
+                onChange={(e) => setQuoteForm({ ...quoteForm, client_email: e.target.value })}
+                placeholder="client@example.com"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={uploading || !quoteForm.title || !quoteForm.client_name}
+              className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {uploading ? 'Creating quote...' : 'Create Quote'}
+            </button>
+          </form>
+        )}
+
       </div>
     </div>
   );

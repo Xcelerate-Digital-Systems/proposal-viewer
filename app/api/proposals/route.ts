@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { splitProposalPages } from '@/lib/split-proposal-pages';
+import { addPage } from '@/lib/page-operations';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,13 +42,22 @@ export async function POST(req: NextRequest) {
       company_id,
       created_by_name,
       prepared_by,
+      entity_type,
       // Allow any additional fields (template-copied cover fields, etc.)
       ...rest
     } = body;
 
-    if (!title || !client_name || !file_path || !company_id) {
+    const isQuote = entity_type === 'quote';
+
+    if (!title || !client_name || !company_id) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, client_name, file_path, company_id' },
+        { error: 'Missing required fields: title, client_name, company_id' },
+        { status: 400 },
+      );
+    }
+    if (!isQuote && !file_path) {
+      return NextResponse.json(
+        { error: 'Missing required field: file_path' },
         { status: 400 },
       );
     }
@@ -61,13 +71,14 @@ export async function POST(req: NextRequest) {
         client_email:      client_email   || null,
         crm_identifier:    crm_identifier || null,
         description:       description    || null,
-        file_path,
+        file_path:         file_path      || '',
         file_size_bytes:   file_size_bytes ?? 0,
         status:            'draft',
         page_names:        [],
         company_id,
         created_by_name:   created_by_name || null,
         prepared_by:       prepared_by     || created_by_name || null,
+        entity_type:       isQuote ? 'quote' : 'proposal',
         ...rest,
       })
       .select('id')
@@ -83,18 +94,43 @@ export async function POST(req: NextRequest) {
 
     const proposalId = proposal.id;
 
-    // ── Split PDF into per-page rows ──────────────────────────────────────
+    // ── Split PDF into per-page rows (proposals only) ────────────────────
     // Non-fatal: if split fails, the proposal still exists and can be
     // backfilled later via POST /api/proposals/split.
+    // Quotes have no PDF, so we skip this step.
     let pageCount = 0;
-    try {
-      const splitResult = await splitProposalPages(proposalId, 'proposal', false);
-      pageCount = splitResult.pageCount ?? 0;
-    } catch (splitErr) {
-      console.error(
-        `Non-fatal: failed to split pages for new proposal ${proposalId}:`,
-        splitErr,
-      );
+    if (!isQuote) {
+      try {
+        const splitResult = await splitProposalPages(proposalId, 'proposal', false);
+        pageCount = splitResult.pageCount ?? 0;
+      } catch (splitErr) {
+        console.error(
+          `Non-fatal: failed to split pages for new proposal ${proposalId}:`,
+          splitErr,
+        );
+      }
+    } else {
+      // ── Auto-create default pages for quotes (pricing + packages) ────
+      // Quotes start with zero proposal_pages_v2 rows (no PDF), so we seed
+      // the initial pages here so the editor tabs work immediately.
+      try {
+        await addPage(supabase, 'proposal', {
+          entityId:  proposalId,
+          companyId: company_id,
+          type:      'pricing',
+          title:     'Pricing',
+          position:  0,
+        });
+        await addPage(supabase, 'proposal', {
+          entityId:  proposalId,
+          companyId: company_id,
+          type:      'packages',
+          title:     'Packages',
+          position:  1,
+        });
+      } catch (pageErr) {
+        console.error(`Non-fatal: failed to create default pages for quote ${proposalId}:`, pageErr);
+      }
     }
 
     return NextResponse.json({

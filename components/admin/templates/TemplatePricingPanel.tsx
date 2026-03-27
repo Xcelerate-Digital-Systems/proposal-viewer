@@ -20,6 +20,8 @@ export type TemplatePricingFormState = {
   taxRate: number;
   taxLabel: string;
   validityDays: number | null;
+  qtyEnabled: boolean;
+  qtyLabel: string;
 };
 
 interface TemplatePricingPanelProps {
@@ -61,14 +63,20 @@ export default function TemplatePricingPanel({
           taxEnabled={pricingForm.taxEnabled}
           validityDays={pricingForm.validityDays}
           proposalDate={new Date().toISOString().split('T')[0]}
+          qtyEnabled={pricingForm.qtyEnabled}
+          qtyLabel={pricingForm.qtyLabel}
           onTitleChange={(v) => onUpdate({ title: v })}
           onIntroTextChange={(v) => onUpdate({ introText: v })}
           onTaxEnabledChange={(v) => onUpdate({ taxEnabled: v })}
           onValidityDaysChange={(v) => onUpdate({ validityDays: v })}
           onProposalDateChange={() => {/* no-op for templates */}}
+          onQtyEnabledChange={(v) => onUpdate({ qtyEnabled: v })}
+          onQtyLabelChange={(v) => onUpdate({ qtyLabel: v })}
         />
         <PricingLineItems
           items={pricingForm.items}
+          qtyEnabled={pricingForm.qtyEnabled}
+          qtyLabel={pricingForm.qtyLabel}
           onChange={(items) => onUpdate({ items })}
         />
         <PricingOptionalItems

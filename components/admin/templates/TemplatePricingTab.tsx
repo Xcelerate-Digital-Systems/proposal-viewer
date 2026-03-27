@@ -40,6 +40,9 @@ type PricingFormState = {
   taxRate: number;
   taxLabel: string;
   validityDays: number | null;
+  qtyEnabled: boolean;
+  qtyLabel: string;
+  footerNote: string;
 };
 
 const DEFAULT_PRICING: PricingFormState = {
@@ -53,6 +56,9 @@ const DEFAULT_PRICING: PricingFormState = {
   taxRate: 10,
   taxLabel: 'GST (10%)',
   validityDays: 30,
+  qtyEnabled: false,
+  qtyLabel: 'Qty',
+  footerNote: '',
 };
 
 /* ------------------------------------------------------------------ */
@@ -111,6 +117,9 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
               taxRate:         (pl.tax_rate as number) ?? 10,
               taxLabel:        (pl.tax_label as string) ?? 'GST (10%)',
               validityDays:    (pl.validity_days as number) ?? null,
+              qtyEnabled:      (pl.qty_enabled as boolean) ?? false,
+              qtyLabel:        (pl.qty_label as string) || 'Qty',
+              footerNote:      (pl.footer_note as string) || '',
             });
           }
         }
@@ -155,6 +164,9 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
             tax_rate:         formData.taxRate,
             tax_label:        formData.taxLabel,
             validity_days:    formData.validityDays,
+            qty_enabled:      formData.qtyEnabled,
+            qty_label:        formData.qtyLabel,
+            footer_note:      formData.footerNote,
           },
         }),
       });
@@ -208,6 +220,9 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
     tax_label:        form.taxLabel,
     validity_days:    form.validityDays,
     proposal_date:    new Date().toISOString().split('T')[0],
+    qty_enabled:      form.qtyEnabled,
+    qty_label:        form.qtyLabel,
+    footer_note:      form.footerNote,
     created_at:       '',
     updated_at:       '',
   };
@@ -286,14 +301,22 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
                 taxEnabled={form.taxEnabled}
                 validityDays={form.validityDays}
                 proposalDate={new Date().toISOString().split('T')[0]}
+                qtyEnabled={form.qtyEnabled}
+                qtyLabel={form.qtyLabel}
                 onTitleChange={(v) => updateForm({ title: v })}
                 onIntroTextChange={(v) => updateForm({ introText: v })}
                 onTaxEnabledChange={(v) => updateForm({ taxEnabled: v })}
                 onValidityDaysChange={(v) => updateForm({ validityDays: v })}
                 onProposalDateChange={() => {/* no-op for templates */}}
+                onQtyEnabledChange={(v) => updateForm({ qtyEnabled: v })}
+                onQtyLabelChange={(v) => updateForm({ qtyLabel: v })}
               />
               <PricingLineItems
                 items={form.items}
+                qtyEnabled={form.qtyEnabled}
+                qtyLabel={form.qtyLabel}
+                footerNote={form.footerNote}
+                onFooterNoteChange={(v) => updateForm({ footerNote: v })}
                 onChange={(items) => updateForm({ items })}
               />
               <PricingOptionalItems

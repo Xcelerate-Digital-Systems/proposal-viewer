@@ -1,8 +1,8 @@
 // app/proposals/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText, LayoutGrid, List, Search } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, FileText, LayoutGrid, List, Search, ChevronDown, Upload, ReceiptText, LayoutTemplate } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
@@ -27,6 +27,9 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [uploadInitialTab, setUploadInitialTab] = useState<'upload' | 'template' | 'quote'>('upload');
+  const [showNewDropdown, setShowNewDropdown] = useState(false);
+  const newDropdownRef = useRef<HTMLDivElement>(null);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +75,23 @@ function ProposalsContent({ companyId }: { companyId: string }) {
     fetchProposals();
     fetchCustomDomain();
   }, [fetchProposals, fetchCustomDomain]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (newDropdownRef.current && !newDropdownRef.current.contains(e.target as Node)) {
+        setShowNewDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const openModal = (tab: 'upload' | 'template' | 'quote') => {
+    setUploadInitialTab(tab);
+    setShowUpload(true);
+    setShowNewDropdown(false);
+  };
 
   const filtered = searchQuery
     ? proposals.filter((p) =>
@@ -132,14 +152,60 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             />
           </div>
 
-          {/* New proposal */}
-          <button
-            onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
-          >
-            <Plus size={16} />
-            New Proposal
-          </button>
+          {/* New — split dropdown */}
+          <div className="relative" ref={newDropdownRef}>
+            <div className="flex items-stretch">
+              <button
+                onClick={() => openModal('upload')}
+                className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-l-[10px] px-4 py-2.5 transition-colors"
+              >
+                <Plus size={16} />
+                New
+              </button>
+              <button
+                onClick={() => setShowNewDropdown((v) => !v)}
+                className="flex items-center px-2 bg-teal hover:bg-teal-hover text-white rounded-r-[10px] border-l border-white/20 transition-colors"
+                aria-label="More options"
+              >
+                <ChevronDown size={14} className={`transition-transform ${showNewDropdown ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {showNewDropdown && (
+              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
+                <button
+                  onClick={() => openModal('upload')}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <Upload size={15} className="text-gray-400 shrink-0" />
+                  <div>
+                    <div className="font-medium">New Proposal</div>
+                    <div className="text-xs text-gray-400">Upload a PDF</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => openModal('template')}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-t border-gray-100"
+                >
+                  <LayoutTemplate size={15} className="text-gray-400 shrink-0" />
+                  <div>
+                    <div className="font-medium">From Template</div>
+                    <div className="text-xs text-gray-400">Use an existing template</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => openModal('quote')}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-t border-gray-100"
+                >
+                  <ReceiptText size={15} className="text-gray-400 shrink-0" />
+                  <div>
+                    <div className="font-medium">New Quote</div>
+                    <div className="text-xs text-gray-400">Send a quick quote</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -150,6 +216,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             companyId={companyId}
             onClose={() => setShowUpload(false)}
             onSuccess={fetchProposals}
+            initialTab={uploadInitialTab}
           />
         )}
 
@@ -170,7 +237,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             <h3 className="text-lg font-semibold text-muted mb-1">No proposals yet</h3>
             <p className="text-sm text-faint">Upload your first proposal to get started</p>
             <button
-              onClick={() => setShowUpload(true)}
+              onClick={() => openModal('upload')}
               className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
             >
               <Plus size={16} />

@@ -149,7 +149,7 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain 
     <div className="bg-white rounded-[14px] border border-edge hover:border-edge-hover transition-colors flex flex-col">
       {/* ─── Visual header — click to open ──────────────────── */}
       <button
-        onClick={() => router.push(`/proposals/${p.id}/pages`)}
+        onClick={() => router.push(p.entity_type === 'quote' ? `/proposals/${p.id}/quote-pricing` : `/proposals/${p.id}/pages`)}
         className="w-full aspect-[16/10] rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative border-b border-edge"
         style={hasCover ? { backgroundColor: p.cover_bg_color_1 || '#0f0f0f' } : undefined}
       >
@@ -222,13 +222,20 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain 
         <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-faint border border-edge">
           {formatDate(p.created_at)}
         </span>
+
+        {/* Quote badge */}
+        {p.entity_type === 'quote' && (
+          <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-amber-50/90 backdrop-blur-sm text-[10px] font-semibold text-amber-600 border border-amber-200">
+            Quote
+          </span>
+        )}
       </button>
 
       {/* ─── Card body ──────────────────────────────────────── */}
       <div className="p-3.5 flex-1 flex flex-col min-w-0">
         <h3
           className="text-[15px] font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
-          onClick={() => router.push(`/proposals/${p.id}/pages`)}
+          onClick={() => router.push(p.entity_type === 'quote' ? `/proposals/${p.id}/quote-pricing` : `/proposals/${p.id}/pages`)}
         >
           {p.title}
         </h3>
@@ -255,7 +262,7 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain 
         <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3.5 px-3.5">
           <div className="flex items-center gap-0.5">
             <button
-              onClick={() => router.push(`/proposals/${p.id}/pages`)}
+              onClick={() => router.push(p.entity_type === 'quote' ? `/proposals/${p.id}/quote-pricing` : `/proposals/${p.id}/pages`)}
               className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal-tint transition-colors"
             >
               <Eye size={12} />

@@ -45,6 +45,8 @@ export interface PricingFormState {
   taxLabel:        string;
   validityDays:    number | null;
   proposalDate:    string | null;
+  qtyEnabled:      boolean;
+  qtyLabel:        string;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

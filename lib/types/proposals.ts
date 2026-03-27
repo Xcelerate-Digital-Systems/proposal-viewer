@@ -141,6 +141,7 @@ export type Proposal = {
   text_page_border_color: string | null;
   text_page_border_radius: string | null;
   text_page_layout: string | null;
+  entity_type: 'proposal' | 'quote';
 };
 
 // ─── Proposal Comment ─────────────────────────────────────────────────────────

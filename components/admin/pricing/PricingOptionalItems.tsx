@@ -2,8 +2,8 @@
 'use client';
 
 import { useCallback } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
-import { PricingOptionalItem, generateItemId } from '@/lib/supabase';
+import { Plus, Trash2, Tag } from 'lucide-react';
+import { PricingOptionalItem, generateItemId, effectiveItemAmount, formatAUD } from '@/lib/supabase';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 
 interface PricingOptionalItemsProps {
@@ -29,7 +29,7 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
     onChange(items.filter((item) => item.id !== id));
   };
 
-  const updateItem = (id: string, field: keyof PricingOptionalItem, value: string | number) => {
+  const updateItem = (id: string, field: keyof PricingOptionalItem, value: string | number | undefined) => {
     onChange(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   };
 
@@ -50,29 +50,70 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
             Optional extras appear in a separate section below the main quote.
           </p>
         )}
-        {items.map((item) => (
-          <div key={item.id} className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-3">
-            <input
-              type="text"
-              value={item.label}
-              onChange={(e) => updateItem(item.id, 'label', e.target.value)}
-              placeholder="Extra description"
-              className="flex-1 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
-            />
-            <CurrencyInput
-              value={item.amount}
-              onChange={(val) => updateItem(item.id, 'amount', val)}
-              size="sm"
-              className="w-28"
-            />
-            <button
-              onClick={() => removeItem(item.id)}
-              className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
-        ))}
+        {items.map((item) => {
+          const effective = effectiveItemAmount(item);
+          const hasDiscount = (item.discount_pct ?? 0) > 0;
+          return (
+            <div key={item.id} className="flex flex-col gap-2 bg-white rounded-lg border border-gray-200 p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(e) => updateItem(item.id, 'label', e.target.value)}
+                  placeholder="Extra description"
+                  className="flex-1 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+                />
+                <CurrencyInput
+                  value={item.amount}
+                  onChange={(val) => updateItem(item.id, 'amount', val)}
+                  size="sm"
+                  className="w-28"
+                />
+                <button
+                  onClick={() => removeItem(item.id)}
+                  className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+              {/* Discount row */}
+              <div className="flex items-center gap-2 pl-0.5">
+                <button
+                  type="button"
+                  onClick={() => updateItem(item.id, 'discount_pct', hasDiscount ? 0 : 10)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    hasDiscount
+                      ? 'bg-teal/10 text-teal border border-teal/20'
+                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50 border border-transparent'
+                  }`}
+                >
+                  <Tag size={10} />
+                  {hasDiscount ? `${item.discount_pct}% off` : 'Add discount'}
+                </button>
+                {hasDiscount && (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={item.discount_pct ?? 0}
+                        onChange={(e) => updateItem(item.id, 'discount_pct', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                        min={0}
+                        max={100}
+                        step={0.5}
+                        className="w-16 px-2 py-1 rounded border border-teal/20 text-xs text-right focus:outline-none focus:ring-1 focus:ring-teal/30 bg-teal/5"
+                      />
+                      <span className="text-xs text-gray-400">%</span>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      saves <span className="text-teal font-medium">{formatAUD(item.amount - effective)}</span>
+                      {' '}→ <span className="font-medium text-gray-700">{formatAUD(effective)}</span>
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

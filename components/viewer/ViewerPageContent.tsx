@@ -4,7 +4,8 @@
 import { RefObject } from 'react';
 import type { CompanyBranding, PageUrlEntry } from '@/hooks/useProposal';
 import type { ProposalPricing, ProposalPackages, TocSettings, PageNameEntry } from '@/lib/supabase';
-import PdfViewer from './PdfViewer';
+import dynamic from 'next/dynamic';
+const PdfViewer = dynamic(() => import('./PdfViewer'), { ssr: false });
 import TextPage from './TextPage';
 import TocPage, { type PageSequenceEntry } from './TocPage';
 import PricingPage from './PricingPage';
