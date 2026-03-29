@@ -42,7 +42,7 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
 
 const tabs: { key: string; label: string; icon: typeof DollarSign; path: string }[] = [
   { key: 'quote-cover',       label: 'Cover',       icon: Image,       path: 'quote-cover' },
-  { key: 'quote-pricing',     label: 'Pricing',     icon: DollarSign,  path: 'quote-pricing' },
+  { key: 'quote-pricing',     label: 'Quote',        icon: DollarSign,  path: 'quote-pricing' },
   { key: 'quote-packages',    label: 'Packages',    icon: Package,     path: 'quote-packages' },
   { key: 'quote-text-pages',  label: 'Text Pages',  icon: AlignLeft,   path: 'quote-text-pages' },
   { key: 'quote-details',     label: 'Details',     icon: Settings,    path: 'quote-details' },

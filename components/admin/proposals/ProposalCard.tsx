@@ -45,7 +45,7 @@ const formatDate = (date: string | null) => {
 const tabDefs: { key: ActiveTab; label: string; icon: React.ReactNode }[] = [
   { key: 'details', label: 'Details', icon: <Settings size={14} /> },
   { key: 'pages', label: 'Edit Pages', icon: <Pencil size={14} /> },
-  { key: 'pricing', label: 'Pricing', icon: <DollarSign size={14} /> },
+  { key: 'pricing', label: 'Quote', icon: <DollarSign size={14} /> },
   { key: 'cover', label: 'Cover', icon: <Image size={14} /> },
 ];
 

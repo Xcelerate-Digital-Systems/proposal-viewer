@@ -35,7 +35,7 @@ interface ViewerStylePreviewProps {
 const TABS = [
   { key: 'text', label: 'Text Page', icon: FileText },
   { key: 'toc', label: 'Contents', icon: List },
-  { key: 'pricing', label: 'Pricing', icon: DollarSign },
+  { key: 'pricing', label: 'Quote', icon: DollarSign },
   { key: 'packages', label: 'Packages', icon: Package },
 ] as const;
 

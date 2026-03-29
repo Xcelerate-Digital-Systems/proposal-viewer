@@ -72,7 +72,7 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
         )}
         <DollarSign size={14} className="text-teal shrink-0" />
         <span className="text-sm font-medium text-teal flex-1 truncate">
-          {title || 'Pricing Page'}
+          {title || 'Quote Page'}
         </span>
 
         {/* Actions */}

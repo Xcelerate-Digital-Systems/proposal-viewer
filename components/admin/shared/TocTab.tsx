@@ -141,7 +141,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
               pdfCount++;
               return { id: `pdf:${pdfCount}`, label: p.title || `Page ${pdfCount}`, type: 'pdf' as const, indent: p.indent ?? 0 };
             }
-            if (p.type === 'pricing')  return { id: 'pricing',          label: p.title || 'Pricing',  type: 'pricing'  as const, indent: p.indent ?? 0 };
+            if (p.type === 'pricing')  return { id: 'pricing',          label: p.title || 'Quote',  type: 'pricing'  as const, indent: p.indent ?? 0 };
             if (p.type === 'packages') return { id: `packages:${p.id}`, label: p.title || 'Packages', type: 'packages' as const, indent: p.indent ?? 0 };
             if (p.type === 'text')     return { id: `text:${p.id}`,     label: p.title || 'Untitled', type: 'text'     as const, indent: p.indent ?? 0 };
             // section → group

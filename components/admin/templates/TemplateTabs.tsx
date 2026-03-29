@@ -15,7 +15,7 @@ const tabs: { key: string; label: string; icon: typeof Pencil; path: string }[] 
   { key: 'design', label: 'Design', icon: Paintbrush, path: 'design' },
   { key: 'cover', label: 'Cover', icon: Image, path: 'cover' },
   { key: 'text-pages', label: 'Text', icon: FileText, path: 'text-pages' },
-  { key: 'pricing', label: 'Pricing', icon: DollarSign, path: 'pricing' },
+  { key: 'pricing', label: 'Quote', icon: DollarSign, path: 'pricing' },
   { key: 'packages', label: 'Packages', icon: Package, path: 'packages' },
   { key: 'details', label: 'Details', icon: Settings, path: 'details' },
 ];

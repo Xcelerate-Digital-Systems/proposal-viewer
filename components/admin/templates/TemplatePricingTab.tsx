@@ -198,7 +198,7 @@ export default function TemplatePricingTab({ templateId, companyId }: TemplatePr
     const updated = { ...form, enabled: newEnabled };
     setForm(updated);
     await savePricing(updated, pageId);
-    toast.success(newEnabled ? 'Pricing page enabled' : 'Pricing page disabled');
+    toast.success(newEnabled ? 'Quote page enabled' : 'Quote page disabled');
   }, [form, pageId, savePricing, toast]);
 
   /* ── Build preview data ─────────────────────────────────────── */

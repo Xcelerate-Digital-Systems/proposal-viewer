@@ -79,7 +79,7 @@ export default function TemplateSectionEditorPanel({
 
 function sectionTitle(section: TemplateActiveSection): string {
   switch (section.type) {
-    case 'pricing':  return 'Pricing';
+    case 'pricing':  return 'Quote';
     case 'packages': return 'Packages';
     case 'text':     return 'Text Page';
     case 'cover':    return 'Cover';

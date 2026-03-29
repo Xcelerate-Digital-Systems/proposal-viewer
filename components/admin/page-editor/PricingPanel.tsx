@@ -26,7 +26,7 @@ export default function PricingPanel({
       <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
         <span className="text-xs text-gray-500 font-medium flex items-center gap-1.5">
           <DollarSign size={12} className="text-teal" />
-          Pricing Page
+          Quote Page
         </span>
         <div className="flex items-center gap-2">
           {pricingSaveStatus === 'saving' && <Loader2 size={12} className="animate-spin text-gray-300" />}

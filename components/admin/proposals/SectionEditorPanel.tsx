@@ -93,7 +93,7 @@ export default function SectionEditorPanel({
 
 function sectionTitle(section: ActiveSection): string {
   switch (section.type) {
-    case 'pricing':  return 'Pricing';
+    case 'pricing':  return 'Quote';
     case 'packages': return 'Packages';
     case 'text':     return 'Text Page';
     case 'cover':    return 'Cover';

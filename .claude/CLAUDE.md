@@ -34,7 +34,7 @@ components/
 ├── admin/                      # Authenticated UI (editors, forms, boards)
 │   ├── proposals/              # Proposal editor
 │   ├── reviews/                # Review management + board nodes
-│   └── shared/                 # Cover, design, TOC, pricing editors
+│   └── shared/                 # Cover, design, TOC, quote editors
 ├── viewer/                     # Public viewer components
 ├── reviews/                    # Review detail view, comments, feedback tools
 └── ui/                         # Primitives (Toast, ConfirmDialog)
@@ -92,6 +92,6 @@ RESEND_API_KEY=                 # Resend email API key
 NEXT_PUBLIC_APP_URL=            # App URL (http://localhost:3000 in dev)
 ```
 
-## Plans
+## Terminology
 
-- [Creative Review completion plan](.claude/plans/proud-prancing-eclipse.md) — All 5 phases complete
+- **Quote** (not "Pricing") — all admin-facing labels use "Quote" for the line-item pricing page. Internal code identifiers and URL paths still use `pricing` for backwards compatibility.
