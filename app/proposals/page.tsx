@@ -152,24 +152,16 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             />
           </div>
 
-          {/* New — split dropdown */}
+          {/* New — dropdown */}
           <div className="relative" ref={newDropdownRef}>
-            <div className="flex items-stretch">
-              <button
-                onClick={() => openModal('upload')}
-                className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-l-[10px] px-4 py-2.5 transition-colors"
-              >
-                <Plus size={16} />
-                New
-              </button>
-              <button
-                onClick={() => setShowNewDropdown((v) => !v)}
-                className="flex items-center px-2 bg-teal hover:bg-teal-hover text-white rounded-r-[10px] border-l border-white/20 transition-colors"
-                aria-label="More options"
-              >
-                <ChevronDown size={14} className={`transition-transform ${showNewDropdown ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
+            <button
+              onClick={() => setShowNewDropdown((v) => !v)}
+              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            >
+              <Plus size={16} />
+              New
+              <ChevronDown size={14} className={`transition-transform ${showNewDropdown ? 'rotate-180' : ''}`} />
+            </button>
 
             {showNewDropdown && (
               <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
