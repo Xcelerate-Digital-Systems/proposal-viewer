@@ -8,7 +8,6 @@ import {
   Heading1, Heading2, Heading3, List, ListOrdered, Quote,
   AlignLeft, AlignCenter, AlignRight, Link, Link2Off,
   Undo, Redo, Minus, Palette, Highlighter,
-  Table, Plus, Trash2, Columns, Rows,
 } from 'lucide-react';
 import ColorPickerDropdown from './ColorPickerDropdown';
 import DynamicFieldMenu from './DynamicFieldMenu';
@@ -257,34 +256,6 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
       <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule">
         <Minus size={16} />
       </ToolbarButton>
-
-      <Separator />
-
-      {/* Table */}
-      <ToolbarButton
-        onClick={() => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor.commands as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true });
-        }}
-        title="Insert Table"
-      >
-        <Table size={16} />
-      </ToolbarButton>
-      {editor.isActive('table') && (
-        <>
-          {/* eslint-disable @typescript-eslint/no-explicit-any */}
-          <ToolbarButton onClick={() => (editor.commands as any).addColumnAfter()} title="Add Column">
-            <Columns size={16} />
-          </ToolbarButton>
-          <ToolbarButton onClick={() => (editor.commands as any).addRowAfter()} title="Add Row">
-            <Rows size={16} />
-          </ToolbarButton>
-          <ToolbarButton onClick={() => (editor.commands as any).deleteTable()} title="Delete Table">
-            <Trash2 size={16} />
-          </ToolbarButton>
-          {/* eslint-enable @typescript-eslint/no-explicit-any */}
-        </>
-      )}
 
       <Separator />
 

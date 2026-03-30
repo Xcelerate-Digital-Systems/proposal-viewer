@@ -1,8 +1,7 @@
 // components/admin/text-editor/RichTextEditor.tsx
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { EditorContent, useEditor } from '@tiptap/react';
+import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import TiptapUnderline from '@tiptap/extension-underline';
@@ -11,7 +10,7 @@ import TiptapLink from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import { TableKit } from '@tiptap/extension-table';
+import { useEffect, useRef } from 'react';
 import { DynamicFieldExtension } from './DynamicFieldExtension';
 import { FontSizeExtension } from './FontSizeExtension';
 import { FontWeightExtension } from './FontWeightExtension';
@@ -38,7 +37,6 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
       FontWeightExtension,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       TiptapLink.configure({ openOnClick: false, HTMLAttributes: { class: 'text-teal underline' } }),
-      TableKit,
       DynamicFieldExtension,
     ],
     content: content as Record<string, unknown>,
