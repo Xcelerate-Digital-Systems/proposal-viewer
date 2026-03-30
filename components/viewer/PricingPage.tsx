@@ -231,41 +231,43 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 })}
 
               {/* Subtotal / Discount / Tax / Total */}
-              <div className="rounded-b-lg overflow-hidden" style={{ backgroundColor: surface }}>
-                {totalDiscount > 0 ? (
-                  <>
+              {(pricing.show_totals ?? true) && (
+                <div className="rounded-b-lg overflow-hidden" style={{ backgroundColor: surface }}>
+                  {totalDiscount > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                        <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
+                        <span className="agv-pricing-body text-sm font-semibold" style={{ color: muted, textDecoration: 'line-through' }}>{formatAUD(baseSubtotal)}</span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                        <span className="agv-pricing-body text-sm font-medium" style={{ color: accent }}>Discount savings</span>
+                        <span className="agv-pricing-body text-sm font-semibold" style={{ color: accent }}>−{formatAUD(totalDiscount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                        <span className="agv-pricing-body text-sm" style={{ color: muted }}>After discount</span>
+                        <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
+                      </div>
+                    </>
+                  ) : (
                     <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
                       <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
-                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: muted, textDecoration: 'line-through' }}>{formatAUD(baseSubtotal)}</span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                      <span className="agv-pricing-body text-sm font-medium" style={{ color: accent }}>Discount savings</span>
-                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: accent }}>−{formatAUD(totalDiscount)}</span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                      <span className="agv-pricing-body text-sm" style={{ color: muted }}>After discount</span>
                       <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
                     </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                    <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
-                    <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
+                  )}
+                  {pricing.tax_enabled && (
+                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                      <span className="agv-pricing-body text-sm" style={{ color: muted }}>{pricing.tax_label}</span>
+                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(tax)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between px-4 py-4">
+                    <span className="agv-pricing-body text-base font-bold" style={{ color: textColor }}>
+                      Total{pricing.tax_enabled ? ' (inc. tax)' : ''}
+                    </span>
+                    <span className="agv-pricing-body text-xl font-bold" style={{ color: accent }}>{formatAUD(total)}</span>
                   </div>
-                )}
-                {pricing.tax_enabled && (
-                  <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                    <span className="agv-pricing-body text-sm" style={{ color: muted }}>{pricing.tax_label}</span>
-                    <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(tax)}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between px-4 py-4">
-                  <span className="agv-pricing-body text-base font-bold" style={{ color: textColor }}>
-                    Total{pricing.tax_enabled ? ' (inc. tax)' : ''}
-                  </span>
-                  <span className="agv-pricing-body text-xl font-bold" style={{ color: accent }}>{formatAUD(total)}</span>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

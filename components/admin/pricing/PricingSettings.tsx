@@ -14,6 +14,7 @@ interface PricingSettingsProps {
   qtyEnabled: boolean;
   qtyLabel: string;
   stageLabel?: string;
+  showTotals?: boolean;
   onTitleChange: (v: string) => void;
   onIntroTextChange: (v: string) => void;
   onTaxEnabledChange: (v: boolean) => void;
@@ -22,12 +23,13 @@ interface PricingSettingsProps {
   onQtyEnabledChange: (v: boolean) => void;
   onQtyLabelChange: (v: string) => void;
   onStageLabelChange?: (v: string) => void;
+  onShowTotalsChange?: (v: boolean) => void;
 }
 
 export default function PricingSettings({
-  title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel, stageLabel,
+  title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel, stageLabel, showTotals,
   onTitleChange, onIntroTextChange, onTaxEnabledChange, onValidityDaysChange, onProposalDateChange,
-  onQtyEnabledChange, onQtyLabelChange, onStageLabelChange,
+  onQtyEnabledChange, onQtyLabelChange, onStageLabelChange, onShowTotalsChange,
 }: PricingSettingsProps) {
   return (
     <div className="space-y-4">
@@ -87,6 +89,17 @@ export default function PricingSettings({
         </div>
         <Toggle enabled={qtyEnabled} onChange={onQtyEnabledChange} size="sm" />
       </div>
+
+      {/* Show Totals toggle */}
+      {onShowTotalsChange && (
+        <div className="flex items-center justify-between py-2 border-t border-gray-100">
+          <div>
+            <span className="text-sm font-medium text-gray-700">Show Totals</span>
+            <p className="text-xs text-gray-400">Show subtotal, discount, and total rows</p>
+          </div>
+          <Toggle enabled={showTotals ?? true} onChange={onShowTotalsChange} size="sm" />
+        </div>
+      )}
 
       {/* Qty label — shown when qty is enabled */}
       {qtyEnabled && (

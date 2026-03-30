@@ -49,6 +49,7 @@ export type PricingFormState = {
   qtyEnabled: boolean;
   qtyLabel: string;
   stageLabel: string;
+  showTotals: boolean;
   footerNote: string;
 };
 
@@ -67,6 +68,7 @@ const DEFAULT_FORM: PricingFormState = {
   qtyEnabled: false,
   qtyLabel: 'Qty',
   stageLabel: 'Stage',
+  showTotals: true,
   footerNote: '',
 };
 
@@ -94,6 +96,7 @@ function unifiedToPricing(page: UnifiedPage): ProposalPricing {
     qty_enabled: (pl.qty_enabled as boolean) ?? false,
     qty_label: (pl.qty_label as string) || 'Qty',
     stage_label: (pl.stage_label as string) || 'Stage',
+    show_totals: (pl.show_totals as boolean) ?? true,
     footer_note: (pl.footer_note as string) || '',
     created_at: page.created_at,
     updated_at: page.updated_at,
@@ -116,6 +119,7 @@ function formFromRecord(record: ProposalPricing): PricingFormState {
     qtyEnabled: record.qty_enabled ?? false,
     qtyLabel: record.qty_label || 'Qty',
     stageLabel: record.stage_label || 'Stage',
+    showTotals: record.show_totals ?? true,
     footerNote: record.footer_note || '',
   };
 }
@@ -240,6 +244,7 @@ export function usePricingEditor({
               qty_enabled: data.qtyEnabled,
               qty_label: data.qtyLabel,
               stage_label: data.stageLabel,
+              show_totals: data.showTotals,
               footer_note: data.footerNote,
             },
           }),
@@ -315,6 +320,7 @@ export function usePricingEditor({
             qty_enabled: false,
             qty_label: 'Qty',
             stage_label: 'Stage',
+            show_totals: true,
             footer_note: '',
           },
         }),
@@ -389,6 +395,7 @@ export function usePricingEditor({
         qty_enabled: form.qtyEnabled,
         qty_label: form.qtyLabel,
         stage_label: form.stageLabel,
+        show_totals: form.showTotals,
         footer_note: form.footerNote,
       }
     : null;
