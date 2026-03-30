@@ -45,6 +45,8 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
     toPdfPage,
     getTextPage,
     pricing,
+    pricingPages,
+    getPricingId,
     packages,
     getPackagesId,
     branding,
@@ -141,13 +143,21 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
   for (let vp = 1; vp <= numPages; vp++) {
     onProgress?.(vp, numPages);
 
-    if (isPricingPage(vp) && pricing) {
-      const orientation = pricingOrientation
-        ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
-        : resolvePageOrientation(vp, pageEntries, dominant.orientation);
-      const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
-      const element = createElement(PricingPage, { pricing, branding, clientName });
-      await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
+    if (isPricingPage(vp)) {
+      const pricingId = getPricingId?.(vp);
+      const pricingData = pricingId && pricingPages
+        ? pricingPages.find((p) => p.id === pricingId) ?? pricing
+        : pricing;
+      if (pricingData) {
+        const orientation = pricingOrientation
+          ? resolveDirectOrientation(pricingOrientation, dominant.orientation)
+          : resolvePageOrientation(vp, pageEntries, dominant.orientation);
+        const [pageWidth, pageHeight] = resolvePageDimensions(orientation, dominant);
+        const element = createElement(PricingPage, { pricing: pricingData, branding, clientName });
+        await captureAndAddPage(outDoc, element, bgPrimary, pageWidth, pageHeight, 960, bgImageCtx);
+      } else {
+        outDoc.addPage([dominant.width, dominant.height]);
+      }
 
     } else if (isPackagesPage(vp)) {
       const pkgId = getPackagesId(vp);

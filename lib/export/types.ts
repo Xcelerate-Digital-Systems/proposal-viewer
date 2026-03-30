@@ -54,6 +54,8 @@ export interface CompositeExportOptions {
   toPdfPage: (vp: number) => number;
   getTextPage: (id: string) => BaseTextPage | undefined;
   pricing: ProposalPricing | null;
+  pricingPages?: ProposalPricing[];
+  getPricingId?: (vp: number) => string | null;
   packages: ProposalPackages[];
   getPackagesId: (vp: number) => string | null;
   branding: CompanyBranding;

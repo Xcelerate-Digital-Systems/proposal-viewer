@@ -71,10 +71,9 @@ export function usePageEditorActions(editor: PageEditor) {
   }, [addPage]);
 
   const handleInsertPricing = useCallback(async () => {
-    if (pages.some((p) => p.type === 'pricing')) return;
     const newPage = await addPage('pricing', { title: 'Project Investment' });
     if (newPage) setSelectedId(newPage.id);
-  }, [pages, addPage]);
+  }, [addPage]);
 
   const handleAddPackages = useCallback(async () => {
     const newPage = await addPage('packages', { title: 'Your Investment' });
@@ -143,14 +142,15 @@ export function usePageEditorActions(editor: PageEditor) {
 
   /* ── Feature flags ──────────────────────────────────────────────────────── */
 
-  const pricingExists = pages.some((p) => p.type === 'pricing');
+  const pricingCount  = pages.filter((p) => p.type === 'pricing').length;
+  const pricingExists = pricingCount > 0;
   const tocExists     = pages.some((p) => p.type === 'toc');
 
   /* ── Summary ────────────────────────────────────────────────────────────── */
 
   const summaryParts = [
     `${pdfPages.length} PDF page${pdfPages.length !== 1 ? 's' : ''}`,
-    pricingExists                                          ? 'pricing'      : '',
+    pricingCount > 0                                        ? `${pricingCount} quote${pricingCount !== 1 ? 's' : ''}` : '',
     pages.filter((p) => p.type === 'packages').length > 0  ? `${pages.filter((p) => p.type === 'packages').length} packages` : '',
     pages.filter((p) => p.type === 'text').length > 0      ? `${pages.filter((p) => p.type === 'text').length} text`         : '',
     tocExists                                              ? 'contents'     : '',

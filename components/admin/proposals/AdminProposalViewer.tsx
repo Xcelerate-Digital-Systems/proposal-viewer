@@ -225,7 +225,7 @@ export default function AdminProposalViewer({ proposalId, shareToken, onExit }: 
               pageEntries={v.pageEntries}
               numPages={v.numPages}
               currentTextPage={v.currentTextPage as Record<string, unknown> | undefined}
-              pricing={v.pricing}
+              pricing={v.currentPricing ?? v.pricing}
               currentPackages={v.currentPackages}
               pdfUrl={v.pdfUrl}
               pdfPage={v.pdfPage}

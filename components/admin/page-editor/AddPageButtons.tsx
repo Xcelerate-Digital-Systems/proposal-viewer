@@ -34,7 +34,7 @@ export default function AddPageButtons({
       {canAddPricing && (
         <button onClick={onAddPricing} className={btnClass}>
           <DollarSign size={12} />
-          Add Pricing Page
+          Add Quote Page
         </button>
       )}
       {!isDocuments && (

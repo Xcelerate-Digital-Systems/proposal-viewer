@@ -35,6 +35,8 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
     branding,
     brandingLoaded,
     pricing,
+    pricingPages,
+    getPricingId,
     packages,
     isPricingPage,
     isPackagesPage,
@@ -81,6 +83,10 @@ useEffect(() => {
   const onPackagesPage = isPackagesPage(currentPage);
   const onTocPage = isTocPage(currentPage);
   const onTextPage = isTextPage(currentPage);
+  const currentPricingId = getPricingId(currentPage);
+  const currentPricing = currentPricingId
+    ? pricingPages.find((p: Record<string, unknown>) => p.id === currentPricingId)
+    : null;
   const currentPackagesId = getPackagesId(currentPage);
   const currentPackages = currentPackagesId ? packages.find((p) => p.id === currentPackagesId) : undefined;
   const currentTextPageId = getTextPageId(currentPage);
@@ -264,7 +270,7 @@ useEffect(() => {
           />
         )}
         {/* Conditionally render PDF, Pricing, Packages, TOC, or Text page */}
-        {onPricingPage && pricing ? (
+        {onPricingPage && (currentPricing || pricing) ? (
           <div
             className="flex-1 relative"
             style={{ backgroundColor: bgPrimary }}
@@ -273,7 +279,7 @@ useEffect(() => {
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
               <div className="relative min-h-full">
                 <PricingPage
-                  pricing={pricing as unknown as ProposalPricing}
+                  pricing={(currentPricing ?? pricing) as unknown as ProposalPricing}
                   branding={branding}
                   clientName="[Client Name]"
                   orientation={pageOrientation}

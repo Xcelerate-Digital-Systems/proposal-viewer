@@ -13,8 +13,6 @@ interface InsertPageMenuProps {
   disabled?: boolean;
   /** Whether to show the pricing option (false for documents) */
   showPricing?: boolean;
-  /** Whether pricing is already added (hide option if so) */
-  pricingAlreadyExists?: boolean;
   /** Called when user selects "Upload PDF Page" and picks a file */
   onInsertPdf: (file: File) => void;
   /** Called when user selects "Add Text Page" */
@@ -28,7 +26,6 @@ export default function InsertPageMenu({
   isStart = false,
   disabled = false,
   showPricing = true,
-  pricingAlreadyExists = false,
   onInsertPdf,
   onInsertTextPage,
   onInsertPricingPage,
@@ -85,7 +82,7 @@ export default function InsertPageMenu({
     setOpen(false);
   }, [onInsertPricingPage]);
 
-  const canShowPricing = showPricing && !pricingAlreadyExists && !!onInsertPricingPage;
+  const canShowPricing = showPricing && !!onInsertPricingPage;
 
   return (
     <div className="relative flex justify-center py-1" ref={menuRef}>
@@ -148,7 +145,7 @@ export default function InsertPageMenu({
             </div>
           </button>
 
-          {/* Pricing page option (only for proposals/templates, and only if not already added) */}
+          {/* Quote page option (only for proposals/templates) */}
           {canShowPricing && (
             <button
               type="button"
@@ -157,7 +154,7 @@ export default function InsertPageMenu({
             >
               <DollarSign size={14} className="text-teal/60 shrink-0" />
               <div>
-                <div className="font-medium">Pricing Page</div>
+                <div className="font-medium">Quote Page</div>
                 <div className="text-[10px] text-gray-400 mt-0.5">Add investment breakdown</div>
               </div>
             </button>

@@ -101,7 +101,7 @@ export default function PageEditor({
 
   /* ── Render ────────────────────────────────────────────────────────────── */
 
-  const pricingActive = pricingExists;
+  // pricingExists kept for backward compat but no longer gates the add button
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -135,7 +135,7 @@ export default function PageEditor({
       {pagesLoaded && (
         <AddPageButtons
           isDocuments={isDocuments}
-          canAddPricing={!isDocuments && !pricingExists}
+          canAddPricing={!isDocuments}
           canAddToc={!isDocuments && !tocExists}
           onAddPricing={handleInsertPricing}
           onAddPackages={handleAddPackages}
@@ -172,7 +172,6 @@ export default function PageEditor({
                 isStart
                 disabled={processing}
                 showPricing={!isDocuments}
-                pricingAlreadyExists={pricingActive}
                 onInsertPdf={(file) => handleInsertPdf(null, file)}
                 onInsertTextPage={() => handleInsertText(null)}
                 onInsertPricingPage={handleInsertPricing}
@@ -193,7 +192,6 @@ export default function PageEditor({
                       <InsertPageMenu
                         disabled={processing}
                         showPricing={!isDocuments}
-                        pricingAlreadyExists={pricingActive}
                         onInsertPdf={(file) => handleInsertPdf(page, file)}
                         onInsertTextPage={() => handleInsertText(page)}
                         onInsertPricingPage={handleInsertPricing}

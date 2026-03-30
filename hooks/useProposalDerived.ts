@@ -59,7 +59,7 @@ export function useProposalDerived(
           return { type: 'pdf' as const, pdfPage: pdfIndex };
         }
         if (p.type === 'text') return { type: 'text' as const, textPageId: p.id };
-        if (p.type === 'pricing') return { type: 'pricing' as const };
+        if (p.type === 'pricing') return { type: 'pricing' as const, pricingId: p.id };
         if (p.type === 'packages') return { type: 'packages' as const, packagesId: p.id };
         if (p.type === 'toc') return { type: 'toc' as const };
         return { type: 'pdf' as const, pdfPage: 0 }; // section — shouldn't reach viewer
@@ -67,12 +67,22 @@ export function useProposalDerived(
     [pageUrls],
   );
 
-  // Backward-compat: extract pricing/packages/textPages from payloads
-  const pricing = useMemo(() => {
-    const p = pageUrls.find((x) => x.type === 'pricing');
-    if (!p) return null;
-    return { id: p.id, enabled: true, title: p.title, position: p.position, indent: p.indent, ...p.payload } as Record<string, unknown>;
-  }, [pageUrls]);
+  const getPricingId = useCallback(
+    (vp: number): string | null => pageUrls[vp - 1]?.type === 'pricing' ? pageUrls[vp - 1].id : null,
+    [pageUrls],
+  );
+
+  // Extract all pricing/packages/textPages from payloads
+  const pricingPages = useMemo(
+    () =>
+      pageUrls
+        .filter((x) => x.type === 'pricing')
+        .map((p) => ({ id: p.id, enabled: true, title: p.title, position: p.position, indent: p.indent, ...p.payload } as Record<string, unknown>)),
+    [pageUrls],
+  );
+
+  // Backward-compat: first pricing page
+  const pricing = pricingPages[0] ?? null;
 
   const packages = useMemo(
     () =>
@@ -128,11 +138,13 @@ export function useProposalDerived(
     isPackagesPage,
     isTocPage,
     isTextPage,
+    getPricingId,
     getPackagesId,
     getTextPageId,
     toPdfPage,
     pageSequence,
     pricing,
+    pricingPages,
     packages,
     textPages,
     tocSettings,

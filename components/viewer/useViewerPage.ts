@@ -12,9 +12,9 @@ export function useViewerPage(token: string) {
     proposal, pdfUrl, numPages, currentPage, setCurrentPage,
     loading, notFound, pageEntries, branding, brandingLoaded,
     comments, accepted, declined, revisionRequested,
-    pricing, packages, textPages,
+    pricing, pricingPages, packages, textPages,
     isPricingPage, isPackagesPage, isTocPage, isTextPage,
-    getPackagesId, getTextPageId, getTextPage, toPdfPage,
+    getPricingId, getPackagesId, getTextPageId, getTextPage, toPdfPage,
     tocSettings, pageSequence, onDocumentLoadSuccess, pageUrls, getPageName,
     acceptProposal, declineProposal, requestRevision,
     submitComment, replyToComment, resolveComment, unresolveComment,
@@ -39,6 +39,10 @@ export function useViewerPage(token: string) {
   const onPackagesPage = isPackagesPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage   = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
+  const currentPricingId  = getPricingId(currentPage);
+  const currentPricing    = currentPricingId
+    ? pricingPages.find((p: Record<string, unknown>) => p.id === currentPricingId)
+    : null;
   const currentPackagesId = getPackagesId(currentPage);
   const currentPackages   = currentPackagesId
     ? packages.find((p: Record<string, unknown>) => p.id === currentPackagesId)
@@ -138,6 +142,8 @@ export function useViewerPage(token: string) {
       toPdfPage,
       getTextPage,
       pricing: pricing as ProposalPricing | null,
+      pricingPages: pricingPages as ProposalPricing[],
+      getPricingId,
       packages: packages as ProposalPackages[],
       getPackagesId,
       branding,
@@ -159,7 +165,8 @@ export function useViewerPage(token: string) {
       includeCover: true,
     });
   }, [pdfUrl, pageUrls, proposal, numPages, isPricingPage, isPackagesPage, isTextPage,
-      getTextPageId, toPdfPage, getTextPage, pricing, packages, getPackagesId,
+      getTextPageId, toPdfPage, getTextPage, pricing, pricingPages, getPricingId,
+      packages, getPackagesId,
       branding, clientLogoUrl, textPages, pageEntries, isTocPage, tocSettings, pageSequence]);
 
   return {
@@ -167,7 +174,7 @@ export function useViewerPage(token: string) {
     proposal, pdfUrl, numPages, currentPage,
     loading, notFound, pageEntries, branding, brandingLoaded,
     comments, accepted, declined, revisionRequested,
-    pricing, onDocumentLoadSuccess, pageUrls, getPageName,
+    pricing, currentPricing, pricingPages, onDocumentLoadSuccess, pageUrls, getPageName,
     acceptProposal, declineProposal, requestRevision,
     submitComment, replyToComment, resolveComment, unresolveComment,
     tocSettings, pageSequence,
