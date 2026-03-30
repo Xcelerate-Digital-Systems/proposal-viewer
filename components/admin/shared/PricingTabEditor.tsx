@@ -251,6 +251,9 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     qtyEnabled={editor.form.qtyEnabled}
                     qtyLabel={editor.form.qtyLabel}
                     stageLabel={editor.form.stageLabel}
+                    descriptionLabel={editor.form.descriptionLabel}
+                    rateLabel={editor.form.rateLabel}
+                    totalLabel={editor.form.totalLabel}
                     showTotals={editor.form.showTotals}
                     onTitleChange={(v) => editor.updateForm({ title: v })}
                     onIntroTextChange={(v) => editor.updateForm({ introText: v })}
@@ -260,6 +263,9 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     onQtyEnabledChange={(v) => editor.updateForm({ qtyEnabled: v })}
                     onQtyLabelChange={(v) => editor.updateForm({ qtyLabel: v })}
                     onStageLabelChange={(v) => editor.updateForm({ stageLabel: v })}
+                    onDescriptionLabelChange={(v) => editor.updateForm({ descriptionLabel: v })}
+                    onRateLabelChange={(v) => editor.updateForm({ rateLabel: v })}
+                    onTotalLabelChange={(v) => editor.updateForm({ totalLabel: v })}
                     onShowTotalsChange={(v) => editor.updateForm({ showTotals: v })}
                   />
                   <PricingLineItems
@@ -268,6 +274,8 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     qtyEnabled={editor.form.qtyEnabled}
                     qtyLabel={editor.form.qtyLabel}
                     stageLabel={editor.form.stageLabel}
+                    descriptionLabel={editor.form.descriptionLabel}
+                    rateLabel={editor.form.rateLabel}
                     footerNote={editor.form.footerNote}
                     onFooterNoteChange={(v) => editor.updateForm({ footerNote: v })}
                   />

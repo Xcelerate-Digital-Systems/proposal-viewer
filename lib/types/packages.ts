@@ -147,6 +147,9 @@ export type ProposalPricing = {
   qty_enabled?: boolean;  // show Qty + Rate columns in viewer and editor
   qty_label?: string;     // column header label for quantities (default: "Qty")
   stage_label?: string;   // column header label for stage/phase (default: "Stage")
+  description_label?: string; // column header for description (default: "Description")
+  rate_label?: string;    // column header for rate/amount (default: "Rate" or "Amount")
+  total_label?: string;   // column header for total (default: "Total")
   show_totals?: boolean;  // show subtotal/total rows (default: true)
   footer_note?: string | null; // optional note shown below the line items table
   created_at: string;

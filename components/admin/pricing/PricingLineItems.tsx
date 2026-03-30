@@ -12,11 +12,13 @@ interface PricingLineItemsProps {
   qtyEnabled?: boolean;
   qtyLabel?: string;
   stageLabel?: string;
+  descriptionLabel?: string;
+  rateLabel?: string;
   footerNote?: string;
   onFooterNoteChange?: (v: string) => void;
 }
 
-export default function PricingLineItems({ items, onChange, qtyEnabled = false, qtyLabel = 'Qty', stageLabel = 'Stage', footerNote, onFooterNoteChange }: PricingLineItemsProps) {
+export default function PricingLineItems({ items, onChange, qtyEnabled = false, qtyLabel = 'Qty', stageLabel = 'Stage', descriptionLabel = 'Description', rateLabel, footerNote, onFooterNoteChange }: PricingLineItemsProps) {
   const effectiveSubtotal = pricingEffectiveSubtotal(items);
 
   const addItem = useCallback(() => {
@@ -100,7 +102,7 @@ export default function PricingLineItems({ items, onChange, qtyEnabled = false, 
                     type="text"
                     value={item.label}
                     onChange={(e) => updateItem(item.id, 'label', e.target.value)}
-                    placeholder="Description"
+                    placeholder={descriptionLabel}
                     className="flex-1 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
                   />
                 </div>
@@ -119,7 +121,7 @@ export default function PricingLineItems({ items, onChange, qtyEnabled = false, 
                       />
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-400 shrink-0">Rate</span>
+                      <span className="text-xs text-gray-400 shrink-0">{rateLabel || 'Rate'}</span>
                       <CurrencyInput
                         value={item.unit_price ?? 0}
                         onChange={(val) => updateItem(item.id, 'unit_price', val)}

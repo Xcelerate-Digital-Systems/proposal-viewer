@@ -14,6 +14,9 @@ interface PricingSettingsProps {
   qtyEnabled: boolean;
   qtyLabel: string;
   stageLabel?: string;
+  descriptionLabel?: string;
+  rateLabel?: string;
+  totalLabel?: string;
   showTotals?: boolean;
   onTitleChange: (v: string) => void;
   onIntroTextChange: (v: string) => void;
@@ -23,13 +26,16 @@ interface PricingSettingsProps {
   onQtyEnabledChange: (v: boolean) => void;
   onQtyLabelChange: (v: string) => void;
   onStageLabelChange?: (v: string) => void;
+  onDescriptionLabelChange?: (v: string) => void;
+  onRateLabelChange?: (v: string) => void;
+  onTotalLabelChange?: (v: string) => void;
   onShowTotalsChange?: (v: boolean) => void;
 }
 
 export default function PricingSettings({
-  title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel, stageLabel, showTotals,
+  title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel, stageLabel, descriptionLabel, rateLabel, totalLabel, showTotals,
   onTitleChange, onIntroTextChange, onTaxEnabledChange, onValidityDaysChange, onProposalDateChange,
-  onQtyEnabledChange, onQtyLabelChange, onStageLabelChange, onShowTotalsChange,
+  onQtyEnabledChange, onQtyLabelChange, onStageLabelChange, onDescriptionLabelChange, onRateLabelChange, onTotalLabelChange, onShowTotalsChange,
 }: PricingSettingsProps) {
   return (
     <div className="space-y-4">
@@ -39,18 +45,52 @@ export default function PricingSettings({
         <input type="text" value={title} onChange={(e) => onTitleChange(e.target.value)} placeholder="Project Investment" className={INPUT_CLS} />
       </div>
 
-      {/* Stage label */}
+      {/* Column labels */}
       {onStageLabelChange && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Stage / Phase Label</label>
-          <input
-            type="text"
-            value={stageLabel ?? 'Stage'}
-            onChange={(e) => onStageLabelChange(e.target.value)}
-            placeholder="Stage"
-            className={INPUT_CLS}
-          />
-          <p className="text-xs text-gray-400 mt-1">First column label — e.g. &quot;Stage&quot;, &quot;Phase&quot;, &quot;Item&quot;, &quot;Task&quot;</p>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Column Labels</label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <input
+                type="text"
+                value={stageLabel ?? 'Stage'}
+                onChange={(e) => onStageLabelChange(e.target.value)}
+                placeholder="Stage"
+                className={INPUT_CLS}
+              />
+              <p className="text-[11px] text-gray-400 mt-0.5">Stage / Phase</p>
+            </div>
+            <div>
+              <input
+                type="text"
+                value={descriptionLabel ?? ''}
+                onChange={(e) => onDescriptionLabelChange?.(e.target.value)}
+                placeholder="Description"
+                className={INPUT_CLS}
+              />
+              <p className="text-[11px] text-gray-400 mt-0.5">Description</p>
+            </div>
+            <div>
+              <input
+                type="text"
+                value={rateLabel ?? ''}
+                onChange={(e) => onRateLabelChange?.(e.target.value)}
+                placeholder={qtyEnabled ? 'Rate' : 'Amount'}
+                className={INPUT_CLS}
+              />
+              <p className="text-[11px] text-gray-400 mt-0.5">{qtyEnabled ? 'Rate' : 'Amount'}</p>
+            </div>
+            <div>
+              <input
+                type="text"
+                value={totalLabel ?? ''}
+                onChange={(e) => onTotalLabelChange?.(e.target.value)}
+                placeholder="Total"
+                className={INPUT_CLS}
+              />
+              <p className="text-[11px] text-gray-400 mt-0.5">Total</p>
+            </div>
+          </div>
         </div>
       )}
 

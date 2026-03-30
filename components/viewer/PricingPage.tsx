@@ -142,21 +142,21 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 style={{ backgroundColor: surface, color: faint }}
               >
                 <span className="w-28 shrink-0">{pricing.stage_label || 'Stage'}</span>
-                <span className="flex-1">Description</span>
+                <span className="flex-1">{pricing.description_label || 'Description'}</span>
                 {pricing.qty_enabled && (
                   <>
                     <span className="w-16 text-right shrink-0">{pricing.qty_label || 'Qty'}</span>
-                    <span className="w-24 text-right shrink-0">Rate</span>
+                    <span className="w-24 text-right shrink-0">{pricing.rate_label || 'Rate'}</span>
                   </>
                 )}
                 {!pricing.qty_enabled && (
-                  <span className="w-24 text-right shrink-0">Amount</span>
+                  <span className="w-24 text-right shrink-0">{pricing.rate_label || 'Amount'}</span>
                 )}
                 {pricing.tax_enabled && (
                   <span className="w-24 text-right shrink-0">{pricing.tax_label.split('(')[0].trim()}</span>
                 )}
                 <span className="w-28 text-right shrink-0">
-                  {pricing.tax_enabled ? 'Inc. Tax' : 'Total'}
+                  {pricing.total_label || (pricing.tax_enabled ? 'Inc. Tax' : 'Total')}
                 </span>
               </div>
 
@@ -262,7 +262,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                   )}
                   <div className="flex items-center justify-between px-4 py-4">
                     <span className="agv-pricing-body text-base font-bold" style={{ color: textColor }}>
-                      Total{pricing.tax_enabled ? ' (inc. tax)' : ''}
+                      {pricing.total_label || (pricing.tax_enabled ? 'Total (inc. tax)' : 'Total')}
                     </span>
                     <span className="agv-pricing-body text-xl font-bold" style={{ color: accent }}>{formatAUD(total)}</span>
                   </div>
