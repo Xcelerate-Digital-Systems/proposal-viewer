@@ -4,6 +4,7 @@
 import Toggle from '@/components/ui/Toggle';
 
 const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40';
+const LABEL_INPUT_CLS = 'mt-1.5 w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30';
 
 interface PricingSettingsProps {
   title: string;
@@ -13,6 +14,7 @@ interface PricingSettingsProps {
   proposalDate: string | null;
   qtyEnabled: boolean;
   qtyLabel: string;
+  showStage?: boolean;
   stageLabel?: string;
   showDescription?: boolean;
   descriptionLabel?: string;
@@ -27,6 +29,7 @@ interface PricingSettingsProps {
   onProposalDateChange: (v: string) => void;
   onQtyEnabledChange: (v: boolean) => void;
   onQtyLabelChange: (v: string) => void;
+  onShowStageChange?: (v: boolean) => void;
   onStageLabelChange?: (v: string) => void;
   onShowDescriptionChange?: (v: boolean) => void;
   onDescriptionLabelChange?: (v: string) => void;
@@ -38,9 +41,9 @@ interface PricingSettingsProps {
 
 export default function PricingSettings({
   title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel,
-  stageLabel, showDescription, descriptionLabel, showRate, rateLabel, totalLabel, showTotals,
+  showStage, stageLabel, showDescription, descriptionLabel, showRate, rateLabel, totalLabel, showTotals,
   onTitleChange, onIntroTextChange, onTaxEnabledChange, onValidityDaysChange, onProposalDateChange,
-  onQtyEnabledChange, onQtyLabelChange, onStageLabelChange,
+  onQtyEnabledChange, onQtyLabelChange, onShowStageChange, onStageLabelChange,
   onShowDescriptionChange, onDescriptionLabelChange,
   onShowRateChange, onRateLabelChange, onTotalLabelChange, onShowTotalsChange,
 }: PricingSettingsProps) {
@@ -74,17 +77,22 @@ export default function PricingSettings({
       <div className="border-t border-gray-100 pt-3 space-y-0">
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Columns & Display</p>
 
-        {/* Stage label — always visible, just the label field */}
-        {onStageLabelChange && (
-          <div className="flex items-center justify-between py-2 border-b border-gray-50">
-            <span className="text-sm font-medium text-gray-700">Stage Column</span>
-            <input
-              type="text"
-              value={stageLabel ?? 'Stage'}
-              onChange={(e) => onStageLabelChange(e.target.value)}
-              placeholder="Stage"
-              className="w-36 px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30 text-right"
-            />
+        {/* Stage toggle + label */}
+        {onShowStageChange && (
+          <div className="py-2 border-b border-gray-50">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Stage</span>
+              <Toggle enabled={showStage ?? true} onChange={onShowStageChange} size="sm" />
+            </div>
+            {(showStage ?? true) && onStageLabelChange && (
+              <input
+                type="text"
+                value={stageLabel ?? 'Stage'}
+                onChange={(e) => onStageLabelChange(e.target.value)}
+                placeholder="Stage"
+                className={LABEL_INPUT_CLS}
+              />
+            )}
           </div>
         )}
 
@@ -101,7 +109,7 @@ export default function PricingSettings({
                 value={descriptionLabel ?? ''}
                 onChange={(e) => onDescriptionLabelChange(e.target.value)}
                 placeholder="Description"
-                className="mt-1.5 w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30"
+                className={LABEL_INPUT_CLS}
               />
             )}
           </div>
@@ -122,7 +130,7 @@ export default function PricingSettings({
               value={qtyLabel}
               onChange={(e) => onQtyLabelChange(e.target.value)}
               placeholder="Qty"
-              className="mt-1.5 w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className={LABEL_INPUT_CLS}
             />
           )}
         </div>
@@ -140,7 +148,7 @@ export default function PricingSettings({
                 value={rateLabel ?? ''}
                 onChange={(e) => onRateLabelChange(e.target.value)}
                 placeholder={qtyEnabled ? 'Rate' : 'Amount'}
-                className="mt-1.5 w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30"
+                className={LABEL_INPUT_CLS}
               />
             )}
           </div>
@@ -160,7 +168,7 @@ export default function PricingSettings({
           <div className="py-2 border-b border-gray-50">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-medium text-gray-700">Show Totals</span>
+                <span className="text-sm font-medium text-gray-700">Totals</span>
                 <p className="text-xs text-gray-400">Subtotal, discount, and total rows</p>
               </div>
               <Toggle enabled={showTotals ?? true} onChange={onShowTotalsChange} size="sm" />
@@ -171,7 +179,7 @@ export default function PricingSettings({
                 value={totalLabel ?? ''}
                 onChange={(e) => onTotalLabelChange(e.target.value)}
                 placeholder="Total"
-                className="mt-1.5 w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30"
+                className={LABEL_INPUT_CLS}
               />
             )}
           </div>

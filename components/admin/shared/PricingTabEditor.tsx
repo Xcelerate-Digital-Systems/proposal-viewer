@@ -199,6 +199,7 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     proposalDate={hideProposalDate ? new Date().toISOString().split('T')[0] : editor.form.proposalDate}
                     qtyEnabled={editor.form.qtyEnabled}
                     qtyLabel={editor.form.qtyLabel}
+                    showStage={editor.form.showStage}
                     stageLabel={editor.form.stageLabel}
                     showDescription={editor.form.showDescription}
                     descriptionLabel={editor.form.descriptionLabel}
@@ -213,6 +214,7 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     onProposalDateChange={hideProposalDate ? () => {} : (v) => editor.updateForm({ proposalDate: v })}
                     onQtyEnabledChange={(v) => editor.updateForm({ qtyEnabled: v })}
                     onQtyLabelChange={(v) => editor.updateForm({ qtyLabel: v })}
+                    onShowStageChange={(v) => editor.updateForm({ showStage: v })}
                     onStageLabelChange={(v) => editor.updateForm({ stageLabel: v })}
                     onShowDescriptionChange={(v) => editor.updateForm({ showDescription: v })}
                     onDescriptionLabelChange={(v) => editor.updateForm({ descriptionLabel: v })}

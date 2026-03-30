@@ -48,6 +48,7 @@ export type PricingFormState = {
   proposalDate: string;
   qtyEnabled: boolean;
   qtyLabel: string;
+  showStage: boolean;
   stageLabel: string;
   showDescription: boolean;
   descriptionLabel: string;
@@ -72,6 +73,7 @@ const DEFAULT_FORM: PricingFormState = {
   proposalDate: new Date().toISOString().split('T')[0],
   qtyEnabled: false,
   qtyLabel: 'Qty',
+  showStage: true,
   stageLabel: 'Stage',
   showDescription: true,
   descriptionLabel: 'Description',
@@ -105,6 +107,7 @@ function unifiedToPricing(page: UnifiedPage): ProposalPricing {
     proposal_date: (pl.proposal_date as string) || new Date().toISOString().split('T')[0],
     qty_enabled: (pl.qty_enabled as boolean) ?? false,
     qty_label: (pl.qty_label as string) || 'Qty',
+    show_stage: (pl.show_stage as boolean) ?? true,
     stage_label: (pl.stage_label as string) || 'Stage',
     show_description: (pl.show_description as boolean) ?? true,
     description_label: (pl.description_label as string) || '',
@@ -133,6 +136,7 @@ function formFromRecord(record: ProposalPricing): PricingFormState {
     proposalDate: record.proposal_date || new Date().toISOString().split('T')[0],
     qtyEnabled: record.qty_enabled ?? false,
     qtyLabel: record.qty_label || 'Qty',
+    showStage: record.show_stage ?? true,
     stageLabel: record.stage_label || 'Stage',
     showDescription: record.show_description ?? true,
     descriptionLabel: record.description_label || '',
@@ -263,6 +267,7 @@ export function usePricingEditor({
               proposal_date: data.proposalDate,
               qty_enabled: data.qtyEnabled,
               qty_label: data.qtyLabel,
+              show_stage: data.showStage,
               stage_label: data.stageLabel,
               show_description: data.showDescription,
               description_label: data.descriptionLabel,
@@ -344,6 +349,7 @@ export function usePricingEditor({
             proposal_date: new Date().toISOString().split('T')[0],
             qty_enabled: false,
             qty_label: 'Qty',
+            show_stage: true,
             stage_label: 'Stage',
             show_description: true,
             description_label: '',
@@ -424,6 +430,7 @@ export function usePricingEditor({
         proposal_date: form.proposalDate,
         qty_enabled: form.qtyEnabled,
         qty_label: form.qtyLabel,
+        show_stage: form.showStage,
         stage_label: form.stageLabel,
         show_description: form.showDescription,
         description_label: form.descriptionLabel,

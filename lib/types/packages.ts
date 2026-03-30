@@ -146,6 +146,7 @@ export type ProposalPricing = {
   proposal_date: string | null;
   qty_enabled?: boolean;  // show Qty + Rate columns in viewer and editor
   qty_label?: string;     // column header label for quantities (default: "Qty")
+  show_stage?: boolean;   // show stage column (default: true)
   stage_label?: string;   // column header label for stage/phase (default: "Stage")
   show_description?: boolean; // show description column (default: true)
   description_label?: string; // column header for description (default: "Description")

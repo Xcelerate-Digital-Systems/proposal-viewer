@@ -141,7 +141,9 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 className="flex items-center gap-4 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-t-lg"
                 style={{ backgroundColor: surface, color: faint }}
               >
-                <span className="w-28 shrink-0">{pricing.stage_label || 'Stage'}</span>
+                {(pricing.show_stage ?? true) && (
+                  <span className="flex-1">{pricing.stage_label || 'Stage'}</span>
+                )}
                 {(pricing.show_description ?? true) && (
                   <span className="flex-1">{pricing.description_label || 'Description'}</span>
                 )}
@@ -157,9 +159,11 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 {pricing.tax_enabled && (
                   <span className="w-24 text-right shrink-0">{pricing.tax_label.split('(')[0].trim()}</span>
                 )}
-                <span className="w-28 text-right shrink-0">
-                  {pricing.total_label || (pricing.tax_enabled ? 'Inc. Tax' : 'Total')}
-                </span>
+                {(pricing.show_totals ?? true) && (
+                  <span className="w-28 text-right shrink-0">
+                    {pricing.total_label || (pricing.tax_enabled ? 'Inc. Tax' : 'Total')}
+                  </span>
+                )}
               </div>
 
               {/* Rows */}
@@ -179,21 +183,23 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                         backgroundColor: idx % 2 === 1 ? `${surface}80` : 'transparent',
                       }}
                     >
-                      <div className="w-28 shrink-0">
-                        {item.description && (
-                          <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
-                            {item.description}
-                          </span>
-                        )}
-                        {hasDiscount && (
-                          <span
-                            className="mt-1 block text-[11px] font-semibold px-1.5 py-0.5 rounded w-fit"
-                            style={{ backgroundColor: `${accent}20`, color: accent }}
-                          >
-                            {item.discount_pct}% off
-                          </span>
-                        )}
-                      </div>
+                      {(pricing.show_stage ?? true) && (
+                        <div className="flex-1 min-w-0">
+                          {item.description && (
+                            <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
+                              {item.description}
+                            </span>
+                          )}
+                          {hasDiscount && (
+                            <span
+                              className="mt-1 block text-[11px] font-semibold px-1.5 py-0.5 rounded w-fit"
+                              style={{ backgroundColor: `${accent}20`, color: accent }}
+                            >
+                              {item.discount_pct}% off
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {(pricing.show_description ?? true) && (
                         <div className="flex-1 min-w-0">
                           {item.label && (
@@ -227,9 +233,11 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           {formatAUD(gst)}
                         </span>
                       )}
-                      <span className="agv-pricing-body w-28 text-right shrink-0 text-sm font-medium" style={{ color: textColor }}>
-                        {formatAUD(pricing.tax_enabled ? effective + gst : effective)}
-                      </span>
+                      {(pricing.show_totals ?? true) && (
+                        <span className="agv-pricing-body w-28 text-right shrink-0 text-sm font-medium" style={{ color: textColor }}>
+                          {formatAUD(pricing.tax_enabled ? effective + gst : effective)}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
