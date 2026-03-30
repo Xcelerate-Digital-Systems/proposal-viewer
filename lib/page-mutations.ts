@@ -144,12 +144,11 @@ export async function deletePage(
 ): Promise<{ success: boolean; totalPages: number; error?: string; status?: number }> {
   const { pagesTable, idColumn } = getEntityConfig(entityType);
 
-  // Guard: don't allow deleting the last page
+  // Guard: don't allow deleting the last page (count all pages, not just enabled)
   const { count: total } = await supabase
     .from(pagesTable)
     .select('*', { count: 'exact', head: true })
-    .eq(idColumn, opts.entityId)
-    .eq('enabled', true);
+    .eq(idColumn, opts.entityId);
 
   if ((total ?? 0) <= 1) {
     return { success: false, totalPages: total ?? 1, error: 'Cannot delete the only remaining page.', status: 400 };
