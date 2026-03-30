@@ -11,11 +11,12 @@ interface PricingLineItemsProps {
   onChange: (items: PricingLineItem[]) => void;
   qtyEnabled?: boolean;
   qtyLabel?: string;
+  stageLabel?: string;
   footerNote?: string;
   onFooterNoteChange?: (v: string) => void;
 }
 
-export default function PricingLineItems({ items, onChange, qtyEnabled = false, qtyLabel = 'Qty', footerNote, onFooterNoteChange }: PricingLineItemsProps) {
+export default function PricingLineItems({ items, onChange, qtyEnabled = false, qtyLabel = 'Qty', stageLabel = 'Stage', footerNote, onFooterNoteChange }: PricingLineItemsProps) {
   const effectiveSubtotal = pricingEffectiveSubtotal(items);
 
   const addItem = useCallback(() => {
@@ -24,7 +25,7 @@ export default function PricingLineItems({ items, onChange, qtyEnabled = false, 
       {
         id: generateItemId(),
         label: '',
-        description: `Stage ${String(items.length + 1).padStart(2, '0')}`,
+        description: `${stageLabel} ${String(items.length + 1).padStart(2, '0')}`,
         percentage: 0,
         amount: 0,
         sort_order: items.length,
@@ -92,7 +93,7 @@ export default function PricingLineItems({ items, onChange, qtyEnabled = false, 
                     type="text"
                     value={item.description}
                     onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                    placeholder={`Stage ${String(idx + 1).padStart(2, '0')}`}
+                    placeholder={`${stageLabel} ${String(idx + 1).padStart(2, '0')}`}
                     className="w-28 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
                   />
                   <input
@@ -114,19 +115,22 @@ export default function PricingLineItems({ items, onChange, qtyEnabled = false, 
                         onBlur={recalcPercentages}
                         min={0}
                         step="any"
-                        className="w-16 px-2 py-1.5 rounded border border-gray-200 text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal/30"
+                        className="w-20 px-2 py-1.5 rounded border border-gray-200 text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal/30"
                       />
                     </div>
-                    <div className="flex items-center gap-1.5 flex-1">
+                    <div className="flex items-center gap-1.5">
                       <span className="text-xs text-gray-400 shrink-0">Rate</span>
                       <CurrencyInput
                         value={item.unit_price ?? 0}
                         onChange={(val) => updateItem(item.id, 'unit_price', val)}
                         onBlur={recalcPercentages}
                         size="sm"
-                        className="flex-1"
+                        className="w-32"
                       />
                     </div>
+                    <span className="text-xs text-gray-500 shrink-0 font-medium">
+                      = {formatAUD(item.amount)}
+                    </span>
                     <span className="text-xs text-gray-400 w-12 text-right shrink-0">
                       {effectiveSubtotal > 0 ? `${Math.round((effective / effectiveSubtotal) * 100)}%` : '—'}
                     </span>

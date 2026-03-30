@@ -22,7 +22,7 @@ export interface FieldConfig {
   /** Mark as required (shows asterisk, applies `required` attr) */
   required?: boolean;
   /** Input type — defaults to 'text' */
-  type?: 'text' | 'email' | 'textarea';
+  type?: 'text' | 'email' | 'textarea' | 'date';
   /** Placeholder text */
   placeholder?: string;
   /** Show "(optional)" after label */
@@ -156,6 +156,9 @@ export const fieldsByType: Record<EntityType, FieldConfig[]> = {
     { key: 'client_name', label: 'Client Name', required: true, placeholder: 'John Smith', half: true },
     { key: 'client_email', label: 'Client Email', type: 'email', placeholder: 'john@example.com', optional: true, half: true },
     { key: 'crm_identifier', label: 'CRM Identifier', placeholder: 'e.g. GHL contact ID', optional: true },
+    { key: 'site_address', label: 'Site / Job Address', placeholder: '123 Main St, Suburb VIC 3000', optional: true },
+    { key: 'estimated_start_date', label: 'Estimated Start Date', type: 'date', optional: true, half: true },
+    { key: 'estimated_duration', label: 'Estimated Duration', placeholder: 'e.g. 2-3 weeks', optional: true, half: true },
     { key: 'description', label: 'Description', type: 'textarea', placeholder: 'Brief note about this proposal...', optional: true },
   ],
   template: [

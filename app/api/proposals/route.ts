@@ -142,6 +142,29 @@ export async function POST(req: NextRequest) {
           title:     'Packages',
           position:  1,
         });
+        await addPage(supabase, 'proposal', {
+          entityId:  proposalId,
+          companyId: company_id,
+          type:      'text',
+          title:     'Terms & Conditions',
+          position:  2,
+          payload: {
+            content: {
+              type: 'doc',
+              content: [
+                { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Terms & Conditions' }] },
+                { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Payment Terms' }] },
+                { type: 'paragraph', content: [{ type: 'text', text: 'Payment is due within 14 days of invoice. A deposit may be required before work commences.' }] },
+                { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Scope of Work' }] },
+                { type: 'paragraph', content: [{ type: 'text', text: 'This quote covers the works described in this document only. Any additional work or variations will be quoted separately.' }] },
+                { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Warranty' }] },
+                { type: 'paragraph', content: [{ type: 'text', text: 'All workmanship is guaranteed for a period of 12 months from the date of completion, unless otherwise specified.' }] },
+                { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Quote Validity' }] },
+                { type: 'paragraph', content: [{ type: 'text', text: 'This quote is valid for 30 days from the date of issue. Prices may be subject to change after this period.' }] },
+              ],
+            },
+          },
+        });
       } catch (pageErr) {
         console.error(`Non-fatal: failed to create default pages for quote ${proposalId}:`, pageErr);
       }

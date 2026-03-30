@@ -19,11 +19,16 @@ interface EditDetailsPanelProps {
   initialValues: Record<string, string | null>;
   onSave: () => void;
   onCancel?: () => void;
+  /** Field keys to hide (e.g. job fields when company toggle is off) */
+  hiddenFields?: string[];
 }
 
-export default function EditDetailsPanel({ type, id, initialValues, onSave, onCancel }: EditDetailsPanelProps) {
+export default function EditDetailsPanel({ type, id, initialValues, onSave, onCancel, hiddenFields }: EditDetailsPanelProps) {
   const toast = useToast();
-  const fields = fieldsByType[type];
+  const allFields = fieldsByType[type];
+  const fields = hiddenFields?.length
+    ? allFields.filter((f) => !hiddenFields.includes(f.key))
+    : allFields;
   const [form, setForm] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     for (const f of fields) {

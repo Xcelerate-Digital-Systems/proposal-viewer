@@ -155,6 +155,7 @@ export async function PATCH(req: NextRequest) {
       'bg_image_path',
       'bg_image_overlay_opacity',
       'cover_image_path',
+      'show_job_fields',
       'brand_colors',
     ];
     const updates: Record<string, unknown> = {};

@@ -49,6 +49,7 @@ export default function PricingPanel({
           proposalDate={pricingForm.proposalDate}
           qtyEnabled={pricingForm.qtyEnabled}
           qtyLabel={pricingForm.qtyLabel}
+          stageLabel={pricingForm.stageLabel}
           onTitleChange={(v) => onUpdate({ title: v })}
           onIntroTextChange={(v) => onUpdate({ introText: v })}
           onTaxEnabledChange={(v) => onUpdate({ taxEnabled: v })}
@@ -56,11 +57,13 @@ export default function PricingPanel({
           onProposalDateChange={(v) => onUpdate({ proposalDate: v })}
           onQtyEnabledChange={(v) => onUpdate({ qtyEnabled: v })}
           onQtyLabelChange={(v) => onUpdate({ qtyLabel: v })}
+          onStageLabelChange={(v) => onUpdate({ stageLabel: v })}
         />
         <PricingLineItems
           items={pricingForm.items}
           qtyEnabled={pricingForm.qtyEnabled}
           qtyLabel={pricingForm.qtyLabel}
+          stageLabel={pricingForm.stageLabel}
           onChange={(items) => onUpdate({ items })}
         />
         <PricingOptionalItems

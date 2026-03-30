@@ -13,6 +13,7 @@ interface PricingSettingsProps {
   proposalDate: string | null;
   qtyEnabled: boolean;
   qtyLabel: string;
+  stageLabel?: string;
   onTitleChange: (v: string) => void;
   onIntroTextChange: (v: string) => void;
   onTaxEnabledChange: (v: boolean) => void;
@@ -20,12 +21,13 @@ interface PricingSettingsProps {
   onProposalDateChange: (v: string) => void;
   onQtyEnabledChange: (v: boolean) => void;
   onQtyLabelChange: (v: string) => void;
+  onStageLabelChange?: (v: string) => void;
 }
 
 export default function PricingSettings({
-  title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel,
+  title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel, stageLabel,
   onTitleChange, onIntroTextChange, onTaxEnabledChange, onValidityDaysChange, onProposalDateChange,
-  onQtyEnabledChange, onQtyLabelChange,
+  onQtyEnabledChange, onQtyLabelChange, onStageLabelChange,
 }: PricingSettingsProps) {
   return (
     <div className="space-y-4">
@@ -34,6 +36,21 @@ export default function PricingSettings({
         <label className="block text-sm font-medium text-gray-700 mb-1">Page Title</label>
         <input type="text" value={title} onChange={(e) => onTitleChange(e.target.value)} placeholder="Project Investment" className={INPUT_CLS} />
       </div>
+
+      {/* Stage label */}
+      {onStageLabelChange && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Stage / Phase Label</label>
+          <input
+            type="text"
+            value={stageLabel ?? 'Stage'}
+            onChange={(e) => onStageLabelChange(e.target.value)}
+            placeholder="Stage"
+            className={INPUT_CLS}
+          />
+          <p className="text-xs text-gray-400 mt-1">First column label — e.g. &quot;Stage&quot;, &quot;Phase&quot;, &quot;Item&quot;, &quot;Task&quot;</p>
+        </div>
+      )}
 
       {/* Intro text */}
       <div>

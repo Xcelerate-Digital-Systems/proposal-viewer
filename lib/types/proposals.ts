@@ -79,6 +79,10 @@ export type Proposal = {
   client_name: string;
   client_email: string | null;
   crm_identifier: string | null;
+  site_address: string | null;
+  estimated_start_date: string | null;
+  estimated_duration: string | null;
+  show_job_fields: boolean;
   description: string | null;
   file_path: string;
   file_size_bytes: number | null;

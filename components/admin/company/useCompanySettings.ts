@@ -50,6 +50,7 @@ export function useCompanySettings(companyId: string) {
   const [coverImageUrl, setCoverImageUrl]           = useState<string | null>(null);
   const [coverImageUploading, setCoverImageUploading] = useState(false);
 
+
   // Font fields
   const [fontHeading, setFontHeading]             = useState<string | null>(null);
   const [fontBody, setFontBody]                   = useState<string | null>(null);

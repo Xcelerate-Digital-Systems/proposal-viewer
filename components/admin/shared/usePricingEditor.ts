@@ -48,6 +48,7 @@ export type PricingFormState = {
   proposalDate: string;
   qtyEnabled: boolean;
   qtyLabel: string;
+  stageLabel: string;
   footerNote: string;
 };
 
@@ -65,6 +66,7 @@ const DEFAULT_FORM: PricingFormState = {
   proposalDate: new Date().toISOString().split('T')[0],
   qtyEnabled: false,
   qtyLabel: 'Qty',
+  stageLabel: 'Stage',
   footerNote: '',
 };
 
@@ -91,6 +93,7 @@ function unifiedToPricing(page: UnifiedPage): ProposalPricing {
     proposal_date: (pl.proposal_date as string) || new Date().toISOString().split('T')[0],
     qty_enabled: (pl.qty_enabled as boolean) ?? false,
     qty_label: (pl.qty_label as string) || 'Qty',
+    stage_label: (pl.stage_label as string) || 'Stage',
     footer_note: (pl.footer_note as string) || '',
     created_at: page.created_at,
     updated_at: page.updated_at,
@@ -112,6 +115,7 @@ function formFromRecord(record: ProposalPricing): PricingFormState {
     proposalDate: record.proposal_date || new Date().toISOString().split('T')[0],
     qtyEnabled: record.qty_enabled ?? false,
     qtyLabel: record.qty_label || 'Qty',
+    stageLabel: record.stage_label || 'Stage',
     footerNote: record.footer_note || '',
   };
 }
@@ -235,6 +239,7 @@ export function usePricingEditor({
               proposal_date: data.proposalDate,
               qty_enabled: data.qtyEnabled,
               qty_label: data.qtyLabel,
+              stage_label: data.stageLabel,
               footer_note: data.footerNote,
             },
           }),
@@ -309,6 +314,7 @@ export function usePricingEditor({
             proposal_date: new Date().toISOString().split('T')[0],
             qty_enabled: false,
             qty_label: 'Qty',
+            stage_label: 'Stage',
             footer_note: '',
           },
         }),
@@ -382,6 +388,7 @@ export function usePricingEditor({
         proposal_date: form.proposalDate,
         qty_enabled: form.qtyEnabled,
         qty_label: form.qtyLabel,
+        stage_label: form.stageLabel,
         footer_note: form.footerNote,
       }
     : null;

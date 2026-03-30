@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  DollarSign, Image, Settings, Package, AlignLeft, ScanEye,
+  DollarSign, Image, Settings, Package, AlignLeft, ScanEye, Pencil, List,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -23,7 +23,7 @@ type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_reque
 
 interface QuoteDetailHeaderProps {
   proposalId: string;
-  activeTab: 'quote-cover' | 'quote-pricing' | 'quote-packages' | 'quote-text-pages' | 'quote-details';
+  activeTab: 'quote-pages' | 'quote-contents' | 'quote-cover' | 'quote-pricing' | 'quote-packages' | 'quote-text-pages' | 'quote-details';
   customDomain?: string | null;
 }
 
@@ -41,11 +41,13 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
 ];
 
 const tabs: { key: string; label: string; icon: typeof DollarSign; path: string }[] = [
-  { key: 'quote-cover',       label: 'Cover',       icon: Image,       path: 'quote-cover' },
-  { key: 'quote-pricing',     label: 'Quote',        icon: DollarSign,  path: 'quote-pricing' },
-  { key: 'quote-packages',    label: 'Packages',    icon: Package,     path: 'quote-packages' },
-  { key: 'quote-text-pages',  label: 'Text Pages',  icon: AlignLeft,   path: 'quote-text-pages' },
-  { key: 'quote-details',     label: 'Details',     icon: Settings,    path: 'quote-details' },
+  { key: 'quote-pages',       label: 'Layout',            icon: Pencil,     path: 'quote-pages' },
+  { key: 'quote-contents',    label: 'Table Of Contents', icon: List,       path: 'quote-contents' },
+  { key: 'quote-cover',       label: 'Cover',             icon: Image,      path: 'quote-cover' },
+  { key: 'quote-pricing',     label: 'Quote',             icon: DollarSign, path: 'quote-pricing' },
+  { key: 'quote-packages',    label: 'Packages',          icon: Package,    path: 'quote-packages' },
+  { key: 'quote-text-pages',  label: 'Text Pages',        icon: AlignLeft,  path: 'quote-text-pages' },
+  { key: 'quote-details',     label: 'Details',           icon: Settings,   path: 'quote-details' },
 ];
 
 /* ------------------------------------------------------------------ */

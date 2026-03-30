@@ -47,6 +47,7 @@ export interface PricingFormState {
   proposalDate:    string | null;
   qtyEnabled:      boolean;
   qtyLabel:        string;
+  stageLabel:      string;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

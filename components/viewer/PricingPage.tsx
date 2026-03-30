@@ -141,7 +141,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 className="flex items-center gap-4 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-t-lg"
                 style={{ backgroundColor: surface, color: faint }}
               >
-                <span className="w-28 shrink-0">Stage</span>
+                <span className="w-28 shrink-0">{pricing.stage_label || 'Stage'}</span>
                 <span className="flex-1">Description</span>
                 {pricing.qty_enabled && (
                   <>
