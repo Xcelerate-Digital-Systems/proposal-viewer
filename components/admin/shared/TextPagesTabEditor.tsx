@@ -92,28 +92,6 @@ export default function TextPagesTabEditor({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col h-full">
 
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-800">Text Pages</h3>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {pages.length === 0
-              ? 'No text pages yet'
-              : `${pages.filter((p) => p.enabled).length} of ${pages.length} enabled`}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {saveStatus === 'saving' && (
-            <Loader2 size={14} className="animate-spin text-gray-300" />
-          )}
-          {saveStatus === 'saved' && (
-            <span className="flex items-center gap-1 text-xs text-emerald-500">
-              <Check size={12} /> Saved
-            </span>
-          )}
-        </div>
-      </div>
-
       {/* ── Page navigation tabs ───────────────────────────────── */}
       <div className="flex items-end gap-0 mb-0 border-b border-gray-200 overflow-x-auto">
         {pages.map((page) => (
@@ -155,6 +133,16 @@ export default function TextPagesTabEditor({
           {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
           Add Page
         </button>
+
+        {/* Save status — right-aligned in tab bar */}
+        <div className="ml-auto flex items-center gap-2 px-3 shrink-0">
+          {saveStatus === 'saving' && <Loader2 size={13} className="animate-spin text-gray-300" />}
+          {saveStatus === 'saved' && (
+            <span className="flex items-center gap-1 text-xs text-emerald-500">
+              <Check size={12} /> Saved
+            </span>
+          )}
+        </div>
       </div>
       <div className="mb-4" />
 

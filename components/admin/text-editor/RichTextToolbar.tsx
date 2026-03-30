@@ -132,7 +132,7 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
   const currentHighlight = editor.getAttributes('highlight')?.color || '';
 
   return (
-    <div className={`flex items-center gap-1 px-2.5 py-2 bg-gray-50 border-b border-gray-200 z-10 overflow-x-auto ${className ?? ''}`}>
+    <div className={`flex flex-wrap items-center gap-1 px-2.5 py-2 bg-gray-50 border-b border-gray-200 z-20 relative ${className ?? ''}`}>
       {/* Undo/Redo */}
       <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
         <Undo size={16} />
@@ -263,12 +263,22 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
       {/* Table */}
       <ToolbarButton
         onClick={() => {
-          try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (editor.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-          } catch (err) {
-            console.error('insertTable error:', err);
+          /* eslint-disable @typescript-eslint/no-explicit-any */
+          const cmds = editor.commands as any;
+          console.log('[table-debug] has insertTable:', typeof cmds.insertTable);
+          console.log('[table-debug] editor extensionManager names:', editor.extensionManager.extensions.map((e: any) => e.name));
+          if (typeof cmds.insertTable === 'function') {
+            const result = cmds.insertTable({ rows: 3, cols: 3, withHeaderRow: true });
+            console.log('[table-debug] insertTable result:', result);
+          } else {
+            console.error('[table-debug] insertTable not available. Trying chain...');
+            try {
+              (editor.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+            } catch (err) {
+              console.error('[table-debug] chain insertTable error:', err);
+            }
           }
+          /* eslint-enable @typescript-eslint/no-explicit-any */
         }}
         title="Insert Table"
       >
