@@ -152,8 +152,12 @@ export type ProposalPricing = {
   description_label?: string; // column header for description (default: "Description")
   show_rate?: boolean;    // show rate/amount column (default: true)
   rate_label?: string;    // column header for rate/amount (default: "Rate" or "Amount")
+  show_line_total?: boolean; // show per-line total column (default: true)
   total_label?: string;   // column header for total (default: "Total")
-  show_totals?: boolean;  // show subtotal/total rows (default: true)
+  show_subtotal?: boolean; // show subtotal row at bottom (default: true)
+  show_discount?: boolean; // show discount/savings rows at bottom (default: true)
+  show_total?: boolean;    // show grand total row at bottom (default: true)
+  show_totals?: boolean;   // legacy: kept for backward compat
   footer_note?: string | null; // optional note shown below the line items table
   created_at: string;
   updated_at: string;

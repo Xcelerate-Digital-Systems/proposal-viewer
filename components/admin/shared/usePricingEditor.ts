@@ -54,8 +54,11 @@ export type PricingFormState = {
   descriptionLabel: string;
   showRate: boolean;
   rateLabel: string;
+  showLineTotal: boolean;
   totalLabel: string;
-  showTotals: boolean;
+  showSubtotal: boolean;
+  showDiscount: boolean;
+  showTotal: boolean;
   footerNote: string;
 };
 
@@ -79,8 +82,11 @@ const DEFAULT_FORM: PricingFormState = {
   descriptionLabel: 'Description',
   showRate: true,
   rateLabel: '',
+  showLineTotal: true,
   totalLabel: '',
-  showTotals: true,
+  showSubtotal: true,
+  showDiscount: true,
+  showTotal: true,
   footerNote: '',
 };
 
@@ -113,8 +119,11 @@ function unifiedToPricing(page: UnifiedPage): ProposalPricing {
     description_label: (pl.description_label as string) || '',
     show_rate: (pl.show_rate as boolean) ?? true,
     rate_label: (pl.rate_label as string) || '',
+    show_line_total: (pl.show_line_total as boolean) ?? true,
     total_label: (pl.total_label as string) || '',
-    show_totals: (pl.show_totals as boolean) ?? true,
+    show_subtotal: (pl.show_subtotal as boolean) ?? true,
+    show_discount: (pl.show_discount as boolean) ?? true,
+    show_total: (pl.show_total as boolean) ?? true,
     footer_note: (pl.footer_note as string) || '',
     created_at: page.created_at,
     updated_at: page.updated_at,
@@ -142,8 +151,11 @@ function formFromRecord(record: ProposalPricing): PricingFormState {
     descriptionLabel: record.description_label || '',
     showRate: record.show_rate ?? true,
     rateLabel: record.rate_label || '',
+    showLineTotal: record.show_line_total ?? true,
     totalLabel: record.total_label || '',
-    showTotals: record.show_totals ?? true,
+    showSubtotal: record.show_subtotal ?? true,
+    showDiscount: record.show_discount ?? true,
+    showTotal: record.show_total ?? true,
     footerNote: record.footer_note || '',
   };
 }
@@ -273,8 +285,11 @@ export function usePricingEditor({
               description_label: data.descriptionLabel,
               show_rate: data.showRate,
               rate_label: data.rateLabel,
+              show_line_total: data.showLineTotal,
               total_label: data.totalLabel,
-              show_totals: data.showTotals,
+              show_subtotal: data.showSubtotal,
+              show_discount: data.showDiscount,
+              show_total: data.showTotal,
               footer_note: data.footerNote,
             },
           }),
@@ -355,8 +370,11 @@ export function usePricingEditor({
             description_label: '',
             show_rate: true,
             rate_label: '',
+            show_line_total: true,
             total_label: '',
-            show_totals: true,
+            show_subtotal: true,
+            show_discount: true,
+            show_total: true,
             footer_note: '',
           },
         }),
@@ -436,8 +454,11 @@ export function usePricingEditor({
         description_label: form.descriptionLabel,
         show_rate: form.showRate,
         rate_label: form.rateLabel,
+        show_line_total: form.showLineTotal,
         total_label: form.totalLabel,
-        show_totals: form.showTotals,
+        show_subtotal: form.showSubtotal,
+        show_discount: form.showDiscount,
+        show_total: form.showTotal,
         footer_note: form.footerNote,
       }
     : null;

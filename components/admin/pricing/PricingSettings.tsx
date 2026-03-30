@@ -20,8 +20,11 @@ interface PricingSettingsProps {
   descriptionLabel?: string;
   showRate?: boolean;
   rateLabel?: string;
+  showLineTotal?: boolean;
   totalLabel?: string;
-  showTotals?: boolean;
+  showSubtotal?: boolean;
+  showDiscount?: boolean;
+  showTotal?: boolean;
   onTitleChange: (v: string) => void;
   onIntroTextChange: (v: string) => void;
   onTaxEnabledChange: (v: boolean) => void;
@@ -35,17 +38,23 @@ interface PricingSettingsProps {
   onDescriptionLabelChange?: (v: string) => void;
   onShowRateChange?: (v: boolean) => void;
   onRateLabelChange?: (v: string) => void;
+  onShowLineTotalChange?: (v: boolean) => void;
   onTotalLabelChange?: (v: string) => void;
-  onShowTotalsChange?: (v: boolean) => void;
+  onShowSubtotalChange?: (v: boolean) => void;
+  onShowDiscountChange?: (v: boolean) => void;
+  onShowTotalChange?: (v: boolean) => void;
 }
 
 export default function PricingSettings({
   title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel,
-  showStage, stageLabel, showDescription, descriptionLabel, showRate, rateLabel, totalLabel, showTotals,
+  showStage, stageLabel, showDescription, descriptionLabel, showRate, rateLabel,
+  showLineTotal, totalLabel, showSubtotal, showDiscount, showTotal,
   onTitleChange, onIntroTextChange, onTaxEnabledChange, onValidityDaysChange, onProposalDateChange,
   onQtyEnabledChange, onQtyLabelChange, onShowStageChange, onStageLabelChange,
   onShowDescriptionChange, onDescriptionLabelChange,
-  onShowRateChange, onRateLabelChange, onTotalLabelChange, onShowTotalsChange,
+  onShowRateChange, onRateLabelChange,
+  onShowLineTotalChange, onTotalLabelChange,
+  onShowSubtotalChange, onShowDiscountChange, onShowTotalChange,
 }: PricingSettingsProps) {
   return (
     <div className="space-y-4">
@@ -73,9 +82,9 @@ export default function PricingSettings({
         </div>
       </div>
 
-      {/* ── Column & Display Toggles ──────────────────────────────── */}
+      {/* ── Column Toggles ────────────────────────────────────────── */}
       <div className="border-t border-gray-100 pt-3 space-y-0">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Columns & Display</p>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Columns</p>
 
         {/* Stage toggle + label */}
         {onShowStageChange && (
@@ -85,13 +94,7 @@ export default function PricingSettings({
               <Toggle enabled={showStage ?? true} onChange={onShowStageChange} size="sm" />
             </div>
             {(showStage ?? true) && onStageLabelChange && (
-              <input
-                type="text"
-                value={stageLabel ?? 'Stage'}
-                onChange={(e) => onStageLabelChange(e.target.value)}
-                placeholder="Stage"
-                className={LABEL_INPUT_CLS}
-              />
+              <input type="text" value={stageLabel ?? 'Stage'} onChange={(e) => onStageLabelChange(e.target.value)} placeholder="Stage" className={LABEL_INPUT_CLS} />
             )}
           </div>
         )}
@@ -104,13 +107,7 @@ export default function PricingSettings({
               <Toggle enabled={showDescription ?? true} onChange={onShowDescriptionChange} size="sm" />
             </div>
             {(showDescription ?? true) && onDescriptionLabelChange && (
-              <input
-                type="text"
-                value={descriptionLabel ?? ''}
-                onChange={(e) => onDescriptionLabelChange(e.target.value)}
-                placeholder="Description"
-                className={LABEL_INPUT_CLS}
-              />
+              <input type="text" value={descriptionLabel ?? ''} onChange={(e) => onDescriptionLabelChange(e.target.value)} placeholder="Description" className={LABEL_INPUT_CLS} />
             )}
           </div>
         )}
@@ -125,13 +122,7 @@ export default function PricingSettings({
             <Toggle enabled={qtyEnabled} onChange={onQtyEnabledChange} size="sm" />
           </div>
           {qtyEnabled && (
-            <input
-              type="text"
-              value={qtyLabel}
-              onChange={(e) => onQtyLabelChange(e.target.value)}
-              placeholder="Qty"
-              className={LABEL_INPUT_CLS}
-            />
+            <input type="text" value={qtyLabel} onChange={(e) => onQtyLabelChange(e.target.value)} placeholder="Qty" className={LABEL_INPUT_CLS} />
           )}
         </div>
 
@@ -143,13 +134,7 @@ export default function PricingSettings({
               <Toggle enabled={showRate ?? true} onChange={onShowRateChange} size="sm" />
             </div>
             {(showRate ?? true) && onRateLabelChange && (
-              <input
-                type="text"
-                value={rateLabel ?? ''}
-                onChange={(e) => onRateLabelChange(e.target.value)}
-                placeholder={qtyEnabled ? 'Rate' : 'Amount'}
-                className={LABEL_INPUT_CLS}
-              />
+              <input type="text" value={rateLabel ?? ''} onChange={(e) => onRateLabelChange(e.target.value)} placeholder={qtyEnabled ? 'Rate' : 'Amount'} className={LABEL_INPUT_CLS} />
             )}
           </div>
         )}
@@ -163,25 +148,48 @@ export default function PricingSettings({
           <Toggle enabled={taxEnabled} onChange={onTaxEnabledChange} size="sm" />
         </div>
 
-        {/* Totals toggle + label */}
-        {onShowTotalsChange && (
+        {/* Line total column toggle + label */}
+        {onShowLineTotalChange && (
           <div className="py-2 border-b border-gray-50">
             <div className="flex items-center justify-between">
-              <div>
-                <span className="text-sm font-medium text-gray-700">Totals</span>
-                <p className="text-xs text-gray-400">Subtotal, discount, and total rows</p>
-              </div>
-              <Toggle enabled={showTotals ?? true} onChange={onShowTotalsChange} size="sm" />
+              <span className="text-sm font-medium text-gray-700">Line Total</span>
+              <Toggle enabled={showLineTotal ?? true} onChange={onShowLineTotalChange} size="sm" />
             </div>
-            {(showTotals ?? true) && onTotalLabelChange && (
-              <input
-                type="text"
-                value={totalLabel ?? ''}
-                onChange={(e) => onTotalLabelChange(e.target.value)}
-                placeholder="Total"
-                className={LABEL_INPUT_CLS}
-              />
+            {(showLineTotal ?? true) && onTotalLabelChange && (
+              <input type="text" value={totalLabel ?? ''} onChange={(e) => onTotalLabelChange(e.target.value)} placeholder="Total" className={LABEL_INPUT_CLS} />
             )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Summary Row Toggles ───────────────────────────────────── */}
+      <div className="border-t border-gray-100 pt-3 space-y-0">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Summary</p>
+
+        {/* Subtotal */}
+        {onShowSubtotalChange && (
+          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+            <span className="text-sm font-medium text-gray-700">Subtotal</span>
+            <Toggle enabled={showSubtotal ?? true} onChange={onShowSubtotalChange} size="sm" />
+          </div>
+        )}
+
+        {/* Discount */}
+        {onShowDiscountChange && (
+          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+              <span className="text-sm font-medium text-gray-700">Discount</span>
+              <p className="text-xs text-gray-400">Savings and after-discount rows</p>
+            </div>
+            <Toggle enabled={showDiscount ?? true} onChange={onShowDiscountChange} size="sm" />
+          </div>
+        )}
+
+        {/* Grand Total */}
+        {onShowTotalChange && (
+          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+            <span className="text-sm font-medium text-gray-700">Grand Total</span>
+            <Toggle enabled={showTotal ?? true} onChange={onShowTotalChange} size="sm" />
           </div>
         )}
       </div>

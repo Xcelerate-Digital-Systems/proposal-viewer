@@ -205,8 +205,11 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     descriptionLabel={editor.form.descriptionLabel}
                     showRate={editor.form.showRate}
                     rateLabel={editor.form.rateLabel}
+                    showLineTotal={editor.form.showLineTotal}
                     totalLabel={editor.form.totalLabel}
-                    showTotals={editor.form.showTotals}
+                    showSubtotal={editor.form.showSubtotal}
+                    showDiscount={editor.form.showDiscount}
+                    showTotal={editor.form.showTotal}
                     onTitleChange={(v) => editor.updateForm({ title: v })}
                     onIntroTextChange={(v) => editor.updateForm({ introText: v })}
                     onTaxEnabledChange={(v) => editor.updateForm({ taxEnabled: v })}
@@ -220,8 +223,11 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     onDescriptionLabelChange={(v) => editor.updateForm({ descriptionLabel: v })}
                     onShowRateChange={(v) => editor.updateForm({ showRate: v })}
                     onRateLabelChange={(v) => editor.updateForm({ rateLabel: v })}
+                    onShowLineTotalChange={(v) => editor.updateForm({ showLineTotal: v })}
                     onTotalLabelChange={(v) => editor.updateForm({ totalLabel: v })}
-                    onShowTotalsChange={(v) => editor.updateForm({ showTotals: v })}
+                    onShowSubtotalChange={(v) => editor.updateForm({ showSubtotal: v })}
+                    onShowDiscountChange={(v) => editor.updateForm({ showDiscount: v })}
+                    onShowTotalChange={(v) => editor.updateForm({ showTotal: v })}
                   />
                   <PricingLineItems
                     items={editor.form.items}
