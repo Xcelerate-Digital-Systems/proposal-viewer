@@ -49,7 +49,9 @@ export type PricingFormState = {
   qtyEnabled: boolean;
   qtyLabel: string;
   stageLabel: string;
+  showDescription: boolean;
   descriptionLabel: string;
+  showRate: boolean;
   rateLabel: string;
   totalLabel: string;
   showTotals: boolean;
@@ -71,7 +73,9 @@ const DEFAULT_FORM: PricingFormState = {
   qtyEnabled: false,
   qtyLabel: 'Qty',
   stageLabel: 'Stage',
+  showDescription: true,
   descriptionLabel: 'Description',
+  showRate: true,
   rateLabel: '',
   totalLabel: '',
   showTotals: true,
@@ -102,7 +106,9 @@ function unifiedToPricing(page: UnifiedPage): ProposalPricing {
     qty_enabled: (pl.qty_enabled as boolean) ?? false,
     qty_label: (pl.qty_label as string) || 'Qty',
     stage_label: (pl.stage_label as string) || 'Stage',
+    show_description: (pl.show_description as boolean) ?? true,
     description_label: (pl.description_label as string) || '',
+    show_rate: (pl.show_rate as boolean) ?? true,
     rate_label: (pl.rate_label as string) || '',
     total_label: (pl.total_label as string) || '',
     show_totals: (pl.show_totals as boolean) ?? true,
@@ -128,7 +134,9 @@ function formFromRecord(record: ProposalPricing): PricingFormState {
     qtyEnabled: record.qty_enabled ?? false,
     qtyLabel: record.qty_label || 'Qty',
     stageLabel: record.stage_label || 'Stage',
+    showDescription: record.show_description ?? true,
     descriptionLabel: record.description_label || '',
+    showRate: record.show_rate ?? true,
     rateLabel: record.rate_label || '',
     totalLabel: record.total_label || '',
     showTotals: record.show_totals ?? true,
@@ -256,7 +264,9 @@ export function usePricingEditor({
               qty_enabled: data.qtyEnabled,
               qty_label: data.qtyLabel,
               stage_label: data.stageLabel,
+              show_description: data.showDescription,
               description_label: data.descriptionLabel,
+              show_rate: data.showRate,
               rate_label: data.rateLabel,
               total_label: data.totalLabel,
               show_totals: data.showTotals,
@@ -335,7 +345,9 @@ export function usePricingEditor({
             qty_enabled: false,
             qty_label: 'Qty',
             stage_label: 'Stage',
+            show_description: true,
             description_label: '',
+            show_rate: true,
             rate_label: '',
             total_label: '',
             show_totals: true,
@@ -413,7 +425,9 @@ export function usePricingEditor({
         qty_enabled: form.qtyEnabled,
         qty_label: form.qtyLabel,
         stage_label: form.stageLabel,
+        show_description: form.showDescription,
         description_label: form.descriptionLabel,
+        show_rate: form.showRate,
         rate_label: form.rateLabel,
         total_label: form.totalLabel,
         show_totals: form.showTotals,

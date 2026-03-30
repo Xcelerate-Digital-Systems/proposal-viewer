@@ -171,57 +171,6 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
         </button>
       </div>
 
-      {/* Job / Site fields toggle (proposals only, not templates) */}
-      {proposalId && (
-        <div className="mb-5 border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin size={14} className="text-gray-400" />
-              <div>
-                <span className="text-sm font-medium text-gray-700">Job / Site Details</span>
-                <p className="text-xs text-gray-400">Site address, start date, and duration</p>
-              </div>
-            </div>
-            <Toggle enabled={showJobFields} onChange={toggleJobFields} size="sm" />
-          </div>
-          {showJobFields && (
-            <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Site / Job Address</label>
-                <input
-                  type="text"
-                  value={jobFields.site_address}
-                  onChange={(e) => updateJobField('site_address', e.target.value)}
-                  placeholder="123 Main St, Suburb VIC 3000"
-                  className={INPUT_CLS}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Start Date</label>
-                  <input
-                    type="date"
-                    value={jobFields.estimated_start_date}
-                    onChange={(e) => updateJobField('estimated_start_date', e.target.value)}
-                    className={INPUT_CLS}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Duration</label>
-                  <input
-                    type="text"
-                    value={jobFields.estimated_duration}
-                    onChange={(e) => updateJobField('estimated_duration', e.target.value)}
-                    placeholder="e.g. 2-3 weeks"
-                    className={INPUT_CLS}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Body: editor + optional preview */}
       <SplitPanelLayout
         containerRef={containerRef}
@@ -251,7 +200,9 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     qtyEnabled={editor.form.qtyEnabled}
                     qtyLabel={editor.form.qtyLabel}
                     stageLabel={editor.form.stageLabel}
+                    showDescription={editor.form.showDescription}
                     descriptionLabel={editor.form.descriptionLabel}
+                    showRate={editor.form.showRate}
                     rateLabel={editor.form.rateLabel}
                     totalLabel={editor.form.totalLabel}
                     showTotals={editor.form.showTotals}
@@ -263,7 +214,9 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     onQtyEnabledChange={(v) => editor.updateForm({ qtyEnabled: v })}
                     onQtyLabelChange={(v) => editor.updateForm({ qtyLabel: v })}
                     onStageLabelChange={(v) => editor.updateForm({ stageLabel: v })}
+                    onShowDescriptionChange={(v) => editor.updateForm({ showDescription: v })}
                     onDescriptionLabelChange={(v) => editor.updateForm({ descriptionLabel: v })}
+                    onShowRateChange={(v) => editor.updateForm({ showRate: v })}
                     onRateLabelChange={(v) => editor.updateForm({ rateLabel: v })}
                     onTotalLabelChange={(v) => editor.updateForm({ totalLabel: v })}
                     onShowTotalsChange={(v) => editor.updateForm({ showTotals: v })}
@@ -296,6 +249,57 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     taxRate={editor.form.taxRate}
                     onChange={(paymentSchedule) => editor.updateForm({ paymentSchedule })}
                   />
+
+                  {/* Job / Site fields (proposals only) */}
+                  {proposalId && (
+                    <div className="border-t border-gray-100 pt-3">
+                      <div className="flex items-center justify-between py-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin size={14} className="text-gray-400" />
+                          <div>
+                            <span className="text-sm font-medium text-gray-700">Job / Site Details</span>
+                            <p className="text-xs text-gray-400">Site address, start date, and duration</p>
+                          </div>
+                        </div>
+                        <Toggle enabled={showJobFields} onChange={toggleJobFields} size="sm" />
+                      </div>
+                      {showJobFields && (
+                        <div className="mt-2 space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Site / Job Address</label>
+                            <input
+                              type="text"
+                              value={jobFields.site_address}
+                              onChange={(e) => updateJobField('site_address', e.target.value)}
+                              placeholder="123 Main St, Suburb VIC 3000"
+                              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Start Date</label>
+                              <input
+                                type="date"
+                                value={jobFields.estimated_start_date}
+                                onChange={(e) => updateJobField('estimated_start_date', e.target.value)}
+                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Duration</label>
+                              <input
+                                type="text"
+                                value={jobFields.estimated_duration}
+                                onChange={(e) => updateJobField('estimated_duration', e.target.value)}
+                                placeholder="e.g. 2-3 weeks"
+                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">

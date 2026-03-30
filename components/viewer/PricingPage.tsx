@@ -142,14 +142,16 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 style={{ backgroundColor: surface, color: faint }}
               >
                 <span className="w-28 shrink-0">{pricing.stage_label || 'Stage'}</span>
-                <span className="flex-1">{pricing.description_label || 'Description'}</span>
-                {pricing.qty_enabled && (
+                {(pricing.show_description ?? true) && (
+                  <span className="flex-1">{pricing.description_label || 'Description'}</span>
+                )}
+                {pricing.qty_enabled && (pricing.show_rate ?? true) && (
                   <>
                     <span className="w-16 text-right shrink-0">{pricing.qty_label || 'Qty'}</span>
                     <span className="w-24 text-right shrink-0">{pricing.rate_label || 'Rate'}</span>
                   </>
                 )}
-                {!pricing.qty_enabled && (
+                {!pricing.qty_enabled && (pricing.show_rate ?? true) && (
                   <span className="w-24 text-right shrink-0">{pricing.rate_label || 'Amount'}</span>
                 )}
                 {pricing.tax_enabled && (
@@ -192,14 +194,16 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           </span>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        {item.label && (
-                          <span className="agv-pricing-body text-sm" style={{ color: muted }}>
-                            {item.label}
-                          </span>
-                        )}
-                      </div>
-                      {pricing.qty_enabled && (
+                      {(pricing.show_description ?? true) && (
+                        <div className="flex-1 min-w-0">
+                          {item.label && (
+                            <span className="agv-pricing-body text-sm" style={{ color: muted }}>
+                              {item.label}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {pricing.qty_enabled && (pricing.show_rate ?? true) && (
                         <>
                           <span className="agv-pricing-body w-16 text-right shrink-0 text-sm" style={{ color: muted }}>
                             {item.qty ?? 1}
@@ -211,7 +215,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           </span>
                         </>
                       )}
-                      {!pricing.qty_enabled && (
+                      {!pricing.qty_enabled && (pricing.show_rate ?? true) && (
                         <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
                           {hasDiscount ? (
                             <span className="line-through opacity-50">{formatAUD(item.amount)}</span>
