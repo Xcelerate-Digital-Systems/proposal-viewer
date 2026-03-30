@@ -262,22 +262,31 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
 
       {/* Table */}
       <ToolbarButton
-        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        onClick={() => {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (editor.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+          } catch (err) {
+            console.error('insertTable error:', err);
+          }
+        }}
         title="Insert Table"
       >
         <Table size={16} />
       </ToolbarButton>
       {editor.isActive('table') && (
         <>
-          <ToolbarButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add Column">
+          {/* eslint-disable @typescript-eslint/no-explicit-any */}
+          <ToolbarButton onClick={() => (editor.chain().focus() as any).addColumnAfter().run()} title="Add Column">
             <Columns size={16} />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().addRowAfter().run()} title="Add Row">
+          <ToolbarButton onClick={() => (editor.chain().focus() as any).addRowAfter().run()} title="Add Row">
             <Rows size={16} />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().deleteTable().run()} title="Delete Table">
+          <ToolbarButton onClick={() => (editor.chain().focus() as any).deleteTable().run()} title="Delete Table">
             <Trash2 size={16} />
           </ToolbarButton>
+          {/* eslint-enable @typescript-eslint/no-explicit-any */}
         </>
       )}
 
