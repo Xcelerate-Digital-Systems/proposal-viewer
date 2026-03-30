@@ -263,22 +263,8 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
       {/* Table */}
       <ToolbarButton
         onClick={() => {
-          /* eslint-disable @typescript-eslint/no-explicit-any */
-          const cmds = editor.commands as any;
-          console.log('[table-debug] has insertTable:', typeof cmds.insertTable);
-          console.log('[table-debug] editor extensionManager names:', editor.extensionManager.extensions.map((e: any) => e.name));
-          if (typeof cmds.insertTable === 'function') {
-            const result = cmds.insertTable({ rows: 3, cols: 3, withHeaderRow: true });
-            console.log('[table-debug] insertTable result:', result);
-          } else {
-            console.error('[table-debug] insertTable not available. Trying chain...');
-            try {
-              (editor.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-            } catch (err) {
-              console.error('[table-debug] chain insertTable error:', err);
-            }
-          }
-          /* eslint-enable @typescript-eslint/no-explicit-any */
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (editor.commands as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true });
         }}
         title="Insert Table"
       >
@@ -287,13 +273,13 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
       {editor.isActive('table') && (
         <>
           {/* eslint-disable @typescript-eslint/no-explicit-any */}
-          <ToolbarButton onClick={() => (editor.chain().focus() as any).addColumnAfter().run()} title="Add Column">
+          <ToolbarButton onClick={() => (editor.commands as any).addColumnAfter()} title="Add Column">
             <Columns size={16} />
           </ToolbarButton>
-          <ToolbarButton onClick={() => (editor.chain().focus() as any).addRowAfter().run()} title="Add Row">
+          <ToolbarButton onClick={() => (editor.commands as any).addRowAfter()} title="Add Row">
             <Rows size={16} />
           </ToolbarButton>
-          <ToolbarButton onClick={() => (editor.chain().focus() as any).deleteTable().run()} title="Delete Table">
+          <ToolbarButton onClick={() => (editor.commands as any).deleteTable()} title="Delete Table">
             <Trash2 size={16} />
           </ToolbarButton>
           {/* eslint-enable @typescript-eslint/no-explicit-any */}

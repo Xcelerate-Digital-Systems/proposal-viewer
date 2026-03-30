@@ -1,7 +1,8 @@
 // components/admin/text-editor/RichTextEditor.tsx
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEffect, useRef } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import TiptapUnderline from '@tiptap/extension-underline';
@@ -10,7 +11,7 @@ import TiptapLink from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { TableKit } from '@tiptap/extension-table';
 import { DynamicFieldExtension } from './DynamicFieldExtension';
 import { FontSizeExtension } from './FontSizeExtension';
 import { FontWeightExtension } from './FontWeightExtension';
@@ -23,35 +24,10 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cachedTableExts: any[] | null = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let tablePromise: Promise<any[]> | null = null;
-
-function loadTableExtensions() {
-  if (cachedTableExts) return Promise.resolve(cachedTableExts);
-  if (!tablePromise) {
-    tablePromise = import('@tiptap/extension-table').then((mod) => {
-      cachedTableExts = [mod.Table, mod.TableRow, mod.TableCell, mod.TableHeader];
-      return cachedTableExts;
-    });
-  }
-  return tablePromise;
-}
-
 export default function RichTextEditor({ content, onUpdate, placeholder }: RichTextEditorProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [tableExts, setTableExts] = useState<any[] | null>(cachedTableExts);
-
-  useEffect(() => {
-    if (!tableExts) {
-      loadTableExtensions().then(setTableExts);
-    }
-  }, [tableExts]);
-
-  const extensions = useMemo(() => {
-    if (!tableExts) return null;
-    return [
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Placeholder.configure({ placeholder: placeholder || 'Start writing your content here...' }),
       TiptapUnderline,
@@ -62,14 +38,9 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
       FontWeightExtension,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       TiptapLink.configure({ openOnClick: false, HTMLAttributes: { class: 'text-teal underline' } }),
-      ...tableExts,
+      TableKit,
       DynamicFieldExtension,
-    ];
-  }, [tableExts, placeholder]);
-
-  const editor = useEditor({
-    immediatelyRender: false,
-    extensions: extensions || [],
+    ],
     content: content as Record<string, unknown>,
     onUpdate: ({ editor: ed }) => onUpdate(ed.getJSON()),
     editorProps: {
@@ -77,7 +48,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] px-4 py-3 text-gray-800',
       },
     },
-  }, [extensions]);
+  });
 
   // Sync content from outside (e.g. page switch)
   const contentRef = useRef(content);
@@ -92,7 +63,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
     }
   }, [editor, content]);
 
-  if (!extensions || !editor) return null;
+  if (!editor) return null;
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white flex flex-col max-h-[70vh]">
