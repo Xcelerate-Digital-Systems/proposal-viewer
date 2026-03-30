@@ -1,7 +1,8 @@
 // app/company/page.tsx
 'use client';
 
-import { Building2, Check, Loader2 } from 'lucide-react';
+import { useRef } from 'react';
+import { Building2, Check, Loader2, ImageIcon, Upload, Trash2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import CustomDomainManager from '@/components/admin/CustomDomainManager';
 import { isValidHex6 } from '@/lib/company-utils';
@@ -150,6 +151,15 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           />
         </ViewerColorsSection>
 
+        {/* Default Cover Image */}
+        <CoverImageSection
+          isOwner={s.isOwner}
+          coverImageUrl={s.coverImageUrl}
+          coverImageUploading={s.coverImageUploading}
+          onUpload={s.handleCoverImageUpload}
+          onRemove={s.handleCoverImageRemove}
+        />
+
         {/* Custom Domain */}
         <CustomDomainManager companyId={companyId} isOwner={s.isOwner} />
 
@@ -159,6 +169,89 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ── Cover Image Section ──────────────────────────────────────────── */
+
+function CoverImageSection({
+  isOwner,
+  coverImageUrl,
+  coverImageUploading,
+  onUpload,
+  onRemove,
+}: {
+  isOwner: boolean;
+  coverImageUrl: string | null;
+  coverImageUploading: boolean;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="bg-white border border-edge rounded-[14px] p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <ImageIcon size={15} className="text-faint" />
+        <span className="text-sm font-medium text-muted">Default Cover Image</span>
+      </div>
+      <p className="text-xs text-faint mb-4">
+        Upload a default background image for the cover page. New proposals and quotes will use this automatically. You can still override it per-proposal.
+      </p>
+
+      {coverImageUrl ? (
+        <div className="flex items-start gap-4">
+          <div
+            className="w-32 h-20 rounded-lg border border-edge bg-cover bg-center shrink-0"
+            style={{ backgroundImage: `url(${coverImageUrl})` }}
+          />
+          <div className="space-y-1.5">
+            {isOwner && (
+              <>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={coverImageUploading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted bg-surface border border-edge rounded-lg hover:bg-edge disabled:opacity-50 transition-colors"
+                >
+                  {coverImageUploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                  Replace
+                </button>
+                <button
+                  onClick={onRemove}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={12} />
+                  Remove
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        isOwner && (
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={coverImageUploading}
+            className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-edge text-faint hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
+          >
+            {coverImageUploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
+            <span className="text-xs font-medium">Upload cover image</span>
+          </button>
+        )
+      )}
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(file);
+          e.target.value = '';
+        }}
+      />
     </div>
   );
 }

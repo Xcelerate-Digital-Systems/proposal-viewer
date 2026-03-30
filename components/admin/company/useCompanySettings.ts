@@ -45,6 +45,11 @@ export function useCompanySettings(companyId: string) {
   const [bgImageUploading, setBgImageUploading]           = useState(false);
   const [bgImageOverlayOpacity, setBgImageOverlayOpacity] = useState(0.85);
 
+  // Cover image (company default for new proposals)
+  const [coverImagePath, setCoverImagePath]         = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl]           = useState<string | null>(null);
+  const [coverImageUploading, setCoverImageUploading] = useState(false);
+
   // Font fields
   const [fontHeading, setFontHeading]             = useState<string | null>(null);
   const [fontBody, setFontBody]                   = useState<string | null>(null);
@@ -94,6 +99,7 @@ export function useCompanySettings(companyId: string) {
         setFontSidebarWeight(data.font_sidebar_weight || null);
         setBgImagePath(data.bg_image_path || null);
         setBgImageOverlayOpacity(data.bg_image_overlay_opacity ?? 0.85);
+        setCoverImagePath(data.cover_image_path || null);
 
         // Brand palette
         const palette: string[] = Array.isArray(data.brand_colors) ? data.brand_colors : [];
@@ -107,6 +113,15 @@ export function useCompanySettings(companyId: string) {
           setBgImageUrl(bgUrl?.publicUrl || null);
         } else {
           setBgImageUrl(null);
+        }
+
+        if (data.cover_image_path) {
+          const { data: coverUrl } = supabase.storage
+            .from('company-assets')
+            .getPublicUrl(data.cover_image_path);
+          setCoverImageUrl(coverUrl?.publicUrl || null);
+        } else {
+          setCoverImageUrl(null);
         }
       }
     } finally {
@@ -354,6 +369,72 @@ export function useCompanySettings(companyId: string) {
     }
   };
 
+  /* ── Cover image (company default for new proposals) ─────── */
+
+  const handleCoverImageUpload = async (file: File) => {
+    if (!isOwner) return;
+    setCoverImageUploading(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+      const safeName = `cover-image.${ext}`.replace(/[^a-zA-Z0-9._-]/g, '');
+      const storagePath = `${companyId}/cover-image/${safeName}`;
+
+      if (coverImagePath) {
+        await supabase.storage.from('company-assets').remove([coverImagePath]);
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-assets')
+        .upload(storagePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/company?company_id=${companyId}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cover_image_path: storagePath }),
+      });
+
+      if (!res.ok) throw new Error('Failed to save');
+
+      setCoverImagePath(storagePath);
+      const { data: urlData } = supabase.storage
+        .from('company-assets')
+        .getPublicUrl(storagePath);
+      setCoverImageUrl(urlData?.publicUrl || null);
+      setCompany(prev => prev ? { ...prev, cover_image_path: storagePath } : prev);
+      showFeedback('Cover image uploaded');
+    } catch (err) {
+      console.error(err);
+      showFeedback('Failed to upload cover image', true);
+    } finally {
+      setCoverImageUploading(false);
+    }
+  };
+
+  const handleCoverImageRemove = async () => {
+    if (!isOwner || !coverImagePath) return;
+    try {
+      await supabase.storage.from('company-assets').remove([coverImagePath]);
+
+      const headers = await getAuthHeaders();
+      await fetch(`/api/company?company_id=${companyId}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cover_image_path: null }),
+      });
+
+      setCoverImagePath(null);
+      setCoverImageUrl(null);
+      setCompany(prev => prev ? { ...prev, cover_image_path: null } : prev);
+      showFeedback('Cover image removed');
+    } catch (err) {
+      console.error(err);
+      showFeedback('Failed to remove cover image', true);
+    }
+  };
+
   /* ── Derived ───────────────────────────────────────────────── */
 
   const colorsChanged =
@@ -400,6 +481,12 @@ export function useCompanySettings(companyId: string) {
     bgImageOverlayOpacity, setBgImageOverlayOpacity,
     handleBgImageUpload,
     handleBgImageRemove,
+
+    // Cover image
+    coverImageUrl,
+    coverImageUploading,
+    handleCoverImageUpload,
+    handleCoverImageRemove,
 
     // Fonts
     fontHeading, setFontHeading,

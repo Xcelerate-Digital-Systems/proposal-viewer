@@ -62,6 +62,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Look up company defaults (cover image) ─────────────────────────────
+    let companyCoverImagePath: string | null = null;
+    if (!rest.cover_image_path) {
+      const { data: companyData } = await supabase
+        .from('companies')
+        .select('cover_image_path')
+        .eq('id', company_id)
+        .single();
+      companyCoverImagePath = companyData?.cover_image_path || null;
+    }
+
     // ── Insert the proposal record ────────────────────────────────────────
     const { data: proposal, error: insertError } = await supabase
       .from('proposals')
@@ -79,6 +90,9 @@ export async function POST(req: NextRequest) {
         created_by_name:   created_by_name || null,
         prepared_by:       prepared_by     || created_by_name || null,
         entity_type:       isQuote ? 'quote' : 'proposal',
+        ...(companyCoverImagePath && !rest.cover_image_path
+          ? { cover_image_path: companyCoverImagePath }
+          : {}),
         ...rest,
       })
       .select('id')

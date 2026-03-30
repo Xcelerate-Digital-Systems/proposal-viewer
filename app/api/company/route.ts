@@ -76,6 +76,14 @@ export async function GET(req: NextRequest) {
       bg_image_url = bgUrlData?.publicUrl || null;
     }
 
+    let cover_image_url = null;
+    if (company.cover_image_path) {
+      const { data: coverUrlData } = supabase.storage
+        .from('company-assets')
+        .getPublicUrl(company.cover_image_path);
+      cover_image_url = coverUrlData?.publicUrl || null;
+    }
+
     // If super admin is viewing another company, treat as owner for UI purposes
     const effectiveRole = (member.is_super_admin && companyId !== member.company_id)
       ? 'owner'
@@ -85,6 +93,7 @@ export async function GET(req: NextRequest) {
       ...company,
       logo_url,
       bg_image_url,
+      cover_image_url,
       current_role: effectiveRole,
     });
   } catch (err) {
@@ -145,6 +154,7 @@ export async function PATCH(req: NextRequest) {
       'text_page_layout',
       'bg_image_path',
       'bg_image_overlay_opacity',
+      'cover_image_path',
       'brand_colors',
     ];
     const updates: Record<string, unknown> = {};
@@ -276,7 +286,15 @@ export async function PATCH(req: NextRequest) {
       bg_image_url = bgUrlData?.publicUrl || null;
     }
 
-    return NextResponse.json({ ...data, logo_url, bg_image_url });
+    let cover_image_url = null;
+    if (data.cover_image_path) {
+      const { data: coverUrlData } = supabase.storage
+        .from('company-assets')
+        .getPublicUrl(data.cover_image_path);
+      cover_image_url = coverUrlData?.publicUrl || null;
+    }
+
+    return NextResponse.json({ ...data, logo_url, bg_image_url, cover_image_url });
   } catch (err) {
     console.error('Update company error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
