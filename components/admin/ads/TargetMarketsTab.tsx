@@ -8,9 +8,10 @@ import type { AdTargetMarket } from '@/lib/types/ads';
 
 type Props = {
   companyId: string;
+  trackerId?: string;
 };
 
-export default function TargetMarketsTab({ companyId }: Props) {
+export default function TargetMarketsTab({ companyId, trackerId }: Props) {
   const [markets, setMarkets] = useState<AdTargetMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -24,13 +25,15 @@ export default function TargetMarketsTab({ companyId }: Props) {
     const token = (await supabase.auth.getSession()).data.session?.access_token;
     if (!token) return;
 
-    const res = await fetch(`/api/ads/target-markets?company_id=${companyId}`, {
+    const params = new URLSearchParams({ company_id: companyId });
+    if (trackerId) params.set('tracker_id', trackerId);
+    const res = await fetch(`/api/ads/target-markets?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const json = await res.json();
     if (json.success) setMarkets(json.data);
     setLoading(false);
-  }, [companyId]);
+  }, [companyId, trackerId]);
 
   useEffect(() => {
     fetchMarkets();
@@ -45,7 +48,7 @@ export default function TargetMarketsTab({ companyId }: Props) {
     const res = await fetch('/api/ads/target-markets', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName.trim(), description: newDescription.trim() || null }),
+      body: JSON.stringify({ name: newName.trim(), description: newDescription.trim() || null, tracker_id: trackerId || null }),
     });
     const json = await res.json();
     if (json.success) {

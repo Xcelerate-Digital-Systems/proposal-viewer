@@ -10,12 +10,20 @@ export async function GET(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const trackerId = req.nextUrl.searchParams.get('tracker_id');
+
     const supabase = createServiceClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from('ad_target_markets')
       .select('*')
       .eq('company_id', auth.companyId)
       .order('sort_order', { ascending: true });
+
+    if (trackerId) {
+      query = query.eq('tracker_id', trackerId);
+    }
+
+    const { data, error } = await query;
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true, data: data || [] });
@@ -35,15 +43,22 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    const { count } = await supabase
+    let countQuery = supabase
       .from('ad_target_markets')
       .select('*', { count: 'exact', head: true })
       .eq('company_id', auth.companyId);
+
+    if (body.tracker_id) {
+      countQuery = countQuery.eq('tracker_id', body.tracker_id);
+    }
+
+    const { count } = await countQuery;
 
     const { data, error } = await supabase
       .from('ad_target_markets')
       .insert({
         company_id: auth.companyId,
+        tracker_id: body.tracker_id || null,
         name: body.name.trim(),
         description: body.description?.trim() || null,
         sort_order: count || 0,

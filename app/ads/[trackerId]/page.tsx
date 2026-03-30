@@ -319,7 +319,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             }}
           />
         ) : activeTab === 'target_markets' ? (
-          <TargetMarketsTab companyId={companyId} />
+          <TargetMarketsTab companyId={companyId} trackerId={trackerId} />
         ) : (
           <ReferenceTabContent type={activeTab} />
         )}

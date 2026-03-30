@@ -286,6 +286,67 @@ function renderNode(
         />
       );
 
+    case 'table':
+      return (
+        <table
+          key={key}
+          style={{
+            borderCollapse: 'collapse',
+            width: '100%',
+            margin: '0.5em 0',
+            fontSize: 'inherit',
+            color: textColor,
+          }}
+        >
+          {children}
+        </table>
+      );
+
+    case 'tableRow':
+      return <tr key={key}>{children}</tr>;
+
+    case 'tableHeader':
+      return (
+        <th
+          key={key}
+          colSpan={Number(node.attrs?.colspan) || 1}
+          rowSpan={Number(node.attrs?.rowspan) || 1}
+          style={{
+            border: `1px solid ${border}`,
+            padding: '8px 12px',
+            textAlign: 'left',
+            verticalAlign: 'top',
+            fontWeight: 600,
+            backgroundColor: `${textColor}08`,
+            color: textColor,
+            fontSize: 'inherit',
+            lineHeight: 1.5,
+          }}
+        >
+          {children}
+        </th>
+      );
+
+    case 'tableCell':
+      return (
+        <td
+          key={key}
+          colSpan={Number(node.attrs?.colspan) || 1}
+          rowSpan={Number(node.attrs?.rowspan) || 1}
+          style={{
+            border: `1px solid ${border}`,
+            padding: '8px 12px',
+            textAlign: 'left',
+            verticalAlign: 'top',
+            color: textColor,
+            fontSize: 'inherit',
+            lineHeight: 1.5,
+          }}
+        >
+          {children}
+        </td>
+      );
+
     case 'codeBlock':
       return (
         <pre

@@ -10,6 +10,10 @@ import TiptapLink from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 import { useEffect, useRef } from 'react';
 import { DynamicFieldExtension } from './DynamicFieldExtension';
 import { FontSizeExtension } from './FontSizeExtension';
@@ -37,6 +41,10 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
       FontWeightExtension,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       TiptapLink.configure({ openOnClick: false, HTMLAttributes: { class: 'text-teal underline' } }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
       DynamicFieldExtension,
     ],
     content: content as Record<string, unknown>,

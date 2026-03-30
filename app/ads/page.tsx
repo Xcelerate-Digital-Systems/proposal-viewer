@@ -115,6 +115,7 @@ function AdsContent({ companyId }: { companyId: string }) {
               if (!result.error) setShowCreate(false);
               return result;
             }}
+            existingClients={Array.from(new Set(trackers.map((t) => t.client_name).filter(Boolean) as string[]))}
           />
         )}
 

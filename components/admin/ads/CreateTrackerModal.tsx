@@ -1,20 +1,40 @@
 // components/admin/ads/CreateTrackerModal.tsx
 'use client';
 
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, ChevronDown } from 'lucide-react';
 
 type Props = {
   onClose: () => void;
   onCreate: (data: { name: string; client_name: string; description?: string }) => Promise<{ error?: string }>;
+  existingClients?: string[];
 };
 
-export default function CreateTrackerModal({ onClose, onCreate }: Props) {
+export default function CreateTrackerModal({ onClose, onCreate, existingClients = [] }: Props) {
   const [name, setName] = useState('');
   const [clientName, setClientName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Filter clients based on current input
+  const filtered = clientName.trim()
+    ? existingClients.filter((c) => c.toLowerCase().includes(clientName.toLowerCase()))
+    : existingClients;
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!showDropdown) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showDropdown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +53,11 @@ export default function CreateTrackerModal({ onClose, onCreate }: Props) {
       setError(result.error);
       setSaving(false);
     }
+  };
+
+  const selectClient = (client: string) => {
+    setClientName(client);
+    setShowDropdown(false);
   };
 
   return (
@@ -61,17 +86,44 @@ export default function CreateTrackerModal({ onClose, onCreate }: Props) {
             />
           </div>
 
-          <div>
+          <div ref={dropdownRef} className="relative">
             <label className="block text-[13px] font-medium text-ink mb-1.5">
               Client
             </label>
-            <input
-              type="text"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="e.g., Doneverse, Acme Corp"
-              className="w-full px-3.5 py-2.5 bg-surface border border-edge rounded-[10px] text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 transition-all"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={clientName}
+                onChange={(e) => { setClientName(e.target.value); setShowDropdown(true); }}
+                onFocus={() => { if (existingClients.length > 0) setShowDropdown(true); }}
+                placeholder="Select or type a new client name"
+                className="w-full px-3.5 py-2.5 bg-surface border border-edge rounded-[10px] text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 transition-all pr-9"
+              />
+              {existingClients.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-faint hover:text-muted"
+                >
+                  <ChevronDown size={14} className={`transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </div>
+
+            {showDropdown && filtered.length > 0 && (
+              <div className="absolute z-10 top-full mt-1 w-full bg-white border border-edge rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                {filtered.map((client) => (
+                  <button
+                    key={client}
+                    type="button"
+                    onClick={() => selectClient(client)}
+                    className="w-full text-left px-3.5 py-2.5 text-[13px] text-ink hover:bg-surface transition-colors first:rounded-t-xl last:rounded-b-xl"
+                  >
+                    {client}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>

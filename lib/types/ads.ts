@@ -143,6 +143,7 @@ export type AdCreativeFormat = {
 export type AdTargetMarket = {
   id: string;
   company_id: string;
+  tracker_id: string | null;
   name: string;
   description: string | null;
   sort_order: number;
