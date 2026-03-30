@@ -14,6 +14,7 @@ export default function PricingTab({ proposalId }: PricingTabProps) {
       entityKey="proposal_id"
       entityId={proposalId}
       companyId={null}
+      proposalId={proposalId}
     />
   );
 }

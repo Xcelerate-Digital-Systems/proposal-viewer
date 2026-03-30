@@ -1,8 +1,9 @@
 // components/admin/shared/PricingTabEditor.tsx
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Check, DollarSign, Loader2, Plus, Trash2, Eye } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Check, DollarSign, Loader2, Plus, Trash2, Eye, MapPin } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import Toggle from '@/components/ui/Toggle';
 import PricingPreview from '@/components/admin/shared/PricingPreview';
 import PricingSettings from '@/components/admin/pricing/PricingSettings';
@@ -18,16 +19,62 @@ import { usePricingEditor, type UsePricingEditorOptions } from './usePricingEdit
 export type PricingTabEditorProps = UsePricingEditorOptions & {
   /** Hide proposal_date for templates */
   hideProposalDate?: boolean;
+  /** Proposal ID — enables the job/site fields toggle (omit for templates) */
+  proposalId?: string;
 };
 
 /* ─── Component ───────────────────────────────────────────────── */
 
-export default function PricingTabEditor({ hideProposalDate, ...props }: PricingTabEditorProps) {
+const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400';
+
+export default function PricingTabEditor({ hideProposalDate, proposalId, ...props }: PricingTabEditorProps) {
   const editor = usePricingEditor(props);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [panelHeight, setPanelHeight] = useState(520);
   const [showPreview, setShowPreview] = useState(true);
+
+  /* ── Job fields (per-proposal toggle) ──────────────────────── */
+
+  const [showJobFields, setShowJobFields] = useState(false);
+  const [jobFields, setJobFields] = useState({ site_address: '', estimated_start_date: '', estimated_duration: '' });
+
+  const fetchJobFields = useCallback(async () => {
+    if (!proposalId) return;
+    const { data } = await supabase
+      .from('proposals')
+      .select('show_job_fields, site_address, estimated_start_date, estimated_duration')
+      .eq('id', proposalId)
+      .single();
+    if (data) {
+      setShowJobFields(data.show_job_fields ?? false);
+      setJobFields({
+        site_address: data.site_address || '',
+        estimated_start_date: data.estimated_start_date || '',
+        estimated_duration: data.estimated_duration || '',
+      });
+    }
+  }, [proposalId]);
+
+  useEffect(() => { fetchJobFields(); }, [fetchJobFields]);
+
+  const toggleJobFields = async () => {
+    if (!proposalId) return;
+    const newVal = !showJobFields;
+    setShowJobFields(newVal);
+    await supabase.from('proposals').update({ show_job_fields: newVal }).eq('id', proposalId);
+  };
+
+  const jobFieldDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const updateJobField = (key: string, value: string) => {
+    setJobFields((prev) => ({ ...prev, [key]: value }));
+    if (jobFieldDebounce.current) clearTimeout(jobFieldDebounce.current);
+    jobFieldDebounce.current = setTimeout(async () => {
+      if (proposalId) {
+        await supabase.from('proposals').update({ [key]: value || null }).eq('id', proposalId);
+      }
+    }, 800);
+  };
 
   /* ── Panel height ───────────────────────────────────────────── */
 
@@ -123,6 +170,57 @@ export default function PricingTabEditor({ hideProposalDate, ...props }: Pricing
           Add Page
         </button>
       </div>
+
+      {/* Job / Site fields toggle (proposals only, not templates) */}
+      {proposalId && (
+        <div className="mb-5 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin size={14} className="text-gray-400" />
+              <div>
+                <span className="text-sm font-medium text-gray-700">Job / Site Details</span>
+                <p className="text-xs text-gray-400">Site address, start date, and duration</p>
+              </div>
+            </div>
+            <Toggle enabled={showJobFields} onChange={toggleJobFields} size="sm" />
+          </div>
+          {showJobFields && (
+            <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Site / Job Address</label>
+                <input
+                  type="text"
+                  value={jobFields.site_address}
+                  onChange={(e) => updateJobField('site_address', e.target.value)}
+                  placeholder="123 Main St, Suburb VIC 3000"
+                  className={INPUT_CLS}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Start Date</label>
+                  <input
+                    type="date"
+                    value={jobFields.estimated_start_date}
+                    onChange={(e) => updateJobField('estimated_start_date', e.target.value)}
+                    className={INPUT_CLS}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Duration</label>
+                  <input
+                    type="text"
+                    value={jobFields.estimated_duration}
+                    onChange={(e) => updateJobField('estimated_duration', e.target.value)}
+                    placeholder="e.g. 2-3 weeks"
+                    className={INPUT_CLS}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Body: editor + optional preview */}
       <SplitPanelLayout

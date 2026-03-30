@@ -9,7 +9,6 @@ import ProposalDetailHeader from '@/components/admin/proposals/ProposalDetailHea
 import EditDetailsPanel from '@/components/admin/shared/EditDetailsPanel';
 import { useToast } from '@/components/ui/Toast';
 import PostAcceptSection from '@/components/admin/proposals/PostAcceptSection';
-import Toggle from '@/components/ui/Toggle';
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -77,13 +76,6 @@ function DetailsContent({
     fetchCustomDomain();
   }, [fetchProposal, fetchCustomDomain]);
 
-  const toggleJobFields = async () => {
-    if (!proposal) return;
-    const newVal = !proposal.show_job_fields;
-    await supabase.from('proposals').update({ show_job_fields: newVal }).eq('id', proposalId);
-    setProposal((prev) => prev ? { ...prev, show_job_fields: newVal } : prev);
-  };
-
   if (loading || !proposal) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -91,8 +83,6 @@ function DetailsContent({
       </div>
     );
   }
-
-  const jobFieldKeys = ['site_address', 'estimated_start_date', 'estimated_duration'];
 
   return (
     <div className="flex flex-col h-full">
@@ -111,9 +101,6 @@ function DetailsContent({
                 client_name: proposal.client_name,
                 client_email: proposal.client_email,
                 crm_identifier: proposal.crm_identifier,
-                site_address: proposal.site_address,
-                estimated_start_date: proposal.estimated_start_date,
-                estimated_duration: proposal.estimated_duration,
                 description: proposal.description,
             }}
             onSave={() => {
@@ -121,22 +108,8 @@ function DetailsContent({
                 fetchProposal();
             }}
             onCancel={() => {}}
-            hiddenFields={proposal.show_job_fields ? [] : jobFieldKeys}
+            hiddenFields={['site_address', 'estimated_start_date', 'estimated_duration']}
         />
-
-        {/* Job fields toggle */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-medium text-gray-700">Job / Site Fields</span>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Show Site Address, Estimated Start Date, and Duration for this proposal
-              </p>
-            </div>
-            <Toggle enabled={proposal.show_job_fields} onChange={toggleJobFields} />
-          </div>
-        </div>
-
         <PostAcceptSection
           entityId={proposal.id}
           table="proposals"
