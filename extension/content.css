@@ -1,0 +1,219 @@
+/* Agency Viz extension — content script styles
+   Brand: teal #017C87, ink #1E2432, font Outfit (loaded from Google Fonts) */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+
+/* ─── Save button on each card ─────────────────────────────────────────── */
+.agency-viz-save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 11px 14px;
+  background: #017C87;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(1, 124, 135, 0.18);
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  z-index: 9999;
+  position: relative;
+}
+.agency-viz-save-btn:hover {
+  background: #016670;
+  box-shadow: 0 4px 12px rgba(1, 124, 135, 0.28);
+}
+.agency-viz-save-btn:active { transform: translateY(1px); }
+.agency-viz-save-btn.saved {
+  background: #1E2432;
+  box-shadow: none;
+}
+.agency-viz-save-btn svg { flex-shrink: 0; }
+
+/* ─── Popover ──────────────────────────────────────────────────────────── */
+.agency-viz-popover {
+  position: absolute;
+  z-index: 2147483647;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(30, 36, 50, 0.22), 0 2px 8px rgba(30, 36, 50, 0.08);
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #1E2432;
+  overflow: hidden;
+  border: 1px solid #EFEFEF;
+  animation: avPopIn 0.15s ease-out;
+}
+@keyframes avPopIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.av-pop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #EFEFEF;
+}
+.av-pop-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1E2432;
+  letter-spacing: -0.01em;
+}
+.av-pop-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #ABABAB;
+  cursor: pointer;
+  padding: 0 4px;
+  font-family: inherit;
+}
+.av-pop-close:hover { color: #1E2432; }
+
+.av-pop-body {
+  padding: 12px 16px;
+}
+.av-pop-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8A8A8A;
+  margin-bottom: 6px;
+}
+.av-pop-label-tags { margin-top: 14px; }
+.av-pop-hint {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #ABABAB;
+}
+
+.av-pop-search-wrap { position: relative; }
+.av-pop-search,
+.av-pop-tags {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1E2432;
+  background: #F5F5F5;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.av-pop-search:focus,
+.av-pop-tags:focus {
+  background: #fff;
+  border-color: #017C87;
+}
+.av-pop-search::placeholder,
+.av-pop-tags::placeholder { color: #ABABAB; }
+
+.av-pop-list {
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.av-pop-list::-webkit-scrollbar { width: 6px; }
+.av-pop-list::-webkit-scrollbar-thumb { background: #EFEFEF; border-radius: 3px; }
+
+.av-pop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #1E2432;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.av-pop-item:hover { background: #F5F5F5; }
+.av-pop-item.selected {
+  background: #E6F5F3;
+  color: #017C87;
+  font-weight: 600;
+}
+.av-pop-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.av-pop-item-count {
+  font-size: 11px;
+  color: #ABABAB;
+  background: #EFEFEF;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+.av-pop-item.selected .av-pop-item-count {
+  background: #017C87;
+  color: #fff;
+}
+
+.av-pop-empty,
+.av-pop-error {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #ABABAB;
+}
+.av-pop-error { color: #c0392b; background: #fff5f5; border-radius: 8px; margin: 8px 0; }
+
+.av-pop-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #EFEFEF;
+  background: #FAFAFA;
+}
+.av-pop-cancel,
+.av-pop-save {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  border: none;
+}
+.av-pop-cancel {
+  background: #fff;
+  color: #1E2432;
+  border: 1px solid #EFEFEF;
+}
+.av-pop-cancel:hover { background: #F5F5F5; }
+.av-pop-save {
+  background: #017C87;
+  color: #fff;
+}
+.av-pop-save:hover:not(:disabled) { background: #016670; }
+.av-pop-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

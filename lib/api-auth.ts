@@ -1,7 +1,59 @@
 // lib/api-auth.ts
 import { NextRequest } from 'next/server';
+import { createHash } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
+
+/** API key prefix marking it as an Agency Viz personal access token. */
+export const API_KEY_PREFIX = 'av_live_';
+
+export function hashApiKey(plaintext: string): string {
+  return createHash('sha256').update(plaintext).digest('hex');
+}
+
+/**
+ * Resolve an API-key bearer token to an auth context. Returns null if the
+ * key is unknown, revoked, or its company/team-member can't be found.
+ */
+async function getAuthContextFromApiKey(token: string) {
+  const supabase = createServiceClient();
+  const keyHash = hashApiKey(token);
+
+  const { data: key } = await supabase
+    .from('api_keys')
+    .select('id, company_id, user_id, revoked_at')
+    .eq('key_hash', keyHash)
+    .single();
+
+  if (!key || key.revoked_at) return null;
+
+  const { data: member } = await supabase
+    .from('team_members')
+    .select('*')
+    .eq('user_id', key.user_id)
+    .eq('company_id', key.company_id)
+    .single();
+  if (!member) return null;
+
+  const { data: company } = await supabase
+    .from('companies')
+    .select('account_type')
+    .eq('id', key.company_id)
+    .single();
+
+  // Fire-and-forget last_used_at update
+  supabase
+    .from('api_keys')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', key.id)
+    .then(() => {});
+
+  return {
+    member,
+    companyId: key.company_id as string,
+    accountType: (company?.account_type ?? 'agency') as 'agency' | 'client',
+  };
+}
 
 /**
  * Get the authenticated team member and resolve the effective company_id.
@@ -20,6 +72,14 @@ export async function getAuthContext(req: NextRequest) {
   if (!authHeader) return null;
 
   const token = authHeader.replace('Bearer ', '');
+
+  // API key path — bypasses Supabase auth and resolves a fixed company/user.
+  // Company override via ?company_id= is intentionally NOT honoured for API
+  // keys, since a key is scoped to one company at issue time.
+  if (token.startsWith(API_KEY_PREFIX)) {
+    return getAuthContextFromApiKey(token);
+  }
+
   const supabaseAuth = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

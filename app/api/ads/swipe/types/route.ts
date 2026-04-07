@@ -2,8 +2,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { corsPreflight, withCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
+
+export async function OPTIONS() {
+  return corsPreflight();
+}
 
 /**
  * Standard ad-type folders seeded on first visit. Order matters — it's how

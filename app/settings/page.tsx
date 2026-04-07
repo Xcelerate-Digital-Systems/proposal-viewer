@@ -8,6 +8,7 @@ import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import TeamMemberManager from '@/components/admin/settings/TeamMemberManager';
 import NotificationSection from '@/components/admin/settings/NotificationSection';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
+import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import { type TeamMember } from '@/lib/supabase';
 import {
   NOTIFICATION_OPTIONS,
@@ -114,6 +115,9 @@ function SettingsContent({ auth }: {
       {isAdminOrOwner && companyId && (
         <WebhookManager companyId={companyId} isSuperAdmin={isSuperAdmin} />
       )}
+
+      {/* API Keys */}
+      {isAdminOrOwner && <ApiKeyManager />}
     </div>
   );
 }
