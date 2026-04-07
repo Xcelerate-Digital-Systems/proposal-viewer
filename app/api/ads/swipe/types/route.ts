@@ -27,7 +27,6 @@ const STANDARD_AD_TYPES = [
   'Feature / Benefit Callouts',
   'Us vs. Them',
   'Hand-Written (Ugly Ads)',
-  'Direct To Offer',
   'Copy-Heavy (Text Only)',
   'Educational',
   'Social Screenshot Overlay',
