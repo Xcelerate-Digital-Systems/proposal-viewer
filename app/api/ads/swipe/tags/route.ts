@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { STANDARD_SWIPE_TAGS } from '@/lib/swipe-files/standard-tags';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,12 +26,18 @@ export async function GET(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    const set = new Set<string>();
+    const dynamicSet = new Set<string>();
     (data || []).forEach((row: { tags: string[] | null }) => {
-      (row.tags || []).forEach((t) => { if (t) set.add(t); });
+      (row.tags || []).forEach((t) => { if (t) dynamicSet.add(t); });
     });
 
-    return NextResponse.json({ success: true, data: Array.from(set).sort() });
+    // Standard categories always come first in their defined order; any
+    // company-specific tags follow in alphabetical order, deduped against
+    // the standard set so they don't appear twice.
+    STANDARD_SWIPE_TAGS.forEach((t) => dynamicSet.delete(t));
+    const merged = [...STANDARD_SWIPE_TAGS, ...Array.from(dynamicSet).sort()];
+
+    return NextResponse.json({ success: true, data: merged });
   } catch (err) {
     console.error('Swipe tags GET error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

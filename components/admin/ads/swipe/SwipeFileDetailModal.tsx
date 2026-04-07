@@ -4,9 +4,9 @@
 import { useEffect, useState } from 'react';
 import {
   X, ChevronLeft, ChevronRight, Share2, Check, Pencil, Trash2,
-  ExternalLink, Calendar, MousePointerClick, Image as ImageIcon, Video as VideoIcon, Tag,
+  ExternalLink, Calendar, MousePointerClick, Image as ImageIcon, Video as VideoIcon, Tag, FolderInput,
 } from 'lucide-react';
-import type { SwipeFile } from '@/lib/supabase';
+import type { SwipeFile, SwipeType } from '@/lib/supabase';
 import SwipeMetaMockup from './SwipeMetaMockup';
 
 type Props = {
@@ -19,6 +19,10 @@ type Props = {
   onDelete: (file: SwipeFile) => Promise<void>;
   /** Called after a successful share so the parent can persist has_been_shared. */
   onShared: (file: SwipeFile) => Promise<void>;
+  /** All folders the user can move the swipe into. Optional — hides the picker when absent. */
+  types?: SwipeType[];
+  /** Called when the user picks a new folder from the Move dropdown. */
+  onMove?: (file: SwipeFile, newTypeId: string) => Promise<void>;
   /** Read-only mode hides edit/delete actions (used by public viewer). */
   readOnly?: boolean;
 };
@@ -39,13 +43,14 @@ function hostFromUrl(url: string | null): string | null {
 }
 
 export default function SwipeFileDetailModal({
-  files, currentIndex, onNavigate, onClose, onEdit, onDelete, onShared, readOnly = false,
+  files, currentIndex, onNavigate, onClose, onEdit, onDelete, onShared, types, onMove, readOnly = false,
 }: Props) {
   const file = files[currentIndex];
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [moving, setMoving] = useState(false);
 
   // Keyboard nav (admin-only)
   useEffect(() => {
@@ -193,6 +198,33 @@ export default function SwipeFileDetailModal({
               label="Format"
               value={file.media_type === 'video' ? 'Video' : 'Image'}
             />
+            {!readOnly && types && onMove && (
+              <div className="flex items-start gap-3">
+                <FolderInput size={14} className="text-faint mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-faint mb-1">Folder</p>
+                  <select
+                    value={file.type_id}
+                    disabled={moving}
+                    onChange={async (e) => {
+                      const newTypeId = e.target.value;
+                      if (newTypeId === file.type_id) return;
+                      setMoving(true);
+                      try {
+                        await onMove(file, newTypeId);
+                      } finally {
+                        setMoving(false);
+                      }
+                    }}
+                    className="w-full text-[13px] text-ink bg-white border border-edge rounded-lg px-2 py-1.5 hover:border-teal/50 focus:outline-none focus:border-teal disabled:opacity-50"
+                  >
+                    {types.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
             {file.source_url && (
               <div className="flex items-start gap-3">
                 <ExternalLink size={14} className="text-faint mt-0.5 shrink-0" />

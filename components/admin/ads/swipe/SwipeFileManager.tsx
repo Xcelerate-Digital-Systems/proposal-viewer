@@ -182,6 +182,18 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
               await swipe.updateFile(f.id, f.type_id, { has_been_shared: true });
             }
           }}
+          types={swipe.types}
+          onMove={async (f, newTypeId) => {
+            await swipe.updateFile(f.id, f.type_id, { type_id: newTypeId });
+            // The swipe just left the current folder's filtered view — close
+            // the detail modal rather than trying to track it across lists.
+            setDetailIndex(null);
+            await Promise.all([
+              swipe.fetchFilesForType(f.type_id),
+              swipe.fetchFilesForType(newTypeId),
+              swipe.fetchTypes(),
+            ]);
+          }}
         />
       )}
 
