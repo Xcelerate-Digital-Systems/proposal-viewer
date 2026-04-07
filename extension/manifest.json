@@ -7,7 +7,7 @@
   "host_permissions": [
     "https://www.facebook.com/ads/library/*",
     "https://*.fbcdn.net/*",
-    "https://app.agencyviz.com/*",
+    "https://app.agencyviz.io/*",
     "http://localhost/*",
     "http://localhost:3000/*",
     "http://localhost:3001/*",

@@ -10,7 +10,7 @@
 // immediately closes the popup and tears down any promise chain running
 // there. Running it in the service worker keeps the flow alive.
 
-const API_BASE = 'https://app.agencyviz.com';
+const API_BASE = 'https://app.agencyviz.io';
 
 async function getSettings() {
   const { apiKey, defaultTypeId, defaultTypeName } = await chrome.storage.sync.get([
