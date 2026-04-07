@@ -6,91 +6,82 @@ import { getAuthContext } from '@/lib/api-auth';
 /**
  * POST /api/ads/swipe/files/upload
  *
- * Multipart form upload for a swipe file's media (image or video).
- * Fields:
- *   - file: the uploaded file (max 50MB)
- *   - company_id: scoping
- *   - swipe_id: optional — if provided, the file's media_url/media_type/media_source
- *               is updated. Otherwise the upload is returned without persisting.
+ * Returns a signed upload URL so the client can upload large files
+ * (up to 100MB) directly to Supabase Storage, bypassing the serverless
+ * function body-size limit (~4.5MB on Vercel).
+ *
+ * Body (JSON):
+ *   - filename: original filename (used for extension + sanity)
+ *   - content_type: MIME type
+ *   - company_id: for storage path scoping
+ *   - swipe_id: optional — embed into the path for traceability
+ *
+ * Response:
+ *   - path: storage path inside the bucket
+ *   - token: one-time upload token (pass to supabase.storage.uploadToSignedUrl)
+ *   - public_url: the eventual public URL once the upload completes
+ *   - media_type: 'image' | 'video' (inferred from content_type)
  */
 export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const supabase = createServiceClient();
-    const formData = await req.formData();
+    const body = await req.json();
+    const { filename, content_type, company_id, swipe_id } = body as {
+      filename?: string;
+      content_type?: string;
+      company_id?: string;
+      swipe_id?: string;
+    };
 
-    const file = formData.get('file') as File | null;
-    const swipeId = formData.get('swipe_id') as string | null;
-    const companyId = formData.get('company_id') as string | null;
-
-    if (!file || !companyId) {
-      return NextResponse.json({ error: 'Missing file or company_id' }, { status: 400 });
-    }
-
-    if (file.size > 100 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 100MB)' }, { status: 400 });
+    if (!filename || !content_type || !company_id) {
+      return NextResponse.json(
+        { error: 'Missing filename, content_type, or company_id' },
+        { status: 400 }
+      );
     }
 
     const allowedTypes = [
       'image/jpeg', 'image/png', 'image/webp', 'image/gif',
       'video/mp4', 'video/quicktime', 'video/webm',
     ];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Accepted: JPEG, PNG, WebP, GIF, MP4, MOV, WebM' }, { status: 400 });
+    if (!allowedTypes.includes(content_type)) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Accepted: JPEG, PNG, WebP, GIF, MP4, MOV, WebM' },
+        { status: 400 }
+      );
     }
 
-    const isVideo = file.type.startsWith('video/');
-    const ext = file.name.split('.').pop() || 'bin';
-    const stub = swipeId || `tmp-${Math.random().toString(36).slice(2, 10)}`;
-    const path = `swipe-files/${companyId}/${stub}-${Date.now()}.${ext}`;
+    const supabase = createServiceClient();
 
-    const { error: uploadError } = await supabase.storage
+    const ext = filename.split('.').pop() || 'bin';
+    const stub = swipe_id || `tmp-${Math.random().toString(36).slice(2, 10)}`;
+    const path = `swipe-files/${company_id}/${stub}-${Date.now()}.${ext}`;
+
+    const { data, error } = await supabase.storage
       .from('company-assets')
-      .upload(path, file, {
-        contentType: file.type,
-        cacheControl: '31536000',
-        upsert: true,
-      });
+      .createSignedUploadUrl(path);
 
-    if (uploadError) {
-      console.error('Swipe upload error:', uploadError);
-      return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    if (error || !data) {
+      console.error('createSignedUploadUrl error:', error);
+      return NextResponse.json({ error: 'Failed to create upload URL' }, { status: 500 });
     }
 
     const { data: urlData } = supabase.storage
       .from('company-assets')
       .getPublicUrl(path);
 
-    const mediaType = isVideo ? 'video' : 'image';
-
-    if (swipeId) {
-      const { error: updateError } = await supabase
-        .from('swipe_files')
-        .update({
-          media_url: urlData.publicUrl,
-          media_type: mediaType,
-          media_source: 'upload',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', swipeId)
-        .eq('company_id', companyId);
-
-      if (updateError) {
-        console.error('Swipe upload update error:', updateError);
-        return NextResponse.json({ error: 'Uploaded but failed to save URL' }, { status: 500 });
-      }
-    }
-
     return NextResponse.json({
       success: true,
-      url: urlData.publicUrl,
-      media_type: mediaType,
+      path: data.path,
+      token: data.token,
+      public_url: urlData.publicUrl,
+      media_type: content_type.startsWith('video/') ? 'video' : 'image',
       media_source: 'upload',
     });
   } catch (err) {
-    console.error('Swipe upload error:', err);
+    console.error('Swipe upload sign error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

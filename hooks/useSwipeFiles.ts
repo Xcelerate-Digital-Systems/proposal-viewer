@@ -156,22 +156,51 @@ export function useSwipeFiles(companyId: string | null) {
     return {};
   };
 
+  /**
+   * Two-step upload to avoid Vercel's ~4.5MB serverless body limit:
+   *   1. Ask the API for a signed upload URL (tiny JSON request)
+   *   2. Stream the file directly to Supabase Storage from the browser
+   */
   const uploadMedia = async (file: File, swipeId?: string) => {
     const headers = await authHeaders();
     if (!headers || !companyId) return { error: 'Not authenticated' };
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('company_id', companyId);
-    if (swipeId) fd.append('swipe_id', swipeId);
 
-    const res = await fetch(`/api/ads/swipe/files/upload?company_id=${companyId}`, {
+    // Client-side guard (server + bucket enforce 100MB too)
+    if (file.size > 100 * 1024 * 1024) {
+      return { error: 'File too large (max 100MB)' };
+    }
+
+    // Step 1: request a signed upload URL
+    const signRes = await fetch(`/api/ads/swipe/files/upload?company_id=${companyId}`, {
       method: 'POST',
-      headers,
-      body: fd,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: file.name,
+        content_type: file.type,
+        company_id: companyId,
+        swipe_id: swipeId,
+      }),
     });
-    const json = await res.json();
-    if (!res.ok) return { error: json.error };
-    return { url: json.url as string, media_type: json.media_type as 'image' | 'video' };
+    const signJson = await signRes.json();
+    if (!signRes.ok) return { error: signJson.error || 'Failed to prepare upload' };
+
+    // Step 2: upload the file bytes directly to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('company-assets')
+      .uploadToSignedUrl(signJson.path, signJson.token, file, {
+        contentType: file.type,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('Direct upload error:', uploadError);
+      return { error: uploadError.message || 'Upload failed' };
+    }
+
+    return {
+      url: signJson.public_url as string,
+      media_type: signJson.media_type as 'image' | 'video',
+    };
   };
 
   return {
