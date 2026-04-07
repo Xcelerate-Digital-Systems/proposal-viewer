@@ -3,7 +3,7 @@
   "name": "Agency Viz — Save to Swipe File",
   "version": "0.1.0",
   "description": "Save Meta Ad Library ads directly into your Agency Viz Swipe File.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "identity"],
   "host_permissions": [
     "https://www.facebook.com/ads/library/*",
     "https://*.fbcdn.net/*",

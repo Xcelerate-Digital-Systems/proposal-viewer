@@ -85,6 +85,23 @@ body {
 .av-btn-primary:hover { background: #016670; }
 .av-btn-primary:active { transform: translateY(1px); }
 
+.av-btn-secondary {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  background: transparent;
+  color: #017C87;
+  border: 1px solid #d9e1e3;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.av-btn-secondary:hover { background: #f4f7f8; }
+
+.av-auth-state { display: block; }
+
 .av-status {
   margin-top: 10px;
   min-height: 16px;

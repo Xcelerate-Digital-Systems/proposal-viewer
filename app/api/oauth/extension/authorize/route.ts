@@ -1,0 +1,68 @@
+// app/api/oauth/extension/authorize/route.ts
+//
+// Called by the in-app consent screen once the user clicks "Approve". Requires
+// a valid Supabase session (Authorization: Bearer <access_token>). Creates a
+// long-lived api_keys row for the Chrome extension and a short-lived one-time
+// code that the extension will swap for the plaintext token.
+
+import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes, createHash } from 'crypto';
+import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext, API_KEY_PREFIX, hashApiKey } from '@/lib/api-auth';
+
+export const dynamic = 'force-dynamic';
+
+const CODE_TTL_SECONDS = 120;
+const DEFAULT_LABEL = 'Chrome Extension';
+
+export async function POST(req: NextRequest) {
+  const auth = await getAuthContext(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const body = await req.json().catch(() => ({}));
+  const label =
+    typeof body.label === 'string' && body.label.trim() ? body.label.trim() : DEFAULT_LABEL;
+
+  // Mint the long-lived token (same shape as /api/settings/api-keys).
+  const plaintext = API_KEY_PREFIX + randomBytes(32).toString('base64url');
+  const key_hash = hashApiKey(plaintext);
+  const key_prefix = plaintext.slice(0, 16);
+
+  const supabase = createServiceClient();
+  const { data: key, error: keyErr } = await supabase
+    .from('api_keys')
+    .insert({
+      company_id: auth.companyId,
+      user_id: auth.member.user_id,
+      label,
+      key_prefix,
+      key_hash,
+    })
+    .select('id')
+    .single();
+
+  if (keyErr || !key) {
+    return NextResponse.json({ error: keyErr?.message || 'Failed to create key' }, { status: 500 });
+  }
+
+  // Mint the short-lived one-time code. The plaintext token is stashed on the
+  // code row so that the exchange endpoint can return it without re-deriving.
+  const code = randomBytes(32).toString('base64url');
+  const code_hash = createHash('sha256').update(code).digest('hex');
+  const expires_at = new Date(Date.now() + CODE_TTL_SECONDS * 1000).toISOString();
+
+  const { error: codeErr } = await supabase.from('oauth_extension_codes').insert({
+    code_hash,
+    api_key_id: key.id,
+    plaintext_token: plaintext,
+    expires_at,
+  });
+
+  if (codeErr) {
+    // Roll back the half-provisioned key so it can't be used silently.
+    await supabase.from('api_keys').delete().eq('id', key.id);
+    return NextResponse.json({ error: codeErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, code, expires_in: CODE_TTL_SECONDS });
+}

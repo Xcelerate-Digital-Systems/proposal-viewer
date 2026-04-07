@@ -11,18 +11,18 @@
     </header>
 
     <main class="av-main">
-      <div class="av-field">
-        <label for="apiBase">API base URL</label>
-        <input id="apiBase" type="text" placeholder="https://app.agencyviz.com" spellcheck="false" />
+      <div id="signedOut" class="av-auth-state" hidden>
+        <p class="av-hint">Connect this extension to your Agency Viz account.</p>
+        <button id="signIn" class="av-btn-primary">Sign in with Agency Viz</button>
       </div>
 
-      <div class="av-field">
-        <label for="apiKey">API key</label>
-        <input id="apiKey" type="password" placeholder="av_live_…" spellcheck="false" />
-        <p class="av-hint">Generate one in Agency Viz → Settings → API Keys.</p>
+      <div id="signedIn" class="av-auth-state" hidden>
+        <p class="av-hint">
+          Connected as <strong id="accountLabel">your account</strong>.
+        </p>
+        <button id="signOut" class="av-btn-secondary">Sign out</button>
       </div>
 
-      <button id="save" class="av-btn-primary">Save settings</button>
       <div id="status" class="av-status"></div>
     </main>
 

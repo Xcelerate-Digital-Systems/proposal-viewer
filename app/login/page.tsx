@@ -20,6 +20,8 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite');
+  const nextUrl = searchParams.get('next');
+  const postLoginTarget = nextUrl && nextUrl.startsWith('/') ? nextUrl : '/';
   const { signInWithPassword, signInWithMagicLink, signUp, session, loading: authLoading } = useAuth();
 
   const [tab, setTab] = useState<Tab>(inviteToken ? 'signup' : 'signin');
@@ -64,7 +66,7 @@ function LoginContent() {
 
   // If already logged in, redirect to dashboard
   if (session && !authLoading) {
-    router.replace('/');
+    router.replace(postLoginTarget);
     return null;
   }
 
@@ -80,7 +82,7 @@ function LoginContent() {
     } else {
       const { error } = await signInWithPassword(email, password);
       if (error) setError(error.message);
-      else router.replace('/');
+      else router.replace(postLoginTarget);
     }
 
     setLoading(false);
@@ -95,7 +97,7 @@ function LoginContent() {
     setLoading(true);
     const { error } = await signUp(email, password, name, inviteToken || undefined);
     if (error) setError((error as any).message || 'Signup failed');
-    else router.replace('/');
+    else router.replace(postLoginTarget);
     setLoading(false);
   };
 
