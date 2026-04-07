@@ -46,7 +46,6 @@
   box-shadow: 0 12px 40px rgba(30, 36, 50, 0.22), 0 2px 8px rgba(30, 36, 50, 0.08);
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #1E2432;
-  overflow: hidden;
   border: 1px solid #EFEFEF;
   animation: avPopIn 0.15s ease-out;
 }
