@@ -2,7 +2,8 @@
 //
 // Injects a "Save to Agency Viz" button onto every Meta Ad Library card. On
 // click, opens a small popover anchored to the button where the user picks a
-// swipe type (and optional tags) before the actual save fires.
+// swipe folder (dropdown) and optional tags (multi-select combobox sourced
+// from the company's existing tags) before the actual save fires.
 //
 // CAVEAT: Meta Ad Library DOM is heavily obfuscated and changes regularly.
 // All scraping logic is isolated in scrapeAdCard() so it can be replaced
@@ -12,9 +13,10 @@ const BUTTON_CLASS = 'agency-viz-save-btn';
 const POPOVER_CLASS = 'agency-viz-popover';
 
 let cachedTypes = null;
+let cachedTags = null;
 let openPopover = null;
 
-/* ─── Type list (cached for the page lifetime) ─────────────────────────── */
+/* ─── Remote data (cached for page lifetime) ───────────────────────────── */
 
 async function loadTypes() {
   if (cachedTypes) return cachedTypes;
@@ -22,6 +24,14 @@ async function loadTypes() {
   if (!res?.ok) throw new Error(res?.error || 'Failed to load swipe types');
   cachedTypes = res.data || [];
   return cachedTypes;
+}
+
+async function loadTags() {
+  if (cachedTags) return cachedTags;
+  const res = await chrome.runtime.sendMessage({ type: 'LIST_TAGS' });
+  if (!res?.ok) return []; // tags are optional — fail silently
+  cachedTags = res.data || [];
+  return cachedTags;
 }
 
 /* ─── Button injection ─────────────────────────────────────────────────── */
@@ -77,12 +87,28 @@ async function openTypePicker(card, btn) {
     </div>
     <div class="av-pop-body">
       <label class="av-pop-label">Folder</label>
-      <div class="av-pop-search-wrap">
-        <input class="av-pop-search" type="text" placeholder="Search folders…" />
+      <div class="av-combo" data-role="folder">
+        <button class="av-combo-btn" type="button">
+          <span class="av-combo-value av-combo-placeholder">Choose a folder…</span>
+          <svg class="av-combo-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="av-combo-panel" hidden>
+          <input class="av-combo-search" type="text" placeholder="Search folders…" />
+          <div class="av-combo-list">Loading…</div>
+        </div>
       </div>
-      <div class="av-pop-list">Loading…</div>
+
       <label class="av-pop-label av-pop-label-tags">Tags <span class="av-pop-hint">(optional)</span></label>
-      <input class="av-pop-tags" type="text" placeholder="e.g. Social Proof, Pain/Agitation" />
+      <div class="av-combo av-combo-multi" data-role="tags">
+        <button class="av-combo-btn" type="button">
+          <span class="av-combo-value av-combo-placeholder">Add tags…</span>
+          <svg class="av-combo-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="av-combo-panel" hidden>
+          <input class="av-combo-search" type="text" placeholder="Search or create tag…" />
+          <div class="av-combo-list">Loading…</div>
+        </div>
+      </div>
     </div>
     <div class="av-pop-footer">
       <button class="av-pop-cancel" type="button">Cancel</button>
@@ -93,35 +119,69 @@ async function openTypePicker(card, btn) {
   openPopover = pop;
   positionPopover(pop, btn);
 
-  const $list = pop.querySelector('.av-pop-list');
-  const $search = pop.querySelector('.av-pop-search');
   const $save = pop.querySelector('.av-pop-save');
-  const $tags = pop.querySelector('.av-pop-tags');
-  let selectedId = '';
-  let selectedName = '';
+  const $folder = pop.querySelector('[data-role="folder"]');
+  const $tags = pop.querySelector('[data-role="tags"]');
 
-  const renderList = (types, filter = '') => {
+  const state = {
+    selectedTypeId: '',
+    selectedTypeName: '',
+    selectedTags: [],
+  };
+
+  // Close either panel when the other opens, or when clicking its button.
+  function togglePanel(combo) {
+    const panel = combo.querySelector('.av-combo-panel');
+    const isOpen = !panel.hidden;
+    pop.querySelectorAll('.av-combo-panel').forEach((p) => (p.hidden = true));
+    pop.querySelectorAll('.av-combo').forEach((c) => c.classList.remove('open'));
+    if (!isOpen) {
+      panel.hidden = false;
+      combo.classList.add('open');
+      const search = panel.querySelector('.av-combo-search');
+      if (search) setTimeout(() => search.focus(), 0);
+    }
+  }
+
+  $folder.querySelector('.av-combo-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePanel($folder);
+  });
+  $tags.querySelector('.av-combo-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePanel($tags);
+  });
+
+  /* ── Folder combobox ─────────────────────────────────────────────────── */
+
+  const $folderValue = $folder.querySelector('.av-combo-value');
+  const $folderList = $folder.querySelector('.av-combo-list');
+  const $folderSearch = $folder.querySelector('.av-combo-search');
+
+  const renderFolders = (types, filter = '') => {
     const f = filter.toLowerCase().trim();
     const filtered = f ? types.filter((t) => t.name.toLowerCase().includes(f)) : types;
     if (filtered.length === 0) {
-      $list.innerHTML = '<div class="av-pop-empty">No matches</div>';
+      $folderList.innerHTML = '<div class="av-combo-empty">No matches</div>';
       return;
     }
-    $list.innerHTML = filtered
+    $folderList.innerHTML = filtered
       .map(
         (t) =>
-          `<button class="av-pop-item" data-id="${t.id}" data-name="${escapeHtml(t.name)}" type="button">
-            <span class="av-pop-item-name">${escapeHtml(t.name)}</span>
-            <span class="av-pop-item-count">${t.file_count || 0}</span>
+          `<button class="av-combo-item" data-id="${t.id}" data-name="${escapeHtml(t.name)}" type="button">
+            <span class="av-combo-item-name">${escapeHtml(t.name)}</span>
+            <span class="av-combo-item-count">${t.file_count || 0}</span>
           </button>`
       )
       .join('');
-    $list.querySelectorAll('.av-pop-item').forEach((el) => {
+    $folderList.querySelectorAll('.av-combo-item').forEach((el) => {
       el.addEventListener('click', () => {
-        $list.querySelectorAll('.av-pop-item').forEach((e) => e.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedId = el.dataset.id;
-        selectedName = el.dataset.name;
+        state.selectedTypeId = el.dataset.id;
+        state.selectedTypeName = el.dataset.name;
+        $folderValue.textContent = state.selectedTypeName;
+        $folderValue.classList.remove('av-combo-placeholder');
+        $folder.querySelector('.av-combo-panel').hidden = true;
+        $folder.classList.remove('open');
         $save.disabled = false;
       });
     });
@@ -129,37 +189,127 @@ async function openTypePicker(card, btn) {
 
   try {
     const types = await loadTypes();
-    renderList(types);
-    $search.addEventListener('input', () => renderList(cachedTypes, $search.value));
-    $search.focus();
+    renderFolders(types);
+    $folderSearch.addEventListener('input', () => renderFolders(cachedTypes, $folderSearch.value));
   } catch (e) {
-    $list.innerHTML = `<div class="av-pop-error">${escapeHtml(e.message)}</div>`;
+    $folderList.innerHTML = `<div class="av-pop-error">${escapeHtml(e.message)}</div>`;
   }
+
+  /* ── Tags combobox (multi) ───────────────────────────────────────────── */
+
+  const $tagsValue = $tags.querySelector('.av-combo-value');
+  const $tagsList = $tags.querySelector('.av-combo-list');
+  const $tagsSearch = $tags.querySelector('.av-combo-search');
+
+  const renderTagsValue = () => {
+    if (state.selectedTags.length === 0) {
+      $tagsValue.textContent = 'Add tags…';
+      $tagsValue.classList.add('av-combo-placeholder');
+      $tagsValue.innerHTML = 'Add tags…';
+      return;
+    }
+    $tagsValue.classList.remove('av-combo-placeholder');
+    $tagsValue.innerHTML = state.selectedTags
+      .map(
+        (t) =>
+          `<span class="av-chip">${escapeHtml(t)}<span class="av-chip-x" data-tag="${escapeHtml(t)}">×</span></span>`
+      )
+      .join('');
+    $tagsValue.querySelectorAll('.av-chip-x').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tag = el.dataset.tag;
+        state.selectedTags = state.selectedTags.filter((t) => t !== tag);
+        renderTagsValue();
+        renderTagsList(cachedTags || [], $tagsSearch.value);
+      });
+    });
+  };
+
+  const renderTagsList = (tags, filter = '') => {
+    const f = filter.toLowerCase().trim();
+    const available = tags.filter((t) => !state.selectedTags.includes(t));
+    const filtered = f ? available.filter((t) => t.toLowerCase().includes(f)) : available;
+    let html = filtered
+      .map(
+        (t) =>
+          `<button class="av-combo-item" data-tag="${escapeHtml(t)}" type="button">
+            <span class="av-combo-item-name">${escapeHtml(t)}</span>
+          </button>`
+      )
+      .join('');
+    // Offer "Create new" if the search term doesn't exactly match anything
+    const exact = tags.find((t) => t.toLowerCase() === f) || state.selectedTags.find((t) => t.toLowerCase() === f);
+    if (f && !exact) {
+      html += `<button class="av-combo-item av-combo-create" data-tag="${escapeHtml(f)}" type="button">
+        <span class="av-combo-item-name">Create "${escapeHtml(f)}"</span>
+      </button>`;
+    }
+    if (!html) html = '<div class="av-combo-empty">No tags yet</div>';
+    $tagsList.innerHTML = html;
+    $tagsList.querySelectorAll('.av-combo-item').forEach((el) => {
+      el.addEventListener('click', () => {
+        const tag = el.dataset.tag;
+        if (!state.selectedTags.includes(tag)) {
+          state.selectedTags.push(tag);
+          if (!cachedTags.includes(tag)) cachedTags.push(tag);
+        }
+        $tagsSearch.value = '';
+        renderTagsValue();
+        renderTagsList(cachedTags, '');
+        $tagsSearch.focus();
+      });
+    });
+  };
+
+  try {
+    const tags = await loadTags();
+    renderTagsList(tags);
+    $tagsSearch.addEventListener('input', () => renderTagsList(cachedTags || [], $tagsSearch.value));
+    $tagsSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const v = $tagsSearch.value.trim();
+        if (v && !state.selectedTags.includes(v)) {
+          state.selectedTags.push(v);
+          if (!cachedTags.includes(v)) cachedTags.push(v);
+          $tagsSearch.value = '';
+          renderTagsValue();
+          renderTagsList(cachedTags, '');
+        }
+      }
+    });
+  } catch {
+    $tagsList.innerHTML = '<div class="av-combo-empty">No tags yet</div>';
+  }
+
+  /* ── Save / cancel ───────────────────────────────────────────────────── */
 
   pop.querySelector('.av-pop-close').addEventListener('click', closePopover);
   pop.querySelector('.av-pop-cancel').addEventListener('click', closePopover);
   $save.addEventListener('click', async () => {
-    if (!selectedId) return;
+    if (!state.selectedTypeId) return;
     $save.disabled = true;
     $save.textContent = 'Saving…';
     try {
       const payload = scrapeAdCard(card);
-      payload.type_id = selectedId;
-      const tags = $tags.value
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean);
-      if (tags.length) payload.tags = tags;
+      payload.type_id = state.selectedTypeId;
+      if (state.selectedTags.length) payload.tags = state.selectedTags;
       const res = await chrome.runtime.sendMessage({ type: 'IMPORT_AD', payload });
       if (!res?.ok) throw new Error(res?.error || 'Save failed');
       $save.textContent = '✓ Saved';
       btn.classList.add('saved');
-      btn.querySelector('span').textContent = `Saved to ${selectedName}`;
+      btn.querySelector('span').textContent = `Saved to ${state.selectedTypeName}`;
       setTimeout(closePopover, 700);
     } catch (e) {
       $save.disabled = false;
       $save.textContent = 'Save';
-      $list.insertAdjacentHTML('beforebegin', `<div class="av-pop-error">${escapeHtml(e.message)}</div>`);
+      const existing = pop.querySelector('.av-pop-error');
+      if (existing) existing.remove();
+      pop.querySelector('.av-pop-body').insertAdjacentHTML(
+        'afterbegin',
+        `<div class="av-pop-error">${escapeHtml(e.message)}</div>`
+      );
     }
   });
 

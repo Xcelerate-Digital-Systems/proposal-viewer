@@ -108,6 +108,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         sendResponse({ ok: true, data: json.data });
         return;
       }
+      if (msg.type === 'LIST_TAGS') {
+        const json = await apiFetch('/api/ads/swipe/tags');
+        sendResponse({ ok: true, data: json.data });
+        return;
+      }
       if (msg.type === 'IMPORT_AD') {
         const settings = await getSettings();
         const payload = {
