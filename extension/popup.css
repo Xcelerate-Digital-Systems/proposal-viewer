@@ -101,6 +101,7 @@ body {
 .av-btn-secondary:hover { background: #f4f7f8; }
 
 .av-auth-state { display: block; }
+.av-auth-state[hidden] { display: none; }
 
 .av-status {
   margin-top: 10px;

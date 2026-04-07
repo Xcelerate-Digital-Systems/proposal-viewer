@@ -2,26 +2,34 @@
 //
 // All network calls to the Agency Viz API go through here. The reason: MV3
 // background workers fetch with host_permissions and bypass page CORS, while
-// content scripts do not. Centralising fetch here also keeps the API key out
-// of the page-side context.
+// content scripts do not. Centralising fetch here also keeps the token out of
+// the page-side context.
+//
+// The OAuth sign-in flow also runs here (not in the popup) because clicking
+// Sign In opens chrome.identity.launchWebAuthFlow in a new window, which
+// immediately closes the popup and tears down any promise chain running
+// there. Running it in the service worker keeps the flow alive.
 
-const DEFAULT_API_BASE = 'https://app.agencyviz.com';
+const API_BASE = 'https://app.agencyviz.com';
 
 async function getSettings() {
-  const { apiKey, apiBase, defaultTypeId, defaultTypeName } =
-    await chrome.storage.sync.get(['apiKey', 'apiBase', 'defaultTypeId', 'defaultTypeName']);
+  const { apiKey, defaultTypeId, defaultTypeName } = await chrome.storage.sync.get([
+    'apiKey',
+    'defaultTypeId',
+    'defaultTypeName',
+  ]);
   return {
     apiKey: apiKey || '',
-    apiBase: apiBase || DEFAULT_API_BASE,
+    apiBase: API_BASE,
     defaultTypeId: defaultTypeId || '',
     defaultTypeName: defaultTypeName || '',
   };
 }
 
 async function apiFetch(path, init = {}) {
-  const { apiKey, apiBase } = await getSettings();
-  if (!apiKey) throw new Error('Missing API key — open the extension popup to set one.');
-  const res = await fetch(`${apiBase}${path}`, {
+  const { apiKey } = await getSettings();
+  if (!apiKey) throw new Error('Not signed in — open the extension popup.');
+  const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       ...(init.headers || {}),
@@ -34,9 +42,67 @@ async function apiFetch(path, init = {}) {
   return json;
 }
 
+function randomState() {
+  const buf = new Uint8Array(16);
+  crypto.getRandomValues(buf);
+  return Array.from(buf, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function parseFragment(url) {
+  return new URLSearchParams(url.split('#')[1] || '');
+}
+
+async function signIn() {
+  const redirectUri = chrome.identity.getRedirectURL();
+  const state = randomState();
+  const authUrl =
+    `${API_BASE}/oauth/extension/authorize` +
+    `?redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&state=${encodeURIComponent(state)}`;
+
+  const redirectedTo = await chrome.identity.launchWebAuthFlow({
+    url: authUrl,
+    interactive: true,
+  });
+  if (!redirectedTo) throw new Error('No response from Agency Viz');
+
+  const frag = parseFragment(redirectedTo);
+  if (frag.get('error')) throw new Error(frag.get('error'));
+  if (frag.get('state') !== state) throw new Error('State mismatch');
+  const code = frag.get('code');
+  if (!code) throw new Error('Missing code');
+
+  const res = await fetch(`${API_BASE}/api/oauth/extension/exchange`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.token) throw new Error(json.error || 'Exchange failed');
+
+  await chrome.storage.sync.set({
+    apiKey: json.token,
+    accountLabel: 'Agency Viz',
+  });
+}
+
+async function signOut() {
+  await chrome.storage.sync.remove(['apiKey', 'accountLabel']);
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     try {
+      if (msg.type === 'SIGN_IN') {
+        await signIn();
+        sendResponse({ ok: true });
+        return;
+      }
+      if (msg.type === 'SIGN_OUT') {
+        await signOut();
+        sendResponse({ ok: true });
+        return;
+      }
       if (msg.type === 'LIST_TYPES') {
         const json = await apiFetch('/api/ads/swipe/types');
         sendResponse({ ok: true, data: json.data });
