@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ThumbsUp, MessageCircle, Share2, MoreHorizontal, Globe } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Share2, MoreHorizontal, Globe, Check } from 'lucide-react';
 import type { SwipeFile } from '@/lib/supabase';
 
 /** Character threshold above which primary text is collapsed behind a "See more" link. */
@@ -12,6 +12,12 @@ type Props = {
   file: SwipeFile;
   /** Compact mode shrinks padding + typography for card grids */
   compact?: boolean;
+  /**
+   * Optional share handler. When provided the decorative three-dots icon in
+   * the mockup header becomes a real button that copies the share link on
+   * click. When omitted (full-size detail modal) the icon stays decorative.
+   */
+  onShare?: () => Promise<void>;
 };
 
 function hostFromUrl(url: string | null | undefined): string | null {
@@ -27,8 +33,17 @@ function hostFromUrl(url: string | null | undefined): string | null {
  * Meta Facebook feed-style mockup for a swipe file. Handles both image and
  * video media, and gracefully hides empty copy fields.
  */
-export default function SwipeMetaMockup({ file, compact = false }: Props) {
+export default function SwipeMetaMockup({ file, compact = false, onShare }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleShareClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onShare) return;
+    await onShare();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
   const pageName = file.brand || 'Brand';
   const displayUrl = hostFromUrl(file.source_url);
   const isVideo = file.media_type === 'video';
@@ -64,7 +79,22 @@ export default function SwipeMetaMockup({ file, compact = false }: Props) {
             <Globe size={10} className="text-[#65676b]" />
           </div>
         </div>
-        <MoreHorizontal size={compact ? 16 : 20} className="text-[#65676b] shrink-0" />
+        {onShare ? (
+          <button
+            type="button"
+            onClick={handleShareClick}
+            title={copied ? 'Link copied!' : 'Copy share link'}
+            className={`shrink-0 p-1 -m-1 rounded-full transition-colors ${
+              copied ? 'text-teal' : 'text-[#65676b] hover:bg-[#f0f2f5] hover:text-[#050505]'
+            }`}
+          >
+            {copied
+              ? <Check size={compact ? 16 : 20} />
+              : <MoreHorizontal size={compact ? 16 : 20} />}
+          </button>
+        ) : (
+          <MoreHorizontal size={compact ? 16 : 20} className="text-[#65676b] shrink-0" />
+        )}
       </div>
 
       {/* Primary text (collapsed with "See more" if long) */}

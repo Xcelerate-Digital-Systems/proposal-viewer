@@ -66,17 +66,17 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-faint">Swipe File</p>
             <h1 className="text-2xl font-semibold text-ink truncate">
               {currentType?.name || 'Swipe File'}
             </h1>
             {currentType?.description && (
-              <p className="text-sm text-muted mt-1 truncate">{currentType.description}</p>
+              <p className="text-sm text-muted mt-1 whitespace-pre-line">{currentType.description}</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setBulkOpen(true)}
               disabled={!currentType}
@@ -142,7 +142,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
                 {files.map((file, idx) => (
                   <div
                     key={file.id}
