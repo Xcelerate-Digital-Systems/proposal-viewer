@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import AccountSwitcher from './sidebar/AccountSwitcher';
+import SwipeTypesSidebarNav from './sidebar/SwipeTypesSidebarNav';
 import {
   ALL_SECTIONS, STANDALONE_ITEMS, getActiveSection, LayoutDashboard,
   type NavItem, type SectionDef,
@@ -51,12 +52,15 @@ export default function AdminSidebar({
   );
 
   const activeSection = getActiveSection(pathname, visibleSections);
+  const inSwipeSection = pathname.startsWith('/ads/swipe');
 
   const isTopLevel =
-    !activeSection ||
-    pathname === '/dashboard' ||
-    pathname === '/clients' ||
-    (accountType !== 'agency' && activeSection.key === 'reviews');
+    !inSwipeSection && (
+      !activeSection ||
+      pathname === '/dashboard' ||
+      pathname === '/clients' ||
+      (accountType !== 'agency' && activeSection.key === 'reviews')
+    );
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard';
@@ -209,9 +213,11 @@ export default function AdminSidebar({
       )}
 
       <nav className="flex-1 px-2 py-3 overflow-y-auto flex flex-col">
-        {isTopLevel
-          ? renderTopLevelNav()
-          : activeSection && renderSectionNav(activeSection)
+        {inSwipeSection
+          ? <SwipeTypesSidebarNav onNavigate={() => setMobileOpen(false)} />
+          : isTopLevel
+            ? renderTopLevelNav()
+            : activeSection && renderSectionNav(activeSection)
         }
       </nav>
 

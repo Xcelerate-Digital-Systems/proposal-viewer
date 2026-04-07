@@ -3,7 +3,7 @@
 
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
-  Palette, Bell, Users, Megaphone,
+  Palette, Bell, Users, Megaphone, Bookmark,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -47,6 +47,16 @@ export const ALL_SECTIONS: SectionDef[] = [
     matchPaths: ['/reviews'],
     items: [
       { href: '/reviews', label: 'Projects', icon: MessageSquareText },
+    ],
+  },
+  {
+    key: 'swipe',
+    label: 'Swipe File',
+    icon: Bookmark,
+    defaultHref: '/ads/swipe',
+    matchPaths: ['/ads/swipe'],
+    items: [
+      { href: '/ads/swipe', label: 'Swipe File', icon: Bookmark },
     ],
   },
   {
