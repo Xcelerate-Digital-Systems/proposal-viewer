@@ -139,7 +139,7 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
               disabled={uploading}
-              className={`w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed rounded-xl transition-colors ${
+              className={`w-full flex flex-col items-center justify-center gap-2 py-12 border-2 border-dashed rounded-xl transition-colors ${
                 dragging
                   ? 'border-teal bg-teal/5'
                   : 'border-edge hover:border-teal/50 hover:bg-surface'
@@ -147,16 +147,16 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
             >
               {uploading ? (
                 <>
-                  <Loader2 size={22} className="text-teal animate-spin" />
+                  <Loader2 size={24} className="text-teal animate-spin" />
                   <span className="text-sm font-medium text-ink">Uploading…</span>
                 </>
               ) : (
                 <>
-                  <Upload size={22} className="text-faint" />
+                  <Upload size={24} className="text-faint" />
                   <span className="text-sm font-medium text-ink">
-                    {mediaUrl ? 'Replace file' : 'Click to upload or drop a file'}
+                    {mediaUrl ? 'Replace file' : 'Select file'}
                   </span>
-                  <span className="text-xs text-faint">JPEG, PNG, WebP, GIF, MP4, MOV, WebM — up to 100MB</span>
+                  <span className="text-xs text-faint">Images and videos, up to 100MB each</span>
                 </>
               )}
             </button>
