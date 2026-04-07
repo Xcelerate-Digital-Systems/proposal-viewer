@@ -8,11 +8,13 @@ type Props = {
   title: string;
   initialName?: string;
   initialDescription?: string;
+  /** When true the name field is locked — used for standard folders. */
+  nameLocked?: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; description?: string }) => Promise<void>;
+  onSave: (data: { name?: string; description?: string }) => Promise<void>;
 };
 
-export default function SwipeFolderModal({ title, initialName = '', initialDescription = '', onClose, onSave }: Props) {
+export default function SwipeFolderModal({ title, initialName = '', initialDescription = '', nameLocked = false, onClose, onSave }: Props) {
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [saving, setSaving] = useState(false);
@@ -22,7 +24,13 @@ export default function SwipeFolderModal({ title, initialName = '', initialDescr
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await onSave({ name: name.trim(), description: description.trim() || undefined });
+      // When the name is locked (standard folder) omit it from the PATCH —
+      // the server rejects any `name` field on standards even if unchanged.
+      await onSave(
+        nameLocked
+          ? { description: description.trim() || '' }
+          : { name: name.trim(), description: description.trim() || undefined }
+      );
     } finally {
       setSaving(false);
     }
@@ -39,12 +47,18 @@ export default function SwipeFolderModal({ title, initialName = '', initialDescr
           <div>
             <label className="block text-xs font-medium text-muted mb-1.5">Name</label>
             <input
-              autoFocus
+              autoFocus={!nameLocked}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2.5 border border-edge rounded-lg text-sm focus:ring-2 focus:ring-teal/20 outline-none"
+              readOnly={nameLocked}
+              className={`w-full px-3 py-2.5 border border-edge rounded-lg text-sm focus:ring-2 focus:ring-teal/20 outline-none ${
+                nameLocked ? 'bg-surface text-faint cursor-not-allowed' : ''
+              }`}
               placeholder="e.g. Direct To Offer"
             />
+            {nameLocked && (
+              <p className="mt-1 text-[11px] text-faint">Standard folder names can&apos;t be changed.</p>
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-muted mb-1.5">Description (optional)</label>

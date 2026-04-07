@@ -61,39 +61,40 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                   <span className="text-[10px] text-white/40 shrink-0">{type.file_count}</span>
                   {active && <ChevronRight size={12} className="text-[#8AD9D1]/50 shrink-0" />}
                 </Link>
-                {!type.is_standard && (
-                  <button
-                    onClick={() => setMenuFor(menuFor === type.id ? null : type.id)}
-                    className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-white/60"
-                    aria-label="Type actions"
-                  >
-                    <MoreVertical size={13} />
-                  </button>
-                )}
-                {menuFor === type.id && !type.is_standard && (
+                <button
+                  onClick={() => setMenuFor(menuFor === type.id ? null : type.id)}
+                  className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-white/60"
+                  aria-label="Type actions"
+                >
+                  <MoreVertical size={13} />
+                </button>
+                {menuFor === type.id && (
                   <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-white border border-edge rounded-lg shadow-lg py-1">
                     <div className="fixed inset-0 -z-10" onClick={() => setMenuFor(null)} />
                     <button
                       onClick={() => { setModal({ open: true, type }); setMenuFor(null); }}
                       className="w-full text-left px-3 py-2 text-[13px] text-ink hover:bg-surface flex items-center gap-2"
                     >
-                      <Pencil size={13} /> Rename
+                      <Pencil size={13} />
+                      {type.is_standard ? 'Edit description' : 'Rename'}
                     </button>
-                    <button
-                      onClick={async () => {
-                        if (confirm(`Delete ad type "${type.name}" and all its swipes?`)) {
-                          await swipe.deleteType(type.id);
-                          if (currentTypeId === type.id) {
-                            const next = swipe.types.find((t) => t.id !== type.id);
-                            router.push(next ? `/ads/swipe/${next.id}` : '/ads/swipe');
+                    {!type.is_standard && (
+                      <button
+                        onClick={async () => {
+                          if (confirm(`Delete ad type "${type.name}" and all its swipes?`)) {
+                            await swipe.deleteType(type.id);
+                            if (currentTypeId === type.id) {
+                              const next = swipe.types.find((t) => t.id !== type.id);
+                              router.push(next ? `/ads/swipe/${next.id}` : '/ads/swipe');
+                            }
                           }
-                        }
-                        setMenuFor(null);
-                      }}
-                      className="w-full text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
-                    >
-                      <Trash2 size={13} /> Delete
-                    </button>
+                          setMenuFor(null);
+                        }}
+                        className="w-full text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -112,15 +113,22 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
 
       {modal.open && (
         <SwipeFolderModal
-          title={modal.type ? 'Rename Ad Type' : 'New Ad Type'}
+          title={
+            modal.type
+              ? modal.type.is_standard
+                ? 'Edit Description'
+                : 'Rename Ad Type'
+              : 'New Ad Type'
+          }
           initialName={modal.type?.name || ''}
           initialDescription={modal.type?.description || ''}
+          nameLocked={modal.type?.is_standard === true}
           onClose={() => setModal({ open: false })}
           onSave={async (data) => {
             if (modal.type) {
               await swipe.updateType(modal.type.id, data);
             } else {
-              const result = await swipe.createType(data);
+              const result = await swipe.createType({ name: data.name!, description: data.description });
               if (result.data) router.push(`/ads/swipe/${result.data.id}`);
             }
             setModal({ open: false });
