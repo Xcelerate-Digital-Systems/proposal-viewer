@@ -27,6 +27,8 @@ const STANDARD_AD_TYPES = [
   'Educational',
   'Social Screenshot Overlay',
   'Media / News (PR Callout)',
+  'UGC AI Video',
+  'Founder Video',
 ];
 
 /* ─── GET — list type folders with file counts ──────────────────────────── */

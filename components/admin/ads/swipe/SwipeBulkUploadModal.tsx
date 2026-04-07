@@ -96,7 +96,7 @@ export default function SwipeBulkUploadModal({ typeId, uploadMedia, createFile, 
             >
               <Upload size={24} className="text-faint" />
               <span className="text-sm font-medium text-ink">Select files</span>
-              <span className="text-xs text-faint">Images and videos, up to 50MB each</span>
+              <span className="text-xs text-faint">Images and videos, up to 100MB each</span>
             </button>
           ) : (
             <>

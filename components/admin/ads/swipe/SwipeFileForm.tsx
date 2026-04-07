@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, Upload, Loader2 } from 'lucide-react';
 import type { SwipeFile, SwipeMediaType } from '@/lib/supabase';
 
 type Props = {
@@ -29,7 +29,9 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
   const [mediaUrl, setMediaUrl] = useState(file?.media_url || '');
   const [mediaType, setMediaType] = useState<SwipeMediaType | null>(file?.media_type || null);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -45,9 +47,7 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0];
-    if (!selected) return;
+  const processFile = async (selected: File) => {
     setError(null);
     setUploading(true);
     const result = await uploadMedia(selected, file?.id);
@@ -58,6 +58,19 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
     }
     setMediaUrl(result.url);
     setMediaType(result.media_type || 'image');
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (selected) await processFile(selected);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) await processFile(dropped);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -119,13 +132,41 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
           {/* Media */}
           <div>
             <label className="block text-xs font-medium text-muted mb-1.5">Image or video</label>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              disabled={uploading}
+              className={`w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed rounded-xl transition-colors ${
+                dragging
+                  ? 'border-teal bg-teal/5'
+                  : 'border-edge hover:border-teal/50 hover:bg-surface'
+              } ${uploading ? 'opacity-60 cursor-wait' : ''}`}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 size={22} className="text-teal animate-spin" />
+                  <span className="text-sm font-medium text-ink">Uploading…</span>
+                </>
+              ) : (
+                <>
+                  <Upload size={22} className="text-faint" />
+                  <span className="text-sm font-medium text-ink">
+                    {mediaUrl ? 'Replace file' : 'Click to upload or drop a file'}
+                  </span>
+                  <span className="text-xs text-faint">JPEG, PNG, WebP, GIF, MP4, MOV, WebM — up to 100MB</span>
+                </>
+              )}
+            </button>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
               onChange={handleFileSelect}
-              className="block w-full text-xs text-muted file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-surface file:text-muted hover:file:bg-edge"
+              className="hidden"
             />
-            {uploading && <p className="text-xs text-faint mt-2">Uploading…</p>}
 
             {mediaUrl && (
               <div className="mt-3 rounded-lg overflow-hidden border border-edge bg-surface h-48 flex items-center justify-center">
