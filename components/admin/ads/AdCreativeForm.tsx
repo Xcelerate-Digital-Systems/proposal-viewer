@@ -2,9 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Plus, Trash2, BookOpen, ImagePlus, Loader2, Upload } from 'lucide-react';
-import ReferenceTabContent from './ReferenceTabContent';
-import type { TabType } from './ReferenceTabContent';
+import { X, Plus, Trash2, ImagePlus, Loader2, Upload } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 import { supabase } from '@/lib/supabase';
 import type { AdCopyVariant, AdCopyVariantType } from '@/lib/types/ads';
@@ -155,18 +153,16 @@ function Field({ label, hint, children, className }: { label: string; hint?: str
   );
 }
 
-function ReferenceLink({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 text-[12px] text-teal hover:text-teal-hover font-medium transition-colors"
-    >
-      <BookOpen size={13} />
-      {label}
-    </button>
-  );
-}
+type EditorTab = 'strategy' | 'audience' | 'destination' | 'execution' | 'content' | 'results';
+
+const EDITOR_TABS: { key: EditorTab; label: string }[] = [
+  { key: 'strategy', label: 'Strategy' },
+  { key: 'audience', label: 'Audience' },
+  { key: 'destination', label: 'Destination' },
+  { key: 'execution', label: 'Execution' },
+  { key: 'content', label: 'Content' },
+  { key: 'results', label: 'Results' },
+];
 
 const inputClass = 'w-full px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 transition-all';
 
@@ -176,7 +172,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editingId);
   const [error, setError] = useState<string | null>(null);
-  const [referenceTab, setReferenceTab] = useState<TabType | null>(null);
+  const [activeTab, setActiveTab] = useState<EditorTab>('strategy');
   const [uploading, setUploading] = useState(false);
   const [targetMarketOptions, setTargetMarketOptions] = useState<{ value: string; label: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -376,7 +372,11 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.ad_name.trim()) return;
+    if (!form.ad_name.trim()) {
+      setActiveTab('strategy');
+      setError('Ad Name is required');
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -431,34 +431,11 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
 
   return (
     <div className="bg-white w-full flex flex-col h-full">
-        {/* Header — title + reference tabs in one row */}
+        {/* Header — title + close */}
         <div className="shrink-0 border-b border-edge flex items-center px-6 py-3 gap-4">
-          <button
-            type="button"
-            onClick={() => setReferenceTab(null)}
-            className={`text-[13px] font-semibold whitespace-nowrap px-3 py-1.5 rounded-md transition-colors ${
-              !referenceTab
-                ? 'bg-teal/10 text-teal'
-                : 'text-muted hover:text-ink hover:bg-edge/50'
-            }`}
-          >
+          <span className="text-[13px] font-semibold text-ink">
             {editingId ? 'Edit Creative' : 'New Creative'}
-          </button>
-          <div className="w-px h-5 bg-edge" />
-          {(['angles', 'formats', 'awareness', 'sophistication'] as TabType[]).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setReferenceTab(referenceTab === tab ? null : tab)}
-              className={`text-[13px] font-medium whitespace-nowrap px-3 py-1.5 rounded-md transition-colors ${
-                referenceTab === tab
-                  ? 'bg-teal/10 text-teal'
-                  : 'text-muted hover:text-ink hover:bg-edge/50'
-              }`}
-            >
-              {tab === 'angles' ? 'Angles Menu' : tab === 'formats' ? 'Creative Formats' : tab === 'awareness' ? 'Awareness Levels' : 'Market Sophistication'}
-            </button>
-          ))}
+          </span>
           <button
             onClick={onClose}
             className="ml-auto w-8 h-8 rounded-lg flex items-center justify-center text-faint hover:text-muted hover:bg-surface shrink-0"
@@ -467,26 +444,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
           </button>
         </div>
 
-        {/* Reference panel — replaces the form area when active */}
-        {referenceTab ? (
-          <div className="flex-1 overflow-y-auto">
-            <div className="px-6 py-4 border-b border-edge bg-surface/30 flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-ink">
-                {referenceTab === 'angles' ? 'Angles Menu' : referenceTab === 'formats' ? 'Creative Formats' : referenceTab === 'awareness' ? 'Awareness Levels' : 'Market Sophistication'}
-              </span>
-              <button
-                type="button"
-                onClick={() => setReferenceTab(null)}
-                className="text-[12px] font-medium text-teal hover:text-teal-hover transition-colors"
-              >
-                Back to Form
-              </button>
-            </div>
-            <div className="px-6 py-6">
-              <ReferenceTabContent type={referenceTab} />
-            </div>
-          </div>
-        ) : loadingEdit ? (
+        {loadingEdit ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
           </div>
@@ -582,9 +540,31 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
               </div>
             </div>
 
-            {/* ─── 2-Column Grid ────────────────────────────────────────────── */}
-            <div className="p-6 grid grid-cols-2 gap-4">
-              {/* Strategy (left) */}
+            {/* ─── Tab strip ─────────────────────────────────────────────────── */}
+            <div className="px-6 pt-4 border-b border-edge flex items-center gap-1 flex-wrap">
+              {EDITOR_TABS.map((tab) => {
+                const active = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-4 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors ${
+                      active
+                        ? 'text-teal border-teal'
+                        : 'text-muted border-transparent hover:text-ink'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ─── Tab content ───────────────────────────────────────────────── */}
+            <div className="p-6 space-y-4">
+              {/* Strategy */}
+              <div className={activeTab === 'strategy' ? '' : 'hidden'}>
               <Section title="Strategy">
                 <Field label="Signal" hint="Where does the data come from? Can choose multiple">
                   <CustomSelect
@@ -616,12 +596,11 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                     />
                   </Field>
                 </div>
-                <div className="flex items-center gap-4 pt-1">
-                  <ReferenceLink label="Angles Menu" onClick={() => setReferenceTab(referenceTab === 'angles' ? null : 'angles')} />
-                </div>
               </Section>
+              </div>
 
-              {/* Audience (right) */}
+              {/* Audience */}
+              <div className={activeTab === 'audience' ? '' : 'hidden'}>
               <Section title="Audience">
                 <Field label="Target Market" hint="Who is the ad targeting? Select or type a custom market">
                   <CustomSelect
@@ -658,13 +637,11 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                     placeholder="Select level..."
                   />
                 </Field>
-                <div className="flex items-center gap-4 pt-1">
-                  <ReferenceLink label="Awareness Levels" onClick={() => setReferenceTab(referenceTab === 'awareness' ? null : 'awareness')} />
-                  <ReferenceLink label="Market Sophistication" onClick={() => setReferenceTab(referenceTab === 'sophistication' ? null : 'sophistication')} />
-                </div>
               </Section>
+              </div>
 
-              {/* Destination (left) */}
+              {/* Destination */}
+              <div className={activeTab === 'destination' ? '' : 'hidden'}>
               <Section title="Destination">
                 <Field label="Offer Variant" hint="Which offer will the ad go to?">
                   <input type="text" value={form.offer_variant} onChange={(e) => updateField('offer_variant', e.target.value)} placeholder="Which offer will the ad go to?" className={inputClass} />
@@ -673,8 +650,10 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                   <input type="text" value={form.lander_variant} onChange={(e) => updateField('lander_variant', e.target.value)} placeholder="Which landing page?" className={inputClass} />
                 </Field>
               </Section>
+              </div>
 
-              {/* Execution (right) */}
+              {/* Execution */}
+              <div className={activeTab === 'execution' ? '' : 'hidden'}>
               <Section title="Execution">
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Creative Style" hint="How the platform reads the type of creative">
@@ -706,12 +685,11 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                     <input type="url" value={form.ad_copy_link} onChange={(e) => updateField('ad_copy_link', e.target.value)} placeholder="Google doc link" className={inputClass} />
                   </Field>
                 </div>
-                <div className="flex items-center gap-4 pt-1">
-                  <ReferenceLink label="Creative Formats" onClick={() => setReferenceTab(referenceTab === 'formats' ? null : 'formats')} />
-                </div>
               </Section>
+              </div>
 
-              {/* Content (left) */}
+              {/* Content */}
+              <div className={activeTab === 'content' ? '' : 'hidden'}>
               <Section title="Content">
                 <Field label="Hook" hint="The scroll-stopper baked into the asset — opening shot of a video, or the static image + burnt-in text">
                   <input
@@ -775,8 +753,10 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                   );
                 })}
               </Section>
+              </div>
 
-              {/* Results (right) */}
+              {/* Results */}
+              <div className={activeTab === 'results' ? '' : 'hidden'}>
               <Section title="Results">
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Winner?" hint="After 7 days, what was the outcome?">
@@ -825,14 +805,15 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                   <textarea value={form.next_action} onChange={(e) => updateField('next_action', e.target.value)} placeholder="What did you learn? What's next?" rows={2} className={inputClass + ' resize-none'} />
                 </Field>
               </Section>
+              </div>
 
-              {error && <p className="col-span-2 text-[13px] text-red-600">{error}</p>}
+              {error && <p className="text-[13px] text-red-600">{error}</p>}
             </div>
           </form>
         )}
 
         {/* Footer */}
-        {!loadingEdit && !referenceTab && (
+        {!loadingEdit && (
           <div className="flex items-center gap-3 px-6 py-4 border-t border-edge shrink-0">
             <button
               type="button"
