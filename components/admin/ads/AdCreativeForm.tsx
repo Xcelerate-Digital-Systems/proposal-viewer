@@ -622,25 +622,27 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
               {/* Audience */}
               <div className={activeTab === 'audience' ? '' : 'hidden'}>
               <Section title="Audience">
-                <Field label="Target Market" hint="Who is the ad targeting? Select or type a custom market">
-                  <CustomSelect
-                    value={form.target_market}
-                    options={targetMarketOptions}
-                    onChange={(v) => updateField('target_market', v)}
-                    placeholder="Select or type a market..."
-                    searchable
-                    creatable
-                  />
-                </Field>
-                <Field label="Persona" hint={personas.length ? 'Pick the audience persona for this ad' : 'No personas configured — add them in Standards'}>
-                  <CustomSelect
-                    value={form.persona}
-                    options={personas.map((p) => ({ value: p, label: p }))}
-                    onChange={(v) => updateField('persona', v)}
-                    placeholder={personas.length ? 'Select persona...' : 'Configure personas in Standards'}
-                    searchable
-                  />
-                </Field>
+                <FieldRow cols={2}>
+                  <Field label="Target Market" hint="Broad market segment — e.g. TRADIES, HOMEOWNERS, ECOM OWNERS">
+                    <CustomSelect
+                      value={form.target_market}
+                      options={targetMarketOptions}
+                      onChange={(v) => updateField('target_market', v)}
+                      placeholder="Select or type a market..."
+                      searchable
+                      creatable
+                    />
+                  </Field>
+                  <Field label="Persona" hint={personas.length ? 'Psychographic avatar within the market — e.g. Family Conscious, Status Driven' : 'No personas configured — add them in Standards'}>
+                    <CustomSelect
+                      value={form.persona}
+                      options={personas.map((p) => ({ value: p, label: p }))}
+                      onChange={(v) => updateField('persona', v)}
+                      placeholder={personas.length ? 'Select persona...' : 'Configure personas in Standards'}
+                      searchable
+                    />
+                  </Field>
+                </FieldRow>
                 <Field label="Awareness Level" hint="Choose which stage they are at">
                   <CustomSelect
                     value={form.awareness_level}

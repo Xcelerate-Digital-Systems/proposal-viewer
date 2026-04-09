@@ -102,14 +102,15 @@ export const AD_SIGNALS: { value: string; label: string }[] = [
 // ─── Angle Family ───────────────────────────────────────────────────────────
 
 export const AD_ANGLE_FAMILIES: { value: string; label: string; description: string }[] = [
-  { value: 'social_proof', label: '🏆 Social Proof', description: 'Testimonials, case studies, results' },
-  { value: 'authority', label: '👔 Authority', description: 'Expert positioning, credentials, media features' },
-  { value: 'pain_agitation', label: '😣 Pain / Agitation', description: 'Highlight the problem, frustration, cost of inaction' },
-  { value: 'desire_aspiration', label: '✨ Desire / Aspiration', description: 'Dream outcome, lifestyle, transformation' },
-  { value: 'logic_education', label: '🧠 Logic / Education', description: 'Teach something, data-driven, myth-busting' },
-  { value: 'curiosity_pattern_interrupt', label: '🔮 Curiosity / Pattern Interrupt', description: 'Unexpected hook, contrarian take, "wait what?"' },
-  { value: 'urgency_scarcity', label: '⏳ Urgency / Scarcity', description: 'Limited time, limited spots, deadline-driven' },
-  { value: 'community_belonging', label: '🤝 Community / Belonging', description: 'Join others like you, movement, identity' },
+  { value: 'clarity_value', label: '🧠 Clarity & Value', description: 'Make the offer instantly understandable and show the value exchange' },
+  { value: 'identity_alignment', label: '💪 Identity & Alignment', description: '"People like me do this" — identity-based messaging and self-image' },
+  { value: 'enemy_contrarian', label: '⚔️ Enemy / Contrarian', description: 'Call out a villain, bad practice, or conventional wisdom to rally against' },
+  { value: 'proof_transformation', label: '📊 Proof & Transformation', description: 'Testimonials, case studies, before/after results and data' },
+  { value: 'mechanism_education', label: '⚙️ Mechanism / Education', description: 'Teach how it works — the unique mechanism, system, or method' },
+  { value: 'pattern_interrupt_curiosity', label: '💥 Pattern Interrupt & Curiosity', description: 'Unexpected hook, contrarian take, "wait what?" moment' },
+  { value: 'offer_urgency', label: '⏰ Offer & Urgency', description: 'Limited time, limited spots, deadline-driven, special offer' },
+  { value: 'emotional_resonance', label: '❤️ Emotional Resonance', description: 'Tap into pain, fear, hope, aspiration, or emotional triggers' },
+  { value: 'novelty_futureproof', label: '🔮 Novelty / Futureproof', description: 'New, cutting-edge, AI-era, what\'s next — positioning as future-ready' },
 ];
 
 // ─── Creative Style ─────────────────────────────────────────────────────────
