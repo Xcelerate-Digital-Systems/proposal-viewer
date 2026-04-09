@@ -143,12 +143,33 @@ function Section({ title, children }: {
   );
 }
 
-function Field({ label, hint, children, className }: { label: string; hint?: string; children: React.ReactNode; className?: string }) {
+function Field({ label, hint, children, className, row }: { label: string; hint?: string; children: React.ReactNode; className?: string; row?: boolean }) {
+  if (row) {
+    // Renders 3 items into a subgrid parent (FieldRow) via grid-flow-col:
+    // row 1 = label, row 2 = input, row 3 = hint. Guarantees inputs are
+    // level across columns regardless of hint length.
+    return (
+      <>
+        <label className="text-[12px] font-medium text-muted block">{label}</label>
+        <div>{children}</div>
+        <p className="text-[11px] text-faint leading-snug">{hint || ''}</p>
+      </>
+    );
+  }
   return (
     <div className={className}>
       <label className="text-[12px] font-medium text-muted mb-1 block">{label}</label>
       {children}
       {hint && <p className="text-[11px] text-faint mt-1 leading-snug">{hint}</p>}
+    </div>
+  );
+}
+
+function FieldRow({ cols, children }: { cols: 2 | 3; children: React.ReactNode }) {
+  const colsClass = cols === 3 ? 'grid-cols-3' : 'grid-cols-2';
+  return (
+    <div className={`grid ${colsClass} grid-rows-[auto_auto_1fr] grid-flow-col gap-x-3 gap-y-1`}>
+      {children}
     </div>
   );
 }
@@ -510,8 +531,8 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                 <Field label="Ad Concept" hint="What is the overall idea of the ad in 1-2 sentences?">
                   <textarea value={form.ad_concept} onChange={(e) => updateField('ad_concept', e.target.value)} placeholder="Overall idea of the ad in 1-2 sentences" rows={2} className={inputClass + ' resize-none'} />
                 </Field>
-                <div className="grid grid-cols-3 gap-3">
-                  <Field label="Status" hint="What is the status of the ad?">
+                <FieldRow cols={3}>
+                  <Field row label="Status" hint="What is the status of the ad?">
                     <CustomSelect
                       value={form.status}
                       options={statusOptions}
@@ -520,7 +541,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                       clearable={false}
                     />
                   </Field>
-                  <Field label="Type" hint="New ad or iteration on a winning ad">
+                  <Field row label="Type" hint="New ad or iteration on a winning ad">
                     <CustomSelect
                       value={form.iteration_type}
                       options={iterationOptions}
@@ -528,7 +549,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                       placeholder="Select..."
                     />
                   </Field>
-                  <Field label="Media" hint="Still image or video">
+                  <Field row label="Media" hint="Still image or video">
                     <CustomSelect
                       value={form.media_type}
                       options={mediaOptions}
@@ -536,7 +557,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                       placeholder="Select..."
                     />
                   </Field>
-                </div>
+                </FieldRow>
               </div>
             </div>
 
@@ -577,8 +598,8 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                 <Field label="Hypothesis" hint="A good hypothesis links one data insight to one predicted ad outcome">
                   <textarea value={form.hypothesis} onChange={(e) => updateField('hypothesis', e.target.value)} placeholder="Links one data insight to one predicted ad outcome" rows={2} className={inputClass + ' resize-none'} />
                 </Field>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Angle Family" hint="See the reference sheet if unsure">
+                <FieldRow cols={2}>
+                  <Field row label="Angle Family" hint="See the reference sheet if unsure">
                     <CustomSelect
                       value={form.angle_family}
                       options={angleFamilyOptions}
@@ -586,7 +607,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                       placeholder="Select angle..."
                     />
                   </Field>
-                  <Field label="Angle Idea" hint="Choose a categorisation for easy data analysis. Can also help for brainstorming">
+                  <Field row label="Angle Idea" hint="Choose a categorisation for easy data analysis. Can also help for brainstorming">
                     <CustomSelect
                       value={form.angle_idea}
                       options={angleIdeaOptions}
@@ -595,7 +616,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                       searchable
                     />
                   </Field>
-                </div>
+                </FieldRow>
               </Section>
               </div>
 
@@ -655,8 +676,8 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
               {/* Execution */}
               <div className={activeTab === 'execution' ? '' : 'hidden'}>
               <Section title="Execution">
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Creative Style" hint="How the platform reads the type of creative">
+                <FieldRow cols={2}>
+                  <Field row label="Creative Style" hint="How the platform reads the type of creative">
                     <CustomSelect
                       value={form.creative_style}
                       options={creativeStyleOptions}
@@ -664,7 +685,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                       placeholder="Select style..."
                     />
                   </Field>
-                  <Field label="Creative Format" hint="Helps with brainstorming and data analysis">
+                  <Field row label="Creative Format" hint="Helps with brainstorming and data analysis">
                     <CustomSelect
                       value={form.creative_format}
                       options={creativeFormatOptions}
@@ -673,18 +694,18 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                       searchable
                     />
                   </Field>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <Field label="Brief Link" hint="Link to the brief or task">
+                </FieldRow>
+                <FieldRow cols={3}>
+                  <Field row label="Brief Link" hint="Link to the brief or task">
                     <input type="url" value={form.brief_link} onChange={(e) => updateField('brief_link', e.target.value)} placeholder="Link to brief" className={inputClass} />
                   </Field>
-                  <Field label="Creative Link" hint="Canva or Frame.io link">
+                  <Field row label="Creative Link" hint="Canva or Frame.io link">
                     <input type="url" value={form.creative_link} onChange={(e) => updateField('creative_link', e.target.value)} placeholder="Canva or Frame.io link" className={inputClass} />
                   </Field>
-                  <Field label="Ad Copy Link" hint="Google doc link">
+                  <Field row label="Ad Copy Link" hint="Google doc link">
                     <input type="url" value={form.ad_copy_link} onChange={(e) => updateField('ad_copy_link', e.target.value)} placeholder="Google doc link" className={inputClass} />
                   </Field>
-                </div>
+                </FieldRow>
               </Section>
               </div>
 
@@ -758,8 +779,8 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
               {/* Results */}
               <div className={activeTab === 'results' ? '' : 'hidden'}>
               <Section title="Results">
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Winner?" hint="After 7 days, what was the outcome?">
+                <FieldRow cols={2}>
+                  <Field row label="Winner?" hint="After 7 days, what was the outcome?">
                     <CustomSelect
                       value={form.winner}
                       options={winnerOptions}
@@ -767,40 +788,40 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                       placeholder="Not assessed"
                     />
                   </Field>
-                  <Field label="Lifespan (days)" hint="How long did the ad run for?">
+                  <Field row label="Lifespan (days)" hint="How long did the ad run for?">
                     <input type="number" value={form.creative_lifespan_days} onChange={(e) => updateField('creative_lifespan_days', e.target.value)} className={inputClass} />
                   </Field>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <Field label="Launch Date" hint="When it went live">
+                </FieldRow>
+                <FieldRow cols={3}>
+                  <Field row label="Launch Date" hint="When it went live">
                     <input type="date" value={form.launch_date} onChange={(e) => updateField('launch_date', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label="Analysis Date" hint="When to review performance">
+                  <Field row label="Analysis Date" hint="When to review performance">
                     <input type="date" value={form.analysis_date} onChange={(e) => updateField('analysis_date', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label="Kill Date" hint="When did we turn off the ad?">
+                  <Field row label="Kill Date" hint="When did we turn off the ad?">
                     <input type="date" value={form.kill_date} onChange={(e) => updateField('kill_date', e.target.value)} className={inputClass} />
                   </Field>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <Field label="Hook Rate %" hint="% watched past 3s">
+                </FieldRow>
+                <FieldRow cols={3}>
+                  <Field row label="Hook Rate %" hint="% watched past 3s">
                     <input type="number" step="0.01" value={form.hook_rate} onChange={(e) => updateField('hook_rate', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label="Hold Rate %" hint="% watched past midpoint">
+                  <Field row label="Hold Rate %" hint="% watched past midpoint">
                     <input type="number" step="0.01" value={form.hold_rate} onChange={(e) => updateField('hold_rate', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label="UCTR %" hint="Unique clicks / reach">
+                  <Field row label="UCTR %" hint="Unique clicks / reach">
                     <input type="number" step="0.0001" value={form.uctr} onChange={(e) => updateField('uctr', e.target.value)} className={inputClass} />
                   </Field>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="CVR" hint="Conversions / clicks">
+                </FieldRow>
+                <FieldRow cols={2}>
+                  <Field row label="CVR" hint="Conversions / clicks">
                     <input type="number" step="0.0001" value={form.cvr} onChange={(e) => updateField('cvr', e.target.value)} className={inputClass} />
                   </Field>
-                  <Field label={form.cpl_label || 'CPL'} hint="Cost per lead or chosen metric">
+                  <Field row label={form.cpl_label || 'CPL'} hint="Cost per lead or chosen metric">
                     <input type="number" step="0.01" value={form.cpl} onChange={(e) => updateField('cpl', e.target.value)} className={inputClass} />
                   </Field>
-                </div>
+                </FieldRow>
                 <Field label="Next Action / Learning" hint="What did you learn? What's next?">
                   <textarea value={form.next_action} onChange={(e) => updateField('next_action', e.target.value)} placeholder="What did you learn? What's next?" rows={2} className={inputClass + ' resize-none'} />
                 </Field>
