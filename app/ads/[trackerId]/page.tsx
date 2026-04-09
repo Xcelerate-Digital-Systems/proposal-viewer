@@ -3,12 +3,13 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Search, Filter, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Filter, ArrowLeft, Upload } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase } from '@/lib/supabase';
 import AdCreativesTable from '@/components/admin/ads/AdCreativesTable';
 import QuickCreateModal from '@/components/admin/ads/QuickCreateModal';
+import AdBulkUploadModal from '@/components/admin/ads/AdBulkUploadModal';
 import AdFilterBar from '@/components/admin/ads/AdFilterBar';
 import ReferenceTabContent from '@/components/admin/ads/ReferenceTabContent';
 import type { TabType } from '@/components/admin/ads/ReferenceTabContent';
@@ -54,6 +55,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const tracker = trackers.find((t) => t.id === trackerId);
 
   const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,7 +79,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
 
   const {
     creatives, pagination, loading,
-    createCreative, deleteCreative,
+    createCreative, updateCreative, deleteCreative, fetchCreatives,
   } = useAdCreatives(companyId, activeFilters);
 
   const fetchAccountStandards = useCallback(async () => {
@@ -148,6 +150,15 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               }`}
             >
               <Filter size={16} />
+            </button>
+
+            {/* Bulk upload */}
+            <button
+              onClick={() => setShowBulkUpload(true)}
+              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            >
+              <Upload size={16} />
+              Bulk Upload
             </button>
 
             {/* New creative */}
@@ -242,6 +253,18 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           />
         )}
       </div>
+
+      {/* Bulk upload modal */}
+      {showBulkUpload && (
+        <AdBulkUploadModal
+          trackerId={trackerId}
+          companyId={companyId}
+          createCreative={createCreative as (data: Record<string, unknown>) => Promise<{ data?: { id: string }; error?: string }>}
+          updateCreative={updateCreative}
+          onClose={() => setShowBulkUpload(false)}
+          onComplete={fetchCreatives}
+        />
+      )}
 
       {/* Quick create modal */}
       {showQuickCreate && (
