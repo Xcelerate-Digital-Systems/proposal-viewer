@@ -287,11 +287,9 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
 
   // ─── Image upload (direct to Supabase, bypasses Vercel payload limit) ─────
   const handleFileUpload = async (file: File) => {
-    if (!editingId) return;
-
-    // 50MB limit for videos
-    if (file.size > 50 * 1024 * 1024) {
-      setError('File too large (max 50MB)');
+    // 500MB limit for videos
+    if (file.size > 500 * 1024 * 1024) {
+      setError('File too large (max 500MB)');
       return;
     }
 
@@ -308,7 +306,9 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
     setError(null);
 
     const ext = file.name.split('.').pop() || 'bin';
-    const path = `ad-creatives/${companyId}/${editingId}-${Date.now()}.${ext}`;
+    // Use editingId when available, otherwise a random id so new creatives can upload too.
+    const fileId = editingId || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`);
+    const path = `ad-creatives/${companyId}/${fileId}-${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from('company-assets')
@@ -329,22 +329,25 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
       .from('company-assets')
       .getPublicUrl(path);
 
-    // Update the creative's image_url in the database
-    const { error: updateError } = await supabase
-      .from('ad_creatives')
-      .update({ image_url: urlData.publicUrl })
-      .eq('id', editingId)
-      .eq('company_id', companyId);
+    // If editing an existing creative, persist the URL immediately.
+    // If creating, just stage it in form state and it'll be saved with the row.
+    if (editingId) {
+      const { error: updateError } = await supabase
+        .from('ad_creatives')
+        .update({ image_url: urlData.publicUrl })
+        .eq('id', editingId)
+        .eq('company_id', companyId);
 
-    setUploading(false);
-
-    if (updateError) {
-      console.error('Update image_url error:', updateError);
-      setError('Uploaded but failed to save URL');
-      return;
+      if (updateError) {
+        console.error('Update image_url error:', updateError);
+        setError('Uploaded but failed to save URL');
+        setUploading(false);
+        return;
+      }
     }
 
     setForm((prev) => ({ ...prev, image_url: urlData.publicUrl }));
+    setUploading(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -489,29 +492,25 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
                 ) : form.image_url ? (
                   <div
                     className="w-[200px] h-[200px] rounded-xl overflow-hidden bg-surface border border-edge relative group cursor-pointer"
-                    onClick={() => editingId && fileRef.current?.click()}
+                    onClick={() => fileRef.current?.click()}
                   >
                     {isVideo ? (
                       <video src={form.image_url} className="w-full h-full object-cover" muted controls />
                     ) : (
                       <img src={form.image_url} alt="" className="w-full h-full object-cover" />
                     )}
-                    {editingId && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <Upload size={20} className="text-white" />
-                        <span className="text-white text-[13px] font-medium">Replace</span>
-                      </div>
-                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Upload size={20} className="text-white" />
+                      <span className="text-white text-[13px] font-medium">Replace</span>
+                    </div>
                   </div>
                 ) : (
                   <div
-                    className={`w-[200px] h-[200px] rounded-xl bg-surface border-2 border-dashed border-edge flex flex-col items-center justify-center gap-2 ${editingId ? 'cursor-pointer hover:border-teal/30 hover:bg-teal/5' : ''} transition-colors`}
-                    onClick={() => editingId && fileRef.current?.click()}
+                    className="w-[200px] h-[200px] rounded-xl bg-surface border-2 border-dashed border-edge flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-teal/30 hover:bg-teal/5 transition-colors"
+                    onClick={() => fileRef.current?.click()}
                   >
                     <ImagePlus size={28} className="text-faint" />
-                    <span className="text-[12px] text-faint">
-                      {editingId ? 'Click to upload' : 'Save first to upload'}
-                    </span>
+                    <span className="text-[12px] text-faint">Click to upload</span>
                   </div>
                 )}
               </div>

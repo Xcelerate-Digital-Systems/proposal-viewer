@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing file, creative_id, or company_id' }, { status: 400 });
     }
 
-    // 100MB limit for videos
-    if (file.size > 100 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 100MB)' }, { status: 400 });
+    // 500MB limit for videos
+    if (file.size > 500 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large (max 500MB)' }, { status: 400 });
     }
 
     // Validate file type
