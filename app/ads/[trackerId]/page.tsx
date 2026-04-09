@@ -1,12 +1,12 @@
 // app/ads/[trackerId]/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowLeft, Search, Filter, BookOpen, Pencil, Check, X } from 'lucide-react';
+import { Plus, Search, Filter, BookOpen, ArrowLeft } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
-import { supabase, type AdTracker } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import AdCreativesTable from '@/components/admin/ads/AdCreativesTable';
 import QuickCreateModal from '@/components/admin/ads/QuickCreateModal';
 import AdFilterBar from '@/components/admin/ads/AdFilterBar';
@@ -14,9 +14,19 @@ import ReferenceTabContent from '@/components/admin/ads/ReferenceTabContent';
 import type { TabType } from '@/components/admin/ads/ReferenceTabContent';
 import StandardsTab from '@/components/admin/ads/StandardsTab';
 import TargetMarketsTab from '@/components/admin/ads/TargetMarketsTab';
-import type { AdAccountStandards, TrackerStandards } from '@/lib/types/ads';
+import { useAdTrackerContext } from '@/components/admin/ads/AdTrackerContext';
+import type { AdAccountStandards } from '@/lib/types/ads';
 
-type TrackerTab = 'creatives' | 'standards' | 'target_markets' | TabType;
+type PanelTab = 'standards' | 'target_markets' | TabType;
+
+const PANELS: { key: PanelTab; label: string }[] = [
+  { key: 'standards', label: 'Standards' },
+  { key: 'target_markets', label: 'Target Markets' },
+  { key: 'angles', label: 'Angles Menu' },
+  { key: 'formats', label: 'Creative Formats' },
+  { key: 'awareness', label: 'Awareness Level' },
+  { key: 'sophistication', label: 'Market Sophistication' },
+];
 
 export default function TrackerDetailPage() {
   return (
@@ -31,17 +41,14 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const router = useRouter();
   const trackerId = params.trackerId as string;
 
-  const [tracker, setTracker] = useState<AdTracker | null>(null);
-  const [trackerLoading, setTrackerLoading] = useState(true);
+  const { trackers, loading: trackersLoading, fetchTrackers } = useAdTrackerContext();
+  const tracker = trackers.find((t) => t.id === trackerId);
+
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<TrackerTab>('creatives');
-  const [editingName, setEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState('');
-  const [nameSaving, setNameSaving] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const [activePanel, setActivePanel] = useState<PanelTab | null>(null);
 
   const [filters, setFilters] = useState<AdCreativeFilters>({
     tracker_id: trackerId,
@@ -49,7 +56,11 @@ function TrackerDetail({ companyId }: { companyId: string }) {
     sort_dir: 'asc',
   });
 
-  // Merge search into filters with debounce
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, tracker_id: trackerId }));
+    setActivePanel(null);
+  }, [trackerId]);
+
   const activeFilters = useMemo(
     () => ({ ...filters, search: searchQuery || undefined }),
     [filters, searchQuery]
@@ -57,23 +68,9 @@ function TrackerDetail({ companyId }: { companyId: string }) {
 
   const {
     creatives, pagination, loading,
-    fetchCreatives, createCreative, updateCreative, deleteCreative,
+    createCreative, deleteCreative,
   } = useAdCreatives(companyId, activeFilters);
 
-  // Fetch tracker info
-  const fetchTracker = useCallback(async () => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    if (!token) return;
-
-    const res = await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = await res.json();
-    if (json.success) setTracker(json.data);
-    setTrackerLoading(false);
-  }, [trackerId, companyId]);
-
-  // Fetch account standards
   const fetchAccountStandards = useCallback(async () => {
     const token = (await supabase.auth.getSession()).data.session?.access_token;
     if (!token) return;
@@ -85,40 +82,8 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   }, [companyId]);
 
   useEffect(() => {
-    fetchTracker();
     fetchAccountStandards();
-  }, [fetchTracker, fetchAccountStandards]);
-
-  const startEditingName = () => {
-    setNameValue(tracker?.name ?? '');
-    setEditingName(true);
-    setTimeout(() => nameInputRef.current?.select(), 0);
-  };
-
-  const cancelEditingName = () => {
-    setEditingName(false);
-    setNameValue('');
-  };
-
-  const saveTrackerName = async () => {
-    if (!nameValue.trim() || nameValue.trim() === tracker?.name) {
-      cancelEditingName();
-      return;
-    }
-    setNameSaving(true);
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    if (token) {
-      const res = await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nameValue.trim() }),
-      });
-      const json = await res.json();
-      if (json.success) setTracker(json.data);
-    }
-    setNameSaving(false);
-    setEditingName(false);
-  };
+  }, [fetchAccountStandards]);
 
   const handleSort = (column: string) => {
     setFilters((prev) => ({
@@ -128,7 +93,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
     }));
   };
 
-  if (trackerLoading) {
+  if (trackersLoading && !tracker) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
@@ -139,65 +104,23 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   if (!tracker) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3">
-        <p className="text-sm text-muted">Tracker not found</p>
+        <p className="text-sm text-muted">Campaign not found</p>
         <button onClick={() => router.push('/ads')} className="text-sm text-teal hover:underline">
-          Back to trackers
+          Back to Ad Tracker
         </button>
       </div>
     );
   }
+
+  const activePanelLabel = PANELS.find((p) => p.key === activePanel)?.label;
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-edge bg-white px-6 lg:px-10 py-5">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push('/ads')}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </button>
           <div className="flex-1 min-w-0">
-            {editingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  value={nameValue}
-                  onChange={(e) => setNameValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveTrackerName();
-                    if (e.key === 'Escape') cancelEditingName();
-                  }}
-                  className="text-xl font-semibold text-ink bg-surface border border-edge rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-teal/30 min-w-0 w-full max-w-sm"
-                  disabled={nameSaving}
-                  autoFocus
-                />
-                <button
-                  onClick={saveTrackerName}
-                  disabled={nameSaving}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-teal hover:bg-teal/10 transition-colors shrink-0"
-                >
-                  <Check size={15} />
-                </button>
-                <button
-                  onClick={cancelEditingName}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors shrink-0"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={startEditingName}
-                className="group flex items-center gap-1.5 text-left"
-                title="Edit campaign name"
-              >
-                <h1 className="text-xl font-semibold text-ink truncate">{tracker.name}</h1>
-                <Pencil size={14} className="text-faint opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
-              </button>
-            )}
+            <h1 className="text-xl font-semibold text-ink truncate">{tracker.name}</h1>
             <p className="text-sm text-muted mt-0.5">
               {pagination.total} creative{pagination.total !== 1 ? 's' : ''}
               {tracker.client_name && ` · ${tracker.client_name}`}
@@ -206,18 +129,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="hidden md:flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2.5 w-[200px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
-              <Search size={16} className="text-faint shrink-0" />
-              <input
-                type="text"
-                placeholder="Search ads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
-              />
-            </div>
-
             {/* Naming Convention */}
             <a
               href="/ads/naming-convention"
@@ -250,43 +161,92 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           </div>
         </div>
 
+        {/* Panel pills + search row */}
+        <div className="flex items-center gap-2 mt-4 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
+            {PANELS.map((p) => {
+              const active = activePanel === p.key;
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => setActivePanel(active ? null : p.key)}
+                  className={`px-3 py-1.5 text-[12px] font-medium rounded-full border transition-colors ${
+                    active
+                      ? 'bg-teal text-white border-teal'
+                      : 'bg-surface text-muted border-transparent hover:text-ink hover:bg-surface/70'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Search */}
+          <div className="hidden md:flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2 w-[220px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
+            <Search size={16} className="text-faint shrink-0" />
+            <input
+              type="text"
+              placeholder="Search ads..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+            />
+          </div>
+        </div>
+
         {/* Filter bar */}
-        {showFilters && activeTab === 'creatives' && (
+        {showFilters && !activePanel && (
           <AdFilterBar
             filters={filters}
             onChange={(f) => setFilters({ ...filters, ...f })}
           />
         )}
-
-        {/* Tab navigation */}
-        <div className="flex items-center gap-1 mt-4 -mb-[1px]">
-          {([
-            { key: 'creatives', label: 'Creatives' },
-            { key: 'standards', label: 'Standards' },
-            { key: 'target_markets', label: 'Target Markets' },
-            { key: 'angles', label: 'Angles Menu' },
-            { key: 'formats', label: 'Creative Formats' },
-            { key: 'awareness', label: 'Awareness Level' },
-            { key: 'sophistication', label: 'Market Sophistication' },
-          ] as { key: TrackerTab; label: string }[]).map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 text-[13px] font-medium rounded-t-lg border border-b-0 transition-colors ${
-                activeTab === tab.key
-                  ? 'bg-white text-ink border-edge'
-                  : 'bg-transparent text-muted border-transparent hover:text-ink hover:bg-surface/50'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Content area */}
       <div className="flex-1 overflow-hidden overflow-y-auto">
-        {activeTab === 'creatives' ? (
+        {activePanel ? (
+          <div className="flex flex-col h-full">
+            <div className="flex items-center gap-3 px-6 lg:px-10 py-4 border-b border-edge bg-ivory">
+              <button
+                onClick={() => setActivePanel(null)}
+                className="flex items-center gap-1.5 text-[13px] text-muted hover:text-ink transition-colors"
+              >
+                <ArrowLeft size={15} />
+                Back to Creatives
+              </button>
+              <div className="w-px h-4 bg-edge" />
+              <h2 className="text-[14px] font-semibold text-ink">{activePanelLabel}</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {activePanel === 'standards' ? (
+                <StandardsTab
+                  trackerId={trackerId}
+                  companyId={companyId}
+                  trackerStandards={tracker.standards || {}}
+                  onSaveTracker={async (standards) => {
+                    const token = (await supabase.auth.getSession()).data.session?.access_token;
+                    if (!token) return;
+                    await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
+                      method: 'PATCH',
+                      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ standards }),
+                    });
+                    fetchTrackers();
+                    fetchAccountStandards();
+                  }}
+                />
+              ) : activePanel === 'target_markets' ? (
+                <TargetMarketsTab companyId={companyId} trackerId={trackerId} />
+              ) : (
+                <ReferenceTabContent type={activePanel} />
+              )}
+            </div>
+          </div>
+        ) : (
           <AdCreativesTable
             creatives={creatives}
             loading={loading}
@@ -297,29 +257,8 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             onEdit={(id) => router.push(`/ads/${trackerId}/${id}`)}
             onDelete={deleteCreative}
             accountStandards={accountStandards}
-            trackerStandards={tracker?.standards || {}}
+            trackerStandards={tracker.standards || {}}
           />
-        ) : activeTab === 'standards' ? (
-          <StandardsTab
-            trackerId={trackerId}
-            companyId={companyId}
-            trackerStandards={tracker?.standards || {}}
-            onSaveTracker={async (standards) => {
-              const token = (await supabase.auth.getSession()).data.session?.access_token;
-              if (!token) return;
-              await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
-                method: 'PATCH',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ standards }),
-              });
-              setTracker({ ...tracker!, standards });
-              fetchAccountStandards();
-            }}
-          />
-        ) : activeTab === 'target_markets' ? (
-          <TargetMarketsTab companyId={companyId} trackerId={trackerId} />
-        ) : (
-          <ReferenceTabContent type={activeTab} />
         )}
       </div>
 
@@ -334,7 +273,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           }}
         />
       )}
-
     </div>
   );
 }

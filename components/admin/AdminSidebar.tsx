@@ -10,6 +10,7 @@ import {
 
 import AccountSwitcher from './sidebar/AccountSwitcher';
 import SwipeTypesSidebarNav from './sidebar/SwipeTypesSidebarNav';
+import AdTrackersSidebarNav from './sidebar/AdTrackersSidebarNav';
 import {
   ALL_SECTIONS, STANDALONE_ITEMS, getActiveSection, LayoutDashboard,
   type NavItem, type SectionDef,
@@ -53,9 +54,13 @@ export default function AdminSidebar({
 
   const activeSection = getActiveSection(pathname, visibleSections);
   const inSwipeSection = pathname.startsWith('/ads/swipe');
+  const inAdsSection =
+    pathname.startsWith('/ads') &&
+    !inSwipeSection &&
+    !pathname.startsWith('/ads/naming-convention');
 
   const isTopLevel =
-    !inSwipeSection && (
+    !inSwipeSection && !inAdsSection && (
       !activeSection ||
       pathname === '/dashboard' ||
       pathname === '/clients' ||
@@ -215,9 +220,11 @@ export default function AdminSidebar({
       <nav className="flex-1 px-2 py-3 overflow-y-auto flex flex-col">
         {inSwipeSection
           ? <SwipeTypesSidebarNav onNavigate={() => setMobileOpen(false)} />
-          : isTopLevel
-            ? renderTopLevelNav()
-            : activeSection && renderSectionNav(activeSection)
+          : inAdsSection
+            ? <AdTrackersSidebarNav onNavigate={() => setMobileOpen(false)} />
+            : isTopLevel
+              ? renderTopLevelNav()
+              : activeSection && renderSectionNav(activeSection)
         }
       </nav>
 

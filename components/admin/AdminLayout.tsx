@@ -6,6 +6,7 @@ import AuthGuard from '@/components/auth/AuthGuard';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { SwipeFileProvider } from '@/components/admin/ads/swipe/SwipeFileContext';
+import { AdTrackerProvider } from '@/components/admin/ads/AdTrackerContext';
 
 interface AdminLayoutProps {
   children: (auth: ReturnType<typeof useAuth>) => React.ReactNode;
@@ -16,6 +17,10 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children, collapseSidebar }: AdminLayoutProps) {
   const pathname = usePathname();
   const inSwipeSection = pathname?.startsWith('/ads/swipe') ?? false;
+  const inAdsSection =
+    (pathname?.startsWith('/ads') ?? false) &&
+    !inSwipeSection &&
+    !(pathname?.startsWith('/ads/naming-convention') ?? false);
 
   return (
     <AuthGuard>
@@ -46,6 +51,10 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
         // Only wrap in SwipeFileProvider when we're in the swipe section + have a companyId
         if (inSwipeSection && auth.companyId) {
           return <SwipeFileProvider companyId={auth.companyId}>{content}</SwipeFileProvider>;
+        }
+
+        if (inAdsSection && auth.companyId) {
+          return <AdTrackerProvider companyId={auth.companyId}>{content}</AdTrackerProvider>;
         }
 
         return content;
