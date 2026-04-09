@@ -1,8 +1,8 @@
 // components/admin/ads/AdCreativeForm.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Plus, Trash2, ImagePlus, Loader2, Upload } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Plus, Trash2, ImagePlus, Loader2, Upload } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 import { supabase } from '@/lib/supabase';
 import type { AdCopyVariant, AdCopyVariantType } from '@/lib/types/ads';
@@ -28,6 +28,13 @@ type Props = {
   personas?: string[];
   onClose: () => void;
   onSave: (data: Record<string, unknown>) => Promise<{ error?: string }>;
+  /** Hide the internal footer bar (Back/Save). Used when the parent provides its own header with save controls. */
+  hideFooter?: boolean;
+};
+
+export type AdCreativeFormHandle = {
+  /** Validates the form and returns the save payload, or null if invalid. */
+  getPayload: () => Record<string, unknown> | null;
 };
 
 type FormData = {
@@ -174,9 +181,10 @@ function FieldRow({ cols, children }: { cols: 2 | 3; children: React.ReactNode }
   );
 }
 
-type EditorTab = 'strategy' | 'audience' | 'destination' | 'execution' | 'content' | 'results';
+type EditorTab = 'overview' | 'strategy' | 'audience' | 'destination' | 'execution' | 'content' | 'results';
 
 const EDITOR_TABS: { key: EditorTab; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
   { key: 'strategy', label: 'Strategy' },
   { key: 'audience', label: 'Audience' },
   { key: 'destination', label: 'Destination' },
@@ -187,13 +195,16 @@ const EDITOR_TABS: { key: EditorTab; label: string }[] = [
 
 const inputClass = 'w-full px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 transition-all';
 
-export default function AdCreativeForm({ trackerId, companyId, editingId, personas = [], onClose, onSave }: Props) {
+const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreativeForm(
+  { trackerId, companyId, editingId, personas = [], onClose, onSave, hideFooter = false },
+  ref,
+) {
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editingId);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<EditorTab>('strategy');
+  const [activeTab, setActiveTab] = useState<EditorTab>('overview');
   const [uploading, setUploading] = useState(false);
   const [targetMarketOptions, setTargetMarketOptions] = useState<{ value: string; label: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -394,18 +405,13 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const buildPayload = (): Record<string, unknown> | null => {
     if (!form.ad_name.trim()) {
-      setActiveTab('strategy');
+      setActiveTab('overview');
       setError('Ad Name is required');
-      return;
+      return null;
     }
-
-    setSaving(true);
-    setError(null);
-
-    const payload: Record<string, unknown> = {
+    return {
       ad_name: form.ad_name.trim(),
       image_url: form.image_url || null,
       signal: form.signal || null,
@@ -442,6 +448,15 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
       next_action: form.next_action || null,
       variants: variants.filter((v) => v.content.trim()),
     };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = buildPayload();
+    if (!payload) return;
+
+    setSaving(true);
+    setError(null);
 
     const result = await onSave(payload);
     if (result.error) {
@@ -450,116 +465,21 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    getPayload: buildPayload,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [form, variants]);
 
   const isVideo = form.image_url && /\.(mp4|mov|webm)$/i.test(form.image_url);
 
   return (
     <div className="bg-white w-full flex flex-col h-full">
-        {/* Header — title + close */}
-        <div className="shrink-0 border-b border-edge flex items-center px-6 py-3 gap-4">
-          <span className="text-[13px] font-semibold text-ink">
-            {editingId ? 'Edit Creative' : 'New Creative'}
-          </span>
-          <button
-            onClick={onClose}
-            className="ml-auto w-8 h-8 rounded-lg flex items-center justify-center text-faint hover:text-muted hover:bg-surface shrink-0"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
         {loadingEdit ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-            {/* ─── Image + Name hero area ───────────────────────────────────── */}
-            <div className="flex gap-6 p-6 pb-4 border-b border-edge bg-surface/30">
-              {/* Image preview / upload */}
-              <div className="shrink-0">
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                {uploading ? (
-                  <div className="w-[200px] h-[200px] rounded-xl bg-surface border border-edge flex items-center justify-center">
-                    <Loader2 size={24} className="text-teal animate-spin" />
-                  </div>
-                ) : form.image_url ? (
-                  <div
-                    className="w-[200px] h-[200px] rounded-xl overflow-hidden bg-surface border border-edge relative group cursor-pointer"
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    {isVideo ? (
-                      <video src={form.image_url} className="w-full h-full object-cover" muted controls />
-                    ) : (
-                      <img src={form.image_url} alt="" className="w-full h-full object-cover" />
-                    )}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <Upload size={20} className="text-white" />
-                      <span className="text-white text-[13px] font-medium">Replace</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className="w-[200px] h-[200px] rounded-xl bg-surface border-2 border-dashed border-edge flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-teal/30 hover:bg-teal/5 transition-colors"
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    <ImagePlus size={28} className="text-faint" />
-                    <span className="text-[12px] text-faint">Click to upload</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Name + key info */}
-              <div className="flex-1 min-w-0 space-y-3">
-                <Field label="Ad Name *" hint="Use the naming convention e.g. MIRROR - C01 - H01 - D01 - IMG01.a">
-                  <input
-                    type="text"
-                    value={form.ad_name}
-                    onChange={(e) => updateField('ad_name', e.target.value)}
-                    placeholder="Use the naming convention"
-                    className={inputClass}
-                    autoFocus
-                  />
-                </Field>
-                <Field label="Ad Concept" hint="What is the overall idea of the ad in 1-2 sentences?">
-                  <textarea value={form.ad_concept} onChange={(e) => updateField('ad_concept', e.target.value)} placeholder="Overall idea of the ad in 1-2 sentences" rows={2} className={inputClass + ' resize-none'} />
-                </Field>
-                <FieldRow cols={3}>
-                  <Field row label="Status" hint="What is the status of the ad?">
-                    <CustomSelect
-                      value={form.status}
-                      options={statusOptions}
-                      onChange={(v) => updateField('status', v)}
-                      placeholder="Select..."
-                      clearable={false}
-                    />
-                  </Field>
-                  <Field row label="Type" hint="New ad or iteration on a winning ad">
-                    <CustomSelect
-                      value={form.iteration_type}
-                      options={iterationOptions}
-                      onChange={(v) => updateField('iteration_type', v)}
-                      placeholder="Select..."
-                    />
-                  </Field>
-                  <Field row label="Media" hint="Still image or video">
-                    <CustomSelect
-                      value={form.media_type}
-                      options={mediaOptions}
-                      onChange={(v) => updateField('media_type', v)}
-                      placeholder="Select..."
-                    />
-                  </Field>
-                </FieldRow>
-              </div>
-            </div>
-
             {/* ─── Tab strip ─────────────────────────────────────────────────── */}
             <div className="px-6 pt-4 border-b border-edge flex items-center gap-1 flex-wrap">
               {EDITOR_TABS.map((tab) => {
@@ -583,6 +503,104 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
 
             {/* ─── Tab content ───────────────────────────────────────────────── */}
             <div className="p-6 space-y-4">
+              {/* Overview */}
+              <div className={activeTab === 'overview' ? '' : 'hidden'}>
+              <Section title="Overview">
+                <div className="flex gap-6">
+                  {/* Image preview / upload */}
+                  <div className="shrink-0">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    {uploading ? (
+                      <div className="w-[180px] h-[180px] rounded-xl bg-surface border border-edge flex items-center justify-center">
+                        <Loader2 size={24} className="text-teal animate-spin" />
+                      </div>
+                    ) : form.image_url ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="w-[180px] h-[180px] rounded-xl overflow-hidden bg-surface border border-edge relative">
+                          {isVideo ? (
+                            <video src={form.image_url} className="w-full h-full object-cover" controls />
+                          ) : (
+                            <img
+                              src={form.image_url}
+                              alt=""
+                              className="w-full h-full object-cover cursor-pointer"
+                              onClick={() => fileRef.current?.click()}
+                            />
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => fileRef.current?.click()}
+                          className="w-[180px] inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-muted bg-surface hover:bg-edge border border-edge rounded-lg transition-colors"
+                        >
+                          <Upload size={13} />
+                          Replace
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        className="w-[180px] h-[180px] rounded-xl bg-surface border-2 border-dashed border-edge flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-teal/30 hover:bg-teal/5 transition-colors"
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        <ImagePlus size={28} className="text-faint" />
+                        <span className="text-[12px] text-faint">Click to upload</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name + key info */}
+                  <div className="flex-1 min-w-0 space-y-3">
+                    <Field label="Ad Name *" hint="Use the naming convention e.g. MIRROR - C01 - H01 - D01 - IMG01.a">
+                      <input
+                        type="text"
+                        value={form.ad_name}
+                        onChange={(e) => updateField('ad_name', e.target.value)}
+                        placeholder="Use the naming convention"
+                        className={inputClass}
+                        autoFocus
+                      />
+                    </Field>
+                    <Field label="Ad Concept" hint="What is the overall idea of the ad in 1-2 sentences?">
+                      <textarea value={form.ad_concept} onChange={(e) => updateField('ad_concept', e.target.value)} placeholder="Overall idea of the ad in 1-2 sentences" rows={2} className={inputClass + ' resize-none'} />
+                    </Field>
+                    <FieldRow cols={3}>
+                      <Field row label="Status" hint="What is the status of the ad?">
+                        <CustomSelect
+                          value={form.status}
+                          options={statusOptions}
+                          onChange={(v) => updateField('status', v)}
+                          placeholder="Select..."
+                          clearable={false}
+                        />
+                      </Field>
+                      <Field row label="Type" hint="New ad or iteration on a winning ad">
+                        <CustomSelect
+                          value={form.iteration_type}
+                          options={iterationOptions}
+                          onChange={(v) => updateField('iteration_type', v)}
+                          placeholder="Select..."
+                        />
+                      </Field>
+                      <Field row label="Media" hint="Still image or video">
+                        <CustomSelect
+                          value={form.media_type}
+                          options={mediaOptions}
+                          onChange={(v) => updateField('media_type', v)}
+                          placeholder="Select..."
+                        />
+                      </Field>
+                    </FieldRow>
+                  </div>
+                </div>
+              </Section>
+              </div>
+
               {/* Strategy */}
               <div className={activeTab === 'strategy' ? '' : 'hidden'}>
               <Section title="Strategy">
@@ -835,7 +853,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
         )}
 
         {/* Footer */}
-        {!loadingEdit && (
+        {!loadingEdit && !hideFooter && (
           <div className="flex items-center gap-3 px-6 py-4 border-t border-edge shrink-0">
             <button
               type="button"
@@ -855,4 +873,6 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, person
         )}
     </div>
   );
-}
+});
+
+export default AdCreativeForm;

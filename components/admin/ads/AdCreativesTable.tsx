@@ -17,6 +17,7 @@ import {
   AD_ITERATION_TYPES,
   AD_SIGNALS,
   AD_ANGLE_FAMILIES,
+  AD_ANGLE_IDEAS,
   AD_CREATIVE_STYLES,
   AD_CREATIVE_FORMATS,
 } from '@/lib/ad-tracker/constants';
@@ -96,7 +97,7 @@ const COLUMNS: ColumnDef[] = [
   { key: 'hypothesis', label: 'Hypothesis', hint: 'Links one data insight to one predicted ad outcome', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 1 },
   { key: 'ad_concept', label: 'Ad Concept', hint: 'Overall idea of the ad in 1-2 sentences', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 1 },
   { key: 'angle_family', label: 'Angle Family', hint: 'See the reference sheet if unsure', cellType: 'select', options: toOpts(AD_ANGLE_FAMILIES), minWidth: '140px', groupIdx: 1 },
-  { key: 'angle_idea', label: 'Angle Idea', hint: 'Categorisation for data analysis & brainstorming', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 1 },
+  { key: 'angle_idea', label: 'Angle Idea', hint: 'Categorisation for data analysis & brainstorming', cellType: 'select', options: toOpts(AD_ANGLE_IDEAS), maxWidth: '200px', minWidth: '140px', groupIdx: 1 },
   // Group 2 — Step 2: Who is the audience
   { key: 'target_market', label: 'Target Market', hint: 'Choose or add to drop down', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 2, firstInGroup: true },
   { key: 'persona', label: 'Persona', hint: 'Audience persona — configured in Standards', cellType: 'text', minWidth: '120px', maxWidth: '160px', groupIdx: 2 },
@@ -127,7 +128,7 @@ const COLUMNS: ColumnDef[] = [
   { key: 'creative_lifespan_days', label: 'Creative Lifespan', hint: 'How long did the ad run for?', cellType: 'number', suffix: 'd', minWidth: '100px', groupIdx: 6 },
   { key: 'hook_rate', label: 'Hook Rate', hint: '30%+', sortable: true, cellType: 'number', suffix: '%', minWidth: '90px', groupIdx: 6 },
   { key: 'hold_rate', label: 'Hold Rate', hint: '10%+', sortable: true, cellType: 'number', suffix: '%', minWidth: '90px', groupIdx: 6 },
-  { key: 'uctr', label: 'UCTR', hint: '1.25%+', sortable: true, cellType: 'number', minWidth: '80px', groupIdx: 6 },
+  { key: 'uctr', label: 'Unique CTR', hint: '1.25%+', sortable: true, cellType: 'number', suffix: '%', minWidth: '100px', groupIdx: 6 },
   { key: 'cvr', label: 'CVR', hint: 'Conversions / clicks', sortable: true, cellType: 'number', minWidth: '80px', groupIdx: 6 },
   { key: 'cpl', label: 'CPL/Metric', sortable: true, cellType: 'number', prefix: '$', minWidth: '90px', groupIdx: 6 },
   { key: 'next_action', label: 'Next Action / Learning', cellType: 'text', maxWidth: '240px', minWidth: '160px', groupIdx: 6 },
@@ -135,7 +136,7 @@ const COLUMNS: ColumnDef[] = [
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-const GROUP_BORDER = 'border-l-2 border-l-edge-hover';
+const GROUP_BORDER = 'border-l-2 border-l-edge-hover !pl-8';
 
 function SortHeader({ label, hint, column, sortBy, sortDir, onSort, firstInGroup, minWidth }: {
   label: string; hint?: string; column: string; sortBy: string; sortDir: string; onSort: (c: string) => void; firstInGroup?: boolean; minWidth?: string;
@@ -143,7 +144,7 @@ function SortHeader({ label, hint, column, sortBy, sortDir, onSort, firstInGroup
   const active = sortBy === column;
   return (
     <th
-      className={`px-3 py-2 text-left cursor-pointer hover:text-ink select-none ${firstInGroup ? GROUP_BORDER : ''}`}
+      className={`px-5 py-3 text-left align-top cursor-pointer hover:text-ink select-none ${firstInGroup ? GROUP_BORDER : ''}`}
       style={minWidth ? { minWidth } : undefined}
       onClick={() => onSort(column)}
     >
@@ -159,14 +160,14 @@ function SortHeader({ label, hint, column, sortBy, sortDir, onSort, firstInGroup
 function ColHeader({ col, sortBy, sortDir, onSort }: { col: ColumnDef; sortBy: string; sortDir: string; onSort: (c: string) => void }) {
   const border = col.firstInGroup ? GROUP_BORDER : '';
   if (col.cellType === 'thumbnail') {
-    return <th className={`px-2 py-2 w-[68px] ${border}`} />;
+    return <th className={`px-2 py-3 w-[68px] align-top ${border}`} />;
   }
   if (col.sortable) {
     return <SortHeader label={col.label} hint={col.hint} column={col.key} sortBy={sortBy} sortDir={sortDir} onSort={onSort} firstInGroup={col.firstInGroup} minWidth={col.minWidth} />;
   }
   return (
     <th
-      className={`px-3 py-2 text-left ${border}`}
+      className={`px-5 py-3 text-left align-top ${border}`}
       style={col.minWidth ? { minWidth: col.minWidth } : undefined}
     >
       <span className="text-[12px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap">{col.label}</span>
@@ -190,7 +191,7 @@ function BadgeDisplay({ value, map, colors }: { value: string | null; map: Selec
 function TextDisplay({ value, maxWidth }: { value: string | null; maxWidth?: string }) {
   if (!value) return <span className="text-faint">—</span>;
   return (
-    <span className={`text-[14px] text-muted truncate block ${maxWidth ? `max-w-[${maxWidth}]` : ''}`}>
+    <span className={`text-[14px] text-ink truncate block ${maxWidth ? `max-w-[${maxWidth}]` : ''}`}>
       {value}
     </span>
   );
@@ -212,7 +213,7 @@ function NumberDisplay({ value, prefix, suffix, meetsStandard }: { value: number
 function SelectDisplay({ value, options }: { value: string | null; options: SelectOption[] }) {
   if (!value) return <span className="text-faint">—</span>;
   const item = options.find((o) => o.value === value);
-  return <span className="text-[14px] text-muted truncate block">{item?.label || value}</span>;
+  return <span className="text-[14px] text-ink truncate block">{item?.label || value}</span>;
 }
 
 // Check if a metric value meets a target (higher is better for rates, lower is better for cost)
@@ -302,7 +303,7 @@ export default function AdCreativesTable({
     // Special readonly columns
     if (col.key === '_links') {
       return (
-        <td key={col.key} className={`px-3.5 py-3 ${gb}`}>
+        <td key={col.key} className={`px-5 py-4 ${gb}`}>
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {c.brief_link ? (
               <a href={c.brief_link} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">
@@ -321,7 +322,7 @@ export default function AdCreativesTable({
 
     if (col.key === '_ad_copy_link') {
       return (
-        <td key={col.key} className={`px-3.5 py-3 ${gb}`} onClick={(e) => e.stopPropagation()}>
+        <td key={col.key} className={`px-5 py-4 ${gb}`} onClick={(e) => e.stopPropagation()}>
           {c.ad_copy_link ? (
             <a href={c.ad_copy_link} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">
               <ExternalLink size={12} />
@@ -336,9 +337,9 @@ export default function AdCreativesTable({
       const typeMap: Record<string, string> = { _headline: 'headline', _primary_text: 'primary_text', _description: 'description', _cta: 'cta' };
       const variant = c.ad_copy_variants?.find((v) => v.variant_type === typeMap[col.key]);
       return (
-        <td key={col.key} className={`px-3.5 py-3 ${gb}`} style={col.maxWidth ? { maxWidth: col.maxWidth } : undefined}>
+        <td key={col.key} className={`px-5 py-4 ${gb}`} style={col.maxWidth ? { maxWidth: col.maxWidth } : undefined}>
           {variant?.content ? (
-            <span className="text-[14px] text-muted block overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} title={variant.content}>{variant.content}</span>
+            <span className="text-[14px] text-ink block overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} title={variant.content}>{variant.content}</span>
           ) : (
             <span className="text-faint">—</span>
           )}
@@ -349,7 +350,7 @@ export default function AdCreativesTable({
     // Badge cells
     if (col.cellType === 'badge') {
       return (
-        <td key={col.key} className={`px-3.5 py-3 ${gb}`}>
+        <td key={col.key} className={`px-5 py-4 ${gb}`}>
           <BadgeDisplay value={raw as string | null} map={col.options!} colors={col.badgeColors!} />
         </td>
       );
@@ -358,7 +359,7 @@ export default function AdCreativesTable({
     // Select cells
     if (col.cellType === 'select') {
       return (
-        <td key={col.key} className={`px-3.5 py-3 ${gb}`}>
+        <td key={col.key} className={`px-5 py-4 ${gb}`}>
           <SelectDisplay value={raw as string | null} options={col.options!} />
         </td>
       );
@@ -368,7 +369,7 @@ export default function AdCreativesTable({
     if (col.cellType === 'text') {
       const strVal = (raw as string) || '';
       return (
-        <td key={col.key} className={`px-3.5 py-3 ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ''} ${gb}`}>
+        <td key={col.key} className={`px-5 py-4 ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ''} ${gb}`}>
           {col.key === 'ad_name' ? (
             <>
               <span className="text-[14px] font-medium text-ink truncate block">{strVal || '—'}</span>
@@ -391,7 +392,7 @@ export default function AdCreativesTable({
       else if (col.key === 'cpl') meetsStandard = checkStandard(numVal, trackerStandards?.cpl_target, true);
 
       return (
-        <td key={col.key} className={`px-3.5 py-3 whitespace-nowrap ${gb}`}>
+        <td key={col.key} className={`px-5 py-4 whitespace-nowrap ${gb}`}>
           <NumberDisplay value={numVal} prefix={col.prefix} suffix={col.suffix} meetsStandard={meetsStandard} />
         </td>
       );
@@ -401,17 +402,17 @@ export default function AdCreativesTable({
     if (col.cellType === 'date') {
       const dateVal = raw as string | null;
       return (
-        <td key={col.key} className={`px-3.5 py-3 text-[14px] text-muted whitespace-nowrap ${gb}`}>
+        <td key={col.key} className={`px-5 py-4 text-[14px] text-ink whitespace-nowrap ${gb}`}>
           {dateVal ? new Date(dateVal).toLocaleDateString() : <span className="text-faint">—</span>}
         </td>
       );
     }
 
-    return <td key={col.key} className={`px-3.5 py-3 text-[14px] text-muted ${gb}`}>—</td>;
+    return <td key={col.key} className={`px-5 py-4 text-[14px] text-ink ${gb}`}>—</td>;
   };
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-auto bg-[#F3F4F6]">
       <table className="w-full min-w-[3200px]">
         <thead className="bg-white border-b border-edge sticky top-0 z-10">
           {/* Group header row */}
@@ -420,7 +421,7 @@ export default function AdCreativesTable({
               <th
                 key={i}
                 colSpan={group.colSpan}
-                className={`px-3.5 py-3 text-left text-[12px] font-bold text-ink uppercase tracking-wider bg-white ${i > 0 ? GROUP_BORDER : ''}`}
+                className={`px-5 pt-4 pb-3 text-left align-top text-[12px] font-bold text-ink uppercase tracking-wider bg-white ${i > 0 ? GROUP_BORDER : ''}`}
               >
                 {group.label}
               </th>
@@ -440,12 +441,12 @@ export default function AdCreativesTable({
             <tr
               key={c.id}
               onClick={() => onEdit(c.id)}
-              className="bg-white hover:bg-surface/50 transition-colors group cursor-pointer"
+              className="bg-white hover:ring-2 hover:ring-teal/40 hover:ring-inset transition-all group cursor-pointer"
             >
               {columns.map((col) => renderCell(c, col))}
 
               {/* Actions menu */}
-              <td className="px-3.5 py-3 relative">
+              <td className="px-5 py-4 relative">
                 <div className="relative" ref={menuOpenId === c.id ? menuRef : undefined}>
                   <button
                     onClick={(e) => {

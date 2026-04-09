@@ -155,7 +155,7 @@ export default function AdTrackersSidebarNav({ onNavigate }: { onNavigate?: () =
         const inNaming = pathname?.startsWith('/ads/naming-convention');
         const PANEL_ITEMS: { key: string; label: string; icon: typeof Shield }[] = [
           { key: 'standards', label: 'Standards', icon: Shield },
-          { key: 'target_markets', label: 'Target Markets', icon: Users },
+          { key: 'target_markets', label: 'Audience', icon: Users },
           { key: 'angles', label: 'Angles Menu', icon: Sparkles },
           { key: 'formats', label: 'Creative Formats', icon: LayoutGrid },
           { key: 'awareness', label: 'Awareness Level', icon: Eye },

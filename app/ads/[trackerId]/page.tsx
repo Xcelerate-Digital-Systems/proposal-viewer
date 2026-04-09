@@ -22,7 +22,7 @@ type PanelTab = 'standards' | 'target_markets' | TabType;
 
 const PANEL_LABELS: Record<PanelTab, string> = {
   standards: 'Standards',
-  target_markets: 'Target Markets',
+  target_markets: 'Audience',
   angles: 'Angles Menu',
   formats: 'Creative Formats',
   awareness: 'Awareness Level',
@@ -140,6 +140,18 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="hidden md:flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2 w-[240px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
+              <Search size={16} className="text-faint shrink-0" />
+              <input
+                type="text"
+                placeholder="Search ads..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+              />
+            </div>
+
             {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -169,23 +181,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               <Plus size={16} />
               New Creative
             </button>
-          </div>
-        </div>
-
-        {/* Search row */}
-        <div className="flex items-center gap-2 mt-4">
-          <div className="flex-1" />
-
-          {/* Search */}
-          <div className="hidden md:flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2 w-[220px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
-            <Search size={16} className="text-faint shrink-0" />
-            <input
-              type="text"
-              placeholder="Search ads..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
-            />
           </div>
         </div>
 
@@ -232,7 +227,21 @@ function TrackerDetail({ companyId }: { companyId: string }) {
                   }}
                 />
               ) : activePanel === 'target_markets' ? (
-                <TargetMarketsTab companyId={companyId} trackerId={trackerId} />
+                <TargetMarketsTab
+                  companyId={companyId}
+                  trackerId={trackerId}
+                  trackerStandards={tracker.standards || {}}
+                  onSaveTrackerStandards={async (standards) => {
+                    const token = (await supabase.auth.getSession()).data.session?.access_token;
+                    if (!token) return;
+                    await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
+                      method: 'PATCH',
+                      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ standards }),
+                    });
+                    fetchTrackers();
+                  }}
+                />
               ) : (
                 <ReferenceTabContent type={activePanel} />
               )}
@@ -246,7 +255,11 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             sortDir={filters.sort_dir || 'asc'}
             companyId={companyId}
             onSort={handleSort}
-            onEdit={(id) => router.push(`/ads/${trackerId}/${id}`)}
+            onEdit={(id) => {
+              const sortBy = filters.sort_by || 'sort_order';
+              const sortDir = filters.sort_dir || 'asc';
+              router.push(`/ads/${trackerId}/${id}?sort=${sortBy}&dir=${sortDir}`);
+            }}
             onDelete={deleteCreative}
             accountStandards={accountStandards}
             trackerStandards={tracker.standards || {}}

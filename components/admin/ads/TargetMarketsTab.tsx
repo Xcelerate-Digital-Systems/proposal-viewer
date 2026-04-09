@@ -1,17 +1,57 @@
 // components/admin/ads/TargetMarketsTab.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback, KeyboardEvent } from 'react';
+import { Plus, Trash2, Loader2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import type { AdTargetMarket } from '@/lib/types/ads';
+import type { AdTargetMarket, TrackerStandards } from '@/lib/types/ads';
 
 type Props = {
   companyId: string;
   trackerId?: string;
+  trackerStandards?: TrackerStandards;
+  onSaveTrackerStandards?: (standards: TrackerStandards) => Promise<void>;
 };
 
-export default function TargetMarketsTab({ companyId, trackerId }: Props) {
+export default function TargetMarketsTab({ companyId, trackerId, trackerStandards, onSaveTrackerStandards }: Props) {
+  // ─── Personas (scoped to this tracker's standards JSON) ───────────────────
+  const [personas, setPersonas] = useState<string[]>(trackerStandards?.personas || []);
+  const [personaInput, setPersonaInput] = useState('');
+  const [savingPersonas, setSavingPersonas] = useState(false);
+
+  useEffect(() => {
+    setPersonas(trackerStandards?.personas || []);
+  }, [trackerStandards]);
+
+  const persistPersonas = async (next: string[]) => {
+    setPersonas(next);
+    if (!onSaveTrackerStandards || !trackerStandards) return;
+    setSavingPersonas(true);
+    await onSaveTrackerStandards({ ...trackerStandards, personas: next });
+    setSavingPersonas(false);
+  };
+
+  const addPersona = () => {
+    const code = personaInput.trim().toUpperCase().replace(/\s+/g, '_');
+    if (!code || personas.includes(code)) {
+      setPersonaInput('');
+      return;
+    }
+    persistPersonas([...personas, code]);
+    setPersonaInput('');
+  };
+
+  const removePersona = (code: string) => {
+    persistPersonas(personas.filter((p) => p !== code));
+  };
+
+  const handlePersonaKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addPersona();
+    }
+  };
+
   const [markets, setMarkets] = useState<AdTargetMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -106,9 +146,66 @@ export default function TargetMarketsTab({ companyId, trackerId }: Props) {
 
   return (
     <div className="p-6 max-w-3xl">
-      <h2 className="text-base font-semibold text-ink mb-1">Target Markets</h2>
+      <h2 className="text-base font-semibold text-ink mb-1">Audience</h2>
       <p className="text-[12px] text-faint mb-5">
-        Define your target market segments. These will appear as dropdown options when creating ad creatives.
+        Configure the target markets and personas this campaign speaks to. Both power the dropdowns in the ad creative form.
+      </p>
+
+      {/* ─── Personas ─────────────────────────────────────────────────────── */}
+      {onSaveTrackerStandards && (
+        <div className="mb-8">
+          <h3 className="text-[13px] font-semibold text-ink mb-1">
+            Personas {savingPersonas && <Loader2 size={12} className="inline animate-spin text-teal ml-1" />}
+          </h3>
+          <p className="text-[12px] text-faint mb-3">
+            Psychographic avatars within your market — the specific characters you&apos;re speaking to. Short uppercase codes, e.g. <span className="font-mono">FAMILY_CONSCIOUS</span>, <span className="font-mono">STATUS_DRIVEN</span>.
+          </p>
+          {personas.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {personas.map((p) => (
+                <span
+                  key={p}
+                  className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 bg-teal/10 text-teal rounded-full text-[12px] font-mono"
+                >
+                  {p}
+                  <button
+                    type="button"
+                    onClick={() => removePersona(p)}
+                    className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-teal/20"
+                    aria-label={`Remove ${p}`}
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={personaInput}
+              onChange={(e) => setPersonaInput(e.target.value)}
+              onKeyDown={handlePersonaKey}
+              placeholder="Add a persona (e.g. FAMILY_CONSCIOUS)"
+              className="flex-1 px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 font-mono uppercase"
+            />
+            <button
+              type="button"
+              onClick={addPersona}
+              disabled={!personaInput.trim()}
+              className="flex items-center gap-1 px-3 py-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Plus size={14} />
+              Add
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Target Markets ───────────────────────────────────────────────── */}
+      <h3 className="text-[13px] font-semibold text-ink mb-1">Target Markets</h3>
+      <p className="text-[12px] text-faint mb-3">
+        Broad market segments — e.g. <span className="font-mono">TRADIES</span>, <span className="font-mono">HOMEOWNERS</span>, <span className="font-mono">ECOM OWNERS</span>.
       </p>
 
       {/* Add new */}

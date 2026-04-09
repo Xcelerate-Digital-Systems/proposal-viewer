@@ -1,7 +1,7 @@
 // app/ads/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Megaphone } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -20,10 +20,16 @@ function AdsIndex() {
   const router = useRouter();
   const { trackers, loading, createTracker } = useAdTrackerContext();
   const [showCreate, setShowCreate] = useState(false);
+  const didRedirectRef = useRef(false);
 
-  // Auto-redirect to first campaign once trackers load
+  // Auto-redirect to first campaign ONCE, on initial load only. Without this guard
+  // the effect would re-fire every time the trackers list changes (e.g. after creating
+  // a new tracker from the sidebar), causing a double navigation with the sidebar's
+  // own router.push.
   useEffect(() => {
+    if (didRedirectRef.current) return;
     if (!loading && trackers.length > 0) {
+      didRedirectRef.current = true;
       router.replace(`/ads/${trackers[0].id}`);
     }
   }, [loading, trackers, router]);
