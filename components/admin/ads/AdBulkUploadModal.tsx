@@ -98,8 +98,8 @@ export default function AdBulkUploadModal({
       setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'uploading' } : r)));
       try {
         // Client-side size guard
-        if (rows[i].file.size > 50 * 1024 * 1024) {
-          throw new Error('File too large (max 50MB)');
+        if (rows[i].file.size > 100 * 1024 * 1024) {
+          throw new Error('File too large (max 100MB)');
         }
         const allowed = [
           'image/jpeg', 'image/png', 'image/webp', 'image/gif',
@@ -160,7 +160,7 @@ export default function AdBulkUploadModal({
             >
               <Upload size={24} className="text-faint" />
               <span className="text-sm font-medium text-ink">Select files</span>
-              <span className="text-xs text-faint">Images and videos, up to 50MB each</span>
+              <span className="text-xs text-faint">Images and videos, up to 100MB each</span>
             </button>
           ) : (
             <>
