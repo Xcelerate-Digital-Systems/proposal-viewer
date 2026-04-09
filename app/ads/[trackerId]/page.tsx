@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Plus, Search, Filter, BookOpen, ArrowLeft } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Plus, Search, Filter, ArrowLeft } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase } from '@/lib/supabase';
@@ -19,14 +19,18 @@ import type { AdAccountStandards } from '@/lib/types/ads';
 
 type PanelTab = 'standards' | 'target_markets' | TabType;
 
-const PANELS: { key: PanelTab; label: string }[] = [
-  { key: 'standards', label: 'Standards' },
-  { key: 'target_markets', label: 'Target Markets' },
-  { key: 'angles', label: 'Angles Menu' },
-  { key: 'formats', label: 'Creative Formats' },
-  { key: 'awareness', label: 'Awareness Level' },
-  { key: 'sophistication', label: 'Market Sophistication' },
-];
+const PANEL_LABELS: Record<PanelTab, string> = {
+  standards: 'Standards',
+  target_markets: 'Target Markets',
+  angles: 'Angles Menu',
+  formats: 'Creative Formats',
+  awareness: 'Awareness Level',
+  sophistication: 'Market Sophistication',
+};
+
+const VALID_PANELS = new Set<PanelTab>([
+  'standards', 'target_markets', 'angles', 'formats', 'awareness', 'sophistication',
+]);
 
 export default function TrackerDetailPage() {
   return (
@@ -39,7 +43,12 @@ export default function TrackerDetailPage() {
 function TrackerDetail({ companyId }: { companyId: string }) {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const trackerId = params.trackerId as string;
+
+  const panelParam = searchParams?.get('panel');
+  const activePanel: PanelTab | null =
+    panelParam && VALID_PANELS.has(panelParam as PanelTab) ? (panelParam as PanelTab) : null;
 
   const { trackers, loading: trackersLoading, fetchTrackers } = useAdTrackerContext();
   const tracker = trackers.find((t) => t.id === trackerId);
@@ -48,7 +57,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [showFilters, setShowFilters] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activePanel, setActivePanel] = useState<PanelTab | null>(null);
 
   const [filters, setFilters] = useState<AdCreativeFilters>({
     tracker_id: trackerId,
@@ -58,8 +66,9 @@ function TrackerDetail({ companyId }: { companyId: string }) {
 
   useEffect(() => {
     setFilters((prev) => ({ ...prev, tracker_id: trackerId }));
-    setActivePanel(null);
   }, [trackerId]);
+
+  const clearPanel = () => router.push(`/ads/${trackerId}`);
 
   const activeFilters = useMemo(
     () => ({ ...filters, search: searchQuery || undefined }),
@@ -112,7 +121,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
     );
   }
 
-  const activePanelLabel = PANELS.find((p) => p.key === activePanel)?.label;
+  const activePanelLabel = activePanel ? PANEL_LABELS[activePanel] : null;
 
   return (
     <div className="flex flex-col h-full">
@@ -129,15 +138,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Naming Convention */}
-            <a
-              href="/ads/naming-convention"
-              className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center bg-surface text-muted hover:text-ink transition-all"
-              title="Ad Naming Convention"
-            >
-              <BookOpen size={16} />
-            </a>
-
             {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -161,27 +161,8 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           </div>
         </div>
 
-        {/* Panel pills + search row */}
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <div className="flex items-center gap-1 flex-wrap">
-            {PANELS.map((p) => {
-              const active = activePanel === p.key;
-              return (
-                <button
-                  key={p.key}
-                  onClick={() => setActivePanel(active ? null : p.key)}
-                  className={`px-3 py-1.5 text-[12px] font-medium rounded-full border transition-colors ${
-                    active
-                      ? 'bg-teal text-white border-teal'
-                      : 'bg-surface text-muted border-transparent hover:text-ink hover:bg-surface/70'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-
+        {/* Search row */}
+        <div className="flex items-center gap-2 mt-4">
           <div className="flex-1" />
 
           {/* Search */}
@@ -212,7 +193,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-3 px-6 lg:px-10 py-4 border-b border-edge bg-ivory">
               <button
-                onClick={() => setActivePanel(null)}
+                onClick={clearPanel}
                 className="flex items-center gap-1.5 text-[13px] text-muted hover:text-ink transition-colors"
               >
                 <ArrowLeft size={15} />

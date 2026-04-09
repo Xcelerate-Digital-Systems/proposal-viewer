@@ -54,10 +54,7 @@ export default function AdminSidebar({
 
   const activeSection = getActiveSection(pathname, visibleSections);
   const inSwipeSection = pathname.startsWith('/ads/swipe');
-  const inAdsSection =
-    pathname.startsWith('/ads') &&
-    !inSwipeSection &&
-    !pathname.startsWith('/ads/naming-convention');
+  const inAdsSection = pathname.startsWith('/ads') && !inSwipeSection;
 
   const isTopLevel =
     !inSwipeSection && !inAdsSection && (

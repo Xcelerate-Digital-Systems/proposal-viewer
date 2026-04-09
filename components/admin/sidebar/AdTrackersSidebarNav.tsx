@@ -3,15 +3,20 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Megaphone, MoreVertical, Pencil, Trash2, ChevronRight } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import {
+  ArrowLeft, Plus, Megaphone, MoreVertical, Pencil, Trash2, ChevronRight,
+  Shield, Users, Sparkles, LayoutGrid, Eye, TrendingUp, Rocket,
+} from 'lucide-react';
 import { useAdTrackerContext } from '@/components/admin/ads/AdTrackerContext';
 import CreateTrackerModal from '@/components/admin/ads/CreateTrackerModal';
 
 export default function AdTrackersSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { trackers, loading, createTracker, updateTracker, deleteTracker } = useAdTrackerContext();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const activePanel = searchParams?.get('panel');
   const [showCreate, setShowCreate] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -144,6 +149,65 @@ export default function AdTrackersSidebarNav({ onNavigate }: { onNavigate?: () =
           New Campaign
         </button>
       </div>
+
+      {(() => {
+        const refTrackerId = currentTrackerId || trackers[0]?.id;
+        const inNaming = pathname?.startsWith('/ads/naming-convention');
+        const PANEL_ITEMS: { key: string; label: string; icon: typeof Shield }[] = [
+          { key: 'standards', label: 'Standards', icon: Shield },
+          { key: 'target_markets', label: 'Target Markets', icon: Users },
+          { key: 'angles', label: 'Angles Menu', icon: Sparkles },
+          { key: 'formats', label: 'Creative Formats', icon: LayoutGrid },
+          { key: 'awareness', label: 'Awareness Level', icon: Eye },
+          { key: 'sophistication', label: 'Market Sophistication', icon: TrendingUp },
+        ];
+        return (
+          <>
+            <div className="mt-4 mb-2 mx-3 border-t border-[#01434A]" />
+            <div className="px-3 pt-1 pb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+                Reference
+              </span>
+            </div>
+            <div className="space-y-0.5">
+              {PANEL_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const active = !inNaming && activePanel === item.key;
+                const href = refTrackerId ? `/ads/${refTrackerId}?panel=${item.key}` : '#';
+                return (
+                  <Link
+                    key={item.key}
+                    href={href}
+                    onClick={onNavigate}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      active ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-[#013036]'
+                    }`}
+                  >
+                    <Icon
+                      size={15}
+                      className={active ? 'text-[#8AD9D1] shrink-0' : 'text-white/40 shrink-0'}
+                    />
+                    <span className="flex-1 truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+              <Link
+                href="/ads/naming-convention"
+                onClick={onNavigate}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  inNaming ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-[#013036]'
+                }`}
+              >
+                <Rocket
+                  size={15}
+                  className={inNaming ? 'text-[#8AD9D1] shrink-0' : 'text-white/40 shrink-0'}
+                />
+                <span className="flex-1 truncate">Andromeda</span>
+              </Link>
+            </div>
+          </>
+        );
+      })()}
 
       {showCreate && (
         <CreateTrackerModal
