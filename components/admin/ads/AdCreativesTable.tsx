@@ -452,7 +452,7 @@ export default function AdCreativesTable({
                       e.stopPropagation();
                       setMenuOpenId(menuOpenId === c.id ? null : c.id);
                     }}
-                    className="w-7 h-7 rounded-md flex items-center justify-center text-faint hover:text-muted hover:bg-surface opacity-0 group-hover:opacity-100 transition-all"
+                    className="w-7 h-7 rounded-md flex items-center justify-center text-faint hover:text-muted hover:bg-surface transition-all"
                   >
                     <MoreHorizontal size={14} />
                   </button>

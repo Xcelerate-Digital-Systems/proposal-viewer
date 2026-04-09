@@ -33,7 +33,7 @@ export default function CustomSelect({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -42,10 +42,19 @@ export default function CustomSelect({
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+    const margin = 8;
+    const gap = 4;
+    const viewportH = window.innerHeight;
+    const spaceBelow = viewportH - rect.bottom - margin - gap;
+    const spaceAbove = rect.top - margin - gap;
+    // Prefer downward; only flip up if there's basically no room below
+    const placeAbove = spaceBelow < 120 && spaceAbove > spaceBelow;
+    const maxHeight = Math.floor(placeAbove ? spaceAbove : spaceBelow);
     setPos({
-      top: rect.bottom + 4,
+      top: placeAbove ? rect.top - gap - maxHeight : rect.bottom + gap,
       left: rect.left,
       width: Math.max(rect.width, 200),
+      maxHeight,
     });
   }, []);
 
@@ -123,8 +132,8 @@ export default function CustomSelect({
   const dropdown = open && pos ? createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[9999] bg-white rounded-xl border border-edge shadow-lg overflow-hidden"
-      style={{ top: pos.top, left: pos.left, width: pos.width }}
+      className="fixed z-[9999] bg-white rounded-xl border border-edge shadow-lg overflow-hidden flex flex-col"
+      style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxHeight }}
     >
       {/* Search */}
       {searchable && (
@@ -144,7 +153,7 @@ export default function CustomSelect({
       )}
 
       {/* Options */}
-      <div className="max-h-[240px] overflow-y-auto py-1">
+      <div className="flex-1 min-h-0 overflow-y-auto py-1">
         {filtered.length === 0 && !creatable ? (
           <p className="px-3 py-2 text-[12px] text-faint text-center">No results</p>
         ) : (
