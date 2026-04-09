@@ -26,6 +26,8 @@ type Props = {
   trackerId: string;
   companyId: string;
   editingId: string | null;
+  /** Personas configured on the tracker (campaign). Drives the persona dropdown. */
+  personas?: string[];
   onClose: () => void;
   onSave: (data: Record<string, unknown>) => Promise<{ error?: string }>;
 };
@@ -39,6 +41,7 @@ type FormData = {
   angle_family: string;
   angle_idea: string;
   target_market: string;
+  persona: string;
   awareness_level: string;
   market_sophistication: string;
   offer_variant: string;
@@ -47,7 +50,7 @@ type FormData = {
   media_type: string;
   creative_style: string;
   creative_format: string;
-  video_hooks: string;
+  hook: string;
   status: string;
   brief_link: string;
   creative_link: string;
@@ -76,10 +79,10 @@ type VariantDraft = {
 const INITIAL_FORM: FormData = {
   ad_name: '', image_url: '',
   signal: '', hypothesis: '', ad_concept: '', angle_family: '', angle_idea: '',
-  target_market: '', awareness_level: '', market_sophistication: '',
+  target_market: '', persona: '', awareness_level: '', market_sophistication: '',
   offer_variant: '', lander_variant: '',
   iteration_type: '', media_type: '', creative_style: '', creative_format: '',
-  video_hooks: '', status: 'draft', brief_link: '', creative_link: '', ad_copy_link: '',
+  hook: '', status: 'draft', brief_link: '', creative_link: '', ad_copy_link: '',
   winner: '', launch_date: '', analysis_date: '', kill_date: '',
   creative_lifespan_days: '', hook_rate: '', hold_rate: '', uctr: '', cvr: '',
   cpl: '', cpl_label: 'CPL', next_action: '',
@@ -167,7 +170,7 @@ function ReferenceLink({ label, onClick }: { label: string; onClick: () => void 
 
 const inputClass = 'w-full px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 transition-all';
 
-export default function AdCreativeForm({ trackerId, companyId, editingId, onClose, onSave }: Props) {
+export default function AdCreativeForm({ trackerId, companyId, editingId, personas = [], onClose, onSave }: Props) {
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
   const [saving, setSaving] = useState(false);
@@ -217,6 +220,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
       angle_family: c.angle_family || '',
       angle_idea: c.angle_idea || '',
       target_market: c.target_market || '',
+      persona: c.persona || '',
       awareness_level: c.awareness_level || '',
       market_sophistication: c.market_sophistication || '',
       offer_variant: c.offer_variant || '',
@@ -225,7 +229,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
       media_type: c.media_type || '',
       creative_style: c.creative_style || '',
       creative_format: c.creative_format || '',
-      video_hooks: c.video_hooks || '',
+      hook: c.hook || '',
       status: c.status || 'draft',
       brief_link: c.brief_link || '',
       creative_link: c.creative_link || '',
@@ -386,6 +390,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
       angle_family: form.angle_family || null,
       angle_idea: form.angle_idea || null,
       target_market: form.target_market || null,
+      persona: form.persona || null,
       awareness_level: form.awareness_level || null,
       market_sophistication: form.market_sophistication || null,
       offer_variant: form.offer_variant || null,
@@ -394,7 +399,7 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
       media_type: form.media_type || null,
       creative_style: form.creative_style || null,
       creative_format: form.creative_format || null,
-      video_hooks: form.video_hooks || null,
+      hook: form.hook || null,
       status: form.status,
       brief_link: form.brief_link || null,
       creative_link: form.creative_link || null,
@@ -628,6 +633,15 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                     creatable
                   />
                 </Field>
+                <Field label="Persona" hint={personas.length ? 'Pick the audience persona for this ad' : 'No personas configured — add them in Standards'}>
+                  <CustomSelect
+                    value={form.persona}
+                    options={personas.map((p) => ({ value: p, label: p }))}
+                    onChange={(v) => updateField('persona', v)}
+                    placeholder={personas.length ? 'Select persona...' : 'Configure personas in Standards'}
+                    searchable
+                  />
+                </Field>
                 <Field label="Awareness Level" hint="Choose which stage they are at">
                   <CustomSelect
                     value={form.awareness_level}
@@ -681,11 +695,6 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
                     />
                   </Field>
                 </div>
-                {form.media_type === 'video' && (
-                  <Field label="Video Hooks" hint="What is the hook of the video?">
-                    <input type="text" value={form.video_hooks} onChange={(e) => updateField('video_hooks', e.target.value)} placeholder="What is the hook of the video?" className={inputClass} />
-                  </Field>
-                )}
                 <div className="grid grid-cols-3 gap-3">
                   <Field label="Brief Link" hint="Link to the brief or task">
                     <input type="url" value={form.brief_link} onChange={(e) => updateField('brief_link', e.target.value)} placeholder="Link to brief" className={inputClass} />
@@ -704,6 +713,15 @@ export default function AdCreativeForm({ trackerId, companyId, editingId, onClos
 
               {/* Content (left) */}
               <Section title="Content">
+                <Field label="Hook" hint="The scroll-stopper baked into the asset — opening shot of a video, or the static image + burnt-in text">
+                  <input
+                    type="text"
+                    value={form.hook}
+                    onChange={(e) => updateField('hook', e.target.value)}
+                    placeholder="What is the hook of this ad?"
+                    className={inputClass}
+                  />
+                </Field>
                 {VARIANT_GROUPS.map((group) => {
                   const match = variants.find((v) => v.variant_type === group.type);
                   const idx = match ? variants.indexOf(match) : -1;

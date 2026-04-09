@@ -1,8 +1,8 @@
 // components/admin/ads/StandardsTab.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Save, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback, KeyboardEvent } from 'react';
+import { Save, Loader2, X, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { AdAccountStandards, TrackerStandards } from '@/lib/types/ads';
 
@@ -25,9 +25,36 @@ export default function StandardsTab({
     uctr_target: null,
   });
   const [campaignStandards, setCampaignStandards] = useState<TrackerStandards>(trackerStandards);
+  const [personaInput, setPersonaInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const personas = campaignStandards.personas || [];
+
+  const addPersona = () => {
+    const code = personaInput.trim().toUpperCase().replace(/\s+/g, '');
+    if (!code || personas.includes(code)) {
+      setPersonaInput('');
+      return;
+    }
+    setCampaignStandards({ ...campaignStandards, personas: [...personas, code] });
+    setPersonaInput('');
+  };
+
+  const removePersona = (code: string) => {
+    setCampaignStandards({
+      ...campaignStandards,
+      personas: personas.filter((p) => p !== code),
+    });
+  };
+
+  const handlePersonaKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addPersona();
+    }
+  };
 
   const fetchAccountStandards = useCallback(async () => {
     const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -77,10 +104,57 @@ export default function StandardsTab({
 
   return (
     <div className="p-6 max-w-xl">
-      <h2 className="text-base font-semibold text-ink mb-1">Performance Standards</h2>
+      <h2 className="text-base font-semibold text-ink mb-1">Campaign Setup</h2>
       <p className="text-[12px] text-faint mb-6">
-        Set benchmarks for your ad performance metrics. Metric cells in the creatives table will turn green when meeting targets and red when below.
+        Configure personas and performance benchmarks for this campaign. These power the ad naming convention and the table&apos;s green/red metric cells.
       </p>
+
+      {/* Personas */}
+      <div className="mb-6">
+        <h3 className="text-[13px] font-semibold text-ink mb-1">Personas</h3>
+        <p className="text-[12px] text-faint mb-3">
+          The audiences this campaign targets. Used in the ad naming convention. Use short uppercase codes — e.g. <span className="font-mono">TRADIES</span>, <span className="font-mono">COACHES</span>, <span className="font-mono">MUMS</span>.
+        </p>
+        {personas.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {personas.map((p) => (
+              <span
+                key={p}
+                className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 bg-teal/10 text-teal rounded-full text-[12px] font-mono"
+              >
+                {p}
+                <button
+                  type="button"
+                  onClick={() => removePersona(p)}
+                  className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-teal/20"
+                  aria-label={`Remove ${p}`}
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={personaInput}
+            onChange={(e) => setPersonaInput(e.target.value)}
+            onKeyDown={handlePersonaKey}
+            placeholder="Add a persona (e.g. TRADIES)"
+            className="flex-1 px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 font-mono uppercase"
+          />
+          <button
+            type="button"
+            onClick={addPersona}
+            disabled={!personaInput.trim()}
+            className="flex items-center gap-1 px-3 py-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Plus size={14} />
+            Add
+          </button>
+        </div>
+      </div>
 
       {/* Universal Standards */}
       <div className="mb-6">

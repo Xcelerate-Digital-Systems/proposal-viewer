@@ -80,10 +80,10 @@ const toOpts = (arr: { value: string; label: string; description?: string }[]): 
 const COLUMN_GROUPS: { label: string; colSpan: number }[] = [
   { label: 'Ad Details', colSpan: 2 },
   { label: 'Step 1: Ad Strategy', colSpan: 5 },
-  { label: 'Step 2: Who is the audience', colSpan: 3 },
+  { label: 'Step 2: Who is the audience', colSpan: 4 },
   { label: 'Step 3: Where is the ad going', colSpan: 2 },
-  { label: 'Step 4: How will you execute the ad', colSpan: 8 },
-  { label: 'Content', colSpan: 4 },
+  { label: 'Step 4: How will you execute the ad', colSpan: 7 },
+  { label: 'Content', colSpan: 5 },
   { label: 'Step 5: Results & Learnings', colSpan: 11 },
 ];
 
@@ -99,6 +99,7 @@ const COLUMNS: ColumnDef[] = [
   { key: 'angle_idea', label: 'Angle Idea', hint: 'Categorisation for data analysis & brainstorming', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 1 },
   // Group 2 — Step 2: Who is the audience
   { key: 'target_market', label: 'Target Market', hint: 'Choose or add to drop down', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 2, firstInGroup: true },
+  { key: 'persona', label: 'Persona', hint: 'Audience persona — configured in Standards', cellType: 'text', minWidth: '120px', maxWidth: '160px', groupIdx: 2 },
   { key: 'awareness_level', label: 'Awareness Level', hint: 'Choose which stage they are at', cellType: 'select', options: toOpts(AWARENESS_LEVELS), minWidth: '140px', groupIdx: 2 },
   { key: 'market_sophistication', label: 'Market Sophistication', hint: 'Choose which stage they are at', cellType: 'select', options: toOpts(MARKET_SOPHISTICATION_LEVELS), minWidth: '160px', groupIdx: 2 },
   // Group 3 — Step 3: Where is the ad going
@@ -109,12 +110,12 @@ const COLUMNS: ColumnDef[] = [
   { key: 'media_type', label: 'Media', hint: 'Still vs video', cellType: 'select', options: toOpts(AD_MEDIA_TYPES), minWidth: '110px', groupIdx: 4 },
   { key: 'creative_style', label: 'Creative Style', hint: 'How will the platform read the creative type', cellType: 'select', options: toOpts(AD_CREATIVE_STYLES), minWidth: '130px', groupIdx: 4 },
   { key: 'creative_format', label: 'Creative Format', hint: 'Helps with brainstorming & data analysis', cellType: 'select', options: toOpts(AD_CREATIVE_FORMATS), minWidth: '140px', groupIdx: 4 },
-  { key: 'video_hooks', label: 'Video Hooks', hint: 'What is the hook of the video?', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 4 },
   { key: 'status', label: 'Status', hint: 'What is the status of the ad?', sortable: true, cellType: 'badge', options: toOpts(AD_CREATIVE_STATUSES), badgeColors: STATUS_COLORS, minWidth: '110px', groupIdx: 4 },
   { key: '_links', label: 'Links', hint: 'Brief & creative links', cellType: 'readonly', minWidth: '80px', groupIdx: 4 },
   { key: '_ad_copy_link', label: 'Ad Copy', hint: 'Google doc link', cellType: 'readonly', minWidth: '80px', groupIdx: 4 },
   // Group 5 — Content
-  { key: '_headline', label: 'Headline', cellType: 'readonly', minWidth: '140px', maxWidth: '200px', groupIdx: 5, firstInGroup: true },
+  { key: 'hook', label: 'Hook', hint: 'Scroll-stopper baked into the asset', cellType: 'text', minWidth: '160px', maxWidth: '220px', groupIdx: 5, firstInGroup: true },
+  { key: '_headline', label: 'Headline', cellType: 'readonly', minWidth: '140px', maxWidth: '200px', groupIdx: 5 },
   { key: '_primary_text', label: 'Primary Text', cellType: 'readonly', minWidth: '160px', maxWidth: '240px', groupIdx: 5 },
   { key: '_description', label: 'Description', cellType: 'readonly', minWidth: '140px', maxWidth: '200px', groupIdx: 5 },
   { key: '_cta', label: 'CTA', cellType: 'readonly', minWidth: '100px', groupIdx: 5 },
@@ -146,11 +147,11 @@ function SortHeader({ label, hint, column, sortBy, sortDir, onSort, firstInGroup
       style={minWidth ? { minWidth } : undefined}
       onClick={() => onSort(column)}
     >
-      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap">
+      <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap">
         {label}
         {active && (sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
       </span>
-      {hint && <span className="block text-[10px] text-faint font-normal normal-case tracking-normal mt-0.5 leading-tight">{hint}</span>}
+      {hint && <span className="block text-[11px] text-faint font-normal normal-case tracking-normal mt-0.5 leading-tight">{hint}</span>}
     </th>
   );
 }
@@ -168,8 +169,8 @@ function ColHeader({ col, sortBy, sortDir, onSort }: { col: ColumnDef; sortBy: s
       className={`px-3 py-2 text-left ${border}`}
       style={col.minWidth ? { minWidth: col.minWidth } : undefined}
     >
-      <span className="text-[11px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap">{col.label}</span>
-      {col.hint && <span className="block text-[10px] text-faint font-normal normal-case tracking-normal mt-0.5 leading-tight">{col.hint}</span>}
+      <span className="text-[12px] font-semibold text-muted uppercase tracking-wider whitespace-nowrap">{col.label}</span>
+      {col.hint && <span className="block text-[11px] text-faint font-normal normal-case tracking-normal mt-0.5 leading-tight">{col.hint}</span>}
     </th>
   );
 }
@@ -180,7 +181,7 @@ function BadgeDisplay({ value, map, colors }: { value: string | null; map: Selec
   if (!value) return <span className="text-faint">—</span>;
   const item = map.find((s) => s.value === value);
   return (
-    <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-medium ${colors[value] || 'bg-gray-100 text-gray-600'}`}>
+    <span className={`inline-flex px-2 py-0.5 rounded-md text-[12px] font-medium ${colors[value] || 'bg-gray-100 text-gray-600'}`}>
       {item?.label || value}
     </span>
   );
@@ -189,7 +190,7 @@ function BadgeDisplay({ value, map, colors }: { value: string | null; map: Selec
 function TextDisplay({ value, maxWidth }: { value: string | null; maxWidth?: string }) {
   if (!value) return <span className="text-faint">—</span>;
   return (
-    <span className={`text-[13px] text-muted truncate block ${maxWidth ? `max-w-[${maxWidth}]` : ''}`}>
+    <span className={`text-[14px] text-muted truncate block ${maxWidth ? `max-w-[${maxWidth}]` : ''}`}>
       {value}
     </span>
   );
@@ -202,7 +203,7 @@ function NumberDisplay({ value, prefix, suffix, meetsStandard }: { value: number
   if (meetsStandard === true) { colorClass = 'text-green-700'; bgClass = 'bg-green-50 border border-green-100'; }
   if (meetsStandard === false) { colorClass = 'text-red-600'; bgClass = 'bg-red-50 border border-red-100'; }
   return (
-    <span className={`text-[13px] ${colorClass} tabular-nums ${bgClass ? `inline-block px-2 py-0.5 rounded-md ${bgClass}` : ''}`}>
+    <span className={`text-[14px] ${colorClass} tabular-nums ${bgClass ? `inline-block px-2 py-0.5 rounded-md ${bgClass}` : ''}`}>
       {prefix}{value}{suffix}
     </span>
   );
@@ -211,7 +212,7 @@ function NumberDisplay({ value, prefix, suffix, meetsStandard }: { value: number
 function SelectDisplay({ value, options }: { value: string | null; options: SelectOption[] }) {
   if (!value) return <span className="text-faint">—</span>;
   const item = options.find((o) => o.value === value);
-  return <span className="text-[13px] text-muted truncate block">{item?.label || value}</span>;
+  return <span className="text-[14px] text-muted truncate block">{item?.label || value}</span>;
 }
 
 // Check if a metric value meets a target (higher is better for rates, lower is better for cost)
@@ -301,7 +302,7 @@ export default function AdCreativesTable({
     // Special readonly columns
     if (col.key === '_links') {
       return (
-        <td key={col.key} className={`px-3 py-2.5 ${gb}`}>
+        <td key={col.key} className={`px-3.5 py-3 ${gb}`}>
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {c.brief_link ? (
               <a href={c.brief_link} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">
@@ -320,7 +321,7 @@ export default function AdCreativesTable({
 
     if (col.key === '_ad_copy_link') {
       return (
-        <td key={col.key} className={`px-3 py-2.5 ${gb}`} onClick={(e) => e.stopPropagation()}>
+        <td key={col.key} className={`px-3.5 py-3 ${gb}`} onClick={(e) => e.stopPropagation()}>
           {c.ad_copy_link ? (
             <a href={c.ad_copy_link} target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">
               <ExternalLink size={12} />
@@ -335,9 +336,9 @@ export default function AdCreativesTable({
       const typeMap: Record<string, string> = { _headline: 'headline', _primary_text: 'primary_text', _description: 'description', _cta: 'cta' };
       const variant = c.ad_copy_variants?.find((v) => v.variant_type === typeMap[col.key]);
       return (
-        <td key={col.key} className={`px-3 py-2.5 ${gb}`} style={col.maxWidth ? { maxWidth: col.maxWidth } : undefined}>
+        <td key={col.key} className={`px-3.5 py-3 ${gb}`} style={col.maxWidth ? { maxWidth: col.maxWidth } : undefined}>
           {variant?.content ? (
-            <span className="text-[13px] text-muted block overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} title={variant.content}>{variant.content}</span>
+            <span className="text-[14px] text-muted block overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} title={variant.content}>{variant.content}</span>
           ) : (
             <span className="text-faint">—</span>
           )}
@@ -348,7 +349,7 @@ export default function AdCreativesTable({
     // Badge cells
     if (col.cellType === 'badge') {
       return (
-        <td key={col.key} className={`px-3 py-2.5 ${gb}`}>
+        <td key={col.key} className={`px-3.5 py-3 ${gb}`}>
           <BadgeDisplay value={raw as string | null} map={col.options!} colors={col.badgeColors!} />
         </td>
       );
@@ -357,7 +358,7 @@ export default function AdCreativesTable({
     // Select cells
     if (col.cellType === 'select') {
       return (
-        <td key={col.key} className={`px-3 py-2.5 ${gb}`}>
+        <td key={col.key} className={`px-3.5 py-3 ${gb}`}>
           <SelectDisplay value={raw as string | null} options={col.options!} />
         </td>
       );
@@ -367,11 +368,11 @@ export default function AdCreativesTable({
     if (col.cellType === 'text') {
       const strVal = (raw as string) || '';
       return (
-        <td key={col.key} className={`px-3 py-2.5 ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ''} ${gb}`}>
+        <td key={col.key} className={`px-3.5 py-3 ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ''} ${gb}`}>
           {col.key === 'ad_name' ? (
             <>
-              <span className="text-[13px] font-medium text-ink truncate block">{strVal || '—'}</span>
-              {c.ad_concept && <span className="text-[11px] text-faint truncate block mt-0.5">{c.ad_concept}</span>}
+              <span className="text-[14px] font-medium text-ink truncate block">{strVal || '—'}</span>
+              {c.ad_concept && <span className="text-[12px] text-faint truncate block mt-0.5">{c.ad_concept}</span>}
             </>
           ) : (
             <TextDisplay value={strVal || null} maxWidth={col.maxWidth} />
@@ -390,7 +391,7 @@ export default function AdCreativesTable({
       else if (col.key === 'cpl') meetsStandard = checkStandard(numVal, trackerStandards?.cpl_target, true);
 
       return (
-        <td key={col.key} className={`px-3 py-2.5 whitespace-nowrap ${gb}`}>
+        <td key={col.key} className={`px-3.5 py-3 whitespace-nowrap ${gb}`}>
           <NumberDisplay value={numVal} prefix={col.prefix} suffix={col.suffix} meetsStandard={meetsStandard} />
         </td>
       );
@@ -400,13 +401,13 @@ export default function AdCreativesTable({
     if (col.cellType === 'date') {
       const dateVal = raw as string | null;
       return (
-        <td key={col.key} className={`px-3 py-2.5 text-[13px] text-muted whitespace-nowrap ${gb}`}>
+        <td key={col.key} className={`px-3.5 py-3 text-[14px] text-muted whitespace-nowrap ${gb}`}>
           {dateVal ? new Date(dateVal).toLocaleDateString() : <span className="text-faint">—</span>}
         </td>
       );
     }
 
-    return <td key={col.key} className={`px-3 py-2.5 text-[13px] text-muted ${gb}`}>—</td>;
+    return <td key={col.key} className={`px-3.5 py-3 text-[14px] text-muted ${gb}`}>—</td>;
   };
 
   return (
@@ -419,7 +420,7 @@ export default function AdCreativesTable({
               <th
                 key={i}
                 colSpan={group.colSpan}
-                className={`px-3 py-2.5 text-left text-[11px] font-bold text-ink uppercase tracking-wider bg-white ${i > 0 ? GROUP_BORDER : ''}`}
+                className={`px-3.5 py-3 text-left text-[12px] font-bold text-ink uppercase tracking-wider bg-white ${i > 0 ? GROUP_BORDER : ''}`}
               >
                 {group.label}
               </th>
@@ -434,7 +435,7 @@ export default function AdCreativesTable({
             <th className="px-3 py-3 w-10" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-edge">
+        <tbody className="divide-y divide-edge-hover/60">
           {creatives.map((c) => (
             <tr
               key={c.id}
@@ -444,7 +445,7 @@ export default function AdCreativesTable({
               {columns.map((col) => renderCell(c, col))}
 
               {/* Actions menu */}
-              <td className="px-3 py-2.5 relative">
+              <td className="px-3.5 py-3 relative">
                 <div className="relative" ref={menuOpenId === c.id ? menuRef : undefined}>
                   <button
                     onClick={(e) => {
@@ -464,7 +465,7 @@ export default function AdCreativesTable({
                           setMenuOpenId(null);
                           onEdit(c.id);
                         }}
-                        className="w-full px-3 py-1.5 text-left text-[13px] text-ink hover:bg-surface flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-left text-[14px] text-ink hover:bg-surface flex items-center gap-2"
                       >
                         <Pencil size={13} />
                         Edit
@@ -475,7 +476,7 @@ export default function AdCreativesTable({
                           setMenuOpenId(null);
                           onDelete(c.id);
                         }}
-                        className="w-full px-3 py-1.5 text-left text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-left text-[14px] text-red-600 hover:bg-red-50 flex items-center gap-2"
                       >
                         <Trash2 size={13} />
                         Delete

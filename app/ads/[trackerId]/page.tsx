@@ -10,7 +10,6 @@ import { supabase, type AdTracker } from '@/lib/supabase';
 import AdCreativesTable from '@/components/admin/ads/AdCreativesTable';
 import QuickCreateModal from '@/components/admin/ads/QuickCreateModal';
 import AdFilterBar from '@/components/admin/ads/AdFilterBar';
-import NamingLegendPanel from '@/components/admin/ads/NamingLegendPanel';
 import ReferenceTabContent from '@/components/admin/ads/ReferenceTabContent';
 import type { TabType } from '@/components/admin/ads/ReferenceTabContent';
 import StandardsTab from '@/components/admin/ads/StandardsTab';
@@ -36,7 +35,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [trackerLoading, setTrackerLoading] = useState(true);
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [showNamingLegend, setShowNamingLegend] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TrackerTab>('creatives');
@@ -220,14 +218,14 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               />
             </div>
 
-            {/* Naming Legend */}
-            <button
-              onClick={() => setShowNamingLegend(true)}
+            {/* Naming Convention */}
+            <a
+              href="/ads/naming-convention"
               className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center bg-surface text-muted hover:text-ink transition-all"
               title="Ad Naming Convention"
             >
               <BookOpen size={16} />
-            </button>
+            </a>
 
             {/* Filter toggle */}
             <button
@@ -335,11 +333,6 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             return result;
           }}
         />
-      )}
-
-      {/* Naming legend panel */}
-      {showNamingLegend && (
-        <NamingLegendPanel onClose={() => setShowNamingLegend(false)} />
       )}
 
     </div>

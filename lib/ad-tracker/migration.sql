@@ -47,7 +47,8 @@ CREATE TABLE ad_creatives (
   media_type TEXT CHECK (media_type IN ('still', 'video')),
   creative_style TEXT,
   creative_format TEXT,
-  video_hooks TEXT,
+  hook TEXT,
+  persona TEXT,
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'briefed', 'in_production', 'ready', 'live', 'paused', 'killed')),
   brief_link TEXT,
   creative_link TEXT,
@@ -119,3 +120,21 @@ CREATE TABLE ad_creative_formats (
 );
 
 CREATE INDEX idx_ad_creative_formats_company ON ad_creative_formats(company_id);
+
+-- ─── 6. Migration: persona + rename video_hooks → hook ──────────────────────
+-- Run on existing databases (idempotent).
+
+ALTER TABLE ad_creatives ADD COLUMN IF NOT EXISTS persona TEXT;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'ad_creatives' AND column_name = 'video_hooks'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'ad_creatives' AND column_name = 'hook'
+  ) THEN
+    ALTER TABLE ad_creatives RENAME COLUMN video_hooks TO hook;
+  END IF;
+END $$;

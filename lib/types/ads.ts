@@ -78,7 +78,8 @@ export type AdCreative = {
   media_type: AdMediaType | null;
   creative_style: string | null;
   creative_format: string | null;
-  video_hooks: string | null;
+  hook: string | null;
+  persona: string | null;
   status: AdCreativeStatus;
   brief_link: string | null;
   creative_link: string | null;
@@ -165,6 +166,8 @@ export type AdTrackerWithCount = AdTracker & {
 export type TrackerStandards = {
   cpl_target?: number | null;
   metric_label?: string; // e.g. "CPL", "CPA", "ROAS"
+  /** Personas this campaign targets — used in the ad naming convention. */
+  personas?: string[];
 };
 
 export type AdAccountStandards = {

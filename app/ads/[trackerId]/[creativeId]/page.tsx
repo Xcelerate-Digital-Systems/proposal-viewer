@@ -1,6 +1,7 @@
 // app/ads/[trackerId]/[creativeId]/page.tsx
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -20,8 +21,24 @@ function EditCreative({ companyId }: { companyId: string }) {
   const router = useRouter();
   const trackerId = params.trackerId as string;
   const creativeId = params.creativeId as string;
+  const [personas, setPersonas] = useState<string[]>([]);
 
   const goBack = () => router.push(`/ads/${trackerId}`);
+
+  // Load tracker personas (configured in Standards tab)
+  useEffect(() => {
+    (async () => {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) return;
+      const res = await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success && json.data?.standards?.personas) {
+        setPersonas(json.data.standards.personas);
+      }
+    })();
+  }, [trackerId, companyId]);
 
   const handleSave = async (data: Record<string, unknown>) => {
     const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -61,6 +78,7 @@ function EditCreative({ companyId }: { companyId: string }) {
           trackerId={trackerId}
           companyId={companyId}
           editingId={creativeId}
+          personas={personas}
           onClose={goBack}
           onSave={handleSave}
         />
