@@ -1,7 +1,7 @@
 // app/ads/naming-convention/page.tsx
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, BookOpen, Sparkles, Lock, Layers, RefreshCw } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 
@@ -103,18 +103,20 @@ const REMIX_TABLE = [
 ];
 
 function NamingConvention() {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-canvas">
       {/* Header */}
       <div className="border-b border-edge bg-white">
         <div className="max-w-5xl mx-auto px-8 py-6">
-          <Link
-            href="javascript:history.back()"
+          <button
+            type="button"
+            onClick={() => router.back()}
             className="inline-flex items-center gap-1.5 text-[12px] text-faint hover:text-muted mb-3"
           >
             <ArrowLeft size={13} />
             Back
-          </Link>
+          </button>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-teal/10 flex items-center justify-center">
               <BookOpen size={18} className="text-teal" />
