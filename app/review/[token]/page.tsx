@@ -15,6 +15,7 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import ReviewBoardViewer from '@/components/review/ReviewBoardViewer';
 import ReviewDetailView from '@/components/reviews/ReviewDetailView';
+import GuestOnboardingModal from '@/components/reviews/GuestOnboardingModal';
 
 
 export default function ReviewViewerPage({ params }: { params: { token: string } }) {
@@ -39,8 +40,11 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const urlBack = searchParams.get('back');
 
   // ── Guest identity ──
-  const { guestName, setGuestName, saveGuestIdentity } = useGuestIdentity();
+  const { guestName, guestEmail, setGuestName, saveGuestIdentity, hydrated: identityHydrated } = useGuestIdentity();
   const { setPendingPin } = usePinFeedback();
+
+  // Show onboarding modal once storage has been read and no name is stored.
+  const showOnboarding = identityHydrated && !guestName && !loading && !notFound;
 
   // ── Fetch review data ──
   useEffect(() => {
@@ -116,11 +120,12 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   // ── Submit comment via API ──
   const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }) => {
     if (!guestName.trim()) return;
-    saveGuestIdentity(guestName);
+    saveGuestIdentity(guestName, guestEmail);
 
     const body: Record<string, unknown> = {
       review_item_id: reviewItemId,
       author_name: guestName.trim(),
+      author_email: guestEmail.trim() || null,
       content: content.trim(),
       comment_type: highlightData ? 'text_highlight' : annotationData ? (annotationData as Record<string, unknown>).type as string : (pinX != null ? 'pin' : 'general'),
       pin_x: pinX ?? null,
@@ -201,6 +206,11 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     return (
       <>
         <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+        <GuestOnboardingModal
+          open={showOnboarding}
+          onSubmit={(name, email) => saveGuestIdentity(name, email)}
+          accentColor={branding.accent_color}
+        />
 
         <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
           <div className="text-center max-w-sm">
@@ -260,21 +270,28 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     : undefined;
 
   return (
-    <ReviewDetailView
-      mode="client"
-      project={project!}
-      items={items}
-      comments={comments}
-      initialItemId={initialItemId}
-      initialTypeFilter={urlType || autoTypeFilter}
-      singleItemOnly={viewMode === 'item'}
-      hideFilterBar={!!autoTypeFilter}
-      guestName={guestName}
-      onGuestNameChange={setGuestName}
-      onSubmitComment={submitComment}
-      shareToken={params.token}
-      companyId={project?.company_id}
-      backAction={backAction}
-    />
+    <>
+      <GuestOnboardingModal
+        open={showOnboarding}
+        onSubmit={(name, email) => saveGuestIdentity(name, email)}
+        accentColor={branding.accent_color}
+      />
+      <ReviewDetailView
+        mode="client"
+        project={project!}
+        items={items}
+        comments={comments}
+        initialItemId={initialItemId}
+        initialTypeFilter={urlType || autoTypeFilter}
+        singleItemOnly={viewMode === 'item'}
+        hideFilterBar={!!autoTypeFilter}
+        guestName={guestName}
+        onGuestNameChange={setGuestName}
+        onSubmitComment={submitComment}
+        shareToken={params.token}
+        companyId={project?.company_id}
+        backAction={backAction}
+      />
+    </>
   );
 }

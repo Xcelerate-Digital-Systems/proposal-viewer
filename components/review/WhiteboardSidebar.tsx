@@ -43,11 +43,11 @@ const TYPE_LABELS: Record<string, string> = {
 
 /* ─── Status config ────────────────────────────────────────────── */
 
-const STATUS_CONFIG: Record<ReviewItemStatus, { color: string; label: string }> = {
-  draft: { color: '#9ca3af', label: 'Draft' },
-  in_review: { color: '#60a5fa', label: 'In Review' },
-  approved: { color: '#10b981', label: 'Approved' },
-  revision_needed: { color: '#fbbf24', label: 'Revision Needed' },
+import { getReviewStatusDef } from '@/lib/reviews/status';
+
+const statusStyle = (status: ReviewItemStatus) => {
+  const s = getReviewStatusDef(status);
+  return { color: s.hex, label: s.label };
 };
 
 /* ─── Component ────────────────────────────────────────────────── */
@@ -157,7 +157,7 @@ export default function WhiteboardSidebar({
               {isExpanded && (
                 <div className="pb-1">
                   {typeItems.map((item) => {
-                    const status = STATUS_CONFIG[item.status];
+                    const status = statusStyle(item.status);
                     const count = commentCounts[item.id] || 0;
 
                     return (

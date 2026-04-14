@@ -15,22 +15,34 @@ document.addEventListener("click",function(e){
 
   exitMode();setActiveTool(null);
 
-  /* Name prompt if needed */
-  var nameNeeded=!guestName;
+  /* Require guest identity before showing input */
+  if(!guestName){
+    if(typeof showOnboard==="function"){
+      var cex=e.clientX,cey=e.clientY;
+      showOnboard(function(){
+        /* Replay the click at the same coordinates once identity is set */
+        var ev=new MouseEvent("click",{clientX:cex,clientY:cey,bubbles:true,cancelable:true});
+        /* Re-enter text mode so the listener runs */
+        setActiveTool("text");setMode("text","Click anywhere to add text");
+        document.elementFromPoint(cex,cey).dispatchEvent(ev);
+      });
+    }
+    return;
+  }
+
   var wrap=document.createElement("div");wrap.className="aviz-text-input-wrap";
   wrap.style.left=px+"px";wrap.style.top=py+"px";
-  wrap.innerHTML=(nameNeeded?'<input class="aviz-inp aviz-text-name" placeholder="Your name" style="margin-bottom:6px;width:100%"/>':'')
-    +'<textarea class="aviz-ta aviz-text-comment" placeholder="Add your comment\\u2026" rows="2" style="min-height:48px;width:100%"></textarea>'
-    +'<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">'
+  wrap.innerHTML='<textarea class="aviz-ta aviz-text-comment" placeholder="Add your comment\\u2026" rows="2" style="min-height:64px;width:100%"></textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;align-items:center">'
+    +'<span style="flex:1;font-size:11px;color:#9ca3af">Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></span>'
     +'<button class="aviz-btn aviz-btn-g aviz-text-cancel">Cancel</button>'
     +'<button class="aviz-btn aviz-btn-p aviz-text-post">Post</button></div>';
   document.body.appendChild(wrap);
 
-  var nameInpEl=wrap.querySelector(".aviz-text-name");
   var textEl=wrap.querySelector(".aviz-text-comment");
   var postBtn=wrap.querySelector(".aviz-text-post");
   var cancelBtn=wrap.querySelector(".aviz-text-cancel");
-  (nameInpEl||textEl).focus();
+  textEl.focus();
 
   /* Also place a live-updating text label above */
   var label=document.createElement("div");label.className="aviz-text-ann pending";
@@ -46,10 +58,9 @@ document.addEventListener("click",function(e){
   function cleanup(){wrap.remove();label.remove();}
 
   function doPost(){
-    var n=nameInpEl?nameInpEl.value.trim():guestName;
+    var n=guestName;
     var txt=textEl.value.trim();
     if(!n||!txt)return;
-    guestName=n;saveGuest();
     postBtn.disabled=true;postBtn.textContent="Capturing\\u2026";
 
     /* Hide form, keep label visible, capture screenshot */
@@ -63,7 +74,7 @@ document.addEventListener("click",function(e){
       function finish(ssUrl){
         var maxTn=0;comments.forEach(function(c){if(c.thread_number&&c.thread_number>maxTn)maxTn=c.thread_number;});
         postComment({
-          author_name:n,content:txt,comment_type:"text",
+          author_name:n,author_email:guestEmail||null,content:txt,comment_type:"text",
           pin_x:pxToPctX(px),pin_y:pxToPctY(py),
           thread_number:maxTn+1,
           screenshot_url:ssUrl||null,

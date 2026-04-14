@@ -11,7 +11,7 @@ var C={
   accent:"#017C87"
 };
 
-var SK="aviz_guest";
+var SK="review_guest_identity";
 var comments=[];
 var annotations=[];
 var mode="idle";
@@ -20,12 +20,13 @@ var activeTool=null;
 var pendingAnnotation=null;
 var highlightEl=null;
 var guestName="";
+var guestEmail="";
 var loading=true;
 var pollTimer=null;
 var boxStart=null;var boxEl=null;var boxDrawing=false;
 
-try{var g=JSON.parse(localStorage.getItem(SK)||"{}");guestName=g.name||"";}catch(e){}
-function saveGuest(){try{localStorage.setItem(SK,JSON.stringify({name:guestName}));}catch(e){}}
+try{var g=JSON.parse(localStorage.getItem(SK)||"{}");guestName=g.name||"";guestEmail=g.email||"";}catch(e){}
+function saveGuest(){try{localStorage.setItem(SK,JSON.stringify({name:guestName,email:guestEmail}));}catch(e){}}
 function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
 function ago(d){var m=Math.floor((Date.now()-new Date(d).getTime())/60000);if(m<1)return"just now";if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";}
 
@@ -49,8 +50,10 @@ function postComment(body,cb){
   body.review_item_id=C.item;
   api("",{method:"POST",body:JSON.stringify(body)}).then(function(d){if(d&&d.id)comments.push(d);if(cb)cb(d);}).catch(function(){if(cb)cb(null);});
 }
-function uploadScreenshot(dataUrl,cb){
-  fetch(C.ssApi,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item:C.item,image:dataUrl})})
+function uploadScreenshot(dataUrl,cb,opts){
+  var body={item:C.item,image:dataUrl};
+  if(opts&&opts.install)body.install=true;
+  fetch(C.ssApi,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(d){cb(d.url||null);}).catch(function(){cb(null);});
 }
 
@@ -82,6 +85,36 @@ function captureAutoScreenshot(cb){
       root.style.display="";if(form)form.style.display="";
       console.error("Auto-screenshot failed:",err);cb(null);
     });
+  });
+}
+
+/* ── Install screenshot — captures the above-the-fold area at the current
+      scroll position as a JPEG (smaller than PNG for a full webpage). */
+function captureInstallScreenshot(cb){
+  root.style.display="none";
+  var onboard=document.getElementById("aviz-onboard");if(onboard)onboard.style.display="none";
+  loadH2C(function(){
+    var prevScroll={x:window.scrollX,y:window.scrollY};
+    window.scrollTo(0,0);
+    /* Give layout a tick to settle before capturing. */
+    setTimeout(function(){
+      html2canvas(document.body,{
+        useCORS:true,allowTaint:true,
+        windowWidth:document.documentElement.clientWidth,
+        windowHeight:document.documentElement.clientHeight,
+        width:document.documentElement.clientWidth,
+        height:document.documentElement.clientHeight,
+        x:0,y:0,scrollX:0,scrollY:0
+      }).then(function(canvas){
+        root.style.display="";if(onboard)onboard.style.display="";
+        window.scrollTo(prevScroll.x,prevScroll.y);
+        cb(canvas.toDataURL("image/jpeg",0.82));
+      }).catch(function(err){
+        root.style.display="";if(onboard)onboard.style.display="";
+        window.scrollTo(prevScroll.x,prevScroll.y);
+        console.error("Install screenshot failed:",err);cb(null);
+      });
+    },120);
   });
 }
 `;

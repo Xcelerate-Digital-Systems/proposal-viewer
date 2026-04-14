@@ -2,28 +2,9 @@
 'use client';
 
 import { Handle, Position } from '@xyflow/react';
-import {
-  Eye, CheckCircle2, AlertCircle, Clock, MessageSquareText,
-} from 'lucide-react';
+import { Eye, MessageSquareText } from 'lucide-react';
 import type { ReviewItem, ReviewItemStatus } from '@/lib/supabase';
-
-/* ─── Status config ────────────────────────────────────────────── */
-
-export interface StatusDef {
-  label: string;
-  color: string;
-  bg: string;
-  dot: string;
-  symbol: string;
-  icon: React.ReactNode;
-}
-
-export const STATUS_CONFIG: Record<ReviewItemStatus, StatusDef> = {
-  draft:           { label: 'Draft',     color: 'text-gray-500',     bg: 'bg-gray-100',   dot: 'bg-gray-400',    symbol: '',  icon: <Clock size={10} /> },
-  in_review:       { label: 'In Review', color: 'text-blue-600',     bg: 'bg-blue-50',    dot: 'bg-blue-500',    symbol: '◉', icon: <Eye size={10} /> },
-  approved:        { label: 'Approved',  color: 'text-emerald-600',  bg: 'bg-emerald-50', dot: 'bg-emerald-500', symbol: '✓', icon: <CheckCircle2 size={10} /> },
-  revision_needed: { label: 'Revision',  color: 'text-amber-600',    bg: 'bg-amber-50',   dot: 'bg-amber-500',  symbol: '!', icon: <AlertCircle size={10} /> },
-};
+import { getReviewStatusDef } from '@/lib/reviews/status';
 
 /* ─── Shared props every node receives ─────────────────────────── */
 
@@ -60,7 +41,7 @@ export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
 }
 
 export function StatusDot({ status }: { status: ReviewItemStatus }) {
-  const s = STATUS_CONFIG[status] || STATUS_CONFIG.draft;
+  const s = getReviewStatusDef(status);
   return (
     <div
       className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center ${s.dot}`}
@@ -87,9 +68,9 @@ export function CommentBadge({ count, unresolved }: { count: number; unresolved:
 }
 
 export function StatusPill({ status }: { status: ReviewItemStatus }) {
-  const s = STATUS_CONFIG[status] || STATUS_CONFIG.draft;
+  const s = getReviewStatusDef(status);
   return (
-    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${s.bg} ${s.color}`}>
+    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${s.bg} ${s.text}`}>
       {s.icon}
       {s.label}
     </div>
@@ -118,7 +99,6 @@ export function CardShell({
   typeLabel: string;
   children: React.ReactNode;
 }) {
-  const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.draft;
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onNavigate?.(item.id);

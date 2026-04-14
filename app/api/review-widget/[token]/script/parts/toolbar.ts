@@ -36,43 +36,46 @@ root.appendChild(bar);
 var barMsg=bar.querySelector("#aviz-bar-msg");
 
 /* ── Mode management ────────────────────────────────────── */
-function setMode(m,msg){
-  exitMode();
-  mode=m;
-  if(m==="pin")document.documentElement.classList.add("aviz-mode-pin");
-  if(m==="box")document.documentElement.classList.add("aviz-mode-box");
-  if(m==="text")document.documentElement.classList.add("aviz-mode-text");
-  if(msg){barMsg.textContent=msg;bar.classList.add("show");}
-}
-function exitMode(){
-  mode="idle";
-  document.documentElement.classList.remove("aviz-mode-pin","aviz-mode-box","aviz-mode-text");
+/* Pin mode is always armed — box/text are temporary overrides that return to pin. */
+function armPinMode(){
+  mode="pin";
+  document.documentElement.classList.remove("aviz-mode-box","aviz-mode-text");
+  document.documentElement.classList.add("aviz-mode-pin");
+  activeTool="pin";
+  Object.keys(toolBtns).forEach(function(k){toolBtns[k].classList.toggle("active",k==="pin");});
   bar.classList.remove("show");
   removePendingAnnotation();
   if(boxEl){boxEl.remove();boxEl=null;}boxDrawing=false;boxStart=null;
 }
-function setActiveTool(id){
-  activeTool=id;
-  Object.keys(toolBtns).forEach(function(k){toolBtns[k].classList.toggle("active",k===id);});
+function setMode(m,msg){
+  removePendingAnnotation();
+  if(boxEl){boxEl.remove();boxEl=null;}boxDrawing=false;boxStart=null;
+  mode=m;
+  document.documentElement.classList.remove("aviz-mode-pin","aviz-mode-box","aviz-mode-text");
+  if(m==="pin")document.documentElement.classList.add("aviz-mode-pin");
+  if(m==="box")document.documentElement.classList.add("aviz-mode-box");
+  if(m==="text")document.documentElement.classList.add("aviz-mode-text");
+  if(msg){barMsg.textContent=msg;bar.classList.add("show");}else{bar.classList.remove("show");}
 }
-bar.querySelector("#aviz-bar-cancel").addEventListener("click",function(){exitMode();setActiveTool(null);});
+function exitMode(){armPinMode();}
+function setActiveTool(id){
+  activeTool=id||"pin";
+  Object.keys(toolBtns).forEach(function(k){toolBtns[k].classList.toggle("active",k===activeTool);});
+}
+bar.querySelector("#aviz-bar-cancel").addEventListener("click",function(){armPinMode();});
 
 /* ── Toolbar click handlers ─────────────────────────────── */
-toolBtns.pin.addEventListener("click",function(){
-  if(mode==="pin"){exitMode();setActiveTool(null);return;}
-  closePanel();setActiveTool("pin");setMode("pin","Click anywhere to place a pin");
-});
+toolBtns.pin.addEventListener("click",function(){closePanel();armPinMode();});
 toolBtns.box.addEventListener("click",function(){
-  if(mode==="box"){exitMode();setActiveTool(null);return;}
+  if(mode==="box"){armPinMode();return;}
   closePanel();setActiveTool("box");setMode("box","Click and drag to draw a box");
 });
 toolBtns.text.addEventListener("click",function(){
-  if(mode==="text"){exitMode();setActiveTool(null);return;}
+  if(mode==="text"){armPinMode();return;}
   closePanel();setActiveTool("text");setMode("text","Click anywhere to add text");
 });
 toolBtns.video.addEventListener("click",function(){/* soon */});
 toolBtns.comments.addEventListener("click",function(){
-  exitMode();
   if(panelOpen){closePanel();}else{openPanel();}
 });
 toolBtns.questions.addEventListener("click",function(){/* soon */});

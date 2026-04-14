@@ -11,7 +11,7 @@ export type ReviewProject = {
   description: string | null;
   client_name: string | null;
   client_email: string | null;
-  status: 'active' | 'archived' | 'completed';
+  status: ReviewStatus;
   share_token: string;
   board_share_token: string | null;
   share_mode: ReviewShareMode;
@@ -21,7 +21,19 @@ export type ReviewProject = {
 };
 
 export type ReviewItemType = 'webpage' | 'email' | 'ad' | 'image' | 'video' | 'sms' | 'google_ad' | 'pdf';
-export type ReviewItemStatus = 'draft' | 'in_review' | 'approved' | 'revision_needed';
+
+/** Unified review workflow status, applied to both projects and items. */
+export type ReviewStatus =
+  | 'draft'
+  | 'internal_review'
+  | 'external_review'
+  | 'client_review'
+  | 'revisions_completed'
+  | 'approved'
+  | 'archived';
+
+/** @deprecated Kept as an alias for existing imports. Use `ReviewStatus`. */
+export type ReviewItemStatus = ReviewStatus;
 
 export type GoogleAdFormat = 'search' | 'display';
 

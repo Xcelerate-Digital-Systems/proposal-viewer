@@ -5,12 +5,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Copy, Check, Trash2, ExternalLink, MessageSquareText,
-  CheckCircle2, AlertCircle,
 } from 'lucide-react';
 import { supabase, type ReviewProject } from '@/lib/supabase';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import { getReviewStatusDef } from '@/lib/reviews/status';
 
 interface ReviewProjectRowProps {
   project: ReviewProject;
@@ -22,11 +22,6 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
 };
 
-const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
-  active: { label: 'Active', bg: 'bg-[#E8F5E9]', text: 'text-[#2E7D32]' },
-  completed: { label: 'Completed', bg: 'bg-teal-tint', text: 'text-teal' },
-  archived: { label: 'Archived', bg: 'bg-surface', text: 'text-muted' },
-};
 
 export default function ReviewProjectRow({ project, onRefresh, customDomain }: ReviewProjectRowProps) {
   const router = useRouter();
@@ -82,7 +77,7 @@ export default function ReviewProjectRow({ project, onRefresh, customDomain }: R
     onRefresh();
   };
 
-  const status = statusConfig[project.status] || statusConfig.active;
+  const status = getReviewStatusDef(project.status);
 
   return (
     <div
@@ -91,9 +86,7 @@ export default function ReviewProjectRow({ project, onRefresh, customDomain }: R
     >
       {/* Status badge */}
       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium shrink-0 ${status.bg} ${status.text}`}>
-        {project.status === 'active' && <CheckCircle2 size={10} />}
-        {project.status === 'completed' && <Check size={10} />}
-        {project.status === 'archived' && <AlertCircle size={10} />}
+        {status.icon}
         {status.label}
       </span>
 

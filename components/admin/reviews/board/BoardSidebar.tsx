@@ -4,9 +4,10 @@
 import { useState } from 'react';
 import {
   Plus, X, Globe, Mail, Smartphone, Image, Video, Megaphone,
-  ChevronDown, ChevronRight, Eye, CheckCircle2, AlertCircle, Clock,
+  ChevronDown, ChevronRight, Eye, CheckCircle2,
 } from 'lucide-react';
 import type { ReviewItem, ReviewItemStatus } from '@/lib/supabase';
+import { getReviewStatusDef } from '@/lib/reviews/status';
 
 /* ─── Props ────────────────────────────────────────────────────── */
 
@@ -39,12 +40,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 /* ─── Status indicators ────────────────────────────────────────── */
 
-const STATUS_DOT: Record<ReviewItemStatus, string> = {
-  draft: 'bg-gray-300',
-  in_review: 'bg-blue-400',
-  approved: 'bg-emerald-500',
-  revision_needed: 'bg-amber-400',
-};
+const statusDotClass = (status: ReviewItemStatus) => getReviewStatusDef(status).dot;
 
 /* ─── Component ────────────────────────────────────────────────── */
 
@@ -97,7 +93,7 @@ export default function BoardSidebar({
                   </div>
 
                   {/* Status dot */}
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[item.status]}`} />
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${statusDotClass(item.status)}`} />
 
                   {/* Add icon */}
                   <Plus size={14} className="text-gray-300 group-hover:text-teal transition-colors shrink-0" />
@@ -132,7 +128,7 @@ export default function BoardSidebar({
                     className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors group"
                   >
                     {/* Status dot */}
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[item.status]}`} />
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${statusDotClass(item.status)}`} />
 
                     {/* Title */}
                     <p className="text-[11px] text-gray-600 truncate flex-1 min-w-0">

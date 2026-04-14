@@ -14,35 +14,36 @@ function showAnnotationForm(type,px,py,extra){
     document.body.appendChild(marker);
   }
 
-  var fw=280,vw=window.innerWidth,vh=window.innerHeight;
+  var fw=380,vw=window.innerWidth,vh=window.innerHeight;
   var cx=px-window.pageXOffset,cy=py-window.pageYOffset;
   var fx=px+20,fy=py-10;
   if(cx+fw+30>vw)fx=px-fw-20;
-  if(cy+200+20>vh)fy=py-200+10;
+  if(cy+220+20>vh)fy=py-220+10;
+
+  /* Guest identity required before posting — trigger onboarding if missing */
+  if(!guestName){if(typeof showOnboard==="function"){showOnboard(function(){showAnnotationForm(type,px,py,extra);});}return;}
 
   var f=document.createElement("div");f.className="aviz-pin-form";
   f.style.left=fx+"px";f.style.top=fy+"px";
   var typeLabel=type==="pin"?"Pin Comment":"Box Comment";
   f.innerHTML='<h4>'+typeLabel+'</h4>'
-    +(guestName?'':'<input class="aviz-inp aviz-pf-name" placeholder="Your name" style="margin-bottom:6px"/>')
-    +'<textarea class="aviz-ta aviz-pf-text" placeholder="Describe your feedback\\u2026" style="min-height:48px"></textarea>'
-    +'<div style="display:flex;gap:6px;margin-top:10px;justify-content:flex-end">'
+    +'<textarea class="aviz-ta aviz-pf-text" placeholder="Describe your feedback\\u2026" style="min-height:80px"></textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;align-items:center">'
+    +'<span style="flex:1;font-size:11px;color:#9ca3af">Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></span>'
     +'<button class="aviz-btn aviz-btn-g aviz-pf-cancel">Cancel</button>'
     +'<button class="aviz-btn aviz-btn-p aviz-pf-send">Post</button></div>';
   document.body.appendChild(f);
 
   pendingAnnotation={form:f,marker:marker,type:type,x:px,y:py,extra:extra||null};
 
-  var pfName=f.querySelector(".aviz-pf-name");
   var pfText=f.querySelector(".aviz-pf-text");
   var pfSend=f.querySelector(".aviz-pf-send");
   pfText.focus();
 
   pfSend.addEventListener("click",function(){
-    var n=pfName?pfName.value.trim():guestName;
+    var n=guestName;
     var t=pfText.value.trim();
     if(!n||!t)return;
-    guestName=n;saveGuest();
     pfSend.disabled=true;pfSend.textContent="Capturing\\u2026";
 
     /* Hide form + existing annotations, keep only pending marker/box visible */
@@ -57,7 +58,7 @@ function showAnnotationForm(type,px,py,extra){
       function doPost(ssUrl){
         var maxTn=0;comments.forEach(function(c){if(c.thread_number&&c.thread_number>maxTn)maxTn=c.thread_number;});
         var payload={
-          author_name:n,content:t,comment_type:type,
+          author_name:n,author_email:guestEmail||null,content:t,comment_type:type,
           pin_x:pxToPctX(px),pin_y:pxToPctY(py),
           thread_number:maxTn+1,
           screenshot_url:ssUrl||null,

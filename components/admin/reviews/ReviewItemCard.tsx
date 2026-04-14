@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Trash2, MessageSquareText, CheckCircle2, AlertCircle, Clock,
+  Trash2, MessageSquareText,
   Pencil, MoreHorizontal, Eye, Globe, Check, Mail, Smartphone,
   Share2, Loader2, ExternalLink,
 } from 'lucide-react';
@@ -12,6 +12,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
 import { buildReviewItemUrl } from '@/lib/proposal-url';
+import { REVIEW_STATUS_OPTIONS } from '@/lib/reviews/status';
 
 interface ReviewItemCardProps {
   item: ReviewItem;
@@ -20,40 +21,14 @@ interface ReviewItemCardProps {
   customDomain?: string | null;
 }
 
-const itemStatusOptions: StatusOption<ReviewItemStatus>[] = [
-  {
-    value: 'draft',
-    label: 'Draft',
-    bg: 'bg-gray-100',
-    text: 'text-gray-600',
-    border: 'border-gray-200',
-    icon: <Clock size={13} />,
-  },
-  {
-    value: 'in_review',
-    label: 'In Review',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    border: 'border-blue-200',
-    icon: <Eye size={13} />,
-  },
-  {
-    value: 'approved',
-    label: 'Approved',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
-    icon: <CheckCircle2 size={13} />,
-  },
-  {
-    value: 'revision_needed',
-    label: 'Revision Needed',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    border: 'border-amber-200',
-    icon: <AlertCircle size={13} />,
-  },
-];
+const itemStatusOptions: StatusOption<ReviewItemStatus>[] = REVIEW_STATUS_OPTIONS.map((s) => ({
+  value: s.value,
+  label: s.label,
+  bg: s.bg,
+  text: s.text,
+  border: s.border,
+  icon: s.icon,
+}));
 
 export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDomain }: ReviewItemCardProps) {
   const confirm = useConfirm();

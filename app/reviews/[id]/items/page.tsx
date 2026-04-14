@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, ArrowLeft, Copy, Check, Image } from 'lucide-react';
 import ProjectTabs from '@/components/admin/reviews/ProjectTabs';
-import { supabase, type ReviewProject, type ReviewItem, type ReviewShareMode } from '@/lib/supabase';
+import { supabase, type ReviewProject, type ReviewItem, type ReviewItemStatus, type ReviewShareMode } from '@/lib/supabase';
 import { buildReviewProjectUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddReviewItemModal from '@/components/admin/reviews/AddReviewItemModal';
 import ReviewItemCard from '@/components/admin/reviews/ReviewItemCard';
 import TypeFilterTabs from '@/components/reviews/TypeFilterTabs';
+import { REVIEW_STATUS_ORDER, getReviewStatusDef } from '@/lib/reviews/status';
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -53,21 +54,18 @@ function ItemsGate({ isSuperAdmin, projectId, companyId, userId, initialTypeFilt
 
 interface StatusSummary {
   total: number;
-  draft: number;
-  in_review: number;
-  approved: number;
-  revision_needed: number;
+  byStatus: Record<ReviewItemStatus, number>;
 }
 
 function StatusBar({ summary }: { summary: StatusSummary }) {
   if (summary.total === 0) return null;
 
-  const segments = [
-    { count: summary.approved, color: 'bg-emerald-500', label: 'Approved' },
-    { count: summary.in_review, color: 'bg-blue-400', label: 'In Review' },
-    { count: summary.revision_needed, color: 'bg-amber-400', label: 'Revision Needed' },
-    { count: summary.draft, color: 'bg-gray-300', label: 'Draft' },
-  ].filter((s) => s.count > 0);
+  const segments = REVIEW_STATUS_ORDER
+    .map((s) => {
+      const def = getReviewStatusDef(s);
+      return { count: summary.byStatus[s], color: def.dot, label: def.label };
+    })
+    .filter((s) => s.count > 0);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -214,10 +212,10 @@ function ItemsContent({
   // Compute status summary
   const statusSummary: StatusSummary = {
     total: items.length,
-    draft: items.filter((i) => i.status === 'draft').length,
-    in_review: items.filter((i) => i.status === 'in_review').length,
-    approved: items.filter((i) => i.status === 'approved').length,
-    revision_needed: items.filter((i) => i.status === 'revision_needed').length,
+    byStatus: REVIEW_STATUS_ORDER.reduce((acc, s) => {
+      acc[s] = items.filter((i) => i.status === s).length;
+      return acc;
+    }, {} as Record<ReviewItemStatus, number>),
   };
 
   if (!project && !loading) return null;

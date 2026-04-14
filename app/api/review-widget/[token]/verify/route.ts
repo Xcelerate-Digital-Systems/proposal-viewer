@@ -7,56 +7,76 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// 1x1 transparent GIF
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Cache-Control': 'no-store',
+};
+
+// 1x1 transparent GIF — legacy fallback for <Image>-style beacons
 const PIXEL = Buffer.from(
   'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
   'base64'
 );
+
+function pixel() {
+  return new NextResponse(PIXEL, {
+    headers: { ...CORS_HEADERS, 'Content-Type': 'image/gif' },
+  });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { token: string } }
 ) {
   const itemId = req.nextUrl.searchParams.get('item');
-  if (!itemId) {
-    return new NextResponse(PIXEL, {
-      headers: {
-        'Content-Type': 'image/gif',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache',
-      },
-    });
-  }
+  const wantsJson = req.nextUrl.searchParams.get('format') === 'json'
+    || (req.headers.get('accept') || '').includes('application/json');
 
-  // Fire-and-forget: mark as installed
-  (async () => {
-    try {
-      const { data: project } = await supabaseAdmin
-        .from('review_projects')
-        .select('id')
-        .eq('share_token', params.token)
-        .single();
+  if (!itemId) return pixel();
 
-      if (!project) return;
+  try {
+    const { data: project } = await supabaseAdmin
+      .from('review_projects')
+      .select('id')
+      .eq('share_token', params.token)
+      .single();
 
-      // Only update if not already installed
+    if (!project) return pixel();
+
+    const { data: item } = await supabaseAdmin
+      .from('review_items')
+      .select('id, widget_installed_at, screenshot_url')
+      .eq('id', itemId)
+      .eq('review_project_id', project.id)
+      .eq('type', 'webpage')
+      .single();
+
+    if (!item) return pixel();
+
+    // Mark installed if not yet marked
+    if (!item.widget_installed_at) {
       await supabaseAdmin
         .from('review_items')
         .update({ widget_installed_at: new Date().toISOString() })
-        .eq('id', itemId)
-        .eq('review_project_id', project.id)
-        .eq('type', 'webpage')
-        .is('widget_installed_at', null);
-    } catch {
-      // Silently fail
+        .eq('id', item.id);
     }
-  })();
 
-  return new NextResponse(PIXEL, {
-    headers: {
-      'Content-Type': 'image/gif',
-      'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'no-cache',
-    },
-  });
+    if (!wantsJson) return pixel();
+
+    return NextResponse.json(
+      {
+        installed: true,
+        needs_screenshot: !item.screenshot_url,
+      },
+      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+    );
+  } catch {
+    return pixel();
+  }
 }

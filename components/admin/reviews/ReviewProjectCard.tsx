@@ -5,14 +5,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Copy, Check, Trash2, ExternalLink, MessageSquareText,
-  Image, CheckCircle2, AlertCircle, MoreHorizontal, Pencil,
+  Image, MoreHorizontal, Pencil,
   Eye, FolderOpen,
 } from 'lucide-react';
-import { supabase, type ReviewProject } from '@/lib/supabase';
+import { supabase, type ReviewProject, type ReviewItemStatus } from '@/lib/supabase';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
+import { REVIEW_STATUS_OPTIONS, REVIEW_STATUS_ORDER, getReviewStatusDef } from '@/lib/reviews/status';
 
 interface ReviewProjectCardProps {
   project: ReviewProject;
@@ -22,10 +23,12 @@ interface ReviewProjectCardProps {
 
 type ItemStats = {
   total: number;
-  approved: number;
-  revision_needed: number;
-  in_review: number;
-  draft: number;
+  byStatus: Record<ReviewItemStatus, number>;
+};
+
+const emptyItemStats: ItemStats = {
+  total: 0,
+  byStatus: REVIEW_STATUS_ORDER.reduce((acc, s) => ({ ...acc, [s]: 0 }), {} as Record<ReviewItemStatus, number>),
 };
 
 type CommentStats = {
@@ -42,34 +45,16 @@ const formatDate = (date: string) => {
   });
 };
 
-type ProjectStatus = 'active' | 'completed' | 'archived';
+type ProjectStatus = ReviewItemStatus;
 
-const projectStatusOptions: StatusOption<ProjectStatus>[] = [
-  {
-    value: 'active',
-    label: 'Active',
-    bg: 'bg-[#E8F5E9]',
-    text: 'text-[#2E7D32]',
-    border: 'border-[#C8E6C9]',
-    icon: <CheckCircle2 size={12} />,
-  },
-  {
-    value: 'completed',
-    label: 'Completed',
-    bg: 'bg-teal-tint',
-    text: 'text-teal',
-    border: 'border-[#B2DFDB]',
-    icon: <Check size={12} />,
-  },
-  {
-    value: 'archived',
-    label: 'Archived',
-    bg: 'bg-surface',
-    text: 'text-muted',
-    border: 'border-edge',
-    icon: <AlertCircle size={12} />,
-  },
-];
+const projectStatusOptions: StatusOption<ProjectStatus>[] = REVIEW_STATUS_OPTIONS.map((s) => ({
+  value: s.value,
+  label: s.label,
+  bg: s.bg,
+  text: s.text,
+  border: s.border,
+  icon: s.icon,
+}));
 
 export default function ReviewProjectCard({ project, onRefresh, customDomain }: ReviewProjectCardProps) {
   const router = useRouter();
@@ -83,7 +68,7 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
   const [editClientName, setEditClientName] = useState(project.client_name || '');
   const [editClientEmail, setEditClientEmail] = useState(project.client_email || '');
   const [saving, setSaving] = useState(false);
-  const [itemStats, setItemStats] = useState<ItemStats>({ total: 0, approved: 0, revision_needed: 0, in_review: 0, draft: 0 });
+  const [itemStats, setItemStats] = useState<ItemStats>(emptyItemStats);
   const [commentStats, setCommentStats] = useState<CommentStats>({ total: 0, resolved: 0, unresolved: 0 });
 
   const fetchStats = useCallback(async () => {
@@ -93,13 +78,11 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
       .eq('review_project_id', project.id);
 
     if (items) {
-      setItemStats({
-        total: items.length,
-        approved: items.filter(i => i.status === 'approved').length,
-        revision_needed: items.filter(i => i.status === 'revision_needed').length,
-        in_review: items.filter(i => i.status === 'in_review').length,
-        draft: items.filter(i => i.status === 'draft').length,
-      });
+      const byStatus = REVIEW_STATUS_ORDER.reduce((acc, s) => {
+        acc[s] = items.filter((i) => i.status === s).length;
+        return acc;
+      }, {} as Record<ReviewItemStatus, number>);
+      setItemStats({ total: items.length, byStatus });
 
       if (items.length > 0) {
         const itemIds = items.map(i => i.id);
@@ -194,11 +177,10 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
 
   // Build progress segments
   const progressSegments = [
-    { count: itemStats.approved, color: 'bg-emerald-500' },
-    { count: itemStats.in_review, color: 'bg-blue-400' },
-    { count: itemStats.revision_needed, color: 'bg-amber-400' },
-    { count: itemStats.draft, color: 'bg-gray-300' },
-  ].filter((s) => s.count > 0);
+    ...REVIEW_STATUS_ORDER
+      .filter((s) => itemStats.byStatus[s] > 0)
+      .map((s) => ({ count: itemStats.byStatus[s], color: getReviewStatusDef(s).dot, label: getReviewStatusDef(s).label })),
+  ];
 
   return (
     <>
@@ -229,30 +211,17 @@ export default function ReviewProjectCard({ project, onRefresh, customDomain }: 
 
               {/* Mini legend */}
               <div className="flex items-center gap-3 flex-wrap justify-center">
-                {itemStats.approved > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] text-[#2E7D32] font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {itemStats.approved} approved
-                  </span>
-                )}
-                {itemStats.in_review > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] text-teal font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal" />
-                    {itemStats.in_review} in review
-                  </span>
-                )}
-                {itemStats.revision_needed > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] text-amber-600 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                    {itemStats.revision_needed} revision
-                  </span>
-                )}
-                {itemStats.draft > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] text-faint font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-edge-hover" />
-                    {itemStats.draft} draft
-                  </span>
-                )}
+                {REVIEW_STATUS_ORDER.map((s) => {
+                  const count = itemStats.byStatus[s];
+                  if (count === 0) return null;
+                  const def = getReviewStatusDef(s);
+                  return (
+                    <span key={s} className={`flex items-center gap-1 text-[10px] font-medium ${def.text}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${def.dot}`} />
+                      {count} {def.label.toLowerCase()}
+                    </span>
+                  );
+                })}
               </div>
 
               {/* Comment count */}

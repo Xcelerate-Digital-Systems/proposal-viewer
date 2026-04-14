@@ -11,6 +11,7 @@ import { pinModeJS } from './parts/pin-mode';
 import { boxModeJS } from './parts/box-mode';
 import { textModeJS } from './parts/text-mode';
 import { annotationsJS } from './parts/annotations';
+import { onboardingJS } from './parts/onboarding';
 import { initJS } from './parts/init';
 
 const supabaseAdmin = createClient(
@@ -94,6 +95,7 @@ function buildWidgetScript(c: {
     boxModeJS(),
     textModeJS(),
     annotationsJS(),
+    onboardingJS(),
     initJS(),
     '\n})();',
   ].join('\n');

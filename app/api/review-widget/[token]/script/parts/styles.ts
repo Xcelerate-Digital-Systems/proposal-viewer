@@ -2,6 +2,7 @@
 
 const ACCENT = '#017C87';
 const PIN_COLOR = '#22c55e'; // green-500 — consistent with in-app PinOverlay
+const HOVER_COLOR = '#f97316'; // orange-500 — element hover outline during pin placement
 const FONT = `'Clash Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
 
 export function stylesJS(apiBase: string): string {
@@ -17,7 +18,7 @@ sty.textContent=\`
 html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:crosshair !important;}
 
 /* ── Element hover highlight ───────────────────────────── */
-.aviz-el-hl{outline:2px solid ${ACCENT}60;outline-offset:2px;transition:outline-color .1s;}
+.aviz-el-hl{outline:2px solid ${HOVER_COLOR};outline-offset:2px;transition:outline-color .1s;box-shadow:0 0 0 1px ${HOVER_COLOR}40;}
 
 /* ── Pin marker ────────────────────────────────────────── */
 .aviz-pin{position:absolute;z-index:2147483639;width:28px;height:28px;border-radius:50%;
@@ -87,11 +88,33 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 #aviz-bar button:hover{background:rgba(255,255,255,.3);}
 
 /* ── Annotation form (floating card) ───────────────────── */
-.aviz-pin-form{position:absolute;z-index:2147483643;width:300px;background:#fff;border-radius:12px;
-  box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);padding:14px;
+.aviz-pin-form{position:absolute;z-index:2147483643;width:380px;max-width:calc(100vw - 40px);background:#fff;border-radius:14px;
+  box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);padding:18px;
   animation:aviz-fadeIn .15s ease-out;}
 @keyframes aviz-fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.aviz-pin-form h4{font-size:11px;font-weight:600;color:${ACCENT};text-transform:uppercase;letter-spacing:.5px;margin:0 0 10px 0;padding:0;}
+.aviz-pin-form h4{font-size:11px;font-weight:600;color:${ACCENT};text-transform:uppercase;letter-spacing:.5px;margin:0 0 12px 0;padding:0;}
+
+/* ── Guest onboarding modal ───────────────────────────── */
+#aviz-onboard{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.55);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:aviz-fadeIn .2s ease-out;}
+#aviz-onboard .aviz-onboard-card{width:100%;max-width:380px;background:#fff;border-radius:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);padding:24px;font-family:${FONT};}
+#aviz-onboard h3{font-size:18px;font-weight:600;color:#111;margin:0 0 6px 0;padding:0;font-family:${FONT};}
+#aviz-onboard p.aviz-onboard-sub{font-size:13px;color:#6b7280;margin:0 0 18px 0;padding:0;line-height:1.5;}
+#aviz-onboard label{display:block;font-size:11px;font-weight:500;color:#6b7280;margin:0 0 4px 0;padding:0;text-transform:uppercase;letter-spacing:.3px;}
+#aviz-onboard .aviz-onboard-field{margin:0 0 12px 0;padding:0;}
+#aviz-onboard .aviz-onboard-field:last-of-type{margin-bottom:18px;}
+#aviz-onboard input{width:100%;padding:10px 12px;margin:0;border:1px solid #e5e7eb;border-radius:8px;
+  font-size:14px;color:#111;outline:none;background:#fff;font-family:${FONT};
+  transition:border-color .15s,box-shadow .15s;}
+#aviz-onboard input:focus{border-color:${ACCENT};box-shadow:0 0 0 3px ${ACCENT}20;}
+#aviz-onboard .aviz-onboard-submit{width:100%;padding:11px 18px;margin:0;border-radius:10px;
+  background:${ACCENT};color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;
+  font-family:${FONT};transition:background .15s;}
+#aviz-onboard .aviz-onboard-submit:hover:not(:disabled){background:#015f68;}
+#aviz-onboard .aviz-onboard-submit:disabled{opacity:.5;cursor:not-allowed;}
+#aviz-onboard .aviz-onboard-optional{font-size:10px;color:#9ca3af;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px;}
 
 /* ══════════════════════════════════════════════════════════
    COMMENTS PANEL  –  Feedbucket style

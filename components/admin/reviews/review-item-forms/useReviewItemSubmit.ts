@@ -36,7 +36,7 @@ export function useReviewItemSubmit({
             review_project_id: reviewProjectId,
             company_id: companyId,
             sort_order: nextSortOrder,
-            status: 'in_review',
+            status: 'internal_review',
             created_by: userId,
             ...payload,
           })
@@ -88,7 +88,7 @@ export function useReviewItemSubmit({
           review_project_id: reviewProjectId,
           company_id: companyId,
           sort_order: nextSortOrder,
-          status: 'in_review',
+          status: 'internal_review',
           created_by: userId,
           image_url: imageUrl,
           ...payload,
