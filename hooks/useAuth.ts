@@ -150,7 +150,14 @@ export function useAuth() {
   const signInWithMagicLink = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/` },
+      options: {
+        // Critical: prevents Supabase from auto-creating an auth.users row on
+        // first OTP request. Account creation must go through the invite flow
+        // so a team_members row is also created — otherwise the user ends up
+        // orphaned and every API call 401s.
+        shouldCreateUser: false,
+        emailRedirectTo: `${window.location.origin}/`,
+      },
     });
     return { error };
   };

@@ -78,8 +78,17 @@ function LoginContent() {
 
     if (method === 'magic') {
       const { error } = await signInWithMagicLink(email);
-      if (error) setError(error.message);
-      else setMagicLinkSent(true);
+      if (error) {
+        // Supabase returns "Signups not allowed for otp" when shouldCreateUser
+        // is false and the email isn't registered.
+        if (/signups not allowed/i.test(error.message)) {
+          setError("No account found for this email. Ask your team owner to send you an invite.");
+        } else {
+          setError(error.message);
+        }
+      } else {
+        setMagicLinkSent(true);
+      }
     } else {
       const { error } = await signInWithPassword(email, password);
       if (error) setError(error.message);
