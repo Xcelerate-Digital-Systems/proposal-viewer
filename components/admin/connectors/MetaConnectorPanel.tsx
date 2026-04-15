@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Loader2, Link as LinkIcon, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Loader2, Link as LinkIcon, AlertTriangle, CheckCircle2, ExternalLink, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface Connection {
@@ -34,10 +34,13 @@ export default function MetaConnectorPanel() {
   const connected = search.get('connected') === '1';
   const error = search.get('error');
 
+  const debugMode = search.get('debug') === '1';
   const [loading, setLoading] = useState(true);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [accounts, setAccounts] = useState<AdAccount[]>([]);
   const [starting, setStarting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [debugRaw, setDebugRaw] = useState<string | null>(null);
 
   const authHeader = async () => {
     const { data } = await supabase.auth.getSession();
@@ -46,13 +49,27 @@ export default function MetaConnectorPanel() {
 
   const load = async () => {
     setLoading(true);
-    const res = await fetch('/api/connectors/meta/accounts', { headers: await authHeader() });
-    const json = (await res.json()) as AccountsResponse | { error: string };
-    if ('success' in json) {
-      setConnections(json.data.connections);
-      setAccounts(json.data.accounts);
+    setLoadError(null);
+    try {
+      const res = await fetch('/api/connectors/meta/accounts', { headers: await authHeader() });
+      const text = await res.text();
+      setDebugRaw(`HTTP ${res.status}\n${text}`);
+      let json: unknown;
+      try { json = JSON.parse(text); } catch { json = null; }
+      if (!res.ok) {
+        setLoadError(`API returned ${res.status}: ${text.slice(0, 200)}`);
+      } else if (json && typeof json === 'object' && 'success' in json) {
+        const j = json as AccountsResponse;
+        setConnections(j.data.connections);
+        setAccounts(j.data.accounts);
+      } else {
+        setLoadError(`Unexpected response: ${text.slice(0, 200)}`);
+      }
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Fetch failed');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
@@ -102,13 +119,35 @@ export default function MetaConnectorPanel() {
         <div className="w-10 h-10 bg-teal-tint rounded-[14px] flex items-center justify-center">
           <LinkIcon size={20} className="text-teal" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-semibold text-ink">Facebook Ads → Looker Studio</h1>
           <p className="text-sm text-faint">
             Connect Meta once, then pull ad performance into Looker Studio with the AgencyViz connector.
           </p>
         </div>
+        <button
+          onClick={load}
+          disabled={loading}
+          className="p-2 text-faint hover:text-ink border border-line rounded-lg disabled:opacity-50"
+          title="Refresh"
+        >
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
+
+      {loadError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+          <p className="text-sm font-semibold text-ink">Couldn't load connection state</p>
+          <pre className="mt-2 text-xs text-muted whitespace-pre-wrap break-all">{loadError}</pre>
+        </div>
+      )}
+
+      {debugMode && debugRaw && (
+        <div className="p-4 bg-gray-50 border border-line rounded-xl">
+          <p className="text-xs font-semibold text-muted mb-2">Debug: /api/connectors/meta/accounts</p>
+          <pre className="text-xs text-faint whitespace-pre-wrap break-all">{debugRaw}</pre>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-10">
