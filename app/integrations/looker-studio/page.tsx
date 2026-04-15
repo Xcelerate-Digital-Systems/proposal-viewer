@@ -8,10 +8,46 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AlertTriangle, CheckCircle2, ExternalLink, BarChart3, Workflow } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ExternalLink, BarChart3, Workflow, Copy, Check } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import MetaConnectorCard from '@/components/admin/connectors/MetaConnectorCard';
+import MetaConnectionsManager from '@/components/admin/connectors/MetaConnectionsManager';
 import ConnectorCard from '@/components/admin/connectors/ConnectorCard';
+
+const LOOKER_DEPLOYMENT_ID =
+  process.env.NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID ||
+  '1kZtHBdop8gy0gIAaRnuugj7n2uWP9ru7r31tDG5NILuZPfS-jJcGtOrV';
+
+function DeploymentIdField() {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(LOOKER_DEPLOYMENT_ID);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API blocked (e.g., insecure origin) — user can still select the text.
+    }
+  };
+
+  return (
+    <div className="flex items-stretch gap-2">
+      <code className="flex-1 min-w-0 px-3 py-2 text-[12px] font-mono text-ink bg-white border border-line rounded-lg overflow-x-auto whitespace-nowrap">
+        {LOOKER_DEPLOYMENT_ID}
+      </code>
+      <button
+        type="button"
+        onClick={copy}
+        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-ink bg-white border border-line rounded-lg hover:bg-surface transition-colors shrink-0"
+        aria-label="Copy deployment ID"
+      >
+        {copied ? <Check size={13} className="text-teal" /> : <Copy size={13} />}
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  );
+}
 
 function Banners() {
   const search = useSearchParams();
@@ -56,6 +92,11 @@ function Banners() {
 }
 
 export default function LookerStudioConnectorsPage() {
+  // Bumping this re-keys both MetaConnectorCard and MetaConnectionsManager so
+  // they re-fetch after any mutation (toggle, disconnect) in the manager.
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refresh = () => setRefreshKey((k) => k + 1);
+
   return (
     <AdminLayout>
       {() => (
@@ -93,7 +134,7 @@ export default function LookerStudioConnectorsPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <MetaConnectorCard />
+            <MetaConnectorCard refreshKey={refreshKey} />
 
             <ConnectorCard
               icon={<Workflow size={22} className="text-white" />}
@@ -109,13 +150,51 @@ export default function LookerStudioConnectorsPage() {
             />
           </div>
 
-          <div className="mt-10 p-5 bg-surface border border-line rounded-2xl">
-            <p className="text-sm font-semibold text-ink mb-1">Using the connector</p>
-            <p className="text-xs text-faint leading-relaxed">
-              Once a data source above is connected, install the AgencyViz Community Connector inside
-              Looker Studio and authenticate with your AgencyViz API key. Each connected data source
-              will show up as a data type you can blend into reports.
+          <MetaConnectionsManager refreshKey={refreshKey} onChange={refresh} />
+
+          <div className="mt-10 p-6 bg-surface border border-line rounded-2xl">
+            <p className="text-sm font-semibold text-ink mb-1">Connecting in Looker Studio</p>
+            <p className="text-xs text-faint leading-relaxed mb-5">
+              Once a data source above is connected, paste the deployment ID below into Looker
+              Studio to load the AgencyViz connector.
             </p>
+
+            <div className="mb-5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted mb-1.5">
+                Deployment ID
+              </label>
+              <DeploymentIdField />
+            </div>
+
+            <ol className="space-y-3 text-xs text-ink leading-relaxed list-decimal pl-5 marker:text-muted marker:font-semibold">
+              <li>
+                Open{' '}
+                <a
+                  href="https://lookerstudio.google.com"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-teal hover:underline"
+                >
+                  Looker Studio
+                </a>{' '}
+                and click <span className="font-semibold">Create → Data source</span>.
+              </li>
+              <li>
+                Scroll to <span className="font-semibold">Build your own</span> and choose{' '}
+                <span className="font-semibold">Build with Apps Script</span> (aka "Create from
+                scratch").
+              </li>
+              <li>
+                Paste the deployment ID above into the{' '}
+                <span className="font-semibold">Deployment ID</span> field and click{' '}
+                <span className="font-semibold">Validate</span>, then{' '}
+                <span className="font-semibold">Next</span>.
+              </li>
+              <li>
+                When prompted, sign in with AgencyViz to authorize the connector, then pick the
+                ad account to pull data from.
+              </li>
+            </ol>
           </div>
         </div>
       )}

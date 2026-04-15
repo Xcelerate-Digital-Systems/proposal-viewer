@@ -43,7 +43,12 @@ function FacebookGlyph() {
   );
 }
 
-export default function MetaConnectorCard() {
+interface MetaConnectorCardProps {
+  /** Bump to force the card to re-fetch its connection status. */
+  refreshKey?: number;
+}
+
+export default function MetaConnectorCard({ refreshKey = 0 }: MetaConnectorCardProps = {}) {
   const [status, setStatus] = useState<ConnectorStatus>('disconnected');
   const [detail, setDetail] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -87,7 +92,7 @@ export default function MetaConnectorCard() {
     }
   }, [authHeader]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, refreshKey]);
 
   const connect = async () => {
     setStarting(true);
