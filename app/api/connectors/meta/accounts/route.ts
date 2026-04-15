@@ -11,6 +11,8 @@ import { createServiceClient } from '@/lib/supabase-server';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const debug = req.nextUrl.searchParams.get('debug') === '1';
+
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -22,12 +24,42 @@ export async function GET(req: NextRequest) {
     .eq('company_id', auth.companyId)
     .eq('status', 'active');
 
+  // Temporary debug — remove once Phase 3 is confirmed working.
+  const buildDebug = async () => ({
+    resolved_company_id: auth.companyId,
+    own_company_id: auth.member.company_id,
+    is_super_admin: auth.member.is_super_admin ?? false,
+    active_connections_query_result: connections,
+    active_connections_query_error: connErr?.message ?? null,
+    all_connections_for_this_company: (
+      await supabase
+        .from('meta_connections')
+        .select('id, company_id, status')
+        .eq('company_id', auth.companyId)
+    ).data,
+    all_connections_any_status: (
+      await supabase
+        .from('meta_connections')
+        .select('id, company_id, status')
+    ).data,
+  });
+
   if (connErr) {
-    return NextResponse.json({ error: connErr.message }, { status: 500 });
+    return NextResponse.json({
+      error: connErr.message,
+      ...(debug ? { _debug: await buildDebug() } : {}),
+    }, { status: 500 });
   }
 
   if (!connections || connections.length === 0) {
-    return NextResponse.json({ success: true, data: { connections: [], accounts: [] } });
+    return NextResponse.json({
+      success: true,
+      data: {
+        connections: [],
+        accounts: [],
+        ...(debug ? { _debug: await buildDebug() } : {}),
+      },
+    });
   }
 
   const connectionIds = connections.map((c) => c.id);
@@ -40,31 +72,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: accErr.message }, { status: 500 });
   }
 
-  // Temporary debug — remove once Phase 3 is confirmed working.
-  const debug = req.nextUrl.searchParams.get('debug') === '1';
-  const debugPayload = debug ? {
-    resolved_company_id: auth.companyId,
-    own_company_id: auth.member.company_id,
-    is_super_admin: auth.member.is_super_admin ?? false,
-    all_connections_for_this_company: (
-      await supabase
-        .from('meta_connections')
-        .select('id, company_id, status')
-        .eq('company_id', auth.companyId)
-    ).data,
-    all_connections_any_status: (
-      await supabase
-        .from('meta_connections')
-        .select('id, company_id, status')
-    ).data,
-  } : undefined;
-
   return NextResponse.json({
     success: true,
     data: {
       connections,
       accounts: accounts ?? [],
-      ...(debug ? { _debug: debugPayload } : {}),
+      ...(debug ? { _debug: await buildDebug() } : {}),
     },
   });
 }
