@@ -42,11 +42,39 @@ export function useAuth() {
   }, []);
 
   const fetchTeamMember = useCallback(async (userId: string) => {
-    const { data: member } = await supabase
+    let { data: member } = await supabase
       .from('team_members')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
+
+    // Self-heal: a logged-in user with no team_members row probably came in
+    // via magic link and never went through /api/auth/register. If there's a
+    // pending invite for their email, claim it now.
+    if (!member) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const res = await fetch('/api/auth/claim-invite', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.claimed) {
+              const refetch = await supabase
+                .from('team_members')
+                .select('*')
+                .eq('user_id', userId)
+                .maybeSingle();
+              member = refetch.data;
+            }
+          }
+        }
+      } catch {
+        // Network issues here shouldn't block the rest of the auth flow.
+      }
+    }
 
     if (!member) {
       setTeamMember(null);
