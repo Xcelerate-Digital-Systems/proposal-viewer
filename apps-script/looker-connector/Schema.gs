@@ -82,8 +82,16 @@ var RATE_METRICS = [
   { id: 'cost_per_unique_outbound_click',    name: 'Cost per unique outbound click',   type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(unique_outbound_clicks)',        desc: 'Computed: spend ÷ unique outbound clicks.' },
 
   { id: 'ctr',                               name: 'CTR (all)',                              type: 'PERCENT',      formula: 'SUM(clicks) / SUM(impressions)',                  desc: 'Click-through rate on all clicks. Computed: clicks ÷ impressions.' },
+  { id: 'unique_ctr',                        name: 'Unique CTR (all)',                       type: 'PERCENT',      formula: 'SUM(unique_clicks) / SUM(reach)',                 desc: 'Percentage of people who saw your ad and clicked anywhere on it. Computed: unique clicks ÷ reach.' },
   { id: 'inline_link_click_ctr',             name: 'CTR (link click-through rate)',          type: 'PERCENT',      formula: 'SUM(inline_link_clicks) / SUM(impressions)',      desc: 'Computed: link clicks ÷ impressions.' },
+  { id: 'unique_inline_link_click_ctr',      name: 'Unique link CTR',                        type: 'PERCENT',      formula: 'SUM(unique_inline_link_clicks) / SUM(reach)',     desc: 'Percentage of people who saw your ad and clicked a link. Computed: unique link clicks ÷ reach.' },
   { id: 'outbound_clicks_ctr',               name: 'Outbound CTR',                           type: 'PERCENT',      formula: 'SUM(outbound_clicks) / SUM(impressions)',         desc: 'Computed: outbound clicks ÷ impressions.' },
+  { id: 'unique_outbound_clicks_ctr',        name: 'Unique outbound CTR',                    type: 'PERCENT',      formula: 'SUM(unique_outbound_clicks) / SUM(reach)',        desc: 'Percentage of people who saw your ad and clicked an outbound link. Computed: unique outbound clicks ÷ reach.' },
+
+  // Agency/DR-standard derived metric, not a native Meta field. 3-second
+  // video views ÷ impressions — how much of your audience made it past the
+  // scroll. Meta's "video_view" action type = 3-second plays.
+  { id: 'hook_rate',                         name: 'Hook rate',                              type: 'PERCENT',      formula: 'SUM(video_view_action) / SUM(impressions)',       desc: 'Share of impressions that became 3-second video views. Computed: 3-second video views ÷ impressions.' },
 ];
 
 // ── Conversion / engagement events ────────────────────────────────────────
