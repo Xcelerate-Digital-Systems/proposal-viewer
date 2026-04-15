@@ -5,19 +5,16 @@
 //   1. getAuthType()  — OAuth.gs
 //   2. getConfig()    — ad-account picker
 //   3. getSchema()    — Schema.gs
-//   4. getData()      — this file; handles action-based field expansion
+//   4. getData()      — this file; maps schema ids to Meta API fields
 
 function getConfig(request) {
   var cc = DataStudioApp.createCommunityConnector();
   var config = cc.getConfig();
 
-  config
-    .newInfo()
-    .setId('intro')
-    .setText(
-      'Choose which connected Facebook ad account to pull data from. Manage '
-      + 'connections at app.agencyviz.io → Ad Tracker → Looker Studio.',
-    );
+  config.newInfo().setId('intro').setText(
+    'Choose which connected Facebook ad account to pull data from. Manage '
+    + 'connections at app.agencyviz.io → Ad Tracker → Looker Studio.',
+  );
 
   var selector = config
     .newSelectSingle()
@@ -58,16 +55,12 @@ function getData(request) {
   var allFields = getFields();
   var scopedFields = allFields.forIds(requestedFieldIds);
 
-  // Expand synthetic ids (e.g. purchases, leads) to the underlying Meta API
-  // fields they depend on (actions, action_values). Dedup so we don't send
-  // the same field twice to the API.
+  // Resolve schema ids → Meta API field names. Dedup so we don't waste a
+  // slot on e.g. `actions` when three conversion metrics all need it.
   var apiFieldSet = {};
   requestedFieldIds.forEach(function (id) {
-    if (ACTION_FIELD_MAP[id]) {
-      apiFieldSet[ACTION_FIELD_MAP[id].from] = true;
-    } else {
-      apiFieldSet[id] = true;
-    }
+    var apiField = schemaIdToApiField(id);
+    if (apiField) apiFieldSet[apiField] = true;
   });
   var apiFields = Object.keys(apiFieldSet);
 
@@ -98,50 +91,58 @@ function getData(request) {
   return { schema: scopedFields.build(), rows: rows };
 }
 
-// Resolve a Looker Studio field id to a scalar value out of a Meta API row.
-// Handles both native scalars (impressions, spend, …) and synthetic fields
-// that need us to look inside the `actions` / `action_values` arrays.
-function resolveFieldValue(row, fieldId) {
-  var mapping = ACTION_FIELD_MAP[fieldId];
-  if (!mapping) return row[fieldId];
-
-  var arr = row[mapping.from];
-  if (!Array.isArray(arr)) return 0;
-
-  // Match the first action_type in our priority list that exists on the row.
-  // Falls back to 0 if none match — better than crashing on a dead pixel.
-  for (var i = 0; i < mapping.types.length; i++) {
-    var wanted = mapping.types[i];
-    for (var j = 0; j < arr.length; j++) {
-      if (arr[j].action_type === wanted) {
-        var v = arr[j].value;
-        return typeof v === 'string' && !isNaN(Number(v)) ? Number(v) : v;
-      }
-    }
-  }
-  return 0;
+// Map a Looker Studio schema id to the API field we need to request.
+function schemaIdToApiField(id) {
+  if (ACTION_FIELD_MAP[id])   return ACTION_FIELD_MAP[id].from;
+  if (VIDEO_SUM_FIELDS[id])   return VIDEO_SUM_FIELDS[id];
+  return id;
 }
 
-// Coerce values into the shapes Looker Studio expects per field type.
-function formatValue(value, fieldId) {
-  if (value === null || value === undefined || value === '') return '';
-
-  if (fieldId === 'date_start' || fieldId === 'date_stop') {
-    // Meta returns 'YYYY-MM-DD'; Looker Studio YEAR_MONTH_DAY wants 'YYYYMMDD'.
-    return String(value).replace(/-/g, '').slice(0, 8);
-  }
-
-  // purchase_roas is returned as an array of {action_type,value} in some API
-  // versions; handle both shapes.
-  if (fieldId === 'purchase_roas' && Array.isArray(value)) {
-    for (var i = 0; i < value.length; i++) {
-      if (value[i].action_type === 'omni_purchase'
-          || value[i].action_type === 'offsite_conversion.fb_pixel_purchase'
-          || value[i].action_type === 'purchase') {
-        return Number(value[i].value);
+// Pull a scalar value out of an API row for a given schema id.
+function resolveFieldValue(row, fieldId) {
+  var actionMap = ACTION_FIELD_MAP[fieldId];
+  if (actionMap) {
+    var arr = row[actionMap.from];
+    if (!Array.isArray(arr)) return 0;
+    for (var i = 0; i < actionMap.types.length; i++) {
+      var wanted = actionMap.types[i];
+      for (var j = 0; j < arr.length; j++) {
+        if (arr[j].action_type === wanted) {
+          return toNumber(arr[j].value);
+        }
       }
     }
     return 0;
+  }
+
+  if (VIDEO_SUM_FIELDS[fieldId]) {
+    var varr = row[VIDEO_SUM_FIELDS[fieldId]];
+    if (!Array.isArray(varr)) return 0;
+    var sum = 0;
+    for (var k = 0; k < varr.length; k++) sum += toNumber(varr[k].value);
+    return sum;
+  }
+
+  return row[fieldId];
+}
+
+function toNumber(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  if (typeof v === 'number') return v;
+  var n = Number(v);
+  return isNaN(n) ? 0 : n;
+}
+
+// Coerce a raw value into what Looker Studio expects per field type.
+function formatValue(value, fieldId) {
+  if (value === null || value === undefined || value === '') {
+    // 0 is safer than '' for numeric fields — avoids chart gaps.
+    if (isNumericField(fieldId)) return 0;
+    return '';
+  }
+
+  if (fieldId === 'date_start' || fieldId === 'date_stop') {
+    return String(value).replace(/-/g, '').slice(0, 8);
   }
 
   var numeric = typeof value === 'number'
@@ -149,13 +150,22 @@ function formatValue(value, fieldId) {
     : (typeof value === 'string' && !isNaN(Number(value)) ? Number(value) : null);
 
   if (numeric !== null) {
-    // PERCENT in Looker Studio = fraction (0.05 means 5%). Meta returns a
-    // percentage number (5.0 means 5%). Divide to line them up.
     if (PERCENT_FIELD_IDS.indexOf(fieldId) !== -1) return numeric / 100;
     return numeric;
   }
 
   return value;
+}
+
+// Rough check whether a field expects a number. Used to decide whether an
+// empty response should become 0 or ''.
+function isNumericField(fieldId) {
+  if (ACTION_FIELD_MAP[fieldId]) return true;
+  if (VIDEO_SUM_FIELDS[fieldId]) return true;
+  if (PERCENT_FIELD_IDS.indexOf(fieldId) !== -1) return true;
+  // Lazy check — scalar metrics are any id not in our dimension set.
+  for (var i = 0; i < DIMENSIONS.length; i++) if (DIMENSIONS[i].id === fieldId) return false;
+  return true;
 }
 
 function throwUserError(message) {
