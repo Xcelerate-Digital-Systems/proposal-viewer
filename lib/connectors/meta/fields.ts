@@ -27,6 +27,7 @@ export const ALLOWED_INSIGHT_FIELDS = new Set<string>([
   'date_start', 'date_stop',
   'objective', 'buying_type',
   'account_id', 'account_name', 'account_currency',
+  'action_values',
   'cost_per_inline_link_click',
   'cost_per_unique_inline_link_click',
   'video_p25_watched_actions',

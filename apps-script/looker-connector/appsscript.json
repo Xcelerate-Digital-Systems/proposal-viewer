@@ -12,13 +12,15 @@
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "dataStudio": {
-    "name": "AgencyViz — Facebook Ads",
+    "name": "AgencyViz Facebook Ads",
     "company": "AgencyViz",
-    "companyUrl": "https://app.agencyviz.io",
-    "addonUrl": "https://app.agencyviz.io",
-    "logoUrl": "https://app.agencyviz.io/logo-square.png",
-    "supportUrl": "https://app.agencyviz.io",
+    "companyUrl": "https://app.agencyviz.io/login",
+    "addonUrl": "https://app.agencyviz.io/login",
+    "logoUrl": "https://app.agencyviz.io/logo-agencyviz.svg",
+    "supportUrl": "https://app.agencyviz.io/login",
     "description": "Facebook Ads performance data for Looker Studio, powered by AgencyViz. Pull campaign, ad set, ad, and creative-level insights from any ad account you've connected in AgencyViz.",
-    "sources": ["facebook"]
+    "sources": [
+      "facebook"
+    ]
   }
 }
