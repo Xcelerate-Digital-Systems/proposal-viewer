@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Plus, Megaphone, MoreVertical, Pencil, Trash2, ChevronRight,
-  Shield, Users, Sparkles, LayoutGrid, Eye, TrendingUp, Rocket,
+  Shield, Users, Sparkles, LayoutGrid, Eye, TrendingUp, Rocket, BarChart3,
 } from 'lucide-react';
 import { useAdTrackerContext } from '@/components/admin/ads/AdTrackerContext';
 import CreateTrackerModal from '@/components/admin/ads/CreateTrackerModal';
@@ -25,8 +25,11 @@ export default function AdTrackersSidebarNav({ onNavigate }: { onNavigate?: () =
   const currentTrackerId = pathname?.startsWith('/ads/')
     && !pathname.startsWith('/ads/swipe')
     && !pathname.startsWith('/ads/naming-convention')
+    && !pathname.startsWith('/ads/looker-studio')
     ? pathname.split('/')[2] || null
     : null;
+
+  const inLookerStudio = pathname?.startsWith('/ads/looker-studio') ?? false;
 
   const startRename = (id: string, name: string) => {
     setRenamingId(id);
@@ -203,6 +206,28 @@ export default function AdTrackersSidebarNav({ onNavigate }: { onNavigate?: () =
                   className={inNaming ? 'text-[#8AD9D1] shrink-0' : 'text-white/40 shrink-0'}
                 />
                 <span className="flex-1 truncate">Andromeda</span>
+              </Link>
+            </div>
+
+            <div className="mt-4 mb-2 mx-3 border-t border-[#01434A]" />
+            <div className="px-3 pt-1 pb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+                Integrations
+              </span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/ads/looker-studio"
+                onClick={onNavigate}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  inLookerStudio ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-[#013036]'
+                }`}
+              >
+                <BarChart3
+                  size={15}
+                  className={inLookerStudio ? 'text-[#8AD9D1] shrink-0' : 'text-white/40 shrink-0'}
+                />
+                <span className="flex-1 truncate">Looker Studio</span>
               </Link>
             </div>
           </>

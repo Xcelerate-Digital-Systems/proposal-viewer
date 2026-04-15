@@ -25,7 +25,7 @@ function redirect(url: string, status = 302) {
 }
 
 function errorRedirect(appUrl: string, reason: string) {
-  const u = new URL(`${appUrl}/settings/connectors/meta`);
+  const u = new URL(`${appUrl}/ads/looker-studio`);
   u.searchParams.set('error', reason);
   return redirect(u.toString());
 }
@@ -142,8 +142,10 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const dest = stateRow.redirect_to
+  const base = stateRow.redirect_to
     ? `${appUrl}${stateRow.redirect_to}`
-    : `${appUrl}/settings/connectors/meta?connected=1`;
-  return redirect(dest);
+    : `${appUrl}/ads/looker-studio`;
+  const dest = new URL(base);
+  dest.searchParams.set('connected', '1');
+  return redirect(dest.toString());
 }

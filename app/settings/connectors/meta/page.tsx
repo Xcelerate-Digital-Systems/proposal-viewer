@@ -1,20 +1,20 @@
 // app/settings/connectors/meta/page.tsx
-'use client';
+//
+// The connector UI moved to /ads/looker-studio. This route exists only so
+// old bookmarks / OAuth redirects keep landing somewhere sensible.
 
-import { Suspense } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import MetaConnectorPanel from '@/components/admin/connectors/MetaConnectorPanel';
+import { redirect } from 'next/navigation';
 
-export default function MetaConnectorSettingsPage() {
-  return (
-    <AdminLayout>
-      {() => (
-        <div className="px-6 lg:px-10 py-8 max-w-5xl">
-          <Suspense fallback={null}>
-            <MetaConnectorPanel />
-          </Suspense>
-        </div>
-      )}
-    </AdminLayout>
-  );
+export const dynamic = 'force-dynamic';
+
+export default function MetaConnectorSettingsPage({
+  searchParams,
+}: {
+  searchParams: { connected?: string; error?: string };
+}) {
+  const qs = new URLSearchParams();
+  if (searchParams.connected) qs.set('connected', searchParams.connected);
+  if (searchParams.error) qs.set('error', searchParams.error);
+  const suffix = qs.toString();
+  redirect(`/ads/looker-studio${suffix ? `?${suffix}` : ''}`);
 }
