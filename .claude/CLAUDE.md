@@ -106,10 +106,14 @@ RESEND_API_KEY=                   # Resend email API key
 NEXT_PUBLIC_APP_URL=              # App URL (http://localhost:3000 in dev)
 
 # Meta → Looker Studio connector
-META_APP_ID=                      # Facebook app id (OAuth client)
-META_APP_SECRET=                  # Facebook app secret (OAuth token exchange)
-META_TOKEN_ENCRYPTION_KEY=        # base64-encoded 32-byte key for AES-256-GCM token crypto
-NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID= # Apps Script deployment id shown on the connector hub
+META_APP_ID=                              # Facebook app id (OAuth client)
+META_APP_SECRET=                          # Facebook app secret (OAuth token exchange)
+META_TOKEN_ENCRYPTION_KEY=                # base64-encoded 32-byte key for AES-256-GCM token crypto
+
+# Per-connector Apps Script deployment ids shown on /integrations/looker-studio.
+# Each connector is a separate Apps Script project with its own deployment lifecycle.
+NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_META=    # Meta Ads → Looker Studio connector
+NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_GHL=     # GoHighLevel → Looker Studio connector
 ```
 
 ## Terminology
