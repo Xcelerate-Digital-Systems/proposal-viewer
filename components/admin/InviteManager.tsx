@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserPlus, Copy, Check, X, Clock, Loader2, Link2 } from 'lucide-react';
+import { UserPlus, Check, X, Clock, Loader2, Link2, Send } from 'lucide-react';
 import { useInvites, CompanyInvite } from '@/hooks/useInvites';
 
 interface InviteManagerProps {
@@ -20,6 +20,7 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
     fetchInvites,
     createInvite,
     revokeInvite,
+    resendInvite,
   } = useInvites(companyId);
 
   const [email, setEmail] = useState('');
@@ -28,6 +29,8 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resentId, setResentId] = useState<string | null>(null);
 
   // Can this user invite owners?
   const canInviteOwner = isSuperAdmin || currentRole === 'owner';
@@ -48,7 +51,11 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
     if (error) {
       setError(error);
     } else if (data) {
-      setSuccess(`Invite sent! Share this link: ${data.invite_url}`);
+      if (data.email_sent === false) {
+        setSuccess(`Invite created, but email failed to send. Share this link manually: ${data.invite_url}`);
+      } else {
+        setSuccess(`Invite emailed to ${data.email}.`);
+      }
       setEmail('');
       setRole('member');
     }
@@ -64,6 +71,19 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
 
   const handleRevoke = async (inviteId: string) => {
     await revokeInvite(inviteId);
+  };
+
+  const handleResend = async (inviteId: string) => {
+    setResendingId(inviteId);
+    setError('');
+    const { error } = await resendInvite(inviteId);
+    setResendingId(null);
+    if (error) {
+      setError(error);
+    } else {
+      setResentId(inviteId);
+      setTimeout(() => setResentId(null), 2000);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -126,12 +146,12 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
             ) : (
               <UserPlus size={14} />
             )}
-            Generate Invite Link
+            Send Invite
           </button>
         </form>
 
         <p className="text-xs text-faint mt-3">
-          Invites expire after 7 days. The recipient must sign up with the invited email.
+          We&apos;ll email the invite link. Invites expire after 7 days, and the recipient must sign up with the invited email.
         </p>
       </div>
 
@@ -166,6 +186,20 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 ml-3">
+                      <button
+                        onClick={() => handleResend(invite.id)}
+                        disabled={resendingId === invite.id}
+                        className="p-1.5 rounded-md hover:bg-surface text-faint hover:text-muted transition-colors disabled:opacity-50"
+                        title="Resend invite email"
+                      >
+                        {resendingId === invite.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : resentId === invite.id ? (
+                          <Check size={14} className="text-emerald-500" />
+                        ) : (
+                          <Send size={14} />
+                        )}
+                      </button>
                       <button
                         onClick={() => handleCopyLink(invite)}
                         className="p-1.5 rounded-md hover:bg-surface text-faint hover:text-muted transition-colors"

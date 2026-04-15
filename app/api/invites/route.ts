@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { isValidEmail } from '@/lib/sanitize';
+import { sendInviteEmail } from '@/lib/auth-emails';
 
 // POST - Create a new invite
 export async function POST(req: NextRequest) {
@@ -92,6 +93,25 @@ export async function POST(req: NextRequest) {
     // Build invite URL
     const baseUrl = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || '';
     const inviteUrl = `${baseUrl}/login?invite=${invite.token}`;
+    const companyName = company?.name || 'AgencyViz';
+
+    // Send invite email (best-effort — surfaces failure but the invite row still exists)
+    let emailSent = true;
+    let emailError: string | null = null;
+    try {
+      await sendInviteEmail({
+        to: invite.email,
+        companyName,
+        inviterName: member.name,
+        role: invite.role,
+        inviteUrl,
+        expiresAt: invite.expires_at,
+      });
+    } catch (err) {
+      emailSent = false;
+      emailError = err instanceof Error ? err.message : 'Unknown email error';
+      console.error('Failed to send invite email:', err);
+    }
 
     return NextResponse.json({
       id: invite.id,
@@ -100,7 +120,9 @@ export async function POST(req: NextRequest) {
       role: invite.role,
       expires_at: invite.expires_at,
       invite_url: inviteUrl,
-      company_name: company?.name || 'Unknown',
+      company_name: companyName,
+      email_sent: emailSent,
+      email_error: emailError,
     });
   } catch (err) {
     console.error('Create invite error:', err);

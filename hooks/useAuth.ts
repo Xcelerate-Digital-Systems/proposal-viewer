@@ -150,6 +150,18 @@ export function useAuth() {
     return { error: null };
   };
 
+  const resetPasswordForEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error };
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error };
+  };
+
   const signOut = async () => {
     localStorage.removeItem(COMPANY_OVERRIDE_KEY);
     localStorage.removeItem('super_admin_company_override'); // clean up legacy key
@@ -229,5 +241,7 @@ export function useAuth() {
     signUp,
     signOut,
     updatePreferences,
+    resetPasswordForEmail,
+    updatePassword,
   };
 }

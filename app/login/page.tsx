@@ -3,10 +3,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Loader2, Mail, Lock, User, ArrowRight, Building2, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
-type Tab = 'signin' | 'signup';
 type Method = 'password' | 'magic';
 
 type InviteInfo = {
@@ -24,7 +24,8 @@ function LoginContent() {
   const postLoginTarget = nextUrl && nextUrl.startsWith('/') ? nextUrl : '/';
   const { signInWithPassword, signInWithMagicLink, signUp, session, loading: authLoading } = useAuth();
 
-  const [tab, setTab] = useState<Tab>(inviteToken ? 'signup' : 'signin');
+  // Open signup is disabled — users only get accounts via invite link.
+  const showSignup = !!inviteToken;
   const [method, setMethod] = useState<Method>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -163,11 +164,7 @@ function LoginContent() {
         <div className="text-center mb-6">
           <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-8 mx-auto mb-6" />
           <h1 className="text-xl font-semibold text-ink">
-            {inviteInfo
-              ? 'Join your team'
-              : tab === 'signin'
-                ? 'Sign in to your account'
-                : 'Create your account'}
+            {inviteInfo ? 'Join your team' : 'Sign in to your account'}
           </h1>
           <p className="text-sm text-faint mt-1">
             {inviteInfo ? 'Complete your account setup' : 'Team members only'}
@@ -194,29 +191,7 @@ function LoginContent() {
           </div>
         )}
 
-        {/* Tabs - hide if invite (force signup) */}
-        {!inviteInfo && (
-          <div className="flex bg-surface rounded-lg p-1 mb-6">
-            <button
-              onClick={() => { setTab('signin'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                tab === 'signin' ? 'bg-white text-ink ' : 'text-faint hover:text-muted'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => { setTab('signup'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                tab === 'signup' ? 'bg-white text-ink ' : 'text-faint hover:text-muted'
-              }`}
-            >
-              Sign Up
-            </button>
-          </div>
-        )}
-
-        {(tab === 'signin' && !inviteInfo) ? (
+        {!showSignup ? (
           <>
             {/* Sign-in method toggle */}
             <div className="flex gap-2 mb-4">
@@ -256,17 +231,27 @@ function LoginContent() {
               </div>
 
               {method === 'password' && (
-                <div className="relative">
-                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
-                  />
-                </div>
+                <>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                    />
+                  </div>
+                  <div className="text-right">
+                    <Link
+                      href="/forgot-password"
+                      className="text-xs text-faint hover:text-teal transition-colors"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                </>
               )}
 
               {error && (
@@ -335,12 +320,6 @@ function LoginContent() {
               {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
               {inviteInfo ? `Join ${inviteInfo.company_name}` : 'Create Account'}
             </button>
-
-            {!inviteInfo && (
-              <p className="text-xs text-faint text-center mt-3">
-                A new workspace will be created for you
-              </p>
-            )}
           </form>
         )}
 

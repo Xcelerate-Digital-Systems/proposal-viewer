@@ -1,73 +1,10 @@
-// app/api/team/[id]/route.ts
+// app/api/invites/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { sendInviteEmail } from '@/lib/auth-emails';
 
-// PATCH - Update a team member's role
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const auth = await getAuthContext(req);
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { member, companyId } = auth;
-
-    // Only owners or super admins can change roles
-    if (!member.is_super_admin && member.role !== 'owner') {
-      return NextResponse.json({ error: 'Only owners can change roles' }, { status: 403 });
-    }
-
-    const { id } = await params;
-    const { role } = await req.json();
-
-    if (!['owner', 'admin', 'member'].includes(role)) {
-      return NextResponse.json({ error: 'Role must be owner, admin, or member' }, { status: 400 });
-    }
-
-    // Can't change own role
-    if (id === member.id) {
-      return NextResponse.json({ error: 'Cannot change your own role' }, { status: 400 });
-    }
-
-    const supabase = createServiceClient();
-
-    // Verify target is in the effective company
-    const { data: target } = await supabase
-      .from('team_members')
-      .select('id, company_id, role')
-      .eq('id', id)
-      .single();
-
-    if (!target || target.company_id !== companyId) {
-      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
-    }
-
-    // Only super admins can demote existing owners
-    if (target.role === 'owner' && !member.is_super_admin) {
-      return NextResponse.json({ error: 'Cannot change owner role' }, { status: 400 });
-    }
-
-    const { error } = await supabase
-      .from('team_members')
-      .update({ role, updated_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error('Update member error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-
-// DELETE - Remove a team member
+// DELETE - Revoke a pending invite
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -80,43 +17,25 @@ export async function DELETE(
 
     const { member, companyId } = auth;
 
-    // Only owners, admins, or super admins can remove members
     if (!member.is_super_admin && member.role !== 'owner' && member.role !== 'admin') {
-      return NextResponse.json({ error: 'Only owners and admins can remove members' }, { status: 403 });
+      return NextResponse.json({ error: 'Only owners and admins can revoke invites' }, { status: 403 });
     }
 
     const { id } = await params;
-
-    // Can't remove yourself
-    if (id === member.id) {
-      return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 });
-    }
-
     const supabase = createServiceClient();
 
-    // Verify target is in the effective company and not owner
-    const { data: target } = await supabase
-      .from('team_members')
-      .select('id, company_id, role, user_id')
+    const { data: invite } = await supabase
+      .from('company_invites')
+      .select('id, company_id')
       .eq('id', id)
       .single();
 
-    if (!target || target.company_id !== companyId) {
-      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    if (!invite || invite.company_id !== companyId) {
+      return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
     }
 
-    if (target.role === 'owner') {
-      return NextResponse.json({ error: 'Cannot remove the owner' }, { status: 400 });
-    }
-
-    // Admins can only remove members, not other admins (super admins can remove anyone except owner)
-    if (!member.is_super_admin && member.role === 'admin' && target.role === 'admin') {
-      return NextResponse.json({ error: 'Admins cannot remove other admins' }, { status: 403 });
-    }
-
-    // Delete team member row
     const { error } = await supabase
-      .from('team_members')
+      .from('company_invites')
       .delete()
       .eq('id', id);
 
@@ -126,7 +45,90 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Remove member error:', err);
+    console.error('Revoke invite error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// POST - Resend an invite email (also refreshes the 7-day expiry)
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await getAuthContext(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { member, companyId } = auth;
+
+    if (!member.is_super_admin && member.role !== 'owner' && member.role !== 'admin') {
+      return NextResponse.json({ error: 'Only owners and admins can resend invites' }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const supabase = createServiceClient();
+
+    const { data: invite } = await supabase
+      .from('company_invites')
+      .select('id, email, role, token, company_id, accepted_at')
+      .eq('id', id)
+      .single();
+
+    if (!invite || invite.company_id !== companyId) {
+      return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
+    }
+
+    if (invite.accepted_at) {
+      return NextResponse.json({ error: 'Invite has already been accepted' }, { status: 400 });
+    }
+
+    // Refresh expiry to give the recipient a full window from "resend" time
+    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { error: updateError } = await supabase
+      .from('company_invites')
+      .update({ expires_at: newExpiresAt })
+      .eq('id', id);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    const { data: company } = await supabase
+      .from('companies')
+      .select('name')
+      .eq('id', companyId)
+      .single();
+
+    const baseUrl = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || '';
+    const inviteUrl = `${baseUrl}/login?invite=${invite.token}`;
+
+    try {
+      await sendInviteEmail({
+        to: invite.email,
+        companyName: company?.name || 'AgencyViz',
+        inviterName: member.name,
+        role: invite.role,
+        inviteUrl,
+        expiresAt: newExpiresAt,
+      });
+    } catch (err) {
+      console.error('Failed to resend invite email:', err);
+      return NextResponse.json({
+        error: 'Invite expiry was refreshed but email delivery failed',
+        invite_url: inviteUrl,
+      }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      email: invite.email,
+      expires_at: newExpiresAt,
+      invite_url: inviteUrl,
+    });
+  } catch (err) {
+    console.error('Resend invite error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

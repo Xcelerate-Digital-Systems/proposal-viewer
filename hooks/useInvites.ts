@@ -83,6 +83,22 @@ export function useInvites(companyId?: string) {
     return { error: res.ok ? null : 'Failed to revoke invite' };
   };
 
+  const resendInvite = async (inviteId: string) => {
+    const headers = await getAuthHeaders();
+    const res = await fetch(buildUrl(`/api/invites/${inviteId}`), {
+      method: 'POST',
+      headers,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { error: data.error || 'Failed to resend invite', data: null };
+    }
+    setInvites(prev =>
+      prev.map(i => (i.id === inviteId ? { ...i, expires_at: data.expires_at } : i))
+    );
+    return { error: null, data };
+  };
+
   const pendingInvites = invites.filter(
     i => !i.accepted_at && new Date(i.expires_at) > new Date()
   );
@@ -102,5 +118,6 @@ export function useInvites(companyId?: string) {
     fetchInvites,
     createInvite,
     revokeInvite,
+    resendInvite,
   };
 }
