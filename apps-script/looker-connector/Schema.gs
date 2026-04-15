@@ -33,14 +33,20 @@ var DIMENSIONS = [
 // ── Scalar metrics (a single number returned directly from Meta) ──────────
 // Pairs of { id, name, type, agg, desc }. 'type' is one of
 // NUMBER | PERCENT | CURRENCY_AUD. 'agg' is one of SUM | AVG.
+//
+// Rate metrics (CPM, CPC, CTR, cost-per-X) are *not* here — they live in
+// RATE_METRICS below as formula-based calculated metrics. Declaring CPM as
+// AVG looks right in a per-row table but collapses incorrectly in table
+// totals and scorecards (Looker's default total is SUM), producing values
+// in the thousands. Formula metrics let Looker aggregate the numerator and
+// denominator independently before dividing — which is the weighted-average
+// CPM Meta's Ads Manager shows.
 var SCALAR_METRICS = [
   // Spend + delivery
   { id: 'spend',       name: 'Amount spent (AUD)', type: 'CURRENCY_AUD', agg: 'SUM', desc: 'Total amount spent on your ads. API: spend.' },
   { id: 'impressions', name: 'Impressions',        type: 'NUMBER',       agg: 'SUM', desc: 'Number of times your ads were on screen. API: impressions.' },
   { id: 'reach',       name: 'Reach',              type: 'NUMBER',       agg: 'SUM', desc: 'Number of people who saw your ads at least once. API: reach.' },
   { id: 'frequency',   name: 'Frequency',          type: 'NUMBER',       agg: 'AVG', desc: 'Average number of times each person saw your ad. API: frequency.' },
-  { id: 'cpm',         name: 'CPM (cost per 1,000 impressions) (AUD)', type: 'CURRENCY_AUD', agg: 'AVG', desc: 'Avg cost per 1,000 impressions. API: cpm.' },
-  { id: 'cpp',         name: 'CPP (cost per 1,000 reached)',           type: 'CURRENCY_AUD', agg: 'AVG', desc: 'Avg cost per 1,000 people reached. API: cpp.' },
 
   // Clicks — scalar
   { id: 'clicks',                         name: 'Clicks (all)',                     type: 'NUMBER',       agg: 'SUM', desc: 'Every click on your ad. API: clicks.' },
@@ -50,26 +56,34 @@ var SCALAR_METRICS = [
   { id: 'outbound_clicks',                name: 'Outbound clicks',                  type: 'NUMBER',       agg: 'SUM', desc: 'Clicks on links that take people off Meta-owned properties. API: outbound_clicks.' },
   { id: 'unique_outbound_clicks',         name: 'Unique outbound clicks',           type: 'NUMBER',       agg: 'SUM', desc: 'API: unique_outbound_clicks.' },
 
-  // CPC
-  { id: 'cpc',                               name: 'CPC (all) (AUD)',                 type: 'CURRENCY_AUD', agg: 'AVG', desc: 'Avg cost for each click (all). API: cpc.' },
-  { id: 'cost_per_unique_click',             name: 'Cost per unique click (AUD)',     type: 'CURRENCY_AUD', agg: 'AVG', desc: 'API: cost_per_unique_click.' },
-  { id: 'cost_per_inline_link_click',        name: 'CPC (cost per link click) (AUD)', type: 'CURRENCY_AUD', agg: 'AVG', desc: 'API: cost_per_inline_link_click.' },
-  { id: 'cost_per_unique_inline_link_click', name: 'Cost per unique link click (AUD)', type: 'CURRENCY_AUD', agg: 'AVG', desc: 'API: cost_per_unique_inline_link_click.' },
-  { id: 'cost_per_outbound_click',           name: 'Cost per outbound click (AUD)',   type: 'CURRENCY_AUD', agg: 'AVG', desc: 'API: cost_per_outbound_click.' },
-  { id: 'cost_per_unique_outbound_click',    name: 'Cost per unique outbound click (AUD)', type: 'CURRENCY_AUD', agg: 'AVG', desc: 'API: cost_per_unique_outbound_click.' },
-
-  // CTR
-  { id: 'ctr',                           name: 'CTR (all)',                     type: 'PERCENT', agg: 'AVG', desc: 'Click-through rate on all clicks. = clicks ÷ impressions. API: ctr.' },
-  { id: 'unique_ctr',                    name: 'Unique CTR (all)',              type: 'PERCENT', agg: 'AVG', desc: 'Unique click-through rate (all). API: unique_ctr.' },
-  { id: 'inline_link_click_ctr',         name: 'CTR (link click-through rate)', type: 'PERCENT', agg: 'AVG', desc: 'Link CTR. = link clicks ÷ impressions. API: inline_link_click_ctr.' },
-  { id: 'unique_inline_link_click_ctr',  name: 'Unique link CTR',               type: 'PERCENT', agg: 'AVG', desc: 'API: unique_inline_link_click_ctr.' },
-  { id: 'outbound_clicks_ctr',           name: 'Outbound CTR',                  type: 'PERCENT', agg: 'AVG', desc: 'API: outbound_clicks_ctr.' },
-  { id: 'unique_outbound_clicks_ctr',    name: 'Unique outbound CTR',           type: 'PERCENT', agg: 'AVG', desc: 'API: unique_outbound_clicks_ctr.' },
-
   // Quality rankings (Meta returns as TEXT — ABOVE_AVERAGE, AVERAGE, etc.)
   { id: 'quality_ranking',           name: 'Quality ranking',           type: 'TEXT', agg: null, desc: 'Meta auction quality ranking. API: quality_ranking.' },
   { id: 'engagement_rate_ranking',   name: 'Engagement rate ranking',   type: 'TEXT', agg: null, desc: 'API: engagement_rate_ranking.' },
   { id: 'conversion_rate_ranking',   name: 'Conversion rate ranking',   type: 'TEXT', agg: null, desc: 'API: conversion_rate_ranking.' },
+];
+
+// ── Rate / ratio metrics (computed by Looker from scalar metrics above) ────
+// Declared with setFormula so Looker aggregates the numerator and denominator
+// across rows before dividing. This matches Meta Ads Manager's weighted
+// averages and — critically — produces the right total in scorecards and
+// table totals instead of summing per-row CPMs into the thousands.
+//
+// Formulas reference the ids declared in SCALAR_METRICS and the conversion
+// event ids auto-generated by CONVERSION_EVENTS. CTR variants are ratios
+// (0.05 = 5%), so the PERCENT type handles the display.
+var RATE_METRICS = [
+  { id: 'cpm',                               name: 'CPM (cost per 1,000 impressions) (AUD)', type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(impressions) * 1000', desc: 'Cost per 1,000 impressions. Computed: spend ÷ impressions × 1000.' },
+  { id: 'cpp',                               name: 'CPP (cost per 1,000 reached) (AUD)',     type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(reach) * 1000',       desc: 'Cost per 1,000 people reached. Computed: spend ÷ reach × 1000.' },
+  { id: 'cpc',                               name: 'CPC (all) (AUD)',                        type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(clicks)',             desc: 'Avg cost for each click (all). Computed: spend ÷ clicks.' },
+  { id: 'cost_per_unique_click',             name: 'Cost per unique click (AUD)',            type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(unique_clicks)',                 desc: 'Computed: spend ÷ unique clicks.' },
+  { id: 'cost_per_inline_link_click',        name: 'CPC (cost per link click) (AUD)',        type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(inline_link_clicks)',            desc: 'Computed: spend ÷ link clicks.' },
+  { id: 'cost_per_unique_inline_link_click', name: 'Cost per unique link click (AUD)',       type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(unique_inline_link_clicks)',     desc: 'Computed: spend ÷ unique link clicks.' },
+  { id: 'cost_per_outbound_click',           name: 'Cost per outbound click (AUD)',          type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(outbound_clicks)',               desc: 'Computed: spend ÷ outbound clicks.' },
+  { id: 'cost_per_unique_outbound_click',    name: 'Cost per unique outbound click (AUD)',   type: 'CURRENCY_AUD', formula: 'SUM(spend) / SUM(unique_outbound_clicks)',        desc: 'Computed: spend ÷ unique outbound clicks.' },
+
+  { id: 'ctr',                               name: 'CTR (all)',                              type: 'PERCENT',      formula: 'SUM(clicks) / SUM(impressions)',                  desc: 'Click-through rate on all clicks. Computed: clicks ÷ impressions.' },
+  { id: 'inline_link_click_ctr',             name: 'CTR (link click-through rate)',          type: 'PERCENT',      formula: 'SUM(inline_link_clicks) / SUM(impressions)',      desc: 'Computed: link clicks ÷ impressions.' },
+  { id: 'outbound_clicks_ctr',               name: 'Outbound CTR',                           type: 'PERCENT',      formula: 'SUM(outbound_clicks) / SUM(impressions)',         desc: 'Computed: outbound clicks ÷ impressions.' },
 ];
 
 // ── Conversion / engagement events ────────────────────────────────────────
@@ -177,7 +191,18 @@ function getFields() {
     if (m.desc) f.setDescription(m.desc);
   });
 
-  // For each conversion event: count + (optional) value + cost-per
+  RATE_METRICS.forEach(function (m) {
+    var f = fields.newMetric()
+      .setId(m.id)
+      .setName(m.name)
+      .setType(T[m.type])
+      .setFormula(m.formula);
+    if (m.desc) f.setDescription(m.desc);
+  });
+
+  // For each conversion event: count + (optional) value + cost-per.
+  // cost_per_<id> is a formula metric so table totals / scorecards divide
+  // aggregate spend by aggregate events rather than summing per-row costs.
   CONVERSION_EVENTS.forEach(function (e) {
     fields.newMetric()
       .setId(e.id)
@@ -199,8 +224,8 @@ function getFields() {
       .setId('cost_per_' + e.id)
       .setName('Cost per ' + e.label.toLowerCase() + ' (AUD)')
       .setType(T.CURRENCY_AUD)
-      .setAggregation(A.AVG)
-      .setDescription('Avg cost per ' + e.label.toLowerCase() + '. API: cost_per_action_type.');
+      .setFormula('SUM(spend) / SUM(' + e.id + ')')
+      .setDescription('Computed: spend ÷ ' + e.label.toLowerCase() + ' events.');
   });
 
   VIDEO_ACTION_METRICS.forEach(function (v) {
