@@ -25,24 +25,56 @@ export async function GET(req: NextRequest) {
     .eq('status', 'active');
 
   // Temporary debug — remove once Phase 3 is confirmed working.
-  const buildDebug = async () => ({
-    resolved_company_id: auth.companyId,
-    own_company_id: auth.member.company_id,
-    is_super_admin: auth.member.is_super_admin ?? false,
-    active_connections_query_result: connections,
-    active_connections_query_error: connErr?.message ?? null,
-    all_connections_for_this_company: (
-      await supabase
-        .from('meta_connections')
-        .select('id, company_id, status')
-        .eq('company_id', auth.companyId)
-    ).data,
-    all_connections_any_status: (
-      await supabase
-        .from('meta_connections')
-        .select('id, company_id, status')
-    ).data,
-  });
+  const buildDebug = async () => {
+    const variantA = await supabase
+      .from('meta_connections')
+      .select('id, company_id, status')
+      .eq('company_id', auth.companyId)
+      .eq('status', 'active');
+
+    const variantB = await supabase
+      .from('meta_connections')
+      .select('id, meta_user_id, meta_user_name, status, expires_at')
+      .eq('company_id', auth.companyId);
+
+    const variantC = await supabase
+      .from('meta_connections')
+      .select('id, company_id, status')
+      .match({ company_id: auth.companyId, status: 'active' });
+
+    const variantD = await supabase
+      .from('meta_connections')
+      .select('id, company_id, status')
+      .eq('company_id', auth.companyId)
+      .filter('status', 'eq', 'active');
+
+    const { data: allForCo } = await supabase
+      .from('meta_connections')
+      .select('id, company_id, status')
+      .eq('company_id', auth.companyId);
+
+    const { data: allAny } = await supabase
+      .from('meta_connections')
+      .select('id, company_id, status');
+
+    return {
+      resolved_company_id: auth.companyId,
+      own_company_id: auth.member.company_id,
+      is_super_admin: auth.member.is_super_admin ?? false,
+      active_connections_query_result: connections,
+      active_connections_query_error: connErr?.message ?? null,
+      // A: same shape as production but with minimal select
+      variant_A_minimal_select_with_status_eq: { data: variantA.data, error: variantA.error?.message ?? null },
+      // B: production select columns, status filter removed
+      variant_B_full_select_no_status_filter: { data: variantB.data, error: variantB.error?.message ?? null },
+      // C: status filter via .match() instead of chained .eq()
+      variant_C_match_instead_of_eq: { data: variantC.data, error: variantC.error?.message ?? null },
+      // D: status filter via .filter() instead of .eq()
+      variant_D_filter_instead_of_eq: { data: variantD.data, error: variantD.error?.message ?? null },
+      all_connections_for_this_company: allForCo,
+      all_connections_any_status: allAny,
+    };
+  };
 
   if (connErr) {
     return NextResponse.json({
