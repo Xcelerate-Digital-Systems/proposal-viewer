@@ -151,10 +151,20 @@ export function useAuth() {
   };
 
   const resetPasswordForEmail = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    return { error };
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return { error: { message: data.error || 'Failed to send reset email' } };
+      }
+      return { error: null };
+    } catch (err) {
+      return { error: { message: err instanceof Error ? err.message : 'Network error' } };
+    }
   };
 
   const updatePassword = async (password: string) => {
