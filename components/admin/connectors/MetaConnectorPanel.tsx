@@ -51,7 +51,10 @@ export default function MetaConnectorPanel() {
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await fetch('/api/connectors/meta/accounts', { headers: await authHeader() });
+      const res = await fetch(
+        debugMode ? '/api/connectors/meta/accounts?debug=1' : '/api/connectors/meta/accounts',
+        { headers: await authHeader() },
+      );
       const text = await res.text();
       setDebugRaw(`HTTP ${res.status}\n${text}`);
       let json: unknown;

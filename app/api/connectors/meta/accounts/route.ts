@@ -40,11 +40,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: accErr.message }, { status: 500 });
   }
 
+  // Temporary debug — remove once Phase 3 is confirmed working.
+  const debug = req.nextUrl.searchParams.get('debug') === '1';
+  const debugPayload = debug ? {
+    resolved_company_id: auth.companyId,
+    own_company_id: auth.member.company_id,
+    is_super_admin: auth.member.is_super_admin ?? false,
+    all_connections_for_this_company: (
+      await supabase
+        .from('meta_connections')
+        .select('id, company_id, status')
+        .eq('company_id', auth.companyId)
+    ).data,
+    all_connections_any_status: (
+      await supabase
+        .from('meta_connections')
+        .select('id, company_id, status')
+    ).data,
+  } : undefined;
+
   return NextResponse.json({
     success: true,
     data: {
       connections,
       accounts: accounts ?? [],
+      ...(debug ? { _debug: debugPayload } : {}),
     },
   });
 }
