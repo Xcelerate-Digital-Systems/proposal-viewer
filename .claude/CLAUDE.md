@@ -25,6 +25,7 @@ app/                            # Next.js App Router pages + API routes
 ├── api/                        # ~50+ API routes
 ├── proposals/, documents/,     # Authenticated CRUD pages
 │   templates/, reviews/
+├── integrations/looker-studio/ # Connectors hub (Meta → Looker Studio)
 ├── view/[token]/               # Public proposal viewer
 ├── doc/[token]/                # Public document viewer
 ├── review/[token]/             # Public review viewer
@@ -34,6 +35,7 @@ components/
 ├── admin/                      # Authenticated UI (editors, forms, boards)
 │   ├── proposals/              # Proposal editor
 │   ├── reviews/                # Review management + board nodes
+│   ├── connectors/             # Integration cards + connection manager
 │   └── shared/                 # Cover, design, TOC, quote editors
 ├── viewer/                     # Public viewer components
 ├── reviews/                    # Review detail view, comments, feedback tools
@@ -42,12 +44,15 @@ components/
 hooks/                          # React hooks (auth, data fetching, feedback)
 lib/
 ├── types/                      # All TypeScript type definitions
+├── connectors/meta/            # Meta OAuth, token crypto, Insights API client
 ├── supabase.ts                 # Client-side Supabase + type re-exports
 ├── supabase-server.ts          # Server-side service client (bypasses RLS)
 ├── api-auth.ts                 # Auth context extraction for API routes
 ├── page-operations.ts          # CRUD barrel for page queries/mutations
 ├── notifications.ts            # Email + webhook notification orchestrator
 └── sanitize.ts                 # Input validation, URL/email sanitization
+
+apps-script/looker-connector/   # Google Apps Script community connector source
 ```
 
 ## Architecture Patterns
@@ -82,14 +87,29 @@ lib/
 - SVG-based drawing overlay with viewBox="0 0 100 100"
 - Types in `lib/types/review.ts`, main view in `components/reviews/ReviewDetailView.tsx`
 
+### Looker Studio Connector (Meta Ads)
+- **UI hub**: `/integrations/looker-studio` — connector cards, deployment ID for Looker Studio, per-account toggles, disconnect per connection
+- **Scope**: connections are company-scoped, not user-scoped. A single company can have multiple Meta connections (unique on `(company_id, meta_user_id)`), so employees each authorize their own Meta login and coexist
+- **Storage**: `meta_connections` (encrypted access token, status, last_used_at), `meta_ad_accounts` (per-account `enabled` flag), `meta_oauth_states` (short-lived CSRF)
+- **Passthrough**: no insights data is stored — every `/api/connectors/meta/data` request hits Meta live (Looker Studio caches ~12h)
+- **Token encryption**: AES-256-GCM via `lib/connectors/meta/token-crypto.ts`, key in `META_TOKEN_ENCRYPTION_KEY`
+- **Apps Script consumer**: authenticates via AgencyViz API key (`av_live_...`), resolves to company via `api_keys` table — the Apps Script itself never handles Meta tokens
+- **Adding Insights fields**: extend `ALLOWED_INSIGHT_FIELDS` in `lib/connectors/meta/fields.ts` and the matching `Schema.gs` entry in `apps-script/looker-connector/`
+
 ## Environment Variables
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=       # Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase public API key
-SUPABASE_SERVICE_ROLE_KEY=      # Supabase service role (server-only)
-RESEND_API_KEY=                 # Resend email API key
-NEXT_PUBLIC_APP_URL=            # App URL (http://localhost:3000 in dev)
+NEXT_PUBLIC_SUPABASE_URL=         # Supabase project URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=    # Supabase public API key
+SUPABASE_SERVICE_ROLE_KEY=        # Supabase service role (server-only)
+RESEND_API_KEY=                   # Resend email API key
+NEXT_PUBLIC_APP_URL=              # App URL (http://localhost:3000 in dev)
+
+# Meta → Looker Studio connector
+META_APP_ID=                      # Facebook app id (OAuth client)
+META_APP_SECRET=                  # Facebook app secret (OAuth token exchange)
+META_TOKEN_ENCRYPTION_KEY=        # base64-encoded 32-byte key for AES-256-GCM token crypto
+NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID= # Apps Script deployment id shown on the connector hub
 ```
 
 ## Terminology
