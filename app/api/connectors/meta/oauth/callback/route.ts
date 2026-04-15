@@ -31,7 +31,9 @@ function errorRedirect(appUrl: string, reason: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  // Strip trailing slash — Meta's OAuth exchange compares redirect_uri strings
+  // exactly, and a double-slash breaks the flow.
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
   const appId = process.env.META_APP_ID;
   const appSecret = process.env.META_APP_SECRET;
 

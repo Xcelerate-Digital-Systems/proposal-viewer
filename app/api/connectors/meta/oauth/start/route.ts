@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const appId = process.env.META_APP_ID;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  // Strip trailing slash — Meta's OAuth exchange compares redirect_uri strings
+  // exactly, and a double-slash breaks the flow.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
   if (!appId || !appUrl) {
     return NextResponse.json(
       { error: 'Meta connector is not configured (missing META_APP_ID or NEXT_PUBLIC_APP_URL)' },
