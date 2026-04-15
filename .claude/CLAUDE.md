@@ -88,9 +88,9 @@ apps-script/looker-connector/   # Google Apps Script community connector source
 - Types in `lib/types/review.ts`, main view in `components/reviews/ReviewDetailView.tsx`
 
 ### Looker Studio Connector (Meta Ads)
-- **UI hub**: `/integrations/looker-studio` — connector cards, deployment ID for Looker Studio, per-account toggles, disconnect per connection
+- **UI hub**: `/integrations/looker-studio` — generic connector cards, plus a Meta-specific panel (setup instructions with the deployment ID, connected Meta account list with disconnect). Each connector ships its own panel because each community connector has a distinct deployment ID.
 - **Scope**: connections are company-scoped, not user-scoped. A single company can have multiple Meta connections (unique on `(company_id, meta_user_id)`), so employees each authorize their own Meta login and coexist
-- **Storage**: `meta_connections` (encrypted access token, status, last_used_at), `meta_ad_accounts` (per-account `enabled` flag), `meta_oauth_states` (short-lived CSRF)
+- **Storage**: `meta_connections` (encrypted access token, status, last_used_at), `meta_ad_accounts` (one row per ad account exposed by the connection), `meta_oauth_states` (short-lived CSRF)
 - **Passthrough**: no insights data is stored — every `/api/connectors/meta/data` request hits Meta live (Looker Studio caches ~12h)
 - **Token encryption**: AES-256-GCM via `lib/connectors/meta/token-crypto.ts`, key in `META_TOKEN_ENCRYPTION_KEY`
 - **Apps Script consumer**: authenticates via AgencyViz API key (`av_live_...`), resolves to company via `api_keys` table — the Apps Script itself never handles Meta tokens

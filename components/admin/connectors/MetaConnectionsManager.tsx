@@ -1,22 +1,23 @@
 // components/admin/connectors/MetaConnectionsManager.tsx
 //
-// Per-connection management UI shown beneath the connector cards. Lets a
-// company admin (a) see which Meta user(s) are linked, (b) toggle individual
-// ad accounts on/off so employees don't accidentally expose personal ad
-// accounts, and (c) revoke a connection entirely.
-//
-// Intentionally fetches the same /api/connectors/meta/accounts endpoint as
-// MetaConnectorCard. The parent re-keys both on mutation so they stay in
-// sync without needing a shared context.
+// Meta-specific post-card details: shows the Meta → Looker Studio deployment
+// ID with setup instructions, and lists every Meta connection linked to the
+// caller's company with a disconnect action per connection. Lives alongside
+// MetaConnectorCard on /integrations/looker-studio; GHL (when it ships) will
+// get its own manager with its own deployment ID because each community
+// connector has a distinct Apps Script project.
 
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Trash2, Users } from 'lucide-react';
+import { Check, Copy, Trash2, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import Toggle from '@/components/ui/Toggle';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+
+const META_DEPLOYMENT_ID =
+  process.env.NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID ||
+  '1kZtHBdop8gy0gIAaRnuugj7n2uWP9ru7r31tDG5NILuZPfS-jJcGtOrV';
 
 interface Connection {
   id: string;
@@ -31,10 +32,6 @@ interface Connection {
 interface AdAccount {
   connection_id: string;
   ad_account_id: string;
-  account_name: string | null;
-  currency?: string | null;
-  business_name?: string | null;
-  enabled: boolean;
 }
 
 interface AccountsResponse {
@@ -44,8 +41,7 @@ interface AccountsResponse {
 
 function formatRelativeTime(iso: string | null): string {
   if (!iso) return 'never';
-  const then = new Date(iso).getTime();
-  const diffMs = Date.now() - then;
+  const diffMs = Date.now() - new Date(iso).getTime();
   const minutes = Math.round(diffMs / 60_000);
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
@@ -54,6 +50,86 @@ function formatRelativeTime(iso: string | null): string {
   const days = Math.round(hours / 24);
   if (days < 30) return `${days}d ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+function DeploymentIdField() {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(META_DEPLOYMENT_ID);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API blocked (e.g., insecure origin) — text remains selectable.
+    }
+  };
+  return (
+    <div className="flex items-stretch gap-2">
+      <code className="flex-1 min-w-0 px-3 py-2 text-[12px] font-mono text-ink bg-white border border-line rounded-lg overflow-x-auto whitespace-nowrap">
+        {META_DEPLOYMENT_ID}
+      </code>
+      <button
+        type="button"
+        onClick={copy}
+        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-ink bg-white border border-line rounded-lg hover:bg-surface transition-colors shrink-0"
+        aria-label="Copy deployment ID"
+      >
+        {copied ? <Check size={13} className="text-teal" /> : <Copy size={13} />}
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  );
+}
+
+function MetaSetupPanel() {
+  return (
+    <div className="p-6 bg-surface border border-line rounded-2xl">
+      <p className="text-sm font-semibold text-ink mb-1">
+        Facebook Ads in Looker Studio
+      </p>
+      <p className="text-xs text-faint leading-relaxed mb-5">
+        Paste the Facebook Ads deployment ID below into Looker Studio to load
+        the AgencyViz connector.
+      </p>
+
+      <div className="mb-5">
+        <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted mb-1.5">
+          Deployment ID
+        </label>
+        <DeploymentIdField />
+      </div>
+
+      <ol className="space-y-3 text-xs text-ink leading-relaxed list-decimal pl-5 marker:text-muted marker:font-semibold">
+        <li>
+          Open{' '}
+          <a
+            href="https://lookerstudio.google.com"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-teal hover:underline"
+          >
+            Looker Studio
+          </a>{' '}
+          and click <span className="font-semibold">Create → Data source</span>.
+        </li>
+        <li>
+          Scroll to <span className="font-semibold">Build your own</span> and choose{' '}
+          <span className="font-semibold">Build with Apps Script</span> (aka "Create from
+          scratch").
+        </li>
+        <li>
+          Paste the deployment ID above into the{' '}
+          <span className="font-semibold">Deployment ID</span> field and click{' '}
+          <span className="font-semibold">Validate</span>, then{' '}
+          <span className="font-semibold">Next</span>.
+        </li>
+        <li>
+          When prompted, sign in with AgencyViz to authorize the connector, then pick the
+          ad account to pull data from.
+        </li>
+      </ol>
+    </div>
+  );
 }
 
 interface Props {
@@ -65,9 +141,6 @@ export default function MetaConnectionsManager({ refreshKey, onChange }: Props) 
   const [connections, setConnections] = useState<Connection[]>([]);
   const [accounts, setAccounts] = useState<AdAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  // Track per-account mutation state so rapid toggles don't race against each
-  // other — the toggle is disabled while its own PATCH is in flight.
-  const [pendingAccounts, setPendingAccounts] = useState<Set<string>>(new Set());
   const [pendingDisconnect, setPendingDisconnect] = useState<string | null>(null);
   const confirm = useConfirm();
   const toast = useToast();
@@ -103,48 +176,6 @@ export default function MetaConnectionsManager({ refreshKey, onChange }: Props) 
     load();
   }, [load, refreshKey]);
 
-  const accountKey = (a: Pick<AdAccount, 'connection_id' | 'ad_account_id'>) =>
-    `${a.connection_id}:${a.ad_account_id}`;
-
-  const toggleAccount = async (account: AdAccount) => {
-    const key = accountKey(account);
-    const next = !account.enabled;
-
-    setPendingAccounts((prev) => new Set(prev).add(key));
-    // Optimistic update — revert on failure.
-    setAccounts((prev) =>
-      prev.map((a) => (accountKey(a) === key ? { ...a, enabled: next } : a))
-    );
-
-    try {
-      const res = await fetch('/api/connectors/meta/accounts', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
-        body: JSON.stringify({
-          connection_id: account.connection_id,
-          ad_account_id: account.ad_account_id,
-          enabled: next,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to update ad account');
-      }
-      onChange();
-    } catch (e) {
-      setAccounts((prev) =>
-        prev.map((a) => (accountKey(a) === key ? { ...a, enabled: !next } : a))
-      );
-      toast.error(e instanceof Error ? e.message : 'Failed to update ad account');
-    } finally {
-      setPendingAccounts((prev) => {
-        const copy = new Set(prev);
-        copy.delete(key);
-        return copy;
-      });
-    }
-  };
-
   const disconnect = async (connection: Connection) => {
     const who = connection.meta_user_name || connection.meta_user_id;
     const ok = await confirm({
@@ -175,87 +206,53 @@ export default function MetaConnectionsManager({ refreshKey, onChange }: Props) 
     }
   };
 
+  // Hide while the initial fetch is in flight so we don't flash a setup panel
+  // that might immediately be followed by a populated connections list.
   if (loading) return null;
-  if (connections.length === 0) return null;
 
   return (
-    <div className="mt-6 space-y-4">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-          Connected accounts
-        </p>
-      </div>
+    <div className="mt-8 space-y-6">
+      <MetaSetupPanel />
 
-      {connections.map((connection) => {
-        const connAccounts = accounts.filter((a) => a.connection_id === connection.id);
-        const enabledCount = connAccounts.filter((a) => a.enabled).length;
+      {connections.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+            Connected Facebook accounts
+          </p>
 
-        return (
-          <div
-            key={connection.id}
-            className="bg-white border border-line rounded-2xl overflow-hidden"
-          >
-            <div className="flex items-start gap-3 p-5 border-b border-line">
-              <div className="w-9 h-9 bg-teal-tint rounded-lg flex items-center justify-center shrink-0">
-                <Users size={16} className="text-teal" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-ink truncate">
-                  {connection.meta_user_name || connection.meta_user_id}
-                </p>
-                <p className="text-xs text-faint mt-0.5">
-                  {enabledCount} of {connAccounts.length} ad account
-                  {connAccounts.length === 1 ? '' : 's'} enabled · last used{' '}
-                  {formatRelativeTime(connection.last_used_at)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => disconnect(connection)}
-                disabled={pendingDisconnect === connection.id}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          {connections.map((connection) => {
+            const accountCount = accounts.filter((a) => a.connection_id === connection.id).length;
+            return (
+              <div
+                key={connection.id}
+                className="flex items-start gap-3 bg-white border border-line rounded-2xl p-5"
               >
-                <Trash2 size={12} />
-                {pendingDisconnect === connection.id ? 'Disconnecting…' : 'Disconnect'}
-              </button>
-            </div>
-
-            {connAccounts.length === 0 ? (
-              <div className="p-5 text-xs text-faint">
-                No ad accounts found on this Meta login.
+                <div className="w-9 h-9 bg-teal-tint rounded-lg flex items-center justify-center shrink-0">
+                  <Users size={16} className="text-teal" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-ink truncate">
+                    {connection.meta_user_name || connection.meta_user_id}
+                  </p>
+                  <p className="text-xs text-faint mt-0.5">
+                    {accountCount} ad account{accountCount === 1 ? '' : 's'} · last used{' '}
+                    {formatRelativeTime(connection.last_used_at)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => disconnect(connection)}
+                  disabled={pendingDisconnect === connection.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                >
+                  <Trash2 size={12} />
+                  {pendingDisconnect === connection.id ? 'Disconnecting…' : 'Disconnect'}
+                </button>
               </div>
-            ) : (
-              <ul className="divide-y divide-line">
-                {connAccounts.map((account) => {
-                  const key = accountKey(account);
-                  const label = account.account_name || account.ad_account_id;
-                  return (
-                    <li
-                      key={key}
-                      className="flex items-center gap-3 px-5 py-3"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-ink truncate">{label}</p>
-                        <p className="text-[11px] text-muted mt-0.5 truncate">
-                          {account.ad_account_id}
-                          {account.business_name ? ` · ${account.business_name}` : ''}
-                          {account.currency ? ` · ${account.currency}` : ''}
-                        </p>
-                      </div>
-                      <Toggle
-                        size="sm"
-                        enabled={account.enabled}
-                        onChange={() => toggleAccount(account)}
-                        disabled={pendingAccounts.has(key)}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
