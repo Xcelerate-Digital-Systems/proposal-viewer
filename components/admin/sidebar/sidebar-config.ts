@@ -3,7 +3,7 @@
 
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
-  Palette, Bell, Users, Megaphone, Bookmark,
+  Palette, Bell, Users, Megaphone, Bookmark, Plug, BarChart3,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -67,6 +67,16 @@ export const ALL_SECTIONS: SectionDef[] = [
     matchPaths: ['/ads'],
     items: [
       { href: '/ads', label: 'Campaigns', icon: Megaphone },
+    ],
+  },
+  {
+    key: 'integrations',
+    label: 'Integrations',
+    icon: Plug,
+    defaultHref: '/integrations/looker-studio',
+    matchPaths: ['/integrations'],
+    items: [
+      { href: '/integrations/looker-studio', label: 'Looker Studio', icon: BarChart3 },
     ],
   },
 ];

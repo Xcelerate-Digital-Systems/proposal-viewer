@@ -1,4 +1,4 @@
-// app/ads/looker-studio/page.tsx
+// app/integrations/looker-studio/page.tsx
 //
 // Hub for data-source connectors that feed the AgencyViz Looker Studio
 // connector. Each card is a single integration; no per-account detail is

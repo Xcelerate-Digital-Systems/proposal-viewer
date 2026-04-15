@@ -95,7 +95,7 @@ export default function MetaConnectorCard() {
       const res = await fetch('/api/connectors/meta/oauth/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
-        body: JSON.stringify({ redirect_to: '/ads/looker-studio' }),
+        body: JSON.stringify({ redirect_to: '/integrations/looker-studio' }),
       });
       const json = await res.json();
       if (json.success && json.authorize_url) {

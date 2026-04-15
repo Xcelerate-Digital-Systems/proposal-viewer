@@ -25,11 +25,10 @@ export default function AdTrackersSidebarNav({ onNavigate }: { onNavigate?: () =
   const currentTrackerId = pathname?.startsWith('/ads/')
     && !pathname.startsWith('/ads/swipe')
     && !pathname.startsWith('/ads/naming-convention')
-    && !pathname.startsWith('/ads/looker-studio')
     ? pathname.split('/')[2] || null
     : null;
 
-  const inLookerStudio = pathname?.startsWith('/ads/looker-studio') ?? false;
+  const inLookerStudio = pathname?.startsWith('/integrations/looker-studio') ?? false;
 
   const startRename = (id: string, name: string) => {
     setRenamingId(id);
@@ -217,7 +216,7 @@ export default function AdTrackersSidebarNav({ onNavigate }: { onNavigate?: () =
             </div>
             <div className="space-y-0.5">
               <Link
-                href="/ads/looker-studio"
+                href="/integrations/looker-studio"
                 onClick={onNavigate}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   inLookerStudio ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-[#013036]'
