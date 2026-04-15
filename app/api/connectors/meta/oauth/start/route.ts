@@ -1,0 +1,67 @@
+// app/api/connectors/meta/oauth/start/route.ts
+//
+// Called by the in-app "Connect Facebook" button. Returns a Facebook OAuth
+// authorize URL plus a CSRF state token. The caller then does
+// `window.location.href = authorize_url` to redirect the user to Facebook.
+//
+// We don't 302 server-side because the request comes in with a Bearer token
+// (Supabase session) — redirect responses lose the Authorization header anyway
+// and the caller wants to do a top-level navigation, not a follow.
+
+import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes, createHash } from 'crypto';
+import { getAuthContext } from '@/lib/api-auth';
+import { createServiceClient } from '@/lib/supabase-server';
+import { buildAuthorizeUrl } from '@/lib/connectors/meta/api-client';
+
+export const dynamic = 'force-dynamic';
+
+const STATE_TTL_SECONDS = 600;
+const REQUIRED_SCOPES = ['ads_read', 'business_management'];
+
+export async function POST(req: NextRequest) {
+  const auth = await getAuthContext(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const appId = process.env.META_APP_ID;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appId || !appUrl) {
+    return NextResponse.json(
+      { error: 'Meta connector is not configured (missing META_APP_ID or NEXT_PUBLIC_APP_URL)' },
+      { status: 500 },
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const redirectTo = typeof body?.redirect_to === 'string' ? body.redirect_to : null;
+
+  const state = randomBytes(32).toString('base64url');
+  const stateHash = createHash('sha256').update(state).digest('hex');
+  const expiresAt = new Date(Date.now() + STATE_TTL_SECONDS * 1000).toISOString();
+
+  const supabase = createServiceClient();
+  const { error } = await supabase.from('meta_oauth_states').insert({
+    state_hash: stateHash,
+    company_id: auth.companyId,
+    user_id: auth.member.user_id,
+    redirect_to: redirectTo,
+    expires_at: expiresAt,
+  });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const redirectUri = `${appUrl}/api/connectors/meta/oauth/callback`;
+  const authorizeUrl = buildAuthorizeUrl({
+    appId,
+    redirectUri,
+    state,
+    scopes: REQUIRED_SCOPES,
+  });
+
+  return NextResponse.json({
+    success: true,
+    authorize_url: authorizeUrl,
+    expires_in: STATE_TTL_SECONDS,
+  });
+}
