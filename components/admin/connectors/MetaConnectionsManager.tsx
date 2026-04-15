@@ -15,9 +15,12 @@ import { supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 
+// Apps Script deployment ID (AKfyc…) for the Looker Studio community connector.
+// Distinct from the Apps Script project's *script* id — Looker Studio's
+// "Build with Apps Script" dialog expects the deployment id, not the script id.
 const META_DEPLOYMENT_ID =
   process.env.NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID ||
-  '1kZtHBdop8gy0gIAaRnuugj7n2uWP9ru7r31tDG5NILuZPfS-jJcGtOrV';
+  'AKfycbzgNfN6xNn_GWw0xUqWXINgyPkuLG-og_3WP5y4Uc8k';
 
 interface Connection {
   id: string;
