@@ -1,0 +1,24 @@
+{
+  "timeZone": "Australia/Perth",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "OAuth2",
+        "libraryId": "1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF",
+        "version": "43"
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "dataStudio": {
+    "name": "AgencyViz — Facebook Ads",
+    "company": "AgencyViz",
+    "companyUrl": "https://app.agencyviz.io",
+    "addonUrl": "https://app.agencyviz.io",
+    "logoUrl": "https://app.agencyviz.io/logo-square.png",
+    "supportUrl": "https://app.agencyviz.io",
+    "description": "Facebook Ads performance data for Looker Studio, powered by AgencyViz. Pull campaign, ad set, ad, and creative-level insights from any ad account you've connected in AgencyViz.",
+    "sources": ["facebook"]
+  }
+}
