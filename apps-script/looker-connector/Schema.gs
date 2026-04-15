@@ -259,10 +259,9 @@ function getFields() {
 var ACTION_FIELD_MAP = (function () {
   var map = {};
   CONVERSION_EVENTS.forEach(function (e) {
-    map[e.id]              = { from: 'actions',              types: e.types };
-    map['cost_per_' + e.id] = { from: 'cost_per_action_type', types: e.types };
+    map[e.id] = { from: 'actions', types: e.types };
     if (e.hasValue) {
-      map[e.id + '_value'] = { from: 'action_values',         types: e.types };
+      map[e.id + '_value'] = { from: 'action_values', types: e.types };
     }
   });
   ROAS_METRICS.forEach(function (r) {
@@ -279,12 +278,3 @@ var VIDEO_SUM_FIELDS = (function () {
   VIDEO_ACTION_METRICS.forEach(function (v) { map[v.id] = v.from; });
   return map;
 })();
-
-// Looker Studio's PERCENT field expects a fraction (0.05 = 5%). Meta returns
-// percentages as whole numbers (5.0 = 5%). These ids need ÷ 100 at format
-// time.
-var PERCENT_FIELD_IDS = [
-  'ctr', 'unique_ctr',
-  'inline_link_click_ctr', 'unique_inline_link_click_ctr',
-  'outbound_clicks_ctr', 'unique_outbound_clicks_ctr',
-];

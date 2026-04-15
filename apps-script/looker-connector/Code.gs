@@ -149,11 +149,7 @@ function formatValue(value, fieldId) {
     ? value
     : (typeof value === 'string' && !isNaN(Number(value)) ? Number(value) : null);
 
-  if (numeric !== null) {
-    if (PERCENT_FIELD_IDS.indexOf(fieldId) !== -1) return numeric / 100;
-    return numeric;
-  }
-
+  if (numeric !== null) return numeric;
   return value;
 }
 
@@ -162,7 +158,6 @@ function formatValue(value, fieldId) {
 function isNumericField(fieldId) {
   if (ACTION_FIELD_MAP[fieldId]) return true;
   if (VIDEO_SUM_FIELDS[fieldId]) return true;
-  if (PERCENT_FIELD_IDS.indexOf(fieldId) !== -1) return true;
   // Lazy check — scalar metrics are any id not in our dimension set.
   for (var i = 0; i < DIMENSIONS.length; i++) if (DIMENSIONS[i].id === fieldId) return false;
   return true;
