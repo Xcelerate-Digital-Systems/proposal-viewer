@@ -154,14 +154,16 @@ function computeDateRollup(dateStr, fieldId) {
   var quarter = Math.ceil(m / 3);
   var iso = getIsoWeek(d);
   switch (fieldId) {
-    case 'year':         return String(y);
-    case 'year_quarter': return String(y) + 'Q' + quarter;
-    case 'year_month':   return String(y) + pad2(m);
-    case 'year_week':    return String(iso.year) + pad2(iso.week);
-    case 'quarter':      return String(quarter);
-    case 'month':        return pad2(m);
-    case 'week':         return pad2(iso.week);
-    case 'day_of_week':  return String(dow);
+    case 'year':           return String(y);
+    case 'year_quarter':   return String(y) + 'Q' + quarter;
+    case 'year_month':     return String(y) + pad2(m);
+    case 'year_week':      return String(iso.year) + pad2(iso.week);
+    case 'quarter':        return String(quarter);
+    case 'month':          return pad2(m);
+    case 'week':           return pad2(iso.week);
+    case 'day':            return pad2(dom);
+    case 'day_of_week':    return String(dow);
+    case 'week_of_month':  return 'Week ' + Math.min(5, Math.ceil(dom / 7));
   }
   return '';
 }

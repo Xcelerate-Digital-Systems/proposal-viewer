@@ -27,7 +27,9 @@ var DIMENSIONS = [
   { id: 'quarter',           name: 'Quarter',              type: 'QUARTER',        desc: 'Quarter (1-4). Derived from date_start.' },
   { id: 'month',              name: 'Month',               type: 'MONTH',          desc: 'Month number (01-12). Derived from date_start.' },
   { id: 'week',              name: 'Week (ISO)',           type: 'WEEK',           desc: 'ISO week number (01-53). Derived from date_start.' },
+  { id: 'day',               name: 'Day of month',         type: 'DAY',            desc: 'Day of month (01-31). Derived from date_start.' },
   { id: 'day_of_week',       name: 'Day of week',          type: 'DAY_OF_WEEK',    desc: 'Day of week (0=Sunday … 6=Saturday). Derived from date_start.' },
+  { id: 'week_of_month',     name: 'Week of month',        type: 'TEXT',           desc: 'Week bucket within the month: "Week 1" (days 1-7), "Week 2" (8-14), "Week 3" (15-21), "Week 4" (22-28), "Week 5" (29+). Derived from date_start.' },
 
   { id: 'account_id',        name: 'Account ID',           type: 'TEXT' },
   { id: 'account_name',      name: 'Account name',         type: 'TEXT' },
@@ -539,5 +541,7 @@ var DATE_ROLLUP_FIELD_IDS = {
   quarter: true,
   month: true,
   week: true,
+  day: true,
   day_of_week: true,
+  week_of_month: true,
 };
