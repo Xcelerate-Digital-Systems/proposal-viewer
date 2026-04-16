@@ -278,6 +278,17 @@ var ACTION_FIELD_MAP = (function () {
   return map;
 })();
 
+// Set of field ids whose semantic type is PERCENT. Used by formatValue in
+// Code.gs to avoid mangling ratio values (0–1 range) that Looker displays
+// as percentages.
+var PERCENT_FIELD_IDS = (function () {
+  var set = {};
+  RATE_METRICS.forEach(function (m) {
+    if (m.type === 'PERCENT') set[m.id] = true;
+  });
+  return set;
+})();
+
 // Fields whose raw value is an array with one entry per action_type, but
 // where we want the SUM of all entries (not a type-specific pick). Used for
 // the `video_*_watched_actions` family.

@@ -145,6 +145,13 @@ function formatValue(value, fieldId) {
     return String(value).replace(/-/g, '').slice(0, 8);
   }
 
+  // Percent fields (CTR, hook rate, etc.) come back as ratios (0.05 = 5%).
+  // Pass through as-is — Looker's PERCENT type handles display formatting.
+  if (PERCENT_FIELD_IDS[fieldId]) {
+    var pct = typeof value === 'number' ? value : Number(value);
+    return isNaN(pct) ? 0 : pct;
+  }
+
   var numeric = typeof value === 'number'
     ? value
     : (typeof value === 'string' && !isNaN(Number(value)) ? Number(value) : null);
