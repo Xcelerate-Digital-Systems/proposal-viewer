@@ -150,6 +150,7 @@ function computeDateRollup(dateStr, fieldId) {
   if (isNaN(d.getTime())) return '';
   var y = d.getUTCFullYear();
   var m = d.getUTCMonth() + 1;
+  var dom = d.getUTCDate();
   var dow = d.getUTCDay();  // 0=Sun..6=Sat — matches Looker DAY_OF_WEEK convention
   var quarter = Math.ceil(m / 3);
   var iso = getIsoWeek(d);

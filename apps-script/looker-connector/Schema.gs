@@ -21,9 +21,9 @@ var DIMENSIONS = [
   // required. Let agencies drag "Month" or "Week" into a pivot without
   // changing the underlying Date field's granularity.
   { id: 'year',              name: 'Year',                 type: 'YEAR',           desc: 'Year rollup (YYYY). Derived from date_start.' },
-  { id: 'year_quarter',      name: 'Year & quarter',       type: 'YEAR_QUARTER',   desc: 'Year + quarter (YYYYQ). Derived from date_start.' },
-  { id: 'year_month',        name: 'Year & month',         type: 'YEAR_MONTH',     desc: 'Year + month (YYYYMM). Derived from date_start.' },
-  { id: 'year_week',         name: 'Year & week (ISO)',    type: 'YEAR_WEEK',      desc: 'Year + ISO week (YYYYWW). Derived from date_start.' },
+  { id: 'year_quarter',      name: 'Year-Quarter',         type: 'YEAR_QUARTER',   desc: 'Year + quarter (YYYYQ). Derived from date_start.' },
+  { id: 'year_month',        name: 'Year-Month',           type: 'YEAR_MONTH',     desc: 'Year + month (YYYYMM). Derived from date_start.' },
+  { id: 'year_week',         name: 'Year-Week (ISO)',      type: 'YEAR_WEEK',      desc: 'Year + ISO week (YYYYWW). Derived from date_start.' },
   { id: 'quarter',           name: 'Quarter',              type: 'QUARTER',        desc: 'Quarter (1-4). Derived from date_start.' },
   { id: 'month',              name: 'Month',               type: 'MONTH',          desc: 'Month number (01-12). Derived from date_start.' },
   { id: 'week',              name: 'Week (ISO)',           type: 'WEEK',           desc: 'ISO week number (01-53). Derived from date_start.' },
