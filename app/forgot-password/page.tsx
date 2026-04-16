@@ -45,6 +45,7 @@ export default function ForgotPasswordPage() {
             Back to sign in
           </Link>
         </div>
+        <LegalFooter />
       </div>
     );
   }
@@ -95,6 +96,17 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
       </div>
+      <LegalFooter />
+    </div>
+  );
+}
+
+function LegalFooter() {
+  return (
+    <div className="mt-6 flex items-center justify-center gap-3 text-xs text-white/60">
+      <a href="/privacy-policy" className="hover:text-white/90 transition-colors">Privacy Policy</a>
+      <span>&middot;</span>
+      <a href="/terms-and-conditions" className="hover:text-white/90 transition-colors">Terms &amp; Conditions</a>
     </div>
   );
 }

@@ -119,6 +119,7 @@ function LoginContent() {
           <Loader2 size={24} className="animate-spin text-white/70 mx-auto mb-3" />
           <p className="text-sm text-white/70">Validating invite...</p>
         </div>
+        <LegalFooter />
       </div>
     );
   }
@@ -140,6 +141,7 @@ function LoginContent() {
             Go to sign in
           </button>
         </div>
+        <LegalFooter />
       </div>
     );
   }
@@ -162,6 +164,7 @@ function LoginContent() {
             Use a different email
           </button>
         </div>
+        <LegalFooter />
       </div>
     );
   }
@@ -345,6 +348,17 @@ function LoginContent() {
           </p>
         )}
       </div>
+      <LegalFooter />
+    </div>
+  );
+}
+
+function LegalFooter() {
+  return (
+    <div className="mt-6 flex items-center justify-center gap-3 text-xs text-white/60">
+      <a href="/privacy-policy" className="hover:text-white/90 transition-colors">Privacy Policy</a>
+      <span>&middot;</span>
+      <a href="/terms-and-conditions" className="hover:text-white/90 transition-colors">Terms &amp; Conditions</a>
     </div>
   );
 }
