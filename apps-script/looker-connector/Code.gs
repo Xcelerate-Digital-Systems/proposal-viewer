@@ -38,6 +38,34 @@ function getConfig(request) {
     config.newInfo().setId('err').setText('Could not load ad accounts: ' + e.message);
   }
 
+  // Breakdowns — split rows by one or more demographic / placement /
+  // time-of-day dimensions. Each selected breakdown becomes a dimension
+  // in the schema and adds `breakdowns=X` to the Meta API call. Meta
+  // rejects some combinations (especially hourly + demographic); if a
+  // report errors with "invalid breakdown combination", reduce to one.
+  var breakdowns = config
+    .newSelectMultiple()
+    .setId('breakdowns')
+    .setName('Breakdowns (optional)')
+    .setHelpText('Split rows by one or more dimensions. Pick carefully — Meta rejects some combinations (e.g. hourly with demographic). If a report errors, reduce the selection.');
+  [
+    ['age',                                                 'Age'],
+    ['gender',                                              'Gender'],
+    ['country',                                             'Country'],
+    ['region',                                              'Region'],
+    ['dma',                                                 'DMA (Designated Market Area)'],
+    ['impression_device',                                   'Impression device'],
+    ['device_platform',                                     'Device platform'],
+    ['publisher_platform',                                  'Publisher platform'],
+    ['platform_position',                                   'Placement (platform position)'],
+    ['hourly_stats_aggregated_by_advertiser_time_zone',     'Hour of day (advertiser TZ)'],
+    ['hourly_stats_aggregated_by_audience_time_zone',       'Hour of day (audience TZ)'],
+  ].forEach(function (opt) {
+    breakdowns.addOption(
+      config.newOptionBuilder().setLabel(opt[1]).setValue(opt[0]),
+    );
+  });
+
   config.setDateRangeRequired(true);
   return config.build();
 }
@@ -52,13 +80,17 @@ function getData(request) {
   }
 
   var requestedFieldIds = (request.fields || []).map(function (f) { return f.name; });
-  var allFields = getFields();
+  var breakdowns = parseBreakdowns(request.configParams);
+  var allFields = getFields(request.configParams);
   var scopedFields = allFields.forIds(requestedFieldIds);
 
   // Resolve schema ids → Meta API field names. Dedup so we don't waste a
   // slot on e.g. `actions` when three conversion metrics all need it.
+  // Breakdown dimension ids are NOT insights fields — Meta returns them
+  // automatically when `breakdowns=` is set, so we skip them here.
   var apiFieldSet = {};
   requestedFieldIds.forEach(function (id) {
+    if (BREAKDOWN_DIMENSIONS[id]) return;
     var apiField = schemaIdToApiField(id);
     if (apiField) apiFieldSet[apiField] = true;
   });
@@ -71,6 +103,7 @@ function getData(request) {
     fields: apiFields,
     level: 'ad',
   };
+  if (breakdowns.length > 0) body.breakdowns = breakdowns;
 
   var resp;
   try {
@@ -93,13 +126,18 @@ function getData(request) {
 
 // Map a Looker Studio schema id to the API field we need to request.
 function schemaIdToApiField(id) {
-  if (ACTION_FIELD_MAP[id])   return ACTION_FIELD_MAP[id].from;
-  if (VIDEO_SUM_FIELDS[id])   return VIDEO_SUM_FIELDS[id];
+  if (ACTION_FIELD_MAP[id])      return ACTION_FIELD_MAP[id].from;
+  if (VIDEO_SUM_FIELDS[id])      return VIDEO_SUM_FIELDS[id];
+  if (DATE_ROLLUP_FIELD_IDS[id]) return 'date_start';
   return id;
 }
 
 // Pull a scalar value out of an API row for a given schema id.
 function resolveFieldValue(row, fieldId) {
+  if (DATE_ROLLUP_FIELD_IDS[fieldId]) {
+    return computeDateRollup(row.date_start, fieldId);
+  }
+
   var actionMap = ACTION_FIELD_MAP[fieldId];
   if (actionMap) {
     var arr = row[actionMap.from];
@@ -124,6 +162,52 @@ function resolveFieldValue(row, fieldId) {
   }
 
   return row[fieldId];
+}
+
+// Compute a date-rollup value from an ISO YYYY-MM-DD string. Looker Studio
+// expects specific string formats per FieldType — see the community
+// connector docs. Returns '' on malformed input so empty cells don't
+// pollute charts.
+function computeDateRollup(dateStr, fieldId) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr + 'T00:00:00Z');
+  if (isNaN(d.getTime())) return '';
+  var y = d.getUTCFullYear();
+  var m = d.getUTCMonth() + 1;
+  var dow = d.getUTCDay();  // 0=Sun..6=Sat — matches Looker DAY_OF_WEEK convention
+  var quarter = Math.ceil(m / 3);
+  var iso = getIsoWeek(d);
+  switch (fieldId) {
+    case 'year':         return String(y);
+    case 'year_quarter': return String(y) + 'Q' + quarter;
+    case 'year_month':   return String(y) + pad2(m);
+    case 'year_week':    return String(iso.year) + pad2(iso.week);
+    case 'quarter':      return String(quarter);
+    case 'month':        return pad2(m);
+    case 'week':         return pad2(iso.week);
+    case 'day_of_week':  return String(dow);
+  }
+  return '';
+}
+
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+// ISO 8601 week calculation — week starts Monday; week 1 is the one
+// containing the first Thursday of the year. Returns {year, week} since
+// dates in late Dec / early Jan can span ISO years (e.g. 2024-12-30 is
+// 2025-W01 under ISO 8601).
+function getIsoWeek(d) {
+  var target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  var dayNr = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNr + 3);
+  var firstThursday = target.getTime();
+  var jan4 = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  var jan4DayNr = (jan4.getUTCDay() + 6) % 7;
+  jan4.setUTCDate(jan4.getUTCDate() - jan4DayNr + 3);
+  return {
+    year: target.getUTCFullYear(),
+    week: 1 + Math.round((firstThursday - jan4.getTime()) / 604800000),
+  };
 }
 
 function toNumber(v) {
@@ -152,6 +236,19 @@ function formatValue(value, fieldId) {
     return isNaN(pct) ? 0 : pct;
   }
 
+  // Creative fields are text/URL/IMAGE — never coerce. A video id like
+  // "123456789" must stay a string or Looker compares it as a number.
+  if (CREATIVE_FIELD_IDS[fieldId]) return String(value);
+
+  // Date rollup fields are pre-formatted strings ("2026Q1", "202604",
+  // "12"). Coercing "2026Q1" to a number produces NaN; coercing "04" to
+  // 4 breaks the Looker format expectation. Pass through as-is.
+  if (DATE_ROLLUP_FIELD_IDS[fieldId]) return String(value);
+
+  // Breakdown dimensions (age "25-34", country "AU", platform "feed")
+  // are always strings — skip numeric coercion.
+  if (BREAKDOWN_DIMENSIONS[fieldId]) return String(value);
+
   var numeric = typeof value === 'number'
     ? value
     : (typeof value === 'string' && !isNaN(Number(value)) ? Number(value) : null);
@@ -165,6 +262,13 @@ function formatValue(value, fieldId) {
 function isNumericField(fieldId) {
   if (ACTION_FIELD_MAP[fieldId]) return true;
   if (VIDEO_SUM_FIELDS[fieldId]) return true;
+  // Creative fields are text/URL/IMAGE — an empty thumbnail should stay
+  // empty, not become 0.
+  if (CREATIVE_FIELD_IDS[fieldId]) return false;
+  // Date rollups are strings (e.g. "2026Q1").
+  if (DATE_ROLLUP_FIELD_IDS[fieldId]) return false;
+  // Breakdown dimensions are strings.
+  if (BREAKDOWN_DIMENSIONS[fieldId]) return false;
   // Lazy check — scalar metrics are any id not in our dimension set.
   for (var i = 0; i < DIMENSIONS.length; i++) if (DIMENSIONS[i].id === fieldId) return false;
   return true;

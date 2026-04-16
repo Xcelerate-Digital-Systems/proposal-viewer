@@ -3,7 +3,8 @@
 // Vercel function; benchmark (scripts/benchmark-meta-passthrough.mjs) shows
 // 24 months of daily data returns in ~5s on parallel(4).
 
-import { META_API_VERSION, DEFAULT_INSIGHT_FIELDS, ALLOWED_INSIGHT_FIELDS } from './fields';
+import { META_API_VERSION, splitAndValidateFields, validateBreakdowns } from './fields';
+import { fetchAdCreativesMap, emptyCreative, type NormalizedCreative } from './creatives';
 
 const BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`;
 
@@ -154,32 +155,28 @@ export function dateChunks(dateFrom: string, dateTo: string, maxDays = 60): Arra
   return chunks;
 }
 
-export function validateFields(requested: string[] | undefined): string[] {
-  if (!requested || requested.length === 0) return [...DEFAULT_INSIGHT_FIELDS];
-  const invalid = requested.filter((f) => !ALLOWED_INSIGHT_FIELDS.has(f));
-  if (invalid.length > 0) {
-    throw new Error(`Unsupported fields: ${invalid.join(', ')}`);
-  }
-  return requested;
-}
-
 async function fetchInsightsChunk(opts: {
   accessToken: string;
   accountId: string;
   level: string;
   fields: string[];
+  breakdowns: string[];
   dateFrom: string;
   dateTo: string;
 }): Promise<Record<string, unknown>[]> {
   const rows: Record<string, unknown>[] = [];
-  let url: string | null = `${BASE_URL}/${opts.accountId}/insights?${new URLSearchParams({
+  const params: Record<string, string> = {
     level: opts.level,
     fields: opts.fields.join(','),
     time_range: JSON.stringify({ since: opts.dateFrom, until: opts.dateTo }),
     time_increment: '1',
     limit: '500',
     access_token: opts.accessToken,
-  })}`;
+  };
+  if (opts.breakdowns.length > 0) {
+    params.breakdowns = opts.breakdowns.join(',');
+  }
+  let url: string | null = `${BASE_URL}/${opts.accountId}/insights?${new URLSearchParams(params)}`;
 
   while (url) {
     const res = await fetch(url);
@@ -205,13 +202,20 @@ export async function fetchInsights(opts: {
   dateFrom: string;
   dateTo: string;
   fields?: string[];
+  breakdowns?: string[];
   level?: 'ad' | 'adset' | 'campaign' | 'account';
   concurrency?: number;
 }): Promise<{ rows: Record<string, unknown>[]; pages: number; elapsed_ms: number }> {
   const start = Date.now();
-  const fields = validateFields(opts.fields);
+  const { insightFields, creativeFields } = splitAndValidateFields(opts.fields);
+  const breakdowns = validateBreakdowns(opts.breakdowns);
   const level = opts.level ?? 'ad';
   const concurrency = opts.concurrency ?? 4;
+
+  // Creative hydration only makes sense at ad grain — creative_id collapses
+  // at higher levels. Silently skip rather than error so a user who picks
+  // campaign-level with a creative-heavy template still gets insights data.
+  const hydrateCreatives = creativeFields.length > 0 && level === 'ad';
 
   const chunks = dateChunks(opts.dateFrom, opts.dateTo, 60);
   const results = await mapPool(chunks, concurrency, ([from, to]) =>
@@ -219,12 +223,36 @@ export async function fetchInsights(opts: {
       accessToken: opts.accessToken,
       accountId: opts.accountId,
       level,
-      fields,
+      fields: insightFields,
+      breakdowns,
       dateFrom: from,
       dateTo: to,
     }),
   );
 
   const rows = results.flat();
+
+  if (hydrateCreatives) {
+    const adIds = rows
+      .map((r) => r.ad_id)
+      .filter((id): id is string => typeof id === 'string');
+    const creativesByAdId = await fetchAdCreativesMap({
+      accessToken: opts.accessToken,
+      adIds,
+    });
+    for (const row of rows) {
+      const creative = creativesByAdId.get(row.ad_id as string) ?? emptyCreative();
+      for (const f of creativeFields) {
+        row[f] = creative[f as keyof NormalizedCreative];
+      }
+    }
+  } else if (creativeFields.length > 0) {
+    // Requested creative fields at the wrong grain — fill nulls so the
+    // Looker Studio schema's column count still matches.
+    for (const row of rows) {
+      for (const f of creativeFields) row[f] = null;
+    }
+  }
+
   return { rows, pages: chunks.length, elapsed_ms: Date.now() - start };
 }

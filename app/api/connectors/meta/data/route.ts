@@ -8,8 +8,9 @@
 //     ad_account_id: "act_1234567890",
 //     date_from: "2025-01-01",
 //     date_to:   "2026-04-15",
-//     fields?:   ["impressions","clicks",...],   // optional; validated whitelist
-//     level?:    "ad" | "adset" | "campaign" | "account"  // default "ad"
+//     fields?:     ["impressions","clicks",...],     // optional; validated whitelist
+//     breakdowns?: ["age","publisher_platform",...], // optional; validated whitelist
+//     level?:      "ad" | "adset" | "campaign" | "account"  // default "ad"
 //   }
 //
 // Response:
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object') return badRequest('Body must be JSON object');
 
-  const { ad_account_id, date_from, date_to, fields, level } = body as Record<string, unknown>;
+  const { ad_account_id, date_from, date_to, fields, breakdowns, level } = body as Record<string, unknown>;
 
   if (typeof ad_account_id !== 'string' || !/^act_\d+$/.test(ad_account_id)) {
     return badRequest('ad_account_id must look like act_1234567890');
@@ -57,6 +58,9 @@ export async function POST(req: NextRequest) {
   }
   if (fields !== undefined && (!Array.isArray(fields) || fields.some((f) => typeof f !== 'string'))) {
     return badRequest('fields must be an array of strings');
+  }
+  if (breakdowns !== undefined && (!Array.isArray(breakdowns) || breakdowns.some((b) => typeof b !== 'string'))) {
+    return badRequest('breakdowns must be an array of strings');
   }
   if (level !== undefined && !['ad', 'adset', 'campaign', 'account'].includes(level as string)) {
     return badRequest('level must be one of ad|adset|campaign|account');
@@ -107,6 +111,7 @@ export async function POST(req: NextRequest) {
       dateFrom: date_from,
       dateTo: date_to,
       fields: fields as string[] | undefined,
+      breakdowns: breakdowns as string[] | undefined,
       level: level as 'ad' | 'adset' | 'campaign' | 'account' | undefined,
       concurrency: 4,
     });
