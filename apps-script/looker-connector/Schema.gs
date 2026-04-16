@@ -318,27 +318,24 @@ var PRODUCT_CATALOG_METRICS = [
 // ─────────────────────────────────────────────────────────────────────────
 
 function getSchema(request) {
-  return { schema: getFields(request && request.configParams).build() };
+  return { schema: getFields().build() };
 }
 
-// Parse the configParams.breakdowns value Looker hands us. SelectMultiple
-// values can arrive as either an array (on first render) or a
-// comma-separated string (after serialisation through configParams), so
-// normalise to an array of valid breakdown ids.
-function parseBreakdowns(configParams) {
-  if (!configParams) return [];
-  var raw = configParams.breakdowns;
-  if (!raw) return [];
-  var items = Array.isArray(raw) ? raw : String(raw).split(',');
+// Extract breakdown ids from a requested-field list. Meta's /insights
+// endpoint changes row grain per breakdown, so we only request the
+// breakdowns the user actually dragged into their chart. Fields picked
+// from BREAKDOWN_DIMENSIONS become the `breakdowns=` param; everything
+// else is a normal schema field.
+function breakdownsFromFields(requestedFieldIds) {
   var out = [];
-  for (var i = 0; i < items.length; i++) {
-    var id = String(items[i]).trim();
+  for (var i = 0; i < requestedFieldIds.length; i++) {
+    var id = requestedFieldIds[i];
     if (BREAKDOWN_DIMENSIONS[id]) out.push(id);
   }
   return out;
 }
 
-function getFields(configParams) {
+function getFields() {
   var cc = CC();
   var fields = cc.getFields();
   var T = cc.FieldType;
@@ -349,10 +346,12 @@ function getFields(configParams) {
     if (d.desc) f.setDescription(d.desc);
   });
 
-  // Only register breakdown dimensions that the user selected — Looker
-  // errors if the returned rows contain dimension values for fields that
-  // aren't in the schema.
-  parseBreakdowns(configParams).forEach(function (id) {
+  // All breakdown dimensions are always available as fields. Meta only
+  // actually splits rows when a breakdown is requested in getData — at
+  // which point we pass `breakdowns=X` to /insights. Meta rejects some
+  // combinations (e.g. hourly + demographic); those errors surface
+  // verbatim to Looker Studio.
+  Object.keys(BREAKDOWN_DIMENSIONS).forEach(function (id) {
     var d = BREAKDOWN_DIMENSIONS[id];
     fields.newDimension().setId(d.id).setName(d.name).setType(T[d.type]);
   });

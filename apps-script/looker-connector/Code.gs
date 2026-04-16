@@ -38,34 +38,6 @@ function getConfig(request) {
     config.newInfo().setId('err').setText('Could not load ad accounts: ' + e.message);
   }
 
-  // Breakdowns — split rows by one or more demographic / placement /
-  // time-of-day dimensions. Each selected breakdown becomes a dimension
-  // in the schema and adds `breakdowns=X` to the Meta API call. Meta
-  // rejects some combinations (especially hourly + demographic); if a
-  // report errors with "invalid breakdown combination", reduce to one.
-  var breakdowns = config
-    .newSelectMultiple()
-    .setId('breakdowns')
-    .setName('Breakdowns (optional)')
-    .setHelpText('Split rows by one or more dimensions. Pick carefully — Meta rejects some combinations (e.g. hourly with demographic). If a report errors, reduce the selection.');
-  [
-    ['age',                                                 'Age'],
-    ['gender',                                              'Gender'],
-    ['country',                                             'Country'],
-    ['region',                                              'Region'],
-    ['dma',                                                 'DMA (Designated Market Area)'],
-    ['impression_device',                                   'Impression device'],
-    ['device_platform',                                     'Device platform'],
-    ['publisher_platform',                                  'Publisher platform'],
-    ['platform_position',                                   'Placement (platform position)'],
-    ['hourly_stats_aggregated_by_advertiser_time_zone',     'Hour of day (advertiser TZ)'],
-    ['hourly_stats_aggregated_by_audience_time_zone',       'Hour of day (audience TZ)'],
-  ].forEach(function (opt) {
-    breakdowns.addOption(
-      config.newOptionBuilder().setLabel(opt[1]).setValue(opt[0]),
-    );
-  });
-
   config.setDateRangeRequired(true);
   return config.build();
 }
@@ -80,8 +52,12 @@ function getData(request) {
   }
 
   var requestedFieldIds = (request.fields || []).map(function (f) { return f.name; });
-  var breakdowns = parseBreakdowns(request.configParams);
-  var allFields = getFields(request.configParams);
+  // Any breakdown dimensions the user dragged into the chart become
+  // `breakdowns=` params on the Meta call. Meta splits row grain per
+  // breakdown and returns each value under a key matching the breakdown
+  // name — resolveFieldValue reads those directly.
+  var breakdowns = breakdownsFromFields(requestedFieldIds);
+  var allFields = getFields();
   var scopedFields = allFields.forIds(requestedFieldIds);
 
   // Resolve schema ids → Meta API field names. Dedup so we don't waste a
