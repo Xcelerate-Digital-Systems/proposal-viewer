@@ -182,6 +182,9 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
               await swipe.updateFile(f.id, f.type_id, { has_been_shared: true });
             }
           }}
+          onFieldUpdate={async (f, field, value) => {
+            await swipe.updateFile(f.id, f.type_id, { [field]: value });
+          }}
           types={swipe.types}
           onMove={async (f, newTypeId) => {
             await swipe.updateFile(f.id, f.type_id, { type_id: newTypeId });

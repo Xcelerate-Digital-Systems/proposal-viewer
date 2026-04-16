@@ -37,6 +37,8 @@ export type SwipeFile = {
   public_share_enabled: boolean;
   has_been_shared: boolean;
   sort_order: number;
+  transcription: string | null;
+  ai_prompt: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

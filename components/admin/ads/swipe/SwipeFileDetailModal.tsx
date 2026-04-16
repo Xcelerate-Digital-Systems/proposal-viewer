@@ -1,13 +1,16 @@
 // components/admin/ads/swipe/SwipeFileDetailModal.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   X, ChevronLeft, ChevronRight, Share2, Check, Pencil, Trash2,
   ExternalLink, Calendar, MousePointerClick, Image as ImageIcon, Video as VideoIcon, Tag, FolderInput,
+  Info, FileText, Sparkles, Loader2,
 } from 'lucide-react';
 import type { SwipeFile, SwipeType } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import SwipeMetaMockup from './SwipeMetaMockup';
+import AccordionSection from './AccordionSection';
 
 type Props = {
   files: SwipeFile[];
@@ -15,15 +18,11 @@ type Props = {
   onNavigate: (index: number) => void;
   onClose: () => void;
   onEdit: (file: SwipeFile) => void;
-  /** Must actually delete the swipe. Parent should refresh its list. */
   onDelete: (file: SwipeFile) => Promise<void>;
-  /** Called after a successful share so the parent can persist has_been_shared. */
   onShared: (file: SwipeFile) => Promise<void>;
-  /** All folders the user can move the swipe into. Optional — hides the picker when absent. */
   types?: SwipeType[];
-  /** Called when the user picks a new folder from the Move dropdown. */
   onMove?: (file: SwipeFile, newTypeId: string) => Promise<void>;
-  /** Read-only mode hides edit/delete actions (used by public viewer). */
+  onFieldUpdate?: (file: SwipeFile, field: string, value: string | null) => Promise<void>;
   readOnly?: boolean;
 };
 
@@ -43,7 +42,7 @@ function hostFromUrl(url: string | null): string | null {
 }
 
 export default function SwipeFileDetailModal({
-  files, currentIndex, onNavigate, onClose, onEdit, onDelete, onShared, types, onMove, readOnly = false,
+  files, currentIndex, onNavigate, onClose, onEdit, onDelete, onShared, types, onMove, onFieldUpdate, readOnly = false,
 }: Props) {
   const file = files[currentIndex];
   const [copied, setCopied] = useState(false);
@@ -51,6 +50,50 @@ export default function SwipeFileDetailModal({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcriptDraft, setTranscriptDraft] = useState(file?.transcription || '');
+  const [promptDraft, setPromptDraft] = useState(file?.ai_prompt || '');
+  const [savingField, setSavingField] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTranscriptDraft(file?.transcription || '');
+    setPromptDraft(file?.ai_prompt || '');
+  }, [file?.id, file?.transcription, file?.ai_prompt]);
+
+  const handleTranscribe = useCallback(async () => {
+    if (!file || transcribing) return;
+    setTranscribing(true);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const res = await fetch(`/api/ads/swipe/files/${file.id}/transcribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Transcription failed');
+      setTranscriptDraft(json.data.transcription || '');
+    } catch (err) {
+      console.error('Transcribe error:', err);
+    } finally {
+      setTranscribing(false);
+    }
+  }, [file, transcribing]);
+
+  const saveField = useCallback(async (field: string, value: string) => {
+    if (!file || !onFieldUpdate) return;
+    const trimmed = value.trim() || null;
+    const current = field === 'transcription' ? file.transcription : file.ai_prompt;
+    if (trimmed === (current || null)) return;
+    setSavingField(field);
+    try {
+      await onFieldUpdate(file, field, trimmed);
+    } finally {
+      setSavingField(null);
+    }
+  }, [file, onFieldUpdate]);
 
   // Keyboard nav (admin-only)
   useEffect(() => {
@@ -171,97 +214,174 @@ export default function SwipeFileDetailModal({
 
         {/* Details pane */}
         <aside className="w-[340px] shrink-0 border-l border-edge bg-white overflow-y-auto flex flex-col">
-          <div className="px-5 py-4 border-b border-edge">
-            <h2 className="text-sm font-semibold text-ink">Details</h2>
-          </div>
-
-          <div className="px-5 py-4 space-y-3 flex-1">
-            <DetailRow icon={<span className="text-[15px]">🏷️</span>} label="Brand" value={file.brand || '—'} />
-            <DetailRow
-              icon={<Calendar size={14} className="text-faint" />}
-              label="Added"
-              value={formatDate(file.created_at)}
-            />
-            {file.cta && (
-              <DetailRow
-                icon={<MousePointerClick size={14} className="text-faint" />}
-                label="CTA"
-                value={file.cta}
-              />
-            )}
-            <DetailRow
-              icon={
-                file.media_type === 'video'
-                  ? <VideoIcon size={14} className="text-faint" />
-                  : <ImageIcon size={14} className="text-faint" />
-              }
-              label="Format"
-              value={file.media_type === 'video' ? 'Video' : 'Image'}
-            />
-            {!readOnly && types && onMove && (
-              <div className="flex items-start gap-3">
-                <FolderInput size={14} className="text-faint mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-faint mb-1">Folder</p>
-                  <select
-                    value={file.type_id}
-                    disabled={moving}
-                    onChange={async (e) => {
-                      const newTypeId = e.target.value;
-                      if (newTypeId === file.type_id) return;
-                      setMoving(true);
-                      try {
-                        await onMove(file, newTypeId);
-                      } finally {
-                        setMoving(false);
-                      }
-                    }}
-                    className="w-full text-[13px] text-ink bg-white border border-edge rounded-lg px-2 py-1.5 hover:border-teal/50 focus:outline-none focus:border-teal disabled:opacity-50"
-                  >
-                    {types.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-            {file.source_url && (
-              <div className="flex items-start gap-3">
-                <ExternalLink size={14} className="text-faint mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-faint">Landing page</p>
-                  <a
-                    href={file.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[13px] text-teal hover:underline truncate block"
-                    title={file.source_url}
-                  >
-                    {landingHost || file.source_url}
-                  </a>
-                </div>
-              </div>
-            )}
-            {file.tags && file.tags.length > 0 && (
-              <div className="flex items-start gap-3">
-                <Tag size={14} className="text-faint mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-faint mb-1">Tags</p>
-                  <div className="flex flex-wrap gap-1">
-                    {file.tags.map((t) => (
-                      <span key={t} className="text-[11px] bg-teal/10 text-teal px-2 py-0.5 rounded-full">
-                        {t}
-                      </span>
-                    ))}
+          <div className="flex-1">
+            {/* Details accordion */}
+            <AccordionSection
+              title="Details"
+              icon={<Info size={14} className="text-faint" />}
+              defaultOpen
+            >
+              <div className="space-y-3">
+                <DetailRow icon={<span className="text-[15px]">🏷️</span>} label="Brand" value={file.brand || '—'} />
+                <DetailRow
+                  icon={<Calendar size={14} className="text-faint" />}
+                  label="Added"
+                  value={formatDate(file.created_at)}
+                />
+                {file.cta && (
+                  <DetailRow
+                    icon={<MousePointerClick size={14} className="text-faint" />}
+                    label="CTA"
+                    value={file.cta}
+                  />
+                )}
+                <DetailRow
+                  icon={
+                    file.media_type === 'video'
+                      ? <VideoIcon size={14} className="text-faint" />
+                      : <ImageIcon size={14} className="text-faint" />
+                  }
+                  label="Format"
+                  value={file.media_type === 'video' ? 'Video' : 'Image'}
+                />
+                {!readOnly && types && onMove && (
+                  <div className="flex items-start gap-3">
+                    <FolderInput size={14} className="text-faint mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-faint mb-1">Folder</p>
+                      <select
+                        value={file.type_id}
+                        disabled={moving}
+                        onChange={async (e) => {
+                          const newTypeId = e.target.value;
+                          if (newTypeId === file.type_id) return;
+                          setMoving(true);
+                          try {
+                            await onMove(file, newTypeId);
+                          } finally {
+                            setMoving(false);
+                          }
+                        }}
+                        className="w-full text-[13px] text-ink bg-white border border-edge rounded-lg px-2 py-1.5 hover:border-teal/50 focus:outline-none focus:border-teal disabled:opacity-50"
+                      >
+                        {types.map((t) => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
+                {file.source_url && (
+                  <div className="flex items-start gap-3">
+                    <ExternalLink size={14} className="text-faint mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-faint">Landing page</p>
+                      <a
+                        href={file.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[13px] text-teal hover:underline truncate block"
+                        title={file.source_url}
+                      >
+                        {landingHost || file.source_url}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {file.tags && file.tags.length > 0 && (
+                  <div className="flex items-start gap-3">
+                    <Tag size={14} className="text-faint mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-faint mb-1">Tags</p>
+                      <div className="flex flex-wrap gap-1">
+                        {file.tags.map((t) => (
+                          <span key={t} className="text-[11px] bg-teal/10 text-teal px-2 py-0.5 rounded-full">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {file.notes && (
+                  <div className="pt-2 border-t border-edge">
+                    <p className="text-[11px] text-faint mb-1">Notes</p>
+                    <p className="text-[13px] text-ink whitespace-pre-wrap">{file.notes}</p>
+                  </div>
+                )}
               </div>
+            </AccordionSection>
+
+            {/* Transcript accordion (video only) */}
+            {file.media_type === 'video' && (
+              <AccordionSection
+                title="Transcript"
+                icon={<FileText size={14} className="text-faint" />}
+                defaultOpen={!!file.transcription}
+                badge={file.transcription ? undefined : 'Empty'}
+              >
+                {readOnly ? (
+                  file.transcription ? (
+                    <p className="text-[13px] text-ink whitespace-pre-wrap">{file.transcription}</p>
+                  ) : (
+                    <p className="text-[12px] text-faint italic">No transcript available.</p>
+                  )
+                ) : (
+                  <div className="space-y-2">
+                    <textarea
+                      value={transcriptDraft}
+                      onChange={(e) => setTranscriptDraft(e.target.value)}
+                      onBlur={() => saveField('transcription', transcriptDraft)}
+                      rows={5}
+                      placeholder="Paste or auto-generate a transcript…"
+                      className="w-full text-[13px] text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-teal/20 outline-none"
+                    />
+                    {savingField === 'transcription' && (
+                      <p className="text-[11px] text-faint">Saving…</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleTranscribe}
+                      disabled={transcribing}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-edge text-[12px] font-medium text-ink hover:bg-surface disabled:opacity-50"
+                    >
+                      {transcribing ? (
+                        <><Loader2 size={12} className="animate-spin" /> Transcribing…</>
+                      ) : (
+                        <><Sparkles size={12} /> {file.transcription ? 'Re-transcribe' : 'Auto-transcribe'}</>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </AccordionSection>
             )}
-            {file.notes && (
-              <div className="pt-2 border-t border-edge">
-                <p className="text-[11px] text-faint mb-1">Notes</p>
-                <p className="text-[13px] text-ink whitespace-pre-wrap">{file.notes}</p>
-              </div>
+
+            {/* AI Prompt accordion */}
+            {(!readOnly || file.ai_prompt) && (
+              <AccordionSection
+                title="AI Prompt"
+                icon={<Sparkles size={14} className="text-faint" />}
+                defaultOpen={!!file.ai_prompt}
+                badge={!file.ai_prompt && !readOnly ? 'Optional' : undefined}
+              >
+                {readOnly ? (
+                  <p className="text-[13px] text-ink whitespace-pre-wrap">{file.ai_prompt}</p>
+                ) : (
+                  <div className="space-y-1">
+                    <textarea
+                      value={promptDraft}
+                      onChange={(e) => setPromptDraft(e.target.value)}
+                      onBlur={() => saveField('ai_prompt', promptDraft)}
+                      rows={4}
+                      placeholder="Paste the prompt you used to generate this creative…"
+                      className="w-full text-[13px] text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-teal/20 outline-none"
+                    />
+                    {savingField === 'ai_prompt' && (
+                      <p className="text-[11px] text-faint">Saving…</p>
+                    )}
+                  </div>
+                )}
+              </AccordionSection>
             )}
           </div>
 

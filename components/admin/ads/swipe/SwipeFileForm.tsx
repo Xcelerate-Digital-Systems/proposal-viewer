@@ -25,6 +25,7 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
   const [cta, setCta] = useState(file?.cta || '');
   const [sourceUrl, setSourceUrl] = useState(file?.source_url || '');
   const [notes, setNotes] = useState(file?.notes || '');
+  const [aiPrompt, setAiPrompt] = useState(file?.ai_prompt || '');
 
   const [mediaUrl, setMediaUrl] = useState(file?.media_url || '');
   const [mediaType, setMediaType] = useState<SwipeMediaType | null>(file?.media_type || null);
@@ -95,6 +96,7 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
         cta: cta.trim() || null,
         source_url: sourceUrl.trim() || null,
         notes: notes.trim() || null,
+        ai_prompt: aiPrompt.trim() || null,
         media_url: mediaUrl.trim() || null,
         media_type: mediaType,
         media_source: mediaUrl ? 'upload' : null,
@@ -332,6 +334,16 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
+              className="w-full px-3 py-2.5 border border-edge rounded-lg text-sm focus:ring-2 focus:ring-teal/20 outline-none resize-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted mb-1.5">AI Prompt <span className="text-faint font-normal">(optional)</span></label>
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              rows={3}
+              placeholder="Paste the prompt you used to generate this creative…"
               className="w-full px-3 py-2.5 border border-edge rounded-lg text-sm focus:ring-2 focus:ring-teal/20 outline-none resize-none"
             />
           </div>

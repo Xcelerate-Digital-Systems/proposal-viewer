@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const EDITABLE_FIELDS = [
   'title', 'notes', 'headline', 'primary_text', 'description', 'cta', 'tags',
   'media_type', 'media_url', 'media_source', 'thumbnail_url', 'source_url', 'brand',
-  'type_id', 'sort_order', 'has_been_shared',
+  'type_id', 'sort_order', 'has_been_shared', 'transcription', 'ai_prompt',
 ] as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
