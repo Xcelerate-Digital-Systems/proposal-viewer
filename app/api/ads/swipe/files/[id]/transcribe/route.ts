@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const ext = file.media_url.match(/\.(mp4|mov|webm|m4a)/i)?.[1] || 'mp4';
-    const videoFile = new File([videoBuffer], `video.${ext}`, {
+    const videoFile = await toFile(videoBuffer, `video.${ext}`, {
       type: ext === 'webm' ? 'video/webm' : ext === 'mov' ? 'video/quicktime' : 'video/mp4',
     });
 
@@ -71,7 +71,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (error || !data) return NextResponse.json({ error: 'Failed to save transcription' }, { status: 500 });
     return NextResponse.json({ success: true, data });
   } catch (err) {
-    console.error('Transcription error:', err);
-    return NextResponse.json({ error: 'Transcription failed' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Transcription error:', msg, err);
+    return NextResponse.json({ error: `Transcription failed: ${msg}` }, { status: 500 });
   }
 }
