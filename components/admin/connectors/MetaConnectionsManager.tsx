@@ -127,8 +127,15 @@ function MetaSetupPanel() {
           <span className="font-semibold">Next</span>.
         </li>
         <li>
-          When prompted, sign in with AgencyViz to authorize the connector, then pick the
-          ad account to pull data from.
+          When prompted for authorization, paste your{' '}
+          <span className="font-semibold">AgencyViz API key</span> (starts with{' '}
+          <code className="text-[11px] bg-white px-1 py-0.5 border border-line rounded">av_live_</code>).
+          You can generate one in{' '}
+          <a href="/settings" className="text-teal hover:underline">Settings → API Keys</a>.
+        </li>
+        <li>
+          Pick the ad account to pull data from, then click{' '}
+          <span className="font-semibold">Connect</span>.
         </li>
       </ol>
     </div>

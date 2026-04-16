@@ -1,53 +1,52 @@
 // OAuth.gs
 //
-// Looker Studio Community Connector OAuth2 hooks. The heavy lifting is done
-// by the apps-script-oauth2 library (loaded via appsscript.json as "OAuth2").
+// Looker Studio Community Connector auth hooks. Uses KEY auth — the user
+// pastes their AgencyViz API key (av_live_...) directly into the connector
+// config. This avoids the OAuth2 redirect-back-to-script.google.com flow
+// which breaks when the user has multiple Google accounts logged in.
 
 function getAuthType() {
   var cc = DataStudioApp.createCommunityConnector();
   return cc.newAuthTypeResponse()
-    .setAuthType(cc.AuthType.OAUTH2)
+    .setAuthType(cc.AuthType.KEY)
+    .setHelpUrl(API_BASE + '/integrations/looker-studio')
     .build();
 }
 
-// Central OAuth service factory. Called by Looker Studio lifecycle functions
-// and by the data/config fetchers when they need a Bearer token.
-function getOAuthService() {
-  return OAuth2.createService('AgencyViz')
-    .setAuthorizationBaseUrl(API_BASE + '/oauth/authorize')
-    .setTokenUrl(API_BASE + '/api/oauth/token')
-    .setClientId(OAUTH_CLIENT_ID)
-    .setClientSecret(OAUTH_CLIENT_SECRET)
-    .setCallbackFunction('authCallback')
-    .setPropertyStore(PropertiesService.getUserProperties());
-}
-
+// Called by Looker Studio to check if the stored credentials are still valid.
 function isAuthValid() {
-  return getOAuthService().hasAccess();
-}
+  var key = getApiKey();
+  if (!key) return false;
 
-// Called when Looker Studio needs the URL to pop up for the user to authorize.
-function get3PAuthorizationUrls() {
-  return getOAuthService().getAuthorizationUrl();
-}
-
-// The redirect URI /oauth/authorize sends the user back to after Approve.
-// Must be a top-level function in this Apps Script project; its name is
-// referenced in getOAuthService().setCallbackFunction('authCallback').
-function authCallback(request) {
-  var service = getOAuthService();
-  var authorized = service.handleCallback(request);
-  if (authorized) {
-    return HtmlService.createHtmlOutput(
-      '<p>Success! You can close this tab and return to Looker Studio.</p>',
-    );
+  // Quick validation: hit the accounts endpoint to confirm the key works.
+  try {
+    var resp = UrlFetchApp.fetch(API_BASE + '/api/connectors/meta/accounts', {
+      method: 'get',
+      headers: { Authorization: 'Bearer ' + key },
+      muteHttpExceptions: true,
+    });
+    return resp.getResponseCode() === 200;
+  } catch (e) {
+    return false;
   }
-  return HtmlService.createHtmlOutput(
-    '<p>Authorization denied. You can close this tab.</p>',
-  );
+}
+
+// Called when the user submits their key in the Looker Studio auth screen.
+function setCredentials(request) {
+  var key = request.key;
+  if (!key || key.indexOf('av_live_') !== 0) {
+    return { errorCode: 'INVALID_CREDENTIALS' };
+  }
+  PropertiesService.getUserProperties().setProperty('av_api_key', key);
+  return { errorCode: 'NONE' };
 }
 
 // Called when the user disconnects the connector in Looker Studio.
 function resetAuth() {
-  getOAuthService().reset();
+  PropertiesService.getUserProperties().deleteProperty('av_api_key');
+}
+
+// Internal helper — returns the stored API key or null.
+function getApiKey() {
+  return PropertiesService.getUserProperties().getProperty('av_api_key');
 }

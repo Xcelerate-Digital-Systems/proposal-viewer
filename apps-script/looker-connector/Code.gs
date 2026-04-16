@@ -169,13 +169,12 @@ function throwUserError(message) {
 }
 
 function callApi(path, method, body) {
-  var service = getOAuthService();
-  var token = service.getAccessToken();
-  if (!token) throwUserError('Not signed in to AgencyViz. Please re-authorize.');
+  var key = getApiKey();
+  if (!key) throwUserError('No API key found. Please re-authorize the connector and paste your AgencyViz API key.');
 
   var options = {
     method: (method || 'GET').toLowerCase(),
-    headers: { Authorization: 'Bearer ' + token },
+    headers: { Authorization: 'Bearer ' + key },
     muteHttpExceptions: true,
   };
   if (body) {
@@ -188,8 +187,8 @@ function callApi(path, method, body) {
   var text = resp.getContentText();
 
   if (code === 401) {
-    service.reset();
-    throw new Error('Session expired. Reconnect the connector to continue.');
+    resetAuth();
+    throw new Error('API key is invalid or revoked. Reconnect the connector with a new key.');
   }
   if (code >= 400) {
     throw new Error('API ' + code + ': ' + text.slice(0, 200));
