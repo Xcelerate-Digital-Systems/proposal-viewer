@@ -54,11 +54,17 @@ export default function SwipeFileDetailModal({
   const [transcriptDraft, setTranscriptDraft] = useState(file?.transcription || '');
   const [promptDraft, setPromptDraft] = useState(file?.ai_prompt || '');
   const [savingField, setSavingField] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string>('details');
 
   useEffect(() => {
     setTranscriptDraft(file?.transcription || '');
     setPromptDraft(file?.ai_prompt || '');
+    setOpenSection('details');
   }, [file?.id, file?.transcription, file?.ai_prompt]);
+
+  const toggleSection = (section: string) => {
+    setOpenSection((prev) => (prev === section ? '' : section));
+  };
 
   const handleTranscribe = useCallback(async () => {
     if (!file || transcribing) return;
@@ -219,7 +225,8 @@ export default function SwipeFileDetailModal({
             <AccordionSection
               title="Details"
               icon={<Info size={14} className="text-faint" />}
-              defaultOpen
+              open={openSection === 'details'}
+              onToggle={() => toggleSection('details')}
             >
               <div className="space-y-3">
                 <DetailRow icon={<span className="text-[15px]">🏷️</span>} label="Brand" value={file.brand || '—'} />
@@ -317,7 +324,8 @@ export default function SwipeFileDetailModal({
               <AccordionSection
                 title="Transcript"
                 icon={<FileText size={14} className="text-faint" />}
-                defaultOpen={!!file.transcription}
+                open={openSection === 'transcript'}
+                onToggle={() => toggleSection('transcript')}
                 badge={file.transcription ? undefined : 'Empty'}
               >
                 {readOnly ? (
@@ -332,9 +340,9 @@ export default function SwipeFileDetailModal({
                       value={transcriptDraft}
                       onChange={(e) => setTranscriptDraft(e.target.value)}
                       onBlur={() => saveField('transcription', transcriptDraft)}
-                      rows={5}
+                      rows={12}
                       placeholder="Paste or auto-generate a transcript…"
-                      className="w-full text-[13px] text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-teal/20 outline-none"
+                      className="w-full text-[13px] text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-y focus:ring-2 focus:ring-teal/20 outline-none"
                     />
                     {savingField === 'transcription' && (
                       <p className="text-[11px] text-faint">Saving…</p>
@@ -361,7 +369,8 @@ export default function SwipeFileDetailModal({
               <AccordionSection
                 title="AI Prompt"
                 icon={<Sparkles size={14} className="text-faint" />}
-                defaultOpen={!!file.ai_prompt}
+                open={openSection === 'prompt'}
+                onToggle={() => toggleSection('prompt')}
                 badge={!file.ai_prompt && !readOnly ? 'Optional' : undefined}
               >
                 {readOnly ? (
@@ -372,9 +381,9 @@ export default function SwipeFileDetailModal({
                       value={promptDraft}
                       onChange={(e) => setPromptDraft(e.target.value)}
                       onBlur={() => saveField('ai_prompt', promptDraft)}
-                      rows={4}
+                      rows={10}
                       placeholder="Paste the prompt you used to generate this creative…"
-                      className="w-full text-[13px] text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-teal/20 outline-none"
+                      className="w-full text-[13px] text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-y focus:ring-2 focus:ring-teal/20 outline-none"
                     />
                     {savingField === 'ai_prompt' && (
                       <p className="text-[11px] text-faint">Saving…</p>
