@@ -84,5 +84,7 @@ export async function POST(req: NextRequest) {
   redirect.searchParams.set('code', code);
   if (state) redirect.searchParams.set('state', state);
 
+  console.log('[oauth/approve] code issued for client_id=%s redirect_uri=%s', client_id, redirect_uri);
+
   return NextResponse.json({ success: true, redirect_to: redirect.toString() });
 }
