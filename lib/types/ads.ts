@@ -68,7 +68,6 @@ export type AdCreative = {
   angle_family: string | null;
   angle_idea: string | null;
   // Audience
-  target_market: string | null;
   awareness_level: AwarenessLevel | null;
   market_sophistication: MarketSophistication | null;
   // Destination
@@ -142,16 +141,6 @@ export type AdCreativeFormat = {
   company_id: string;
   name: string;
   category: string | null;
-  description: string | null;
-  sort_order: number;
-  created_at: string;
-};
-
-export type AdTargetMarket = {
-  id: string;
-  company_id: string;
-  tracker_id: string | null;
-  name: string;
   description: string | null;
   sort_order: number;
   created_at: string;

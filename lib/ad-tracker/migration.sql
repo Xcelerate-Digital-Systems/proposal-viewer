@@ -34,7 +34,6 @@ CREATE TABLE ad_creatives (
   angle_idea TEXT,
 
   -- Audience
-  target_market TEXT,
   awareness_level TEXT CHECK (awareness_level IN ('unaware', 'problem_aware', 'solution_aware', 'product_aware', 'most_aware')),
   market_sophistication TEXT CHECK (market_sophistication IN ('simple_claim', 'enlarged_claim', 'unique_mechanism', 'proof_heavy', 'contrarian')),
 
@@ -155,3 +154,10 @@ ALTER TABLE ad_creatives
 CREATE INDEX IF NOT EXISTS idx_ad_creatives_tracker_meta_ad_id
   ON ad_creatives (tracker_id, meta_ad_id)
   WHERE meta_ad_id IS NOT NULL;
+
+-- ─── 8. Migration: collapse Target Market into Persona ──────────────────────
+-- Audience taxonomy was consolidated onto a single persona concept. Drops
+-- the now-unused column + table. Idempotent for existing databases.
+
+ALTER TABLE ad_creatives DROP COLUMN IF EXISTS target_market;
+DROP TABLE IF EXISTS ad_target_markets;
