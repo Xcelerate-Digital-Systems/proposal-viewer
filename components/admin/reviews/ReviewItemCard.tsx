@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Trash2, MessageSquareText,
   Pencil, MoreHorizontal, Eye, Globe, Check, Mail, Smartphone,
-  Share2, Loader2, ExternalLink, Link as LinkIcon, Camera,
+  Share2, Loader2, ExternalLink, Link as LinkIcon, Camera, Image as ImageIcon, Monitor,
 } from 'lucide-react';
 import { supabase, type ReviewItem, type ReviewItemStatus } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -112,10 +112,11 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
       url: normalized,
       updated_at: new Date().toISOString(),
     };
-    // URL change invalidates the old screenshot and install state
+    // URL change invalidates the old screenshot, install state, and preview preference
     if (urlChanged) {
       patch.screenshot_url = null;
       patch.widget_installed_at = null;
+      patch.prefer_screenshot = false;
     }
 
     const { error } = await supabase
@@ -131,6 +132,26 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
       onRefresh();
     }
     setSaving(false);
+  };
+
+  const handleTogglePreviewMode = async () => {
+    setShowMenu(false);
+    const next = !item.prefer_screenshot;
+    const { error } = await supabase
+      .from('review_items')
+      .update({ prefer_screenshot: next, updated_at: new Date().toISOString() })
+      .eq('id', item.id);
+
+    if (error) {
+      toast.error('Failed to update preview mode');
+      return;
+    }
+    if (next && !item.screenshot_url) {
+      toast.info('Visit the page to capture a screenshot preview');
+    } else {
+      toast.success(next ? 'Using screenshot preview' : 'Using live preview');
+    }
+    onRefresh();
   };
 
   const handleRetakeScreenshot = async () => {
@@ -221,15 +242,14 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
         className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-b border-gray-100 relative rounded-t-xl"
       >
         {item.type === 'webpage' ? (
-          // Webpage: screenshot if available, otherwise scaled iframe, fallback to icon
-          item.screenshot_url ? (
+          // Webpage: prefer_screenshot overrides, else iframe if URL, else screenshot, else icon
+          item.prefer_screenshot && item.screenshot_url ? (
             <div className="w-full h-full relative">
               <img
                 src={item.screenshot_url}
                 alt={item.title}
                 className="w-full h-full object-cover object-top"
               />
-              {/* Widget status pill */}
               <div className="absolute bottom-2 left-2 z-20">
                 {item.widget_installed_at ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
@@ -260,6 +280,26 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
               />
               {/* Overlay to ensure click passes through to button */}
               <div className="absolute inset-0 z-10" />
+              {/* Widget status pill */}
+              <div className="absolute bottom-2 left-2 z-20">
+                {item.widget_installed_at ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
+                    <Check size={9} /> Connected
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
+                    Awaiting install
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : item.screenshot_url ? (
+            <div className="w-full h-full relative">
+              <img
+                src={item.screenshot_url}
+                alt={item.title}
+                className="w-full h-full object-cover object-top"
+              />
               {/* Widget status pill */}
               <div className="absolute bottom-2 left-2 z-20">
                 {item.widget_installed_at ? (
@@ -502,6 +542,22 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
                       >
                         <LinkIcon size={14} />
                         Edit URL
+                      </button>
+                      <button
+                        onClick={handleTogglePreviewMode}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        {item.prefer_screenshot ? (
+                          <>
+                            <Monitor size={14} />
+                            Use Live Preview
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon size={14} />
+                            Use Screenshot Instead
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={handleRetakeScreenshot}

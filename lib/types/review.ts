@@ -77,6 +77,7 @@ export type ReviewItem = {
   created_at: string;
   updated_at: string;
   widget_installed_at: string | null;
+  prefer_screenshot: boolean;
   board_x: number | null;
   board_y: number | null;
   share_token: string | null;

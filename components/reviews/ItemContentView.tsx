@@ -553,7 +553,21 @@ function WebpagePreviewView({
     <div className="flex flex-col h-full bg-gray-100">
       {/* Preview area */}
       <div className="flex-1 min-h-0 relative overflow-hidden">
-        {item.screenshot_url ? (
+        {item.prefer_screenshot && item.screenshot_url ? (
+          <img
+            src={item.screenshot_url}
+            alt={item.title}
+            className="w-full h-full object-contain object-top bg-white"
+          />
+        ) : item.url ? (
+          <iframe
+            src={item.url}
+            title={item.title}
+            className="w-full h-full border-0 bg-white"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            loading="lazy"
+          />
+        ) : item.screenshot_url ? (
           <img
             src={item.screenshot_url}
             alt={item.title}
@@ -567,20 +581,8 @@ function WebpagePreviewView({
               </div>
               <h3 className="text-sm font-semibold text-gray-700 mb-1">No preview yet</h3>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Feedback happens on the live page via the installed widget. Open the page to
-                capture the first preview and start collecting comments.
+                Add a URL to preview the page, or visit it with the widget installed to capture a screenshot.
               </p>
-              {item.url && (
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-teal hover:bg-[#015c64] transition-colors"
-                >
-                  <ExternalLink size={12} />
-                  Open live page
-                </a>
-              )}
             </div>
           </div>
         )}
