@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Trash2, MessageSquareText,
   Pencil, MoreHorizontal, Eye, Globe, Check, Mail, Smartphone,
-  Share2, Loader2, ExternalLink,
+  Share2, Loader2, ExternalLink, Link as LinkIcon, Camera,
 } from 'lucide-react';
 import { supabase, type ReviewItem, type ReviewItemStatus } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -36,6 +36,8 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
+  const [editingUrl, setEditingUrl] = useState(false);
+  const [editUrl, setEditUrl] = useState(item.url || '');
   const [saving, setSaving] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [unresolvedCount, setUnresolvedCount] = useState(0);
@@ -88,6 +90,69 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
       onRefresh();
     }
     setSaving(false);
+  };
+
+  const handleSaveUrl = async () => {
+    const trimmed = editUrl.trim();
+    if (!trimmed) {
+      toast.error('URL cannot be empty');
+      return;
+    }
+    const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      new URL(normalized);
+    } catch {
+      toast.error('Enter a valid URL');
+      return;
+    }
+
+    const urlChanged = normalized !== (item.url || '');
+    setSaving(true);
+    const patch: Record<string, unknown> = {
+      url: normalized,
+      updated_at: new Date().toISOString(),
+    };
+    // URL change invalidates the old screenshot and install state
+    if (urlChanged) {
+      patch.screenshot_url = null;
+      patch.widget_installed_at = null;
+    }
+
+    const { error } = await supabase
+      .from('review_items')
+      .update(patch)
+      .eq('id', item.id);
+
+    if (error) {
+      toast.error('Failed to update URL');
+    } else {
+      setEditingUrl(false);
+      toast.success(urlChanged ? 'URL updated — visit the new page to capture a preview' : 'URL updated');
+      onRefresh();
+    }
+    setSaving(false);
+  };
+
+  const handleRetakeScreenshot = async () => {
+    setShowMenu(false);
+    const ok = await confirm({
+      title: 'Retake Screenshot',
+      message: 'Clear the current preview? The next visit to the page with the widget installed will capture a fresh screenshot.',
+      confirmLabel: 'Retake',
+    });
+    if (!ok) return;
+
+    const { error } = await supabase
+      .from('review_items')
+      .update({ screenshot_url: null, updated_at: new Date().toISOString() })
+      .eq('id', item.id);
+
+    if (error) {
+      toast.error('Failed to clear screenshot');
+    } else {
+      toast.success('Visit the page to capture a new preview');
+      onRefresh();
+    }
   };
 
   const handleShare = async () => {
@@ -336,6 +401,31 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
           )}
         </div>
 
+        {/* URL editor (webpage only) */}
+        {item.type === 'webpage' && editingUrl && (
+          <div className="mb-2.5 flex items-center gap-1.5 min-w-0">
+            <input
+              type="url"
+              value={editUrl}
+              onChange={(e) => setEditUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveUrl();
+                if (e.key === 'Escape') { setEditingUrl(false); setEditUrl(item.url || ''); }
+              }}
+              placeholder="https://example.com/page"
+              className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal min-w-0"
+              autoFocus
+            />
+            <button
+              onClick={handleSaveUrl}
+              disabled={!editUrl.trim() || saving}
+              className="p-1 text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+            >
+              <Check size={14} />
+            </button>
+          </div>
+        )}
+
         {/* Status dropdown */}
         <div className="mb-3">
           <StatusDropdown
@@ -390,8 +480,7 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
                     Copy Share Link
                   </button>
                   {item.type === 'webpage' && item.url && (
-                    
-                     <a href={item.url}
+                    <a href={item.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setShowMenu(false)}
@@ -400,6 +489,28 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
                       <ExternalLink size={14} />
                       Open Page
                     </a>
+                  )}
+                  {item.type === 'webpage' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          setEditUrl(item.url || '');
+                          setEditingUrl(true);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <LinkIcon size={14} />
+                        Edit URL
+                      </button>
+                      <button
+                        onClick={handleRetakeScreenshot}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <Camera size={14} />
+                        Retake Screenshot
+                      </button>
+                    </>
                   )}
                   <div className="border-t border-gray-100 my-1" />
                   <button

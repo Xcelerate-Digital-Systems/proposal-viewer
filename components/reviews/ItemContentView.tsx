@@ -559,15 +559,31 @@ function WebpagePreviewView({
             alt={item.title}
             className="w-full h-full object-contain object-top bg-white"
           />
-        ) : item.url ? (
-          <iframe
-            src={item.url}
-            title={item.title}
-            className="w-full h-full border-0 bg-white"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-            loading="lazy"
-          />
-        ) : null}
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-white">
+            <div className="text-center max-w-sm px-6">
+              <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <Globe size={26} className="text-gray-300" />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">No preview yet</h3>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Feedback happens on the live page via the installed widget. Open the page to
+                capture the first preview and start collecting comments.
+              </p>
+              {item.url && (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-teal hover:bg-[#015c64] transition-colors"
+                >
+                  <ExternalLink size={12} />
+                  Open live page
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Floating toolbar overlay */}
         <div className="absolute top-4 left-4 right-4 flex items-center gap-2 pointer-events-none">
