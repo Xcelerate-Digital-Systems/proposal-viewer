@@ -29,10 +29,11 @@ type Props = {
   sortDir: string;
   companyId: string;
   onSort: (column: string) => void;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => Promise<{ error?: string }>;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => Promise<{ error?: string }>;
   accountStandards?: AdAccountStandards | null;
   trackerStandards?: TrackerStandards;
+  readOnly?: boolean;
 };
 
 // ─── Column config ──────────────────────────────────────────────────────────
@@ -226,7 +227,7 @@ function checkStandard(value: number | null, target: number | null | undefined, 
 
 export default function AdCreativesTable({
   creatives, loading, sortBy, sortDir, companyId, onSort, onEdit, onDelete,
-  accountStandards, trackerStandards,
+  accountStandards, trackerStandards, readOnly = false,
 }: Props) {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -440,51 +441,59 @@ export default function AdCreativesTable({
           {creatives.map((c) => (
             <tr
               key={c.id}
-              onClick={() => onEdit(c.id)}
-              className="bg-white hover:ring-2 hover:ring-teal/40 hover:ring-inset transition-all group cursor-pointer"
+              onClick={readOnly || !onEdit ? undefined : () => onEdit(c.id)}
+              className={`bg-white transition-all group ${
+                readOnly || !onEdit
+                  ? ''
+                  : 'hover:ring-2 hover:ring-teal/40 hover:ring-inset cursor-pointer'
+              }`}
             >
               {columns.map((col) => renderCell(c, col))}
 
-              {/* Actions menu */}
+              {/* Actions menu — hidden in read-only mode */}
               <td className="px-5 py-4 relative">
-                <div className="relative" ref={menuOpenId === c.id ? menuRef : undefined}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuOpenId(menuOpenId === c.id ? null : c.id);
-                    }}
-                    className="w-7 h-7 rounded-md flex items-center justify-center text-faint hover:text-muted hover:bg-surface transition-all"
-                  >
-                    <MoreHorizontal size={14} />
-                  </button>
+                {!readOnly && onEdit && (
+                  <div className="relative" ref={menuOpenId === c.id ? menuRef : undefined}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenId(menuOpenId === c.id ? null : c.id);
+                      }}
+                      className="w-7 h-7 rounded-md flex items-center justify-center text-faint hover:text-muted hover:bg-surface transition-all"
+                    >
+                      <MoreHorizontal size={14} />
+                    </button>
 
-                  {menuOpenId === c.id && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-edge rounded-lg shadow-lg z-20 py-1 min-w-[140px]">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpenId(null);
-                          onEdit(c.id);
-                        }}
-                        className="w-full px-3 py-1.5 text-left text-[14px] text-ink hover:bg-surface flex items-center gap-2"
-                      >
-                        <Pencil size={13} />
-                        Edit
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpenId(null);
-                          onDelete(c.id);
-                        }}
-                        className="w-full px-3 py-1.5 text-left text-[14px] text-red-600 hover:bg-red-50 flex items-center gap-2"
-                      >
-                        <Trash2 size={13} />
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    {menuOpenId === c.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-edge rounded-lg shadow-lg z-20 py-1 min-w-[140px]">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenId(null);
+                            onEdit(c.id);
+                          }}
+                          className="w-full px-3 py-1.5 text-left text-[14px] text-ink hover:bg-surface flex items-center gap-2"
+                        >
+                          <Pencil size={13} />
+                          Edit
+                        </button>
+                        {onDelete && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuOpenId(null);
+                              onDelete(c.id);
+                            }}
+                            className="w-full px-3 py-1.5 text-left text-[14px] text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <Trash2 size={13} />
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </td>
             </tr>
           ))}

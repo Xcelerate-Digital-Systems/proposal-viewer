@@ -1,12 +1,14 @@
 // app/ads/page.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Megaphone } from 'lucide-react';
+import { Plus, Building2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { useAdTrackerContext } from '@/components/admin/ads/AdTrackerContext';
-import CreateTrackerModal from '@/components/admin/ads/CreateTrackerModal';
+import { supabase } from '@/lib/supabase';
+import CreateClientModal from '@/components/admin/ads/CreateClientModal';
+
+type Client = { id: string; name: string };
 
 export default function AdsPage() {
   return (
@@ -18,23 +20,38 @@ export default function AdsPage() {
 
 function AdsIndex() {
   const router = useRouter();
-  const { trackers, loading, createTracker } = useAdTrackerContext();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const didRedirectRef = useRef(false);
 
-  // Auto-redirect to first campaign ONCE, on initial load only. Without this guard
-  // the effect would re-fire every time the trackers list changes (e.g. after creating
-  // a new tracker from the sidebar), causing a double navigation with the sidebar's
-  // own router.push.
+  const fetchClients = useCallback(async () => {
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    if (!token) { setLoading(false); return; }
+
+    const res = await fetch('/api/clients', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { setLoading(false); return; }
+
+    const json = await res.json();
+    setClients(Array.isArray(json) ? json : []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchClients(); }, [fetchClients]);
+
+  // Auto-redirect to first client ONCE on initial load. Guarded so the effect
+  // doesn't re-fire when the list changes (e.g. after creating a new client).
   useEffect(() => {
     if (didRedirectRef.current) return;
-    if (!loading && trackers.length > 0) {
+    if (!loading && clients.length > 0) {
       didRedirectRef.current = true;
-      router.replace(`/ads/${trackers[0].id}`);
+      router.replace(`/ads/client/${clients[0].id}`);
     }
-  }, [loading, trackers, router]);
+  }, [loading, clients, router]);
 
-  if (loading || trackers.length > 0) {
+  if (loading || clients.length > 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
@@ -46,31 +63,24 @@ function AdsIndex() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-6">
       <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mb-4">
-        <Megaphone size={28} className="text-faint" />
+        <Building2 size={28} className="text-faint" />
       </div>
-      <h3 className="text-lg font-semibold text-muted mb-1">No campaigns yet</h3>
+      <h3 className="text-lg font-semibold text-muted mb-1">No clients yet</h3>
       <p className="text-sm text-faint max-w-sm">
-        Create a campaign to start cataloguing and monitoring your ad creatives
+        Create a client to start tracking their ads, decisions, and game plan.
       </p>
       <button
         onClick={() => setShowCreate(true)}
         className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
       >
         <Plus size={16} />
-        New Campaign
+        New Client
       </button>
 
       {showCreate && (
-        <CreateTrackerModal
+        <CreateClientModal
           onClose={() => setShowCreate(false)}
-          onCreate={async (data) => {
-            const result = await createTracker(data);
-            if (!result.error && result.data) {
-              setShowCreate(false);
-              router.replace(`/ads/${result.data.id}`);
-            }
-            return result;
-          }}
+          onCreated={(client) => router.replace(`/ads/client/${client.id}`)}
         />
       )}
     </div>

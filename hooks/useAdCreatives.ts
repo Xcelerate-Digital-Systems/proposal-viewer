@@ -6,6 +6,7 @@ import { supabase, AdCreativeWithVariants } from '@/lib/supabase';
 
 export type AdCreativeFilters = {
   tracker_id?: string;
+  client_id?: string;
   status?: string;
   winner?: string;
   media_type?: string;

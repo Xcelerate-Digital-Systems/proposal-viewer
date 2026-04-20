@@ -179,3 +179,19 @@ export type AdAccountStandards = {
   created_at: string;
   updated_at: string;
 };
+
+// ─── Shareable client view payload ──────────────────────────────────────────
+
+export type ClientAdTrackerSharePayload = {
+  client: {
+    id: string;
+    name: string;
+    slug: string | null;
+    logo_url: string | null;
+  };
+  /** Merged list of every creative across every tracker owned by this client. */
+  creatives: AdCreativeWithVariants[];
+  /** The trackers whose creatives make up the list — used to surface per-tracker standards. */
+  trackers: Array<Pick<AdTracker, 'id' | 'name' | 'description' | 'standards'>>;
+  account_standards: AdAccountStandards | null;
+};
