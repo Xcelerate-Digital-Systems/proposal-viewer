@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Search, Filter, ArrowLeft, Upload, Share2 } from 'lucide-react';
+import { Plus, Search, Filter, ArrowLeft, Upload, Share2, RefreshCw } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase } from '@/lib/supabase';
@@ -16,6 +16,7 @@ import type { TabType } from '@/components/admin/ads/ReferenceTabContent';
 import StandardsTab from '@/components/admin/ads/StandardsTab';
 import TargetMarketsTab from '@/components/admin/ads/TargetMarketsTab';
 import ClientShareModal from '@/components/admin/ads/ClientShareModal';
+import MetaSyncModal from '@/components/admin/ads/MetaSyncModal';
 import { useAdTrackerContext } from '@/components/admin/ads/AdTrackerContext';
 import type { AdAccountStandards } from '@/lib/types/ads';
 
@@ -57,6 +58,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
 
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showMetaSync, setShowMetaSync] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
@@ -181,6 +183,15 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             >
               <Upload size={16} />
               Bulk Upload
+            </button>
+
+            {/* Sync from Meta */}
+            <button
+              onClick={() => setShowMetaSync(true)}
+              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            >
+              <RefreshCw size={16} />
+              Sync
             </button>
 
             {/* New creative */}
@@ -309,6 +320,15 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           initialToken={tracker.share_token ?? null}
           onClose={() => setShowShare(false)}
           onTokenChange={() => { fetchTrackers(); }}
+        />
+      )}
+
+      {/* Meta sync modal */}
+      {showMetaSync && (
+        <MetaSyncModal
+          trackerId={trackerId}
+          onClose={() => setShowMetaSync(false)}
+          onComplete={fetchCreatives}
         />
       )}
     </div>

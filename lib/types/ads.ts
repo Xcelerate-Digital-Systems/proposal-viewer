@@ -98,6 +98,11 @@ export type AdCreative = {
   cpl: number | null;
   cpl_label: string;
   next_action: string | null;
+  // Meta sync provenance (null/manual for manually-created creatives)
+  meta_ad_id: string | null;
+  meta_ad_account_id: string | null;
+  source: 'manual' | 'meta_sync';
+  synced_at: string | null;
   // Meta
   sort_order: number;
   created_by: string | null;

@@ -138,3 +138,20 @@ BEGIN
     ALTER TABLE ad_creatives RENAME COLUMN video_hooks TO hook;
   END IF;
 END $$;
+
+-- ─── 7. Migration: Meta sync provenance on ad_creatives ─────────────────────
+-- Adds columns that let us trace a creative back to the Meta ad it was synced
+-- from, and detect already-imported ads on subsequent sync runs. Same Meta ad
+-- may legitimately appear across multiple trackers (different clients, same
+-- creative), so dedup is scoped per (tracker_id, meta_ad_id) — not a global
+-- unique constraint.
+
+ALTER TABLE ad_creatives
+  ADD COLUMN IF NOT EXISTS meta_ad_id TEXT,
+  ADD COLUMN IF NOT EXISTS meta_ad_account_id TEXT,
+  ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual',
+  ADD COLUMN IF NOT EXISTS synced_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_ad_creatives_tracker_meta_ad_id
+  ON ad_creatives (tracker_id, meta_ad_id)
+  WHERE meta_ad_id IS NOT NULL;
