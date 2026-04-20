@@ -100,8 +100,7 @@ const COLUMNS: ColumnDef[] = [
   { key: 'angle_family', label: 'Angle Family', hint: 'See the reference sheet if unsure', cellType: 'select', options: toOpts(AD_ANGLE_FAMILIES), minWidth: '140px', groupIdx: 1 },
   { key: 'angle_idea', label: 'Angle Idea', hint: 'Categorisation for data analysis & brainstorming', cellType: 'select', options: toOpts(AD_ANGLE_IDEAS), maxWidth: '200px', minWidth: '140px', groupIdx: 1 },
   // Group 2 — Step 2: Who is the audience
-  { key: 'target_market', label: 'Target Market', hint: 'Choose or add to drop down', cellType: 'text', maxWidth: '200px', minWidth: '140px', groupIdx: 2, firstInGroup: true },
-  { key: 'persona', label: 'Persona', hint: 'Audience persona — configured in Standards', cellType: 'text', minWidth: '120px', maxWidth: '160px', groupIdx: 2 },
+  { key: 'persona', label: 'Persona', hint: 'Who this ad speaks to — configured in Client settings → Audience', cellType: 'text', minWidth: '140px', maxWidth: '200px', groupIdx: 2, firstInGroup: true },
   { key: 'awareness_level', label: 'Awareness Level', hint: 'Choose which stage they are at', cellType: 'select', options: toOpts(AWARENESS_LEVELS), minWidth: '140px', groupIdx: 2 },
   { key: 'market_sophistication', label: 'Market Sophistication', hint: 'Choose which stage they are at', cellType: 'select', options: toOpts(MARKET_SOPHISTICATION_LEVELS), minWidth: '160px', groupIdx: 2 },
   // Group 3 — Step 3: Where is the ad going

@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Shield, Users, X } from 'lucide-react';
 import StandardsTab from './StandardsTab';
-import TargetMarketsTab from './TargetMarketsTab';
+import AudienceTab from './AudienceTab';
 import type { TrackerStandards } from '@/lib/types/ads';
 
 type Tab = 'standards' | 'audience';
@@ -76,9 +76,7 @@ export default function ClientSettingsModal({
               onSaveTracker={onSaveTrackerStandards}
             />
           ) : (
-            <TargetMarketsTab
-              companyId={companyId}
-              trackerId={trackerId}
+            <AudienceTab
               trackerStandards={trackerStandards}
               onSaveTrackerStandards={onSaveTrackerStandards}
             />

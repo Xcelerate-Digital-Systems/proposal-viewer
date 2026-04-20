@@ -45,7 +45,6 @@ type FormData = {
   ad_concept: string;
   angle_family: string;
   angle_idea: string;
-  target_market: string;
   persona: string;
   awareness_level: string;
   market_sophistication: string;
@@ -84,7 +83,7 @@ type VariantDraft = {
 const INITIAL_FORM: FormData = {
   ad_name: '', image_url: '',
   signal: '', hypothesis: '', ad_concept: '', angle_family: '', angle_idea: '',
-  target_market: '', persona: '', awareness_level: '', market_sophistication: '',
+  persona: '', awareness_level: '', market_sophistication: '',
   offer_variant: '', lander_variant: '',
   iteration_type: '', media_type: '', creative_style: '', creative_format: '',
   hook: '', status: 'draft', brief_link: '', creative_link: '', ad_copy_link: '',
@@ -206,23 +205,7 @@ const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreati
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<EditorTab>('overview');
   const [uploading, setUploading] = useState(false);
-  const [targetMarketOptions, setTargetMarketOptions] = useState<{ value: string; label: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Fetch target market options
-  useEffect(() => {
-    (async () => {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-      if (!token) return;
-      const res = await fetch(`/api/ads/target-markets?company_id=${companyId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
-      if (json.success) {
-        setTargetMarketOptions(json.data.map((m: { name: string }) => ({ value: m.name, label: m.name })));
-      }
-    })();
-  }, [companyId]);
 
   // Load existing creative for editing
   const loadCreative = useCallback(async () => {
@@ -247,7 +230,6 @@ const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreati
       ad_concept: c.ad_concept || '',
       angle_family: c.angle_family || '',
       angle_idea: c.angle_idea || '',
-      target_market: c.target_market || '',
       persona: c.persona || '',
       awareness_level: c.awareness_level || '',
       market_sophistication: c.market_sophistication || '',
@@ -419,7 +401,6 @@ const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreati
       ad_concept: form.ad_concept || null,
       angle_family: form.angle_family || null,
       angle_idea: form.angle_idea || null,
-      target_market: form.target_market || null,
       persona: form.persona || null,
       awareness_level: form.awareness_level || null,
       market_sophistication: form.market_sophistication || null,
@@ -640,27 +621,15 @@ const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreati
               {/* Audience */}
               <div className={activeTab === 'audience' ? '' : 'hidden'}>
               <Section title="Audience">
-                <FieldRow cols={2}>
-                  <Field label="Target Market" hint="Broad market segment — e.g. TRADIES, HOMEOWNERS, ECOM OWNERS">
-                    <CustomSelect
-                      value={form.target_market}
-                      options={targetMarketOptions}
-                      onChange={(v) => updateField('target_market', v)}
-                      placeholder="Select or type a market..."
-                      searchable
-                      creatable
-                    />
-                  </Field>
-                  <Field label="Persona" hint={personas.length ? 'Psychographic avatar within the market — e.g. Family Conscious, Status Driven' : 'No personas configured — add them in Standards'}>
-                    <CustomSelect
-                      value={form.persona}
-                      options={personas.map((p) => ({ value: p, label: p }))}
-                      onChange={(v) => updateField('persona', v)}
-                      placeholder={personas.length ? 'Select persona...' : 'Configure personas in Standards'}
-                      searchable
-                    />
-                  </Field>
-                </FieldRow>
+                <Field label="Persona" hint={personas.length ? 'Who this ad speaks to — e.g. Tradies, Homeowners, E-com owners' : 'No personas configured yet — add them in Client settings → Audience'}>
+                  <CustomSelect
+                    value={form.persona}
+                    options={personas.map((p) => ({ value: p, label: p }))}
+                    onChange={(v) => updateField('persona', v)}
+                    placeholder={personas.length ? 'Select persona...' : 'Add personas in Client settings'}
+                    searchable
+                  />
+                </Field>
                 <Field label="Awareness Level" hint="Choose which stage they are at">
                   <CustomSelect
                     value={form.awareness_level}

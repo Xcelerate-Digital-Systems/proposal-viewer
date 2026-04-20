@@ -184,7 +184,6 @@ function renderCreative(c: AdCreativeWithVariants): string[] {
     ['Hypothesis', c.hypothesis],
     ['Ad concept', c.ad_concept],
     ['Angle', joinOrNull(c.angle_family, c.angle_idea)],
-    ['Audience', c.target_market],
     ['Persona', c.persona],
     ['Awareness', humanizeOrNull(c.awareness_level)],
     ['Sophistication', humanizeOrNull(c.market_sophistication)],
