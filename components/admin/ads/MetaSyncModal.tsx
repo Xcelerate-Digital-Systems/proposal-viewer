@@ -40,6 +40,7 @@ type ActiveAd = {
   meta_ad_id: string;
   name: string;
   effective_status: string;
+  created_time: string | null;
   media_type: 'still' | 'video';
   image_url: string | null;
   thumbnail_url: string | null;
@@ -490,7 +491,7 @@ function PickerStep({
         />
       </div>
       <p className="text-xs text-faint">
-        Fetches every ad with effective_status = ACTIVE. You'll pick which ones to import on the next step.
+        Fetches every ad on this account (active, paused, archived — all of it), newest first. You'll pick which ones to import on the next step.
       </p>
     </div>
   );
@@ -565,9 +566,9 @@ function SelectionStep({
   if (ads.length === 0 && alreadyImportedCount === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-20 text-center">
-        <p className="text-sm font-semibold text-ink">No active ads found</p>
+        <p className="text-sm font-semibold text-ink">No ads found</p>
         <p className="text-xs text-faint max-w-xs">
-          This ad account has no ads with effective_status = ACTIVE right now.
+          This ad account doesn't have any ads to import.
         </p>
       </div>
     );
@@ -649,9 +650,15 @@ function SelectionStep({
                       Imported
                     </span>
                   )}
+                  <StatusPill status={ad.effective_status} />
                   {ad.media_type === 'video' && (
                     <span className="shrink-0 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface text-muted border border-edge">
                       Video
+                    </span>
+                  )}
+                  {ad.created_time && (
+                    <span className="shrink-0 text-[10px] text-faint">
+                      {formatCreatedDate(ad.created_time)}
                     </span>
                   )}
                 </div>
@@ -754,4 +761,40 @@ function RowStatusIcon({ status }: { status: ImportStatus }) {
   if (status === 'importing') return <Loader2 size={14} className="text-teal animate-spin" />;
   if (status === 'done') return <Check size={14} className="text-teal" />;
   return <AlertCircle size={14} className="text-red-600" />;
+}
+
+function StatusPill({ status }: { status: string }) {
+  // Meta effective_status can be ACTIVE, PAUSED, ADSET_PAUSED, CAMPAIGN_PAUSED,
+  // ARCHIVED, DELETED, IN_PROCESS, DISAPPROVED, WITH_ISSUES, and others.
+  // Colour families keep the visual noise manageable.
+  const s = status.toUpperCase();
+  const isActive = s === 'ACTIVE';
+  const isPaused = s.includes('PAUSED');
+  const isArchived = s === 'ARCHIVED' || s === 'DELETED';
+  const isIssue = s === 'DISAPPROVED' || s === 'WITH_ISSUES';
+
+  const classes = isActive
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    : isPaused
+    ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : isArchived
+    ? 'bg-surface text-faint border-edge'
+    : isIssue
+    ? 'bg-red-50 text-red-700 border-red-200'
+    : 'bg-surface text-muted border-edge';
+
+  const label = s.replace(/_/g, ' ').toLowerCase();
+  return (
+    <span
+      className={`shrink-0 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${classes}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function formatCreatedDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }

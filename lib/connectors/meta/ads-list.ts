@@ -14,10 +14,13 @@ import { fetchAdCreativesMap } from './creatives';
 const BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`;
 const VIDEO_IDS_PER_BATCH = 50;
 
+// Historical name — kept for file/function continuity. Represents any ad
+// returned by the sync lister, regardless of effective_status.
 export interface ActiveAd {
   meta_ad_id: string;
   name: string;
   effective_status: string;
+  created_time: string | null; // ISO8601 from Meta; used to sort newest-first
   media_type: 'still' | 'video';
   image_url: string | null;
   thumbnail_url: string | null;
@@ -37,8 +40,11 @@ interface RawAdListItem {
   id: string;
   name?: string;
   effective_status?: string;
+  created_time?: string;
 }
 
+// Lists every ad on an ad account (no effective_status filter). Paginates.
+// The caller sorts newest-first downstream.
 export async function fetchActiveAdIds(
   accessToken: string,
   accountId: string,
@@ -46,11 +52,8 @@ export async function fetchActiveAdIds(
   const out: RawAdListItem[] = [];
   const params = new URLSearchParams({
     access_token: accessToken,
-    fields: 'id,name,effective_status',
+    fields: 'id,name,effective_status,created_time',
     limit: '200',
-    filtering: JSON.stringify([
-      { field: 'effective_status', operator: 'IN', value: ['ACTIVE'] },
-    ]),
   });
   let url: string | null = `${BASE_URL}/${accountId}/ads?${params}`;
 
@@ -133,7 +136,7 @@ export async function fetchActiveAdsWithCreatives(opts: {
     ? await fetchVideoSources(opts.accessToken, videoIds)
     : new Map<string, { source: string | null; picture: string | null }>();
 
-  return listed.map((listing) => {
+  const out: ActiveAd[] = listed.map((listing) => {
     const creative = creatives.get(listing.id);
     const videoInfo = creative?.ad_video_id ? videoSources.get(creative.ad_video_id) : null;
     const isVideo = Boolean(creative?.ad_video_id || creative?.ad_creative_type === 'VIDEO');
@@ -141,7 +144,8 @@ export async function fetchActiveAdsWithCreatives(opts: {
     return {
       meta_ad_id: listing.id,
       name: listing.name ?? creative?.ad_creative_name ?? 'Untitled ad',
-      effective_status: listing.effective_status ?? 'ACTIVE',
+      effective_status: listing.effective_status ?? 'UNKNOWN',
+      created_time: listing.created_time ?? creative?.ad_created_time ?? null,
       media_type: isVideo ? 'video' : 'still',
       image_url: creative?.ad_image_url ?? null,
       thumbnail_url: creative?.ad_thumbnail_url ?? videoInfo?.picture ?? null,
@@ -157,6 +161,15 @@ export async function fetchActiveAdsWithCreatives(opts: {
       preview_url: creative?.ad_preview_url ?? null,
     };
   });
+
+  // Newest-first. Ads without a created_time sink to the bottom.
+  out.sort((a, b) => {
+    const ta = a.created_time ? Date.parse(a.created_time) : 0;
+    const tb = b.created_time ? Date.parse(b.created_time) : 0;
+    return tb - ta;
+  });
+
+  return out;
 }
 
 function safeJson(text: string): unknown {
