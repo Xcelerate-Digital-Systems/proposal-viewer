@@ -1,12 +1,21 @@
 // middleware.ts
+import { NextRequest, NextResponse } from 'next/server';
 
-// Custom domain routing has been disabled — all requests pass through.
-// Re-enable by restoring the domain-aware middleware when needed.
+// On the apex domain (agencyviz.io), rewrite "/" to the public marketing home.
+// Everything else (including app.agencyviz.io) passes through unchanged.
+export function middleware(request: NextRequest) {
+  const hostname = (request.headers.get('host') || '').split(':')[0];
+  const { pathname } = request.nextUrl;
 
-export function middleware() {
-  // no-op
+  if (pathname === '/' && (hostname === 'agencyviz.io' || hostname === 'www.agencyviz.io')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/home';
+    return NextResponse.rewrite(url);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [],
+  matcher: ['/'],
 };
