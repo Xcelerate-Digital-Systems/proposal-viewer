@@ -61,7 +61,7 @@ export default function FormActions({
         <button
           type="submit"
           disabled={disabled}
-          className="px-5 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-5 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {uploading ? 'Saving…' : (submitLabel || 'Add Item')}
         </button>

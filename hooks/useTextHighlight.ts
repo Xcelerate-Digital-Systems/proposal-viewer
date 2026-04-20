@@ -8,6 +8,8 @@ export interface TextHighlightData {
   startOffset: number;
   endOffset: number;
   elementPath: string;
+  /** Selection bounding rect as percentages relative to the container — used for popover anchoring. */
+  rectPct: { x: number; y: number };
 }
 
 interface UseTextHighlightOptions {
@@ -105,16 +107,25 @@ export function useTextHighlight({ containerRef, enabled }: UseTextHighlightOpti
     const endOffset = getTextOffset(container, range.endContainer, range.endOffset);
     const elementPath = buildElementPath(range.startContainer, container);
 
+    // Compute selection rect as % of the container so popovers can anchor reliably
+    // even after the browser selection is cleared.
+    const rect = range.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const anchorXpx = (rect.left + rect.right) / 2 - containerRect.left;
+    const anchorYpx = rect.top - containerRect.top;
+    const rectPct = {
+      x: containerRect.width > 0 ? (anchorXpx / containerRect.width) * 100 : 50,
+      y: containerRect.height > 0 ? (anchorYpx / containerRect.height) * 100 : 50,
+    };
+
     setSelection({
       text,
       startOffset,
       endOffset,
       elementPath,
+      rectPct,
     });
 
-    // Position the floating button near the end of the selection
-    const rect = range.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
     setButtonPos({
       x: rect.right - containerRect.left,
       y: rect.top - containerRect.top - 36,

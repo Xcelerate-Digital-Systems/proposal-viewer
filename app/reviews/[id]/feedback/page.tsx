@@ -521,7 +521,7 @@ function FeedbackModal({
                     href={comment.item_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-teal hover:text-[#015c64] transition-colors truncate max-w-full"
+                    className="inline-flex items-center gap-1.5 text-xs text-teal hover:text-teal-hover transition-colors truncate max-w-full"
                   >
                     <ExternalLink size={11} className="shrink-0" />
                     <span className="truncate">{comment.item_url}</span>

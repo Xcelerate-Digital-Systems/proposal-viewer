@@ -17,6 +17,8 @@ import { CommentsPanel } from '@/components/reviews/comments';
 import ItemContentView from '@/components/reviews/ItemContentView';
 import ItemSidebar from '@/components/reviews/ItemSidebar';
 import PinCommentPopover from '@/components/reviews/PinCommentPopover';
+import PendingPinPopover from '@/components/reviews/PendingPinPopover';
+import PendingHighlightPopover from '@/components/reviews/PendingHighlightPopover';
 import WebpageClientPlaceholder from '@/components/reviews/WebpageClientPlaceholder';
 import { FeedbackToolbar, FeedbackModeBar, DrawingOverlay, HighlightOverlay } from '@/components/reviews/feedback';
 import type { AnnotationData } from '@/components/reviews/feedback';
@@ -402,7 +404,7 @@ export default function ReviewDetailView({
                 onAnnotationClick={handlePinClick}
               />
 
-              {/* Pin comment popover */}
+              {/* Pin comment popover (existing pins) */}
               {popoverComment && popoverComment.pin_x != null && popoverComment.pin_y != null && (
                 <PinCommentPopover
                   comment={popoverComment}
@@ -420,6 +422,40 @@ export default function ReviewDetailView({
                 />
               )}
 
+              {/* New-pin popover (anchored at click) */}
+              {pendingPin && !pendingHighlight && selectedItemId && (
+                <PendingPinPopover
+                  pinX={pendingPin.x}
+                  pinY={pendingPin.y}
+                  containerRef={imageContainerRef}
+                  onSubmit={async (content) => {
+                    await handleSubmitComment(content, pendingPin.x, pendingPin.y);
+                  }}
+                  onCancel={handleCancelPin}
+                  companyId={companyId}
+                  authorName={isAdmin ? authorName : undefined}
+                  guestName={isClient ? guestName : undefined}
+                  onNameChange={isClient ? onGuestNameChange : undefined}
+                />
+              )}
+
+              {/* New-highlight popover (anchored at selection) */}
+              {pendingHighlight && selectedItemId && (
+                <PendingHighlightPopover
+                  pinX={pendingHighlight.rectPct.x}
+                  pinY={pendingHighlight.rectPct.y}
+                  containerRef={imageContainerRef}
+                  highlightText={pendingHighlight.text}
+                  onSubmit={async (content) => {
+                    await handleSubmitComment(content);
+                  }}
+                  onCancel={() => setPendingHighlight(null)}
+                  companyId={companyId}
+                  authorName={isAdmin ? authorName : undefined}
+                  guestName={isClient ? guestName : undefined}
+                  onNameChange={isClient ? onGuestNameChange : undefined}
+                />
+              )}
 
               <FeedbackToolbar
                 onToggleComments={() => setShowComments(!showComments)}
@@ -436,11 +472,8 @@ export default function ReviewDetailView({
               resolvedComments={resolvedComments}
               getReplies={getReplies}
               hasComments={topLevelComments.length > 0}
-              pendingPin={pendingPin}
               highlightCommentId={highlightedCommentId}
-              pendingHighlightText={pendingHighlight?.text}
               onSubmitComment={handleSubmitComment}
-              onCancelPin={handleCancelPin}
               onClose={() => setShowComments(false)}
               authorName={isAdmin ? authorName : undefined}
               guestName={isClient ? guestName : undefined}
@@ -583,7 +616,7 @@ export default function ReviewDetailView({
               onAnnotationClick={handlePinClick}
             />
 
-            {/* Pin comment popover */}
+            {/* Pin comment popover (existing pins) */}
             {popoverComment && popoverComment.pin_x != null && popoverComment.pin_y != null && (
               <PinCommentPopover
                 comment={popoverComment}
@@ -601,6 +634,40 @@ export default function ReviewDetailView({
               />
             )}
 
+            {/* New-pin popover (anchored at click) */}
+            {pendingPin && !pendingHighlight && selectedItemId && (
+              <PendingPinPopover
+                pinX={pendingPin.x}
+                pinY={pendingPin.y}
+                containerRef={imageContainerRef}
+                onSubmit={async (content) => {
+                  await handleSubmitComment(content, pendingPin.x, pendingPin.y);
+                }}
+                onCancel={handleCancelPin}
+                companyId={companyId}
+                authorName={isAdmin ? authorName : undefined}
+                guestName={isClient ? guestName : undefined}
+                onNameChange={isClient ? onGuestNameChange : undefined}
+              />
+            )}
+
+            {/* New-highlight popover (anchored at selection) */}
+            {pendingHighlight && selectedItemId && (
+              <PendingHighlightPopover
+                pinX={pendingHighlight.rectPct.x}
+                pinY={pendingHighlight.rectPct.y}
+                containerRef={imageContainerRef}
+                highlightText={pendingHighlight.text}
+                onSubmit={async (content) => {
+                  await handleSubmitComment(content);
+                }}
+                onCancel={() => setPendingHighlight(null)}
+                companyId={companyId}
+                authorName={isAdmin ? authorName : undefined}
+                guestName={isClient ? guestName : undefined}
+                onNameChange={isClient ? onGuestNameChange : undefined}
+              />
+            )}
 
             <FeedbackToolbar
               onToggleComments={() => setShowComments(!showComments)}
@@ -620,11 +687,8 @@ export default function ReviewDetailView({
             resolvedComments={resolvedComments}
             getReplies={getReplies}
             hasComments={topLevelComments.length > 0}
-            pendingPin={pendingPin}
             highlightCommentId={highlightedCommentId}
-            pendingHighlightText={pendingHighlight?.text}
             onSubmitComment={handleSubmitComment}
-            onCancelPin={handleCancelPin}
             onClose={() => setShowComments(false)}
             authorName={isAdmin ? authorName : undefined}
             guestName={isClient ? guestName : undefined}

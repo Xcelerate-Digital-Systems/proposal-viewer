@@ -127,7 +127,7 @@ export default function GeneralCommentForm({
             <button
               type="submit"
               disabled={isDisabled}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal text-white text-xs font-medium hover:bg-[#01434A] disabled:opacity-40 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal text-white text-xs font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
             >
               <Send size={11} />
               Post

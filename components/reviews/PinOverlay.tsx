@@ -24,10 +24,10 @@ export default function PinOverlay({
         <button
           key={c.id}
           data-pin-marker
-          className={`absolute w-7 h-7 -ml-3.5 -mt-3.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg z-10 border-2 border-white transition-transform hover:scale-110 ${
+          className={`absolute w-7 h-7 -ml-3.5 -mt-3.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg z-10 border-2 border-white transition-transform hover:scale-110 text-white ${
             c.resolved
-              ? 'bg-gray-400 opacity-50'
-              : 'bg-green-500 text-white'
+              ? 'bg-emerald-500 opacity-50'
+              : 'bg-teal'
           }`}
           style={{ left: `${c.pin_x}%`, top: `${c.pin_y}%` }}
           onClick={(e) => {
@@ -43,7 +43,7 @@ export default function PinOverlay({
       {/* Pending pin (not yet submitted) */}
       {pendingPin && (
         <div
-          className="absolute w-7 h-7 -ml-3.5 -mt-3.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg animate-pulse z-10 border-2 border-white bg-green-500 text-white"
+          className="absolute w-7 h-7 -ml-3.5 -mt-3.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg animate-pulse z-10 border-2 border-white bg-teal text-white"
           style={{ left: `${pendingPin.x}%`, top: `${pendingPin.y}%` }}
         >
           +

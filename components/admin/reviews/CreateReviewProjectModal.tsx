@@ -142,7 +142,7 @@ export default function CreateReviewProjectModal({
             <button
               type="submit"
               disabled={!title.trim() || saving}
-              className="px-5 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Creating…' : 'Create Project'}
             </button>

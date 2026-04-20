@@ -2,9 +2,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { MapPin, X, Highlighter } from 'lucide-react';
+import { MapPin, X } from 'lucide-react';
 import type { ReviewComment } from '@/lib/supabase';
-import PendingPinForm from './PendingPinForm';
 import GeneralCommentForm from './GeneralCommentForm';
 import CommentThread from './CommentThread';
 import ResolvedSection from './ResolvedSection';
@@ -18,14 +17,10 @@ interface CommentsPanelProps {
   getReplies: (parentId: string) => ReviewComment[];
   /** Whether there are any top-level comments at all */
   hasComments: boolean;
-  /** Currently placing a new pin */
-  pendingPin: { x: number; y: number } | null;
   /** Comment ID to scroll to and highlight (set when a pin marker is clicked) */
   highlightCommentId?: string | null;
-  /** Callback to submit a comment */
+  /** Callback to submit a (general, non-pin) comment */
   onSubmitComment: (content: string, pinX?: number, pinY?: number, parentId?: string) => Promise<void>;
-  /** Callback to cancel pending pin */
-  onCancelPin: () => void;
   /** Callback to close the panel */
   onClose: () => void;
 
@@ -47,9 +42,6 @@ interface CommentsPanelProps {
   /** Company ID for attachment uploads */
   companyId?: string;
 
-  /** Highlighted text from a text selection (shown above the pending form) */
-  pendingHighlightText?: string;
-
   /** Desktop: static panel. Mobile: full-screen overlay. Default classes handle both. */
   className?: string;
   /** Whether the panel shows a close button. Defaults to true. */
@@ -61,10 +53,8 @@ export default function CommentsPanel({
   resolvedComments,
   getReplies,
   hasComments,
-  pendingPin,
   highlightCommentId,
   onSubmitComment,
-  onCancelPin,
   onClose,
   authorName,
   onResolve,
@@ -72,7 +62,6 @@ export default function CommentsPanel({
   guestName,
   onNameChange,
   companyId,
-  pendingHighlightText,
   className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col border-l border-gray-200 bg-white',
   closable = true,
 }: CommentsPanelProps) {
@@ -111,43 +100,6 @@ export default function CommentsPanel({
 
       {/* Threads */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        {/* Pending pin form (only for actual pin placements, not highlights) */}
-        {pendingPin && !pendingHighlightText && (
-          <PendingPinForm
-            authorName={authorName}
-            guestName={guestName}
-            onNameChange={onNameChange}
-            companyId={companyId}
-            onSubmit={async (content) => {
-              await onSubmitComment(content, pendingPin.x, pendingPin.y);
-            }}
-            onCancel={onCancelPin}
-          />
-        )}
-
-        {/* Pending highlight form (no pin needed — the highlight is visible on the content) */}
-        {pendingHighlightText && (
-          <div>
-            <div className="mb-2 px-3 py-2 rounded-lg bg-teal/5 border border-teal/20">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Highlighter size={10} className="text-teal" />
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-teal">Highlighted text</p>
-              </div>
-              <p className="text-xs text-gray-700 italic line-clamp-3">&ldquo;{pendingHighlightText}&rdquo;</p>
-            </div>
-            <PendingPinForm
-              authorName={authorName}
-              guestName={guestName}
-              onNameChange={onNameChange}
-              companyId={companyId}
-              onSubmit={async (content) => {
-                await onSubmitComment(content);
-              }}
-              onCancel={onCancelPin}
-            />
-          </div>
-        )}
-
         {/* Unresolved threads */}
         {unresolvedComments.map((c) => (
           <CommentThread
@@ -174,11 +126,11 @@ export default function CommentsPanel({
         />
 
         {/* Empty state */}
-        {!hasComments && !pendingPin && !pendingHighlightText && (
+        {!hasComments && (
           <div className="text-center py-8">
             <MapPin size={24} className="mx-auto mb-2 text-gray-200" />
             <p className="text-xs text-gray-400">
-              Click anywhere on the content to leave a comment, or use the form below.
+              Click anywhere on the content to leave a comment.
             </p>
           </div>
         )}

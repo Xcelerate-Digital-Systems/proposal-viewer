@@ -159,7 +159,7 @@ function NotStartedCard({ projectId }: { projectId: string }) {
       </p>
       <Link
         href={`/reviews/${projectId}/items`}
-        className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover transition-colors"
       >
         <Plus size={16} />
         Add a webpage

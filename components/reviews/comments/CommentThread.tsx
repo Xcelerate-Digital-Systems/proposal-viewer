@@ -2,47 +2,13 @@
 'use client';
 
 import { useState } from 'react';
-import { CornerDownRight, Send, CheckCircle2, RotateCcw, ExternalLink, FileText } from 'lucide-react';
+import { CornerDownRight, Send, CheckCircle2, RotateCcw } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
-import type { ReviewComment, ReviewCommentAttachment } from '@/lib/supabase';
+import type { ReviewComment } from '@/lib/supabase';
 import EmojiPicker from './EmojiPicker';
-
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
-function AttachmentList({ attachments }: { attachments?: ReviewCommentAttachment[] }) {
-  if (!attachments || attachments.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap gap-1.5 mt-1.5">
-      {attachments.map((a, i) => {
-        const isImage = IMAGE_TYPES.includes(a.type);
-        return isImage ? (
-          <a
-            key={i}
-            href={a.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-16 h-16 rounded-lg border border-gray-200 overflow-hidden hover:border-teal/40 transition-colors"
-          >
-            <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
-          </a>
-        ) : (
-          <a
-            key={i}
-            href={a.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 hover:border-teal/40 transition-colors"
-          >
-            <FileText size={10} className="text-gray-400 shrink-0" />
-            <span className="text-[10px] text-gray-600 truncate max-w-[100px]">{a.name}</span>
-            <ExternalLink size={8} className="text-gray-300 shrink-0" />
-          </a>
-        );
-      })}
-    </div>
-  );
-}
+import AttachmentList from './AttachmentList';
+import ReactionBar from './ReactionBar';
+import { useCommentReactions } from '@/hooks/useCommentReactions';
 
 interface CommentThreadProps {
   comment: ReviewComment;
@@ -96,6 +62,10 @@ export default function CommentThread({
   };
 
   const isTeam = comment.author_type === 'team';
+  const currentUserName = (authorName ?? guestName ?? '').trim() || null;
+  const { reactions, toggle: toggleReaction } = useCommentReactions(comment.id, {
+    currentUserName,
+  });
 
   return (
     <div
@@ -140,39 +110,25 @@ export default function CommentThread({
           )}
           <p className="text-xs text-gray-600 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
           <AttachmentList attachments={comment.attachments} />
+          {currentUserName && (
+            <div className="mt-1.5">
+              <ReactionBar
+                commentId={comment.id}
+                reactions={reactions}
+                currentUserName={currentUserName}
+                onToggleReaction={(_id, emoji) => toggleReaction(emoji)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Replies */}
       {replies.length > 0 && (
         <div className="mt-2.5 ml-4 pl-4 border-l-2 border-gray-100 space-y-2">
-          {replies.map((r) => {
-            const rIsTeam = r.author_type === 'team';
-            return (
-              <div key={r.id} className="flex items-start gap-2">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
-                  rIsTeam
-                    ? 'bg-teal/10 text-teal'
-                    : 'bg-gray-100 text-gray-400'
-                }`}>
-                  {r.author_name.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-gray-900">{r.author_name}</span>
-                    {rIsTeam && (
-                      <span className="text-[8px] font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">
-                        Team
-                      </span>
-                    )}
-                    <span className="text-[10px] text-gray-400">{timeAgo(r.created_at)}</span>
-                  </div>
-                  <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">{r.content}</p>
-                  <AttachmentList attachments={r.attachments} />
-                </div>
-              </div>
-            );
-          })}
+          {replies.map((r) => (
+            <ReplyItem key={r.id} reply={r} currentUserName={currentUserName} />
+          ))}
         </div>
       )}
 
@@ -234,13 +190,57 @@ export default function CommentThread({
             <button
               type="submit"
               disabled={replyDisabled}
-              className="p-1.5 rounded-lg bg-teal text-white disabled:opacity-40 hover:bg-[#01434A] transition-colors"
+              className="p-1.5 rounded-lg bg-teal text-white disabled:opacity-40 hover:bg-teal-hover transition-colors"
             >
               <Send size={11} />
             </button>
           </div>
         </form>
       )}
+    </div>
+  );
+}
+
+function ReplyItem({
+  reply,
+  currentUserName,
+}: {
+  reply: ReviewComment;
+  currentUserName: string | null;
+}) {
+  const rIsTeam = reply.author_type === 'team';
+  const { reactions, toggle } = useCommentReactions(reply.id, { currentUserName });
+
+  return (
+    <div className="flex items-start gap-2">
+      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
+        rIsTeam ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400'
+      }`}>
+        {reply.author_name.charAt(0).toUpperCase()}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium text-gray-900">{reply.author_name}</span>
+          {rIsTeam && (
+            <span className="text-[8px] font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">
+              Team
+            </span>
+          )}
+          <span className="text-[10px] text-gray-400">{timeAgo(reply.created_at)}</span>
+        </div>
+        <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">{reply.content}</p>
+        <AttachmentList attachments={reply.attachments} />
+        {currentUserName && (
+          <div className="mt-1.5">
+            <ReactionBar
+              commentId={reply.id}
+              reactions={reactions}
+              currentUserName={currentUserName}
+              onToggleReaction={(_id, emoji) => toggle(emoji)}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -81,7 +81,7 @@ export function ViewButton({ id, onNavigate }: { id: string; onNavigate?: (id: s
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onNavigate?.(id); }}
-      className="flex items-center gap-1 text-[10px] font-medium text-teal hover:text-[#01434A] transition-colors"
+      className="flex items-center gap-1 text-[10px] font-medium text-teal hover:text-teal-hover transition-colors"
     >
       <Eye size={10} />
       View

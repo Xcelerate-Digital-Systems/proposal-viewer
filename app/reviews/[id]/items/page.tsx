@@ -196,8 +196,9 @@ function ItemsContent({
   const handleOpenViewer = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
 
-    // Connected webpage items → open the live URL directly
-    if (item?.type === 'webpage' && item.widget_installed_at && item.url) {
+    // Webpage items → feedback happens on the live page via the widget,
+    // not inside the admin viewer, so always open the URL.
+    if (item?.type === 'webpage' && item.url) {
       window.open(item.url, '_blank');
       return;
     }
@@ -258,7 +259,7 @@ function ItemsContent({
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setShowAddItem(true)}
-                  className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+                  className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
                 >
                   <Plus size={16} />
                   Add Item
@@ -308,7 +309,7 @@ function ItemsContent({
             </p>
             <button
               onClick={() => setShowAddItem(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover transition-colors"
             >
               <Plus size={16} />
               Add First Item

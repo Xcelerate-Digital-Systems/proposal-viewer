@@ -342,7 +342,7 @@ export default function DrawingOverlay({
               type="button"
               onClick={handleTextSubmit}
               disabled={!textInput.trim()}
-              className="px-2 py-0.5 rounded bg-teal text-white text-[10px] font-medium disabled:opacity-40 hover:bg-[#01434A] transition-colors"
+              className="px-2 py-0.5 rounded bg-teal text-white text-[10px] font-medium disabled:opacity-40 hover:bg-teal-hover transition-colors"
             >
               Add
             </button>

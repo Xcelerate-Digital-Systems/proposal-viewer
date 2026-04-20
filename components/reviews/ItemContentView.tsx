@@ -263,15 +263,18 @@ export default function ItemContentView({
     );
   }
 
-  // Webpage items — prefer screenshot preview; fall back to embed-install panel
+  // Webpage items — screenshot only. The widget on the live page is the only
+  // feedback surface; we never render a live iframe of the customer's page in-app.
   if (isWebpage) {
     if (renderWebpage) return <>{renderWebpage(item)}</>;
-    const hasPreview = Boolean(item.screenshot_url || item.url);
-    if (hasPreview) {
+    if (item.screenshot_url) {
       return (
         <WebpagePreviewView
           item={item}
           shareToken={shareToken || ''}
+          containerRef={containerRef}
+          pinComments={pinComments}
+          onPinClick={onPinClick}
         />
       );
     }
@@ -499,7 +502,7 @@ function WebpageEmbedView({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-teal hover:bg-[#015c64] transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-teal hover:bg-teal-hover transition-colors"
             >
               <ExternalLink size={14} />
               Open Page
@@ -521,9 +524,15 @@ function WebpageEmbedView({
 function WebpagePreviewView({
   item,
   shareToken,
+  containerRef,
+  pinComments,
+  onPinClick,
 }: {
   item: ReviewItem;
   shareToken: string;
+  containerRef?: React.RefObject<HTMLDivElement>;
+  pinComments: ReviewComment[];
+  onPinClick: (commentId?: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [showEmbed, setShowEmbed] = useState(false);
@@ -551,41 +560,20 @@ function WebpagePreviewView({
 
   return (
     <div className="flex flex-col h-full bg-gray-100">
-      {/* Preview area */}
-      <div className="flex-1 min-h-0 relative overflow-hidden">
-        {item.prefer_screenshot && item.screenshot_url ? (
-          <img
-            src={item.screenshot_url}
-            alt={item.title}
-            className="w-full h-full object-contain object-top bg-white"
-          />
-        ) : item.url ? (
-          <iframe
-            src={item.url}
-            title={item.title}
-            className="w-full h-full border-0 bg-white"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-            loading="lazy"
-          />
-        ) : item.screenshot_url ? (
-          <img
-            src={item.screenshot_url}
-            alt={item.title}
-            className="w-full h-full object-contain object-top bg-white"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-white">
-            <div className="text-center max-w-sm px-6">
-              <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <Globe size={26} className="text-gray-300" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">No preview yet</h3>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Add a URL to preview the page, or visit it with the widget installed to capture a screenshot.
-              </p>
-            </div>
-          </div>
-        )}
+      {/* Preview area — screenshot only; no live iframe (widget on the live page is the only feedback surface) */}
+      <div ref={containerRef} className="flex-1 min-h-0 relative overflow-hidden">
+        <img
+          src={item.screenshot_url!}
+          alt={item.title}
+          className="w-full h-full object-contain object-top bg-white"
+        />
+
+        {/* Pins captured via the live-page widget — display only, no click-to-create here */}
+        <PinOverlay
+          pinComments={pinComments}
+          pendingPin={null}
+          onPinClick={onPinClick}
+        />
 
         {/* Floating toolbar overlay */}
         <div className="absolute top-4 left-4 right-4 flex items-center gap-2 pointer-events-none">

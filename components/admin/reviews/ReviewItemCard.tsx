@@ -180,6 +180,15 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
     setSharing(true);
     setShowMenu(false);
 
+    // Webpages: share the live URL — that's where the widget collects
+    // feedback. The in-app viewer is a no-op for webpage items now.
+    if (item.type === 'webpage' && item.url) {
+      await navigator.clipboard.writeText(item.url);
+      toast.success('Page URL copied to clipboard');
+      setSharing(false);
+      return;
+    }
+
     let token = item.share_token;
 
     // Generate token if none exists

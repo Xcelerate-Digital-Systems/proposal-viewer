@@ -28,7 +28,7 @@ export default function WebpageClientPlaceholder({ item }: { item: ReviewItem })
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-teal hover:bg-[#015c64] transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-teal hover:bg-teal-hover transition-colors"
           >
             <ExternalLink size={14} />
             Visit Page

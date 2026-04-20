@@ -112,8 +112,9 @@ function BoardContent({
   const handleOpenViewer = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
 
-    // Connected webpage items → open the live URL directly
-    if (item?.type === 'webpage' && item.widget_installed_at && item.url) {
+    // Webpage items → feedback happens on the live page via the widget,
+    // not inside the admin viewer, so always open the URL.
+    if (item?.type === 'webpage' && item.url) {
       window.open(item.url, '_blank');
       return;
     }
@@ -172,7 +173,7 @@ function BoardContent({
 
                 <button
                   onClick={() => setShowAddItem(true)}
-                  className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors"
+                  className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
                 >
                   <Plus size={16} />
                   Add Item
@@ -194,11 +195,14 @@ function BoardContent({
             userId={userId}
             nextSortOrder={items.length}
             onClose={() => setShowAddItem(false)}
-            onSuccess={(newItemId) => {
+            onSuccess={(created) => {
               fetchItems();
-              if (newItemId) {
-                router.push(`/reviews/${projectId}/items/${newItemId}`);
-              }
+              if (!created) return;
+              // Webpages collect feedback via the embedded widget on the
+              // live page, so there's nothing to show in the admin viewer.
+              // Stay on the board.
+              if (created.type === 'webpage') return;
+              router.push(`/reviews/${projectId}/items/${created.id}`);
             }}
           />
         )}

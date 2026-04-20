@@ -156,7 +156,7 @@ export default function EdgeStyleEditor({
             </button>
             <button
               onClick={onSave}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-teal hover:bg-[#01434A] rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-teal hover:bg-teal-hover rounded-lg transition-colors"
             >
               Save
             </button>

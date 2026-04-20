@@ -2,35 +2,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, CornerDownRight, Send, CheckCircle2, RotateCcw, ExternalLink, FileText } from 'lucide-react';
+import { X, CornerDownRight, Send, CheckCircle2, RotateCcw } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
-import type { ReviewComment, ReviewCommentAttachment } from '@/lib/supabase';
-
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
-function AttachmentList({ attachments }: { attachments?: ReviewCommentAttachment[] }) {
-  if (!attachments || attachments.length === 0) return null;
-  return (
-    <div className="flex flex-wrap gap-1.5 mt-1.5">
-      {attachments.map((a, i) => {
-        const isImage = IMAGE_TYPES.includes(a.type);
-        return isImage ? (
-          <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
-            className="block w-14 h-14 rounded-lg border border-gray-200 overflow-hidden hover:border-teal/40 transition-colors">
-            <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
-          </a>
-        ) : (
-          <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 hover:border-teal/40 transition-colors">
-            <FileText size={10} className="text-gray-400 shrink-0" />
-            <span className="text-[10px] text-gray-600 truncate max-w-[80px]">{a.name}</span>
-            <ExternalLink size={8} className="text-gray-300 shrink-0" />
-          </a>
-        );
-      })}
-    </div>
-  );
-}
+import type { ReviewComment } from '@/lib/supabase';
+import AttachmentList from './comments/AttachmentList';
+import ReactionBar from './comments/ReactionBar';
+import { usePopoverPosition } from '@/hooks/usePopoverPosition';
+import { useCommentReactions } from '@/hooks/useCommentReactions';
 
 interface PinCommentPopoverProps {
   /** The parent comment for this pin */
@@ -63,7 +41,6 @@ export default function PinCommentPopover({
   replies,
   pinX,
   pinY,
-  containerRef,
   onClose,
   onReply,
   onResolve,
@@ -81,6 +58,12 @@ export default function PinCommentPopover({
   const replyDisabled = isGuest
     ? !replyText.trim() || !(guestName?.trim()) || submitting
     : !replyText.trim() || submitting;
+
+  const currentUserName = (authorName ?? guestName ?? '').trim() || null;
+  const {
+    reactions: mainReactions,
+    toggle: toggleMainReaction,
+  } = useCommentReactions(comment.id, { currentUserName });
 
   const handleReply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,29 +84,7 @@ export default function PinCommentPopover({
     return () => document.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  // Position the popover relative to the container
-  const style: React.CSSProperties = {
-    position: 'absolute',
-    zIndex: 50,
-  };
-
-  // Place to the right of the pin if there's room, otherwise to the left
-  if (pinX < 60) {
-    style.left = `calc(${pinX}% + 20px)`;
-  } else {
-    style.right = `calc(${100 - pinX}% + 20px)`;
-  }
-
-  // Vertically centered near the pin
-  if (pinY < 40) {
-    style.top = `${pinY}%`;
-  } else if (pinY > 60) {
-    style.bottom = `${100 - pinY}%`;
-  } else {
-    style.top = `${pinY}%`;
-    style.transform = 'translateY(-50%)';
-  }
-
+  const style = usePopoverPosition(pinX, pinY);
   const isTeam = comment.author_type === 'team';
 
   return (
@@ -140,7 +101,7 @@ export default function PinCommentPopover({
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold">
+            <span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold">
               {comment.thread_number || '•'}
             </span>
             <span className="text-[10px] text-gray-400">
@@ -174,7 +135,7 @@ export default function PinCommentPopover({
                 </div>
               )}
               <p className="text-xs text-gray-600 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
-              <AttachmentList attachments={comment.attachments} />
+              <AttachmentList attachments={comment.attachments} size="sm" />
 
               {/* Screenshot thumbnail */}
               {comment.screenshot_url && (
@@ -183,35 +144,26 @@ export default function PinCommentPopover({
                   <img src={comment.screenshot_url} alt="Screenshot" className="w-full object-cover" />
                 </a>
               )}
+
+              {currentUserName && (
+                <div className="mt-1.5">
+                  <ReactionBar
+                    commentId={comment.id}
+                    reactions={mainReactions}
+                    currentUserName={currentUserName}
+                    onToggleReaction={(_id, emoji) => toggleMainReaction(emoji)}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
           {/* Replies */}
           {replies.length > 0 && (
             <div className="ml-4 pl-3 border-l-2 border-gray-100 space-y-2">
-              {replies.map((r) => {
-                const rIsTeam = r.author_type === 'team';
-                return (
-                  <div key={r.id} className="flex items-start gap-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
-                      rIsTeam ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400'
-                    }`}>
-                      {r.author_name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-medium text-gray-900">{r.author_name}</span>
-                        {rIsTeam && (
-                          <span className="text-[8px] font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">Team</span>
-                        )}
-                        <span className="text-[10px] text-gray-400">{timeAgo(r.created_at)}</span>
-                      </div>
-                      <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">{r.content}</p>
-                      <AttachmentList attachments={r.attachments} />
-                    </div>
-                  </div>
-                );
-              })}
+              {replies.map((r) => (
+                <PopoverReplyItem key={r.id} reply={r} currentUserName={currentUserName} />
+              ))}
             </div>
           )}
 
@@ -253,7 +205,7 @@ export default function PinCommentPopover({
                   placeholder="Write a reply…" autoFocus
                   className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-[11px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
                 <button type="submit" disabled={replyDisabled}
-                  className="p-1.5 rounded-lg bg-teal text-white disabled:opacity-40 hover:bg-[#01434A] transition-colors">
+                  className="p-1.5 rounded-lg bg-teal text-white disabled:opacity-40 hover:bg-teal-hover transition-colors">
                   <Send size={11} />
                 </button>
               </div>
@@ -262,5 +214,47 @@ export default function PinCommentPopover({
         </div>
       </div>
     </>
+  );
+}
+
+function PopoverReplyItem({
+  reply,
+  currentUserName,
+}: {
+  reply: ReviewComment;
+  currentUserName: string | null;
+}) {
+  const rIsTeam = reply.author_type === 'team';
+  const { reactions, toggle } = useCommentReactions(reply.id, { currentUserName });
+
+  return (
+    <div className="flex items-start gap-2">
+      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
+        rIsTeam ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400'
+      }`}>
+        {reply.author_name.charAt(0).toUpperCase()}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium text-gray-900">{reply.author_name}</span>
+          {rIsTeam && (
+            <span className="text-[8px] font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">Team</span>
+          )}
+          <span className="text-[10px] text-gray-400">{timeAgo(reply.created_at)}</span>
+        </div>
+        <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">{reply.content}</p>
+        <AttachmentList attachments={reply.attachments} size="sm" />
+        {currentUserName && (
+          <div className="mt-1.5">
+            <ReactionBar
+              commentId={reply.id}
+              reactions={reactions}
+              currentUserName={currentUserName}
+              onToggleReaction={(_id, emoji) => toggle(emoji)}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
