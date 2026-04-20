@@ -142,19 +142,151 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
             <div>
               <h2 className="text-base font-semibold text-gray-900 mb-1">Widget Installation</h2>
               <p className="text-sm text-gray-500">
-                Add the feedback widget script to each webpage to enable comments, screenshots, and screen recording.
+                Install the feedback widget script once on the domain that hosts these pages. The
+                widget detects the current URL and loads comments for the matching page.
               </p>
             </div>
 
-            {webpageItems.map((item) => (
-              <WebpageSetupCard
-                key={item.id}
-                item={item}
-                shareToken={project?.share_token || ''}
-              />
-            ))}
+            <ProjectSetupCard
+              items={webpageItems}
+              shareToken={project?.share_token || ''}
+            />
+
+            <details className="group">
+              <summary className="cursor-pointer list-none flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
+                <span className="w-4 h-4 inline-flex items-center justify-center rounded border border-gray-200 group-open:rotate-90 transition-transform">
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 1l4 3-4 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </span>
+                Per-page snippets (fallback for multi-domain funnels)
+              </summary>
+              <div className="mt-4 space-y-4">
+                <p className="text-xs text-gray-400">
+                  Use these only if your pages live on separate domains or you want to scope the
+                  widget to a specific page.
+                </p>
+                {webpageItems.map((item) => (
+                  <WebpageSetupCard
+                    key={item.id}
+                    item={item}
+                    shareToken={project?.share_token || ''}
+                  />
+                ))}
+              </div>
+            </details>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Project-wide (one-install) setup card                              */
+/* ------------------------------------------------------------------ */
+
+function ProjectSetupCard({ items, shareToken }: { items: ReviewItem[]; shareToken: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
+
+  const scriptTag = shareToken
+    ? `<script src="${apiBase}/api/review-widget/${shareToken}/script" defer><\/script>`
+    : '';
+
+  const installedCount = items.filter((i) => i.widget_installed_at).length;
+  const total = items.length;
+
+  const handleCopy = async () => {
+    if (!scriptTag) return;
+    try {
+      await navigator.clipboard.writeText(scriptTag);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = scriptTag;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center shrink-0">
+            <Code2 size={18} className="text-teal" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-gray-900">Project-wide snippet</h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              One install. Works across all {total} page{total === 1 ? '' : 's'} in this project.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 shrink-0">
+          {installedCount}/{total} detected
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+            <Code2 size={13} />
+            Embed Code
+          </label>
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check size={12} className="text-emerald-500" />
+                <span className="text-emerald-600">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy size={12} />
+                Copy
+              </>
+            )}
+          </button>
+        </div>
+        <div
+          onClick={handleCopy}
+          className="relative bg-gray-900 rounded-xl p-4 cursor-pointer group"
+        >
+          <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
+            {scriptTag || '/* Missing share token */'}
+          </pre>
+          <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
+        </div>
+        <p className="text-xs text-gray-400">
+          Add this to the <code className="font-mono text-gray-500">&lt;head&gt;</code> of your site
+          (root template, GTM container, or platform-level custom code).
+        </p>
+      </div>
+
+      <div className="pt-3 border-t border-gray-100">
+        <p className="text-xs font-medium text-gray-500 mb-2">Pages in this project</p>
+        <ul className="space-y-1.5">
+          {items.map((it) => (
+            <li key={it.id} className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
+              {it.widget_installed_at ? (
+                <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
+              ) : (
+                <Clock size={12} className="text-amber-500 shrink-0" />
+              )}
+              <span className="font-medium truncate">{it.title}</span>
+              {it.url && (
+                <span className="text-gray-400 truncate">· {it.url}</span>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

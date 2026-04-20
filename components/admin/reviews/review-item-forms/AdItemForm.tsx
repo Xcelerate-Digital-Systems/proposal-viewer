@@ -94,7 +94,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Summer Sale – Facebook Feed"
+            placeholder="e.g. Summer Sale"
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             autoFocus
           />

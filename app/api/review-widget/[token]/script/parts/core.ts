@@ -1,11 +1,11 @@
 // app/api/review-widget/[token]/script/parts/core.ts
 
-export function coreJS(c: { token: string; itemId: string; apiBase: string }): string {
+export function coreJS(c: { token: string; apiBase: string }): string {
   return `
 /* ── Config & State ─────────────────────────────────────── */
 var C={
   token:"${c.token}",
-  item:"${c.itemId}",
+  item:__aviz_resolvedItem,
   api:"${c.apiBase}/api/review-widget/${c.token}/comments",
   ssApi:"${c.apiBase}/api/review-widget/${c.token}/screenshot",
   accent:"#017C87"

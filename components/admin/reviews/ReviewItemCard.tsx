@@ -279,7 +279,7 @@ export default function ReviewItemCard({ item, onRefresh, onOpenViewer, customDo
         {/* Type badge overlay */}
         <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-500 capitalize border border-gray-200/60">
           {item.type === 'ad'
-            ? (item.ad_platform === 'instagram_feed' ? 'Instagram Ad' : 'Facebook Ad')
+            ? 'Meta Ad'
             : item.type === 'webpage'
             ? 'Web Page'
             : item.type}
