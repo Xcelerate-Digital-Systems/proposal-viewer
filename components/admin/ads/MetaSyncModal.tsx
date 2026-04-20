@@ -241,6 +241,7 @@ export default function MetaSyncModal({ trackerId, onClose, onComplete }: Props)
             primary_text: ad.primary_text,
             headline: ad.headline,
             description: ad.description,
+            cta_type: ad.cta_type,
             all_primary_texts: ad.all_primary_texts,
             all_headlines: ad.all_headlines,
             all_descriptions: ad.all_descriptions,

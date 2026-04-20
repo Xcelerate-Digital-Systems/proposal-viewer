@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Search, Filter, ArrowLeft, Upload, Share2, RefreshCw } from 'lucide-react';
+import { Plus, Search, Filter, ArrowLeft, Upload, Share2, RefreshCw, ChevronDown } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase } from '@/lib/supabase';
@@ -59,6 +59,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [showMetaSync, setShowMetaSync] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
@@ -176,32 +177,60 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               Share
             </button>
 
-            {/* Bulk upload */}
-            <button
-              onClick={() => setShowBulkUpload(true)}
-              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
-            >
-              <Upload size={16} />
-              Bulk Upload
-            </button>
-
-            {/* Sync from Meta */}
-            <button
-              onClick={() => setShowMetaSync(true)}
-              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
-            >
-              <RefreshCw size={16} />
-              Sync
-            </button>
-
-            {/* New creative */}
-            <button
-              onClick={() => setShowQuickCreate(true)}
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
-            >
-              <Plus size={16} />
-              New Ad
-            </button>
+            {/* Add ads dropdown — combines New Ad, Bulk Upload, and Sync */}
+            <div className="relative">
+              <button
+                onClick={() => setShowAddMenu((v) => !v)}
+                className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] pl-4 pr-3 py-2.5 transition-colors"
+              >
+                <Plus size={16} />
+                Add ads
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${showAddMenu ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {showAddMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowAddMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1.5 z-50 bg-white border border-edge rounded-[10px] shadow-lg py-1 min-w-[200px] overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setShowAddMenu(false);
+                        setShowQuickCreate(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-ink hover:bg-surface text-left"
+                    >
+                      <Plus size={15} className="text-muted" />
+                      New ad
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAddMenu(false);
+                        setShowBulkUpload(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-ink hover:bg-surface text-left"
+                    >
+                      <Upload size={15} className="text-muted" />
+                      Bulk upload
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAddMenu(false);
+                        setShowMetaSync(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-ink hover:bg-surface text-left"
+                    >
+                      <RefreshCw size={15} className="text-muted" />
+                      Sync from Meta
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 

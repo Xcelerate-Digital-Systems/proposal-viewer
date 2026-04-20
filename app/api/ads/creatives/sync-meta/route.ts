@@ -35,6 +35,7 @@ interface SyncAdInput {
   primary_text?: string | null;
   headline?: string | null;
   description?: string | null;
+  cta_type?: string | null;
   all_primary_texts?: string | null;
   all_headlines?: string | null;
   all_descriptions?: string | null;
@@ -155,7 +156,9 @@ async function importSingleAd(opts: {
     });
   }
 
-  // Insert the ad_creatives row.
+  // Insert the ad_creatives row. Deliberately omit `status` so the DB default
+  // ('draft') applies — synced ads come in with mixed effective_status values
+  // (ACTIVE, PAUSED, ARCHIVED, ...); the user decides the tracker state after.
   const { data: creative, error: insertErr } = await supabase
     .from('ad_creatives')
     .insert({
@@ -164,7 +167,6 @@ async function importSingleAd(opts: {
       ad_name: ad.name || 'Untitled ad',
       image_url: storedUrl,
       media_type: ad.media_type,
-      status: 'live',
       source: 'meta_sync',
       meta_ad_id: ad.meta_ad_id,
       meta_ad_account_id: ad.meta_ad_account_id,
@@ -270,7 +272,73 @@ function buildVariantRows(
   addVariants(rows, adCreativeId, 'headline', 'Headline', ad.all_headlines, ad.headline);
   addVariants(rows, adCreativeId, 'description', 'Description', ad.all_descriptions, ad.description);
 
+  // CTA — Meta emits a code (e.g. LEARN_MORE); store the human button label
+  // so it's comparable with manually-entered CTAs in the tracker.
+  const ctaLabel = formatMetaCtaLabel(ad.cta_type);
+  if (ctaLabel) {
+    rows.push({
+      ad_creative_id: adCreativeId,
+      variant_type: 'cta',
+      label: 'CTA',
+      content: ctaLabel,
+      sort_order: 0,
+    });
+  }
+
   return rows;
+}
+
+// Maps Meta's effective CTA enum to the label Meta shows on the ad button.
+// Covers the common values; anything unknown falls back to title-casing the
+// enum code (GET_QUOTE → "Get Quote") which stays readable.
+const META_CTA_LABELS: Record<string, string> = {
+  LEARN_MORE: 'Learn More',
+  SHOP_NOW: 'Shop Now',
+  SIGN_UP: 'Sign Up',
+  DOWNLOAD: 'Download',
+  GET_OFFER: 'Get Offer',
+  GET_QUOTE: 'Get Quote',
+  GET_SHOWTIMES: 'Get Showtimes',
+  CONTACT_US: 'Contact Us',
+  APPLY_NOW: 'Apply Now',
+  BOOK_NOW: 'Book Now',
+  BOOK_TRAVEL: 'Book Now',
+  SUBSCRIBE: 'Subscribe',
+  INSTALL_APP: 'Install Now',
+  INSTALL_MOBILE_APP: 'Install Now',
+  USE_APP: 'Use App',
+  PLAY_GAME: 'Play Game',
+  WATCH_MORE: 'Watch More',
+  WATCH_VIDEO: 'Watch More',
+  LISTEN_NOW: 'Listen Now',
+  LISTEN_MUSIC: 'Listen Now',
+  MESSAGE_PAGE: 'Send Message',
+  WHATSAPP_MESSAGE: 'Send WhatsApp Message',
+  CALL_NOW: 'Call Now',
+  CALL: 'Call Now',
+  CONTACT: 'Contact Us',
+  GET_DIRECTIONS: 'Get Directions',
+  DONATE_NOW: 'Donate Now',
+  DONATE: 'Donate',
+  OPEN_LINK: 'Open Link',
+  ORDER_NOW: 'Order Now',
+  SEE_MENU: 'See Menu',
+  REQUEST_TIME: 'Request Time',
+  SAVE: 'Save',
+  EVENT_RSVP: 'Remind Me',
+  NO_BUTTON: '',
+};
+
+function formatMetaCtaLabel(code: string | null | undefined): string {
+  if (!code) return '';
+  const upper = code.toUpperCase();
+  if (upper in META_CTA_LABELS) return META_CTA_LABELS[upper];
+  // Fallback: GET_QUOTE → "Get Quote"
+  return upper
+    .split('_')
+    .filter(Boolean)
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(' ');
 }
 
 function addVariants(
