@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Search, Filter, ArrowLeft, Upload, Share2, RefreshCw, ChevronDown } from 'lucide-react';
+import { Plus, Search, Filter, ArrowLeft, Upload, Share2, RefreshCw, ChevronDown, Settings2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase } from '@/lib/supabase';
@@ -13,18 +13,18 @@ import AdBulkUploadModal from '@/components/admin/ads/AdBulkUploadModal';
 import AdFilterBar from '@/components/admin/ads/AdFilterBar';
 import ReferenceTabContent from '@/components/admin/ads/ReferenceTabContent';
 import type { TabType } from '@/components/admin/ads/ReferenceTabContent';
-import StandardsTab from '@/components/admin/ads/StandardsTab';
-import TargetMarketsTab from '@/components/admin/ads/TargetMarketsTab';
 import ClientShareModal from '@/components/admin/ads/ClientShareModal';
 import MetaSyncModal from '@/components/admin/ads/MetaSyncModal';
+import ClientSettingsModal from '@/components/admin/ads/ClientSettingsModal';
 import { useAdTrackerContext } from '@/components/admin/ads/AdTrackerContext';
-import type { AdAccountStandards } from '@/lib/types/ads';
+import type { AdAccountStandards, TrackerStandards } from '@/lib/types/ads';
 
-type PanelTab = 'standards' | 'target_markets' | TabType;
+// Standards and Audience were previously panel types. They're now in the
+// Client settings modal — the remaining panels are all generic reference
+// tabs shared across clients.
+type PanelTab = TabType;
 
 const PANEL_LABELS: Record<PanelTab, string> = {
-  standards: 'Standards',
-  target_markets: 'Audience',
   angles: 'Angles Menu',
   formats: 'Creative Formats',
   awareness: 'Awareness Level',
@@ -32,7 +32,7 @@ const PANEL_LABELS: Record<PanelTab, string> = {
 };
 
 const VALID_PANELS = new Set<PanelTab>([
-  'standards', 'target_markets', 'angles', 'formats', 'awareness', 'sophistication',
+  'angles', 'formats', 'awareness', 'sophistication',
 ]);
 
 export default function TrackerDetailPage() {
@@ -62,6 +62,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showClientSettings, setShowClientSettings] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -168,6 +169,15 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               <Filter size={16} />
             </button>
 
+            {/* Client settings — Standards + Audience for this client */}
+            <button
+              onClick={() => setShowClientSettings(true)}
+              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            >
+              <Settings2 size={16} />
+              Client settings
+            </button>
+
             {/* Share */}
             <button
               onClick={() => setShowShare(true)}
@@ -259,42 +269,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               <h2 className="text-[14px] font-semibold text-ink">{activePanelLabel}</h2>
             </div>
             <div className="flex-1 overflow-y-auto">
-              {activePanel === 'standards' ? (
-                <StandardsTab
-                  trackerId={trackerId}
-                  companyId={companyId}
-                  trackerStandards={tracker.standards || {}}
-                  onSaveTracker={async (standards) => {
-                    const token = (await supabase.auth.getSession()).data.session?.access_token;
-                    if (!token) return;
-                    await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
-                      method: 'PATCH',
-                      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ standards }),
-                    });
-                    fetchTrackers();
-                    fetchAccountStandards();
-                  }}
-                />
-              ) : activePanel === 'target_markets' ? (
-                <TargetMarketsTab
-                  companyId={companyId}
-                  trackerId={trackerId}
-                  trackerStandards={tracker.standards || {}}
-                  onSaveTrackerStandards={async (standards) => {
-                    const token = (await supabase.auth.getSession()).data.session?.access_token;
-                    if (!token) return;
-                    await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
-                      method: 'PATCH',
-                      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ standards }),
-                    });
-                    fetchTrackers();
-                  }}
-                />
-              ) : (
-                <ReferenceTabContent type={activePanel} />
-              )}
+              <ReferenceTabContent type={activePanel} />
             </div>
           </div>
         ) : (
@@ -358,6 +333,28 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           trackerId={trackerId}
           onClose={() => setShowMetaSync(false)}
           onComplete={fetchCreatives}
+        />
+      )}
+
+      {/* Client settings modal — Standards + Audience tabs */}
+      {showClientSettings && (
+        <ClientSettingsModal
+          trackerId={trackerId}
+          companyId={companyId}
+          clientName={tracker.name}
+          trackerStandards={tracker.standards || {}}
+          onSaveTrackerStandards={async (standards: TrackerStandards) => {
+            const token = (await supabase.auth.getSession()).data.session?.access_token;
+            if (!token) return;
+            await fetch(`/api/ads/trackers/${trackerId}?company_id=${companyId}`, {
+              method: 'PATCH',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ standards }),
+            });
+            fetchTrackers();
+            fetchAccountStandards();
+          }}
+          onClose={() => setShowClientSettings(false)}
         />
       )}
     </div>

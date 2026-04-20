@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Plus, Building2, MoreVertical, Pencil, Trash2, ChevronRight,
-  Shield, Users, Sparkles, LayoutGrid, Eye, TrendingUp, Rocket,
+  Sparkles, LayoutGrid, Eye, TrendingUp, Rocket,
 } from 'lucide-react';
 import { useAdTrackerContext } from '@/components/admin/ads/AdTrackerContext';
 import CreateTrackerModal from '@/components/admin/ads/CreateTrackerModal';
@@ -155,9 +155,10 @@ export default function AdTrackersSidebarNav({ onNavigate }: { onNavigate?: () =
 
       {(() => {
         const refTrackerId = currentTrackerId || trackers[0]?.id;
-        const PANEL_ITEMS: { key: string; label: string; icon: typeof Shield }[] = [
-          { key: 'standards', label: 'Standards', icon: Shield },
-          { key: 'target_markets', label: 'Audience', icon: Users },
+        // Standards and Audience were removed from the sidebar — they're
+        // per-client, so they live in the Client settings modal opened from
+        // the tracker header instead.
+        const PANEL_ITEMS: { key: string; label: string; icon: typeof Sparkles }[] = [
           { key: 'angles', label: 'Angles Menu', icon: Sparkles },
           { key: 'formats', label: 'Creative Formats', icon: LayoutGrid },
           { key: 'awareness', label: 'Awareness Level', icon: Eye },
