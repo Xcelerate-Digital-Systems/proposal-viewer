@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { X, Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, type LucideIcon } from 'lucide-react';
 import { type ReviewItemType } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
-import { useReviewItemSubmit } from './review-item-forms/useReviewItemSubmit';
+import { useReviewItemSubmit, type CreatedItemSummary } from './review-item-forms/useReviewItemSubmit';
 import ImageItemForm from './review-item-forms/ImageItemForm';
 import AdItemForm from './review-item-forms/AdItemForm';
 import EmailItemForm from './review-item-forms/EmailItemForm';
@@ -23,7 +23,7 @@ interface AddReviewItemModalProps {
   userId: string | null;
   nextSortOrder: number;
   onClose: () => void;
-  onSuccess: (newItemId?: string) => void;
+  onSuccess: (created?: CreatedItemSummary) => void;
 }
 
 const typeOptions: { value: ReviewItemType; label: string; icon: LucideIcon; description: string; enabled: boolean }[] = [

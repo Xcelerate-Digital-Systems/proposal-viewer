@@ -5,12 +5,18 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 
+export type CreatedItemSummary = {
+  id: string;
+  type: string;
+  url: string | null;
+};
+
 interface UseReviewItemSubmitOptions {
   reviewProjectId: string;
   companyId: string;
   userId: string | null;
   nextSortOrder: number;
-  onSuccess: (newItemId?: string) => void;
+  onSuccess: (created?: CreatedItemSummary) => void;
   onClose: () => void;
 }
 
@@ -50,7 +56,11 @@ export function useReviewItemSubmit({
         }
 
         toast.success('Item added');
-        onSuccess(newItem.id);
+        onSuccess({
+          id: newItem.id,
+          type: String(payload.type ?? ''),
+          url: (payload.url as string | undefined) ?? null,
+        });
         onClose();
       } catch {
         toast.error('Something went wrong');
@@ -105,11 +115,13 @@ export function useReviewItemSubmit({
           fullPayload.pdf_url = imageUrl;
         }
 
-        const { error: insertError } = await supabase
+        const { data: newItem, error: insertError } = await supabase
           .from('review_items')
-          .insert(fullPayload);
+          .insert(fullPayload)
+          .select('id')
+          .single();
 
-        if (insertError) {
+        if (insertError || !newItem) {
           toast.error('Failed to create item');
           await supabase.storage.from('company-assets').remove([path]);
           setUploading(false);
@@ -117,7 +129,11 @@ export function useReviewItemSubmit({
         }
 
         toast.success('Item added');
-        onSuccess();
+        onSuccess({
+          id: newItem.id,
+          type: String(payload.type ?? ''),
+          url: null,
+        });
         onClose();
       } catch {
         toast.error('Something went wrong');

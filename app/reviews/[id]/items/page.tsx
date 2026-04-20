@@ -280,11 +280,15 @@ function ItemsContent({
             userId={userId}
             nextSortOrder={items.length}
             onClose={() => setShowAddItem(false)}
-            onSuccess={(newItemId) => {
+            onSuccess={(created) => {
               fetchItems();
-              if (newItemId) {
-                router.push(`/reviews/${projectId}/items/${newItemId}`);
+              if (!created) return;
+              // Webpages: feedback happens on the live page, not the viewer
+              if (created.type === 'webpage' && created.url) {
+                window.open(created.url, '_blank');
+                return;
               }
+              router.push(`/reviews/${projectId}/items/${created.id}`);
             }}
           />
         )}
