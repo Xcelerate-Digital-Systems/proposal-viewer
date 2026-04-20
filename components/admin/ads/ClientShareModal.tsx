@@ -6,7 +6,7 @@ import { X, Copy, Check, Sparkles, Link2, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 type Props = {
-  clientId: string;
+  trackerId: string;
   clientName: string;
   initialToken: string | null;
   onClose: () => void;
@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function ClientShareModal({
-  clientId, clientName, initialToken, onClose, onTokenChange,
+  trackerId, clientName, initialToken, onClose, onTokenChange,
 }: Props) {
   const [token, setToken] = useState<string | null>(initialToken);
   const [working, setWorking] = useState(false);
@@ -28,7 +28,7 @@ export default function ClientShareModal({
   const authFetch = async (method: 'POST' | 'DELETE') => {
     const accessToken = (await supabase.auth.getSession()).data.session?.access_token;
     if (!accessToken) throw new Error('Not authenticated');
-    return fetch(`/api/ads/client/${clientId}/share`, {
+    return fetch(`/api/ads/tracker/${trackerId}/share`, {
       method,
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -95,8 +95,8 @@ export default function ClientShareModal({
           {!token ? (
             <>
               <p className="text-[13px] text-muted">
-                Generate a read-only public link so clients and AI tools can view every ad, strategy,
-                and decision for <span className="font-medium text-ink">{clientName}</span>.
+                Generate a read-only public link so clients and AI tools can view every ad,
+                strategy, and decision for <span className="font-medium text-ink">{clientName}</span>.
               </p>
               <button
                 onClick={handleGenerate}

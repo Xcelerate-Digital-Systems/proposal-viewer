@@ -13,6 +13,7 @@ export type AdTracker = {
   client_name: string | null;
   status: AdTrackerStatus;
   standards: TrackerStandards;
+  share_token: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -180,18 +181,11 @@ export type AdAccountStandards = {
   updated_at: string;
 };
 
-// ─── Shareable client view payload ──────────────────────────────────────────
+// ─── Shareable tracker view payload ─────────────────────────────────────────
+// In the UI each ad tracker is labelled as a "client". Payload is tracker-scoped.
 
-export type ClientAdTrackerSharePayload = {
-  client: {
-    id: string;
-    name: string;
-    slug: string | null;
-    logo_url: string | null;
-  };
-  /** Merged list of every creative across every tracker owned by this client. */
+export type AdTrackerSharePayload = {
+  tracker: Pick<AdTracker, 'id' | 'name' | 'description' | 'client_name' | 'standards'>;
   creatives: AdCreativeWithVariants[];
-  /** The trackers whose creatives make up the list — used to surface per-tracker standards. */
-  trackers: Array<Pick<AdTracker, 'id' | 'name' | 'description' | 'standards'>>;
   account_standards: AdAccountStandards | null;
 };

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Search, Filter, ArrowLeft, Upload } from 'lucide-react';
+import { Plus, Search, Filter, ArrowLeft, Upload, Share2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdCreatives, type AdCreativeFilters } from '@/hooks/useAdCreatives';
 import { supabase } from '@/lib/supabase';
@@ -15,6 +15,7 @@ import ReferenceTabContent from '@/components/admin/ads/ReferenceTabContent';
 import type { TabType } from '@/components/admin/ads/ReferenceTabContent';
 import StandardsTab from '@/components/admin/ads/StandardsTab';
 import TargetMarketsTab from '@/components/admin/ads/TargetMarketsTab';
+import ClientShareModal from '@/components/admin/ads/ClientShareModal';
 import { useAdTrackerContext } from '@/components/admin/ads/AdTrackerContext';
 import type { AdAccountStandards } from '@/lib/types/ads';
 
@@ -57,6 +58,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [accountStandards, setAccountStandards] = useState<AdAccountStandards | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -115,7 +117,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   if (!tracker) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3">
-        <p className="text-sm text-muted">Campaign not found</p>
+        <p className="text-sm text-muted">Client not found</p>
         <button onClick={() => router.push('/ads')} className="text-sm text-teal hover:underline">
           Back to Ad Tracker
         </button>
@@ -133,8 +135,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-semibold text-ink truncate">{tracker.name}</h1>
             <p className="text-sm text-muted mt-0.5">
-              {pagination.total} creative{pagination.total !== 1 ? 's' : ''}
-              {tracker.client_name && ` · ${tracker.client_name}`}
+              {pagination.total} ad{pagination.total !== 1 ? 's' : ''}
               {tracker.description && ` · ${tracker.description}`}
             </p>
           </div>
@@ -164,6 +165,15 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               <Filter size={16} />
             </button>
 
+            {/* Share */}
+            <button
+              onClick={() => setShowShare(true)}
+              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            >
+              <Share2 size={16} />
+              Share
+            </button>
+
             {/* Bulk upload */}
             <button
               onClick={() => setShowBulkUpload(true)}
@@ -179,7 +189,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
               className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
             >
               <Plus size={16} />
-              New Creative
+              New Ad
             </button>
           </div>
         </div>
@@ -288,6 +298,17 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             if (!result.error) setShowQuickCreate(false);
             return result;
           }}
+        />
+      )}
+
+      {/* Share modal */}
+      {showShare && (
+        <ClientShareModal
+          trackerId={trackerId}
+          clientName={tracker.name}
+          initialToken={tracker.share_token ?? null}
+          onClose={() => setShowShare(false)}
+          onTokenChange={() => { fetchTrackers(); }}
         />
       )}
     </div>

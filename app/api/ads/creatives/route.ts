@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
 
     const params = req.nextUrl.searchParams;
     const trackerId = params.get('tracker_id');
-    const clientId = params.get('client_id');
     const status = params.get('status');
     const winner = params.get('winner');
     const mediaType = params.get('media_type');
@@ -32,26 +31,6 @@ export async function GET(req: NextRequest) {
       .eq('company_id', auth.companyId);
 
     if (trackerId) query = query.eq('tracker_id', trackerId);
-
-    // When filtering by client, resolve the client's tracker ids first and
-    // scope to them. Returns an empty result set when the client has no
-    // trackers yet — rather than returning every tracker in the agency.
-    if (clientId && !trackerId) {
-      const { data: clientTrackers } = await supabase
-        .from('ad_trackers')
-        .select('id')
-        .eq('client_id', clientId)
-        .eq('company_id', auth.companyId);
-      const trackerIds = (clientTrackers ?? []).map((t: { id: string }) => t.id);
-      if (trackerIds.length === 0) {
-        return NextResponse.json({
-          success: true,
-          data: [],
-          pagination: { page, per_page: perPage, total: 0, total_pages: 0 },
-        });
-      }
-      query = query.in('tracker_id', trackerIds);
-    }
     if (status) query = query.eq('status', status);
     if (winner) query = query.eq('winner', winner);
     if (mediaType) query = query.eq('media_type', mediaType);

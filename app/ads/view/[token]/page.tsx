@@ -3,12 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Building2, Megaphone, Sparkles } from 'lucide-react';
+import { Megaphone, Sparkles } from 'lucide-react';
 import AdCreativesTable from '@/components/admin/ads/AdCreativesTable';
-import type { ClientAdTrackerSharePayload } from '@/lib/types/ads';
+import type { AdTrackerSharePayload } from '@/lib/types/ads';
 
 export default function PublicAdTrackerViewer({ params }: { params: { token: string } }) {
-  const [payload, setPayload] = useState<ClientAdTrackerSharePayload | null>(null);
+  const [payload, setPayload] = useState<AdTrackerSharePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [sortBy, setSortBy] = useState('sort_order');
@@ -53,7 +53,6 @@ export default function PublicAdTrackerViewer({ params }: { params: { token: str
     );
   }
 
-  // Sort creatives client-side
   const sortedCreatives = [...payload.creatives].sort((a, b) => {
     const av = (a as Record<string, unknown>)[sortBy];
     const bv = (b as Record<string, unknown>)[sortBy];
@@ -73,28 +72,17 @@ export default function PublicAdTrackerViewer({ params }: { params: { token: str
     }
   };
 
-  const primaryTrackerStandards = payload.trackers[0]?.standards || {};
-
   return (
     <div className="min-h-screen bg-ivory flex flex-col">
-      {/* Header */}
       <header className="border-b border-edge bg-white px-6 lg:px-10 py-5">
         <div className="flex items-center justify-between gap-4 max-w-[2000px] mx-auto">
-          <div className="flex items-center gap-3 min-w-0">
-            {payload.client.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={payload.client.logo_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
-            ) : (
-              <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center">
-                <Building2 size={18} className="text-faint" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-lg font-semibold text-ink truncate">{payload.client.name}</h1>
-              <p className="text-[12px] text-muted">
-                Ad tracker · {payload.creatives.length} ad{payload.creatives.length !== 1 ? 's' : ''}
-              </p>
-            </div>
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold text-ink truncate">{payload.tracker.name}</h1>
+            <p className="text-[12px] text-muted">
+              {payload.creatives.length} ad{payload.creatives.length !== 1 ? 's' : ''}
+              {payload.tracker.client_name && ` · ${payload.tracker.client_name}`}
+              {payload.tracker.description && ` · ${payload.tracker.description}`}
+            </p>
           </div>
 
           <Link
@@ -107,7 +95,6 @@ export default function PublicAdTrackerViewer({ params }: { params: { token: str
         </div>
       </header>
 
-      {/* Body */}
       <main className="flex-1 overflow-hidden">
         {payload.creatives.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 py-16">
@@ -125,7 +112,7 @@ export default function PublicAdTrackerViewer({ params }: { params: { token: str
             companyId=""
             onSort={handleSort}
             accountStandards={payload.account_standards}
-            trackerStandards={primaryTrackerStandards}
+            trackerStandards={payload.tracker.standards || {}}
             readOnly
           />
         )}

@@ -4,11 +4,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Copy, Check, ArrowLeft, FileJson } from 'lucide-react';
-import type { ClientAdTrackerSharePayload } from '@/lib/types/ads';
-import type { AdCreativeWithVariants } from '@/lib/types/ads';
+import type { AdTrackerSharePayload, AdCreativeWithVariants } from '@/lib/types/ads';
 
 export default function AiAdTrackerViewer({ params }: { params: { token: string } }) {
-  const [payload, setPayload] = useState<ClientAdTrackerSharePayload | null>(null);
+  const [payload, setPayload] = useState<AdTrackerSharePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -100,31 +99,30 @@ export default function AiAdTrackerViewer({ params }: { params: { token: string 
 
 // ─── Markdown renderer ──────────────────────────────────────────────────────
 
-function renderMarkdown(p: ClientAdTrackerSharePayload): string {
+function renderMarkdown(p: AdTrackerSharePayload): string {
   const lines: string[] = [];
-  lines.push(`# ${p.client.name} — Ad Tracker`);
+  lines.push(`# ${p.tracker.name} — Ad Tracker`);
+  if (p.tracker.client_name) lines.push(`_Client: ${p.tracker.client_name}_`);
+  if (p.tracker.description) lines.push(`_${p.tracker.description}_`);
   lines.push('');
   lines.push(`Total ads: ${p.creatives.length}`);
   lines.push('');
 
-  // Standards section (per tracker)
-  if (p.trackers.length > 0) {
-    lines.push('## Standards');
-    for (const t of p.trackers) {
-      const s = t.standards || {};
-      const label = s.metric_label || 'CPL';
-      const target = s.cpl_target != null ? `$${s.cpl_target}` : '—';
-      const personas = s.personas && s.personas.length ? s.personas.join(', ') : '—';
-      lines.push(`- **${t.name}** — ${label} target: ${target} · Personas: ${personas}`);
-    }
-    if (p.account_standards) {
-      const a = p.account_standards;
-      lines.push(
-        `- **Account targets** — Hook rate ≥ ${pct(a.hook_rate_target)} · Hold rate ≥ ${pct(a.hold_rate_target)} · Unique CTR ≥ ${pct(a.uctr_target)}`
-      );
-    }
-    lines.push('');
+  // Standards block
+  const s = p.tracker.standards || {};
+  const label = s.metric_label || 'CPL';
+  const target = s.cpl_target != null ? `$${s.cpl_target}` : '—';
+  const personas = s.personas && s.personas.length ? s.personas.join(', ') : '—';
+  lines.push('## Standards');
+  lines.push(`- **${label} target:** ${target}`);
+  lines.push(`- **Personas:** ${personas}`);
+  if (p.account_standards) {
+    const a = p.account_standards;
+    lines.push(
+      `- **Account targets:** Hook rate ≥ ${pct(a.hook_rate_target)} · Hold rate ≥ ${pct(a.hold_rate_target)} · Unique CTR ≥ ${pct(a.uctr_target)}`
+    );
   }
+  lines.push('');
 
   if (p.creatives.length === 0) {
     lines.push('_No ads tracked yet._');
@@ -140,13 +138,11 @@ function renderMarkdown(p: ClientAdTrackerSharePayload): string {
   }
 
   const statusOrder = ['live', 'ready', 'in_production', 'briefed', 'draft', 'paused', 'killed'];
-  const sortedStatuses = Object.keys(groups).sort(
-    (a, b) => {
-      const ai = statusOrder.indexOf(a);
-      const bi = statusOrder.indexOf(b);
-      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-    }
-  );
+  const sortedStatuses = Object.keys(groups).sort((a, b) => {
+    const ai = statusOrder.indexOf(a);
+    const bi = statusOrder.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
 
   lines.push('## Ads by status');
   lines.push('');
@@ -161,8 +157,6 @@ function renderMarkdown(p: ClientAdTrackerSharePayload): string {
     }
   }
 
-  // Decisions / next actions — a dedicated section so AI can lock onto the
-  // game plan without re-scanning every ad block.
   const withActions = p.creatives.filter((c) => c.next_action && c.next_action.trim());
   if (withActions.length > 0) {
     lines.push('## Game plan — next actions');
@@ -203,7 +197,6 @@ function renderCreative(c: AdCreativeWithVariants): string[] {
     if (value) lines.push(`- **${label}:** ${value}`);
   }
 
-  // Copy variants
   if (c.ad_copy_variants && c.ad_copy_variants.length > 0) {
     const byType: Record<string, string[]> = {};
     for (const v of c.ad_copy_variants) {
@@ -217,7 +210,6 @@ function renderCreative(c: AdCreativeWithVariants): string[] {
     if (copyBits.length) lines.push(`- **Copy:** ${copyBits.join(' · ')}`);
   }
 
-  // Metrics
   const metrics: string[] = [];
   if (c.hook_rate != null) metrics.push(`Hook ${c.hook_rate}%`);
   if (c.hold_rate != null) metrics.push(`Hold ${c.hold_rate}%`);

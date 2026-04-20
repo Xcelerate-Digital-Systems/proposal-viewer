@@ -7,9 +7,8 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/ads/share/[token]
  *
- * Public token-gated endpoint. Returns every ad creative across every tracker
- * owned by the client company whose ad_tracker_share_token matches [token].
- * Supports ?format=json to be explicit; the payload is the same either way.
+ * Public token-gated endpoint. Returns the ad tracker (treated as a "client"
+ * in the UI) and every creative under it.
  */
 export async function GET(
   _req: NextRequest,
@@ -17,49 +16,36 @@ export async function GET(
 ) {
   const supabase = createServiceClient();
 
-  const { data: client, error: clientErr } = await supabase
-    .from('companies')
-    .select('id, name, slug, logo_url, agency_id')
-    .eq('ad_tracker_share_token', params.token)
-    .eq('account_type', 'client')
+  const { data: tracker, error: trackerErr } = await supabase
+    .from('ad_trackers')
+    .select('id, company_id, name, description, client_name, standards')
+    .eq('share_token', params.token)
     .single();
 
-  if (clientErr || !client) {
+  if (trackerErr || !tracker) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  // Trackers owned by this client. company_id on ad_trackers is the agency;
-  // the link to the client is client_id.
-  const { data: trackers } = await supabase
-    .from('ad_trackers')
-    .select('id, name, description, standards')
-    .eq('client_id', client.id)
-    .eq('company_id', client.agency_id);
-
-  const trackerIds = (trackers ?? []).map((t: { id: string }) => t.id);
-
-  const { data: creatives } = trackerIds.length
-    ? await supabase
-        .from('ad_creatives')
-        .select('*, ad_copy_variants(*)')
-        .in('tracker_id', trackerIds)
-        .order('sort_order', { ascending: true })
-    : { data: [] };
+  const { data: creatives } = await supabase
+    .from('ad_creatives')
+    .select('*, ad_copy_variants(*)')
+    .eq('tracker_id', tracker.id)
+    .order('sort_order', { ascending: true });
 
   const { data: accountStandards } = await supabase
     .from('ad_account_standards')
     .select('*')
-    .eq('company_id', client.agency_id)
+    .eq('company_id', tracker.company_id)
     .maybeSingle();
 
   return NextResponse.json({
-    client: {
-      id: client.id,
-      name: client.name,
-      slug: client.slug,
-      logo_url: client.logo_url,
+    tracker: {
+      id: tracker.id,
+      name: tracker.name,
+      description: tracker.description,
+      client_name: tracker.client_name,
+      standards: tracker.standards,
     },
-    trackers: trackers ?? [],
     creatives: creatives ?? [],
     account_standards: accountStandards ?? null,
   });
