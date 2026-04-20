@@ -168,7 +168,13 @@ export default function AddReviewItemModal({
           <PdfItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} />
         )}
         {step === 'details' && itemType === 'webpage' && (
-          <WebpageItemForm onSubmit={submitPayload} onBack={handleBack} onCancel={onClose} uploading={uploading} />
+          <WebpageItemForm
+            reviewProjectId={reviewProjectId}
+            onSubmit={submitPayload}
+            onBack={handleBack}
+            onCancel={onClose}
+            uploading={uploading}
+          />
         )}
       </div>
     </div>

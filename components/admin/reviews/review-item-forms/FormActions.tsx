@@ -14,6 +14,8 @@ interface FormActionsProps {
     enabled: boolean;
     onToggle: () => void;
   };
+  /** Override primary button label (defaults to "Add Item"). */
+  submitLabel?: string;
 }
 
 export default function FormActions({
@@ -22,6 +24,7 @@ export default function FormActions({
   disabled,
   uploading,
   previewToggle,
+  submitLabel,
 }: FormActionsProps) {
   return (
     <div className="pt-2 flex items-center justify-between">
@@ -60,7 +63,7 @@ export default function FormActions({
           disabled={disabled}
           className="px-5 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {uploading ? 'Uploading…' : 'Add Item'}
+          {uploading ? 'Saving…' : (submitLabel || 'Add Item')}
         </button>
       </div>
     </div>

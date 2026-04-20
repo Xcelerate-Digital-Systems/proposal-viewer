@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Globe, Code2, Copy, Check, CheckCircle2, Clock, ExternalLink, } from 'lucide-react';
+import { ArrowLeft, Plus, Globe, Code2, Copy, Check, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
 import ProjectTabs from '@/components/admin/reviews/ProjectTabs';
 import { supabase, type ReviewProject, type ReviewItem } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -68,6 +68,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
       .from('review_items')
       .select('*')
       .eq('review_project_id', projectId)
+      .eq('type', 'webpage')
       .order('sort_order', { ascending: true });
 
     setItems(data || []);
@@ -79,9 +80,16 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
     fetchItems();
   }, [fetchProject, fetchItems]);
 
-  const webpageItems = items.filter((i) => i.type === 'webpage');
+  // Poll for install state if not yet connected
+  useEffect(() => {
+    if (!project || project.script_installed_at) return;
+    const t = setInterval(fetchProject, 5000);
+    return () => clearInterval(t);
+  }, [project, fetchProject]);
 
   if (!project && !loading) return null;
+
+  const installed = !!project?.script_installed_at;
 
   return (
     <div className="flex flex-col h-full">
@@ -116,63 +124,17 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
 
       {/* Scrollable content */}
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
-        {loading ? (
+        {loading || !project ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           </div>
-        ) : webpageItems.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Globe size={28} className="text-gray-300" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-500 mb-1">No web pages</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              Add a webpage item to your project to set up the feedback widget.
-            </p>
-            <Link
-              href={`/reviews/${projectId}/items`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors"
-            >
-              <Plus size={16} />
-              Add Items
-            </Link>
-          </div>
+        ) : !project.root_domain ? (
+          <NotStartedCard projectId={projectId} />
         ) : (
           <div className="max-w-3xl space-y-6">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Widget Installation</h2>
-              <p className="text-sm text-gray-500">
-                Install the feedback widget script once on the domain that hosts these pages. The
-                widget detects the current URL and loads comments for the matching page.
-              </p>
-            </div>
+            <StatusCard project={project} items={items} installed={installed} />
 
-            <ProjectSetupCard
-              items={webpageItems}
-              shareToken={project?.share_token || ''}
-            />
-
-            <details className="group">
-              <summary className="cursor-pointer list-none flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
-                <span className="w-4 h-4 inline-flex items-center justify-center rounded border border-gray-200 group-open:rotate-90 transition-transform">
-                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 1l4 3-4 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                </span>
-                Per-page snippets (fallback for multi-domain funnels)
-              </summary>
-              <div className="mt-4 space-y-4">
-                <p className="text-xs text-gray-400">
-                  Use these only if your pages live on separate domains or you want to scope the
-                  widget to a specific page.
-                </p>
-                {webpageItems.map((item) => (
-                  <WebpageSetupCard
-                    key={item.id}
-                    item={item}
-                    shareToken={project?.share_token || ''}
-                  />
-                ))}
-              </div>
-            </details>
+            {items.length > 0 && <PagesList items={items} />}
           </div>
         )}
       </div>
@@ -181,134 +143,51 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
 }
 
 /* ------------------------------------------------------------------ */
-/*  Project-wide (one-install) setup card                              */
+/*  Pre-setup empty state                                              */
 /* ------------------------------------------------------------------ */
 
-function ProjectSetupCard({ items, shareToken }: { items: ReviewItem[]; shareToken: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
-
-  const scriptTag = shareToken
-    ? `<script src="${apiBase}/api/review-widget/${shareToken}/script" defer><\/script>`
-    : '';
-
-  const installedCount = items.filter((i) => i.widget_installed_at).length;
-  const total = items.length;
-
-  const handleCopy = async () => {
-    if (!scriptTag) return;
-    try {
-      await navigator.clipboard.writeText(scriptTag);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = scriptTag;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
+function NotStartedCard({ projectId }: { projectId: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center shrink-0">
-            <Code2 size={18} className="text-teal" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900">Project-wide snippet</h3>
-            <p className="text-xs text-gray-400 mt-0.5">
-              One install. Works across all {total} page{total === 1 ? '' : 's'} in this project.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 shrink-0">
-          {installedCount}/{total} detected
-        </div>
+    <div className="max-w-2xl mx-auto text-center py-16">
+      <div className="w-16 h-16 bg-teal/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <Globe size={28} className="text-teal" />
       </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-            <Code2 size={13} />
-            Embed Code
-          </label>
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
-          >
-            {copied ? (
-              <>
-                <Check size={12} className="text-emerald-500" />
-                <span className="text-emerald-600">Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy size={12} />
-                Copy
-              </>
-            )}
-          </button>
-        </div>
-        <div
-          onClick={handleCopy}
-          className="relative bg-gray-900 rounded-xl p-4 cursor-pointer group"
-        >
-          <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
-            {scriptTag || '/* Missing share token */'}
-          </pre>
-          <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
-        </div>
-        <p className="text-xs text-gray-400">
-          Add this to the <code className="font-mono text-gray-500">&lt;head&gt;</code> of your site
-          (root template, GTM container, or platform-level custom code).
-        </p>
-      </div>
-
-      <div className="pt-3 border-t border-gray-100">
-        <p className="text-xs font-medium text-gray-500 mb-2">Pages in this project</p>
-        <ul className="space-y-1.5">
-          {items.map((it) => (
-            <li key={it.id} className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
-              {it.widget_installed_at ? (
-                <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-              ) : (
-                <Clock size={12} className="text-amber-500 shrink-0" />
-              )}
-              <span className="font-medium truncate">{it.title}</span>
-              {it.url && (
-                <span className="text-gray-400 truncate">· {it.url}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <h3 className="text-lg font-semibold text-gray-700 mb-1">No website connected yet</h3>
+      <p className="text-sm text-gray-500 mb-5 max-w-md mx-auto">
+        Add a webpage from the Items tab to kick off the install wizard. One script covers every page
+        in this project.
+      </p>
+      <Link
+        href={`/reviews/${projectId}/items`}
+        className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-[#01434A] transition-colors"
+      >
+        <Plus size={16} />
+        Add a webpage
+      </Link>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Individual webpage setup card                                      */
+/*  Install status card                                                */
 /* ------------------------------------------------------------------ */
 
-function WebpageSetupCard({ item, shareToken }: { item: ReviewItem; shareToken: string }) {
+function StatusCard({
+  project,
+  items,
+  installed,
+}: {
+  project: ReviewProject;
+  items: ReviewItem[];
+  installed: boolean;
+}) {
   const [copied, setCopied] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(!installed);
 
   const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
-
-  const scriptTag = shareToken && item.id
-    ? `<script src="${apiBase}/api/review-widget/${shareToken}/script?item=${item.id}" defer><\/script>`
-    : '';
-
-  const isInstalled = !!item.widget_installed_at;
+  const scriptTag = `<script src="${apiBase}/api/review-widget/${project.share_token}/script" defer><\/script>`;
 
   const handleCopy = async () => {
-    if (!scriptTag) return;
     try {
       await navigator.clipboard.writeText(scriptTag);
     } catch {
@@ -325,101 +204,131 @@ function WebpageSetupCard({ item, shareToken }: { item: ReviewItem; shareToken: 
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-      {/* Header row */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center shrink-0">
-            <Globe size={18} className="text-teal" />
+          <div
+            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+              installed ? 'bg-emerald-50' : 'bg-amber-50'
+            }`}
+          >
+            {installed
+              ? <CheckCircle2 size={18} className="text-emerald-600" />
+              : <Clock size={18} className="text-amber-600" />}
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900 truncate">{item.title}</h3>
-            {item.url && (
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-400 hover:text-teal truncate block transition-colors"
-              >
-                {item.url}
-              </a>
-            )}
+            <h3 className="text-sm font-semibold text-gray-900">
+              {installed ? 'Script installed' : 'Waiting for install'}
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">
+              {project.root_domain}
+            </p>
           </div>
         </div>
 
-        {/* Status badge */}
-        <div
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
-            isInstalled
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              : 'bg-amber-50 text-amber-700 border border-amber-200'
-          }`}
-        >
-          {isInstalled ? (
-            <>
-              <CheckCircle2 size={12} />
-              Connected
-            </>
-          ) : (
-            <>
-              <Clock size={12} />
-              Awaiting install
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Embed code */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-            <Code2 size={13} />
-            Embed Code
-          </label>
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
-          >
-            {copied ? (
-              <>
-                <Check size={12} className="text-emerald-500" />
-                <span className="text-emerald-600">Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy size={12} />
-                Copy
-              </>
-            )}
-          </button>
-        </div>
-        <div
-          onClick={handleCopy}
-          className="relative bg-gray-900 rounded-xl p-4 cursor-pointer group"
-        >
-          <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
-            {scriptTag || '/* Missing share token or item ID */'}
-          </pre>
-          <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
-        </div>
-        <p className="text-xs text-gray-400">
-          Add this to the <code className="font-mono text-gray-500">&lt;head&gt;</code> tag of your page.
-        </p>
-      </div>
-
-      {/* Open page link */}
-      {item.url && (
-        <div className="pt-1">
+        <div className="flex items-center gap-2 shrink-0">
           <a
-            href={item.url}
+            href={project.root_domain || '#'}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-teal hover:text-[#015c64] transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
           >
             <ExternalLink size={12} />
-            Open Page
+            Visit
           </a>
+          <button
+            onClick={() => setShowEmbed((s) => !s)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
+          >
+            <Code2 size={12} />
+            {showEmbed ? 'Hide code' : 'Show code'}
+          </button>
+        </div>
+      </div>
+
+      {showEmbed && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+              <Code2 size={13} />
+              Embed Code
+            </label>
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
+            >
+              {copied ? (
+                <>
+                  <Check size={12} className="text-emerald-500" />
+                  <span className="text-emerald-600">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={12} />
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+          <div
+            onClick={handleCopy}
+            className="relative bg-gray-900 rounded-xl p-4 cursor-pointer group"
+          >
+            <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
+              {scriptTag}
+            </pre>
+            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
+          </div>
+          <p className="text-xs text-gray-400">
+            Paste this into the <code className="font-mono text-gray-500">&lt;head&gt;</code> of{' '}
+            <span className="font-mono text-gray-600">{project.root_domain}</span>. Works across{' '}
+            {items.length} page{items.length === 1 ? '' : 's'} in this project.
+          </p>
         </div>
       )}
+
+      {!installed && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+          <span className="relative flex w-2 h-2">
+            <span className="absolute inline-flex w-full h-full rounded-full bg-amber-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex w-2 h-2 rounded-full bg-amber-500" />
+          </span>
+          <p className="text-xs font-medium text-amber-800">
+            Paste the script, then visit any page on {project.root_domain} — we&apos;ll auto-detect it.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Per-page status list                                               */
+/* ------------------------------------------------------------------ */
+
+function PagesList({ items }: { items: ReviewItem[] }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-900">Pages</h3>
+        <span className="text-xs text-gray-400">
+          {items.filter((i) => i.widget_installed_at).length}/{items.length} visited
+        </span>
+      </div>
+      <ul className="space-y-1.5">
+        {items.map((it) => (
+          <li key={it.id} className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
+            {it.widget_installed_at ? (
+              <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
+            ) : (
+              <Clock size={12} className="text-amber-500 shrink-0" />
+            )}
+            <span className="font-medium truncate">{it.title}</span>
+            {it.url && (
+              <span className="text-gray-400 truncate font-mono">· {it.url}</span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

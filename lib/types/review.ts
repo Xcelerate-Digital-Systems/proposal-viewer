@@ -15,6 +15,8 @@ export type ReviewProject = {
   share_token: string;
   board_share_token: string | null;
   share_mode: ReviewShareMode;
+  root_domain: string | null;
+  script_installed_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

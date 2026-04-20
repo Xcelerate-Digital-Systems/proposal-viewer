@@ -78,9 +78,8 @@ export async function GET(
     items = (rows || [])
       .filter((r): r is { id: string; url: string } => typeof r.url === 'string' && r.url.length > 0);
 
-    if (items.length === 0) {
-      return jsResponse('/* AgencyViz: no webpages configured */');
-    }
+    // Empty project is fine — the script still pings /heartbeat so the
+    // setup wizard can confirm install before any pages are added.
   }
 
   const apiBase = process.env.NEXT_PUBLIC_APP_URL || 'https://app.agencyviz.com';
@@ -103,7 +102,8 @@ function buildWidgetScript(c: {
   apiBase: string;
 }) {
   const resolver = `
-/* ══ AgencyViz: resolve review item from current URL ══ */
+/* ══ AgencyViz: heartbeat + resolve review item from current URL ══ */
+try{fetch("${c.apiBase}/api/review-widget/${c.token}/heartbeat",{method:"POST",keepalive:true}).catch(function(){});}catch(e){}
 var __aviz_pinnedItem=${JSON.stringify(c.pinnedItemId)};
 var __aviz_items=${JSON.stringify(c.items)};
 var __aviz_resolvedItem=__aviz_pinnedItem||null;
