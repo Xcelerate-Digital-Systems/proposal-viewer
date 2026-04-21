@@ -54,34 +54,27 @@ function BoardContent({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
-        <Link
-          href="/feedback"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors mb-3"
-        >
-          <ArrowLeft size={14} />
-          All Projects
-        </Link>
-
+      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-4 border-b border-gray-200 lg:border-b-0">
         {project && (
           <>
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div className="min-w-0">
-                <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
-                  {project.title}
-                </h1>
-                <div className="flex items-center gap-3 mt-1">
-                  {project.client_name && (
-                    <span className="text-sm text-gray-400">{project.client_name}</span>
-                  )}
-                  {project.description && (
-                    <>
-                      {project.client_name && <span className="text-gray-200">·</span>}
-                      <span className="text-sm text-gray-400 truncate max-w-[300px]">
-                        {project.description}
-                      </span>
-                    </>
-                  )}
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 flex items-center gap-3">
+                <Link
+                  href="/feedback"
+                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+                  title="All Projects"
+                >
+                  <ArrowLeft size={16} />
+                </Link>
+                <div className="min-w-0">
+                  <h1 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
+                    {project.title}
+                  </h1>
+                  <p className="text-xs text-gray-400 truncate">
+                    {project.client_name}
+                    {project.client_name && project.description && ' · '}
+                    {project.description}
+                  </p>
                 </div>
               </div>
 
@@ -91,15 +84,16 @@ function BoardContent({ projectId }: { projectId: string }) {
                   view="board"
                   projectId={project.id}
                   buildUrl={(t) => buildReviewWhiteboardUrl(t, customDomain, window.location.origin)}
-                  label="Share Board"
+                  label={project.board_share_token ? 'Copy link' : 'Share Board'}
+                  permanent
                   onTokenChange={(t) => setProject((prev) => prev ? { ...prev, board_share_token: t } : prev)}
                 />
 
                 <button
                   onClick={openAddItem}
-                  className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
+                  className="flex items-center gap-2 bg-teal text-white px-3.5 py-2 rounded-lg text-[13px] font-medium hover:bg-teal-hover transition-colors"
                 >
-                  <Plus size={16} />
+                  <Plus size={15} />
                   Add Item
                 </button>
               </div>
@@ -109,7 +103,7 @@ function BoardContent({ projectId }: { projectId: string }) {
         )}
       </div>
 
-      <div className="flex-1 px-2 pb-2 pt-2">
+      <div className="flex-1 min-h-0 px-2 pb-2 pt-2">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />

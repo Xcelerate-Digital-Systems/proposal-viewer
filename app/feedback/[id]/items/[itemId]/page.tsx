@@ -256,7 +256,7 @@ function ItemViewerContent({
     const token = session ? (await supabase.auth.getSession()).data.session?.access_token : null;
     if (!token) return;
 
-    const res = await fetch(`/api/review-comments/${commentId}/resolve`, {
+    const res = await fetch(`/api/review-comments/${commentId}/resolve?company_id=${companyId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ resolved: true, resolved_by: authorName }),
@@ -268,7 +268,8 @@ function ItemViewerContent({
       setAllProjectComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, resolved: true } : c)));
       toast.success('Comment resolved');
     } else {
-      toast.error('Failed to resolve');
+      const body = await res.json().catch(() => ({}));
+      toast.error(body?.error || 'Failed to resolve');
     }
   };
 
@@ -276,7 +277,7 @@ function ItemViewerContent({
     const token = session ? (await supabase.auth.getSession()).data.session?.access_token : null;
     if (!token) return;
 
-    const res = await fetch(`/api/review-comments/${commentId}/resolve`, {
+    const res = await fetch(`/api/review-comments/${commentId}/resolve?company_id=${companyId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ resolved: false }),
@@ -288,7 +289,52 @@ function ItemViewerContent({
       setAllProjectComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, resolved: false } : c)));
       toast.info('Comment reopened');
     } else {
-      toast.error('Failed to reopen');
+      const body = await res.json().catch(() => ({}));
+      toast.error(body?.error || 'Failed to reopen');
+    }
+  };
+
+  // ── Edit / delete ──
+  const editComment = async (commentId: string, content: string) => {
+    const token = session ? (await supabase.auth.getSession()).data.session?.access_token : null;
+    if (!token) return;
+
+    const res = await fetch(`/api/review-comments/${commentId}?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ content }),
+    });
+
+    if (res.ok) {
+      const updated = await res.json();
+      setComments((prev) => prev.map((c) => (c.id === commentId ? updated : c)));
+      toast.success('Comment updated');
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body?.error || 'Failed to update comment');
+    }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    const token = session ? (await supabase.auth.getSession()).data.session?.access_token : null;
+    if (!token) return;
+
+    const res = await fetch(`/api/review-comments/${commentId}?company_id=${companyId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      setComments((prev) =>
+        prev.filter((c) => c.id !== commentId && c.parent_comment_id !== commentId)
+      );
+      setAllProjectComments((prev) =>
+        prev.filter((c) => c.id !== commentId && c.parent_comment_id !== commentId)
+      );
+      toast.success('Comment deleted');
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body?.error || 'Failed to delete comment');
     }
   };
 
@@ -327,6 +373,8 @@ function ItemViewerContent({
       onSubmitComment={submitComment}
       onResolveComment={resolveComment}
       onUnresolveComment={unresolveComment}
+      onEditComment={editComment}
+      onDeleteComment={deleteComment}
       onItemChange={handleItemChange}
       onFilterChange={handleFilterChange}
       shareToken={project.share_token || ''}

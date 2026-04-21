@@ -30,6 +30,12 @@ interface ShareButtonProps {
 
   /** Callback after token changes (so parent can update state) */
   onTokenChange?: (token: string | null) => void;
+
+  /**
+   * Hide the revoke dropdown. Use for views where the link is considered
+   * permanent (e.g. the whiteboard board share URL).
+   */
+  permanent?: boolean;
 }
 
 /* ─── Component ────────────────────────────────────────────────── */
@@ -42,6 +48,7 @@ export default function ShareButton({
   buildUrl,
   label = 'Share',
   onTokenChange,
+  permanent = false,
 }: ShareButtonProps) {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
@@ -147,7 +154,7 @@ export default function ShareButton({
           ${isActive
             ? 'text-teal border-teal/30 bg-teal/5 hover:bg-teal/10'
             : 'text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}
-          ${isActive ? 'rounded-l-lg border-r-0' : 'rounded-lg'}
+          ${isActive && !permanent ? 'rounded-l-lg border-r-0' : 'rounded-lg'}
         `}
       >
         {loading ? (
@@ -162,8 +169,8 @@ export default function ShareButton({
         {copied ? 'Copied!' : label}
       </button>
 
-      {/* Dropdown chevron — only when token exists */}
-      {isActive && (
+      {/* Dropdown chevron — only when token exists AND link isn't permanent */}
+      {isActive && !permanent && (
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="flex items-center px-1.5 py-2 rounded-r-lg border border-teal/30 bg-teal/5 hover:bg-teal/10 text-teal transition-colors"
@@ -173,7 +180,7 @@ export default function ShareButton({
       )}
 
       {/* Dropdown menu */}
-      {menuOpen && isActive && token && (
+      {menuOpen && isActive && token && !permanent && (
         <div className="fixed z-[9999] bg-white rounded-xl border border-gray-200 shadow-lg w-[200px] py-1"
           style={{
             top: (menuRef.current?.getBoundingClientRect().bottom ?? 0) + 4,

@@ -14,7 +14,8 @@ import { fontFamily } from '@/lib/google-fonts';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { CommentsPanel } from '@/components/feedback/comments';
 import ItemContentView from '@/components/feedback/ItemContentView';
-import ItemSidebar from '@/components/feedback/ItemSidebar';
+import ItemThumbStrip from '@/components/feedback/ItemThumbStrip';
+import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
 import PinCommentPopover from '@/components/feedback/PinCommentPopover';
 import PendingPinPopover from '@/components/feedback/PendingPinPopover';
 import PendingHighlightPopover from '@/components/feedback/PendingHighlightPopover';
@@ -64,6 +65,10 @@ interface ReviewDetailViewProps {
   onResolveComment?: (commentId: string) => Promise<void>;
   /** Unresolve a comment (admin only) */
   onUnresolveComment?: (commentId: string) => Promise<void>;
+  /** Edit a comment's content (admin only) */
+  onEditComment?: (commentId: string, content: string) => Promise<void>;
+  /** Delete a comment and its replies (admin only) */
+  onDeleteComment?: (commentId: string) => Promise<void>;
   /** Called when selected item changes — admin uses this for router.push */
   onItemChange?: (itemId: string, typeFilter: string | null) => void;
   /** Called when type filter changes — admin uses this for URL sync */
@@ -107,6 +112,8 @@ export default function FeedbackDetailView({
   onSubmitComment,
   onResolveComment,
   onUnresolveComment,
+  onEditComment,
+  onDeleteComment,
   onItemChange,
   onFilterChange,
   backAction,
@@ -126,7 +133,7 @@ export default function FeedbackDetailView({
 
   // ── Branding colors (client mode) ──
   const brandingColors = useBrandingColors(branding ?? {} as CompanyBranding);
-  const { bgSecondary, accent, border, sidebarText } = brandingColors;
+  const { accent, border, sidebarText } = brandingColors;
 
   // Use admin-style sidebar when no branding is provided (unbranded client mode)
   const hasBranding = isClient && branding?.logo_url || branding?.name;
@@ -479,9 +486,11 @@ export default function FeedbackDetailView({
               onNameChange={isClient ? onGuestNameChange : undefined}
               onResolve={onResolveComment}
               onUnresolve={onUnresolveComment}
+              onEdit={isAdmin ? onEditComment : undefined}
+              onDelete={isAdmin ? onDeleteComment : undefined}
               companyId={companyId}
               closable={false}
-              className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-gray-50`}
+              className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white`}
             />
           </div>
         </div>
@@ -490,13 +499,16 @@ export default function FeedbackDetailView({
   }
 
   // ══════════════════════════════════════════════════════════════════
-  //  SIDEBAR + DETAIL MODE (default)
+  //  HEADER + DETAIL MODE (default) — thumb strip in header, comments on left
   // ══════════════════════════════════════════════════════════════════
 
-  // Determine which types to show in sidebar filter — hide when hideFilterBar is set
-  const sidebarTypes = hideFilterBar ? [] : (isAdmin && typeFilter ? [] : availableTypes);
+  // Determine which types to show in filter — hide when hideFilterBar is set
+  const stripTypes = hideFilterBar ? [] : (isAdmin && typeFilter ? [] : availableTypes);
 
-  const sidebarVariant = isAdmin || !hasBranding ? 'admin' : 'branded';
+  const stripVariant: 'admin' | 'branded' = isAdmin || !hasBranding ? 'admin' : 'branded';
+  const stripComments = isAdmin
+    ? allProjectComments
+    : (comments as Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]);
 
   return (
     <>
@@ -506,89 +518,147 @@ export default function FeedbackDetailView({
 
       {MobileGate}
 
-      <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-row bg-gray-50`}>
-        {/* ── Sidebar ── */}
-        <ItemSidebar
-          items={items}
-          filteredItems={filteredItems}
-          availableTypes={sidebarTypes}
-          typeFilter={typeFilter}
-          onFilterChange={handleFilterChange}
-          selectedItemId={selectedItemId}
-          onSelectItem={handleSidebarSelect}
-          comments={isAdmin ? allProjectComments : comments as Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]}
-          variant={sidebarVariant as 'admin' | 'branded'}
-          projectTitle={project.title}
-          logoUrl={hasBranding ? branding?.logo_url : undefined}
-          companyName={hasBranding ? branding?.name : undefined}
-          bgColor={hasBranding ? bgSecondary : undefined}
-          borderColor={hasBranding ? border : undefined}
-          textColor={hasBranding ? sidebarText : undefined}
-          accentColor={hasBranding ? accent : undefined}
-          fontHeading={hasBranding && branding ? fontFamily(branding.font_heading) : undefined}
-          fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
-        />
-
-        {/* ── Main content area ── */}
-        <div className="flex-1 flex flex-col min-w-0 relative">
-          {/* Header bar */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0">
-            {/* Left — back action */}
-            <div className="flex items-center min-w-[180px]">
-              {backAction && (
-                <button
-                  onClick={backAction.onClick}
-                  className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+      <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-gray-50`}>
+        {/* ── Single-row header: back/logo · filters · ◄ thumbs ► · count · actions ── */}
+        <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 bg-white shrink-0">
+          {/* Back + branding */}
+          <div className="flex items-center gap-2 shrink-0 min-w-0">
+            {backAction ? (
+              <button
+                onClick={backAction.onClick}
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors min-w-0"
+              >
+                <ArrowLeft size={14} className="shrink-0" />
+                <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
+              </button>
+            ) : (
+              <span className="text-sm font-semibold text-gray-900 truncate max-w-[180px]">
+                {project.title}
+              </span>
+            )}
+            {hasBranding && branding?.logo_url && (
+              <>
+                <span className="text-gray-200">·</span>
+                <img
+                  src={branding.logo_url}
+                  alt={branding.name}
+                  className="h-5 w-auto max-w-[100px] object-contain"
+                />
+              </>
+            )}
+            {hasBranding && !branding?.logo_url && branding?.name && (
+              <>
+                <span className="text-gray-200">·</span>
+                <span
+                  className="text-sm font-semibold text-gray-800"
+                  style={{ fontFamily: fontFamily(branding.font_heading) }}
                 >
-                  <ArrowLeft size={14} />
-                  {backAction.label}
-                </button>
-              )}
-            </div>
-
-            {/* Center — item nav */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => goToItem(currentIdx - 1)}
-                disabled={currentIdx <= 0}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
-              >
-                <ChevronLeft size={20} strokeWidth={2} />
-              </button>
-              <div className="flex flex-col items-center">
-                <span className="text-sm font-medium text-gray-800 truncate max-w-[280px]">
-                  {selectedItem?.title}
+                  {branding.name}
                 </span>
-                <span className="text-[11px] text-gray-400">
-                  {currentIdx + 1} of {filteredItems.length}
-                </span>
-              </div>
-              <button
-                onClick={() => goToItem(currentIdx + 1)}
-                disabled={currentIdx >= filteredItems.length - 1}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
-              >
-                <ChevronRight size={20} strokeWidth={2} />
-              </button>
-            </div>
-
-            {/* Right — actions */}
-            <div className="flex items-center gap-2 min-w-[180px] justify-end">
-              {renderHeaderActions?.(selectedItem)}
-            </div>
+              </>
+            )}
           </div>
 
-          {/* Mode bar — appears when a drawing tool is active */}
-          <FeedbackModeBar
-            mode={feedbackMode}
-            onCancel={() => changeFeedbackMode('idle')}
+          {/* Filters */}
+          {stripTypes.length > 1 && (
+            <>
+              <div className="w-px h-6 bg-gray-200 shrink-0" />
+              <div className="shrink-0">
+                <TypeFilterTabs
+                  items={items}
+                  availableTypes={stripTypes}
+                  typeFilter={typeFilter}
+                  onFilterChange={handleFilterChange}
+                  variant={stripVariant}
+                  sidebarTextColor={hasBranding ? sidebarText : undefined}
+                  showCounts={false}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Thumb strip */}
+          <div className="w-px h-6 bg-gray-200 shrink-0" />
+          <ItemThumbStrip
+            filteredItems={filteredItems}
+            selectedItemId={selectedItemId}
+            onSelectItem={handleSidebarSelect}
+            comments={stripComments}
+            variant={stripVariant}
+            textColor={hasBranding ? sidebarText : undefined}
+            accentColor={hasBranding ? accent : undefined}
+            fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
+            className="flex-1 min-w-0"
           />
 
-          {/* Item viewer */}
+          {/* Nav cluster — Previous / count / Next — swipe-file style */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => goToItem(currentIdx - 1)}
+              disabled={currentIdx <= 0}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={15} />
+              Previous
+            </button>
+            <span className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
+              {currentIdx + 1} of {filteredItems.length}
+            </span>
+            <button
+              onClick={() => goToItem(currentIdx + 1)}
+              disabled={currentIdx >= filteredItems.length - 1}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <ChevronRight size={15} />
+            </button>
+          </div>
+
+          {/* Actions */}
+          {renderHeaderActions && (
+            <>
+              <div className="w-px h-6 bg-gray-200 shrink-0" />
+              <div className="flex items-center gap-2 shrink-0">
+                {renderHeaderActions(selectedItem)}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Mode bar — appears when a drawing tool is active */}
+        <FeedbackModeBar
+          mode={feedbackMode}
+          onCancel={() => changeFeedbackMode('idle')}
+        />
+
+        {/* ── Body: comments (left) + content (right) ── */}
+        <div className="flex-1 flex min-h-0">
+          {showComments && (
+            <CommentsPanel
+              unresolvedComments={unresolvedComments}
+              resolvedComments={resolvedComments}
+              getReplies={getReplies}
+              hasComments={topLevelComments.length > 0}
+              highlightCommentId={highlightedCommentId}
+              onSubmitComment={handleSubmitComment}
+              onClose={() => setShowComments(false)}
+              authorName={isAdmin ? authorName : undefined}
+              guestName={isClient ? guestName : undefined}
+              onNameChange={isClient ? onGuestNameChange : undefined}
+              onResolve={onResolveComment}
+              onUnresolve={onUnresolveComment}
+              onEdit={isAdmin ? onEditComment : undefined}
+              onDelete={isAdmin ? onDeleteComment : undefined}
+              companyId={companyId}
+              className="w-[340px] shrink-0 border-r border-gray-200 bg-white flex flex-col"
+            />
+          )}
+
+          {/* ── Main content area ── */}
           <div
             className={`flex-1 relative ${
               isWebpageItem ? 'overflow-auto p-4' : 'overflow-auto flex items-center justify-center p-6'
-            } bg-gray-50`}
+            } bg-gray-50 min-w-0`}
           >
             <ItemContentView
               item={selectedItem}
@@ -678,26 +748,6 @@ export default function FeedbackDetailView({
             />
           </div>
         </div>
-
-        {/* ── Comments panel ── */}
-        {showComments && (
-          <CommentsPanel
-            unresolvedComments={unresolvedComments}
-            resolvedComments={resolvedComments}
-            getReplies={getReplies}
-            hasComments={topLevelComments.length > 0}
-            highlightCommentId={highlightedCommentId}
-            onSubmitComment={handleSubmitComment}
-            onClose={() => setShowComments(false)}
-            authorName={isAdmin ? authorName : undefined}
-            guestName={isClient ? guestName : undefined}
-            onNameChange={isClient ? onGuestNameChange : undefined}
-            onResolve={onResolveComment}
-            onUnresolve={onUnresolveComment}
-            companyId={companyId}
-            className="w-[340px] shrink-0 border-l border-gray-200 bg-gray-50 flex flex-col"
-          />
-        )}
       </div>
     </>
   );

@@ -37,6 +37,11 @@ interface CommentsPanelProps {
   /** Unresolve callback — if provided, reopen button appears on resolved threads */
   onUnresolve?: (commentId: string) => Promise<void>;
 
+  /** Edit callback — if provided, edit button appears on threads (admin only) */
+  onEdit?: (commentId: string, content: string) => Promise<void>;
+  /** Delete callback — if provided, delete button appears on threads (admin only) */
+  onDelete?: (commentId: string) => Promise<void>;
+
   // Attachments
   /** Company ID for attachment uploads */
   companyId?: string;
@@ -58,6 +63,8 @@ export default function CommentsPanel({
   authorName,
   onResolve,
   onUnresolve,
+  onEdit,
+  onDelete,
   guestName,
   onNameChange,
   companyId,
@@ -113,6 +120,10 @@ export default function CommentsPanel({
             }}
             onResolve={onResolve ? () => onResolve(c.id) : undefined}
             onUnresolve={onUnresolve ? () => onUnresolve(c.id) : undefined}
+            onEdit={onEdit ? (content) => onEdit(c.id, content) : undefined}
+            onDelete={onDelete ? () => onDelete(c.id) : undefined}
+            onEditReply={onEdit}
+            onDeleteReply={onDelete}
             highlighted={highlightCommentId === c.id}
           />
         ))}

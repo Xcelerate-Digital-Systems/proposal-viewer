@@ -117,7 +117,23 @@ export function FeedbackBoardProvider({
       router.push('/feedback');
       return;
     }
-    setProjectState(data);
+
+    // Whiteboard share link is permanent — auto-create the token the first
+    // time we load a project that doesn't have one yet so the share URL is
+    // always ready to copy.
+    let project = data;
+    if (!project.board_share_token) {
+      const newToken = crypto.randomUUID();
+      const { data: updated } = await supabase
+        .from('review_projects')
+        .update({ board_share_token: newToken, updated_at: new Date().toISOString() })
+        .eq('id', project.id)
+        .select()
+        .single();
+      if (updated) project = updated;
+    }
+
+    setProjectState(project);
   }, [projectId, companyId, router]);
 
   const refreshItems = useCallback(async () => {

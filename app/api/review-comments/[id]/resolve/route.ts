@@ -14,8 +14,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Feedback is agency-only
-    if (auth.accountType !== 'agency') {
+    // Feedback is team-facing. Super admins bypass the agency-only guard so
+    // they can act on projects in any company they're viewing.
+    if (!auth.member.is_super_admin && auth.accountType !== 'agency') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -35,8 +36,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
     }
 
-    // Check company access (getAuthContext already handles super admin override)
-    if (comment.company_id !== auth.companyId) {
+    // Check company access. Super admins can act across companies; regular
+    // agency members must match the comment's company.
+    if (!auth.member.is_super_admin && comment.company_id !== auth.companyId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

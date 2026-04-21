@@ -232,7 +232,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     ctx.shapes.length === 0;
 
   return (
-    <div className="flex h-[calc(100vh-220px)] min-h-[500px] bg-paper rounded-xl border-2 border-sketch-ink/70 overflow-hidden shadow-sketch">
+    <div className="flex h-full min-h-[400px] bg-paper rounded-xl border-2 border-sketch-ink/70 overflow-hidden shadow-sketch">
       <div
         className={`flex-1 relative bg-notebook ${cursorClass}`}
         ref={reactFlowRef}
