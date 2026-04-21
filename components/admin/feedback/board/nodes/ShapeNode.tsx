@@ -521,6 +521,9 @@ function DecisionShape({
 
   const renderAddButton = (side: FeedbackDecisionBranchSide) => {
     if (readOnly || content.branches.length >= 6) return null;
+    // Left is the canonical input side — incoming edges land here, so no
+    // "+ branch" button is rendered there to keep the joining handle clear.
+    if (side === 'left') return null;
     return (
       <button
         type="button"
