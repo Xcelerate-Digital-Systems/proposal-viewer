@@ -100,12 +100,12 @@ function SettingsContent({ auth }: {
           />
           {isSuperAdmin && (
             <NotificationSection
-              title="Creative Review"
+              title="Feedback"
               options={REVIEW_NOTIFICATION_OPTIONS}
               teamMember={teamMember}
               saving={saving}
               onToggle={handleToggle}
-              accentLabel="Creative Review"
+              accentLabel="Feedback"
             />
           )}
         </div>

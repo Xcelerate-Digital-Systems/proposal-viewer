@@ -32,7 +32,7 @@ export default function PrivacyPage() {
             <p>
               AgencyViz (&quot;the Service&quot;) is operated by Xcelerate Digital Systems (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;).
               AgencyViz is a business-to-business software platform that helps agencies manage proposals, documents,
-              creative reviews, and reporting integrations.
+              feedbacks, and reporting integrations.
             </p>
             <p>
               This Privacy Policy explains how we collect, use, store, and protect information when you use AgencyViz
@@ -52,9 +52,9 @@ export default function PrivacyPage() {
             <p>We store content you create or upload through the Service, including:</p>
             <ul>
               <li>Proposals, documents, and templates</li>
-              <li>Review projects and feedback comments</li>
+              <li>Feedback projects and feedback comments</li>
               <li>Uploaded files (PDFs, images)</li>
-              <li>Screenshots and annotations created during creative reviews</li>
+              <li>Screenshots and annotations created during feedbacks</li>
             </ul>
 
             <h3 className="text-base font-medium text-ink mt-4 mb-2">Third-party integration data</h3>

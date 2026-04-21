@@ -1,11 +1,10 @@
-// app/api/review/[token]/comments/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
 /**
  * POST /api/review/[token]/comments
  *
- * Post a comment on a review item. Token can be either:
+ * Post a comment on a feedback item. Token can be either:
  *   - A review_projects.share_token (project-level sharing)
  *   - A review_items.share_token (item-level sharing)
  *

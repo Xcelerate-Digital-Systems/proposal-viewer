@@ -40,13 +40,13 @@ export const ALL_SECTIONS: SectionDef[] = [
     ],
   },
   {
-    key: 'reviews',
-    label: 'Creative Review',
+    key: 'feedback',
+    label: 'Feedback',
     icon: MessageSquareText,
-    defaultHref: '/reviews',
-    matchPaths: ['/reviews'],
+    defaultHref: '/feedback',
+    matchPaths: ['/feedback'],
     items: [
-      { href: '/reviews', label: 'Projects', icon: MessageSquareText },
+      { href: '/feedback', label: 'Projects', icon: MessageSquareText },
     ],
   },
   {

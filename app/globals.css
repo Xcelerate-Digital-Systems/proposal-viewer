@@ -3,8 +3,6 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Outfit', sans-serif;
-  --font-display: 'Outfit', sans-serif;
   --brand-dark: #0f0f0f;
   --brand-accent: #01434A;
   --brand-accent-hover: #e85d00;
@@ -14,6 +12,24 @@
   --brand-muted: #333333;
   --brand-text: #ffffff;
   --brand-text-secondary: #999999;
+}
+
+@keyframes sketch-dashflow {
+  from { stroke-dashoffset: 32; }
+  to { stroke-dashoffset: 0; }
+}
+
+.bg-notebook {
+  background-color: #FAFAFA;
+  background-image: radial-gradient(circle, rgba(43, 43, 43, 0.15) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.bg-notebook-paper {
+  background-color: #FAFAFA;
+  background-image:
+    linear-gradient(to bottom, transparent 0, transparent 27px, rgba(43, 43, 43, 0.08) 28px);
+  background-size: 100% 28px;
 }
 
 * {

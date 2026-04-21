@@ -169,8 +169,8 @@ function TeamContent({
         member: 'Can view and manage proposals and documents. Cannot manage team or invites.',
       }
     : {
-        owner: 'Full access. Can manage team, change roles, and manage all proposals, templates, and Creative Review projects.',
-        admin: 'Can invite members, remove members, and manage all proposals, templates, and Creative Review projects.',
+        owner: 'Full access. Can manage team, change roles, and manage all proposals, templates, and Feedback projects.',
+        admin: 'Can invite members, remove members, and manage all proposals, templates, and Feedback projects.',
         member: 'Can view and manage proposals. Cannot manage team or invites.',
       };
 

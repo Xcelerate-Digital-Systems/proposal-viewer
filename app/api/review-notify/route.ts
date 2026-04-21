@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Look up review project by share token
+    // Look up feedback project by share token
     const { data: project, error: projErr } = await supabase
       .from('review_projects')
       .select('id, title, client_name, client_email, company_id, share_token')
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (projErr || !project) {
-      return NextResponse.json({ error: 'Review project not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Feedback project not found' }, { status: 404 });
     }
 
     // Get company info
@@ -297,7 +297,7 @@ function buildReviewTeamEmail(params: {
   switch (event_type) {
     case 'review_comment_added':
       subject = `💬 New review comment on "${projectTitle}"`;
-      headline = 'New Review Comment';
+      headline = 'New Feedback Comment';
       body = `
         <p><strong>${escapeHtml(commentAuthor || 'Someone')}</strong> commented${itemRef} in <strong>"${escapeHtml(projectTitle)}"</strong>:</p>
         <div style="background:#f3fafa;border-left:3px solid #017C87;padding:12px 16px;margin:16px 0;border-radius:4px;">
@@ -307,7 +307,7 @@ function buildReviewTeamEmail(params: {
       break;
 
     case 'review_comment_resolved':
-      subject = `✔️ Review comment resolved on "${projectTitle}"`;
+      subject = `✔️ Feedback comment resolved on "${projectTitle}"`;
       headline = 'Comment Resolved';
       body = `<p><strong>${escapeHtml(resolvedBy || 'Someone')}</strong> resolved a comment${itemRef} in <strong>"${escapeHtml(projectTitle)}"</strong>.</p>`;
       break;
@@ -338,7 +338,7 @@ function buildReviewTeamEmail(params: {
           <h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">${headline}</h1>
           <div style="color:#6b7280;font-size:15px;line-height:1.6;">${body}</div>
           <div style="margin-top:28px;">
-            <a href="${reviewUrl}" style="display:inline-block;background:#017C87;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;margin-right:8px;">View Review</a>
+            <a href="${reviewUrl}" style="display:inline-block;background:#017C87;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;margin-right:8px;">View Feedback</a>
             <a href="${dashboardUrl}/reviews" style="display:inline-block;background:#f9fafb;color:#6b7280;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;border:1px solid #e5e7eb;">Dashboard</a>
           </div>
         </td></tr>
@@ -370,8 +370,8 @@ function buildReviewClientEmail(params: {
 
   switch (event_type) {
     case 'review_comment_added':
-      subject = `💬 ${companyName} commented on your review`;
-      headline = 'New Comment on Your Review';
+      subject = `💬 ${companyName} commented on your feedback`;
+      headline = 'New Comment on Your Feedback';
       body = `
         <p><strong>${escapeHtml(commentAuthor || companyName)}</strong> left feedback${itemTitle ? ` on "${escapeHtml(itemTitle)}"` : ''}:</p>
         <div style="background:#f3fafa;border-left:3px solid #017C87;padding:12px 16px;margin:16px 0;border-radius:4px;">
@@ -383,13 +383,13 @@ function buildReviewClientEmail(params: {
     case 'review_comment_resolved':
       subject = `✔️ ${companyName} resolved a comment`;
       headline = 'Comment Resolved';
-      body = `<p><strong>${escapeHtml(resolvedBy || companyName)}</strong> resolved a comment${itemTitle ? ` on "${escapeHtml(itemTitle)}"` : ''} in your review.</p>`;
+      body = `<p><strong>${escapeHtml(resolvedBy || companyName)}</strong> resolved a comment${itemTitle ? ` on "${escapeHtml(itemTitle)}"` : ''} in your feedback.</p>`;
       break;
 
     default:
-      subject = `Update on your review from ${companyName}`;
-      headline = 'Review Update';
-      body = `<p>There's an update on your review <strong>"${escapeHtml(projectTitle)}"</strong>.</p>`;
+      subject = `Update on your feedback from ${companyName}`;
+      headline = 'Feedback Update';
+      body = `<p>There's an update on your feedback <strong>"${escapeHtml(projectTitle)}"</strong>.</p>`;
       break;
   }
 
@@ -406,7 +406,7 @@ function buildReviewClientEmail(params: {
           <h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">${headline}</h1>
           <div style="color:#6b7280;font-size:15px;line-height:1.6;">${body}</div>
           <div style="margin-top:28px;">
-            <a href="${reviewUrl}" style="display:inline-block;background:#017C87;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">View Review</a>
+            <a href="${reviewUrl}" style="display:inline-block;background:#017C87;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">View Feedback</a>
           </div>
         </td></tr>
         <tr><td style="padding:16px 32px;border-top:1px solid #e5e7eb;">

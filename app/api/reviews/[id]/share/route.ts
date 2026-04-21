@@ -27,7 +27,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Creative Review is agency-only
+    // Feedback is agency-only
     if (auth.accountType !== 'agency') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

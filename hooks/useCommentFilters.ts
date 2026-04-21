@@ -2,13 +2,13 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { type ReviewComment } from '@/lib/supabase';
+import { type FeedbackComment } from '@/lib/supabase';
 
 /**
  * Derives filtered comment lists for a selected item from the full comments array.
  * Replaces identical filtering logic duplicated across review/project/admin item pages.
  */
-export function useCommentFilters(comments: ReviewComment[], selectedItemId: string | null) {
+export function useCommentFilters(comments: FeedbackComment[], selectedItemId: string | null) {
   const itemComments = useMemo(
     () => comments.filter((c) => c.review_item_id === selectedItemId),
     [comments, selectedItemId]

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Image as ImageIcon, ArrowLeft, Monitor } from 'lucide-react';
-import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewCommentReaction, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
+import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackBoardEdge, type FeedbackBoardNote } from '@/lib/supabase';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useGuestIdentity } from '@/hooks/useGuestIdentity';
@@ -13,23 +13,23 @@ import { usePinFeedback } from '@/hooks/usePinFeedback';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
-import ReviewBoardViewer from '@/components/review/ReviewBoardViewer';
-import ReviewDetailView from '@/components/reviews/ReviewDetailView';
-import GuestOnboardingModal from '@/components/reviews/GuestOnboardingModal';
+import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewer';
+import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
+import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
 
 
 export default function ReviewViewerPage({ params }: { params: { token: string } }) {
   const searchParams = useSearchParams();
-  const [project, setProject] = useState<ReviewProject | null>(null);
-  const [items, setItems] = useState<ReviewItem[]>([]);
-  const [comments, setComments] = useState<ReviewComment[]>([]);
+  const [project, setProject] = useState<FeedbackProject | null>(null);
+  const [items, setItems] = useState<FeedbackItem[]>([]);
+  const [comments, setComments] = useState<FeedbackComment[]>([]);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
-  const [boardEdges, setBoardEdges] = useState<ReviewBoardEdge[]>([]);
-  const [boardNotes, setBoardNotes] = useState<ReviewBoardNote[]>([]);
-  const [reactions, setReactions] = useState<ReviewCommentReaction[]>([]);
+  const [boardEdges, setBoardEdges] = useState<FeedbackBoardEdge[]>([]);
+  const [boardNotes, setBoardNotes] = useState<FeedbackBoardNote[]>([]);
+  const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [showBoardView, setShowBoardView] = useState(true);
   const [viewMode, setViewMode] = useState<'project' | 'item'>('project');
   const [initialItemId, setInitialItemId] = useState<string | null>(null);
@@ -77,12 +77,12 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
 
         // Select initial item based on URL params
         const startItems = urlType
-          ? data.items.filter((i: ReviewItem) => i.type === urlType)
+          ? data.items.filter((i: FeedbackItem) => i.type === urlType)
           : data.items;
-        if (urlItem && data.items.find((i: ReviewItem) => i.id === urlItem)) {
+        if (urlItem && data.items.find((i: FeedbackItem) => i.id === urlItem)) {
           setInitialItemId(urlItem);
           // Auto-filter to same type as the deep-linked item
-          const linkedItem = data.items.find((i: ReviewItem) => i.id === urlItem);
+          const linkedItem = data.items.find((i: FeedbackItem) => i.id === urlItem);
           if (linkedItem?.type) setAutoTypeFilter(linkedItem.type);
         } else if (startItems.length > 0) {
           setInitialItemId(startItems[0].id);
@@ -111,10 +111,10 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   useEffect(() => {
     if (project) {
       document.title = project.client_name
-        ? `Review for ${project.client_name}`
+        ? `Feedback for ${project.client_name}`
         : project.title;
     }
-    return () => { document.title = 'Creative Review'; };
+    return () => { document.title = 'Feedback'; };
   }, [project]);
 
   // ── Submit comment via API ──
@@ -190,7 +190,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <ImageIcon size={28} className="text-gray-300" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-500">Review not found</h2>
+          <h2 className="text-lg font-semibold text-gray-500">Feedback not found</h2>
           <p className="text-sm text-gray-400 mt-1">This link may be expired or invalid</p>
         </div>
       </div>
@@ -244,7 +244,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           </div>
 
           <div className="flex-1 min-h-0">
-            <ReviewBoardViewer
+            <FeedbackBoardViewer
               items={items}
               boardEdges={boardEdges}
               boardNotes={boardNotes}
@@ -276,7 +276,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         onSubmit={(name, email) => saveGuestIdentity(name, email)}
         accentColor={branding.accent_color}
       />
-      <ReviewDetailView
+      <FeedbackDetailView
         mode="client"
         project={project!}
         items={items}

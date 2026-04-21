@@ -1,4 +1,3 @@
-// app/api/review/[token]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 

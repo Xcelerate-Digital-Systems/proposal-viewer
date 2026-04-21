@@ -1,0 +1,83 @@
+'use client';
+
+import { memo, useState, useEffect, useCallback } from 'react';
+import type { NodeProps } from '@xyflow/react';
+import { supabase, type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
+import { type NodeItemProps } from './nodeConfig';
+
+// Type-specific node components
+import WebsiteNode from './WebsiteNode';
+import ImageNode from './ImageNode';
+import VideoNode from './VideoNode';
+import EmailNode from './EmailNode';
+import SMSNode from './SMSNode';
+import FacebookNode from './FacebookNode';
+import GoogleAdNode from './GoogleAdNode';
+import PdfNode from './PdfNode';
+
+/* ─── Node data interface ──────────────────────────────────────── */
+
+export interface ReviewItemNodeData extends Record<string, unknown> {
+  item: FeedbackItem;
+  readOnly?: boolean;
+  onNavigate?: (itemId: string) => void;
+  onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>;
+}
+
+/* ─── Component map ────────────────────────────────────────────── */
+
+const NODE_COMPONENTS: Record<string, React.ComponentType<NodeItemProps>> = {
+  webpage: WebsiteNode,
+  image: ImageNode,
+  video: VideoNode,
+  email: EmailNode,
+  sms: SMSNode,
+  ad: FacebookNode,
+  google_ad: GoogleAdNode,
+  pdf: PdfNode,
+};
+
+/* ─── Dispatcher ───────────────────────────────────────────────── */
+
+function ReviewItemNodeComponent({ data, selected }: NodeProps) {
+  const { item, readOnly, onNavigate, onUpdateStatus } = data as ReviewItemNodeData;
+  const [commentCount, setCommentCount] = useState(0);
+  const [unresolvedCount, setUnresolvedCount] = useState(0);
+
+  const fetchCommentStats = useCallback(async () => {
+    const { data: comments } = await supabase
+      .from('review_comments')
+      .select('resolved')
+      .eq('review_item_id', item.id)
+      .is('parent_comment_id', null);
+
+    if (comments) {
+      setCommentCount(comments.length);
+      setUnresolvedCount(comments.filter((c: { resolved: boolean }) => !c.resolved).length);
+    }
+  }, [item.id]);
+
+  useEffect(() => {
+    fetchCommentStats();
+  }, [fetchCommentStats]);
+
+  // Pick the right component (falls back to WebsiteNode for unknown types)
+  const Component = NODE_COMPONENTS[item.type] || WebsiteNode;
+
+  return (
+    <Component
+      item={item}
+      selected={!!selected}
+      readOnly={readOnly}
+      commentCount={commentCount}
+      unresolvedCount={unresolvedCount}
+      onNavigate={onNavigate}
+      onUpdateStatus={onUpdateStatus}
+    />
+  );
+}
+
+const FeedbackItemNode = memo(ReviewItemNodeComponent);
+FeedbackItemNode.displayName = 'FeedbackItemNode';
+
+export default FeedbackItemNode;

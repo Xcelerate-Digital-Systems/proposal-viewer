@@ -102,7 +102,7 @@ function buildWidgetScript(c: {
   apiBase: string;
 }) {
   const resolver = `
-/* ══ AgencyViz: heartbeat + resolve review item from current URL ══ */
+/* ══ AgencyViz: heartbeat + resolve feedback item from current URL ══ */
 try{fetch("${c.apiBase}/api/review-widget/${c.token}/heartbeat",{method:"POST",keepalive:true}).catch(function(){});}catch(e){}
 var __aviz_pinnedItem=${JSON.stringify(c.pinnedItemId)};
 var __aviz_items=${JSON.stringify(c.items)};

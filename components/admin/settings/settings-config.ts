@@ -68,14 +68,14 @@ export const NOTIFICATION_OPTIONS: NotificationOption[] = [
 export const REVIEW_NOTIFICATION_OPTIONS: NotificationOption[] = [
   {
     key: 'notify_review_comment_added',
-    label: 'Review Comment Added',
-    description: 'When a client or team member comments on a review item',
+    label: 'Feedback Comment Added',
+    description: 'When a client or team member comments on a feedback item',
     icon: MessageSquare,
   },
   {
     key: 'notify_review_item_status',
-    label: 'Review Item Status Changed',
-    description: 'When a review item is approved or needs revision',
+    label: 'Feedback Item Status Changed',
+    description: 'When a feedback item is approved or needs revision',
     icon: AlertCircle,
   },
 ];
@@ -132,26 +132,26 @@ export const WEBHOOK_EVENTS: WebhookEvent[] = [
 export const REVIEW_WEBHOOK_EVENTS: WebhookEvent[] = [
   {
     key: 'review_comment_added',
-    label: 'Review Comment Added',
-    description: 'Fires when someone comments on a review item',
+    label: 'Feedback Comment Added',
+    description: 'Fires when someone comments on a feedback item',
     icon: MessageSquare,
   },
   {
     key: 'review_comment_resolved',
-    label: 'Review Comment Resolved',
+    label: 'Feedback Comment Resolved',
     description: 'Fires when a review comment is resolved',
     icon: CheckCheck,
   },
   {
     key: 'review_item_approved',
-    label: 'Review Item Approved',
-    description: 'Fires when a review item is marked as approved',
+    label: 'Feedback Item Approved',
+    description: 'Fires when a feedback item is marked as approved',
     icon: CheckCircle2,
   },
   {
     key: 'review_item_revision_needed',
-    label: 'Review Revision Needed',
-    description: 'Fires when a review item is marked as needing revision',
+    label: 'Feedback Revision Needed',
+    description: 'Fires when a feedback item is marked as needing revision',
     icon: AlertCircle,
   },
 ];

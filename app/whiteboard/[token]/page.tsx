@@ -4,16 +4,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Monitor } from 'lucide-react';
-import { type ReviewProject, type ReviewItem, type ReviewComment, type ReviewBoardEdge, type ReviewBoardNote } from '@/lib/supabase';
+import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackBoardEdge, type FeedbackBoardNote } from '@/lib/supabase';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useBrandingColors } from '@/hooks/useBrandingColors';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
-import ReviewBoardViewer from '@/components/review/ReviewBoardViewer';
-import ReviewNotFound from '@/components/reviews/ReviewNotFound';
-import WhiteboardSidebar from '@/components/review/WhiteboardSidebar';
+import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewer';
+import FeedbackNotFound from '@/components/feedback/FeedbackNotFound';
+import WhiteboardSidebar from '@/components/feedback/public/WhiteboardSidebar';
 
 /**
  * Public whiteboard view — /whiteboard/[token]
@@ -28,11 +28,11 @@ import WhiteboardSidebar from '@/components/review/WhiteboardSidebar';
  */
 export default function PublicWhiteboardPage({ params }: { params: { token: string } }) {
   const router = useRouter();
-  const [project, setProject] = useState<ReviewProject | null>(null);
-  const [items, setItems] = useState<ReviewItem[]>([]);
-  const [comments, setComments] = useState<ReviewComment[]>([]);
-  const [boardEdges, setBoardEdges] = useState<ReviewBoardEdge[]>([]);
-  const [boardNotes, setBoardNotes] = useState<ReviewBoardNote[]>([]);
+  const [project, setProject] = useState<FeedbackProject | null>(null);
+  const [items, setItems] = useState<FeedbackItem[]>([]);
+  const [comments, setComments] = useState<FeedbackComment[]>([]);
+  const [boardEdges, setBoardEdges] = useState<FeedbackBoardEdge[]>([]);
+  const [boardNotes, setBoardNotes] = useState<FeedbackBoardNote[]>([]);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -78,7 +78,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
         ? `Board — ${project.client_name}`
         : `Board — ${project.title}`;
     }
-    return () => { document.title = 'Creative Review'; };
+    return () => { document.title = 'Feedback'; };
   }, [project]);
 
   // Clicking a board node — navigate (same tab) to item detail view.
@@ -107,7 +107,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   // ── Early returns ──
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading board…" />;
-  if (notFound) return <ReviewNotFound type="not_found" />;
+  if (notFound) return <FeedbackNotFound type="not_found" />;
 
   return (
     <>
@@ -169,7 +169,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
             onSelectItem={handleSelectItem}
           />
           <div className="flex-1 min-h-0">
-            <ReviewBoardViewer
+            <FeedbackBoardViewer
               items={items}
               boardEdges={boardEdges}
               boardNotes={boardNotes}

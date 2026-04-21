@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'AgencyViz — Agency Toolbox',
   description:
-    'AgencyViz is a B2B software platform for agencies: proposals, creative review, ad tracking, and reporting integrations.',
+    'AgencyViz is a B2B software platform for agencies: proposals, feedback, ad tracking, and reporting integrations.',
 };
 
 export default function HomePage() {
@@ -38,7 +38,7 @@ export default function HomePage() {
           The agency toolbox.
         </h1>
         <p className="text-lg text-muted max-w-xl mx-auto mb-10">
-          Proposals, creative review, ad tracking, and reporting integrations &mdash; in one place for agencies
+          Proposals, feedback, ad tracking, and reporting integrations &mdash; in one place for agencies
           and their clients.
         </p>
         <a

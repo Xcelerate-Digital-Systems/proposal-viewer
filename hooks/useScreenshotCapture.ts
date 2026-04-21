@@ -5,9 +5,9 @@ import { useCallback, useRef } from 'react';
 import html2canvas from 'html2canvas';
 
 interface UseScreenshotCaptureOptions {
-  /** The share token for the review project */
+  /** The share token for the feedback project */
   shareToken?: string;
-  /** The current review item ID */
+  /** The current feedback item ID */
   itemId?: string | null;
 }
 

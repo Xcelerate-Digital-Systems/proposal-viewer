@@ -383,7 +383,7 @@ function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: 
               />
               {isSuperAdmin && (
                 <StatCard
-                  label="Review Items"
+                  label="Feedback Items"
                   value={reviewStats.items}
                   icon={Layers}
                   iconBg="#E6F5F3"

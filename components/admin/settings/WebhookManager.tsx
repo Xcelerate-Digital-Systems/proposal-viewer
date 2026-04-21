@@ -80,10 +80,10 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
             <div className="space-y-3">
               <div className="mb-1 flex items-center gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-faint px-1">
-                  Creative Review Events
+                  Feedback Events
                 </span>
                 <span className="text-[9px] font-semibold uppercase tracking-wider bg-teal/10 text-teal px-1.5 py-0.5 rounded">
-                  Creative Review
+                  Feedback
                 </span>
               </div>
               {REVIEW_WEBHOOK_EVENTS.map((evt) => (

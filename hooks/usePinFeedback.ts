@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { type FeedbackMode } from '@/components/reviews/feedback';
+import { type FeedbackMode } from '@/components/feedback/tools';
 
 /**
  * Manages pin feedback state and drawing tool modes.

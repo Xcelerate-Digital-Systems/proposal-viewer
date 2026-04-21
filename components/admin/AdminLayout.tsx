@@ -7,6 +7,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { SwipeFileProvider } from '@/components/admin/ads/swipe/SwipeFileContext';
 import { AdTrackerProvider } from '@/components/admin/ads/AdTrackerContext';
+import { FeedbackBoardProvider } from '@/components/admin/feedback/board/FeedbackBoardContext';
 
 interface AdminLayoutProps {
   children: (auth: ReturnType<typeof useAuth>) => React.ReactNode;
@@ -21,6 +22,8 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
     (pathname?.startsWith('/ads') ?? false) &&
     !inSwipeSection &&
     !(pathname?.startsWith('/ads/naming-convention') ?? false);
+  const feedbackBoardMatch = pathname?.match(/^\/feedback\/([^/]+)\/board/);
+  const feedbackBoardProjectId = feedbackBoardMatch?.[1] ?? null;
 
   return (
     <AuthGuard>
@@ -55,6 +58,18 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
 
         if (inAdsSection && auth.companyId) {
           return <AdTrackerProvider companyId={auth.companyId}>{content}</AdTrackerProvider>;
+        }
+
+        if (feedbackBoardProjectId && auth.companyId) {
+          return (
+            <FeedbackBoardProvider
+              projectId={feedbackBoardProjectId}
+              companyId={auth.companyId}
+              userId={auth.session?.user?.id ?? null}
+            >
+              {content}
+            </FeedbackBoardProvider>
+          );
         }
 
         return content;

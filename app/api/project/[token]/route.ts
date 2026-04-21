@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/project/[token]
  *
- * Public route: loads a review project and all its items for the card grid view.
+ * Public route: loads a feedback project and all its items for the card grid view.
  * Token is the review_projects.share_token.
  */
 export async function GET(

@@ -39,7 +39,7 @@ export default function TermsPage() {
           <Section title="2. Description of Service">
             <p>
               AgencyViz is a business-to-business software platform operated by Xcelerate Digital Systems that enables
-              agencies to create and manage proposals, documents, templates, creative reviews, and reporting
+              agencies to create and manage proposals, documents, templates, feedbacks, and reporting
               integrations with third-party advertising and analytics platforms.
             </p>
           </Section>
@@ -68,7 +68,7 @@ export default function TermsPage() {
           <Section title="5. Content Ownership and Licence">
             <p>
               You retain full ownership of all content you create or upload to AgencyViz, including proposals,
-              documents, templates, review projects, and uploaded files.
+              documents, templates, feedback projects, and uploaded files.
             </p>
             <p>
               By using the Service, you grant Xcelerate Digital Systems a limited, non-exclusive licence to host,

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/whiteboard/[token]
  *
- * Public route: loads a review project, items, and board data for the
+ * Public route: loads a feedback project, items, and board data for the
  * whiteboard canvas view.
  * Token is the review_projects.board_share_token.
  *

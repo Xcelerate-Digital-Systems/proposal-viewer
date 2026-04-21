@@ -2,7 +2,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import type { ReviewCommentReaction } from '@/lib/supabase';
+import type { FeedbackCommentReaction } from '@/lib/supabase';
 
 interface UseCommentReactionsOptions {
   /** Display name posted as author_name for new reactions (null = guest hasn't named themselves yet) */
@@ -14,7 +14,7 @@ interface UseCommentReactionsOptions {
 }
 
 interface UseCommentReactionsResult {
-  reactions: ReviewCommentReaction[];
+  reactions: FeedbackCommentReaction[];
   loading: boolean;
   toggle: (emoji: string) => Promise<void>;
 }
@@ -26,7 +26,7 @@ export function useCommentReactions(
   commentId: string,
   { currentUserName, currentUserId, enabled = true }: UseCommentReactionsOptions
 ): UseCommentReactionsResult {
-  const [reactions, setReactions] = useState<ReviewCommentReaction[]>([]);
+  const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function useCommentReactions(
       if (existing) {
         setReactions((prev) => prev.filter((r) => r.id !== existing.id));
       } else {
-        const placeholder: ReviewCommentReaction = {
+        const placeholder: FeedbackCommentReaction = {
           id: `optimistic-${Date.now()}`,
           review_comment_id: commentId,
           emoji,

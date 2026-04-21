@@ -1,18 +1,22 @@
-// app/api/review-widget/[token]/script/parts/styles.ts
+import { POPOVER_STYLE } from '@/lib/feedback/popover-style';
 
 const ACCENT = '#017C87';
 const PIN_COLOR = '#22c55e'; // green-500 — consistent with in-app PinOverlay
 const HOVER_COLOR = '#f97316'; // orange-500 — element hover outline during pin placement
-const FONT = `'Clash Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
+const FONT = `'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
 
-export function stylesJS(apiBase: string): string {
-  const fontBase = apiBase + '/fonts';
+export function stylesJS(_apiBase: string): string {
   return `
+// Load Outfit from Google Fonts (widget runs on third-party pages)
+var fontLink=document.createElement("link");
+fontLink.rel="stylesheet";
+fontLink.href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap";
+document.head.appendChild(fontLink);
+
 var sty=document.createElement("style");
 sty.textContent=\`
-@font-face{font-family:'Clash Grotesk';src:url('${fontBase}/ClashGrotesk-Variable.woff2') format('woff2');font-weight:200 700;font-style:normal;font-display:swap;}
-#aviz-root{box-sizing:border-box;margin:0;padding:0;font-family:${FONT};line-height:1.4;}
-#aviz-root *{box-sizing:border-box;font-family:${FONT};line-height:1.4;}
+#aviz-root{box-sizing:border-box;margin:0;padding:0;font-family:${FONT};line-height:1.45;}
+#aviz-root *{box-sizing:border-box;font-family:${FONT};line-height:1.45;}
 
 /* ── Crosshair cursor (always on outside widget UI) ────── */
 html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:crosshair !important;}
@@ -88,11 +92,11 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 #aviz-bar button:hover{background:rgba(255,255,255,.3);}
 
 /* ── Annotation form (floating card) ───────────────────── */
-.aviz-pin-form{position:absolute;z-index:2147483643;width:380px;max-width:calc(100vw - 40px);background:#fff;border-radius:14px;
-  box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);padding:18px;
+.aviz-pin-form{position:absolute;z-index:2147483643;width:${POPOVER_STYLE.widthPx}px;max-width:calc(100vw - 40px);background:${POPOVER_STYLE.background};border-radius:${POPOVER_STYLE.borderRadiusPx}px;
+  box-shadow:${POPOVER_STYLE.boxShadow};padding:${POPOVER_STYLE.paddingPx}px;border:1px solid ${POPOVER_STYLE.borderColor};
   animation:aviz-fadeIn .15s ease-out;}
 @keyframes aviz-fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.aviz-pin-form h4{font-size:11px;font-weight:600;color:${ACCENT};text-transform:uppercase;letter-spacing:.5px;margin:0 0 12px 0;padding:0;}
+.aviz-pin-form h4{font-size:12px;font-weight:600;color:${ACCENT};text-transform:uppercase;letter-spacing:.5px;margin:0 0 14px 0;padding:0;}
 
 /* ── Guest onboarding modal ───────────────────────────── */
 #aviz-onboard{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.55);
@@ -129,7 +133,7 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 /* ── Panel header ──────────────────────────────────────── */
 #aviz-panel .aviz-ph{padding:14px 16px;margin:0;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 #aviz-panel .aviz-ph-left{display:flex;align-items:center;gap:8px;margin:0;padding:0;}
-#aviz-panel .aviz-ph-title{font-size:15px;font-weight:600;color:#111;margin:0;padding:0;}
+#aviz-panel .aviz-ph-title{font-size:16px;font-weight:600;color:#111;margin:0;padding:0;}
 #aviz-panel .aviz-ph-dots{background:none;border:none;cursor:pointer;color:#9ca3af;font-size:18px;padding:2px 4px;margin:0;
   border-radius:4px;transition:background .15s;line-height:1;}
 #aviz-panel .aviz-ph-dots:hover{background:#f3f4f6;}
@@ -140,7 +144,7 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 /* ── Tabs: Open / Resolved + Filter ────────────────────── */
 #aviz-panel .aviz-tabs{display:flex;align-items:center;padding:0 16px;margin:0;border-bottom:1px solid #e5e7eb;flex-shrink:0;}
 #aviz-panel .aviz-tabs-left{display:flex;flex:1;gap:0;margin:0;padding:0;}
-#aviz-panel .aviz-tab{padding:10px 14px;margin:0;font-size:13px;font-weight:500;color:#9ca3af;background:none;border:none;
+#aviz-panel .aviz-tab{padding:10px 14px;margin:0;font-size:14px;font-weight:500;color:#9ca3af;background:none;border:none;
   border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;font-family:${FONT};
   display:flex;align-items:center;gap:6px;}
 #aviz-panel .aviz-tab:hover{color:#6b7280;}
@@ -207,13 +211,13 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 
 /* Card header: author */
 #aviz-panel .aviz-card-head{display:flex;align-items:center;gap:8px;margin:0 0 2px 0;padding:0;}
-#aviz-panel .aviz-card-author{font-size:13px;font-weight:600;color:#111;margin:0;padding:0;}
+#aviz-panel .aviz-card-author{font-size:14px;font-weight:600;color:#111;margin:0;padding:0;}
 #aviz-panel .aviz-card-team{font-size:9px;font-weight:600;text-transform:uppercase;padding:2px 6px;margin:0;border-radius:4px;
   background:${ACCENT}12;color:${ACCENT};letter-spacing:.3px;}
 #aviz-panel .aviz-card-team.sm{font-size:8px;padding:1px 5px;}
 
 /* Card content */
-#aviz-panel .aviz-card-content{font-size:13px;color:#374151;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin:0;padding:0;}
+#aviz-panel .aviz-card-content{font-size:14px;color:#374151;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin:0;padding:0;}
 
 /* ── Collapsed card: compact meta row ──────────────────── */
 #aviz-panel .aviz-card-compact-meta{display:flex;align-items:center;gap:12px;margin:6px 0 0 0;padding:0;}
@@ -230,9 +234,9 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 #aviz-panel .aviz-card-reply{margin:0 0 8px 0;padding:0;}
 #aviz-panel .aviz-card-reply:last-child{margin-bottom:0;}
 #aviz-panel .aviz-card-reply-head{display:flex;align-items:center;gap:6px;margin:0 0 1px 0;padding:0;}
-#aviz-panel .aviz-card-reply-author{font-size:12px;font-weight:600;color:#111;margin:0;padding:0;}
+#aviz-panel .aviz-card-reply-author{font-size:13px;font-weight:600;color:#111;margin:0;padding:0;}
 #aviz-panel .aviz-card-reply-time{font-size:10px;color:#9ca3af;margin:0;padding:0;}
-#aviz-panel .aviz-card-reply-text{font-size:12px;color:#4b5563;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin:0;padding:0;}
+#aviz-panel .aviz-card-reply-text{font-size:13px;color:#4b5563;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin:0;padding:0;}
 
 /* Screenshot thumbnail + meta in expanded view */
 #aviz-panel .aviz-card-meta{display:flex;align-items:flex-start;gap:10px;margin:10px 0;padding:0;}
@@ -247,7 +251,7 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 
 /* ── Expanded card: inline comment input ──────────────── */
 #aviz-panel .aviz-card-comment-input{margin:10px 0 0 0;padding:10px 0 0 0;border-top:1px solid #f3f4f6;}
-#aviz-panel .aviz-card-comment-placeholder{width:100%;text-align:left;padding:8px 12px;margin:0;border-radius:8px;font-size:13px;
+#aviz-panel .aviz-card-comment-placeholder{width:100%;text-align:left;padding:8px 12px;margin:0;border-radius:8px;font-size:14px;
   color:#9ca3af;border:1px solid #e5e7eb;background:#fff;cursor:text;transition:border-color .15s;
   font-family:${FONT};}
 #aviz-panel .aviz-card-comment-placeholder:hover{border-color:#d1d5db;}
@@ -293,16 +297,16 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 /* ══════════════════════════════════════════════════════════
    FORM INPUTS  (shared by panel footer + annotation forms)
    ══════════════════════════════════════════════════════════ */
-.aviz-inp{width:100%;padding:8px 12px;margin:0;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;
+.aviz-inp{width:100%;padding:8px 12px;margin:0;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;
   color:#111;outline:none;transition:border-color .15s,box-shadow .15s;background:#fff;font-family:${FONT};}
 .aviz-inp:focus{border-color:${ACCENT};box-shadow:0 0 0 3px ${ACCENT}20;}
 .aviz-inp::placeholder{color:#9ca3af;}
-.aviz-ta{width:100%;padding:8px 12px;margin:0;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;
+.aviz-ta{width:100%;padding:8px 12px;margin:0;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;
   color:#111;outline:none;resize:none;min-height:56px;background:#fff;transition:border-color .15s,box-shadow .15s;font-family:${FONT};}
 .aviz-ta:focus{border-color:${ACCENT};box-shadow:0 0 0 3px ${ACCENT}20;}
 .aviz-ta::placeholder{color:#9ca3af;}
 
-.aviz-cancel-btn{font-size:12px;padding:6px 12px;margin:0;color:#9ca3af;background:none;border:none;cursor:pointer;
+.aviz-cancel-btn{font-size:13px;padding:6px 12px;margin:0;color:#9ca3af;background:none;border:none;cursor:pointer;
   font-family:${FONT};font-weight:500;transition:color .15s;border-radius:6px;}
 .aviz-cancel-btn:hover{color:#6b7280;background:#f3f4f6;}
 
