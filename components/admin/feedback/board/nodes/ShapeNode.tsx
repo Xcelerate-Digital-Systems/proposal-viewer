@@ -2,7 +2,7 @@
 
 import { memo, useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Plus, X, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit } from '@/lib/supabase';
 import { roughRect, roughLine, roughPath, roughCircle } from '@/components/feedback/sketchy/roughPath';
 import { hashStringToInt } from '@/components/feedback/sketchy/seed';
@@ -232,7 +232,13 @@ function TextShape({
 
 /* ─── Decision shape — flowchart diamond with branch outputs ───── */
 
+// First palette entry is the neutral "no colour" default — an empty pill sits
+// on every side until the user chooses a colour. Distinguished from pure white
+// by a subtle gray fill so the empty state is visible against the paper bg.
+const NEUTRAL_PALETTE = { fill: '#F3F4F6', border: '#9CA3AF', text: '#6B7280', label: 'None' };
+
 const BRANCH_PALETTE: { fill: string; border: string; text: string; label: string }[] = [
+  NEUTRAL_PALETTE,
   { fill: '#A7F3D0', border: '#047857', text: '#064E3B', label: 'Green' },
   { fill: '#FECACA', border: '#B91C1C', text: '#7F1D1D', label: 'Red' },
   { fill: '#BFDBFE', border: '#1D4ED8', text: '#1E3A8A', label: 'Blue' },
@@ -242,42 +248,54 @@ const BRANCH_PALETTE: { fill: string; border: string; text: string; label: strin
 ];
 
 function paletteEntry(color: string) {
-  return BRANCH_PALETTE.find((p) => p.fill === color) || BRANCH_PALETTE[0];
+  return BRANCH_PALETTE.find((p) => p.fill === color) || NEUTRAL_PALETTE;
+}
+
+const ALL_SIDES: FeedbackDecisionBranchSide[] = ['top', 'right', 'bottom', 'left'];
+
+function emptyBranchForSide(side: FeedbackDecisionBranchSide): FeedbackDecisionBranch {
+  return { id: side, label: '', color: NEUTRAL_PALETTE.fill, side };
 }
 
 const DEFAULT_DECISION_CONTENT: FeedbackDecisionContent = {
   question: 'Decision?',
-  branches: [
-    { id: 'b1', label: 'Yes', color: BRANCH_PALETTE[0].fill, side: 'right' },
-    { id: 'b2', label: 'No', color: BRANCH_PALETTE[1].fill, side: 'bottom' },
-  ],
+  branches: ALL_SIDES.map(emptyBranchForSide),
 };
 
-const ALL_SIDES: FeedbackDecisionBranchSide[] = ['top', 'right', 'bottom', 'left'];
-
-function sideFromIndex(i: number): FeedbackDecisionBranchSide {
-  return ALL_SIDES[(i + 1) % 4]; // default first branch → right, then bottom, left, top
-}
-
 export function parseDecisionContent(raw: string | null | undefined): FeedbackDecisionContent {
-  if (!raw) return DEFAULT_DECISION_CONTENT;
+  if (!raw) return cloneDefaultDecisionContent();
   try {
     const parsed = JSON.parse(raw) as Partial<FeedbackDecisionContent>;
-    if (!parsed || !Array.isArray(parsed.branches) || parsed.branches.length === 0) {
-      return DEFAULT_DECISION_CONTENT;
+    const question = typeof parsed?.question === 'string' ? parsed.question : DEFAULT_DECISION_CONTENT.question;
+
+    // Enforce exactly one branch per side. Keep the first branch we encounter
+    // for each side (older content may have multiple), and fill any missing
+    // sides with neutral defaults so every corner always has a slot.
+    const bySide: Partial<Record<FeedbackDecisionBranchSide, FeedbackDecisionBranch>> = {};
+    const incoming = Array.isArray(parsed?.branches) ? parsed.branches : [];
+    for (const b of incoming) {
+      if (!b || !ALL_SIDES.includes(b.side as FeedbackDecisionBranchSide)) continue;
+      const side = b.side as FeedbackDecisionBranchSide;
+      if (bySide[side]) continue;
+      bySide[side] = {
+        id: b.id || side,
+        label: typeof b.label === 'string' ? b.label : '',
+        color: b.color ?? NEUTRAL_PALETTE.fill,
+        side,
+      };
     }
-    return {
-      question: typeof parsed.question === 'string' ? parsed.question : DEFAULT_DECISION_CONTENT.question,
-      branches: parsed.branches.map((b, i) => ({
-        id: b?.id || `b${i + 1}`,
-        label: b?.label ?? '',
-        color: b?.color ?? BRANCH_PALETTE[i % BRANCH_PALETTE.length].fill,
-        side: b?.side && ALL_SIDES.includes(b.side) ? b.side : sideFromIndex(i),
-      })),
-    };
+    const branches = ALL_SIDES.map((side) => bySide[side] ?? emptyBranchForSide(side));
+    return { question, branches };
   } catch {
-    return DEFAULT_DECISION_CONTENT;
+    return cloneDefaultDecisionContent();
   }
+}
+
+function cloneDefaultDecisionContent(): FeedbackDecisionContent {
+  return {
+    question: DEFAULT_DECISION_CONTENT.question,
+    branches: DEFAULT_DECISION_CONTENT.branches.map((b) => ({ ...b })),
+  };
 }
 
 export function serializeDecisionContent(content: FeedbackDecisionContent): string {
@@ -308,12 +326,11 @@ function DecisionShape({
 }) {
   const content = useMemo(() => parseDecisionContent(shape.content), [shape.content]);
 
-  // Local drafts for inline editing
   const [editingQuestion, setEditingQuestion] = useState(false);
   const [questionDraft, setQuestionDraft] = useState(content.question);
-  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
+  const [editingSide, setEditingSide] = useState<FeedbackDecisionBranchSide | null>(null);
   const [branchDraft, setBranchDraft] = useState('');
-  const [colorPickerFor, setColorPickerFor] = useState<string | null>(null);
+  const [colorPickerSide, setColorPickerSide] = useState<FeedbackDecisionBranchSide | null>(null);
 
   useEffect(() => { setQuestionDraft(content.question); }, [content.question]);
 
@@ -349,28 +366,10 @@ function DecisionShape({
     );
   }, [seed, strokeColor, strokeWidth]);
 
-  const updateBranch = (id: string, patch: Partial<FeedbackDecisionBranch>) => {
+  const updateBranchBySide = (side: FeedbackDecisionBranchSide, patch: Partial<FeedbackDecisionBranch>) => {
     commit({
       question: content.question,
-      branches: content.branches.map((b) => (b.id === id ? { ...b, ...patch } : b)),
-    });
-  };
-
-  const removeBranch = (id: string) => {
-    if (content.branches.length <= 1) return;
-    commit({
-      question: content.question,
-      branches: content.branches.filter((b) => b.id !== id),
-    });
-  };
-
-  const addBranchOnSide = (side: FeedbackDecisionBranchSide) => {
-    const nextIndex = content.branches.length;
-    const palette = BRANCH_PALETTE[nextIndex % BRANCH_PALETTE.length];
-    const newId = `b${Date.now()}`;
-    commit({
-      question: content.question,
-      branches: [...content.branches, { id: newId, label: 'Option', color: palette.fill, side }],
+      branches: content.branches.map((b) => (b.side === side ? { ...b, ...patch } : b)),
     });
   };
 
@@ -382,52 +381,57 @@ function DecisionShape({
     }
   };
 
-  const startEditBranch = (b: FeedbackDecisionBranch) => {
+  const startEditBranch = (side: FeedbackDecisionBranchSide, current: string) => {
     if (readOnly) return;
-    setEditingBranchId(b.id);
-    setBranchDraft(b.label);
+    setEditingSide(side);
+    setBranchDraft(current);
   };
-
   const commitBranch = () => {
-    if (!editingBranchId) return;
-    updateBranch(editingBranchId, { label: branchDraft.trim() || 'Option' });
-    setEditingBranchId(null);
+    if (!editingSide) return;
+    updateBranchBySide(editingSide, { label: branchDraft.trim() });
+    setEditingSide(null);
   };
 
-  const branchesBySide: Record<FeedbackDecisionBranchSide, FeedbackDecisionBranch[]> = {
-    top: [], right: [], bottom: [], left: [],
+  const bySide: Record<FeedbackDecisionBranchSide, FeedbackDecisionBranch> = {
+    top: content.branches.find((b) => b.side === 'top') ?? emptyBranchForSide('top'),
+    right: content.branches.find((b) => b.side === 'right') ?? emptyBranchForSide('right'),
+    bottom: content.branches.find((b) => b.side === 'bottom') ?? emptyBranchForSide('bottom'),
+    left: content.branches.find((b) => b.side === 'left') ?? emptyBranchForSide('left'),
   };
-  for (const b of content.branches) branchesBySide[b.side].push(b);
 
-  const renderBranch = (b: FeedbackDecisionBranch) => {
+  const handleDotClass = '!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+
+  const positionFor: Record<FeedbackDecisionBranchSide, Position> = {
+    top: Position.Top, right: Position.Right, bottom: Position.Bottom, left: Position.Left,
+  };
+
+  // The handle dot sits in its own 12×12 wrapper so React Flow's absolute
+  // positioning stays bounded and the dot flows naturally between the pill
+  // and the outer edge of the node.
+  const renderHandle = (side: FeedbackDecisionBranchSide) => (
+    <div className="relative w-3 h-3 shrink-0">
+      <Handle
+        id={side}
+        type="source"
+        position={positionFor[side]}
+        isConnectable={!readOnly}
+        className={handleDotClass}
+        style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+      />
+    </div>
+  );
+
+  const renderPill = (side: FeedbackDecisionBranchSide) => {
+    const b = bySide[side];
     const pal = paletteEntry(b.color);
-    const isEditing = editingBranchId === b.id;
-    const showColors = colorPickerFor === b.id;
+    const isEditing = editingSide === side;
+    const showColors = colorPickerSide === side;
     return (
-      <div key={b.id} className="relative group" style={{ isolation: 'isolate' }}>
-        {/* The Handle is a transparent overlay on the pill — the pill itself
-            becomes the drag source, so there's no redundant dot next to it.
-            position still drives edge routing direction. */}
-        <Handle
-          id={`branch-${b.id}`}
-          type="source"
-          position={rfPosition(b.side)}
-          isConnectable={!readOnly}
-          style={{
-            top: 0, left: 0, right: 0, bottom: 0,
-            width: '100%', height: '100%',
-            minWidth: 0, minHeight: 0,
-            transform: 'none',
-            background: 'transparent',
-            border: 'none',
-            borderRadius: 999,
-            zIndex: 1,
-          }}
-        />
-
+      <div className="relative group" style={{ isolation: 'isolate' }}>
         <div
-          className="relative z-[2] px-3 py-1 rounded-full border-2 font-hand font-semibold text-[12px] leading-tight whitespace-nowrap shadow-sketch select-none pointer-events-none"
+          className="nodrag px-3 py-1 rounded-full border-2 font-hand font-semibold text-[12px] leading-tight whitespace-nowrap shadow-sketch select-none min-w-[52px] text-center cursor-text"
           style={{ background: pal.fill, borderColor: pal.border, color: pal.text }}
+          onDoubleClick={(e) => { e.stopPropagation(); startEditBranch(side, b.label); }}
         >
           {isEditing && !readOnly ? (
             <input
@@ -436,25 +440,23 @@ function DecisionShape({
               onChange={(e) => setBranchDraft(e.target.value)}
               onBlur={commitBranch}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') { setEditingBranchId(null); }
+                if (e.key === 'Escape') { setEditingSide(null); }
                 if (e.key === 'Enter') { e.preventDefault(); commitBranch(); }
               }}
-              size={Math.max(3, branchDraft.length)}
-              className="bg-transparent outline-none font-hand font-semibold text-[12px] pointer-events-auto"
+              size={Math.max(3, branchDraft.length || 4)}
+              className="bg-transparent outline-none font-hand font-semibold text-[12px] text-center"
               style={{ color: pal.text, minWidth: 40 }}
             />
           ) : (
-            <span>{b.label || 'Option'}</span>
+            <span className={b.label ? '' : 'opacity-50'}>{b.label || 'Label'}</span>
           )}
         </div>
 
-        {/* Admin controls: edit label, color, side cycle, remove. These sit
-            above the handle (z-index) so the click targets work. */}
         {!readOnly && (
           <div className="absolute -top-2 -right-2 hidden group-hover:flex items-center gap-1 z-[3]">
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); startEditBranch(b); }}
+              onClick={(e) => { e.stopPropagation(); startEditBranch(side, b.label); }}
               className="w-4 h-4 rounded-full bg-white border border-sketch-ink/40 flex items-center justify-center text-sketch-ink/70 hover:text-sketch-ink shadow-sketch text-[9px] font-bold"
               title="Rename"
             >
@@ -462,39 +464,17 @@ function DecisionShape({
             </button>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); setColorPickerFor(showColors ? null : b.id); }}
+              onClick={(e) => { e.stopPropagation(); setColorPickerSide(showColors ? null : side); }}
               className="w-4 h-4 rounded-full border-2 border-white shadow-sketch"
               style={{ background: pal.border }}
               title="Change color"
             />
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                const idx = ALL_SIDES.indexOf(b.side);
-                updateBranch(b.id, { side: ALL_SIDES[(idx + 1) % 4] });
-              }}
-              className="w-4 h-4 rounded-full bg-white border border-sketch-ink/40 flex items-center justify-center text-sketch-ink/70 hover:text-sketch-ink shadow-sketch text-[9px] font-bold"
-              title="Move to next side"
-            >
-              ↻
-            </button>
-            {content.branches.length > 1 && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); removeBranch(b.id); }}
-                className="w-4 h-4 rounded-full bg-white border border-sketch-ink/40 flex items-center justify-center text-sketch-ink/70 hover:text-red-600 shadow-sketch"
-                title="Remove branch"
-              >
-                <X size={9} />
-              </button>
-            )}
           </div>
         )}
 
         {!readOnly && showColors && (
           <>
-            <div className="fixed inset-0 z-10" onClick={() => setColorPickerFor(null)} />
+            <div className="fixed inset-0 z-10" onClick={() => setColorPickerSide(null)} />
             <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 bg-paper rounded-lg border-2 border-sketch-ink/60 shadow-sketch-lg p-1.5 flex gap-1">
               {BRANCH_PALETTE.map((p) => (
                 <button
@@ -502,8 +482,8 @@ function DecisionShape({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    updateBranch(b.id, { color: p.fill });
-                    setColorPickerFor(null);
+                    updateBranchBySide(side, { color: p.fill });
+                    setColorPickerSide(null);
                   }}
                   className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
                     b.color === p.fill ? 'border-sketch-ink' : 'border-paper'
@@ -519,73 +499,31 @@ function DecisionShape({
     );
   };
 
-  const renderAddButton = (side: FeedbackDecisionBranchSide) => {
-    if (readOnly || content.branches.length >= 6) return null;
-    // Left is the canonical input side — incoming edges land here, so no
-    // "+ branch" button is rendered there to keep the joining handle clear.
-    if (side === 'left') return null;
-    return (
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); addBranchOnSide(side); }}
-        className="w-6 h-6 rounded-full bg-paper border-2 border-dashed border-sketch-ink/40 text-sketch-ink/60 hover:border-sketch-ink hover:text-sketch-ink flex items-center justify-center transition-colors"
-        title={`Add branch on ${side}`}
-      >
-        <Plus size={12} />
-      </button>
-    );
-  };
-
-  // Three-column, three-row grid keeps the diamond centred while each cardinal
-  // slot grows to fit its stacked branch pills without affecting the others.
+  // Every side follows the same order outward from the diamond:
+  //   diamond corner → pill → handle dot
   return (
     <div
       className={`relative grid ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`}
-      style={{ gridTemplateColumns: 'minmax(80px, auto) auto minmax(80px, auto)', gridTemplateRows: 'minmax(40px, auto) auto minmax(40px, auto)' }}
+      style={{
+        gridTemplateColumns: 'minmax(110px, auto) auto minmax(110px, auto)',
+        gridTemplateRows: 'minmax(52px, auto) auto minmax(52px, auto)',
+      }}
     >
-      {/* ── Row 1: top branches ─────────────────────────────────── */}
-      <div /> {/* spacer */}
-      <div className="flex flex-wrap items-end justify-center gap-2 pb-1">
-        {branchesBySide.top.map(renderBranch)}
-        {renderAddButton('top')}
+      {/* Row 1: top — handle sits above pill (which sits above the diamond) */}
+      <div />
+      <div className="flex flex-col items-center gap-1.5 pb-1">
+        {renderHandle('top')}
+        {renderPill('top')}
       </div>
       <div />
 
-      {/* ── Row 2: left branches | diamond | right branches ─────── */}
-      <div className="flex flex-col items-end justify-center gap-2 pr-1">
-        {branchesBySide.left.map(renderBranch)}
-        {renderAddButton('left')}
+      {/* Row 2: left — handle | pill | diamond | pill | handle — right */}
+      <div className="flex items-center justify-end gap-1.5 pr-1">
+        {renderHandle('left')}
+        {renderPill('left')}
       </div>
 
       <div className="relative" style={{ width: DIAMOND_BOX, height: DIAMOND_BOX }}>
-        {/* Input handles live INSIDE the diamond div so they anchor to the
-            diamond edges, not the outer node grid. z-index lifts them above
-            the diamond SVG fill so the dot stays visible at each vertex. */}
-        <Handle
-          id="top" type="target" position={Position.Top}
-          className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-          style={{ top: DIAMOND_PAD, left: DIAMOND_BOX / 2, zIndex: 2 }}
-          isConnectable={!readOnly}
-        />
-        <Handle
-          id="left" type="target" position={Position.Left}
-          className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-          style={{ top: DIAMOND_BOX / 2, left: DIAMOND_PAD, zIndex: 2 }}
-          isConnectable={!readOnly}
-        />
-        <Handle
-          id="right-target" type="target" position={Position.Right}
-          className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-          style={{ top: DIAMOND_BOX / 2, left: DIAMOND_BOX - DIAMOND_PAD, zIndex: 2 }}
-          isConnectable={!readOnly}
-        />
-        <Handle
-          id="bottom-target" type="target" position={Position.Bottom}
-          className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-          style={{ top: DIAMOND_BOX - DIAMOND_PAD, left: DIAMOND_BOX / 2, zIndex: 2 }}
-          isConnectable={!readOnly}
-        />
-
         <svg
           width={DIAMOND_BOX}
           height={DIAMOND_BOX}
@@ -634,16 +572,16 @@ function DecisionShape({
         </div>
       </div>
 
-      <div className="flex flex-col items-start justify-center gap-2 pl-1">
-        {branchesBySide.right.map(renderBranch)}
-        {renderAddButton('right')}
+      <div className="flex items-center gap-1.5 pl-1">
+        {renderPill('right')}
+        {renderHandle('right')}
       </div>
 
-      {/* ── Row 3: bottom branches ──────────────────────────────── */}
+      {/* Row 3: bottom — pill below diamond, handle below pill */}
       <div />
-      <div className="flex flex-wrap items-start justify-center gap-2 pt-1">
-        {branchesBySide.bottom.map(renderBranch)}
-        {renderAddButton('bottom')}
+      <div className="flex flex-col items-center gap-1.5 pt-1">
+        {renderPill('bottom')}
+        {renderHandle('bottom')}
       </div>
       <div />
     </div>
@@ -684,9 +622,11 @@ export function serializeWaitContent(content: FeedbackWaitContent): string {
   return JSON.stringify(content);
 }
 
-// Match the icon-layout item nodes (email / sms / ad) — 88px circle with a
-// label beneath, inside a 140px-wide column.
-const WAIT_ICON_SIZE = 88;
+// Wait renders as a small rounded square so it reads instantly as "this is
+// not a content item" next to the circular email/sms/ad icons and the
+// diamond decision node. Smaller footprint than the 88px item icons since
+// it's a flow marker, not a content preview.
+const WAIT_ICON_SIZE = 64;
 const WAIT_NODE_WIDTH = 140;
 
 function formatWaitLabel(content: FeedbackWaitContent): string {
@@ -715,24 +655,6 @@ function WaitShape({
     setLabelDraft(content.label ?? '');
   }, [content.duration, content.unit, content.label]);
 
-  const seed = useMemo(() => hashStringToInt(shape.id), [shape.id]);
-  const stroke = selected ? '#017C87' : '#2B2B2B';
-  const strokeWidth = selected ? 2.6 : 1.9;
-
-  const circlePaths = useMemo(
-    () => roughCircle(WAIT_ICON_SIZE / 2, WAIT_ICON_SIZE / 2, WAIT_ICON_SIZE - strokeWidth * 2 - 4, {
-      seed,
-      roughness: 1.8,
-      bowing: 1.8,
-      stroke,
-      strokeWidth,
-      fill: '#BFDBFE',
-      fillStyle: 'solid',
-      disableMultiStroke: false,
-    }),
-    [seed, stroke, strokeWidth]
-  );
-
   const commit = () => {
     setEditing(false);
     const safeDuration = Math.min(Math.max(1, Math.round(duration)), 9999);
@@ -753,41 +675,31 @@ function WaitShape({
   const handleClass = '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
 
   return (
-    <div className={`flex flex-col items-center ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`} style={{ width: WAIT_NODE_WIDTH }}>
-      {/* Four-sided handles on the icon circle. Top/left are targets,
-          bottom/right are sources to favour the common top→bottom flow. */}
-      <div className="relative" style={{ width: WAIT_ICON_SIZE, height: WAIT_ICON_SIZE }}>
-        <Handle id="top"           type="target" position={Position.Top}    className={handleClass} style={{ top: 0, left: '50%', zIndex: 2 }} isConnectable={!readOnly} />
-        <Handle id="top-source"    type="source" position={Position.Top}    className={handleClass} style={{ top: 0, left: '50%', zIndex: 2 }} isConnectable={!readOnly} />
-        <Handle id="left"          type="target" position={Position.Left}   className={handleClass} style={{ top: '50%', left: 0, zIndex: 2 }} isConnectable={!readOnly} />
-        <Handle id="left-source"   type="source" position={Position.Left}   className={handleClass} style={{ top: '50%', left: 0, zIndex: 2 }} isConnectable={!readOnly} />
-        <Handle id="right"         type="source" position={Position.Right}  className={handleClass} style={{ top: '50%', right: 0, zIndex: 2 }} isConnectable={!readOnly} />
-        <Handle id="right-target"  type="target" position={Position.Right}  className={handleClass} style={{ top: '50%', right: 0, zIndex: 2 }} isConnectable={!readOnly} />
-        <Handle id="bottom"        type="source" position={Position.Bottom} className={handleClass} style={{ bottom: 0, left: '50%', zIndex: 2 }} isConnectable={!readOnly} />
-        <Handle id="bottom-target" type="target" position={Position.Bottom} className={handleClass} style={{ bottom: 0, left: '50%', zIndex: 2 }} isConnectable={!readOnly} />
+    <div className={`relative flex flex-col items-center ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`} style={{ width: WAIT_NODE_WIDTH }}>
+      {/* Handles live on the outer node so the top handle sits above the icon
+          and the bottom handle sits below the label — matching the email /
+          SMS / ad icon nodes. Every handle is `type="source"` so React Flow
+          always treats the drag-start as the edge source under connectionMode
+          "loose" (Miro-style); `-source` / `-target` aliases preserve edges
+          saved before this change. */}
+      <Handle id="top"           type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
+      <Handle id="top-source"    type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
+      <Handle id="left"          type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
+      <Handle id="left-source"   type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
+      <Handle id="right"         type="source" position={Position.Right}  className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
+      <Handle id="right-target"  type="source" position={Position.Right}  className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
+      <Handle id="bottom"        type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
 
-        <svg
-          width={WAIT_ICON_SIZE}
-          height={WAIT_ICON_SIZE}
-          viewBox={`0 0 ${WAIT_ICON_SIZE} ${WAIT_ICON_SIZE}`}
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-        >
-          {circlePaths.map((p, i) => (
-            <path
-              key={i}
-              d={p.d}
-              stroke={p.stroke}
-              strokeWidth={p.strokeWidth}
-              fill={p.fill ?? 'none'}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ))}
-        </svg>
-
+      {/* Flat filled square — deliberately skips the roughjs sketchy border
+          so Wait reads as a system/flow marker distinct from the hand-drawn
+          content nodes and the diamond. */}
+      <div
+        className={`relative rounded-lg ${selected ? 'ring-2 ring-teal/60' : ''}`}
+        style={{ width: WAIT_ICON_SIZE, height: WAIT_ICON_SIZE, background: '#BFDBFE' }}
+      >
         <div className="absolute inset-0 flex items-center justify-center text-sketch-ink pointer-events-none">
-          <Clock size={30} strokeWidth={1.5} />
+          <Clock size={24} strokeWidth={1.5} />
         </div>
       </div>
 

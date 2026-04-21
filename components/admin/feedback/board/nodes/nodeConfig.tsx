@@ -24,38 +24,37 @@ export interface NodeItemProps {
 /* ─── Reusable sub-components ──────────────────────────────────── */
 
 /**
- * Renders connection handles on all 4 sides of a node. Each side has stacked
- * source + target handles so a user can drag a connection from any side and
- * drop it onto any side of another node. Existing `left` / `right` handle ids
- * are preserved for backward compat with previously saved edges.
+ * Renders connection handles on all 4 sides of a node. Every handle is
+ * `type="source"`: React Flow's connection resolver uses the drag-start
+ * handle's type to decide source/target, and with connectionMode="loose"
+ * source→source connections are allowed — so this keeps the edge direction
+ * always matching the drag direction (Miro-style). Duplicate legacy ids
+ * (`*-source`, `*-target`) are preserved as aliases so previously-saved
+ * edges don't lose their attachment point.
  */
 export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
   const handleClass =
     '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
   return (
     <>
-      {/* Left — target kept at legacy id for existing edges */}
-      <Handle id="left" type="target" position={Position.Left}
+      <Handle id="left" type="source" position={Position.Left}
         className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
       <Handle id="left-source" type="source" position={Position.Left}
         className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
 
-      {/* Right — source kept at legacy id for existing edges */}
       <Handle id="right" type="source" position={Position.Right}
         className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
-      <Handle id="right-target" type="target" position={Position.Right}
+      <Handle id="right-target" type="source" position={Position.Right}
         className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
 
-      {/* Top */}
-      <Handle id="top" type="target" position={Position.Top}
+      <Handle id="top" type="source" position={Position.Top}
         className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
       <Handle id="top-source" type="source" position={Position.Top}
         className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
 
-      {/* Bottom */}
       <Handle id="bottom" type="source" position={Position.Bottom}
         className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
-      <Handle id="bottom-target" type="target" position={Position.Bottom}
+      <Handle id="bottom-target" type="source" position={Position.Bottom}
         className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
     </>
   );

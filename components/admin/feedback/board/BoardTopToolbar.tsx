@@ -32,7 +32,7 @@ interface Props {
 
 export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
   return (
-    <div className="flex items-center gap-1.5 bg-paper rounded-2xl border-2 border-sketch-ink/70 shadow-sketch-lg px-3 py-2 font-hand">
+    <div className="flex flex-col items-center gap-1.5 bg-paper rounded-2xl border-2 border-sketch-ink/70 shadow-sketch-lg px-2 py-3 font-hand">
       {TOOLS.map((tool) => {
         const active = activeTool === tool.id;
         const soon = tool.comingSoon;

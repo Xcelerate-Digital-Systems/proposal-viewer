@@ -313,11 +313,12 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
               return 'fill-paper stroke-sketch-ink/40';
             }}
             className="!bg-paper-dark !border-2 !border-sketch-ink/50 !rounded-lg"
+            style={{ width: 140, height: 90 }}
             zoomable
             pannable
           />
 
-          <Panel position="top-center">
+          <Panel position="top-right">
             <BoardTopToolbar activeTool={activeTool} onToolSelect={handleToolSelect} />
           </Panel>
 

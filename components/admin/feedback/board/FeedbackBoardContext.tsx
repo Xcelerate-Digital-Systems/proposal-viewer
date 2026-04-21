@@ -468,11 +468,8 @@ export function FeedbackBoardProvider({
           userId={userId}
           nextSortOrder={items.length}
           onClose={() => setShowAddItem(false)}
-          onSuccess={(created) => {
+          onSuccess={() => {
             refreshItems();
-            if (!created) return;
-            if (created.type === 'webpage') return;
-            router.push(`/feedback/${projectId}/items/${created.id}`);
           }}
         />
       )}
