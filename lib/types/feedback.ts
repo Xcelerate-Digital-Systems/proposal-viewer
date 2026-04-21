@@ -40,11 +40,12 @@ export type FeedbackItemType =
 /** Workflow status, applied to both projects and items. String values are DB-bound. */
 export type FeedbackStatus =
   | 'draft'
+  | 'in_progress'
   | 'internal_review'
-  | 'external_review'
   | 'client_review'
-  | 'revisions_completed'
+  | 'revision_needed'
   | 'approved'
+  | 'rejected'
   | 'archived';
 
 /** @deprecated Use `FeedbackStatus`. */
@@ -187,11 +188,15 @@ export type FeedbackShapeType = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'te
  * Shape of the JSON blob stored in `review_board_shapes.content` for decision shapes.
  * Drawn shapes (rectangle/ellipse/arrow/line) leave content null; text shapes store raw text.
  */
+export type FeedbackDecisionBranchSide = 'top' | 'right' | 'bottom' | 'left';
+
 export type FeedbackDecisionBranch = {
   /** Stable id so edges can reference a branch across renames. */
   id: string;
   label: string;
   color: string;
+  /** Which corner of the diamond the branch pill hangs off. */
+  side: FeedbackDecisionBranchSide;
 };
 export type FeedbackDecisionContent = {
   question: string;

@@ -3,7 +3,7 @@
 import { memo, useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Plus, X } from 'lucide-react';
-import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionContent } from '@/lib/supabase';
+import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent } from '@/lib/supabase';
 import { roughRect, roughLine, roughPath } from '@/components/feedback/sketchy/roughPath';
 import { hashStringToInt } from '@/components/feedback/sketchy/seed';
 
@@ -236,10 +236,16 @@ function paletteEntry(color: string) {
 const DEFAULT_DECISION_CONTENT: FeedbackDecisionContent = {
   question: 'Decision?',
   branches: [
-    { id: 'b1', label: 'Yes', color: BRANCH_PALETTE[0].fill },
-    { id: 'b2', label: 'No', color: BRANCH_PALETTE[1].fill },
+    { id: 'b1', label: 'Yes', color: BRANCH_PALETTE[0].fill, side: 'right' },
+    { id: 'b2', label: 'No', color: BRANCH_PALETTE[1].fill, side: 'bottom' },
   ],
 };
+
+const ALL_SIDES: FeedbackDecisionBranchSide[] = ['top', 'right', 'bottom', 'left'];
+
+function sideFromIndex(i: number): FeedbackDecisionBranchSide {
+  return ALL_SIDES[(i + 1) % 4]; // default first branch → right, then bottom, left, top
+}
 
 export function parseDecisionContent(raw: string | null | undefined): FeedbackDecisionContent {
   if (!raw) return DEFAULT_DECISION_CONTENT;
@@ -254,6 +260,7 @@ export function parseDecisionContent(raw: string | null | undefined): FeedbackDe
         id: b?.id || `b${i + 1}`,
         label: b?.label ?? '',
         color: b?.color ?? BRANCH_PALETTE[i % BRANCH_PALETTE.length].fill,
+        side: b?.side && ALL_SIDES.includes(b.side) ? b.side : sideFromIndex(i),
       })),
     };
   } catch {
@@ -268,6 +275,14 @@ export function serializeDecisionContent(content: FeedbackDecisionContent): stri
 const DIAMOND = 130;
 const DIAMOND_PAD = 6;
 const DIAMOND_BOX = DIAMOND + DIAMOND_PAD * 2;
+
+/** Map our per-branch side to the React Flow Position enum for edge routing. */
+function rfPosition(side: FeedbackDecisionBranchSide): Position {
+  if (side === 'top') return Position.Top;
+  if (side === 'right') return Position.Right;
+  if (side === 'bottom') return Position.Bottom;
+  return Position.Left;
+}
 
 function DecisionShape({
   shape, selected, readOnly, onUpdateContent,
@@ -335,13 +350,13 @@ function DecisionShape({
     });
   };
 
-  const addBranch = () => {
+  const addBranchOnSide = (side: FeedbackDecisionBranchSide) => {
     const nextIndex = content.branches.length;
     const palette = BRANCH_PALETTE[nextIndex % BRANCH_PALETTE.length];
     const newId = `b${Date.now()}`;
     commit({
       question: content.question,
-      branches: [...content.branches, { id: newId, label: 'Option', color: palette.fill }],
+      branches: [...content.branches, { id: newId, label: 'Option', color: palette.fill, side }],
     });
   };
 
@@ -365,21 +380,171 @@ function DecisionShape({
     setEditingBranchId(null);
   };
 
+  const branchesBySide: Record<FeedbackDecisionBranchSide, FeedbackDecisionBranch[]> = {
+    top: [], right: [], bottom: [], left: [],
+  };
+  for (const b of content.branches) branchesBySide[b.side].push(b);
+
+  const renderBranch = (b: FeedbackDecisionBranch) => {
+    const pal = paletteEntry(b.color);
+    const isEditing = editingBranchId === b.id;
+    const showColors = colorPickerFor === b.id;
+    return (
+      <div key={b.id} className="relative group">
+        <div
+          className="px-3 py-1 rounded-full border-2 font-hand font-semibold text-[12px] leading-tight whitespace-nowrap shadow-sketch select-none"
+          style={{ background: pal.fill, borderColor: pal.border, color: pal.text }}
+          onDoubleClick={(e) => { e.stopPropagation(); startEditBranch(b); }}
+        >
+          {isEditing && !readOnly ? (
+            <input
+              autoFocus
+              value={branchDraft}
+              onChange={(e) => setBranchDraft(e.target.value)}
+              onBlur={commitBranch}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') { setEditingBranchId(null); }
+                if (e.key === 'Enter') { e.preventDefault(); commitBranch(); }
+              }}
+              size={Math.max(3, branchDraft.length)}
+              className="bg-transparent outline-none font-hand font-semibold text-[12px]"
+              style={{ color: pal.text, minWidth: 40 }}
+            />
+          ) : (
+            <span>{b.label || 'Option'}</span>
+          )}
+        </div>
+
+        {/* Source handle sits at the outward-facing edge of the pill so edges
+            leave the branch in the direction of its side. React Flow uses
+            position for routing, explicit style for visual placement. */}
+        <Handle
+          id={`branch-${b.id}`}
+          type="source"
+          position={rfPosition(b.side)}
+          isConnectable={!readOnly}
+          style={{
+            ...handleEdgeStyle(b.side),
+            width: 10, height: 10,
+            background: pal.border,
+            border: '2px solid #FAFAFA',
+            borderRadius: '50%',
+          }}
+        />
+
+        {/* Admin controls: color, side cycle, remove */}
+        {!readOnly && (
+          <div className="absolute -top-2 -right-2 hidden group-hover:flex items-center gap-1 z-10">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setColorPickerFor(showColors ? null : b.id); }}
+              className="w-4 h-4 rounded-full border-2 border-white shadow-sketch"
+              style={{ background: pal.border }}
+              title="Change color"
+            />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const idx = ALL_SIDES.indexOf(b.side);
+                updateBranch(b.id, { side: ALL_SIDES[(idx + 1) % 4] });
+              }}
+              className="w-4 h-4 rounded-full bg-white border border-sketch-ink/40 flex items-center justify-center text-sketch-ink/70 hover:text-sketch-ink shadow-sketch text-[9px] font-bold"
+              title="Move to next side"
+            >
+              ↻
+            </button>
+            {content.branches.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); removeBranch(b.id); }}
+                className="w-4 h-4 rounded-full bg-white border border-sketch-ink/40 flex items-center justify-center text-sketch-ink/70 hover:text-red-600 shadow-sketch"
+                title="Remove branch"
+              >
+                <X size={9} />
+              </button>
+            )}
+          </div>
+        )}
+
+        {!readOnly && showColors && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setColorPickerFor(null)} />
+            <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 bg-paper rounded-lg border-2 border-sketch-ink/60 shadow-sketch-lg p-1.5 flex gap-1">
+              {BRANCH_PALETTE.map((p) => (
+                <button
+                  key={p.fill}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateBranch(b.id, { color: p.fill });
+                    setColorPickerFor(null);
+                  }}
+                  className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                    b.color === p.fill ? 'border-sketch-ink' : 'border-paper'
+                  }`}
+                  style={{ background: p.fill }}
+                  title={p.label}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderAddButton = (side: FeedbackDecisionBranchSide) => {
+    if (readOnly || content.branches.length >= 6) return null;
+    return (
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); addBranchOnSide(side); }}
+        className="w-6 h-6 rounded-full bg-paper border-2 border-dashed border-sketch-ink/40 text-sketch-ink/60 hover:border-sketch-ink hover:text-sketch-ink flex items-center justify-center transition-colors"
+        title={`Add branch on ${side}`}
+      >
+        <Plus size={12} />
+      </button>
+    );
+  };
+
+  // Three-column, three-row grid keeps the diamond centred while each cardinal
+  // slot grows to fit its stacked branch pills without affecting the others.
   return (
-    <div className={`relative flex flex-col items-center ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`}>
-      {/* Input handles — target on top, plus source/target on left+right so you
-          can route connections in from any side. */}
+    <div
+      className={`relative grid ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`}
+      style={{ gridTemplateColumns: 'minmax(80px, auto) auto minmax(80px, auto)', gridTemplateRows: 'minmax(40px, auto) auto minmax(40px, auto)' }}
+    >
+      {/* Input target handles on all 4 diamond corners, so connections can
+          drop onto the node from any direction. Each branch owns its own
+          source handle on whichever side it lives. */}
       <Handle id="top" type="target" position={Position.Top}
         className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-        style={{ left: DIAMOND_BOX / 2 }} isConnectable={!readOnly} />
+        style={{ left: '50%' }} isConnectable={!readOnly} />
       <Handle id="left" type="target" position={Position.Left}
         className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-        style={{ top: DIAMOND_PAD + DIAMOND / 2 }} isConnectable={!readOnly} />
+        style={{ top: '50%' }} isConnectable={!readOnly} />
       <Handle id="right-target" type="target" position={Position.Right}
         className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-        style={{ top: DIAMOND_PAD + DIAMOND / 2 }} isConnectable={!readOnly} />
+        style={{ top: '50%' }} isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="target" position={Position.Bottom}
+        className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
+        style={{ left: '50%' }} isConnectable={!readOnly} />
 
-      {/* Diamond body */}
+      {/* ── Row 1: top branches ─────────────────────────────────── */}
+      <div /> {/* spacer */}
+      <div className="flex flex-wrap items-end justify-center gap-2 pb-1">
+        {branchesBySide.top.map(renderBranch)}
+        {renderAddButton('top')}
+      </div>
+      <div />
+
+      {/* ── Row 2: left branches | diamond | right branches ─────── */}
+      <div className="flex flex-col items-end justify-center gap-2 pr-1">
+        {branchesBySide.left.map(renderBranch)}
+        {renderAddButton('left')}
+      </div>
+
       <div className="relative" style={{ width: DIAMOND_BOX, height: DIAMOND_BOX }}>
         <svg
           width={DIAMOND_BOX}
@@ -400,8 +565,6 @@ function DecisionShape({
             />
           ))}
         </svg>
-
-        {/* Question text, vertically + horizontally centred in the diamond */}
         <div
           className="absolute inset-0 flex items-center justify-center px-6 py-6 text-center"
           onDoubleClick={(e) => {
@@ -431,121 +594,28 @@ function DecisionShape({
         </div>
       </div>
 
-      {/* Branch row — each pill is an output handle */}
-      <div className="flex flex-wrap items-center justify-center gap-2 mt-1 px-1 pb-1 max-w-[260px]">
-        {content.branches.map((b) => {
-          const pal = paletteEntry(b.color);
-          const isEditing = editingBranchId === b.id;
-          const showColors = colorPickerFor === b.id;
-          return (
-            <div key={b.id} className="relative group">
-              <div
-                className="px-3 py-1 rounded-full border-2 font-hand font-semibold text-[12px] leading-tight whitespace-nowrap shadow-sketch select-none"
-                style={{ background: pal.fill, borderColor: pal.border, color: pal.text }}
-                onDoubleClick={(e) => { e.stopPropagation(); startEditBranch(b); }}
-              >
-                {isEditing && !readOnly ? (
-                  <input
-                    autoFocus
-                    value={branchDraft}
-                    onChange={(e) => setBranchDraft(e.target.value)}
-                    onBlur={commitBranch}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') { setEditingBranchId(null); }
-                      if (e.key === 'Enter') { e.preventDefault(); commitBranch(); }
-                    }}
-                    size={Math.max(3, branchDraft.length)}
-                    className="bg-transparent outline-none font-hand font-semibold text-[12px]"
-                    style={{ color: pal.text, minWidth: 40 }}
-                  />
-                ) : (
-                  <span>{b.label || 'Option'}</span>
-                )}
-              </div>
-
-              {/* Source handle — a small dot beneath each branch pill */}
-              <Handle
-                id={`branch-${b.id}`}
-                type="source"
-                position={Position.Bottom}
-                isConnectable={!readOnly}
-                style={{
-                  left: '50%',
-                  bottom: -6,
-                  width: 10,
-                  height: 10,
-                  transform: 'translate(-50%, 0)',
-                  background: pal.border,
-                  border: '2px solid #FAFAFA',
-                  borderRadius: '50%',
-                }}
-              />
-
-              {/* Admin controls: color swap + remove */}
-              {!readOnly && (
-                <div className="absolute -top-2 -right-2 hidden group-hover:flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setColorPickerFor(showColors ? null : b.id); }}
-                    className="w-4 h-4 rounded-full border-2 border-white shadow-sketch"
-                    style={{ background: pal.border }}
-                    title="Change color"
-                  />
-                  {content.branches.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); removeBranch(b.id); }}
-                      className="w-4 h-4 rounded-full bg-white border border-sketch-ink/40 flex items-center justify-center text-sketch-ink/70 hover:text-red-600 shadow-sketch"
-                      title="Remove branch"
-                    >
-                      <X size={9} />
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Color picker popover */}
-              {!readOnly && showColors && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setColorPickerFor(null)} />
-                  <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 bg-paper rounded-lg border-2 border-sketch-ink/60 shadow-sketch-lg p-1.5 flex gap-1">
-                    {BRANCH_PALETTE.map((p) => (
-                      <button
-                        key={p.fill}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateBranch(b.id, { color: p.fill });
-                          setColorPickerFor(null);
-                        }}
-                        className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
-                          b.color === p.fill ? 'border-sketch-ink' : 'border-paper'
-                        }`}
-                        style={{ background: p.fill }}
-                        title={p.label}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })}
-
-        {!readOnly && content.branches.length < 6 && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); addBranch(); }}
-            className="px-2 py-1 rounded-full border-2 border-dashed border-sketch-ink/40 text-sketch-ink/60 hover:border-sketch-ink hover:text-sketch-ink font-hand text-[11px] flex items-center gap-1 transition-colors"
-            title="Add branch"
-          >
-            <Plus size={11} />
-            Add
-          </button>
-        )}
+      <div className="flex flex-col items-start justify-center gap-2 pl-1">
+        {branchesBySide.right.map(renderBranch)}
+        {renderAddButton('right')}
       </div>
+
+      {/* ── Row 3: bottom branches ──────────────────────────────── */}
+      <div />
+      <div className="flex flex-wrap items-start justify-center gap-2 pt-1">
+        {branchesBySide.bottom.map(renderBranch)}
+        {renderAddButton('bottom')}
+      </div>
+      <div />
     </div>
   );
+}
+
+/** Tiny helper: position the branch's handle dot on its outward edge. */
+function handleEdgeStyle(side: FeedbackDecisionBranchSide): React.CSSProperties {
+  if (side === 'top')    return { top: -6, left: '50%', transform: 'translate(-50%, 0)' };
+  if (side === 'bottom') return { bottom: -6, left: '50%', transform: 'translate(-50%, 0)' };
+  if (side === 'left')   return { left: -6, top: '50%', transform: 'translate(0, -50%)' };
+  return                        { right: -6, top: '50%', transform: 'translate(0, -50%)' };
 }
 
 const ShapeNode = memo(ShapeNodeComponent);
