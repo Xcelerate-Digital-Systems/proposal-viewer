@@ -559,30 +559,30 @@ function DecisionShape({
 
       <div className="relative" style={{ width: DIAMOND_BOX, height: DIAMOND_BOX }}>
         {/* Input handles live INSIDE the diamond div so they anchor to the
-            diamond edges, not the outer node grid (which would place them far
-            beyond the diamond when branches are present on that side). */}
+            diamond edges, not the outer node grid. z-index lifts them above
+            the diamond SVG fill so the dot stays visible at each vertex. */}
         <Handle
           id="top" type="target" position={Position.Top}
           className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-          style={{ top: DIAMOND_PAD, left: DIAMOND_BOX / 2 }}
+          style={{ top: DIAMOND_PAD, left: DIAMOND_BOX / 2, zIndex: 2 }}
           isConnectable={!readOnly}
         />
         <Handle
           id="left" type="target" position={Position.Left}
           className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-          style={{ top: DIAMOND_BOX / 2, left: DIAMOND_PAD }}
+          style={{ top: DIAMOND_BOX / 2, left: DIAMOND_PAD, zIndex: 2 }}
           isConnectable={!readOnly}
         />
         <Handle
           id="right-target" type="target" position={Position.Right}
           className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-          style={{ top: DIAMOND_BOX / 2, left: DIAMOND_BOX - DIAMOND_PAD }}
+          style={{ top: DIAMOND_BOX / 2, left: DIAMOND_BOX - DIAMOND_PAD, zIndex: 2 }}
           isConnectable={!readOnly}
         />
         <Handle
           id="bottom-target" type="target" position={Position.Bottom}
           className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-          style={{ top: DIAMOND_BOX - DIAMOND_PAD, left: DIAMOND_BOX / 2 }}
+          style={{ top: DIAMOND_BOX - DIAMOND_PAD, left: DIAMOND_BOX / 2, zIndex: 2 }}
           isConnectable={!readOnly}
         />
 
