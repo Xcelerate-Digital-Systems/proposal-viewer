@@ -34,6 +34,7 @@ export async function POST(
       highlight_end,
       highlight_text,
       highlight_element_path,
+      version_id,
     } = body;
 
     if (!review_item_id || !author_name || !content || !comment_type) {
@@ -86,6 +87,18 @@ export async function POST(
       thread_number = (existing?.[0]?.thread_number ?? 0) + 1;
     }
 
+    // Validate version_id if supplied — must belong to this item, else null.
+    let safeVersionId: string | null = null;
+    if (version_id && typeof version_id === 'string') {
+      const { data: v } = await supabase
+        .from('review_item_versions')
+        .select('id')
+        .eq('id', version_id)
+        .eq('review_item_id', review_item_id)
+        .maybeSingle();
+      safeVersionId = v?.id ?? null;
+    }
+
     const { data: comment, error: insertErr } = await supabase
       .from('review_comments')
       .insert({
@@ -107,6 +120,7 @@ export async function POST(
         highlight_end: highlight_end ?? null,
         highlight_text: highlight_text ?? null,
         highlight_element_path: highlight_element_path ?? null,
+        version_id: safeVersionId,
       })
       .select()
       .single();

@@ -6,6 +6,8 @@ import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
+import AddVersionModal from '@/components/admin/feedback/AddVersionModal';
+import { useItemVersions } from '@/hooks/useItemVersions';
 
 
 export default function ReviewItemViewerPage({
@@ -72,6 +74,7 @@ function ItemViewerContent({
   const [project, setProject] = useState<FeedbackProject | null>(null);
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [comments, setComments] = useState<FeedbackComment[]>([]);
+  const [showAddVersion, setShowAddVersion] = useState(false);
   const [allProjectComments, setAllProjectComments] = useState<Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]>([]);
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,6 +197,18 @@ function ItemViewerContent({
     fetchReactions();
   }, [fetchProject, fetchItems, fetchComments, fetchAllProjectComments, fetchReactions]);
 
+  // ── Current item + its versions ──
+  const currentItem = items.find((i) => i.id === itemId) || null;
+  const supportsVersions = currentItem && currentItem.type !== 'webpage';
+  const {
+    versions, activeVersionId, creating: creatingVersion,
+    setActiveVersion, createVersion, uploadAsset,
+  } = useItemVersions({
+    item: supportsVersions ? currentItem : null,
+    companyId,
+    userId: session?.user?.id ?? null,
+  });
+
   // ── Submit comment ──
   const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }) => {
     if (!content.trim()) return;
@@ -228,6 +243,11 @@ function ItemViewerContent({
       highlight_end: highlightData?.end ?? null,
       highlight_text: highlightData?.text ?? null,
       highlight_element_path: highlightData?.elementPath ?? null,
+      // Pin the comment to whichever version the reviewer is currently looking
+      // at. For replies, inherit the parent's version so threads stay coherent.
+      version_id: parentId
+        ? (comments.find((c) => c.id === parentId)?.version_id ?? null)
+        : (reviewItemId === currentItem?.id ? activeVersionId : null),
     };
 
     const { data, error } = await supabase
@@ -371,28 +391,45 @@ function ItemViewerContent({
   }
 
   return (
-    <FeedbackDetailView
-      mode="admin"
-      project={project}
-      items={items}
-      comments={comments}
-      allProjectComments={allProjectComments}
-      initialItemId={itemId}
-      initialTypeFilter={typeFilter}
-      authorName={authorName}
-      onSubmitComment={submitComment}
-      onResolveComment={resolveComment}
-      onUnresolveComment={unresolveComment}
-      onEditComment={editComment}
-      onDeleteComment={deleteComment}
-      onItemChange={handleItemChange}
-      onFilterChange={handleFilterChange}
-      shareToken={project.share_token || ''}
-      companyId={companyId}
-      backAction={{
-        label: project.title || 'Back',
-        onClick: () => router.push(`/feedback/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`),
-      }}
-    />
+    <>
+      <FeedbackDetailView
+        mode="admin"
+        project={project}
+        items={items}
+        comments={comments}
+        allProjectComments={allProjectComments}
+        initialItemId={itemId}
+        initialTypeFilter={typeFilter}
+        authorName={authorName}
+        onSubmitComment={submitComment}
+        onResolveComment={resolveComment}
+        onUnresolveComment={unresolveComment}
+        onEditComment={editComment}
+        onDeleteComment={deleteComment}
+        onItemChange={handleItemChange}
+        onFilterChange={handleFilterChange}
+        shareToken={project.share_token || ''}
+        companyId={companyId}
+        versions={supportsVersions ? versions : undefined}
+        activeVersionId={activeVersionId}
+        onVersionChange={supportsVersions ? setActiveVersion : undefined}
+        onAddVersion={supportsVersions ? () => setShowAddVersion(true) : undefined}
+        backAction={{
+          label: project.title || 'Back',
+          onClick: () => router.push(`/feedback/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`),
+        }}
+      />
+
+      {showAddVersion && currentItem && (
+        <AddVersionModal
+          item={currentItem}
+          nextVersionNumber={versions.reduce((max, v) => Math.max(max, v.versionNumber), 0) + 1}
+          creating={creatingVersion}
+          onClose={() => setShowAddVersion(false)}
+          onSubmit={createVersion}
+          onUploadAsset={uploadAsset}
+        />
+      )}
+    </>
   );
 }

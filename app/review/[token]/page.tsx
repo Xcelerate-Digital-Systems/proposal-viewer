@@ -4,7 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Image as ImageIcon, ArrowLeft, Monitor } from 'lucide-react';
-import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackBoardEdge, type FeedbackBoardNote } from '@/lib/supabase';
+import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackItemVersion } from '@/lib/supabase';
+import { buildVersionList } from '@/lib/feedback/versions';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useGuestIdentity } from '@/hooks/useGuestIdentity';
@@ -29,11 +30,15 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [boardEdges, setBoardEdges] = useState<FeedbackBoardEdge[]>([]);
   const [boardNotes, setBoardNotes] = useState<FeedbackBoardNote[]>([]);
+  const [itemVersions, setItemVersions] = useState<FeedbackItemVersion[]>([]);
+  /** Per-item override of which version the client is looking at. Missing = use item.active_version_id. */
+  const [clientVersionOverrides, setClientVersionOverrides] = useState<Record<string, string | null>>({});
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [showBoardView, setShowBoardView] = useState(true);
   const [viewMode, setViewMode] = useState<'project' | 'item'>('project');
   const [initialItemId, setInitialItemId] = useState<string | null>(null);
   const [autoTypeFilter, setAutoTypeFilter] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   const urlType = searchParams.get('type');
   const urlItem = searchParams.get('item');
@@ -67,6 +72,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         // Board data
         if (data.boardEdges) setBoardEdges(data.boardEdges);
         if (data.boardNotes) setBoardNotes(data.boardNotes);
+        if (data.itemVersions) setItemVersions(data.itemVersions);
 
         // If share_mode is board, start in board view — unless deep-linked to an item
         if (data.project.share_mode === 'board' && !urlItem) {
@@ -79,16 +85,18 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         const startItems = urlType
           ? data.items.filter((i: FeedbackItem) => i.type === urlType)
           : data.items;
+        let startId: string | null = null;
         if (urlItem && data.items.find((i: FeedbackItem) => i.id === urlItem)) {
-          setInitialItemId(urlItem);
-          // Auto-filter to same type as the deep-linked item
+          startId = urlItem;
           const linkedItem = data.items.find((i: FeedbackItem) => i.id === urlItem);
           if (linkedItem?.type) setAutoTypeFilter(linkedItem.type);
         } else if (startItems.length > 0) {
-          setInitialItemId(startItems[0].id);
+          startId = startItems[0].id;
         } else if (data.items.length > 0) {
-          setInitialItemId(data.items[0].id);
+          startId = data.items[0].id;
         }
+        setInitialItemId(startId);
+        setSelectedItemId(startId);
 
         // Load branding
         const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`);
@@ -117,10 +125,37 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     return () => { document.title = 'Feedback'; };
   }, [project]);
 
+  // ── Version selection for the currently-selected item ──
+  const selectedItem = items.find((i) => i.id === selectedItemId) || null;
+  const selectedItemVersions = selectedItem
+    ? buildVersionList(selectedItem, itemVersions.filter((v) => v.review_item_id === selectedItem.id))
+    : [];
+  const resolvedActiveVersionId = selectedItem
+    ? (clientVersionOverrides[selectedItem.id] !== undefined
+        ? clientVersionOverrides[selectedItem.id]
+        : selectedItem.active_version_id ?? null)
+    : null;
+
+  const handleClientVersionChange = useCallback((versionId: string | null) => {
+    if (!selectedItemId) return;
+    setClientVersionOverrides((prev) => ({ ...prev, [selectedItemId]: versionId }));
+  }, [selectedItemId]);
+
+  const handleItemChange = useCallback((id: string) => {
+    setSelectedItemId(id);
+  }, []);
+
   // ── Submit comment via API ──
   const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }) => {
     if (!guestName.trim()) return;
     saveGuestIdentity(guestName, guestEmail);
+
+    // Stamp with whichever version the client is currently looking at. Replies
+    // inherit the parent's version so threads stay anchored to one render.
+    const parent = parentId ? comments.find((c) => c.id === parentId) : null;
+    const versionIdForComment = parent
+      ? (parent.version_id ?? null)
+      : (reviewItemId === selectedItemId ? resolvedActiveVersionId : null);
 
     const body: Record<string, unknown> = {
       review_item_id: reviewItemId,
@@ -137,6 +172,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       highlight_end: highlightData?.end ?? null,
       highlight_text: highlightData?.text ?? null,
       highlight_element_path: highlightData?.elementPath ?? null,
+      version_id: versionIdForComment,
     };
 
     const res = await fetch(`/api/review/${params.token}/comments`, {
@@ -173,6 +209,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   // ── Board → item detail navigation ──
   const handleBoardItemClick = useCallback((itemId: string) => {
     setInitialItemId(itemId);
+    setSelectedItemId(itemId);
     // Auto-filter to same type as clicked item
     const clickedItem = items.find((i) => i.id === itemId);
     if (clickedItem?.type) setAutoTypeFilter(clickedItem.type);
@@ -296,8 +333,12 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         guestName={guestName}
         onGuestNameChange={setGuestName}
         onSubmitComment={submitComment}
+        onItemChange={handleItemChange}
         shareToken={params.token}
         companyId={project?.company_id}
+        versions={selectedItem && selectedItem.type !== 'webpage' ? selectedItemVersions : undefined}
+        activeVersionId={resolvedActiveVersionId}
+        onVersionChange={selectedItem && selectedItem.type !== 'webpage' ? handleClientVersionChange : undefined}
         backAction={backAction}
       />
     </>

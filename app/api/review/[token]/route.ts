@@ -36,19 +36,27 @@ export async function GET(
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
 
-      // Load comments for this single item
-      const { data: comments } = await supabase
-        .from('review_comments')
-        .select('*')
-        .eq('review_item_id', item.id)
-        .order('created_at', { ascending: true });
+      // Load comments for this single item + its versions
+      const [commentsRes, versionsRes] = await Promise.all([
+        supabase
+          .from('review_comments')
+          .select('*')
+          .eq('review_item_id', item.id)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('review_item_versions')
+          .select('*')
+          .eq('review_item_id', item.id)
+          .order('version_number', { ascending: true }),
+      ]);
 
       return NextResponse.json({
         mode: 'item',
         project,
         item,
-        items: [item],        // Array for compatibility with existing page
-        comments: comments || [],
+        items: [item],
+        comments: commentsRes.data || [],
+        itemVersions: versionsRes.data || [],
       });
     }
 
@@ -74,18 +82,27 @@ export async function GET(
       .eq('review_project_id', project.id)
       .order('sort_order', { ascending: true });
 
-    // Load all comments for all items in this project
+    // Load all comments + all versions for every item in this project
     const itemIds = (items || []).map((i: { id: string }) => i.id);
     let comments: unknown[] = [];
+    let itemVersions: unknown[] = [];
 
     if (itemIds.length > 0) {
-      const { data: commentData } = await supabase
-        .from('review_comments')
-        .select('*')
-        .in('review_item_id', itemIds)
-        .order('created_at', { ascending: true });
+      const [commentRes, versionRes] = await Promise.all([
+        supabase
+          .from('review_comments')
+          .select('*')
+          .in('review_item_id', itemIds)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('review_item_versions')
+          .select('*')
+          .in('review_item_id', itemIds)
+          .order('version_number', { ascending: true }),
+      ]);
 
-      comments = commentData || [];
+      comments = commentRes.data || [];
+      itemVersions = versionRes.data || [];
     }
 
     // Load board data if share_mode is 'board'
@@ -113,6 +130,7 @@ export async function GET(
       project,
       items: items || [],
       comments,
+      itemVersions,
       boardEdges,
       boardNotes,
     });

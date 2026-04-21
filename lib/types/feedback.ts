@@ -97,6 +97,41 @@ export type FeedbackItem = {
   board_x: number | null;
   board_y: number | null;
   share_token: string | null;
+  /** When set, the viewer renders the assets from this row in `review_item_versions`.
+   *  Null means render the v1 fields already on the item itself. */
+  active_version_id: string | null;
+};
+
+/** A stored version of a feedback item's assets. v1 lives on `review_items`; v2+ live here. */
+export type FeedbackItemVersion = {
+  id: string;
+  review_item_id: string;
+  company_id: string;
+  version_number: number;
+  notes: string | null;
+  url: string | null;
+  screenshot_url: string | null;
+  html_content: string | null;
+  ad_headline: string | null;
+  ad_copy: string | null;
+  ad_cta: string | null;
+  ad_creative_url: string | null;
+  ad_platform: string | null;
+  email_subject: string | null;
+  email_preheader: string | null;
+  email_body: string | null;
+  sms_body: string | null;
+  image_url: string | null;
+  video_url: string | null;
+  pdf_url: string | null;
+  google_ad_format: GoogleAdFormat | null;
+  google_ad_headline: string | null;
+  google_ad_description1: string | null;
+  google_ad_description2: string | null;
+  google_ad_display_url: string | null;
+  google_ad_final_url: string | null;
+  created_at: string;
+  created_by: string | null;
 };
 
 export type FeedbackCommentType = 'pin' | 'text_highlight' | 'general';
@@ -105,6 +140,8 @@ export type FeedbackComment = {
   id: string;
   review_item_id: string;
   company_id: string;
+  /** Which version of the item the comment was made on. Null means v1 (original). */
+  version_id: string | null;
   parent_comment_id: string | null;
   thread_number: number | null;
   author_name: string;

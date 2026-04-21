@@ -5,6 +5,8 @@ import {
   ArrowLeft, ChevronLeft, ChevronRight, ExternalLink, Monitor,
 } from 'lucide-react';
 import type { FeedbackProject, FeedbackItem, FeedbackComment } from '@/lib/supabase';
+import { applyVersion, type VersionView } from '@/lib/feedback/versions';
+import VersionPicker from '@/components/feedback/VersionPicker';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { usePinFeedback } from '@/hooks/usePinFeedback';
 import { useScreenshotCapture } from '@/hooks/useScreenshotCapture';
@@ -91,6 +93,16 @@ interface ReviewDetailViewProps {
   // ── Comments updated externally (e.g. after submit in parent) ──
   /** Updated comments array — when parent manages comment state */
   onCommentsUpdate?: (comments: FeedbackComment[]) => void;
+
+  // ── Versions (per selected item) ──
+  /** Ordered list of versions for the currently-selected item, v1 first. */
+  versions?: VersionView[];
+  /** review_item_versions.id of the active version, or null for v1. */
+  activeVersionId?: string | null;
+  /** Called when the user picks a different version. */
+  onVersionChange?: (versionId: string | null) => void;
+  /** When provided, the version picker shows a "+" button that calls this. */
+  onAddVersion?: () => void;
 }
 
 /* ─── Component ──────────────────────────────────────────────────── */
@@ -120,6 +132,10 @@ export default function FeedbackDetailView({
   shareToken,
   renderHeaderActions,
   companyId,
+  versions,
+  activeVersionId = null,
+  onVersionChange,
+  onAddVersion,
 }: ReviewDetailViewProps) {
   const isAdmin = mode === 'admin';
   const isClient = mode === 'client';
@@ -155,13 +171,16 @@ export default function FeedbackDetailView({
   // ── Drawing annotation state ──
   const [pendingAnnotation, setPendingAnnotation] = useState<AnnotationData | null>(null);
 
-  // Filter annotation comments (have annotation_data)
+  // Filter annotation comments (have annotation_data) — note this runs BEFORE
+  // `versionScopedComments` is declared because of the file order; we inline
+  // the version filter here so pins/drawings on v2 don't leak into v1's view.
   const annotationComments = useMemo(
     () => comments.filter((c) =>
       c.review_item_id === selectedItemId &&
-      (c as unknown as Record<string, unknown>).annotation_data != null
+      (c as unknown as Record<string, unknown>).annotation_data != null &&
+      (!versions || versions.length <= 1 || (c.version_id ?? null) === (activeVersionId ?? null))
     ),
-    [comments, selectedItemId]
+    [comments, selectedItemId, versions, activeVersionId]
   );
 
   // Handle annotation completion from DrawingOverlay
@@ -194,11 +213,26 @@ export default function FeedbackDetailView({
     [items, typeFilter]
   );
 
-  const selectedItem = useMemo(() => {
+  const rawSelectedItem = useMemo(() => {
     return filteredItems.find((i) => i.id === selectedItemId)
       || items.find((i) => i.id === selectedItemId)
       || null;
   }, [filteredItems, items, selectedItemId]);
+
+  // Merge the active version's asset fields onto the item so every downstream
+  // renderer (ItemContentView, thumb strip, etc.) sees the right URLs / copy
+  // without knowing about versions. Falls through to raw item when the item
+  // has no versions, keeping pre-versioning items unchanged.
+  const activeVersion = useMemo<VersionView | null>(() => {
+    if (!versions || versions.length === 0) return null;
+    return versions.find((v) => (v.id ?? null) === (activeVersionId ?? null)) || versions[0];
+  }, [versions, activeVersionId]);
+
+  const selectedItem = useMemo<FeedbackItem | null>(() => {
+    if (!rawSelectedItem) return null;
+    if (!activeVersion) return rawSelectedItem;
+    return applyVersion(rawSelectedItem, activeVersion);
+  }, [rawSelectedItem, activeVersion]);
 
   // ── Text highlight state (available for all content types) ──
   const { selection: textSelection, clearSelection: clearTextSelection } = useTextHighlight({
@@ -206,12 +240,13 @@ export default function FeedbackDetailView({
     enabled: feedbackMode === 'idle',
   });
 
-  // Filter text_highlight comments
+  // Filter text_highlight comments (scoped to active version)
   const highlightComments = useMemo(
     () => comments.filter((c) =>
-      c.review_item_id === selectedItemId && c.comment_type === 'text_highlight'
+      c.review_item_id === selectedItemId && c.comment_type === 'text_highlight' &&
+      (!versions || versions.length <= 1 || (c.version_id ?? null) === (activeVersionId ?? null))
     ),
-    [comments, selectedItemId]
+    [comments, selectedItemId, versions, activeVersionId]
   );
 
   // Auto-open comment form when text is selected — no extra button needed
@@ -240,11 +275,20 @@ export default function FeedbackDetailView({
   const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
   const isWebpageItem = selectedItem?.type === 'webpage';
 
+  // Comments are pinned to the version they were made on — filter the feed to
+  // whichever version is currently showing so pins / highlights line up with
+  // the rendered asset. v1 comments have version_id === null.
+  const versionScopedComments = useMemo(() => {
+    if (!versions || versions.length <= 1) return comments;
+    const activeId = activeVersion?.id ?? null;
+    return comments.filter((c) => (c.version_id ?? null) === activeId);
+  }, [comments, versions, activeVersion]);
+
   // ── Comment filtering ──
   const {
     topLevelComments, getReplies,
     unresolvedComments, resolvedComments, pinComments,
-  } = useCommentFilters(comments, selectedItemId);
+  } = useCommentFilters(versionScopedComments, selectedItemId);
 
   // ── Keep selection in sync when filter changes and current item is hidden ──
   useEffect(() => {
@@ -613,6 +657,22 @@ export default function FeedbackDetailView({
               <ChevronRight size={15} />
             </button>
           </div>
+
+          {/* Version picker — rendered only when the parent passes versions. */}
+          {versions && versions.length > 0 && onVersionChange && (
+            <>
+              <div className="w-px h-6 bg-gray-200 shrink-0" />
+              <div className="shrink-0">
+                <VersionPicker
+                  versions={versions}
+                  activeVersionId={activeVersionId}
+                  onChange={onVersionChange}
+                  onAddVersion={onAddVersion}
+                  compact
+                />
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           {renderHeaderActions && (
