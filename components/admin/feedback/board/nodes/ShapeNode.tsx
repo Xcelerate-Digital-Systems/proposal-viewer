@@ -6,6 +6,7 @@ import { Clock } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit } from '@/lib/supabase';
 import { roughRect, roughLine, roughPath, roughCircle } from '@/components/feedback/sketchy/roughPath';
 import { hashStringToInt } from '@/components/feedback/sketchy/seed';
+import { NODE_FRAME_W, NODE_FRAME_H } from './nodeConfig';
 
 const ARROW_HEAD = 14;
 const ARROW_ANGLE = Math.PI / 6;
@@ -302,11 +303,13 @@ export function serializeDecisionContent(content: FeedbackDecisionContent): stri
   return JSON.stringify(content);
 }
 
-// Sized to roughly match the feedback item card height (252px) when branches
-// are present on top/bottom. 160 diamond + 12 padding + ~40 per branch row ≈ 252.
-const DIAMOND = 160;
+// Sized so the full decision node (diamond + side pill columns + handle dots)
+// fits inside the shared 240×240 NODE_FRAME. 112px diamond + 64px columns on
+// each side = 240px total; rows match so the whole thing stays square.
+const DIAMOND = 112;
 const DIAMOND_PAD = 6;
 const DIAMOND_BOX = DIAMOND + DIAMOND_PAD * 2;
+const DECISION_SIDE_SLOT = (NODE_FRAME_W - DIAMOND_BOX) / 2;
 
 /** Map our per-branch side to the React Flow Position enum for edge routing. */
 function rfPosition(side: FeedbackDecisionBranchSide): Position {
@@ -429,7 +432,7 @@ function DecisionShape({
     return (
       <div className="relative group" style={{ isolation: 'isolate' }}>
         <div
-          className="nodrag px-3 py-1 rounded-full border-2 font-hand font-semibold text-[12px] leading-tight whitespace-nowrap shadow-sketch select-none min-w-[52px] text-center cursor-text"
+          className="nodrag px-2 py-0.5 rounded-full border-2 font-hand font-semibold text-[11px] leading-tight whitespace-nowrap shadow-sketch select-none min-w-[40px] text-center cursor-text"
           style={{ background: pal.fill, borderColor: pal.border, color: pal.text }}
           onDoubleClick={(e) => { e.stopPropagation(); startEditBranch(side, b.label); }}
         >
@@ -444,8 +447,8 @@ function DecisionShape({
                 if (e.key === 'Enter') { e.preventDefault(); commitBranch(); }
               }}
               size={Math.max(3, branchDraft.length || 4)}
-              className="bg-transparent outline-none font-hand font-semibold text-[12px] text-center"
-              style={{ color: pal.text, minWidth: 40 }}
+              className="bg-transparent outline-none font-hand font-semibold text-[11px] text-center"
+              style={{ color: pal.text, minWidth: 32 }}
             />
           ) : (
             <span className={b.label ? '' : 'opacity-50'}>{b.label || 'Label'}</span>
@@ -505,20 +508,22 @@ function DecisionShape({
     <div
       className={`relative grid ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`}
       style={{
-        gridTemplateColumns: 'minmax(110px, auto) auto minmax(110px, auto)',
-        gridTemplateRows: 'minmax(52px, auto) auto minmax(52px, auto)',
+        width: NODE_FRAME_W,
+        height: NODE_FRAME_H,
+        gridTemplateColumns: `${DECISION_SIDE_SLOT}px ${DIAMOND_BOX}px ${DECISION_SIDE_SLOT}px`,
+        gridTemplateRows: `${DECISION_SIDE_SLOT}px ${DIAMOND_BOX}px ${DECISION_SIDE_SLOT}px`,
       }}
     >
       {/* Row 1: top — handle sits above pill (which sits above the diamond) */}
       <div />
-      <div className="flex flex-col items-center gap-1.5 pb-1">
+      <div className="flex flex-col items-center justify-end gap-1 pb-1">
         {renderHandle('top')}
         {renderPill('top')}
       </div>
       <div />
 
       {/* Row 2: left — handle | pill | diamond | pill | handle — right */}
-      <div className="flex items-center justify-end gap-1.5 pr-1">
+      <div className="flex items-center justify-end gap-1 pr-1">
         {renderHandle('left')}
         {renderPill('left')}
       </div>
@@ -544,7 +549,7 @@ function DecisionShape({
           ))}
         </svg>
         <div
-          className="absolute inset-0 flex items-center justify-center px-8 py-8 text-center"
+          className="absolute inset-0 flex items-center justify-center px-4 py-4 text-center"
           onDoubleClick={(e) => {
             e.stopPropagation();
             if (!readOnly) setEditingQuestion(true);
@@ -561,25 +566,25 @@ function DecisionShape({
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitQuestion(); }
               }}
               className="w-full bg-transparent border-none outline-none resize-none font-hand text-sketch-ink text-center leading-tight"
-              style={{ fontSize: 16 }}
+              style={{ fontSize: 13 }}
               rows={3}
             />
           ) : (
-            <span className="font-hand text-sketch-ink leading-tight" style={{ fontSize: 16 }}>
+            <span className="font-hand text-sketch-ink leading-tight" style={{ fontSize: 13 }}>
               {content.question || (!readOnly && <span className="opacity-40">Double-click</span>)}
             </span>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 pl-1">
+      <div className="flex items-center gap-1 pl-1">
         {renderPill('right')}
         {renderHandle('right')}
       </div>
 
       {/* Row 3: bottom — pill below diamond, handle below pill */}
       <div />
-      <div className="flex flex-col items-center gap-1.5 pt-1">
+      <div className="flex flex-col items-center justify-start gap-1 pt-1">
         {renderPill('bottom')}
         {renderHandle('bottom')}
       </div>
@@ -627,7 +632,6 @@ export function serializeWaitContent(content: FeedbackWaitContent): string {
 // diamond decision node. Smaller footprint than the 88px item icons since
 // it's a flow marker, not a content preview.
 const WAIT_ICON_SIZE = 64;
-const WAIT_NODE_WIDTH = 140;
 
 function formatWaitLabel(content: FeedbackWaitContent): string {
   const unitDef = WAIT_UNITS.find((u) => u.value === content.unit);
@@ -675,7 +679,7 @@ function WaitShape({
   const handleClass = '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
 
   return (
-    <div className={`relative flex flex-col items-center ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`} style={{ width: WAIT_NODE_WIDTH }}>
+    <div className={`relative flex flex-col items-center justify-center ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`} style={{ width: NODE_FRAME_W, height: NODE_FRAME_H }}>
       {/* Handles live on the outer node so the top handle sits above the icon
           and the bottom handle sits below the label — matching the email /
           SMS / ad icon nodes. Every handle is `type="source"` so React Flow

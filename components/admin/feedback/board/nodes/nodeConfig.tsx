@@ -226,8 +226,14 @@ export function ViewButton({ id, onNavigate }: { id: string; onNavigate?: (id: s
 
 /* ─── Card shell (shared wrapper for card-layout nodes) ────────── */
 
-const CARD_W = 236;
-const CARD_H = 252;
+// Every board node renders inside a uniform 240×240 frame so cards, icon
+// nodes, wait, and decision all line up on the same grid on the whiteboard.
+// 240 is divisible by the 20px snap grid the board uses.
+export const NODE_FRAME_W = 240;
+export const NODE_FRAME_H = 240;
+
+const CARD_W = NODE_FRAME_W;
+const CARD_H = NODE_FRAME_H;
 
 export function CardShell({
   item, selected, readOnly, commentCount, unresolvedCount, onNavigate, onUpdateStatus,
@@ -353,9 +359,10 @@ export function IconShell({
     <>
       <NodeHandles readOnly={readOnly} />
       <div
-        className={`flex flex-col items-center w-[140px] ${
+        className={`flex flex-col items-center justify-center ${
           !readOnly ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
         }`}
+        style={{ width: NODE_FRAME_W, height: NODE_FRAME_H }}
         onClick={readOnly ? handleClick : undefined}
       >
         <div
