@@ -82,8 +82,8 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
         : { x: 200, y: 200 };
       // Rough half-size to centre the spawn; the visual sizes are owned by
       // the node components, we just ballpark it so the drop point feels right.
-      const offsetX = tool === 'decision' ? 86 : 110;
-      const offsetY = tool === 'decision' ? 86 : 126;
+      const offsetX = tool === 'decision' ? 86 : 70;
+      const offsetY = tool === 'decision' ? 86 : 60;
       void ctx.createShape({
         shape_type: tool,
         x: Math.round(centre.x - offsetX),

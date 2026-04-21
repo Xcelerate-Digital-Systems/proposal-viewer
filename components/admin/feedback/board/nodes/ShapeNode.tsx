@@ -4,7 +4,7 @@ import { memo, useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Plus, X, Clock } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit } from '@/lib/supabase';
-import { roughRect, roughLine, roughPath } from '@/components/feedback/sketchy/roughPath';
+import { roughRect, roughLine, roughPath, roughCircle } from '@/components/feedback/sketchy/roughPath';
 import { hashStringToInt } from '@/components/feedback/sketchy/seed';
 
 const ARROW_HEAD = 14;
@@ -684,13 +684,15 @@ export function serializeWaitContent(content: FeedbackWaitContent): string {
   return JSON.stringify(content);
 }
 
-const WAIT_WIDTH = 220;
-const WAIT_HEIGHT = 252; // Matches the feedback item card height
+// Match the icon-layout item nodes (email / sms / ad) — 88px circle with a
+// label beneath, inside a 140px-wide column.
+const WAIT_ICON_SIZE = 88;
+const WAIT_NODE_WIDTH = 140;
 
 function formatWaitLabel(content: FeedbackWaitContent): string {
   const unitDef = WAIT_UNITS.find((u) => u.value === content.unit);
-  const plural = content.duration === 1 ? unitDef?.short : `${unitDef?.short}s`;
-  return `Wait ${content.duration} ${plural || content.unit}`;
+  const short = content.duration === 1 ? unitDef?.short : `${unitDef?.short}s`;
+  return `Wait ${content.duration} ${short || content.unit}`;
 }
 
 function WaitShape({
@@ -714,20 +716,21 @@ function WaitShape({
   }, [content.duration, content.unit, content.label]);
 
   const seed = useMemo(() => hashStringToInt(shape.id), [shape.id]);
-  const strokeColor = selected ? '#017C87' : '#2B2B2B';
-  const strokeWidth = selected ? 2.4 : 1.8;
-  const rectPaths = useMemo(
-    () => roughRect(6, 6, WAIT_WIDTH - 12, WAIT_HEIGHT - 12, {
+  const stroke = selected ? '#017C87' : '#2B2B2B';
+  const strokeWidth = selected ? 2.6 : 1.9;
+
+  const circlePaths = useMemo(
+    () => roughCircle(WAIT_ICON_SIZE / 2, WAIT_ICON_SIZE / 2, WAIT_ICON_SIZE - strokeWidth * 2 - 4, {
       seed,
-      roughness: 1.5,
-      bowing: 1.4,
-      stroke: strokeColor,
+      roughness: 1.8,
+      bowing: 1.8,
+      stroke,
       strokeWidth,
-      fill: '#DBEAFE',
+      fill: '#BFDBFE',
       fillStyle: 'solid',
       disableMultiStroke: false,
     }),
-    [seed, strokeColor, strokeWidth]
+    [seed, stroke, strokeWidth]
   );
 
   const commit = () => {
@@ -747,51 +750,53 @@ function WaitShape({
     }
   };
 
-  const handleClass = '!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+  const handleClass = '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
 
   return (
-    <div className={`relative ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`} style={{ width: WAIT_WIDTH, height: WAIT_HEIGHT }}>
-      {/* Four-sided connection handles — target on top/left, source on
-          bottom/right so the typical bottom→top flow routes naturally. */}
-      <Handle id="top"           type="target" position={Position.Top}    className={handleClass} style={{ top: 0, left: '50%' }} isConnectable={!readOnly} />
-      <Handle id="left"          type="target" position={Position.Left}   className={handleClass} style={{ top: '50%', left: 0 }} isConnectable={!readOnly} />
-      <Handle id="right"         type="source" position={Position.Right}  className={handleClass} style={{ top: '50%', right: 0 }} isConnectable={!readOnly} />
-      <Handle id="right-target"  type="target" position={Position.Right}  className={handleClass} style={{ top: '50%', right: 0 }} isConnectable={!readOnly} />
-      <Handle id="bottom"        type="source" position={Position.Bottom} className={handleClass} style={{ bottom: 0, left: '50%' }} isConnectable={!readOnly} />
-      <Handle id="bottom-target" type="target" position={Position.Bottom} className={handleClass} style={{ bottom: 0, left: '50%' }} isConnectable={!readOnly} />
-      <Handle id="top-source"    type="source" position={Position.Top}    className={handleClass} style={{ top: 0, left: '50%' }} isConnectable={!readOnly} />
-      <Handle id="left-source"   type="source" position={Position.Left}   className={handleClass} style={{ top: '50%', left: 0 }} isConnectable={!readOnly} />
+    <div className={`flex flex-col items-center ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`} style={{ width: WAIT_NODE_WIDTH }}>
+      {/* Four-sided handles on the icon circle. Top/left are targets,
+          bottom/right are sources to favour the common top→bottom flow. */}
+      <div className="relative" style={{ width: WAIT_ICON_SIZE, height: WAIT_ICON_SIZE }}>
+        <Handle id="top"           type="target" position={Position.Top}    className={handleClass} style={{ top: 0, left: '50%', zIndex: 2 }} isConnectable={!readOnly} />
+        <Handle id="top-source"    type="source" position={Position.Top}    className={handleClass} style={{ top: 0, left: '50%', zIndex: 2 }} isConnectable={!readOnly} />
+        <Handle id="left"          type="target" position={Position.Left}   className={handleClass} style={{ top: '50%', left: 0, zIndex: 2 }} isConnectable={!readOnly} />
+        <Handle id="left-source"   type="source" position={Position.Left}   className={handleClass} style={{ top: '50%', left: 0, zIndex: 2 }} isConnectable={!readOnly} />
+        <Handle id="right"         type="source" position={Position.Right}  className={handleClass} style={{ top: '50%', right: 0, zIndex: 2 }} isConnectable={!readOnly} />
+        <Handle id="right-target"  type="target" position={Position.Right}  className={handleClass} style={{ top: '50%', right: 0, zIndex: 2 }} isConnectable={!readOnly} />
+        <Handle id="bottom"        type="source" position={Position.Bottom} className={handleClass} style={{ bottom: 0, left: '50%', zIndex: 2 }} isConnectable={!readOnly} />
+        <Handle id="bottom-target" type="target" position={Position.Bottom} className={handleClass} style={{ bottom: 0, left: '50%', zIndex: 2 }} isConnectable={!readOnly} />
 
-      <svg
-        width={WAIT_WIDTH}
-        height={WAIT_HEIGHT}
-        viewBox={`0 0 ${WAIT_WIDTH} ${WAIT_HEIGHT}`}
-        className="absolute inset-0 pointer-events-none"
-        aria-hidden="true"
-      >
-        {rectPaths.map((p, i) => (
-          <path
-            key={i}
-            d={p.d}
-            stroke={p.stroke}
-            strokeWidth={p.strokeWidth}
-            fill={p.fill ?? 'none'}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ))}
-      </svg>
+        <svg
+          width={WAIT_ICON_SIZE}
+          height={WAIT_ICON_SIZE}
+          viewBox={`0 0 ${WAIT_ICON_SIZE} ${WAIT_ICON_SIZE}`}
+          className="absolute inset-0 pointer-events-none"
+          aria-hidden="true"
+        >
+          {circlePaths.map((p, i) => (
+            <path
+              key={i}
+              d={p.d}
+              stroke={p.stroke}
+              strokeWidth={p.strokeWidth}
+              fill={p.fill ?? 'none'}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+        </svg>
+
+        <div className="absolute inset-0 flex items-center justify-center text-sketch-ink pointer-events-none">
+          <Clock size={30} strokeWidth={1.5} />
+        </div>
+      </div>
 
       <div
-        className="relative h-full flex flex-col items-center justify-center gap-3 px-4 py-4 text-center"
+        className="mt-2 text-center w-full px-1"
         onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
       >
-        <div className="w-12 h-12 rounded-full bg-paper border-2 border-sketch-ink/60 flex items-center justify-center shadow-sketch">
-          <Clock size={22} className="text-sketch-ink" strokeWidth={1.8} />
-        </div>
-
         {editing && !readOnly ? (
-          <div className="flex flex-col items-center gap-2 w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-1 w-full">
               <input
                 type="number"
@@ -804,12 +809,12 @@ function WaitShape({
                   if (e.key === 'Enter') { e.preventDefault(); commit(); }
                   if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
                 }}
-                className="flex-1 min-w-0 text-center px-2 py-1 rounded-md border border-sketch-ink/40 bg-paper font-hand text-base focus:outline-none focus:border-teal"
+                className="w-10 text-center px-1 py-0.5 rounded-md border border-sketch-ink/40 bg-paper font-hand text-sm focus:outline-none focus:border-teal"
               />
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
-                className="px-1.5 py-1 rounded-md border border-sketch-ink/40 bg-paper font-hand text-sm focus:outline-none focus:border-teal"
+                className="flex-1 min-w-0 px-1 py-0.5 rounded-md border border-sketch-ink/40 bg-paper font-hand text-xs focus:outline-none focus:border-teal"
               >
                 {WAIT_UNITS.map((u) => (
                   <option key={u.value} value={u.value}>{u.label}</option>
@@ -825,24 +830,17 @@ function WaitShape({
                 if (e.key === 'Enter') { e.preventDefault(); commit(); }
               }}
               placeholder="Label (optional)"
-              className="w-full px-2 py-1 rounded-md border border-sketch-ink/30 bg-paper font-hand text-xs focus:outline-none focus:border-teal"
+              className="w-full px-1 py-0.5 rounded-md border border-sketch-ink/30 bg-paper font-hand text-[11px] focus:outline-none focus:border-teal"
             />
           </div>
         ) : (
           <>
-            <div className="font-hand text-xl text-sketch-ink leading-tight">
+            <h4 className="font-hand text-base text-sketch-ink truncate leading-tight">
               {formatWaitLabel(content)}
-            </div>
-            {content.label && (
-              <div className="font-hand text-xs text-sketch-ink/60 leading-snug">
-                {content.label}
-              </div>
-            )}
-            {!readOnly && !content.label && (
-              <div className="text-[10px] text-sketch-ink/40 italic">
-                Double-click to edit
-              </div>
-            )}
+            </h4>
+            <span className="text-[11px] font-medium text-sketch-ink/60 mt-0.5 block uppercase tracking-wider">
+              {content.label || 'Wait'}
+            </span>
           </>
         )}
       </div>
