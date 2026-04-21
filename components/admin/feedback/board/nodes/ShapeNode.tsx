@@ -390,11 +390,30 @@ function DecisionShape({
     const isEditing = editingBranchId === b.id;
     const showColors = colorPickerFor === b.id;
     return (
-      <div key={b.id} className="relative group">
+      <div key={b.id} className="relative group" style={{ isolation: 'isolate' }}>
+        {/* The Handle is a transparent overlay on the pill — the pill itself
+            becomes the drag source, so there's no redundant dot next to it.
+            position still drives edge routing direction. */}
+        <Handle
+          id={`branch-${b.id}`}
+          type="source"
+          position={rfPosition(b.side)}
+          isConnectable={!readOnly}
+          style={{
+            top: 0, left: 0, right: 0, bottom: 0,
+            width: '100%', height: '100%',
+            minWidth: 0, minHeight: 0,
+            transform: 'none',
+            background: 'transparent',
+            border: 'none',
+            borderRadius: 999,
+            zIndex: 1,
+          }}
+        />
+
         <div
-          className="px-3 py-1 rounded-full border-2 font-hand font-semibold text-[12px] leading-tight whitespace-nowrap shadow-sketch select-none"
+          className="relative z-[2] px-3 py-1 rounded-full border-2 font-hand font-semibold text-[12px] leading-tight whitespace-nowrap shadow-sketch select-none pointer-events-none"
           style={{ background: pal.fill, borderColor: pal.border, color: pal.text }}
-          onDoubleClick={(e) => { e.stopPropagation(); startEditBranch(b); }}
         >
           {isEditing && !readOnly ? (
             <input
@@ -407,7 +426,7 @@ function DecisionShape({
                 if (e.key === 'Enter') { e.preventDefault(); commitBranch(); }
               }}
               size={Math.max(3, branchDraft.length)}
-              className="bg-transparent outline-none font-hand font-semibold text-[12px]"
+              className="bg-transparent outline-none font-hand font-semibold text-[12px] pointer-events-auto"
               style={{ color: pal.text, minWidth: 40 }}
             />
           ) : (
@@ -415,26 +434,18 @@ function DecisionShape({
           )}
         </div>
 
-        {/* Source handle sits at the outward-facing edge of the pill so edges
-            leave the branch in the direction of its side. React Flow uses
-            position for routing, explicit style for visual placement. */}
-        <Handle
-          id={`branch-${b.id}`}
-          type="source"
-          position={rfPosition(b.side)}
-          isConnectable={!readOnly}
-          style={{
-            ...handleEdgeStyle(b.side),
-            width: 10, height: 10,
-            background: pal.border,
-            border: '2px solid #FAFAFA',
-            borderRadius: '50%',
-          }}
-        />
-
-        {/* Admin controls: color, side cycle, remove */}
+        {/* Admin controls: edit label, color, side cycle, remove. These sit
+            above the handle (z-index) so the click targets work. */}
         {!readOnly && (
-          <div className="absolute -top-2 -right-2 hidden group-hover:flex items-center gap-1 z-10">
+          <div className="absolute -top-2 -right-2 hidden group-hover:flex items-center gap-1 z-[3]">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); startEditBranch(b); }}
+              className="w-4 h-4 rounded-full bg-white border border-sketch-ink/40 flex items-center justify-center text-sketch-ink/70 hover:text-sketch-ink shadow-sketch text-[9px] font-bold"
+              title="Rename"
+            >
+              ✎
+            </button>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setColorPickerFor(showColors ? null : b.id); }}
@@ -610,13 +621,6 @@ function DecisionShape({
   );
 }
 
-/** Tiny helper: position the branch's handle dot on its outward edge. */
-function handleEdgeStyle(side: FeedbackDecisionBranchSide): React.CSSProperties {
-  if (side === 'top')    return { top: -6, left: '50%', transform: 'translate(-50%, 0)' };
-  if (side === 'bottom') return { bottom: -6, left: '50%', transform: 'translate(-50%, 0)' };
-  if (side === 'left')   return { left: -6, top: '50%', transform: 'translate(0, -50%)' };
-  return                        { right: -6, top: '50%', transform: 'translate(0, -50%)' };
-}
 
 const ShapeNode = memo(ShapeNodeComponent);
 ShapeNode.displayName = 'ShapeNode';

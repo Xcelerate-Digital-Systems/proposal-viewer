@@ -112,6 +112,9 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         const strokeColor = (e.style as Record<string, string>)?.stroke || '#2B2B2B';
         const strokeWidth = Number((e.style as Record<string, number>)?.strokeWidth) || 2;
         const dashed = !!(e.style as Record<string, boolean>)?.dashed;
+        const rawArrow = (e.style as Record<string, string> | null | undefined)?.arrowDir;
+        const arrowDir: 'none' | 'source' | 'target' | 'both' =
+          rawArrow === 'none' || rawArrow === 'source' || rawArrow === 'both' ? rawArrow : 'target';
         const source = e.source_shape_id ? `shape-${e.source_shape_id}` : e.source_item_id;
         const target = e.target_shape_id ? `shape-${e.target_shape_id}` : e.target_item_id;
         if (!source || !target) return null;
@@ -136,6 +139,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
             strokeWidth,
             dashed,
             animated: e.animated || false,
+            arrowDir,
             onEdgeClick: handleEdgeClickFromData,
           },
         } as Edge;
@@ -240,7 +244,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
   const handleUpdateEdgeStyle = useCallback(
     async (
       edgeId: string,
-      patch: { label?: string | null; color?: string; strokeWidth?: number; dashed?: boolean; animated?: boolean }
+      patch: { label?: string | null; color?: string; strokeWidth?: number; dashed?: boolean; animated?: boolean; arrowDir?: 'none' | 'source' | 'target' | 'both' }
     ) => {
       let nextEdge: Edge | undefined;
       setEdges((eds) => {
@@ -255,11 +259,16 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         const nextStrokeWidth = patch.strokeWidth ?? (currentStyle.strokeWidth as number) ?? 2;
         const nextDashed = patch.dashed !== undefined ? patch.dashed : !!(currentData.dashed as boolean);
         const nextAnimated = patch.animated !== undefined ? patch.animated : !!edge.animated;
+        const currentArrowDir = (currentData.arrowDir as string) ?? 'target';
+        const nextArrowDir = patch.arrowDir ?? (currentArrowDir as 'none' | 'source' | 'target' | 'both');
         const updated: Edge = {
           ...edge,
           animated: nextAnimated,
           style: { stroke: nextColor, strokeWidth: nextStrokeWidth },
-          markerEnd: { type: MarkerType.ArrowClosed, color: nextColor, width: 16, height: 16 },
+          // Arrow rendering is handled inside LabeledEdge — strip the default
+          // React Flow marker so it doesn't double up with our custom heads.
+          markerEnd: undefined,
+          markerStart: undefined,
           data: {
             ...currentData,
             label: nextLabel || undefined,
@@ -267,6 +276,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
             strokeWidth: nextStrokeWidth,
             dashed: nextDashed,
             animated: nextAnimated,
+            arrowDir: nextArrowDir,
           },
         };
         nextEdge = updated;
@@ -284,6 +294,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
           stroke: nextEdge.style?.stroke,
           strokeWidth: nextEdge.style?.strokeWidth,
           dashed: (nextEdge.data as Record<string, unknown>)?.dashed as boolean,
+          arrowDir: (nextEdge.data as Record<string, unknown>)?.arrowDir,
         } as Record<string, unknown>,
       });
     },

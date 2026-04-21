@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, ArrowRight, ArrowLeft, ArrowLeftRight, Minus } from 'lucide-react';
 import type { Edge } from '@xyflow/react';
+
+export type ArrowDirection = 'none' | 'source' | 'target' | 'both';
 
 export const EDGE_COLORS = [
   { value: '#2B2B2B', label: 'Ink' },
@@ -28,6 +30,7 @@ interface EdgeStyle {
   strokeWidth: number;
   dashed: boolean;
   animated: boolean;
+  arrowDir: ArrowDirection;
 }
 
 export type EdgeStylePatch = {
@@ -36,6 +39,7 @@ export type EdgeStylePatch = {
   strokeWidth?: number;
   dashed?: boolean;
   animated?: boolean;
+  arrowDir?: ArrowDirection;
 };
 
 export interface EdgeStyleEditorProps {
@@ -48,12 +52,15 @@ export interface EdgeStyleEditorProps {
 function readStyle(edge: Edge): EdgeStyle {
   const data = (edge.data || {}) as Record<string, unknown>;
   const style = (edge.style || {}) as Record<string, unknown>;
+  const raw = (data.arrowDir as string) ?? 'target';
+  const arrowDir: ArrowDirection = raw === 'none' || raw === 'source' || raw === 'both' ? raw as ArrowDirection : 'target';
   return {
     label: (data.label as string | null) ?? (edge.label as string | null) ?? null,
     color: (data.color as string) ?? (style.stroke as string) ?? '#2B2B2B',
     strokeWidth: (style.strokeWidth as number) ?? 2.2,
     dashed: !!(data.dashed as boolean),
     animated: !!edge.animated,
+    arrowDir,
   };
 }
 
@@ -164,6 +171,38 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
               style={{ animation: 'sketch-dashflow 0.6s linear infinite' }}
             />
           </svg>
+        </ToolbarButton>
+      </Row>
+
+      {/* Arrow */}
+      <Row label="Arrow">
+        <ToolbarButton
+          active={current.arrowDir === 'none'}
+          onClick={() => onUpdate(edge.id, { arrowDir: 'none' })}
+          title="No arrowheads"
+        >
+          <Minus size={14} strokeWidth={2.2} />
+        </ToolbarButton>
+        <ToolbarButton
+          active={current.arrowDir === 'target'}
+          onClick={() => onUpdate(edge.id, { arrowDir: 'target' })}
+          title="Arrow on target"
+        >
+          <ArrowRight size={14} strokeWidth={2.2} />
+        </ToolbarButton>
+        <ToolbarButton
+          active={current.arrowDir === 'source'}
+          onClick={() => onUpdate(edge.id, { arrowDir: 'source' })}
+          title="Arrow on source (flipped)"
+        >
+          <ArrowLeft size={14} strokeWidth={2.2} />
+        </ToolbarButton>
+        <ToolbarButton
+          active={current.arrowDir === 'both'}
+          onClick={() => onUpdate(edge.id, { arrowDir: 'both' })}
+          title="Arrow on both ends"
+        >
+          <ArrowLeftRight size={14} strokeWidth={2.2} />
         </ToolbarButton>
       </Row>
 

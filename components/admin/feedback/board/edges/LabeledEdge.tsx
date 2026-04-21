@@ -10,12 +10,16 @@ import {
 import { roughPath, roughLine } from '@/components/feedback/sketchy/roughPath';
 import { hashStringToInt } from '@/components/feedback/sketchy/seed';
 
+export type LabeledEdgeArrowDir = 'none' | 'source' | 'target' | 'both';
+
 export interface LabeledEdgeData extends Record<string, unknown> {
   label?: string;
   color?: string;
   strokeWidth?: number;
   dashed?: boolean;
   animated?: boolean;
+  /** Which end(s) of the edge draw an arrowhead. Defaults to 'target'. */
+  arrowDir?: LabeledEdgeArrowDir;
   onEdgeClick?: (edgeId: string) => void;
 }
 
@@ -60,6 +64,7 @@ function LabeledEdgeComponent({
     (selected ? 0.6 : 0);
   const dashed = edgeData.dashed || false;
   const animated = edgeData.animated || false;
+  const arrowDir: LabeledEdgeArrowDir = edgeData.arrowDir ?? 'target';
   const seed = hashStringToInt(id);
 
   // Snap to 2px grid to avoid regen on sub-pixel pan
@@ -92,9 +97,7 @@ function LabeledEdgeComponent({
   }, [edgePath, seed, color, strokeWidth, dashed, animated]);
 
   const arrowPaths = useMemo(() => {
-    const tailAngle = arrowAngleFor(targetPosition);
-    const a1 = tailAngle + ARROW_ANGLE;
-    const a2 = tailAngle - ARROW_ANGLE;
+    if (arrowDir === 'none') return [];
     const arrowOpts = {
       seed: seed + 1,
       roughness: 1.1,
@@ -103,10 +106,26 @@ function LabeledEdgeComponent({
       strokeWidth: strokeWidth + 0.3,
       disableMultiStroke: false,
     };
-    const arm1 = roughLine(tx, ty, tx + Math.cos(a1) * ARROW_LEN, ty + Math.sin(a1) * ARROW_LEN, arrowOpts);
-    const arm2 = roughLine(tx, ty, tx + Math.cos(a2) * ARROW_LEN, ty + Math.sin(a2) * ARROW_LEN, arrowOpts);
-    return [...arm1, ...arm2];
-  }, [seed, color, strokeWidth, targetPosition, tx, ty]);
+
+    const heads: { d: string; stroke: string; strokeWidth: number }[] = [];
+    const drawHead = (x: number, y: number, angleRad: number, seedOffset: number) => {
+      const a1 = angleRad + ARROW_ANGLE;
+      const a2 = angleRad - ARROW_ANGLE;
+      const opts = { ...arrowOpts, seed: seed + seedOffset };
+      heads.push(...roughLine(x, y, x + Math.cos(a1) * ARROW_LEN, y + Math.sin(a1) * ARROW_LEN, opts));
+      heads.push(...roughLine(x, y, x + Math.cos(a2) * ARROW_LEN, y + Math.sin(a2) * ARROW_LEN, opts));
+    };
+
+    // Target arrow: tail extends AWAY from the target (opposite of where the
+    // edge enters). Source arrow: tail extends AWAY from the source.
+    if (arrowDir === 'target' || arrowDir === 'both') {
+      drawHead(tx, ty, arrowAngleFor(targetPosition), 1);
+    }
+    if (arrowDir === 'source' || arrowDir === 'both') {
+      drawHead(sx, sy, arrowAngleFor(sourcePosition), 2);
+    }
+    return heads;
+  }, [arrowDir, seed, color, strokeWidth, sourcePosition, targetPosition, sx, sy, tx, ty]);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
