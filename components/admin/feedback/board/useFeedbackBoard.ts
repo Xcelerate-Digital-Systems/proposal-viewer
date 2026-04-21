@@ -41,7 +41,8 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
   const ctx = useFeedbackBoardContextOrThrow();
   const {
     placedItems, boardNotes, shapes, boardEdges,
-    updateItemStatus, updateNote, deleteNote, updateShape,
+    updateItemStatus, updateItemBoardPosition,
+    updateNote, deleteNote, updateShape,
     createEdge, updateEdge,
   } = ctx;
 
@@ -106,35 +107,40 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
   }, [setEdges]);
 
   useEffect(() => {
-    const flowEdges: Edge[] = boardEdges.map((e) => {
-      const strokeColor = (e.style as Record<string, string>)?.stroke || '#2B2B2B';
-      const strokeWidth = Number((e.style as Record<string, number>)?.strokeWidth) || 2;
-      const dashed = !!(e.style as Record<string, boolean>)?.dashed;
-      return {
-        id: e.id,
-        source: e.source_item_id,
-        target: e.target_item_id,
-        sourceHandle: e.source_handle || 'right',
-        targetHandle: e.target_handle || 'left',
-        type: 'labeled',
-        animated: e.animated || false,
-        style: { stroke: strokeColor, strokeWidth },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: strokeColor,
-          width: 16,
-          height: 16,
-        },
-        data: {
-          label: e.label || undefined,
-          color: strokeColor,
-          strokeWidth,
-          dashed,
+    const flowEdges: Edge[] = boardEdges
+      .map((e) => {
+        const strokeColor = (e.style as Record<string, string>)?.stroke || '#2B2B2B';
+        const strokeWidth = Number((e.style as Record<string, number>)?.strokeWidth) || 2;
+        const dashed = !!(e.style as Record<string, boolean>)?.dashed;
+        const source = e.source_shape_id ? `shape-${e.source_shape_id}` : e.source_item_id;
+        const target = e.target_shape_id ? `shape-${e.target_shape_id}` : e.target_item_id;
+        if (!source || !target) return null;
+        return {
+          id: e.id,
+          source,
+          target,
+          sourceHandle: e.source_handle || 'right',
+          targetHandle: e.target_handle || 'left',
+          type: 'labeled',
           animated: e.animated || false,
-          onEdgeClick: handleEdgeClickFromData,
-        },
-      };
-    });
+          style: { stroke: strokeColor, strokeWidth },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: strokeColor,
+            width: 16,
+            height: 16,
+          },
+          data: {
+            label: e.label || undefined,
+            color: strokeColor,
+            strokeWidth,
+            dashed,
+            animated: e.animated || false,
+            onEdgeClick: handleEdgeClickFromData,
+          },
+        } as Edge;
+      })
+      .filter((e): e is Edge => e !== null);
     setEdges(flowEdges);
   }, [boardEdges, handleEdgeClickFromData, setEdges]);
 
@@ -146,14 +152,9 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
     } else if (nodeId.startsWith('shape-')) {
       await updateShape(nodeId.replace('shape-', ''), { x, y });
     } else {
-      // Item node — direct supabase since item ownership lives in context via refreshItems
-      const { supabase } = await import('@/lib/supabase');
-      await supabase
-        .from('review_items')
-        .update({ board_x: x, board_y: y, updated_at: new Date().toISOString() })
-        .eq('id', nodeId);
+      await updateItemBoardPosition(nodeId, x, y);
     }
-  }, [updateNote, updateShape]);
+  }, [updateNote, updateShape, updateItemBoardPosition]);
 
   const debouncedSavePosition = useDebouncedCallback(saveNodePosition, 300);
 
@@ -184,11 +185,19 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         connection.source.startsWith('note-') || connection.target.startsWith('note-');
 
       if (!isNoteEdge) {
+        // RF node ids: items use the raw item id, shapes use `shape-{uuid}`. Split
+        // into item vs shape columns so FK cascades behave correctly.
+        const sourceIsShape = connection.source.startsWith('shape-');
+        const targetIsShape = connection.target.startsWith('shape-');
+        const sourceId = sourceIsShape ? connection.source.slice(6) : connection.source;
+        const targetId = targetIsShape ? connection.target.slice(6) : connection.target;
         await createEdge({
           review_project_id: ctx.projectId,
           company_id: ctx.companyId,
-          source_item_id: connection.source,
-          target_item_id: connection.target,
+          source_item_id: sourceIsShape ? null : sourceId,
+          source_shape_id: sourceIsShape ? sourceId : null,
+          target_item_id: targetIsShape ? null : targetId,
+          target_shape_id: targetIsShape ? targetId : null,
           source_handle: connection.sourceHandle || 'right',
           target_handle: connection.targetHandle || 'left',
           edge_type: 'labeled',

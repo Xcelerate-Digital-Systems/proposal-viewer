@@ -43,6 +43,7 @@ export async function GET(
       comments: data.comments || [],
       boardEdges: data.boardEdges || [],
       boardNotes: data.boardNotes || [],
+      boardShapes: data.boardShapes || [],
     });
 
     // Prevent browser and CDN caching — always return fresh data

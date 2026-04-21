@@ -47,6 +47,7 @@ interface ContextValue {
   placeItem: (itemId: string) => Promise<void>;
   removeItemFromBoard: (itemId: string) => Promise<void>;
   updateItemStatus: (itemId: string, status: FeedbackStatus) => Promise<void>;
+  updateItemBoardPosition: (itemId: string, x: number, y: number) => Promise<void>;
 
   // Sticky notes
   boardNotes: FeedbackBoardNote[];
@@ -254,6 +255,26 @@ export function FeedbackBoardProvider({
     [toast, refreshItems]
   );
 
+  // Persist a drag-end position and update local state so a subsequent
+  // refreshItems() (triggered by status updates, add-item, etc.) doesn't
+  // snap the node back to the last-seen DB coordinates before the save
+  // completes. Without this, dragged nodes — especially compact icon-layout
+  // ones like email/sms/ad — could visibly jump back after a race.
+  const updateItemBoardPosition = useCallback(
+    async (itemId: string, x: number, y: number) => {
+      setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, board_x: x, board_y: y } : i)));
+      const { error } = await supabase
+        .from('review_items')
+        .update({ board_x: x, board_y: y, updated_at: new Date().toISOString() })
+        .eq('id', itemId);
+      if (error) {
+        toast.error('Failed to save position');
+        refreshItems();
+      }
+    },
+    [toast, refreshItems]
+  );
+
   /* ─── Sticky notes ─────────────────────────────────────────── */
 
   const addNote = useCallback(async (): Promise<FeedbackBoardNote | null> => {
@@ -378,6 +399,9 @@ export function FeedbackBoardProvider({
   const deleteShape = useCallback(
     async (id: string) => {
       setShapes((prev) => prev.filter((s) => s.id !== id));
+      // Optimistically drop any edges touching this shape so the canvas stays
+      // in sync; the DB cascade handles the server-side cleanup.
+      setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
       await supabase.from('review_board_shapes').delete().eq('id', id);
     },
     []
@@ -407,6 +431,7 @@ export function FeedbackBoardProvider({
       placeItem,
       removeItemFromBoard,
       updateItemStatus,
+      updateItemBoardPosition,
       boardNotes,
       addNote,
       updateNote,
@@ -426,7 +451,7 @@ export function FeedbackBoardProvider({
       items, placedItems, unplacedItems,
       customDomain, loading,
       refreshItems,
-      placeItem, removeItemFromBoard, updateItemStatus,
+      placeItem, removeItemFromBoard, updateItemStatus, updateItemBoardPosition,
       boardNotes, addNote, updateNote, deleteNote,
       boardEdges, createEdge, updateEdge, deleteEdge,
       shapes, createShape, updateShape, deleteShape,

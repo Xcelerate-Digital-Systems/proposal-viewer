@@ -75,14 +75,21 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
 
   return (
     <>
-      {/* Allow connections to/from sticky notes */}
-      <Handle
-        id="left"
-        type="target"
-        position={Position.Left}
-        className="!w-2 !h-2 !bg-transparent !border-0 hover:!bg-sketch-ink transition-colors !-left-1"
-        isConnectable={!readOnly}
-      />
+      {/* Allow connections on all 4 sides, stacked source+target so users can
+          drag from any side and drop on any side. */}
+      {(() => {
+        const cls = '!w-2 !h-2 !bg-transparent !border-0 hover:!bg-sketch-ink transition-colors';
+        return (
+          <>
+            <Handle id="left" type="target" position={Position.Left} className={`${cls} !-left-1`} isConnectable={!readOnly} />
+            <Handle id="left-source" type="source" position={Position.Left} className={`${cls} !-left-1`} isConnectable={!readOnly} />
+            <Handle id="top" type="target" position={Position.Top} className={`${cls} !-top-1`} isConnectable={!readOnly} />
+            <Handle id="top-source" type="source" position={Position.Top} className={`${cls} !-top-1`} isConnectable={!readOnly} />
+            <Handle id="bottom" type="source" position={Position.Bottom} className={`${cls} !-bottom-1`} isConnectable={!readOnly} />
+            <Handle id="bottom-target" type="target" position={Position.Bottom} className={`${cls} !-bottom-1`} isConnectable={!readOnly} />
+          </>
+        );
+      })()}
 
       <div
         className={`relative group transition-transform ${
@@ -183,6 +190,13 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
       <Handle
         id="right"
         type="source"
+        position={Position.Right}
+        className="!w-2 !h-2 !bg-transparent !border-0 hover:!bg-gray-400 transition-colors !-right-1"
+        isConnectable={!readOnly}
+      />
+      <Handle
+        id="right-target"
+        type="target"
         position={Position.Right}
         className="!w-2 !h-2 !bg-transparent !border-0 hover:!bg-gray-400 transition-colors !-right-1"
         isConnectable={!readOnly}

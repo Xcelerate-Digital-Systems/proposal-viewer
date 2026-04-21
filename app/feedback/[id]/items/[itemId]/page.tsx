@@ -105,8 +105,18 @@ function ItemViewerContent({
       .eq('review_project_id', projectId)
       .order('sort_order', { ascending: true });
 
-    setItems(data || []);
-  }, [projectId]);
+    // Webpage items live on their own integrated viewer (widget on the real URL),
+    // so they must never appear in this feedback detail view — neither in the
+    // sidebar nor as the current item. If the requested itemId is a webpage,
+    // send the user back to the items listing.
+    const all = data || [];
+    const currentIsWebpage = all.find((i) => i.id === itemId)?.type === 'webpage';
+    if (currentIsWebpage) {
+      router.replace(`/feedback/${projectId}/items`);
+      return;
+    }
+    setItems(all.filter((i) => i.type !== 'webpage'));
+  }, [projectId, itemId, router]);
 
   const fetchComments = useCallback(async () => {
     const { data } = await supabase

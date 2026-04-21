@@ -72,8 +72,28 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
       setActiveTool('select');
       return;
     }
+    if (tool === 'decision') {
+      // Drop a decision shape near the centre of the current viewport so it's
+      // immediately visible, not hidden off-screen.
+      const container = reactFlowRef.current;
+      const rect = container?.getBoundingClientRect();
+      const centre = rect
+        ? rf.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 3 })
+        : { x: 200, y: 200 };
+      void ctx.createShape({
+        shape_type: 'decision',
+        x: Math.round(centre.x - 75),
+        y: Math.round(centre.y - 60),
+        width: null, height: null, end_x: null, end_y: null,
+        content: null,
+        color: DRAW_COLOR, stroke_width: DRAW_STROKE_WIDTH, dashed: false,
+        font_size: null,
+      });
+      setActiveTool('select');
+      return;
+    }
     setActiveTool(tool);
-  }, [ctx]);
+  }, [ctx, rf]);
 
   /* ── Drawing interaction on the canvas ──────────────────── */
 

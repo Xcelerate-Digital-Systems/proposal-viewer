@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Monitor } from 'lucide-react';
-import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackBoardEdge, type FeedbackBoardNote } from '@/lib/supabase';
+import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackBoardShape } from '@/lib/supabase';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useBrandingColors } from '@/hooks/useBrandingColors';
@@ -35,6 +35,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   const [comments, setComments] = useState<FeedbackComment[]>([]);
   const [boardEdges, setBoardEdges] = useState<FeedbackBoardEdge[]>([]);
   const [boardNotes, setBoardNotes] = useState<FeedbackBoardNote[]>([]);
+  const [boardShapes, setBoardShapes] = useState<FeedbackBoardShape[]>([]);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -62,6 +63,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
         setComments(data.comments);
         setBoardEdges(data.boardEdges || []);
         setBoardNotes(data.boardNotes || []);
+        setBoardShapes(data.boardShapes || []);
 
         // Load branding
         const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`, { cache: 'no-store' });
@@ -192,6 +194,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
               items={items}
               boardEdges={boardEdges}
               boardNotes={boardNotes}
+              boardShapes={boardShapes}
               comments={comments}
               branding={branding}
               onSelectItem={handleSelectItem}

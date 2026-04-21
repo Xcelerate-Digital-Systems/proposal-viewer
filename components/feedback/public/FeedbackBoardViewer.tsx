@@ -11,10 +11,11 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { type FeedbackItem, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackComment } from '@/lib/supabase';
+import { type FeedbackItem, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackBoardShape, type FeedbackComment } from '@/lib/supabase';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import FeedbackItemNode, { type ReviewItemNodeData } from '@/components/admin/feedback/board/nodes/FeedbackItemNode';
 import StickyNoteNode, { type StickyNoteNodeData } from '@/components/admin/feedback/board/nodes/StickyNoteNode';
+import ShapeNode, { type ShapeNodeData } from '@/components/admin/feedback/board/nodes/ShapeNode';
 import LabeledEdge from '@/components/admin/feedback/board/edges/LabeledEdge';
 import { type EdgeTypes } from '@xyflow/react';
 
@@ -24,6 +25,7 @@ interface ReviewBoardViewerProps {
   items: FeedbackItem[];
   boardEdges: FeedbackBoardEdge[];
   boardNotes: FeedbackBoardNote[];
+  boardShapes?: FeedbackBoardShape[];
   comments: FeedbackComment[];
   branding: CompanyBranding;
   onSelectItem: (itemId: string) => void;
@@ -34,6 +36,7 @@ interface ReviewBoardViewerProps {
 const nodeTypes: NodeTypes = {
   reviewItem: FeedbackItemNode,
   stickyNote: StickyNoteNode,
+  shape: ShapeNode,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -45,6 +48,7 @@ export default function FeedbackBoardViewer({
   items,
   boardEdges,
   boardNotes,
+  boardShapes = [],
   comments,
   branding,
   onSelectItem,
@@ -98,38 +102,55 @@ export default function FeedbackBoardViewer({
       } satisfies StickyNoteNodeData,
     }));
 
-    setNodes([...itemNodes, ...noteNodes]);
-  }, [placedItems, boardNotes, commentCounts, onSelectItem]);
+    const shapeNodes: Node[] = boardShapes.map((shape) => ({
+      id: `shape-${shape.id}`,
+      type: 'shape',
+      position: { x: shape.x, y: shape.y },
+      draggable: false,
+      selectable: shape.shape_type === 'decision',
+      data: {
+        shape,
+        readOnly: true,
+      } satisfies ShapeNodeData,
+    }));
+
+    setNodes([...itemNodes, ...noteNodes, ...shapeNodes]);
+  }, [placedItems, boardNotes, boardShapes, commentCounts, onSelectItem]);
 
   // Build edges
   useEffect(() => {
-    const flowEdges: Edge[] = boardEdges.map((e) => {
-      const strokeColor = (e.style as Record<string, string>)?.stroke || accent;
-      return {
-        id: e.id,
-        source: e.source_item_id,
-        target: e.target_item_id,
-        sourceHandle: e.source_handle || 'right',
-        targetHandle: e.target_handle || 'left',
-        type: 'labeled',
-        animated: e.animated || false,
-        label: e.label || undefined,
-        style: {
-          stroke: strokeColor,
-          strokeWidth: Number((e.style as Record<string, number>)?.strokeWidth) || 2,
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: strokeColor,
-          width: 16,
-          height: 16,
-        },
-        labelStyle: { fontSize: 11, fontWeight: 500, fill: '#64748b' },
-        labelBgStyle: { fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 1 },
-        labelBgPadding: [6, 4] as [number, number],
-        labelBgBorderRadius: 6,
-      };
-    });
+    const flowEdges: Edge[] = boardEdges
+      .map((e) => {
+        const strokeColor = (e.style as Record<string, string>)?.stroke || accent;
+        const source = e.source_shape_id ? `shape-${e.source_shape_id}` : e.source_item_id;
+        const target = e.target_shape_id ? `shape-${e.target_shape_id}` : e.target_item_id;
+        if (!source || !target) return null;
+        return {
+          id: e.id,
+          source,
+          target,
+          sourceHandle: e.source_handle || 'right',
+          targetHandle: e.target_handle || 'left',
+          type: 'labeled',
+          animated: e.animated || false,
+          label: e.label || undefined,
+          style: {
+            stroke: strokeColor,
+            strokeWidth: Number((e.style as Record<string, number>)?.strokeWidth) || 2,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: strokeColor,
+            width: 16,
+            height: 16,
+          },
+          labelStyle: { fontSize: 11, fontWeight: 500, fill: '#64748b' },
+          labelBgStyle: { fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 1 },
+          labelBgPadding: [6, 4] as [number, number],
+          labelBgBorderRadius: 6,
+        } as Edge;
+      })
+      .filter((e): e is Edge => e !== null);
 
     setEdges(flowEdges);
   }, [boardEdges, accent]);
@@ -137,15 +158,14 @@ export default function FeedbackBoardViewer({
   // Handle node click — navigate to item viewer
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
-      // Only navigate for feedback item nodes, not sticky notes
-      if (!node.id.startsWith('note-')) {
-        onSelectItem(node.id);
-      }
+      // Only navigate for feedback item nodes — skip notes and shapes.
+      if (node.id.startsWith('note-') || node.id.startsWith('shape-')) return;
+      onSelectItem(node.id);
     },
     [onSelectItem]
   );
 
-  if (placedItems.length === 0) {
+  if (placedItems.length === 0 && boardNotes.length === 0 && boardShapes.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-center p-8 bg-notebook">
         <div>
@@ -181,6 +201,7 @@ export default function FeedbackBoardViewer({
         <MiniMap
           nodeClassName={(node) => {
             if (node.type === 'stickyNote') return 'fill-sticky-yellow';
+            if (node.type === 'shape') return 'fill-sketch-ink/40';
             return 'fill-paper stroke-sketch-ink/40';
           }}
           className="!bg-paper-dark !border-2 !border-sketch-ink/50 !rounded-lg"

@@ -150,8 +150,12 @@ export type FeedbackBoardEdge = {
   id: string;
   review_project_id: string;
   company_id: string;
-  source_item_id: string;
-  target_item_id: string;
+  /** Set when the source is a review_item. Mutually exclusive with source_shape_id. */
+  source_item_id: string | null;
+  /** Set when the source is a board shape (e.g. a decision node). */
+  source_shape_id: string | null;
+  target_item_id: string | null;
+  target_shape_id: string | null;
   source_handle: string;
   target_handle: string;
   label: string | null;
@@ -177,7 +181,22 @@ export type FeedbackBoardNote = {
   updated_at: string;
 };
 
-export type FeedbackShapeType = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text';
+export type FeedbackShapeType = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text' | 'decision';
+
+/**
+ * Shape of the JSON blob stored in `review_board_shapes.content` for decision shapes.
+ * Drawn shapes (rectangle/ellipse/arrow/line) leave content null; text shapes store raw text.
+ */
+export type FeedbackDecisionBranch = {
+  /** Stable id so edges can reference a branch across renames. */
+  id: string;
+  label: string;
+  color: string;
+};
+export type FeedbackDecisionContent = {
+  question: string;
+  branches: FeedbackDecisionBranch[];
+};
 
 export type FeedbackBoardShape = {
   id: string;
