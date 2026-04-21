@@ -1,23 +1,40 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { fontFamily } from '@/lib/google-fonts';
 
 interface GuestOnboardingModalProps {
   open: boolean;
   /** Called with a trimmed name (required) and optional email. */
   onSubmit: (name: string, email: string) => void;
-  /** Optional accent color for the submit button (defaults to the teal palette). */
+  /** Accent color for the primary button (defaults to teal). */
   accentColor?: string;
+  /** Optional brand logo — shown at the top of the card. */
+  logoUrl?: string | null;
+  /** Optional company name — used for the logo fallback and footer line. */
+  companyName?: string | null;
+  /** Optional project title — shown in the heading for context. */
+  projectTitle?: string | null;
+  /** Optional heading font family name. */
+  fontHeading?: string | null;
 }
 
 /**
  * First-visit identity prompt for public review viewers. Matches the widget's
  * onboarding flow so a visitor only enters their name once per device.
+ *
+ * Surfaces company branding (logo + name + project title) so the reviewer has
+ * a clear sense of who's asking and what they're about to review.
  */
 export default function GuestOnboardingModal({
   open,
   onSubmit,
   accentColor = '#017C87',
+  logoUrl,
+  companyName,
+  projectTitle,
+  fontHeading,
 }: GuestOnboardingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,7 +43,7 @@ export default function GuestOnboardingModal({
 
   useEffect(() => {
     if (!open) return;
-    const t = setTimeout(() => nameRef.current?.focus(), 40);
+    const t = setTimeout(() => nameRef.current?.focus(), 60);
     return () => clearTimeout(t);
   }, [open]);
 
@@ -46,72 +63,144 @@ export default function GuestOnboardingModal({
     onSubmit(trimmedName, trimmedEmail);
   };
 
+  const initial = (companyName?.trim()?.[0] ?? 'F').toUpperCase();
+  const headingFont = fontHeading ? fontFamily(fontHeading) : undefined;
+
   return (
     <div
-      className="fixed inset-0 z-[2147483646] flex items-center justify-center p-5 bg-slate-900/55 backdrop-blur-sm"
+      className="fixed inset-0 z-[2147483646] flex items-center justify-center p-5 bg-slate-950/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="guest-onboard-title"
     >
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes cardIn {
+          from { opacity: 0; transform: translateY(8px) scale(0.98) }
+          to { opacity: 1; transform: translateY(0) scale(1) }
+        }
+      `}</style>
+
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-[380px] bg-white rounded-2xl shadow-2xl p-6"
+        className="relative w-full max-w-[400px] bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.35)] overflow-hidden animate-[cardIn_220ms_cubic-bezier(0.22,0.61,0.36,1)]"
       >
-        <h2 id="guest-onboard-title" className="text-lg font-semibold text-gray-900 mb-1.5">
-          Welcome
-        </h2>
-        <p className="text-sm text-gray-500 leading-relaxed mb-5">
-          Add your name so the team knows who&rsquo;s leaving feedback. Your email is
-          optional and only used to notify you of replies.
-        </p>
-
-        <div className="mb-3">
-          <label
-            htmlFor="guest-name"
-            className="block text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-1"
-          >
-            Your name
-          </label>
-          <input
-            id="guest-name"
-            ref={nameRef}
-            type="text"
-            autoComplete="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Jane Doe"
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-          />
-        </div>
-
-        <div className="mb-5">
-          <label
-            htmlFor="guest-email"
-            className="block text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-1"
-          >
-            Email <span className="ml-1 text-[10px] normal-case tracking-normal text-gray-400">(optional)</span>
-          </label>
-          <input
-            id="guest-email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => { setEmail(e.target.value); setEmailError(false); }}
-            placeholder="jane@example.com"
-            className={`w-full px-3 py-2.5 rounded-lg border text-sm text-gray-900 outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal ${
-              emailError ? 'border-red-400' : 'border-gray-200'
-            }`}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        {/* Brand ribbon */}
+        <div
+          className="h-1.5 w-full"
           style={{ backgroundColor: accentColor }}
-        >
-          Continue
-        </button>
+        />
+
+        <div className="px-7 pt-7 pb-6">
+          {/* Logo / initial */}
+          <div className="flex items-center gap-3 mb-5">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={companyName ?? 'Brand logo'}
+                className="h-8 w-auto max-w-[140px] object-contain"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base font-semibold shrink-0"
+                style={{ backgroundColor: accentColor }}
+              >
+                {initial}
+              </div>
+            )}
+            {companyName && !logoUrl && (
+              <span
+                className="text-sm font-semibold text-gray-900 truncate"
+                style={{ fontFamily: headingFont }}
+              >
+                {companyName}
+              </span>
+            )}
+          </div>
+
+          {/* Headline */}
+          <h2
+            id="guest-onboard-title"
+            className="text-[22px] leading-tight font-semibold text-gray-900"
+            style={{ fontFamily: headingFont }}
+          >
+            {projectTitle ? (
+              <>
+                Review <span className="text-gray-500 font-medium">·</span>{' '}
+                <span className="block mt-0.5 truncate">{projectTitle}</span>
+              </>
+            ) : (
+              'Welcome'
+            )}
+          </h2>
+          <p className="text-[13px] text-gray-500 leading-relaxed mt-2">
+            Add your name so the team knows who&rsquo;s leaving feedback. Email is
+            optional — we&rsquo;ll only use it to notify you of replies.
+          </p>
+
+          {/* Inputs */}
+          <div className="mt-5 space-y-2.5">
+            <div className="relative">
+              <input
+                id="guest-name"
+                ref={nameRef}
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder=" "
+                className="peer w-full px-3.5 pt-5 pb-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-300 focus:ring-2"
+                style={{ ['--tw-ring-color' as string]: `${accentColor}25` }}
+              />
+              <label
+                htmlFor="guest-name"
+                className="absolute left-3.5 top-1.5 text-[10px] uppercase tracking-wide font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-gray-500"
+              >
+                Your name
+              </label>
+            </div>
+
+            <div className="relative">
+              <input
+                id="guest-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setEmailError(false); }}
+                placeholder=" "
+                className={`peer w-full px-3.5 pt-5 pb-2 rounded-xl bg-gray-50 border text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-300 focus:ring-2 ${
+                  emailError ? 'border-red-300 focus:border-red-300' : 'border-gray-200'
+                }`}
+                style={{ ['--tw-ring-color' as string]: emailError ? '#fecaca' : `${accentColor}25` }}
+              />
+              <label
+                htmlFor="guest-email"
+                className="absolute left-3.5 top-1.5 text-[10px] uppercase tracking-wide font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-gray-500"
+              >
+                Email (optional)
+              </label>
+            </div>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="group mt-5 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 shadow-sm"
+            style={{ backgroundColor: accentColor }}
+          >
+            Continue
+            <ArrowRight
+              size={16}
+              className="transition-transform group-hover:translate-x-0.5 group-disabled:translate-x-0"
+            />
+          </button>
+
+          {/* Footer */}
+          <p className="mt-4 text-[11px] text-center text-gray-400">
+            {companyName ? `An invitation from ${companyName}` : 'Private feedback space'}
+          </p>
+        </div>
       </form>
     </div>
   );

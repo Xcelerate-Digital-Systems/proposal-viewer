@@ -210,6 +210,10 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           open={showOnboarding}
           onSubmit={(name, email) => saveGuestIdentity(name, email)}
           accentColor={branding.accent_color}
+          logoUrl={branding.logo_url}
+          companyName={branding.name}
+          projectTitle={project?.title}
+          fontHeading={branding.font_heading}
         />
 
         <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
@@ -275,6 +279,10 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         open={showOnboarding}
         onSubmit={(name, email) => saveGuestIdentity(name, email)}
         accentColor={branding.accent_color}
+        logoUrl={branding.logo_url}
+        companyName={branding.name}
+        projectTitle={project?.title}
+        fontHeading={branding.font_heading}
       />
       <FeedbackDetailView
         mode="client"

@@ -8,12 +8,14 @@ import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type Fee
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useBrandingColors } from '@/hooks/useBrandingColors';
+import { useGuestIdentity } from '@/hooks/useGuestIdentity';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewer';
 import FeedbackNotFound from '@/components/feedback/FeedbackNotFound';
 import WhiteboardSidebar from '@/components/feedback/public/WhiteboardSidebar';
+import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
 
 /**
  * Public whiteboard view — /whiteboard/[token]
@@ -39,6 +41,13 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   const [brandingLoaded, setBrandingLoaded] = useState(false);
 
   const { bgSecondary, sidebarText } = useBrandingColors(branding);
+
+  // ── Guest identity ──
+  // Collect name + email on first visit so the reviewer isn't prompted again
+  // when they click into an individual item. The key is shared with the
+  // /review/[token] route and the embedded widget.
+  const { guestName, saveGuestIdentity, hydrated: identityHydrated } = useGuestIdentity();
+  const showOnboarding = identityHydrated && !guestName && !loading && !notFound;
 
   // Fetch via the /api/whiteboard/[token] endpoint
   useEffect(() => {
@@ -112,6 +121,16 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   return (
     <>
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+
+      <GuestOnboardingModal
+        open={showOnboarding}
+        onSubmit={(name, email) => saveGuestIdentity(name, email)}
+        accentColor={branding.accent_color}
+        logoUrl={branding.logo_url}
+        companyName={branding.name}
+        projectTitle={project?.title}
+        fontHeading={branding.font_heading}
+      />
 
       {/* Mobile — desktop required message */}
       <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
