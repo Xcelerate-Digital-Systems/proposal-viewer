@@ -72,18 +72,22 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
       setActiveTool('select');
       return;
     }
-    if (tool === 'decision') {
-      // Drop a decision shape near the centre of the current viewport so it's
+    if (tool === 'decision' || tool === 'wait') {
+      // Drop the shape near the centre of the current viewport so it's
       // immediately visible, not hidden off-screen.
       const container = reactFlowRef.current;
       const rect = container?.getBoundingClientRect();
       const centre = rect
         ? rf.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 3 })
         : { x: 200, y: 200 };
+      // Rough half-size to centre the spawn; the visual sizes are owned by
+      // the node components, we just ballpark it so the drop point feels right.
+      const offsetX = tool === 'decision' ? 86 : 110;
+      const offsetY = tool === 'decision' ? 86 : 126;
       void ctx.createShape({
-        shape_type: 'decision',
-        x: Math.round(centre.x - 75),
-        y: Math.round(centre.y - 60),
+        shape_type: tool,
+        x: Math.round(centre.x - offsetX),
+        y: Math.round(centre.y - offsetY),
         width: null, height: null, end_x: null, end_y: null,
         content: null,
         color: DRAW_COLOR, stroke_width: DRAW_STROKE_WIDTH, dashed: false,

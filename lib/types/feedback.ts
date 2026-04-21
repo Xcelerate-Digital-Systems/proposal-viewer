@@ -219,7 +219,15 @@ export type FeedbackBoardNote = {
   updated_at: string;
 };
 
-export type FeedbackShapeType = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text' | 'decision';
+export type FeedbackShapeType = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text' | 'decision' | 'wait';
+
+/** Stored as JSON in `review_board_shapes.content` for wait shapes. */
+export type FeedbackWaitUnit = 'minutes' | 'hours' | 'days' | 'weeks';
+export type FeedbackWaitContent = {
+  duration: number;
+  unit: FeedbackWaitUnit;
+  label?: string | null;
+};
 
 /**
  * Shape of the JSON blob stored in `review_board_shapes.content` for decision shapes.

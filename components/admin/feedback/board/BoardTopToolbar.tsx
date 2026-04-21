@@ -1,9 +1,9 @@
 'use client';
 
-import { MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond } from 'lucide-react';
+import { MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-export type BoardTool = 'select' | 'sticky' | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text' | 'decision';
+export type BoardTool = 'select' | 'sticky' | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text' | 'decision' | 'wait';
 
 interface ToolDef {
   id: BoardTool;
@@ -21,6 +21,7 @@ const TOOLS: ToolDef[] = [
   { id: 'line', icon: <Minus size={22} strokeWidth={2.2} />, label: 'Line', shortcut: 'L' },
   { id: 'text', icon: <Type size={22} strokeWidth={1.7} />, label: 'Text', shortcut: 'T' },
   { id: 'decision', icon: <Diamond size={22} strokeWidth={1.7} />, label: 'Decision', shortcut: 'D' },
+  { id: 'wait', icon: <Clock size={22} strokeWidth={1.7} />, label: 'Wait Step', shortcut: 'W' },
   { id: 'sticky', icon: <StickyNote size={22} strokeWidth={1.7} />, label: 'Sticky Note', shortcut: 'N' },
 ];
 

@@ -2,8 +2,8 @@
 
 import { memo, useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Plus, X } from 'lucide-react';
-import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent } from '@/lib/supabase';
+import { Plus, X, Clock } from 'lucide-react';
+import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit } from '@/lib/supabase';
 import { roughRect, roughLine, roughPath } from '@/components/feedback/sketchy/roughPath';
 import { hashStringToInt } from '@/components/feedback/sketchy/seed';
 
@@ -37,6 +37,18 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
   if (shape.shape_type === 'decision') {
     return (
       <DecisionShape
+        shape={shape}
+        selected={!!selected}
+        readOnly={readOnly}
+        onUpdateContent={onUpdateContent}
+      />
+    );
+  }
+
+  // Wait shape — Funnelytics-style delay step
+  if (shape.shape_type === 'wait') {
+    return (
+      <WaitShape
         shape={shape}
         selected={!!selected}
         readOnly={readOnly}
@@ -272,7 +284,9 @@ export function serializeDecisionContent(content: FeedbackDecisionContent): stri
   return JSON.stringify(content);
 }
 
-const DIAMOND = 130;
+// Sized to roughly match the feedback item card height (252px) when branches
+// are present on top/bottom. 160 diamond + 12 padding + ~40 per branch row ≈ 252.
+const DIAMOND = 160;
 const DIAMOND_PAD = 6;
 const DIAMOND_BOX = DIAMOND + DIAMOND_PAD * 2;
 
@@ -526,22 +540,6 @@ function DecisionShape({
       className={`relative grid ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`}
       style={{ gridTemplateColumns: 'minmax(80px, auto) auto minmax(80px, auto)', gridTemplateRows: 'minmax(40px, auto) auto minmax(40px, auto)' }}
     >
-      {/* Input target handles on all 4 diamond corners, so connections can
-          drop onto the node from any direction. Each branch owns its own
-          source handle on whichever side it lives. */}
-      <Handle id="top" type="target" position={Position.Top}
-        className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-        style={{ left: '50%' }} isConnectable={!readOnly} />
-      <Handle id="left" type="target" position={Position.Left}
-        className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-        style={{ top: '50%' }} isConnectable={!readOnly} />
-      <Handle id="right-target" type="target" position={Position.Right}
-        className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-        style={{ top: '50%' }} isConnectable={!readOnly} />
-      <Handle id="bottom-target" type="target" position={Position.Bottom}
-        className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
-        style={{ left: '50%' }} isConnectable={!readOnly} />
-
       {/* ── Row 1: top branches ─────────────────────────────────── */}
       <div /> {/* spacer */}
       <div className="flex flex-wrap items-end justify-center gap-2 pb-1">
@@ -557,6 +555,34 @@ function DecisionShape({
       </div>
 
       <div className="relative" style={{ width: DIAMOND_BOX, height: DIAMOND_BOX }}>
+        {/* Input handles live INSIDE the diamond div so they anchor to the
+            diamond edges, not the outer node grid (which would place them far
+            beyond the diamond when branches are present on that side). */}
+        <Handle
+          id="top" type="target" position={Position.Top}
+          className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
+          style={{ top: DIAMOND_PAD, left: DIAMOND_BOX / 2 }}
+          isConnectable={!readOnly}
+        />
+        <Handle
+          id="left" type="target" position={Position.Left}
+          className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
+          style={{ top: DIAMOND_BOX / 2, left: DIAMOND_PAD }}
+          isConnectable={!readOnly}
+        />
+        <Handle
+          id="right-target" type="target" position={Position.Right}
+          className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
+          style={{ top: DIAMOND_BOX / 2, left: DIAMOND_BOX - DIAMOND_PAD }}
+          isConnectable={!readOnly}
+        />
+        <Handle
+          id="bottom-target" type="target" position={Position.Bottom}
+          className="!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors"
+          style={{ top: DIAMOND_BOX - DIAMOND_PAD, left: DIAMOND_BOX / 2 }}
+          isConnectable={!readOnly}
+        />
+
         <svg
           width={DIAMOND_BOX}
           height={DIAMOND_BOX}
@@ -577,7 +603,7 @@ function DecisionShape({
           ))}
         </svg>
         <div
-          className="absolute inset-0 flex items-center justify-center px-6 py-6 text-center"
+          className="absolute inset-0 flex items-center justify-center px-8 py-8 text-center"
           onDoubleClick={(e) => {
             e.stopPropagation();
             if (!readOnly) setEditingQuestion(true);
@@ -594,11 +620,11 @@ function DecisionShape({
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitQuestion(); }
               }}
               className="w-full bg-transparent border-none outline-none resize-none font-hand text-sketch-ink text-center leading-tight"
-              style={{ fontSize: 15 }}
+              style={{ fontSize: 16 }}
               rows={3}
             />
           ) : (
-            <span className="font-hand text-sketch-ink leading-tight" style={{ fontSize: 15 }}>
+            <span className="font-hand text-sketch-ink leading-tight" style={{ fontSize: 16 }}>
               {content.question || (!readOnly && <span className="opacity-40">Double-click</span>)}
             </span>
           )}
@@ -621,6 +647,205 @@ function DecisionShape({
   );
 }
 
+
+/* ─── Wait shape — flowchart delay step (Funnelytics-style) ──────── */
+
+const WAIT_UNITS: { value: FeedbackWaitUnit; label: string; short: string }[] = [
+  { value: 'minutes', label: 'Minutes', short: 'min' },
+  { value: 'hours',   label: 'Hours',   short: 'hr' },
+  { value: 'days',    label: 'Days',    short: 'day' },
+  { value: 'weeks',   label: 'Weeks',   short: 'wk' },
+];
+
+const DEFAULT_WAIT_CONTENT: FeedbackWaitContent = { duration: 1, unit: 'days', label: null };
+
+export function parseWaitContent(raw: string | null | undefined): FeedbackWaitContent {
+  if (!raw) return DEFAULT_WAIT_CONTENT;
+  try {
+    const parsed = JSON.parse(raw) as Partial<FeedbackWaitContent>;
+    const unit = WAIT_UNITS.find((u) => u.value === parsed?.unit)?.value ?? DEFAULT_WAIT_CONTENT.unit;
+    const duration = typeof parsed?.duration === 'number' && parsed.duration > 0
+      ? Math.min(parsed.duration, 9999)
+      : DEFAULT_WAIT_CONTENT.duration;
+    return {
+      duration,
+      unit,
+      label: typeof parsed?.label === 'string' ? parsed.label : null,
+    };
+  } catch {
+    return DEFAULT_WAIT_CONTENT;
+  }
+}
+
+export function serializeWaitContent(content: FeedbackWaitContent): string {
+  return JSON.stringify(content);
+}
+
+const WAIT_WIDTH = 220;
+const WAIT_HEIGHT = 252; // Matches the feedback item card height
+
+function formatWaitLabel(content: FeedbackWaitContent): string {
+  const unitDef = WAIT_UNITS.find((u) => u.value === content.unit);
+  const plural = content.duration === 1 ? unitDef?.short : `${unitDef?.short}s`;
+  return `Wait ${content.duration} ${plural || content.unit}`;
+}
+
+function WaitShape({
+  shape, selected, readOnly, onUpdateContent,
+}: {
+  shape: FeedbackBoardShape;
+  selected: boolean;
+  readOnly?: boolean;
+  onUpdateContent?: (id: string, content: string) => void;
+}) {
+  const content = useMemo(() => parseWaitContent(shape.content), [shape.content]);
+  const [editing, setEditing] = useState(false);
+  const [duration, setDuration] = useState(content.duration);
+  const [unit, setUnit] = useState<FeedbackWaitUnit>(content.unit);
+  const [labelDraft, setLabelDraft] = useState(content.label ?? '');
+
+  useEffect(() => {
+    setDuration(content.duration);
+    setUnit(content.unit);
+    setLabelDraft(content.label ?? '');
+  }, [content.duration, content.unit, content.label]);
+
+  const seed = useMemo(() => hashStringToInt(shape.id), [shape.id]);
+  const strokeColor = selected ? '#017C87' : '#2B2B2B';
+  const strokeWidth = selected ? 2.4 : 1.8;
+  const rectPaths = useMemo(
+    () => roughRect(6, 6, WAIT_WIDTH - 12, WAIT_HEIGHT - 12, {
+      seed,
+      roughness: 1.5,
+      bowing: 1.4,
+      stroke: strokeColor,
+      strokeWidth,
+      fill: '#DBEAFE',
+      fillStyle: 'solid',
+      disableMultiStroke: false,
+    }),
+    [seed, strokeColor, strokeWidth]
+  );
+
+  const commit = () => {
+    setEditing(false);
+    const safeDuration = Math.min(Math.max(1, Math.round(duration)), 9999);
+    const next: FeedbackWaitContent = {
+      duration: safeDuration,
+      unit,
+      label: labelDraft.trim() || null,
+    };
+    if (
+      next.duration !== content.duration ||
+      next.unit !== content.unit ||
+      (next.label ?? null) !== (content.label ?? null)
+    ) {
+      onUpdateContent?.(shape.id, serializeWaitContent(next));
+    }
+  };
+
+  const handleClass = '!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+
+  return (
+    <div className={`relative ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`} style={{ width: WAIT_WIDTH, height: WAIT_HEIGHT }}>
+      {/* Four-sided connection handles — target on top/left, source on
+          bottom/right so the typical bottom→top flow routes naturally. */}
+      <Handle id="top"           type="target" position={Position.Top}    className={handleClass} style={{ top: 0, left: '50%' }} isConnectable={!readOnly} />
+      <Handle id="left"          type="target" position={Position.Left}   className={handleClass} style={{ top: '50%', left: 0 }} isConnectable={!readOnly} />
+      <Handle id="right"         type="source" position={Position.Right}  className={handleClass} style={{ top: '50%', right: 0 }} isConnectable={!readOnly} />
+      <Handle id="right-target"  type="target" position={Position.Right}  className={handleClass} style={{ top: '50%', right: 0 }} isConnectable={!readOnly} />
+      <Handle id="bottom"        type="source" position={Position.Bottom} className={handleClass} style={{ bottom: 0, left: '50%' }} isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="target" position={Position.Bottom} className={handleClass} style={{ bottom: 0, left: '50%' }} isConnectable={!readOnly} />
+      <Handle id="top-source"    type="source" position={Position.Top}    className={handleClass} style={{ top: 0, left: '50%' }} isConnectable={!readOnly} />
+      <Handle id="left-source"   type="source" position={Position.Left}   className={handleClass} style={{ top: '50%', left: 0 }} isConnectable={!readOnly} />
+
+      <svg
+        width={WAIT_WIDTH}
+        height={WAIT_HEIGHT}
+        viewBox={`0 0 ${WAIT_WIDTH} ${WAIT_HEIGHT}`}
+        className="absolute inset-0 pointer-events-none"
+        aria-hidden="true"
+      >
+        {rectPaths.map((p, i) => (
+          <path
+            key={i}
+            d={p.d}
+            stroke={p.stroke}
+            strokeWidth={p.strokeWidth}
+            fill={p.fill ?? 'none'}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </svg>
+
+      <div
+        className="relative h-full flex flex-col items-center justify-center gap-3 px-4 py-4 text-center"
+        onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
+      >
+        <div className="w-12 h-12 rounded-full bg-paper border-2 border-sketch-ink/60 flex items-center justify-center shadow-sketch">
+          <Clock size={22} className="text-sketch-ink" strokeWidth={1.8} />
+        </div>
+
+        {editing && !readOnly ? (
+          <div className="flex flex-col items-center gap-2 w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1 w-full">
+              <input
+                type="number"
+                min={1}
+                max={9999}
+                autoFocus
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value, 10) || 1)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                  if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
+                }}
+                className="flex-1 min-w-0 text-center px-2 py-1 rounded-md border border-sketch-ink/40 bg-paper font-hand text-base focus:outline-none focus:border-teal"
+              />
+              <select
+                value={unit}
+                onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
+                className="px-1.5 py-1 rounded-md border border-sketch-ink/40 bg-paper font-hand text-sm focus:outline-none focus:border-teal"
+              >
+                {WAIT_UNITS.map((u) => (
+                  <option key={u.value} value={u.value}>{u.label}</option>
+                ))}
+              </select>
+            </div>
+            <input
+              type="text"
+              value={labelDraft}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+              }}
+              placeholder="Label (optional)"
+              className="w-full px-2 py-1 rounded-md border border-sketch-ink/30 bg-paper font-hand text-xs focus:outline-none focus:border-teal"
+            />
+          </div>
+        ) : (
+          <>
+            <div className="font-hand text-xl text-sketch-ink leading-tight">
+              {formatWaitLabel(content)}
+            </div>
+            {content.label && (
+              <div className="font-hand text-xs text-sketch-ink/60 leading-snug">
+                {content.label}
+              </div>
+            )}
+            {!readOnly && !content.label && (
+              <div className="text-[10px] text-sketch-ink/40 italic">
+                Double-click to edit
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const ShapeNode = memo(ShapeNodeComponent);
 ShapeNode.displayName = 'ShapeNode';
