@@ -7,6 +7,7 @@ import {
   Controls,
   MiniMap,
   useReactFlow,
+  ConnectionMode,
   type NodeTypes,
   type EdgeTypes,
   MarkerType,
@@ -273,6 +274,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           onEdgeClick={board.onEdgeClick}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
+          connectionMode={ConnectionMode.Loose}
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
           fitViewOptions={{ padding: 0.2 }}
