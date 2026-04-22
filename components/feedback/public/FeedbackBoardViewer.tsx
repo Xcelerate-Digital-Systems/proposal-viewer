@@ -5,6 +5,7 @@ import {
   ReactFlow,
   Controls,
   MiniMap,
+  ConnectionMode,
   type Node,
   type Edge,
   type NodeTypes,
@@ -197,6 +198,8 @@ export default function FeedbackBoardViewer({
         onNodeClick={onNodeClick}
         fitView
         fitViewOptions={{ padding: 0.3 }}
+        minZoom={0.1}
+        maxZoom={2}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={true}
@@ -205,6 +208,10 @@ export default function FeedbackBoardViewer({
         zoomOnPinch
         style={{ background: 'transparent' }}
         proOptions={{ hideAttribution: true }}
+        // Loose mode so source-typed handles can still anchor as edge targets —
+        // every Wait / Action / Item handle is declared type="source" (see
+        // admin board note) and strict mode would silently drop those edges.
+        connectionMode={ConnectionMode.Loose}
       >
         <Controls
           showInteractive={false}

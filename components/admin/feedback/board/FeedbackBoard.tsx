@@ -281,6 +281,8 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
           fitViewOptions={{ padding: 0.2 }}
+          minZoom={0.1}
+          maxZoom={2}
           snapToGrid
           snapGrid={[20, 20]}
           style={{ background: 'transparent' }}

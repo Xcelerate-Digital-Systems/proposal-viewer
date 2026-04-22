@@ -472,7 +472,7 @@ function DecisionShape({
               style={{ color: pal.text, minWidth: 32 }}
             />
           ) : (
-            <span className={b.label ? '' : 'opacity-50'}>{b.label || 'Label'}</span>
+            <span className={b.label ? '' : 'opacity-50'}>{b.label || '–'}</span>
           )}
         </div>
 
