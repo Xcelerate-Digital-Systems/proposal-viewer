@@ -83,6 +83,14 @@ interface ReviewDetailViewProps {
   /** Share token for content loading (e.g. signed URLs) */
   shareToken?: string;
 
+  /**
+   * When true, click-to-pin + automatic text-highlight capture are disabled so
+   * the reviewer can interact with the underlying content (click links, scroll
+   * inside frames, select text without leaving a comment). Drawing tools still
+   * work if the user explicitly picks one.
+   */
+  browseMode?: boolean;
+
   // ── Admin extras ──
   /** Render function for header-right actions (share button, external link, etc.) */
   renderHeaderActions?: (currentItem: FeedbackItem | null) => React.ReactNode;
@@ -136,6 +144,7 @@ export default function FeedbackDetailView({
   onFilterChange,
   backAction,
   shareToken,
+  browseMode = false,
   renderHeaderActions,
   companyId,
   versions,
@@ -244,7 +253,7 @@ export default function FeedbackDetailView({
   // ── Text highlight state (available for all content types) ──
   const { selection: textSelection, clearSelection: clearTextSelection } = useTextHighlight({
     containerRef: imageContainerRef as React.RefObject<HTMLElement>,
-    enabled: feedbackMode === 'idle' || feedbackMode === 'highlight',
+    enabled: !browseMode && (feedbackMode === 'idle' || feedbackMode === 'highlight'),
   });
 
   // Filter text_highlight comments (scoped to active version)
@@ -322,6 +331,10 @@ export default function FeedbackDetailView({
 
   // ── Pin click → always open comments when pin is placed ──
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // Browse mode: reviewer wants to interact with the underlying content, not
+    // drop a pin. Bail before anything fires.
+    if (browseMode) return;
+
     // Compute click position as % within the container BEFORE forwarding the
     // event — so we can hand the same coords to the screenshot crop and end
     // up with a 16:9 frame centred on the pin marker.
@@ -336,7 +349,7 @@ export default function FeedbackDetailView({
         if (url) setPendingScreenshotUrl(url);
       });
     }
-  }, [baseHandleImageClick, pinActive, captureScreenshot, imageContainerRef]);
+  }, [browseMode, baseHandleImageClick, pinActive, captureScreenshot, imageContainerRef]);
 
   // ── Existing pin clicked → show popover ──
   const handlePinClick = useCallback((commentId?: string) => {

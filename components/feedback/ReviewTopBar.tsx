@@ -1,0 +1,153 @@
+'use client';
+
+import { useState } from 'react';
+import { MessageSquare, MousePointer2, ArrowRight } from 'lucide-react';
+import CompleteFeedbackModal from './CompleteFeedbackModal';
+import { fontFamily } from '@/lib/google-fonts';
+
+export type ReviewMode = 'comment' | 'browse';
+
+interface ReviewTopBarProps {
+  projectTitle: string;
+  clientName?: string | null;
+  shareToken: string;
+  reviewerName: string;
+  reviewerEmail: string;
+
+  mode: ReviewMode;
+  onModeChange: (next: ReviewMode) => void;
+
+  accentColor?: string;
+  logoUrl?: string | null;
+  companyName?: string | null;
+  fontHeading?: string | null;
+
+  /** When true, render the Finish button as disabled "Review submitted". */
+  submitted: boolean;
+  /** Called after the reviewer successfully posts their completion. */
+  onSubmitted: () => void;
+}
+
+/**
+ * Fixed top chrome on the public reviewer page. Houses project context
+ * on the left, Comment/Browse mode toggle in the centre, and the reviewer
+ * avatar + "Finish reviewing" button on the right.
+ *
+ * Browse mode gates pin placement in FeedbackDetailView; Comment mode is
+ * the default and restores full pin/highlight behaviour.
+ */
+export default function ReviewTopBar({
+  projectTitle,
+  clientName,
+  shareToken,
+  reviewerName,
+  reviewerEmail,
+  mode,
+  onModeChange,
+  accentColor = '#017C87',
+  logoUrl,
+  companyName,
+  fontHeading,
+  submitted,
+  onSubmitted,
+}: ReviewTopBarProps) {
+  const [showFinish, setShowFinish] = useState(false);
+  const headingFont = fontHeading ? fontFamily(fontHeading) : undefined;
+  const initials = (reviewerName.trim()[0] ?? 'R').toUpperCase();
+
+  return (
+    <>
+      <div className="fixed top-0 inset-x-0 z-30 h-12 bg-white border-b border-gray-200 flex items-center px-4 gap-4">
+        {/* Left — brand + project */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {logoUrl ? (
+            <img src={logoUrl} alt={companyName ?? 'Brand'} className="h-6 w-auto max-w-[120px] object-contain" />
+          ) : companyName ? (
+            <span
+              className="text-sm font-semibold text-gray-900 truncate"
+              style={{ fontFamily: headingFont }}
+            >
+              {companyName}
+            </span>
+          ) : null}
+          {(logoUrl || companyName) && <span className="h-4 w-px bg-gray-200" />}
+          <div className="min-w-0 flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-900 truncate">
+              {projectTitle}
+            </span>
+            {clientName && (
+              <span className="text-xs text-gray-400 truncate hidden md:inline">
+                · {clientName}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Centre — Comment / Browse toggle */}
+        <div className="flex items-center bg-gray-100 rounded-full p-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => onModeChange('comment')}
+            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[12px] font-semibold transition-colors ${
+              mode === 'comment'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <MessageSquare size={12} />
+            Comment
+          </button>
+          <button
+            type="button"
+            onClick={() => onModeChange('browse')}
+            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[12px] font-semibold transition-colors ${
+              mode === 'browse'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <MousePointer2 size={12} />
+            Browse
+          </button>
+        </div>
+
+        {/* Right — avatar + Finish */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+            style={{ backgroundColor: accentColor }}
+            title={reviewerName || 'Reviewer'}
+          >
+            {initials}
+          </div>
+          {submitted ? (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-semibold">
+              Review submitted
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowFinish(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[12px] font-semibold hover:brightness-110 transition-all shadow-sm"
+              style={{ backgroundColor: accentColor }}
+            >
+              Finish reviewing
+              <ArrowRight size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showFinish && (
+        <CompleteFeedbackModal
+          shareToken={shareToken}
+          reviewerName={reviewerName}
+          reviewerEmail={reviewerEmail}
+          accentColor={accentColor}
+          onClose={() => setShowFinish(false)}
+          onSubmitted={onSubmitted}
+        />
+      )}
+    </>
+  );
+}

@@ -18,7 +18,7 @@ import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewe
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
 import ReviewerNoteOverlay from '@/components/feedback/ReviewerNoteOverlay';
-import CompleteFeedbackButton from '@/components/feedback/CompleteFeedbackButton';
+import ReviewTopBar, { type ReviewMode } from '@/components/feedback/ReviewTopBar';
 
 
 export default function ReviewViewerPage({ params }: { params: { token: string } }) {
@@ -41,6 +41,15 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const [initialItemId, setInitialItemId] = useState<string | null>(null);
   const [autoTypeFilter, setAutoTypeFilter] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [reviewMode, setReviewMode] = useState<ReviewMode>('comment');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.localStorage.getItem('av-review-complete-' + params.token)) {
+      setReviewSubmitted(true);
+    }
+  }, [params.token]);
 
   const urlType = searchParams.get('type');
   const urlItem = searchParams.get('item');
@@ -282,13 +291,23 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
             fontHeading={branding.font_heading}
           />
         )}
-        <CompleteFeedbackButton
-          shareToken={params.token}
-          reviewerName={guestName}
-          reviewerEmail={guestEmail}
-          accentColor={branding.accent_color}
-          hidden={showOnboarding}
-        />
+        {!showOnboarding && project && (
+          <ReviewTopBar
+            projectTitle={project.title}
+            clientName={project.client_name}
+            shareToken={params.token}
+            reviewerName={guestName}
+            reviewerEmail={guestEmail}
+            mode={reviewMode}
+            onModeChange={setReviewMode}
+            accentColor={branding.accent_color}
+            logoUrl={branding.logo_url}
+            companyName={branding.name}
+            fontHeading={branding.font_heading}
+            submitted={reviewSubmitted}
+            onSubmitted={() => setReviewSubmitted(true)}
+          />
+        )}
 
         <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
           <div className="text-center max-w-sm">
@@ -302,20 +321,8 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           </div>
         </div>
 
-        <div className="hidden lg:flex min-h-screen flex-col bg-gray-50">
-          <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
-            <div className="flex items-center gap-3 min-w-0">
-              {branding.logo_url ? (
-                <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
-              ) : branding.name ? (
-                <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: fontFamily(branding.font_heading) }}>
-                  {branding.name}
-                </span>
-              ) : null}
-              <span className="text-sm text-gray-400 truncate">
-                {project?.title}
-              </span>
-            </div>
+        <div className="hidden lg:flex min-h-screen flex-col bg-gray-50 pt-12">
+          <div className="px-4 py-2 bg-white border-b border-gray-200 shrink-0 text-right">
             <p className="text-xs text-gray-400">
               Click any item to view details and leave feedback
             </p>
@@ -373,34 +380,47 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           fontHeading={branding.font_heading}
         />
       )}
-      <CompleteFeedbackButton
-        shareToken={params.token}
-        reviewerName={guestName}
-        reviewerEmail={guestEmail}
-        accentColor={branding.accent_color}
-        hidden={showOnboarding}
-      />
-      <FeedbackDetailView
-        mode="client"
-        project={project!}
-        items={items}
-        comments={comments}
-        initialItemId={initialItemId}
-        initialTypeFilter={urlType || autoTypeFilter}
-        singleItemOnly={viewMode === 'item'}
-        hideFilterBar={!!autoTypeFilter}
-        guestName={guestName}
-        onGuestNameChange={setGuestName}
-        onSubmitComment={submitComment}
-        onItemChange={handleItemChange}
-        shareToken={params.token}
-        companyId={project?.company_id}
-        versions={selectedItem && selectedItem.type !== 'webpage' ? selectedItemVersions : undefined}
-        activeVersionId={resolvedActiveVersionId}
-        onVersionChange={selectedItem && selectedItem.type !== 'webpage' ? handleClientVersionChange : undefined}
-        backAction={backAction}
-        onUpdateItemStatus={handleUpdateItemStatus}
-      />
+      {!showOnboarding && project && (
+        <ReviewTopBar
+          projectTitle={project.title}
+          clientName={project.client_name}
+          shareToken={params.token}
+          reviewerName={guestName}
+          reviewerEmail={guestEmail}
+          mode={reviewMode}
+          onModeChange={setReviewMode}
+          accentColor={branding.accent_color}
+          logoUrl={branding.logo_url}
+          companyName={branding.name}
+          fontHeading={branding.font_heading}
+          submitted={reviewSubmitted}
+          onSubmitted={() => setReviewSubmitted(true)}
+        />
+      )}
+      <div className="pt-12 min-h-screen flex flex-col">
+        <FeedbackDetailView
+          mode="client"
+          project={project!}
+          items={items}
+          comments={comments}
+          initialItemId={initialItemId}
+          initialTypeFilter={urlType || autoTypeFilter}
+          singleItemOnly={viewMode === 'item'}
+          hideFilterBar={!!autoTypeFilter}
+          guestName={guestName}
+          onGuestNameChange={setGuestName}
+          onSubmitComment={submitComment}
+          onItemChange={handleItemChange}
+          shareToken={params.token}
+          companyId={project?.company_id}
+          browseMode={reviewMode === 'browse'}
+          versions={selectedItem && selectedItem.type !== 'webpage' ? selectedItemVersions : undefined}
+          activeVersionId={resolvedActiveVersionId}
+          onVersionChange={selectedItem && selectedItem.type !== 'webpage' ? handleClientVersionChange : undefined}
+          backAction={backAction}
+          onUpdateItemStatus={handleUpdateItemStatus}
+        />
+      </div>
     </>
   );
 }
