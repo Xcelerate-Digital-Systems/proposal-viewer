@@ -22,6 +22,9 @@ export type FeedbackProject = {
   share_mode: FeedbackShareMode;
   root_domain: string | null;
   script_installed_at: string | null;
+  reviewer_note: string | null;
+  reviewer_note_show: boolean;
+  reviewer_note_updated_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

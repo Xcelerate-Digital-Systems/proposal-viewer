@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import { buildReviewWhiteboardUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { FeedbackBoard } from '@/components/admin/feedback/board';
 import { useFeedbackBoardContext } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import ShareButton from '@/components/feedback/ShareButton';
+import ReviewerNoteModal from '@/components/admin/feedback/ReviewerNoteModal';
 
 export default function ReviewBoardPage({ params }: { params: { id: string } }) {
   return (
@@ -36,6 +37,7 @@ function BoardGate({ isSuperAdmin, projectId }: { isSuperAdmin?: boolean; projec
 function BoardContent({ projectId }: { projectId: string }) {
   const router = useRouter();
   const ctx = useFeedbackBoardContext();
+  const [showNoteModal, setShowNoteModal] = useState(false);
 
   if (!ctx) return null;
   const { project, items, loading, customDomain, setProject, openAddItem } = ctx;
@@ -79,6 +81,21 @@ function BoardContent({ projectId }: { projectId: string }) {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setShowNoteModal(true)}
+                  className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+                  title={project.reviewer_note ? 'Edit reviewer note' : 'Add a note for reviewers'}
+                >
+                  <FileText size={14} />
+                  Note
+                  {project.reviewer_note && project.reviewer_note_show && (
+                    <span
+                      className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-teal"
+                      aria-label="Note visible to reviewers"
+                    />
+                  )}
+                </button>
+
                 <ShareButton
                   token={project.board_share_token}
                   view="board"
@@ -112,6 +129,16 @@ function BoardContent({ projectId }: { projectId: string }) {
           <FeedbackBoard onNavigateToItem={handleOpenViewer} />
         )}
       </div>
+
+      {showNoteModal && project && (
+        <ReviewerNoteModal
+          projectId={project.id}
+          initialNote={project.reviewer_note ?? ''}
+          initialShow={project.reviewer_note_show}
+          onClose={() => setShowNoteModal(false)}
+          onSaved={(next) => setProject((prev) => prev ? { ...prev, ...next } : prev)}
+        />
+      )}
     </div>
   );
 }

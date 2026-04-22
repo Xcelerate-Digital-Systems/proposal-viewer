@@ -17,6 +17,7 @@ import { fontFamily } from '@/lib/google-fonts';
 import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewer';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
+import ReviewerNoteOverlay from '@/components/feedback/ReviewerNoteOverlay';
 
 
 export default function ReviewViewerPage({ params }: { params: { token: string } }) {
@@ -269,6 +270,17 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           projectTitle={project?.title}
           fontHeading={branding.font_heading}
         />
+        {!showOnboarding && project?.reviewer_note_show && project?.reviewer_note && (
+          <ReviewerNoteOverlay
+            shareToken={params.token}
+            note={project.reviewer_note}
+            updatedAt={project.reviewer_note_updated_at}
+            accentColor={branding.accent_color}
+            logoUrl={branding.logo_url}
+            companyName={branding.name}
+            fontHeading={branding.font_heading}
+          />
+        )}
 
         <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
           <div className="text-center max-w-sm">
@@ -342,6 +354,17 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         projectTitle={project?.title}
         fontHeading={branding.font_heading}
       />
+      {!showOnboarding && project?.reviewer_note_show && project?.reviewer_note && (
+        <ReviewerNoteOverlay
+          shareToken={params.token}
+          note={project.reviewer_note}
+          updatedAt={project.reviewer_note_updated_at}
+          accentColor={branding.accent_color}
+          logoUrl={branding.logo_url}
+          companyName={branding.name}
+          fontHeading={branding.font_heading}
+        />
+      )}
       <FeedbackDetailView
         mode="client"
         project={project!}
