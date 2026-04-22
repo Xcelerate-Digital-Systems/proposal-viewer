@@ -92,11 +92,12 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 #aviz-bar button:hover{background:rgba(255,255,255,.3);}
 
 /* ── Annotation form (floating card) ───────────────────── */
-.aviz-pin-form{position:absolute;z-index:2147483643;width:${POPOVER_STYLE.widthPx}px;max-width:calc(100vw - 40px);background:${POPOVER_STYLE.background};border-radius:${POPOVER_STYLE.borderRadiusPx}px;
-  box-shadow:${POPOVER_STYLE.boxShadow};padding:${POPOVER_STYLE.paddingPx}px;border:1px solid ${POPOVER_STYLE.borderColor};
+.aviz-pin-form{position:absolute;z-index:2147483643;width:${POPOVER_STYLE.widthPx}px;max-width:calc(100vw - 40px);background:${POPOVER_STYLE.background};border-radius:16px;
+  box-shadow:${POPOVER_STYLE.boxShadow};padding:16px;border:1px solid ${POPOVER_STYLE.borderColor};
   animation:aviz-fadeIn .15s ease-out;}
 @keyframes aviz-fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.aviz-pin-form h4{font-size:12px;font-weight:600;color:${ACCENT};text-transform:uppercase;letter-spacing:.5px;margin:0 0 14px 0;padding:0;}
+.aviz-pin-form h4{font-size:11px;font-weight:500;color:#9ca3af;margin:0 0 8px 0;padding:0;}
+.aviz-pf-quote{margin:0 0 10px 0;padding:6px 10px;border-left:3px solid #fde047;background:#fefce8;border-radius:0 6px 6px 0;font-size:11px;color:#92400e;font-style:italic;}
 
 /* ── Guest onboarding modal ───────────────────────────── */
 #aviz-onboard{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.55);
@@ -318,7 +319,7 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 .aviz-post-btn.sm{padding:6px 8px;}
 
 /* Legacy shared buttons (annotation form) */
-.aviz-btn{padding:7px 14px;margin:0;border-radius:8px;font-size:11px;font-weight:600;border:none;cursor:pointer;
+.aviz-btn{padding:7px 16px;margin:0;border-radius:9999px;font-size:12px;font-weight:600;border:none;cursor:pointer;
   transition:opacity .15s,background .15s;font-family:${FONT};}
 .aviz-btn:disabled{opacity:.4;cursor:not-allowed;}
 .aviz-btn-p{background:${ACCENT};color:#fff;}.aviz-btn-p:hover:not(:disabled){opacity:.9;}

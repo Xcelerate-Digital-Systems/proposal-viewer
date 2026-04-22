@@ -21,7 +21,6 @@ import ItemThumbStrip from '@/components/feedback/ItemThumbStrip';
 import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
 import PinCommentPopover from '@/components/feedback/PinCommentPopover';
 import PendingPinPopover from '@/components/feedback/PendingPinPopover';
-import PendingHighlightPopover from '@/components/feedback/PendingHighlightPopover';
 import WebpageClientPlaceholder from '@/components/feedback/WebpageClientPlaceholder';
 import { FeedbackToolbar, FeedbackModeBar, DrawingOverlay, HighlightOverlay } from '@/components/feedback/tools';
 import type { AnnotationData } from '@/components/feedback/tools';
@@ -522,13 +521,13 @@ export default function FeedbackDetailView({
                 />
               )}
 
-              {/* New-highlight popover (anchored at selection) */}
+              {/* New-highlight popover (anchored at selection) — same composer as pin, with quoted text */}
               {pendingHighlight && selectedItemId && (
-                <PendingHighlightPopover
+                <PendingPinPopover
                   pinX={pendingHighlight.rectPct.x}
                   pinY={pendingHighlight.rectPct.y}
                   containerRef={imageContainerRef}
-                  highlightText={pendingHighlight.text}
+                  quotedText={pendingHighlight.text}
                   onSubmit={async (content) => {
                     await handleSubmitComment(content);
                   }}
@@ -828,13 +827,13 @@ export default function FeedbackDetailView({
               />
             )}
 
-            {/* New-highlight popover (anchored at selection) */}
+            {/* New-highlight popover (anchored at selection) — same composer as pin, with quoted text */}
             {pendingHighlight && selectedItemId && (
-              <PendingHighlightPopover
+              <PendingPinPopover
                 pinX={pendingHighlight.rectPct.x}
                 pinY={pendingHighlight.rectPct.y}
                 containerRef={imageContainerRef}
-                highlightText={pendingHighlight.text}
+                quotedText={pendingHighlight.text}
                 onSubmit={async (content) => {
                   await handleSubmitComment(content);
                 }}

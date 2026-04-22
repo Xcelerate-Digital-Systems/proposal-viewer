@@ -25,6 +25,9 @@ interface PendingPinPopoverProps {
   guestName?: string;
   /** Guest: name change handler */
   onNameChange?: (name: string) => void;
+
+  /** Optional quoted text shown above the composer (used when posting from highlight mode) */
+  quotedText?: string;
 }
 
 export default function PendingPinPopover({
@@ -36,8 +39,13 @@ export default function PendingPinPopover({
   authorName,
   guestName,
   onNameChange,
+  quotedText,
 }: PendingPinPopoverProps) {
   const style = usePopoverPosition(pinX, pinY);
+
+  // Popover positions to the right of the pin when pinX < 60, otherwise to the
+  // left. The tail points back at the pin from whichever side is adjacent.
+  const tailOnLeft = pinX < 60;
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -54,9 +62,19 @@ export default function PendingPinPopover({
 
       <div
         style={{ ...style, width: POPOVER_STYLE.widthPx, ...POPOVER_INLINE_STYLE }}
-        className="bg-white rounded-xl border border-gray-200 z-50"
+        className="relative bg-white rounded-2xl border border-gray-200 z-50"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Tail — rotated square on the popover's adjacent edge */}
+        <div
+          aria-hidden
+          className={`absolute top-6 w-3 h-3 bg-white rotate-45 ${
+            tailOnLeft
+              ? '-left-[7px] border-l border-b border-gray-200'
+              : '-right-[7px] border-r border-t border-gray-200'
+          }`}
+        />
+
         <PendingPinForm
           onSubmit={onSubmit}
           onCancel={onCancel}
@@ -64,6 +82,7 @@ export default function PendingPinPopover({
           authorName={authorName}
           guestName={guestName}
           onNameChange={onNameChange}
+          quotedText={quotedText}
         />
       </div>
     </>

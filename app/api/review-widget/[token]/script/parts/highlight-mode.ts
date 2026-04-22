@@ -73,7 +73,7 @@ document.addEventListener("mouseup",function(){
     var wrap=document.createElement("div");wrap.className="aviz-text-input-wrap";
     wrap.style.left=px+"px";wrap.style.top=(py+20)+"px";
     var preview=text.length>120?text.slice(0,120)+"\\u2026":text;
-    wrap.innerHTML='<div style="margin-bottom:8px;padding:6px 8px;border-left:3px solid #fde047;background:#fefce8;font-size:11px;color:#92400e;font-style:italic;border-radius:4px;max-width:300px">\\u201C'+esc(preview)+'\\u201D</div>'
+    wrap.innerHTML='<div class="aviz-pf-quote" style="max-width:300px">\\u201C'+esc(preview)+'\\u201D</div>'
       +'<textarea class="aviz-ta aviz-text-comment" placeholder="Comment on the highlighted text\\u2026" rows="2" style="min-height:64px;width:100%"></textarea>'
       +'<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;align-items:center">'
       +'<span style="flex:1;font-size:11px;color:#9ca3af">Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></span>'

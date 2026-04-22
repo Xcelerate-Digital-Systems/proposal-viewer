@@ -25,11 +25,9 @@ function showAnnotationForm(type,px,py,extra){
 
   var f=document.createElement("div");f.className="aviz-pin-form";
   f.style.left=fx+"px";f.style.top=fy+"px";
-  var typeLabel=type==="pin"?"Pin Comment":"Box Comment";
-  f.innerHTML='<h4>'+typeLabel+'</h4>'
-    +'<textarea class="aviz-ta aviz-pf-text" placeholder="Describe your feedback\\u2026" style="min-height:80px"></textarea>'
+  f.innerHTML='<h4>Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></h4>'
+    +'<textarea class="aviz-ta aviz-pf-text" placeholder="Add a comment\\u2026" style="min-height:80px"></textarea>'
     +'<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;align-items:center">'
-    +'<span style="flex:1;font-size:11px;color:#9ca3af">Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></span>'
     +'<button class="aviz-btn aviz-btn-g aviz-pf-cancel">Cancel</button>'
     +'<button class="aviz-btn aviz-btn-p aviz-pf-send">Post</button></div>';
   document.body.appendChild(f);
