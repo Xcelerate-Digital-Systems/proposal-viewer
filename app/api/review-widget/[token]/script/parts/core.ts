@@ -57,6 +57,17 @@ function uploadScreenshot(dataUrl,cb,opts){
     .then(function(r){return r.json();}).then(function(d){cb(d.url||null);}).catch(function(){cb(null);});
 }
 
+/* ── Video upload — multipart to /api/review-comments/video-upload ── */
+function uploadVideo(blob,cb){
+  var form=new FormData();
+  form.append("file",blob,"review-"+Date.now()+".webm");
+  form.append("share_token",C.token);
+  fetch("${c.apiBase}/api/review-comments/video-upload",{method:"POST",body:form})
+    .then(function(r){return r.json();})
+    .then(function(d){cb(d.url||null);})
+    .catch(function(){cb(null);});
+}
+
 /* ── html2canvas loader ─────────────────────────────────── */
 function loadH2C(cb){
   if(window.html2canvas){cb();return;}

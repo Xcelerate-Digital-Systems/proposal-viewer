@@ -190,6 +190,11 @@ function threadHTML(c){
     h+='</div>';
   }
 
+  /* Video clip (when present) */
+  if(c.video_url){
+    h+='<video class="aviz-card-video" src="'+esc(c.video_url)+'" controls preload="metadata" onclick="event.stopPropagation()"></video>';
+  }
+
   /* Screenshot thumbnail + meta */
   if(c.screenshot_url){
     h+='<div class="aviz-card-meta">';

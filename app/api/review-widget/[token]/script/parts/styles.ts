@@ -123,6 +123,42 @@ mark.aviz-hl.resolved{background:rgba(253,224,71,.28);}
 .aviz-priority-menu .pi-low{color:#10b981;}
 .aviz-priority-menu .pi-none{color:#2563eb;}
 
+/* ── Video recorder modal ──────────────────────────────── */
+.aviz-vid-backdrop{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:20px;font-family:${FONT};}
+.aviz-vid-card{background:#fff;border-radius:16px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;animation:aviz-fadeIn .2s ease-out;}
+.aviz-vid-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 6px;}
+.aviz-vid-head h3{margin:0;padding:0;font-size:17px;font-weight:600;color:#111;font-family:${FONT};}
+.aviz-vid-close{background:transparent;border:none;color:#9ca3af;font-size:22px;line-height:1;cursor:pointer;padding:4px 8px;margin:0;border-radius:6px;}
+.aviz-vid-close:hover{background:#f3f4f6;color:#6b7280;}
+.aviz-vid-card-inner{padding:10px 22px 20px;display:flex;flex-direction:column;gap:14px;}
+.aviz-vid-copy{margin:0;padding:0;font-size:13px;color:#6b7280;line-height:1.55;}
+.aviz-vid-mic-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;cursor:pointer;user-select:none;}
+.aviz-vid-mic-toggle input{width:16px;height:16px;margin:0;padding:0;}
+.aviz-vid-err{margin:0;padding:0;font-size:12px;color:#dc2626;}
+.aviz-vid-start{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border:none;border-radius:12px;background:#ef4444;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:${FONT};transition:background .15s;}
+.aviz-vid-start:hover{background:#dc2626;}
+.aviz-vid-status{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:13px;font-weight:500;}
+.aviz-vid-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;animation:aviz-pulse 1s ease-in-out infinite;}
+@keyframes aviz-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.aviz-vid-timer{margin-left:auto;font-family:ui-monospace,Menlo,Monaco,monospace;font-size:13px;color:#991b1b;}
+.aviz-vid-stop{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border:none;border-radius:12px;background:#111827;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:${FONT};transition:background .15s;}
+.aviz-vid-stop:hover{background:#1f2937;}
+.aviz-vid-preview{width:100%;max-height:380px;border-radius:12px;background:#000;display:block;}
+.aviz-vid-len{margin:0;padding:0;text-align:center;font-size:11px;color:#9ca3af;}
+.aviz-vid-actions{display:flex;gap:8px;}
+.aviz-vid-redo{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;font-family:${FONT};}
+.aviz-vid-redo:hover{background:#f9fafb;}
+.aviz-vid-accept{flex:1.4;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border:none;border-radius:12px;background:${ACCENT};color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:${FONT};transition:background .15s;}
+.aviz-vid-accept:hover{background:#015f68;}
+.aviz-vid-uploading{padding:40px 0;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.aviz-vid-uploading p{margin:0;padding:0;font-size:13px;color:#6b7280;}
+.aviz-vid-spinner{width:32px;height:32px;border-radius:50%;border:2px solid #e5e7eb;border-top-color:${ACCENT};animation:aviz-spin 1s linear infinite;}
+@keyframes aviz-spin{to{transform:rotate(360deg)}}
+
+/* Inline video card (panel + video comment composer) */
+.aviz-card-video{display:block;width:100%;max-width:100%;border-radius:10px;background:#000;margin:8px 0;max-height:260px;}
+.aviz-video-form{max-width:460px;}
+
 /* ── Guest onboarding modal ───────────────────────────── */
 #aviz-onboard{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.55);
   display:flex;align-items:center;justify-content:center;padding:20px;

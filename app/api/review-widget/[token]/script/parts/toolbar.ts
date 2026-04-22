@@ -13,7 +13,7 @@ var tools=[
   {id:"text",icon:ICON.text,label:"Add Text"},
   {id:"highlight",icon:ICON.highlight,label:"Highlight Text"},
   {id:"sep1",sep:true},
-  {id:"video",icon:ICON.video,label:"Record Video",soon:true},
+  {id:"video",icon:ICON.video,label:"Record Video"},
   {id:"comments",icon:ICON.chat,label:"Comments"},
   {id:"questions",icon:ICON.help,label:"Questions",soon:true},
 ];
@@ -80,7 +80,14 @@ toolBtns.highlight.addEventListener("click",function(){
   if(mode==="highlight"){armPinMode();return;}
   closePanel();setActiveTool("highlight");setMode("highlight","Select text on the page to leave a highlighted comment");
 });
-toolBtns.video.addEventListener("click",function(){/* soon */});
+toolBtns.video.addEventListener("click",function(){
+  closePanel();
+  if(!guestName){
+    if(typeof showOnboard==="function"){showOnboard(function(){openVideoRecorder();});}
+    return;
+  }
+  openVideoRecorder();
+});
 toolBtns.comments.addEventListener("click",function(){
   if(panelOpen){closePanel();}else{openPanel();}
 });
