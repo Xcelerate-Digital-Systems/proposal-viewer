@@ -105,6 +105,24 @@ mark.aviz-hl:hover{background:rgba(253,224,71,.8);}
 mark.aviz-hl.resolved{background:rgba(253,224,71,.28);}
 .aviz-hl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:3px;border-radius:9999px;background:${ACCENT};color:#fff;font-size:10px;font-weight:700;line-height:1;vertical-align:middle;cursor:pointer;user-select:none;font-style:normal;font-family:${FONT};}
 
+/* ── Priority selector (shared across pin, text, highlight forms) ── */
+.aviz-priority{position:relative;display:inline-flex;}
+.aviz-priority-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:transparent;border:none;color:#9ca3af;cursor:pointer;padding:0;margin:0;transition:background .12s,color .12s;}
+.aviz-priority-btn:hover{background:#f3f4f6;color:#6b7280;}
+.aviz-priority-btn.p-high{color:#ef4444;}
+.aviz-priority-btn.p-medium{color:#f59e0b;}
+.aviz-priority-btn.p-low{color:#10b981;}
+.aviz-priority-menu{position:absolute;right:0;bottom:calc(100% + 4px);background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:4px 0;min-width:160px;z-index:2147483645;display:none;font-family:${FONT};}
+.aviz-priority-menu.open{display:block;}
+.aviz-priority-menu .label{padding:6px 12px 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#9ca3af;}
+.aviz-priority-menu button{display:flex;align-items:center;gap:8px;width:100%;padding:6px 12px;border:none;background:transparent;color:#374151;font-size:13px;font-family:inherit;cursor:pointer;text-align:left;}
+.aviz-priority-menu button:hover{background:#f9fafb;}
+.aviz-priority-menu button.selected{color:#2563eb;font-weight:600;}
+.aviz-priority-menu .pi-high{color:#ef4444;}
+.aviz-priority-menu .pi-medium{color:#f59e0b;}
+.aviz-priority-menu .pi-low{color:#10b981;}
+.aviz-priority-menu .pi-none{color:#2563eb;}
+
 /* ── Guest onboarding modal ───────────────────────────── */
 #aviz-onboard{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.55);
   display:flex;align-items:center;justify-content:center;padding:20px;

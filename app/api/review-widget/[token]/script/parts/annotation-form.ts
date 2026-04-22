@@ -27,10 +27,13 @@ function showAnnotationForm(type,px,py,extra){
   f.style.left=fx+"px";f.style.top=fy+"px";
   f.innerHTML='<h4>Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></h4>'
     +'<textarea class="aviz-ta aviz-pf-text" placeholder="Add a comment\\u2026" style="min-height:80px"></textarea>'
-    +'<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;align-items:center">'
+    +'<div class="aviz-pf-footer" style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;align-items:center">'
+    +'<div class="aviz-pf-priority-slot" style="margin-right:auto"></div>'
     +'<button class="aviz-btn aviz-btn-g aviz-pf-cancel">Cancel</button>'
     +'<button class="aviz-btn aviz-btn-p aviz-pf-send">Post</button></div>';
   document.body.appendChild(f);
+  var priorityCtrl=createPriorityControl();
+  f.querySelector(".aviz-pf-priority-slot").appendChild(priorityCtrl.element);
 
   pendingAnnotation={form:f,marker:marker,type:type,x:px,y:py,extra:extra||null};
 
@@ -63,7 +66,8 @@ function showAnnotationForm(type,px,py,extra){
           pin_x:pxToPctX(px),pin_y:pxToPctY(py),
           thread_number:maxTn+1,
           screenshot_url:ssUrl||null,
-          annotation_data:null
+          annotation_data:null,
+          priority:priorityCtrl.getValue()
         };
         if(type==="box"&&extra){
           payload.pin_x=extra.x;payload.pin_y=extra.y;

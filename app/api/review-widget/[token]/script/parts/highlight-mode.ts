@@ -77,9 +77,12 @@ document.addEventListener("mouseup",function(){
       +'<textarea class="aviz-ta aviz-text-comment" placeholder="Comment on the highlighted text\\u2026" rows="2" style="min-height:64px;width:100%"></textarea>'
       +'<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;align-items:center">'
       +'<span style="flex:1;font-size:11px;color:#9ca3af">Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></span>'
+      +'<div class="aviz-priority-slot"></div>'
       +'<button class="aviz-btn aviz-btn-g aviz-text-cancel">Cancel</button>'
       +'<button class="aviz-btn aviz-btn-p aviz-text-post">Post</button></div>';
     document.body.appendChild(wrap);
+    var priorityCtrl=createPriorityControl();
+    wrap.querySelector(".aviz-priority-slot").appendChild(priorityCtrl.element);
 
     var textEl=wrap.querySelector(".aviz-text-comment");
     var postBtn=wrap.querySelector(".aviz-text-post");
@@ -96,7 +99,8 @@ document.addEventListener("mouseup",function(){
 
       postComment({
         author_name:n,author_email:guestEmail||null,content:txt,comment_type:"text_highlight",
-        highlight_text:text,highlight_start:startOffset,highlight_end:endOffset,highlight_element_path:elementPath
+        highlight_text:text,highlight_start:startOffset,highlight_end:endOffset,highlight_element_path:elementPath,
+        priority:priorityCtrl.getValue()
       },function(d){
         cleanup();refresh();armPinMode();
         if(d)openPanel();

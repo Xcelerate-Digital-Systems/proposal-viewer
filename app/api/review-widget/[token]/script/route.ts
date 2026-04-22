@@ -11,6 +11,7 @@ import { pinModeJS } from './parts/pin-mode';
 import { boxModeJS } from './parts/box-mode';
 import { textModeJS } from './parts/text-mode';
 import { highlightModeJS } from './parts/highlight-mode';
+import { priorityMenuJS } from './parts/priority-menu';
 import { annotationsJS } from './parts/annotations';
 import { onboardingJS } from './parts/onboarding';
 import { initJS } from './parts/init';
@@ -139,6 +140,7 @@ if(!__aviz_resolvedItem)return;
     coreJS({ token: c.token, apiBase: c.apiBase }),
     toolbarJS(),
     panelJS(),
+    priorityMenuJS(),
     annotationFormJS(),
     pinModeJS(),
     boxModeJS(),
