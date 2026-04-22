@@ -253,7 +253,7 @@ export default function FeedbackDetailView({
   // ── Text highlight state (available for all content types) ──
   const { selection: textSelection, clearSelection: clearTextSelection } = useTextHighlight({
     containerRef: imageContainerRef as React.RefObject<HTMLElement>,
-    enabled: !browseMode && (feedbackMode === 'idle' || feedbackMode === 'highlight'),
+    enabled: !browseMode && !(!isAdmin && !!project?.pause_new_comments) && (feedbackMode === 'idle' || feedbackMode === 'highlight'),
   });
 
   // Filter text_highlight comments (scoped to active version)
@@ -329,11 +329,16 @@ export default function FeedbackDetailView({
     }
   }, [initialTypeFilter]);
 
+  // Reviewers can't drop new pins when the admin has paused comments for
+  // this project. isAdmin keeps pause off on the admin detail viewer.
+  const commentsLocked = !isAdmin && !!project?.pause_new_comments;
+
   // ── Pin click → always open comments when pin is placed ──
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // Browse mode: reviewer wants to interact with the underlying content, not
     // drop a pin. Bail before anything fires.
     if (browseMode) return;
+    if (commentsLocked) return;
 
     // Compute click position as % within the container BEFORE forwarding the
     // event — so we can hand the same coords to the screenshot crop and end
@@ -349,7 +354,7 @@ export default function FeedbackDetailView({
         if (url) setPendingScreenshotUrl(url);
       });
     }
-  }, [browseMode, baseHandleImageClick, pinActive, captureScreenshot, imageContainerRef]);
+  }, [browseMode, commentsLocked, baseHandleImageClick, pinActive, captureScreenshot, imageContainerRef]);
 
   // ── Existing pin clicked → show popover ──
   const handlePinClick = useCallback((commentId?: string) => {

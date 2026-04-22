@@ -25,6 +25,7 @@ export type FeedbackProject = {
   reviewer_note: string | null;
   reviewer_note_show: boolean;
   reviewer_note_updated_at: string | null;
+  pause_new_comments: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;

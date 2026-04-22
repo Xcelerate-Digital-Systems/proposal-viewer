@@ -295,6 +295,8 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           <ReviewTopBar
             projectTitle={project.title}
             clientName={project.client_name}
+            projectStatus={project.status}
+            commentsPaused={project.pause_new_comments}
             shareToken={params.token}
             reviewerName={guestName}
             reviewerEmail={guestEmail}

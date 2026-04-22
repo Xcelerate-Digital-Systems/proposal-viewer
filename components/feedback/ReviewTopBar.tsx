@@ -1,15 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, MousePointer2, ArrowRight } from 'lucide-react';
+import { MessageSquare, MousePointer2, ArrowRight, Pause } from 'lucide-react';
 import CompleteFeedbackModal from './CompleteFeedbackModal';
 import { fontFamily } from '@/lib/google-fonts';
+import { getFeedbackStatusDef } from '@/lib/feedback/status';
+import type { FeedbackStatus } from '@/lib/types/feedback';
 
 export type ReviewMode = 'comment' | 'browse';
 
 interface ReviewTopBarProps {
   projectTitle: string;
   clientName?: string | null;
+  projectStatus?: FeedbackStatus;
+  commentsPaused?: boolean;
   shareToken: string;
   reviewerName: string;
   reviewerEmail: string;
@@ -39,6 +43,8 @@ interface ReviewTopBarProps {
 export default function ReviewTopBar({
   projectTitle,
   clientName,
+  projectStatus,
+  commentsPaused = false,
   shareToken,
   reviewerName,
   reviewerEmail,
@@ -54,6 +60,7 @@ export default function ReviewTopBar({
   const [showFinish, setShowFinish] = useState(false);
   const headingFont = fontHeading ? fontFamily(fontHeading) : undefined;
   const initials = (reviewerName.trim()[0] ?? 'R').toUpperCase();
+  const statusDef = projectStatus ? getFeedbackStatusDef(projectStatus) : null;
 
   return (
     <>
@@ -78,6 +85,12 @@ export default function ReviewTopBar({
             {clientName && (
               <span className="text-xs text-gray-400 truncate hidden md:inline">
                 · {clientName}
+              </span>
+            )}
+            {statusDef && (
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-medium ${statusDef.bg} ${statusDef.text} ${statusDef.border}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${statusDef.dot}`} />
+                {statusDef.label}
               </span>
             )}
           </div>
@@ -137,6 +150,13 @@ export default function ReviewTopBar({
           )}
         </div>
       </div>
+
+      {commentsPaused && (
+        <div className="fixed top-12 inset-x-0 z-20 bg-amber-50 border-b border-amber-200 text-amber-800 text-[12px] font-medium px-4 py-1.5 flex items-center justify-center gap-2">
+          <Pause size={12} />
+          The team has paused new comments for this review.
+        </div>
+      )}
 
       {showFinish && (
         <CompleteFeedbackModal

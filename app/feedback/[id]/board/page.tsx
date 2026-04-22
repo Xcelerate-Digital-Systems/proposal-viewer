@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Pause, Play } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import { buildReviewWhiteboardUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -11,6 +11,8 @@ import { FeedbackBoard } from '@/components/admin/feedback/board';
 import { useFeedbackBoardContext } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import ShareButton from '@/components/feedback/ShareButton';
 import ReviewerNoteModal from '@/components/admin/feedback/ReviewerNoteModal';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/Toast';
 
 export default function ReviewBoardPage({ params }: { params: { id: string } }) {
   return (
@@ -36,11 +38,30 @@ function BoardGate({ isSuperAdmin, projectId }: { isSuperAdmin?: boolean; projec
 
 function BoardContent({ projectId }: { projectId: string }) {
   const router = useRouter();
+  const toast = useToast();
   const ctx = useFeedbackBoardContext();
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [togglingPause, setTogglingPause] = useState(false);
 
   if (!ctx) return null;
   const { project, items, loading, customDomain, setProject, openAddItem } = ctx;
+
+  const togglePauseComments = async () => {
+    if (!project || togglingPause) return;
+    const next = !project.pause_new_comments;
+    setTogglingPause(true);
+    const { error } = await supabase
+      .from('review_projects')
+      .update({ pause_new_comments: next, updated_at: new Date().toISOString() })
+      .eq('id', project.id);
+    setTogglingPause(false);
+    if (error) {
+      toast.error('Failed to update');
+      return;
+    }
+    setProject((prev) => prev ? { ...prev, pause_new_comments: next } : prev);
+    toast.success(next ? 'New comments paused' : 'Comments reopened');
+  };
 
   const handleOpenViewer = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
@@ -81,6 +102,20 @@ function BoardContent({ projectId }: { projectId: string }) {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={togglePauseComments}
+                  disabled={togglingPause}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
+                    project.pause_new_comments
+                      ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                      : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                  title={project.pause_new_comments ? 'Reopen comments for reviewers' : 'Pause new reviewer comments'}
+                >
+                  {project.pause_new_comments ? <Play size={14} /> : <Pause size={14} />}
+                  {project.pause_new_comments ? 'Comments paused' : 'Pause'}
+                </button>
+
                 <button
                   onClick={() => setShowNoteModal(true)}
                   className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
