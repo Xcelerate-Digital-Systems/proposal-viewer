@@ -26,6 +26,15 @@ type CommentWithItem = FeedbackComment & {
   annotation_data?: unknown;
 };
 
+type ReviewCompletion = {
+  id: string;
+  review_project_id: string;
+  reviewer_name: string | null;
+  reviewer_email: string | null;
+  message: string | null;
+  completed_at: string;
+};
+
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
 /* ------------------------------------------------------------------ */
@@ -84,6 +93,8 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [tab, setTab] = useState<'open' | 'resolved'>('open');
   const [priorityFilter, setPriorityFilter] = useState<FeedbackCommentPriority | 'all'>('all');
   const [selectedComment, setSelectedComment] = useState<CommentWithItem | null>(null);
+  const [completions, setCompletions] = useState<ReviewCompletion[]>([]);
+  const [completionsOpen, setCompletionsOpen] = useState(false);
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
 
@@ -121,6 +132,15 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
 
       setAllComments(commentsData || []);
     }
+
+    // Fetch completion submissions (reviewers hitting the Finish flow)
+    const { data: completionsData } = await supabase
+      .from('review_completions')
+      .select('*')
+      .eq('review_project_id', projectId)
+      .order('completed_at', { ascending: false });
+
+    setCompletions((completionsData as ReviewCompletion[]) || []);
 
     setLoading(false);
   }, [projectId]);
@@ -297,7 +317,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           <div className="flex items-center justify-center py-20">
             <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           </div>
-        ) : enrichedComments.length === 0 ? (
+        ) : enrichedComments.length === 0 && completions.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <MessageSquare size={28} className="text-gray-300" />
@@ -308,7 +328,54 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             </p>
           </div>
         ) : (
-          <div className="max-w-4xl">
+          <div className="max-w-4xl space-y-4">
+            {completions.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setCompletionsOpen((o) => !o)}
+                  className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {completions.length} reviewer{completions.length !== 1 ? 's' : ''} finished reviewing
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Most recent: {formatTimeAgo(completions[0].completed_at)}
+                    </p>
+                  </div>
+                  {completionsOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                </button>
+
+                {completionsOpen && (
+                  <div className="divide-y divide-gray-100 border-t border-gray-100">
+                    {completions.map((c) => (
+                      <div key={c.id} className="flex items-start gap-3 px-5 py-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 text-[11px] font-semibold text-emerald-700">
+                          {(c.reviewer_name?.trim()[0] ?? '?').toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-medium text-gray-900 truncate">
+                              {c.reviewer_name || 'Anonymous reviewer'}
+                            </span>
+                            {c.reviewer_email && (
+                              <span className="text-gray-400 truncate">· {c.reviewer_email}</span>
+                            )}
+                            <span className="text-gray-400 shrink-0 ml-auto">{formatTimeAgo(c.completed_at)}</span>
+                          </div>
+                          {c.message && (
+                            <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">{c.message}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Open / Resolved toggle */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               {/* Filter bar */}
