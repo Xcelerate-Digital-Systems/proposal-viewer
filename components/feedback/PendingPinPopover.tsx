@@ -5,6 +5,7 @@ import PendingPinForm from './comments/PendingPinForm';
 import { usePopoverPosition } from '@/hooks/usePopoverPosition';
 import { POPOVER_STYLE, POPOVER_INLINE_STYLE } from '@/lib/feedback/popover-style';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
+import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 
 interface PendingPinPopoverProps {
   /** Pin position as percentages (0–100) within the container */
@@ -12,8 +13,8 @@ interface PendingPinPopoverProps {
   pinY: number;
   /** Container element for positioning context (must be position: relative) */
   containerRef: React.RefObject<HTMLDivElement>;
-  /** Submit handler — receives content and uploaded attachments */
-  onSubmit: (content: string, attachments?: FeedbackCommentAttachment[]) => Promise<void>;
+  /** Submit handler — receives content, attachments, and priority */
+  onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority) => Promise<void>;
   /** Cancel/dismiss handler — clears pending pin */
   onCancel: () => void;
   /** Company ID for attachment uploads */

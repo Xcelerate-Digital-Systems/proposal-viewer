@@ -4,10 +4,12 @@ import { useRef, useState } from 'react';
 import { Paperclip, Send } from 'lucide-react';
 import AttachmentPicker, { type PendingAttachment } from './AttachmentPicker';
 import EmojiPicker from './EmojiPicker';
+import PrioritySelector from './PrioritySelector';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
+import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 
 interface PendingPinFormProps {
-  onSubmit: (content: string, attachments?: FeedbackCommentAttachment[]) => Promise<void>;
+  onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority) => Promise<void>;
   onCancel: () => void;
   /** Company ID for attachment uploads */
   companyId?: string;
@@ -62,6 +64,7 @@ export default function PendingPinForm({
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
+  const [priority, setPriority] = useState<FeedbackCommentPriority>('none');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isGuest = !authorName;
@@ -103,9 +106,10 @@ export default function PendingPinForm({
       attachments = await uploadAttachments(pendingFiles, companyId);
     }
 
-    await onSubmit(text, attachments);
+    await onSubmit(text, attachments, priority);
     setText('');
     setPendingFiles([]);
+    setPriority('none');
     setSubmitting(false);
   };
 
@@ -177,6 +181,7 @@ export default function PendingPinForm({
           onChange={(e) => handleAddFiles(e.target.files)}
         />
         <EmojiPicker onSelect={(emoji) => setText((prev) => prev + emoji)} />
+        <PrioritySelector value={priority} onChange={setPriority} />
         <div className="flex-1" />
         <button
           type="submit"

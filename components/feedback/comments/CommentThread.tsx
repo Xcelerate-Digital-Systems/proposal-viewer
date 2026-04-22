@@ -8,6 +8,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import EmojiPicker from './EmojiPicker';
 import AttachmentList from './AttachmentList';
 import ReactionBar from './ReactionBar';
+import { getPriorityDef } from './PrioritySelector';
 import { useCommentReactions } from '@/hooks/useCommentReactions';
 
 interface CommentThreadProps {
@@ -146,6 +147,19 @@ export default function CommentThread({
                 Team
               </span>
             )}
+            {comment.priority && comment.priority !== 'none' && (() => {
+              const def = getPriorityDef(comment.priority);
+              const Icon = def.icon;
+              return (
+                <span
+                  className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[9px] font-medium uppercase ${def.badgeClass}`}
+                  title={`Priority: ${def.label}`}
+                >
+                  <Icon size={9} className={def.iconClass} />
+                  {def.label}
+                </span>
+              );
+            })()}
             <span className="text-[10px] text-gray-400">{timeAgo(comment.created_at)}</span>
           </div>
           {comment.comment_type === 'text_highlight' && comment.highlight_text && (

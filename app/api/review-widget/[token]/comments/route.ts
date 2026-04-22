@@ -100,7 +100,12 @@ export async function POST(
       highlight_start,
       highlight_end,
       highlight_element_path,
+      priority,
     } = body;
+
+    const VALID_PRIORITIES = ['high', 'medium', 'low', 'none'] as const;
+    type Priority = typeof VALID_PRIORITIES[number];
+    const safePriority: Priority = VALID_PRIORITIES.includes(priority) ? priority : 'none';
 
     if (!review_item_id || !author_name || !content || !comment_type) {
       return corsJson({ error: 'Missing required fields' }, 400);
@@ -148,6 +153,7 @@ export async function POST(
         highlight_start: typeof highlight_start === 'number' ? highlight_start : null,
         highlight_end: typeof highlight_end === 'number' ? highlight_end : null,
         highlight_element_path: highlight_element_path || null,
+        priority: safePriority,
       })
       .select()
       .single();

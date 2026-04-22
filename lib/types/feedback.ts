@@ -136,6 +136,8 @@ export type FeedbackItemVersion = {
 
 export type FeedbackCommentType = 'pin' | 'text_highlight' | 'general';
 
+export type FeedbackCommentPriority = 'high' | 'medium' | 'low' | 'none';
+
 export type FeedbackComment = {
   id: string;
   review_item_id: string;
@@ -159,6 +161,7 @@ export type FeedbackComment = {
   annotation_data: Record<string, unknown> | null;
   attachments: FeedbackCommentAttachment[];
   screenshot_url: string | null;
+  priority: FeedbackCommentPriority;
   resolved: boolean;
   resolved_by: string | null;
   resolved_at: string | null;

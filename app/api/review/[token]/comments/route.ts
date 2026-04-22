@@ -35,7 +35,12 @@ export async function POST(
       highlight_text,
       highlight_element_path,
       version_id,
+      priority,
     } = body;
+
+    const VALID_PRIORITIES = ['high', 'medium', 'low', 'none'] as const;
+    type Priority = typeof VALID_PRIORITIES[number];
+    const safePriority: Priority = VALID_PRIORITIES.includes(priority) ? priority : 'none';
 
     if (!review_item_id || !author_name || !content || !comment_type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -120,6 +125,7 @@ export async function POST(
         highlight_end: highlight_end ?? null,
         highlight_text: highlight_text ?? null,
         highlight_element_path: highlight_element_path ?? null,
+        priority: safePriority,
         version_id: safeVersionId,
       })
       .select()

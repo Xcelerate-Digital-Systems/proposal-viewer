@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction } from '@/lib/supabase';
+import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
@@ -210,7 +211,7 @@ function ItemViewerContent({
   });
 
   // ── Submit comment ──
-  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }) => {
+  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority) => {
     if (!content.trim()) return;
 
     const currentItem = items.find((i) => i.id === reviewItemId) || null;
@@ -244,6 +245,7 @@ function ItemViewerContent({
       highlight_end: highlightData?.end ?? null,
       highlight_text: highlightData?.text ?? null,
       highlight_element_path: highlightData?.elementPath ?? null,
+      priority: priority ?? 'none',
       // Pin the comment to whichever version the reviewer is currently looking
       // at. For replies, inherit the parent's version so threads stay coherent.
       version_id: parentId

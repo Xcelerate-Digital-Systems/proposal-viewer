@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft,  MessageSquare, CheckCircle2, Circle, X, Globe, Image as ImageIcon, Mail, Smartphone, Monitor, ChevronDown, ChevronUp, ExternalLink, Clock, Send, Trash2, } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment } from '@/lib/supabase';
+import type { FeedbackCommentPriority } from '@/lib/types/feedback';
+import { getPriorityDef, PRIORITY_OPTIONS } from '@/components/feedback/comments/PrioritySelector';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -79,6 +81,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [allComments, setAllComments] = useState<FeedbackComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'open' | 'resolved'>('open');
+  const [priorityFilter, setPriorityFilter] = useState<FeedbackCommentPriority | 'all'>('all');
   const [selectedComment, setSelectedComment] = useState<CommentWithItem | null>(null);
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
@@ -150,7 +153,10 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
 
   const openComments = enrichedComments.filter((c) => !c.resolved);
   const resolvedComments = enrichedComments.filter((c) => c.resolved);
-  const displayed = tab === 'open' ? openComments : resolvedComments;
+  const baseDisplayed = tab === 'open' ? openComments : resolvedComments;
+  const displayed = priorityFilter === 'all'
+    ? baseDisplayed
+    : baseDisplayed.filter((c) => (c.priority || 'none') === priorityFilter);
 
   const hasWebpages = items.some((i) => i.type === 'webpage');
 
@@ -304,7 +310,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             {/* Open / Resolved toggle */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               {/* Filter bar */}
-              <div className="flex items-center gap-4 px-5 py-3 border-b border-gray-100">
+              <div className="flex items-center gap-4 px-5 py-3 border-b border-gray-100 flex-wrap">
                 <button
                   onClick={() => setTab('open')}
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
@@ -333,6 +339,33 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                     {resolvedComments.length}
                   </span>
                 </button>
+
+                {/* Priority filter — appears after a divider */}
+                <span className="w-px h-4 bg-gray-200" />
+                <button
+                  onClick={() => setPriorityFilter('all')}
+                  className={`text-xs font-medium transition-colors ${
+                    priorityFilter === 'all' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  All priorities
+                </button>
+                {PRIORITY_OPTIONS.filter((p) => p.value !== 'none').map((p) => {
+                  const Icon = p.icon;
+                  const active = priorityFilter === p.value;
+                  return (
+                    <button
+                      key={p.value}
+                      onClick={() => setPriorityFilter(active ? 'all' : p.value)}
+                      className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+                        active ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      <Icon size={12} className={p.iconClass} />
+                      {p.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* List */}
@@ -385,6 +418,8 @@ const TYPE_ICONS: Record<string, typeof Globe> = {
 
 function FeedbackRow({ comment, onClick }: { comment: CommentWithItem; onClick: () => void }) {
   const TypeIcon = TYPE_ICONS[comment.item_type] || MessageSquare;
+  const priorityDef = comment.priority && comment.priority !== 'none' ? getPriorityDef(comment.priority) : null;
+  const PriorityIcon = priorityDef?.icon;
 
   return (
     <button
@@ -404,9 +439,20 @@ function FeedbackRow({ comment, onClick }: { comment: CommentWithItem; onClick: 
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-900 line-clamp-2 leading-relaxed">
-          {comment.content}
-        </p>
+        <div className="flex items-start gap-2">
+          <p className="text-sm text-gray-900 line-clamp-2 leading-relaxed flex-1">
+            {comment.content}
+          </p>
+          {priorityDef && PriorityIcon && (
+            <span
+              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[9px] font-medium uppercase shrink-0 ${priorityDef.badgeClass}`}
+              title={`Priority: ${priorityDef.label}`}
+            >
+              <PriorityIcon size={9} className={priorityDef.iconClass} />
+              {priorityDef.label}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-400">
           <TypeIcon size={12} />
           <span className="truncate max-w-[200px]">{comment.item_title}</span>
