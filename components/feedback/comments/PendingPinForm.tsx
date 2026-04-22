@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Paperclip, Send } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Paperclip, Pencil, Send, Video } from 'lucide-react';
 import AttachmentPicker, { type PendingAttachment } from './AttachmentPicker';
 import AttachFilesModal from './AttachFilesModal';
 import EmojiPicker from './EmojiPicker';
 import PrioritySelector from './PrioritySelector';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
+import type { FeedbackMode } from '@/components/feedback/tools';
 
 interface PendingPinFormProps {
   onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority) => Promise<void>;
@@ -25,6 +26,8 @@ interface PendingPinFormProps {
 
   /** Optional quoted text rendered above the textarea (used when posting from highlight mode) */
   quotedText?: string;
+  /** When present, shows a pencil icon that opens a drawing tool submenu. */
+  onOpenDrawing?: (mode: FeedbackMode) => void;
 }
 
 const MAX_FILES = 5;
@@ -59,12 +62,26 @@ export default function PendingPinForm({
   guestName,
   onNameChange,
   quotedText,
+  onOpenDrawing,
 }: PendingPinFormProps) {
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
   const [priority, setPriority] = useState<FeedbackCommentPriority>('none');
   const [showAttachModal, setShowAttachModal] = useState(false);
+  const [showDrawMenu, setShowDrawMenu] = useState(false);
+  const drawMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showDrawMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (drawMenuRef.current && !drawMenuRef.current.contains(e.target as Node)) {
+        setShowDrawMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showDrawMenu]);
 
   const isGuest = !authorName;
   const isDisabled = isGuest
@@ -153,6 +170,53 @@ export default function PendingPinForm({
           )}
         </button>
         <EmojiPicker onSelect={(emoji) => setText((prev) => prev + emoji)} />
+
+        {onOpenDrawing && (
+          <div ref={drawMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setShowDrawMenu((o) => !o)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+              title="Draw on page"
+            >
+              <Pencil size={16} />
+            </button>
+            {showDrawMenu && (
+              <div className="absolute left-0 bottom-full mb-1 w-40 bg-white rounded-xl border border-gray-200 shadow-lg py-1 z-50">
+                <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                  Draw
+                </p>
+                {[
+                  { mode: 'arrow' as const, label: 'Arrow' },
+                  { mode: 'box' as const, label: 'Rectangle' },
+                  { mode: 'text' as const, label: 'Text' },
+                ].map((opt) => (
+                  <button
+                    key={opt.mode}
+                    type="button"
+                    onClick={() => {
+                      setShowDrawMenu(false);
+                      onOpenDrawing(opt.mode);
+                    }}
+                    className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <button
+          type="button"
+          disabled
+          className="p-1.5 rounded-lg text-gray-300 cursor-not-allowed transition-colors relative"
+          title="Record video (coming soon)"
+        >
+          <Video size={16} />
+        </button>
+
         <PrioritySelector value={priority} onChange={setPriority} />
         <div className="flex-1" />
         <button

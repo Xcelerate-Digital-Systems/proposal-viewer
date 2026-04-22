@@ -6,6 +6,7 @@ import { usePopoverPosition } from '@/hooks/usePopoverPosition';
 import { POPOVER_STYLE, POPOVER_INLINE_STYLE } from '@/lib/feedback/popover-style';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
+import type { FeedbackMode } from '@/components/feedback/tools';
 
 interface PendingPinPopoverProps {
   /** Pin position as percentages (0–100) within the container */
@@ -29,6 +30,9 @@ interface PendingPinPopoverProps {
 
   /** Optional quoted text shown above the composer (used when posting from highlight mode) */
   quotedText?: string;
+  /** When present, surfaces a drawing menu inside the composer; activating a tool
+   *  dismisses the popover (parent closes via onCancel) and enters that mode. */
+  onOpenDrawing?: (mode: FeedbackMode) => void;
 }
 
 export default function PendingPinPopover({
@@ -41,6 +45,7 @@ export default function PendingPinPopover({
   guestName,
   onNameChange,
   quotedText,
+  onOpenDrawing,
 }: PendingPinPopoverProps) {
   const style = usePopoverPosition(pinX, pinY);
 
@@ -84,6 +89,7 @@ export default function PendingPinPopover({
           guestName={guestName}
           onNameChange={onNameChange}
           quotedText={quotedText}
+          onOpenDrawing={onOpenDrawing}
         />
       </div>
     </>

@@ -519,6 +519,7 @@ export default function FeedbackDetailView({
                   authorName={isAdmin ? authorName : undefined}
                   guestName={isClient ? guestName : undefined}
                   onNameChange={isClient ? onGuestNameChange : undefined}
+                  onOpenDrawing={(mode) => { handleCancelPin(); changeFeedbackMode(mode); }}
                 />
               )}
 
@@ -825,6 +826,7 @@ export default function FeedbackDetailView({
                 authorName={isAdmin ? authorName : undefined}
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
+                onOpenDrawing={(mode) => { handleCancelPin(); changeFeedbackMode(mode); }}
               />
             )}
 
