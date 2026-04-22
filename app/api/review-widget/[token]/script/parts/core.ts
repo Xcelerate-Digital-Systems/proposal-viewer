@@ -65,8 +65,10 @@ function loadH2C(cb){
   document.head.appendChild(s);
 }
 
-/* ── Auto-screenshot (hides widget UI, captures viewport) ── */
-function captureAutoScreenshot(cb){
+/* ── Auto-screenshot (hides widget UI but keeps pin marker, crops around pin) ──
+   opts.cropAround = { x, y } — page coordinates to centre the 16:9 crop on.
+   When omitted, returns the full viewport capture unchanged. */
+function captureAutoScreenshot(cb,opts){
   root.style.display="none";
   var form=document.querySelector(".aviz-pin-form");if(form)form.style.display="none";
   loadH2C(function(){
@@ -80,7 +82,26 @@ function captureAutoScreenshot(cb){
       x:window.scrollX,y:window.scrollY
     }).then(function(canvas){
       root.style.display="";if(form)form.style.display="";
-      cb(canvas.toDataURL("image/png"));
+      var out=canvas;
+      if(opts&&opts.cropAround){
+        try{
+          /* Pin coords are in PAGE space; canvas captured the viewport at
+             scrollX/scrollY, so subtract scroll to get canvas-local px. */
+          var pinX=opts.cropAround.x-window.scrollX;
+          var pinY=opts.cropAround.y-window.scrollY;
+          var dw=Math.min(canvas.width,1280);
+          var dh=Math.min(canvas.height,Math.round(dw*9/16));
+          if(dw>20&&dh>20){
+            var sx=Math.max(0,Math.min(canvas.width-dw,Math.round(pinX-dw/2)));
+            var sy=Math.max(0,Math.min(canvas.height-dh,Math.round(pinY-dh/2)));
+            var dest=document.createElement("canvas");dest.width=dw;dest.height=dh;
+            var ctx=dest.getContext("2d");
+            ctx.drawImage(canvas,sx,sy,dw,dh,0,0,dw,dh);
+            out=dest;
+          }
+        }catch(e){/* fall back to full canvas */}
+      }
+      cb(out.toDataURL("image/jpeg",0.85));
     }).catch(function(err){
       root.style.display="";if(form)form.style.display="";
       console.error("Auto-screenshot failed:",err);cb(null);

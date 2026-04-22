@@ -11,6 +11,11 @@ interface UseScreenshotCaptureOptions {
   itemId?: string | null;
 }
 
+interface CaptureOptions {
+  /** Crop a 16:9 region centred on these container-relative percentages (0-100). */
+  cropAroundPct?: { x: number; y: number };
+}
+
 /**
  * Captures a screenshot of the content area using html2canvas
  * and uploads it to the screenshot API endpoint.
@@ -22,7 +27,7 @@ export function useScreenshotCapture({
   const capturingRef = useRef(false);
 
   const capture = useCallback(
-    async (containerEl: HTMLElement | null): Promise<string | null> => {
+    async (containerEl: HTMLElement | null, opts?: CaptureOptions): Promise<string | null> => {
       if (!containerEl || !shareToken || !itemId || capturingRef.current) return null;
 
       capturingRef.current = true;
@@ -30,12 +35,32 @@ export function useScreenshotCapture({
         const canvas = await html2canvas(containerEl, {
           useCORS: true,
           allowTaint: true,
-          scale: 1, // 1x for reasonable file size
+          scale: 1,
           logging: false,
-          backgroundColor: '#f9fafb', // gray-50
+          backgroundColor: '#f9fafb',
         });
 
-        const dataUrl = canvas.toDataURL('image/png');
+        let outCanvas: HTMLCanvasElement = canvas;
+        if (opts?.cropAroundPct) {
+          const dw = Math.min(canvas.width, 1280);
+          const dh = Math.min(canvas.height, Math.round((dw * 9) / 16));
+          if (dw > 20 && dh > 20) {
+            const pinX = (opts.cropAroundPct.x / 100) * canvas.width;
+            const pinY = (opts.cropAroundPct.y / 100) * canvas.height;
+            const sx = Math.max(0, Math.min(canvas.width - dw, Math.round(pinX - dw / 2)));
+            const sy = Math.max(0, Math.min(canvas.height - dh, Math.round(pinY - dh / 2)));
+            const dest = document.createElement('canvas');
+            dest.width = dw;
+            dest.height = dh;
+            const ctx = dest.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(canvas, sx, sy, dw, dh, 0, 0, dw, dh);
+              outCanvas = dest;
+            }
+          }
+        }
+
+        const dataUrl = outCanvas.toDataURL('image/jpeg', 0.85);
 
         const res = await fetch(`/api/review-widget/${shareToken}/screenshot`, {
           method: 'POST',

@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft,  MessageSquare, CheckCircle2, Circle, X, Globe, Image as ImageIcon, Mail, Smartphone, Monitor, ChevronDown, ChevronUp, ExternalLink, Clock, } from 'lucide-react';
+import { ArrowLeft,  MessageSquare, CheckCircle2, Circle, X, Globe, Image as ImageIcon, Mail, Smartphone, Monitor, ChevronDown, ChevronUp, ExternalLink, Clock, Send, Trash2, } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -33,14 +35,20 @@ export default function ReviewFeedbackPage({ params }: { params: { id: string } 
           isSuperAdmin={auth.isSuperAdmin}
           projectId={params.id}
           companyId={auth.companyId!}
+          session={auth.session}
+          teamMember={auth.teamMember}
         />
       )}
     </AdminLayout>
   );
 }
 
-function FeedbackGate({ isSuperAdmin, projectId, companyId }: {
-  isSuperAdmin?: boolean; projectId: string; companyId: string;
+function FeedbackGate({ isSuperAdmin, projectId, companyId, session, teamMember }: {
+  isSuperAdmin?: boolean;
+  projectId: string;
+  companyId: string;
+  session: { user: { id: string; email?: string } } | null;
+  teamMember: { name?: string; email?: string } | null;
 }) {
   const router = useRouter();
 
@@ -50,21 +58,30 @@ function FeedbackGate({ isSuperAdmin, projectId, companyId }: {
 
   if (!isSuperAdmin) return null;
 
-  return <FeedbackContent projectId={projectId} companyId={companyId} />;
+  return <FeedbackContent projectId={projectId} companyId={companyId} session={session} teamMember={teamMember} />;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Main content                                                       */
 /* ------------------------------------------------------------------ */
 
-function FeedbackContent({ projectId, companyId }: { projectId: string; companyId: string }) {
+function FeedbackContent({ projectId, companyId, session, teamMember }: {
+  projectId: string;
+  companyId: string;
+  session: { user: { id: string; email?: string } } | null;
+  teamMember: { name?: string; email?: string } | null;
+}) {
   const router = useRouter();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [project, setProject] = useState<FeedbackProject | null>(null);
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [allComments, setAllComments] = useState<FeedbackComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'open' | 'resolved'>('open');
   const [selectedComment, setSelectedComment] = useState<CommentWithItem | null>(null);
+
+  const authorName = teamMember?.name || teamMember?.email || 'Team';
 
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
@@ -136,6 +153,76 @@ function FeedbackContent({ projectId, companyId }: { projectId: string; companyI
   const displayed = tab === 'open' ? openComments : resolvedComments;
 
   const hasWebpages = items.some((i) => i.type === 'webpage');
+
+  // Submit reply to a top-level comment
+  const handleSubmitReply = async (parent: CommentWithItem, content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return false;
+
+    const insertData: Record<string, unknown> = {
+      review_item_id: parent.review_item_id,
+      company_id: companyId,
+      parent_comment_id: parent.id,
+      thread_number: null,
+      author_name: authorName,
+      author_email: teamMember?.email || null,
+      author_user_id: session?.user?.id || null,
+      author_type: 'team',
+      content: trimmed,
+      comment_type: 'general',
+      pin_x: null,
+      pin_y: null,
+      version_id: parent.version_id ?? null,
+    };
+
+    const { data, error } = await supabase
+      .from('review_comments')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error || !data) {
+      toast.error('Failed to post reply');
+      return false;
+    }
+
+    setAllComments((prev) => [...prev, data as FeedbackComment]);
+    return true;
+  };
+
+  // Delete a comment (and its replies)
+  const handleDeleteComment = async (comment: CommentWithItem) => {
+    const ok = await confirm({
+      title: 'Delete comment?',
+      message: 'This deletes the comment and all replies. Cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const token = session ? (await supabase.auth.getSession()).data.session?.access_token : null;
+    if (!token) {
+      toast.error('Not authenticated');
+      return;
+    }
+
+    const res = await fetch(`/api/review-comments/${comment.id}?company_id=${companyId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body?.error || 'Failed to delete comment');
+      return;
+    }
+
+    setAllComments((prev) =>
+      prev.filter((c) => c.id !== comment.id && c.parent_comment_id !== comment.id)
+    );
+    setSelectedComment(null);
+    toast.success('Comment deleted');
+  };
 
   // Toggle resolve
   const handleToggleResolve = async (comment: CommentWithItem, resolved: boolean) => {
@@ -276,6 +363,8 @@ function FeedbackContent({ projectId, companyId }: { projectId: string; companyI
           allComments={allComments}
           onClose={() => setSelectedComment(null)}
           onToggleResolve={handleToggleResolve}
+          onSubmitReply={handleSubmitReply}
+          onDelete={handleDeleteComment}
         />
       )}
     </div>
@@ -353,17 +442,34 @@ function FeedbackModal({
   allComments,
   onClose,
   onToggleResolve,
+  onSubmitReply,
+  onDelete,
 }: {
   comment: CommentWithItem;
   allComments: FeedbackComment[];
   onClose: () => void;
   onToggleResolve: (comment: CommentWithItem, resolved: boolean) => void;
+  onSubmitReply: (parent: CommentWithItem, content: string) => Promise<boolean>;
+  onDelete: (comment: CommentWithItem) => void;
 }) {
   const [showReplies, setShowReplies] = useState(true);
+  const [replyText, setReplyText] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
 
   const replies = allComments
     .filter((c) => c.parent_comment_id === comment.id)
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  const handleReplySubmit = async () => {
+    if (!replyText.trim() || submittingReply) return;
+    setSubmittingReply(true);
+    const ok = await onSubmitReply(comment, replyText);
+    setSubmittingReply(false);
+    if (ok) {
+      setReplyText('');
+      setShowReplies(true);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
@@ -383,12 +489,22 @@ function FeedbackModal({
               Reported by <span className="font-medium text-gray-700">{comment.author_name}</span>
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => onDelete(comment)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              title="Delete"
+            >
+              <Trash2 size={16} />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              title="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Modal body */}
@@ -439,6 +555,33 @@ function FeedbackModal({
                   )}
                 </div>
               )}
+
+              {/* Reply composer */}
+              <div className="border-t border-gray-100 pt-4">
+                <div className="flex items-end gap-2">
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        handleReplySubmit();
+                      }
+                    }}
+                    placeholder="Reply to this feedback…"
+                    rows={2}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
+                  />
+                  <button
+                    onClick={handleReplySubmit}
+                    disabled={!replyText.trim() || submittingReply}
+                    className="flex items-center gap-1.5 bg-teal text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send size={14} />
+                    Reply
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Right — metadata sidebar */}

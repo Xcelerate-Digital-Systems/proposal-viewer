@@ -87,7 +87,7 @@ document.addEventListener("click",function(e){
 
       if(dataUrl){uploadScreenshot(dataUrl,function(url){finish(url);});}
       else{finish(null);}
-    });
+    },{cropAround:{x:px,y:py}});
   }
 
   postBtn.addEventListener("click",doPost);

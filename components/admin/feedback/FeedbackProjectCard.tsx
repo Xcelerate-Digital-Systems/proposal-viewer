@@ -187,14 +187,14 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
         {/* ─── Visual header — click to open ──────────────────── */}
         <button
           onClick={() => router.push(`/feedback/${project.id}`)}
-          className="w-full aspect-[4/3] rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-surface flex flex-col items-center justify-center p-5 border-b border-edge"
+          className="w-full aspect-[4/3] rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-surface flex flex-col items-center justify-center p-3 border-b border-edge"
         >
           {itemStats.total > 0 ? (
-            <div className="w-full flex flex-col items-center gap-3">
+            <div className="w-full flex flex-col items-center gap-2">
               {/* Large item count */}
               <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl font-bold text-ink">{itemStats.total}</span>
-                <span className="text-sm text-faint font-medium">item{itemStats.total !== 1 ? 's' : ''}</span>
+                <span className="text-2xl font-bold text-ink">{itemStats.total}</span>
+                <span className="text-xs text-faint font-medium">item{itemStats.total !== 1 ? 's' : ''}</span>
               </div>
 
               {/* Progress bar */}
@@ -252,7 +252,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
         </button>
 
         {/* ─── Card body ──────────────────────────────────────── */}
-        <div className="p-3.5 flex-1 flex flex-col min-w-0">
+        <div className="p-3 flex-1 flex flex-col min-w-0">
           {/* Title */}
           <h3
             className="text-[15px] font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
@@ -283,7 +283,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           <div className="flex-1" />
 
           {/* ─── Actions ────────────────────────────────────────── */}
-          <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3.5 px-3.5">
+          <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3 px-3">
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => router.push(`/feedback/${project.id}`)}

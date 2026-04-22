@@ -244,7 +244,7 @@ export default function FeedbackDetailView({
   // ── Text highlight state (available for all content types) ──
   const { selection: textSelection, clearSelection: clearTextSelection } = useTextHighlight({
     containerRef: imageContainerRef as React.RefObject<HTMLElement>,
-    enabled: feedbackMode === 'idle',
+    enabled: feedbackMode === 'idle' || feedbackMode === 'highlight',
   });
 
   // Filter text_highlight comments (scoped to active version)
@@ -322,11 +322,17 @@ export default function FeedbackDetailView({
 
   // ── Pin click → always open comments when pin is placed ──
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // Compute click position as % within the container BEFORE forwarding the
+    // event — so we can hand the same coords to the screenshot crop and end
+    // up with a 16:9 frame centred on the pin marker.
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+    const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+
     baseHandleImageClick(e);
     if (pinActive) {
       setShowComments(true);
-      // Auto-capture screenshot of the content area
-      captureScreenshot(imageContainerRef.current).then((url) => {
+      captureScreenshot(imageContainerRef.current, { cropAroundPct: { x: pctX, y: pctY } }).then((url) => {
         if (url) setPendingScreenshotUrl(url);
       });
     }
@@ -492,6 +498,7 @@ export default function FeedbackDetailView({
                   onReply={handlePopoverReply}
                   onResolve={onResolveComment}
                   onUnresolve={onUnresolveComment}
+                  onDelete={isAdmin ? onDeleteComment : undefined}
                   authorName={isAdmin ? authorName : undefined}
                   guestName={isClient ? guestName : undefined}
                   onNameChange={isClient ? onGuestNameChange : undefined}
@@ -797,6 +804,7 @@ export default function FeedbackDetailView({
                 onReply={handlePopoverReply}
                 onResolve={onResolveComment}
                 onUnresolve={onUnresolveComment}
+                onDelete={isAdmin ? onDeleteComment : undefined}
                 authorName={isAdmin ? authorName : undefined}
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}

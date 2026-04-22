@@ -85,9 +85,7 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   // Tab title
   useEffect(() => {
     if (project) {
-      document.title = project.client_name
-        ? `Board — ${project.client_name}`
-        : `Board — ${project.title}`;
+      document.title = project.title || project.client_name || 'Feedback';
     }
     return () => { document.title = 'Feedback'; };
   }, [project]);

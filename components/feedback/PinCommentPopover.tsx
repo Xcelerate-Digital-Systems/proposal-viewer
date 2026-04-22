@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, CornerDownRight, Send, CheckCircle2, RotateCcw } from 'lucide-react';
+import { X, CornerDownRight, Send, CheckCircle2, RotateCcw, Trash2 } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import { POPOVER_STYLE, POPOVER_INLINE_STYLE } from '@/lib/feedback/popover-style';
 import type { FeedbackComment } from '@/lib/supabase';
@@ -28,6 +28,8 @@ interface PinCommentPopoverProps {
   onResolve?: (commentId: string) => Promise<void>;
   /** Unresolve callback */
   onUnresolve?: (commentId: string) => Promise<void>;
+  /** Delete callback (admin only — deletes the pin and all replies) */
+  onDelete?: (commentId: string) => Promise<void>;
   /** Team author name (if admin) */
   authorName?: string;
   /** Guest name (if client) */
@@ -45,6 +47,7 @@ export default function PinCommentPopover({
   onReply,
   onResolve,
   onUnresolve,
+  onDelete,
   authorName,
   guestName,
   onNameChange,
@@ -188,6 +191,17 @@ export default function PinCommentPopover({
                 className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-amber-600 transition-colors">
                 <RotateCcw size={10} />
                 Reopen
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={async () => {
+                  await onDelete(comment.id);
+                  onClose();
+                }}
+                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-red-600 transition-colors ml-auto">
+                <Trash2 size={10} />
+                Delete
               </button>
             )}
           </div>

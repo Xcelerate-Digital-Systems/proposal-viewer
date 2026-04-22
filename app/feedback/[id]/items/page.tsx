@@ -5,14 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, ArrowLeft, Copy, Check, Image } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
-import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackStatus, type FeedbackShareMode } from '@/lib/supabase';
+import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackShareMode } from '@/lib/supabase';
 import { buildReviewProjectUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
 import FeedbackItemCard from '@/components/admin/feedback/FeedbackItemCard';
 import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
-import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
-
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
 /* ------------------------------------------------------------------ */
@@ -45,56 +43,6 @@ function ItemsGate({ isSuperAdmin, projectId, companyId, userId, initialTypeFilt
   if (!isSuperAdmin) return null;
 
   return <ItemsContent projectId={projectId} companyId={companyId} userId={userId} initialTypeFilter={initialTypeFilter} />;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Status summary bar                                                 */
-/* ------------------------------------------------------------------ */
-
-interface StatusSummary {
-  total: number;
-  byStatus: Record<FeedbackStatus, number>;
-}
-
-function StatusBar({ summary }: { summary: StatusSummary }) {
-  if (summary.total === 0) return null;
-
-  const segments = REVIEW_STATUS_ORDER
-    .map((s) => {
-      const def = getFeedbackStatusDef(s);
-      return { count: summary.byStatus[s], color: def.dot, label: def.label };
-    })
-    .filter((s) => s.count > 0);
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      {/* Progress bar */}
-      <div className="flex rounded-full overflow-hidden h-2 mb-3">
-        {segments.map((seg) => (
-          <div
-            key={seg.label}
-            className={`${seg.color} transition-all`}
-            style={{ width: `${(seg.count / summary.total) * 100}%` }}
-          />
-        ))}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-5 text-xs">
-        {segments.map((seg) => (
-          <div key={seg.label} className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${seg.color}`} />
-            <span className="text-gray-500">
-              {seg.count} {seg.label}
-            </span>
-          </div>
-        ))}
-        <span className="text-gray-400 ml-auto">
-          {summary.total} item{summary.total !== 1 ? 's' : ''} total
-        </span>
-      </div>
-    </div>
-  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -209,15 +157,6 @@ function ItemsContent({
     router.push(`/feedback/${projectId}/items/${itemId}${typeParam}`);
   };
 
-  // Compute status summary
-  const statusSummary: StatusSummary = {
-    total: items.length,
-    byStatus: REVIEW_STATUS_ORDER.reduce((acc, s) => {
-      acc[s] = items.filter((i) => i.status === s).length;
-      return acc;
-    }, {} as Record<FeedbackStatus, number>),
-  };
-
   if (!project && !loading) return null;
 
   return (
@@ -308,9 +247,6 @@ function ItemsContent({
           </div>
         ) : (
           <div className="space-y-4 mt-4">
-            {/* Status summary */}
-            <StatusBar summary={statusSummary} />
-
             {/* Type filter tabs */}
             <TypeFilterTabs
               items={items}
@@ -320,7 +256,7 @@ function ItemsContent({
             />
 
             {/* Items grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
               {filteredItems.map((item) => (
                 <FeedbackItemCard
                   key={item.id}

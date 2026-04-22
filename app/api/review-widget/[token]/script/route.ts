@@ -10,6 +10,7 @@ import { annotationFormJS } from './parts/annotation-form';
 import { pinModeJS } from './parts/pin-mode';
 import { boxModeJS } from './parts/box-mode';
 import { textModeJS } from './parts/text-mode';
+import { highlightModeJS } from './parts/highlight-mode';
 import { annotationsJS } from './parts/annotations';
 import { onboardingJS } from './parts/onboarding';
 import { initJS } from './parts/init';
@@ -142,6 +143,7 @@ if(!__aviz_resolvedItem)return;
     pinModeJS(),
     boxModeJS(),
     textModeJS(),
+    highlightModeJS(),
     annotationsJS(),
     onboardingJS(),
     initJS(),

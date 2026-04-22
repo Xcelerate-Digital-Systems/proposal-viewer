@@ -11,6 +11,7 @@ var tools=[
   {id:"pin",icon:ICON.pin,label:"Pin Comment"},
   {id:"box",icon:ICON.box,label:"Draw Box"},
   {id:"text",icon:ICON.text,label:"Add Text"},
+  {id:"highlight",icon:ICON.highlight,label:"Highlight Text"},
   {id:"sep1",sep:true},
   {id:"video",icon:ICON.video,label:"Record Video",soon:true},
   {id:"comments",icon:ICON.chat,label:"Comments"},
@@ -39,7 +40,7 @@ var barMsg=bar.querySelector("#aviz-bar-msg");
 /* Pin mode is always armed — box/text are temporary overrides that return to pin. */
 function armPinMode(){
   mode="pin";
-  document.documentElement.classList.remove("aviz-mode-box","aviz-mode-text");
+  document.documentElement.classList.remove("aviz-mode-box","aviz-mode-text","aviz-mode-highlight");
   document.documentElement.classList.add("aviz-mode-pin");
   activeTool="pin";
   Object.keys(toolBtns).forEach(function(k){toolBtns[k].classList.toggle("active",k==="pin");});
@@ -51,10 +52,11 @@ function setMode(m,msg){
   removePendingAnnotation();
   if(boxEl){boxEl.remove();boxEl=null;}boxDrawing=false;boxStart=null;
   mode=m;
-  document.documentElement.classList.remove("aviz-mode-pin","aviz-mode-box","aviz-mode-text");
+  document.documentElement.classList.remove("aviz-mode-pin","aviz-mode-box","aviz-mode-text","aviz-mode-highlight");
   if(m==="pin")document.documentElement.classList.add("aviz-mode-pin");
   if(m==="box")document.documentElement.classList.add("aviz-mode-box");
   if(m==="text")document.documentElement.classList.add("aviz-mode-text");
+  if(m==="highlight")document.documentElement.classList.add("aviz-mode-highlight");
   if(msg){barMsg.textContent=msg;bar.classList.add("show");}else{bar.classList.remove("show");}
 }
 function exitMode(){armPinMode();}
@@ -73,6 +75,10 @@ toolBtns.box.addEventListener("click",function(){
 toolBtns.text.addEventListener("click",function(){
   if(mode==="text"){armPinMode();return;}
   closePanel();setActiveTool("text");setMode("text","Click anywhere to add text");
+});
+toolBtns.highlight.addEventListener("click",function(){
+  if(mode==="highlight"){armPinMode();return;}
+  closePanel();setActiveTool("highlight");setMode("highlight","Select text on the page to leave a highlighted comment");
 });
 toolBtns.video.addEventListener("click",function(){/* soon */});
 toolBtns.comments.addEventListener("click",function(){

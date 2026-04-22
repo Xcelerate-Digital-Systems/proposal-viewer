@@ -1,9 +1,9 @@
 'use client';
 
-import { MessageSquare, MoveUpRight, Square, Type } from 'lucide-react';
+import { MessageSquare, MoveUpRight, Square, Type, Highlighter } from 'lucide-react';
 
 /** Pin is always active by default. Drawing tools override pin mode when selected. */
-export type FeedbackMode = 'idle' | 'pin' | 'arrow' | 'box' | 'text' | 'screenshot';
+export type FeedbackMode = 'idle' | 'pin' | 'arrow' | 'box' | 'text' | 'highlight' | 'screenshot';
 
 interface FeedbackToolbarProps {
   /** Toggle comments panel */
@@ -59,6 +59,12 @@ export default function FeedbackToolbar({
             onClick={() => handleToolClick('text')}
             tooltip="Text"
             icon={<Type size={18} />}
+          />
+          <ToolButton
+            active={mode === 'highlight'}
+            onClick={() => handleToolClick('highlight')}
+            tooltip="Highlight Text"
+            icon={<Highlighter size={18} />}
           />
 
           <div className="w-5 h-px bg-sketch-ink/25 my-0.5" />

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, MessageSquareText, LayoutGrid, List, Search } from 'lucide-react';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
+import type { FeedbackStatus } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
 import CreateFeedbackProjectModal from '@/components/admin/feedback/CreateFeedbackProjectModal';
 import FeedbackProjectCard from '@/components/admin/feedback/FeedbackProjectCard';
@@ -37,6 +38,13 @@ function ReviewsGate({ isSuperAdmin, companyId, userId }: { isSuperAdmin?: boole
 
 type FilterTab = 'active' | 'completed' | 'archived' | 'all';
 
+const FILTER_STATUSES: Record<FilterTab, FeedbackStatus[] | null> = {
+  active: ['draft', 'in_progress', 'internal_review', 'client_review', 'revision_needed'],
+  completed: ['approved', 'rejected'],
+  archived: ['archived'],
+  all: null,
+};
+
 function ReviewsContent({ companyId, userId }: { companyId: string; userId: string | null }) {
   const [projects, setProjects] = useState<FeedbackProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,8 +72,9 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
       .eq('company_id', companyId)
       .order('updated_at', { ascending: false });
 
-    if (filter !== 'all') {
-      query = query.eq('status', filter);
+    const statuses = FILTER_STATUSES[filter];
+    if (statuses) {
+      query = query.in('status', statuses);
     }
 
     const { data } = await query;
@@ -234,7 +243,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             )}
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((project) => (
               <FeedbackProjectCard
                 key={project.id}

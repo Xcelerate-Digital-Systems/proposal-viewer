@@ -50,6 +50,9 @@ function showAnnotationForm(type,px,py,extra){
     f.style.display="none";
     annotations.forEach(function(a){if(a.el)a.el.style.display="none";});
 
+    /* Centre the screenshot crop on the pin/box anchor */
+    var cropCx=type==="box"&&extra?pctToPxX(extra.x):px;
+    var cropCy=type==="box"&&extra?pctToPxY(extra.y):py;
     captureAutoScreenshot(function(dataUrl){
       /* Restore existing annotations */
       annotations.forEach(function(a){if(a.el)a.el.style.display="";});
@@ -79,7 +82,7 @@ function showAnnotationForm(type,px,py,extra){
       }else{
         doPost(null);
       }
-    });
+    },{cropAround:{x:cropCx,y:cropCy}});
   });
 
   pfText.addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();pfSend.click();}});

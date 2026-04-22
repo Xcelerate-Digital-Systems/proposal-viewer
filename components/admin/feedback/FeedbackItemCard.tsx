@@ -407,9 +407,9 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
       </button>
 
       {/* Card body */}
-      <div className="p-3.5 flex-1 flex flex-col min-w-0">
+      <div className="p-3 flex-1 flex flex-col min-w-0">
         {/* Title */}
-        <div className="mb-2.5 min-w-0">
+        <div className="mb-2 min-w-0">
           {editing ? (
             <div className="flex items-center gap-1.5">
               <input
@@ -475,7 +475,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
         )}
 
         {/* Status dropdown */}
-        <div className="mb-3">
+        <div className="mb-2">
           <StatusDropdown
             value={item.status}
             options={itemStatusOptions}
@@ -484,7 +484,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
         </div>
 
         {/* Comments stat */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
+        <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
           <MessageSquareText size={12} />
           <span>
             {commentCount} comment{commentCount !== 1 ? 's' : ''}
@@ -498,7 +498,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
         <div className="flex-1" />
 
         {/* Actions */}
-        <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3.5 px-3.5">
+        <div className="flex items-center justify-between border-t border-gray-100 pt-2 -mx-3 px-3">
           <button
             onClick={() => onOpenViewer(item.id)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"

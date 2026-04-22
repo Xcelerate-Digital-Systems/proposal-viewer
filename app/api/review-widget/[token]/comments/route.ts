@@ -96,6 +96,10 @@ export async function POST(
       parent_comment_id,
       screenshot_url,
       annotation_data,
+      highlight_text,
+      highlight_start,
+      highlight_end,
+      highlight_element_path,
     } = body;
 
     if (!review_item_id || !author_name || !content || !comment_type) {
@@ -108,7 +112,7 @@ export async function POST(
     }
 
     // Determine thread_number for new top-level annotated comments
-    const NUMBERED_TYPES = ['pin', 'box', 'text', 'screenshot'];
+    const NUMBERED_TYPES = ['pin', 'box', 'text', 'screenshot', 'text_highlight'];
     let thread_number: number | null = null;
     if (!parent_comment_id && NUMBERED_TYPES.includes(comment_type)) {
       const { data: existing } = await supabase
@@ -140,6 +144,10 @@ export async function POST(
         pin_element_path: pin_element_path || null,
         screenshot_url: screenshot_url || null,
         annotation_data: annotation_data || null,
+        highlight_text: highlight_text || null,
+        highlight_start: typeof highlight_start === 'number' ? highlight_start : null,
+        highlight_end: typeof highlight_end === 'number' ? highlight_end : null,
+        highlight_element_path: highlight_element_path || null,
       })
       .select()
       .single();
