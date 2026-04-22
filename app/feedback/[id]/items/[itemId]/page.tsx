@@ -216,7 +216,8 @@ function ItemViewerContent({
     const currentItem = items.find((i) => i.id === reviewItemId) || null;
 
     let thread_number: number | null = null;
-    if (!parentId && pinX != null) {
+    const isNumberedAnnotation = pinX != null || highlightData != null;
+    if (!parentId && isNumberedAnnotation) {
       const existingTopLevel = comments.filter((c) => !c.parent_comment_id);
       const maxThread = existingTopLevel
         .filter((c) => c.thread_number != null)

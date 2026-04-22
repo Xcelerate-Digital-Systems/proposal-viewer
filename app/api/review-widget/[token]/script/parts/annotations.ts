@@ -35,7 +35,75 @@ function renderAnnotations(){
       document.body.appendChild(el);annotations.push({id:c.id,el:el,type:"text"});
     }
   });
+  renderTextHighlights();
 }
+
+/* ── Text-highlight rendering (yellow marks + numbered badges) ── */
+function findHighlightNodeAtOffset(target){
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{
+    acceptNode:function(n){
+      var p=n.parentNode;
+      if(!p)return NodeFilter.FILTER_REJECT;
+      /* Skip widget UI + our own highlight wrappers */
+      if(p.closest&&(p.closest("#aviz-root")||p.closest("mark.aviz-hl")||p.closest(".aviz-pin-form")||p.closest(".aviz-text-input-wrap")||p.closest("#aviz-panel")))return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  var accumulated=0,node;
+  while((node=walker.nextNode())){
+    var len=(node.textContent||"").length;
+    if(accumulated+len>=target)return{node:node,offset:target-accumulated};
+    accumulated+=len;
+  }
+  return null;
+}
+
+function unwrapExistingHighlights(){
+  var marks=document.querySelectorAll("mark.aviz-hl");
+  for(var i=0;i<marks.length;i++){
+    var m=marks[i];
+    var badges=m.querySelectorAll(".aviz-hl-badge");
+    for(var j=0;j<badges.length;j++)badges[j].remove();
+    var parent=m.parentNode;if(!parent)continue;
+    while(m.firstChild)parent.insertBefore(m.firstChild,m);
+    parent.removeChild(m);
+    if(parent.normalize)parent.normalize();
+  }
+}
+
+function renderTextHighlights(){
+  unwrapExistingHighlights();
+  /* Sort descending so wrapping earlier ranges doesn't shift later offsets */
+  var highlights=comments.filter(function(c){
+    return !c.parent_comment_id&&c.comment_type==="text_highlight"
+      &&c.highlight_start!=null&&c.highlight_end!=null;
+  }).sort(function(a,b){return (b.highlight_start||0)-(a.highlight_start||0);});
+
+  highlights.forEach(function(c){
+    var startPos=findHighlightNodeAtOffset(c.highlight_start);
+    var endPos=findHighlightNodeAtOffset(c.highlight_end);
+    if(!startPos||!endPos)return;
+    try{
+      var range=document.createRange();
+      range.setStart(startPos.node,startPos.offset);
+      range.setEnd(endPos.node,endPos.offset);
+      var mark=document.createElement("mark");
+      mark.className="aviz-hl"+(c.resolved?" resolved":"");
+      mark.setAttribute("data-comment-id",c.id);
+      range.surroundContents(mark);
+      mark.addEventListener("click",function(e){e.stopPropagation();openPanel();scrollToThread(c.id);});
+      if(c.thread_number!=null){
+        var badge=document.createElement("span");
+        badge.className="aviz-hl-badge";
+        badge.textContent=String(c.thread_number);
+        badge.setAttribute("contenteditable","false");
+        badge.addEventListener("click",function(e){e.stopPropagation();openPanel();scrollToThread(c.id);});
+        mark.appendChild(badge);
+      }
+    }catch(e){/* range spans element boundaries — skip */}
+  });
+}
+
 var resizeTimer;
 window.addEventListener("resize",function(){clearTimeout(resizeTimer);resizeTimer=setTimeout(renderAnnotations,150);});
 `;

@@ -99,6 +99,12 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:cro
 .aviz-pin-form h4{font-size:11px;font-weight:500;color:#9ca3af;margin:0 0 8px 0;padding:0;}
 .aviz-pf-quote{margin:0 0 10px 0;padding:6px 10px;border-left:3px solid #fde047;background:#fefce8;border-radius:0 6px 6px 0;font-size:11px;color:#92400e;font-style:italic;}
 
+/* ── Text highlight marks ──────────────────────────────── */
+mark.aviz-hl{background:rgba(253,224,71,.55);padding:1px 2px;border-radius:2px;cursor:pointer;transition:background .15s;color:inherit;}
+mark.aviz-hl:hover{background:rgba(253,224,71,.8);}
+mark.aviz-hl.resolved{background:rgba(253,224,71,.28);}
+.aviz-hl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:3px;border-radius:9999px;background:${ACCENT};color:#fff;font-size:10px;font-weight:700;line-height:1;vertical-align:middle;cursor:pointer;user-select:none;font-style:normal;font-family:${FONT};}
+
 /* ── Guest onboarding modal ───────────────────────────── */
 #aviz-onboard{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.55);
   display:flex;align-items:center;justify-content:center;padding:20px;

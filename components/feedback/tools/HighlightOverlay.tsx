@@ -14,9 +14,6 @@ interface HighlightOverlayProps {
   onHighlightClick?: (commentId: string) => void;
 }
 
-/**
- * Finds the text node and offset within a container at a given flat character offset.
- */
 function findNodeAtOffset(
   container: HTMLElement,
   targetOffset: number
@@ -37,8 +34,9 @@ function findNodeAtOffset(
 }
 
 /**
- * Renders <mark> highlights over previously commented text ranges.
- * Uses DOM manipulation to wrap text ranges after the container renders.
+ * Renders <mark> highlights over previously commented text ranges with a
+ * numbered badge inside each mark (markup.io-style). Clicking either the
+ * text or the badge invokes onHighlightClick.
  */
 export default function HighlightOverlay({
   containerRef,
@@ -49,10 +47,10 @@ export default function HighlightOverlay({
   const marksRef = useRef<HTMLElement[]>([]);
 
   const applyHighlights = useCallback(() => {
-    // Clean up previous marks
     for (const mark of marksRef.current) {
       const parent = mark.parentNode;
       if (parent) {
+        mark.querySelectorAll('.review-highlight-badge').forEach((b) => b.remove());
         while (mark.firstChild) {
           parent.insertBefore(mark.firstChild, mark);
         }
@@ -65,7 +63,8 @@ export default function HighlightOverlay({
     const container = containerRef.current;
     if (!container || highlightComments.length === 0) return;
 
-    // Sort by start offset descending so wrapping doesn't shift earlier offsets
+    // Sort by start offset descending so wrapping earlier ranges doesn't
+    // shift the offsets of later ones.
     const sorted = [...highlightComments]
       .filter((c) => c.highlight_start != null && c.highlight_end != null)
       .sort((a, b) => (b.highlight_start ?? 0) - (a.highlight_start ?? 0));
@@ -85,11 +84,14 @@ export default function HighlightOverlay({
         range.setEnd(endPos.node, endPos.offset);
 
         const mark = document.createElement('mark');
+        const isActive = comment.id === highlightedCommentId;
         mark.className = `review-highlight cursor-pointer transition-all duration-200 ${
-          comment.id === highlightedCommentId
-            ? 'bg-teal/30 ring-2 ring-teal ring-offset-1 animate-pulse'
-            : 'bg-teal/15 hover:bg-teal/25'
+          isActive
+            ? 'bg-yellow-300/60 ring-2 ring-yellow-400 ring-offset-1 animate-pulse'
+            : 'bg-yellow-200/70 hover:bg-yellow-300/80'
         }`;
+        mark.style.padding = '1px 2px';
+        mark.style.borderRadius = '2px';
         mark.dataset.commentId = comment.id;
         mark.title = comment.highlight_text || '';
 
@@ -99,21 +101,53 @@ export default function HighlightOverlay({
         });
 
         range.surroundContents(mark);
+
+        // Append a numbered badge as the last child of the mark so it sits
+        // at the end of the highlight inline with the wrapped text.
+        if (comment.thread_number != null) {
+          const badge = document.createElement('span');
+          badge.className = 'review-highlight-badge';
+          badge.textContent = String(comment.thread_number);
+          badge.setAttribute('contenteditable', 'false');
+          Object.assign(badge.style, {
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: '16px',
+            height: '16px',
+            padding: '0 4px',
+            marginLeft: '3px',
+            borderRadius: '9999px',
+            background: '#017C87',
+            color: '#ffffff',
+            fontSize: '10px',
+            fontWeight: '700',
+            lineHeight: '1',
+            verticalAlign: 'middle',
+            cursor: 'pointer',
+            userSelect: 'none',
+            fontStyle: 'normal',
+          } as Partial<CSSStyleDeclaration>);
+          badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            onHighlightClick?.(comment.id);
+          });
+          mark.appendChild(badge);
+        }
+
         marksRef.current.push(mark);
       } catch {
-        // surroundContents can fail if range spans across element boundaries
-        // In that case, we skip this highlight silently
+        // surroundContents fails if the range spans element boundaries; skip.
       }
     }
   }, [containerRef, highlightComments, highlightedCommentId, onHighlightClick]);
 
   useEffect(() => {
-    // Small delay to ensure the container content has rendered
     const timer = setTimeout(applyHighlights, 100);
     return () => {
       clearTimeout(timer);
-      // Cleanup marks on unmount
       for (const mark of marksRef.current) {
+        mark.querySelectorAll('.review-highlight-badge').forEach((b) => b.remove());
         const parent = mark.parentNode;
         if (parent) {
           while (mark.firstChild) {
@@ -127,6 +161,5 @@ export default function HighlightOverlay({
     };
   }, [applyHighlights]);
 
-  // This component doesn't render any React DOM — it manipulates the container directly
   return null;
 }
