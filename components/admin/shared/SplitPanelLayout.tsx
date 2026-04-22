@@ -18,6 +18,8 @@ interface SplitPanelLayoutProps {
   rightClassName?: string;
   /** Gap between columns — defaults to gap-6 */
   gap?: 'gap-5' | 'gap-6';
+  /** Extra classes for the outer flex container (e.g. "flex-1 min-h-0" to fill a flex parent) */
+  className?: string;
 }
 
 export default function SplitPanelLayout({
@@ -28,11 +30,12 @@ export default function SplitPanelLayout({
   leftClassName = '',
   rightClassName = '',
   gap = 'gap-6',
+  className = '',
 }: SplitPanelLayoutProps) {
   return (
     <div
       ref={containerRef}
-      className={`flex ${gap}`}
+      className={`flex ${gap} ${className}`}
       style={panelHeight ? { height: panelHeight } : undefined}
     >
       <div className={`${right ? 'w-[65%] px-2' : 'flex-1'} min-w-0 ${leftClassName}`}>

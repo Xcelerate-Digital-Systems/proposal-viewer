@@ -1,7 +1,8 @@
 // components/admin/shared/PackagesAppearanceSection.tsx
 'use client';
 
-import { Check, Circle, CheckCircle2, ArrowRight, Star, Minus, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Circle, CheckCircle2, ArrowRight, Star, Minus, RotateCcw, ChevronDown } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import { PackageStyling, PackageFeatureIcon, PackageTier, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
@@ -28,6 +29,8 @@ export default function PackagesAppearanceSection({
   onStylingChange,
   onTierChange,
 }: PackagesAppearanceSectionProps) {
+  const [expanded, setExpanded] = useState(false);
+
   const update = (changes: Partial<PackageStyling>) => {
     onStylingChange({ ...styling, ...changes });
   };
@@ -41,8 +44,17 @@ export default function PackagesAppearanceSection({
 
       {/* ── Header ────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Appearance</label>
-        {!isDefault(styling) && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700 transition-colors"
+        >
+          <ChevronDown
+            size={12}
+            className={`transition-transform ${expanded ? '' : '-rotate-90'}`}
+          />
+          Appearance
+        </button>
+        {expanded && !isDefault(styling) && (
           <button
             onClick={resetAll}
             className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-teal transition-colors"
@@ -52,6 +64,8 @@ export default function PackagesAppearanceSection({
           </button>
         )}
       </div>
+
+      {expanded && <>
 
       {/* ── Title colour ──────────────────────────────────── */}
       <div className="px-4 py-4 space-y-2 bg-white">
@@ -203,6 +217,8 @@ export default function PackagesAppearanceSection({
           </div>
         </div>
       </div>
+
+      </>}
 
     </div>
   );

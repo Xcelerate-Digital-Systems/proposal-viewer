@@ -30,8 +30,6 @@ const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white
 export default function PricingTabEditor({ hideProposalDate, proposalId, ...props }: PricingTabEditorProps) {
   const editor = usePricingEditor(props);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [panelHeight, setPanelHeight] = useState(520);
   const [showPreview, setShowPreview] = useState(true);
 
   /* ── Job fields (per-proposal toggle) ──────────────────────── */
@@ -76,20 +74,6 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
     }, 800);
   };
 
-  /* ── Panel height ───────────────────────────────────────────── */
-
-  useEffect(() => {
-    const measure = () => {
-      if (containerRef.current) {
-        const top = containerRef.current.getBoundingClientRect().top;
-        setPanelHeight(Math.max(400, window.innerHeight - top - 24));
-      }
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
-
   /* ── Loading ────────────────────────────────────────────────── */
 
   if (!editor.loaded) {
@@ -101,41 +85,9 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-800">Quote Pages</h3>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {editor.allPages.length === 0
-              ? 'No quote pages yet'
-              : `${editor.allPages.filter((p) => p.enabled).length} of ${editor.allPages.length} enabled`}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {editor.saveStatus === 'saving' && <Loader2 size={14} className="animate-spin text-gray-300" />}
-          {editor.saveStatus === 'saved' && (
-            <span className="flex items-center gap-1 text-xs text-emerald-500">
-              <Check size={12} /> Saved
-            </span>
-          )}
-          {editor.selectedId && (
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                showPreview
-                  ? 'bg-teal/10 text-teal'
-                  : 'bg-gray-100 text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <Eye size={13} /> Preview
-            </button>
-          )}
-        </div>
-      </div>
-
+    <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
       {/* Page navigation tabs */}
-      <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto mb-5">
+      <div className="shrink-0 flex items-end gap-0 border-b border-gray-200 overflow-x-auto mb-5">
         {editor.allPages.map((page) => (
           <button
             key={page.id}
@@ -169,12 +121,31 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
           {editor.adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
           Add Page
         </button>
+        <div className="ml-auto flex items-center gap-3 pr-1 pb-1.5">
+          {editor.saveStatus === 'saving' && <Loader2 size={14} className="animate-spin text-gray-300" />}
+          {editor.saveStatus === 'saved' && (
+            <span className="flex items-center gap-1 text-xs text-emerald-500">
+              <Check size={12} /> Saved
+            </span>
+          )}
+          {editor.selectedId && (
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                showPreview
+                  ? 'bg-teal/10 text-teal'
+                  : 'bg-gray-100 text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <Eye size={13} /> Preview
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Body: editor + optional preview */}
       <SplitPanelLayout
-        containerRef={containerRef}
-        panelHeight={panelHeight}
+        className="flex-1 min-h-0"
         gap="gap-5"
         leftClassName="overflow-y-auto"
         left={

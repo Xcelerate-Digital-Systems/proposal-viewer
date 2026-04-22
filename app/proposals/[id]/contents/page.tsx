@@ -81,8 +81,8 @@ function ContentsContent({
         customDomain={customDomain}
       />
 
-      <div className="flex-1 px-6 lg:px-10 py-6">
-       <TocTab entityType="proposal" entityId={proposalId} />
+      <div className="flex-1 min-h-0 px-6 lg:px-10 py-6 flex flex-col">
+        <TocTab entityType="proposal" entityId={proposalId} />
       </div>
     </div>
   );

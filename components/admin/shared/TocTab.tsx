@@ -319,10 +319,10 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1 min-h-0 flex flex-col">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="shrink-0 flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
             <List size={15} className="text-teal" />
@@ -355,10 +355,10 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
       </div>
 
       {settings.enabled ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr] gap-6 items-start flex-1 min-h-0">
 
           {/* ── Left: controls ── */}
-          <div className="space-y-5">
+          <div className="space-y-5 h-full overflow-y-auto pr-2 min-h-0">
 
             {/* Page title */}
             <div>

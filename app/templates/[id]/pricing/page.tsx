@@ -73,7 +73,7 @@ function PricingContent({
         activeTab="pricing"
       />
 
-      <div className="flex-1 px-6 lg:px-10 py-6">
+      <div className="flex-1 min-h-0 px-6 lg:px-10 py-6 flex flex-col">
         <TemplatePricingTab templateId={templateId} companyId={companyId} />
       </div>
     </div>
