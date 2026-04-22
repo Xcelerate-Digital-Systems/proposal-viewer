@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Paperclip, Send } from 'lucide-react';
 import AttachmentPicker, { type PendingAttachment } from './AttachmentPicker';
+import AttachFilesModal from './AttachFilesModal';
 import EmojiPicker from './EmojiPicker';
 import PrioritySelector from './PrioritySelector';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
@@ -26,9 +27,7 @@ interface PendingPinFormProps {
   quotedText?: string;
 }
 
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_FILES = 5;
-const MAX_SIZE_MB = 10;
 
 async function uploadAttachments(
   pending: PendingAttachment[],
@@ -65,36 +64,12 @@ export default function PendingPinForm({
   const [submitting, setSubmitting] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
   const [priority, setPriority] = useState<FeedbackCommentPriority>('none');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAttachModal, setShowAttachModal] = useState(false);
 
   const isGuest = !authorName;
   const isDisabled = isGuest
     ? !text.trim() || !(guestName?.trim()) || submitting
     : !text.trim() || submitting;
-
-  const handleAddFiles = (files: FileList | null) => {
-    if (!files) return;
-    const remaining = MAX_FILES - pendingFiles.length;
-    if (remaining <= 0) return;
-    const maxBytes = MAX_SIZE_MB * 1024 * 1024;
-    const next: PendingAttachment[] = [];
-    for (let i = 0; i < Math.min(files.length, remaining); i++) {
-      const file = files[i];
-      if (file.size > maxBytes) continue;
-      const pa: PendingAttachment = { file };
-      if (IMAGE_TYPES.includes(file.type)) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          pa.preview = reader.result as string;
-          setPendingFiles((prev) => [...prev]); // trigger re-render with populated preview
-        };
-        reader.readAsDataURL(file);
-      }
-      next.push(pa);
-    }
-    if (next.length > 0) setPendingFiles((prev) => [...prev, ...next]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +132,7 @@ export default function PendingPinForm({
 
         {pendingFiles.length > 0 && (
           <div className="mt-2">
-            <AttachmentPicker attachments={pendingFiles} onChange={setPendingFiles} />
+            <AttachmentPicker attachments={pendingFiles} onChange={setPendingFiles} hideAddButton />
           </div>
         )}
       </div>
@@ -165,21 +140,18 @@ export default function PendingPinForm({
       <div className="flex items-center gap-1 px-3 py-2 border-t border-gray-100">
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => setShowAttachModal(true)}
           disabled={pendingFiles.length >= MAX_FILES}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Attach file"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed relative"
+          title="Attach files"
         >
           <Paperclip size={16} />
+          {pendingFiles.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-teal text-white text-[9px] font-bold flex items-center justify-center">
+              {pendingFiles.length}
+            </span>
+          )}
         </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip"
-          onChange={(e) => handleAddFiles(e.target.files)}
-        />
         <EmojiPicker onSelect={(emoji) => setText((prev) => prev + emoji)} />
         <PrioritySelector value={priority} onChange={setPriority} />
         <div className="flex-1" />
@@ -192,6 +164,14 @@ export default function PendingPinForm({
           {submitting ? 'Sending…' : 'Post'}
         </button>
       </div>
+
+      {showAttachModal && (
+        <AttachFilesModal
+          existing={pendingFiles}
+          onClose={() => setShowAttachModal(false)}
+          onConfirm={(files) => setPendingFiles(files)}
+        />
+      )}
     </form>
   );
 }

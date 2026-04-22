@@ -13,6 +13,8 @@ interface AttachmentPickerProps {
   onChange: (attachments: PendingAttachment[]) => void;
   maxFiles?: number;
   maxSizeMb?: number;
+  /** When true, hide the inline "Attach file" button (caller provides its own trigger). */
+  hideAddButton?: boolean;
 }
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -22,6 +24,7 @@ export default function AttachmentPicker({
   onChange,
   maxFiles = 5,
   maxSizeMb = 10,
+  hideAddButton = false,
 }: AttachmentPickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +114,7 @@ export default function AttachmentPicker({
       )}
 
       {/* Add button */}
-      {attachments.length < maxFiles && (
+      {!hideAddButton && attachments.length < maxFiles && (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
