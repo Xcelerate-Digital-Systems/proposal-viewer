@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Image as ImageIcon, ArrowLeft, Monitor } from 'lucide-react';
-import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackItemVersion } from '@/lib/supabase';
+import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackItemVersion, type FeedbackStatus } from '@/lib/supabase';
 import { buildVersionList } from '@/lib/feedback/versions';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
@@ -144,6 +144,21 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const handleItemChange = useCallback((id: string) => {
     setSelectedItemId(id);
   }, []);
+
+  // Client status change — hits the token-scoped status endpoint and
+  // optimistically patches the local items list so the header updates.
+  const handleUpdateItemStatus = useCallback(async (itemId: string, status: FeedbackStatus) => {
+    const previousStatus = items.find((it) => it.id === itemId)?.status;
+    setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, status } : it)));
+    const res = await fetch(`/api/review/${params.token}/items/${itemId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok && previousStatus) {
+      setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, status: previousStatus } : it)));
+    }
+  }, [params.token, items]);
 
   // ── Submit comment via API ──
   const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }) => {
@@ -303,12 +318,16 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   //  DETAIL VIEW — single item or sidebar+detail, delegated to shared
   // ══════════════════════════════════════════════════════════════════
 
-  // Determine back action: board mode → back to board, ?back= param → external back link
-  const backAction = urlBack && isValidHttpUrl(urlBack)
-  ? { label: 'Back to Board', onClick: () => { window.location.href = urlBack; } }
-  : isBoardMode
-    ? { label: 'Back to Board', onClick: () => setShowBoardView(true) }
-    : undefined;
+  // Determine back action: ?back= absolute URL OR same-origin path, else
+  // board-mode fallback. Relative paths (e.g. /whiteboard/xxx when the item
+  // link comes from a shared whiteboard) are also accepted — they just need
+  // to start with a single slash to avoid protocol-relative URLs.
+  const isSafeBackPath = urlBack != null && urlBack.startsWith('/') && !urlBack.startsWith('//');
+  const backAction = urlBack && (isValidHttpUrl(urlBack) || isSafeBackPath)
+    ? { label: 'Back to Board', onClick: () => { window.location.href = urlBack; } }
+    : isBoardMode
+      ? { label: 'Back to Board', onClick: () => setShowBoardView(true) }
+      : undefined;
 
   return (
     <>
@@ -340,6 +359,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         activeVersionId={resolvedActiveVersionId}
         onVersionChange={selectedItem && selectedItem.type !== 'webpage' ? handleClientVersionChange : undefined}
         backAction={backAction}
+        onUpdateItemStatus={handleUpdateItemStatus}
       />
     </>
   );

@@ -73,7 +73,10 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
       setActiveTool('select');
       return;
     }
-    if (tool === 'decision' || tool === 'wait') {
+    if (
+      tool === 'decision' || tool === 'wait' ||
+      tool === 'call' || tool === 'meeting' || tool === 'automation' || tool === 'goal'
+    ) {
       // Drop the shape near the centre of the current viewport so it's
       // immediately visible, not hidden off-screen.
       const container = reactFlowRef.current;
@@ -81,10 +84,10 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
       const centre = rect
         ? rf.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 3 })
         : { x: 200, y: 200 };
-      // Rough half-size to centre the spawn; the visual sizes are owned by
-      // the node components, we just ballpark it so the drop point feels right.
-      const offsetX = tool === 'decision' ? 86 : 70;
-      const offsetY = tool === 'decision' ? 86 : 60;
+      // Rough half-size to centre the spawn; visual sizes live in the node
+      // components, we just ballpark it so the drop point feels right.
+      const offsetX = tool === 'decision' ? 120 : 66;
+      const offsetY = tool === 'decision' ? 120 : 44;
       void ctx.createShape({
         shape_type: tool,
         x: Math.round(centre.x - offsetX),

@@ -8,7 +8,6 @@ import {
   type Node,
   type Edge,
   type NodeTypes,
-  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { type FeedbackItem, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackBoardShape, type FeedbackComment } from '@/lib/supabase';
@@ -117,11 +116,19 @@ export default function FeedbackBoardViewer({
     setNodes([...itemNodes, ...noteNodes, ...shapeNodes]);
   }, [placedItems, boardNotes, boardShapes, commentCounts, onSelectItem]);
 
-  // Build edges
+  // Build edges — mirror the admin board's edge shape so LabeledEdge sees
+  // arrowDir/label/dashed via `data`. The old top-level `label`/`markerEnd`
+  // fields were ignored by our custom edge renderer, which is why
+  // user-set arrows weren't showing on the public view.
   useEffect(() => {
     const flowEdges: Edge[] = boardEdges
       .map((e) => {
         const strokeColor = (e.style as Record<string, string>)?.stroke || accent;
+        const strokeWidth = Number((e.style as Record<string, number>)?.strokeWidth) || 2;
+        const dashed = !!(e.style as Record<string, boolean>)?.dashed;
+        const rawArrow = (e.style as Record<string, string> | null | undefined)?.arrowDir;
+        const arrowDir: 'none' | 'source' | 'target' | 'both' =
+          rawArrow === 'none' || rawArrow === 'source' || rawArrow === 'both' ? rawArrow : 'target';
         const source = e.source_shape_id ? `shape-${e.source_shape_id}` : e.source_item_id;
         const target = e.target_shape_id ? `shape-${e.target_shape_id}` : e.target_item_id;
         if (!source || !target) return null;
@@ -133,21 +140,15 @@ export default function FeedbackBoardViewer({
           targetHandle: e.target_handle || 'left',
           type: 'labeled',
           animated: e.animated || false,
-          label: e.label || undefined,
-          style: {
-            stroke: strokeColor,
-            strokeWidth: Number((e.style as Record<string, number>)?.strokeWidth) || 2,
-          },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
+          style: { stroke: strokeColor, strokeWidth },
+          data: {
+            label: e.label || undefined,
             color: strokeColor,
-            width: 16,
-            height: 16,
+            strokeWidth,
+            dashed,
+            animated: e.animated || false,
+            arrowDir,
           },
-          labelStyle: { fontSize: 11, fontWeight: 500, fill: '#64748b' },
-          labelBgStyle: { fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 1 },
-          labelBgPadding: [6, 4] as [number, number],
-          labelBgBorderRadius: 6,
         } as Edge;
       })
       .filter((e): e is Edge => e !== null);
@@ -176,7 +177,18 @@ export default function FeedbackBoardViewer({
   }
 
   return (
-    <div className="w-full h-full bg-notebook">
+    <div className="public-feedback-board w-full h-full bg-notebook">
+      {/* Hide all handle dots on the read-only client view — the handle DOM
+          nodes stay in place so React Flow can still anchor edges to them,
+          they just have no visible dot/border. */}
+      <style>{`
+        .public-feedback-board .react-flow__handle {
+          background: transparent !important;
+          border: 0 !important;
+          box-shadow: none !important;
+          pointer-events: none !important;
+        }
+      `}</style>
       <ReactFlow
         nodes={nodes}
         edges={edges}

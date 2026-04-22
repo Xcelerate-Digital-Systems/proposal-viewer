@@ -1,9 +1,13 @@
 'use client';
 
-import { MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock } from 'lucide-react';
+import { MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock, Phone, CalendarDays, Zap, Flag } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-export type BoardTool = 'select' | 'sticky' | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text' | 'decision' | 'wait';
+export type BoardTool =
+  | 'select' | 'sticky'
+  | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text'
+  | 'decision' | 'wait'
+  | 'call' | 'meeting' | 'automation' | 'goal';
 
 interface ToolDef {
   id: BoardTool;
@@ -22,6 +26,10 @@ const TOOLS: ToolDef[] = [
   { id: 'text', icon: <Type size={22} strokeWidth={1.7} />, label: 'Text', shortcut: 'T' },
   { id: 'decision', icon: <Diamond size={22} strokeWidth={1.7} />, label: 'Decision', shortcut: 'D' },
   { id: 'wait', icon: <Clock size={22} strokeWidth={1.7} />, label: 'Wait Step', shortcut: 'W' },
+  { id: 'call', icon: <Phone size={22} strokeWidth={1.7} />, label: 'Call', shortcut: 'C' },
+  { id: 'meeting', icon: <CalendarDays size={22} strokeWidth={1.7} />, label: 'Meeting', shortcut: 'M' },
+  { id: 'automation', icon: <Zap size={22} strokeWidth={1.7} />, label: 'Automation', shortcut: 'Z' },
+  { id: 'goal', icon: <Flag size={22} strokeWidth={1.7} />, label: 'Goal', shortcut: 'G' },
   { id: 'sticky', icon: <StickyNote size={22} strokeWidth={1.7} />, label: 'Sticky Note', shortcut: 'N' },
 ];
 

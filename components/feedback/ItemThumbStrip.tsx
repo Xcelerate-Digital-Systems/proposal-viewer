@@ -79,7 +79,10 @@ export default function ItemThumbStrip({
   return (
     <div
       ref={scrollRef}
-      className={`flex items-center gap-1.5 overflow-x-auto ${className || ''}`}
+      // py-1.5 gives the ring + notification badge room to sit inside the
+      // scroll container — with overflow-x:auto, CSS coerces overflow-y to
+      // auto too, so anything extending past the edge would otherwise clip.
+      className={`flex items-center gap-1.5 overflow-x-auto py-1.5 ${className || ''}`}
       style={{ scrollbarWidth: 'thin' }}
     >
       {filteredItems.map((item) => {

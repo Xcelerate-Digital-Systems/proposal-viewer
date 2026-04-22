@@ -219,7 +219,18 @@ export type FeedbackBoardNote = {
   updated_at: string;
 };
 
-export type FeedbackShapeType = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text' | 'decision' | 'wait';
+export type FeedbackShapeType =
+  | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text'
+  | 'decision' | 'wait'
+  | 'call' | 'meeting' | 'automation' | 'goal';
+
+/** Stored as JSON in `review_board_shapes.content` for the label-only action
+ *  shapes (Call, Meeting, Automation, Goal). Kept as an object — not a raw
+ *  string — so per-type config (duration, value, tag name, …) can be added
+ *  later without touching existing rows. */
+export type FeedbackActionContent = {
+  label: string | null;
+};
 
 /** Stored as JSON in `review_board_shapes.content` for wait shapes. */
 export type FeedbackWaitUnit = 'minutes' | 'hours' | 'days' | 'weeks';

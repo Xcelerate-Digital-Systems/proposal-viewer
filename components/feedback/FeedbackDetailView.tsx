@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, ExternalLink, Monitor,
+  ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Monitor,
 } from 'lucide-react';
-import type { FeedbackProject, FeedbackItem, FeedbackComment } from '@/lib/supabase';
+import type { FeedbackProject, FeedbackItem, FeedbackComment, FeedbackStatus } from '@/lib/supabase';
+import { REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
 import { applyVersion, type VersionView } from '@/lib/feedback/versions';
 import VersionPicker from '@/components/feedback/VersionPicker';
 import type { CompanyBranding } from '@/hooks/useProposal';
@@ -103,6 +104,11 @@ interface ReviewDetailViewProps {
   onVersionChange?: (versionId: string | null) => void;
   /** When provided, the version picker shows a "+" button that calls this. */
   onAddVersion?: () => void;
+
+  // ── Client status update ──
+  /** Client can change status (approve / request revision / reject). When
+   *  provided, a status picker appears in the header. */
+  onUpdateItemStatus?: (itemId: string, status: FeedbackStatus) => Promise<void> | void;
 }
 
 /* ─── Component ──────────────────────────────────────────────────── */
@@ -136,6 +142,7 @@ export default function FeedbackDetailView({
   activeVersionId = null,
   onVersionChange,
   onAddVersion,
+  onUpdateItemStatus,
 }: ReviewDetailViewProps) {
   const isAdmin = mode === 'admin';
   const isClient = mode === 'client';
@@ -410,8 +417,18 @@ export default function FeedbackDetailView({
 
         <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-gray-50`}>
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200 shrink-0">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
+              {backAction && (
+                <button
+                  onClick={backAction.onClick}
+                  data-no-pin
+                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <ArrowLeft size={14} className="shrink-0" />
+                  <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
+                </button>
+              )}
               {hasBranding && branding?.logo_url ? (
                 <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
               ) : hasBranding && branding?.name ? (
@@ -423,7 +440,16 @@ export default function FeedbackDetailView({
               {hasBranding && <span className="text-gray-200">·</span>}
               <span className="text-sm font-semibold text-gray-900 truncate">{selectedItem.title}</span>
             </div>
-            {renderHeaderActions?.(selectedItem)}
+            <div className="flex items-center gap-2 shrink-0">
+              {isClient && onUpdateItemStatus && selectedItem && (
+                <ClientStatusControl
+                  itemId={selectedItem.id}
+                  status={selectedItem.status}
+                  onChange={onUpdateItemStatus}
+                />
+              )}
+              {renderHeaderActions?.(selectedItem)}
+            </div>
           </div>
 
           <FeedbackModeBar mode={feedbackMode} onCancel={() => changeFeedbackMode('idle')} />
@@ -674,6 +700,20 @@ export default function FeedbackDetailView({
             </>
           )}
 
+          {/* Client status picker — approve / revision / reject */}
+          {isClient && onUpdateItemStatus && selectedItem && (
+            <>
+              <div className="w-px h-6 bg-gray-200 shrink-0" />
+              <div className="shrink-0">
+                <ClientStatusControl
+                  itemId={selectedItem.id}
+                  status={selectedItem.status}
+                  onChange={onUpdateItemStatus}
+                />
+              </div>
+            </>
+          )}
+
           {/* Actions */}
           {renderHeaderActions && (
             <>
@@ -810,5 +850,90 @@ export default function FeedbackDetailView({
         </div>
       </div>
     </>
+  );
+}
+
+/* ─── Client status picker ─────────────────────────────────────────── */
+
+// Limited set of statuses a client is allowed to set from the review link.
+// Mirrors the allowlist in /api/review/[token]/items/[itemId]/status.
+const CLIENT_STATUS_OPTIONS: FeedbackStatus[] = [
+  'client_review',
+  'revision_needed',
+  'approved',
+  'rejected',
+];
+
+function ClientStatusControl({
+  itemId,
+  status,
+  onChange,
+}: {
+  itemId: string;
+  status: FeedbackStatus;
+  onChange: (itemId: string, next: FeedbackStatus) => Promise<void> | void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const current = REVIEW_STATUS_CONFIG[status];
+
+  const handlePick = async (next: FeedbackStatus) => {
+    setOpen(false);
+    if (next === status) return;
+    try {
+      setPending(true);
+      await onChange(itemId, next);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <div ref={ref} className="relative inline-block" data-no-pin>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        disabled={pending}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${current.bg} ${current.text} ${current.border} hover:brightness-95 disabled:opacity-60`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+        {current.label}
+        <ChevronDown size={12} className="opacity-60" />
+      </button>
+      {open && (
+        <div
+          className="absolute top-full right-0 mt-1 z-50 w-44 bg-white rounded-lg border border-gray-200 shadow-lg py-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {CLIENT_STATUS_OPTIONS.map((opt) => {
+            const def = REVIEW_STATUS_CONFIG[opt];
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handlePick(opt)}
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left hover:bg-gray-50 transition-colors ${
+                  opt === status ? 'bg-gray-50' : ''
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${def.dot}`} />
+                <span className="text-gray-700 truncate">{def.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

@@ -2,8 +2,8 @@
 
 import { memo, useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Clock } from 'lucide-react';
-import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit } from '@/lib/supabase';
+import { Clock, Phone, CalendarDays, Zap, Flag, type LucideIcon } from 'lucide-react';
+import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
 import { roughRect, roughLine, roughPath, roughCircle } from '@/components/feedback/sketchy/roughPath';
 import { hashStringToInt } from '@/components/feedback/sketchy/seed';
 import { NODE_FRAME_W, NODE_FRAME_H } from './nodeConfig';
@@ -51,6 +51,27 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     return (
       <WaitShape
         shape={shape}
+        selected={!!selected}
+        readOnly={readOnly}
+        onUpdateContent={onUpdateContent}
+      />
+    );
+  }
+
+  // Action shapes — Call / Meeting / Automation / Goal. Same recipe as Wait,
+  // just a different tint + icon + placeholder per type. Label-only config
+  // for now; each type's schema can be extended via FeedbackActionContent
+  // without changing the shape_type.
+  if (
+    shape.shape_type === 'call' ||
+    shape.shape_type === 'meeting' ||
+    shape.shape_type === 'automation' ||
+    shape.shape_type === 'goal'
+  ) {
+    return (
+      <ActionShape
+        shape={shape}
+        actionType={shape.shape_type}
         selected={!!selected}
         readOnly={readOnly}
         onUpdateContent={onUpdateContent}
@@ -627,11 +648,12 @@ export function serializeWaitContent(content: FeedbackWaitContent): string {
   return JSON.stringify(content);
 }
 
-// Wait renders as a small rounded square so it reads instantly as "this is
-// not a content item" next to the circular email/sms/ad icons and the
-// diamond decision node. Smaller footprint than the 88px item icons since
-// it's a flow marker, not a content preview.
-const WAIT_ICON_SIZE = 64;
+// Wait is deliberately compact — the whole blue rectangle is the node, with
+// Clock icon + label stacked inside and handles sitting right on its edges.
+// Smaller than the uniform NODE_FRAME so the handles end up close to the
+// icon (user preference: "edges closer, label inside the blue frame").
+const WAIT_W = 132;
+const WAIT_H = 88;
 
 function formatWaitLabel(content: FeedbackWaitContent): string {
   const unitDef = WAIT_UNITS.find((u) => u.value === content.unit);
@@ -679,13 +701,15 @@ function WaitShape({
   const handleClass = '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
 
   return (
-    <div className={`relative flex flex-col items-center justify-center ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`} style={{ width: NODE_FRAME_W, height: NODE_FRAME_H }}>
-      {/* Handles live on the outer node so the top handle sits above the icon
-          and the bottom handle sits below the label — matching the email /
-          SMS / ad icon nodes. Every handle is `type="source"` so React Flow
+    <div
+      className={`relative rounded-lg ${selected ? 'ring-2 ring-teal/60' : ''}`}
+      style={{ width: WAIT_W, height: WAIT_H, background: '#BFDBFE' }}
+      onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
+    >
+      {/* Every handle is `type="source"` so React Flow's connection resolver
           always treats the drag-start as the edge source under connectionMode
-          "loose" (Miro-style); `-source` / `-target` aliases preserve edges
-          saved before this change. */}
+          "loose" (Miro-style). `-source`/`-target` ids preserved so previously
+          saved edges keep their attachment point. */}
       <Handle id="top"           type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
       <Handle id="top-source"    type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
       <Handle id="left"          type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
@@ -695,71 +719,172 @@ function WaitShape({
       <Handle id="bottom"        type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
       <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
 
-      {/* Flat filled square — deliberately skips the roughjs sketchy border
-          so Wait reads as a system/flow marker distinct from the hand-drawn
-          content nodes and the diamond. */}
-      <div
-        className={`relative rounded-lg ${selected ? 'ring-2 ring-teal/60' : ''}`}
-        style={{ width: WAIT_ICON_SIZE, height: WAIT_ICON_SIZE, background: '#BFDBFE' }}
-      >
-        <div className="absolute inset-0 flex items-center justify-center text-sketch-ink pointer-events-none">
-          <Clock size={24} strokeWidth={1.5} />
-        </div>
-      </div>
-
-      <div
-        className="mt-2 text-center w-full px-1"
-        onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
-      >
-        {editing && !readOnly ? (
-          <div className="flex flex-col items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-1 w-full">
-              <input
-                type="number"
-                min={1}
-                max={9999}
-                autoFocus
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value, 10) || 1)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); commit(); }
-                  if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
-                }}
-                className="w-10 text-center px-1 py-0.5 rounded-md border border-sketch-ink/40 bg-paper font-hand text-sm focus:outline-none focus:border-teal"
-              />
-              <select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
-                className="flex-1 min-w-0 px-1 py-0.5 rounded-md border border-sketch-ink/40 bg-paper font-hand text-xs focus:outline-none focus:border-teal"
-              >
-                {WAIT_UNITS.map((u) => (
-                  <option key={u.value} value={u.value}>{u.label}</option>
-                ))}
-              </select>
-            </div>
+      {editing && !readOnly ? (
+        <div className="relative w-full h-full flex flex-col items-center justify-center gap-1 px-2 text-sketch-ink" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1 w-full">
             <input
-              type="text"
-              value={labelDraft}
-              onChange={(e) => setLabelDraft(e.target.value)}
-              onBlur={commit}
+              type="number"
+              min={1}
+              max={9999}
+              autoFocus
+              value={duration}
+              onChange={(e) => setDuration(parseInt(e.target.value, 10) || 1)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
               }}
-              placeholder="Label (optional)"
-              className="w-full px-1 py-0.5 rounded-md border border-sketch-ink/30 bg-paper font-hand text-[11px] focus:outline-none focus:border-teal"
+              className="w-9 text-center px-1 py-0 rounded border border-sketch-ink/40 bg-paper/80 font-hand text-xs focus:outline-none focus:border-teal"
             />
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
+              className="flex-1 min-w-0 px-1 py-0 rounded border border-sketch-ink/40 bg-paper/80 font-hand text-[10px] focus:outline-none focus:border-teal"
+            >
+              {WAIT_UNITS.map((u) => (
+                <option key={u.value} value={u.value}>{u.label}</option>
+              ))}
+            </select>
           </div>
-        ) : (
-          <>
-            <h4 className="font-hand text-base text-sketch-ink truncate leading-tight">
-              {formatWaitLabel(content)}
-            </h4>
-            <span className="text-[11px] font-medium text-sketch-ink/60 mt-0.5 block uppercase tracking-wider">
-              {content.label || 'Wait'}
-            </span>
-          </>
-        )}
-      </div>
+          <input
+            type="text"
+            value={labelDraft}
+            onChange={(e) => setLabelDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); commit(); }
+            }}
+            placeholder="Label (optional)"
+            className="w-full px-1 py-0 rounded border border-sketch-ink/30 bg-paper/80 font-hand text-[10px] focus:outline-none focus:border-teal"
+          />
+        </div>
+      ) : (
+        <div className="relative w-full h-full flex flex-col items-center justify-center gap-0.5 px-2 text-sketch-ink">
+          <Clock size={18} strokeWidth={1.6} />
+          <h4 className="font-hand text-xs font-semibold truncate max-w-full leading-tight">
+            {formatWaitLabel(content)}
+          </h4>
+          <span className="text-[9px] font-semibold text-sketch-ink/60 uppercase tracking-wider leading-none truncate max-w-full">
+            {content.label || 'Wait'}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Action shapes — Call / Meeting / Automation / Goal ─────────── */
+
+type FeedbackActionType = 'call' | 'meeting' | 'automation' | 'goal';
+
+interface ActionTypeConfig {
+  /** Uppercase type label shown below the user-entered label. */
+  typeLabel: string;
+  /** Placeholder shown when the user hasn't set a label yet. */
+  placeholder: string;
+  /** Flat background fill for the rectangle. */
+  tint: string;
+  /** Lucide icon component. */
+  Icon: LucideIcon;
+}
+
+// Colour map chosen so each action is scannable at a glance without
+// collision with Wait (blue) or Decision (yellow diamond). Label-only config
+// for now — expansion lives in FeedbackActionContent.
+const ACTION_CONFIG: Record<FeedbackActionType, ActionTypeConfig> = {
+  call:       { typeLabel: 'Call',       placeholder: 'Phone call', tint: '#BBF7D0', Icon: Phone },
+  meeting:    { typeLabel: 'Meeting',    placeholder: 'Meeting',    tint: '#E9D5FF', Icon: CalendarDays },
+  automation: { typeLabel: 'Automation', placeholder: 'Automation', tint: '#FED7AA', Icon: Zap },
+  goal:       { typeLabel: 'Goal',       placeholder: 'Goal',       tint: '#FEF3C7', Icon: Flag },
+};
+
+export function parseActionContent(raw: string | null | undefined): FeedbackActionContent {
+  if (!raw) return { label: null };
+  try {
+    const parsed = JSON.parse(raw) as Partial<FeedbackActionContent>;
+    return { label: typeof parsed?.label === 'string' ? parsed.label : null };
+  } catch {
+    // Fall back to treating stray plain-text content as the label.
+    return { label: typeof raw === 'string' ? raw : null };
+  }
+}
+
+export function serializeActionContent(content: FeedbackActionContent): string {
+  return JSON.stringify(content);
+}
+
+function ActionShape({
+  shape, actionType, selected, readOnly, onUpdateContent,
+}: {
+  shape: FeedbackBoardShape;
+  actionType: FeedbackActionType;
+  selected: boolean;
+  readOnly?: boolean;
+  onUpdateContent?: (id: string, content: string) => void;
+}) {
+  const config = ACTION_CONFIG[actionType];
+  const content = useMemo(() => parseActionContent(shape.content), [shape.content]);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(content.label ?? '');
+
+  useEffect(() => { setDraft(content.label ?? ''); }, [content.label]);
+
+  const commit = () => {
+    setEditing(false);
+    const next = draft.trim();
+    if (next !== (content.label ?? '')) {
+      onUpdateContent?.(shape.id, serializeActionContent({ label: next || null }));
+    }
+  };
+
+  const Icon = config.Icon;
+  const handleClass = '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+
+  return (
+    <div
+      className={`relative rounded-lg ${selected ? 'ring-2 ring-teal/60' : ''}`}
+      style={{ width: WAIT_W, height: WAIT_H, background: config.tint }}
+      onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
+    >
+      {/* Every handle is `type="source"` so drag direction always equals edge
+          direction under connectionMode="loose". Same aliases as the Wait
+          node so existing saved edges keep their attachment point. */}
+      <Handle id="top"           type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
+      <Handle id="top-source"    type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
+      <Handle id="left"          type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
+      <Handle id="left-source"   type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
+      <Handle id="right"         type="source" position={Position.Right}  className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
+      <Handle id="right-target"  type="source" position={Position.Right}  className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
+      <Handle id="bottom"        type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
+
+      {editing && !readOnly ? (
+        <div className="relative w-full h-full flex flex-col items-center justify-center gap-1 px-2 text-sketch-ink" onClick={(e) => e.stopPropagation()}>
+          <Icon size={18} strokeWidth={1.6} />
+          <input
+            type="text"
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); commit(); }
+              if (e.key === 'Escape') { setDraft(content.label ?? ''); setEditing(false); }
+            }}
+            placeholder={config.placeholder}
+            className="w-full px-1 py-0 rounded border border-sketch-ink/30 bg-paper/80 font-hand text-[11px] font-semibold text-center focus:outline-none focus:border-teal"
+          />
+        </div>
+      ) : (
+        <div className="relative w-full h-full flex flex-col items-center justify-center gap-0.5 px-2 text-sketch-ink">
+          <Icon size={18} strokeWidth={1.6} />
+          <h4 className="font-hand text-xs font-semibold truncate max-w-full leading-tight">
+            {content.label || config.placeholder}
+          </h4>
+          <span className="text-[9px] font-semibold text-sketch-ink/60 uppercase tracking-wider leading-none truncate max-w-full">
+            {config.typeLabel}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
