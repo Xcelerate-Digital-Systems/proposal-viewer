@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { fetchAccessibleFile, fetchAccessibleType } from '@/lib/swipe-files/access';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,11 +36,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     updates.updated_at = new Date().toISOString();
 
     const supabase = createServiceClient();
+
+    // Access gate: caller must be able to access the file's current folder.
+    const access = await fetchAccessibleFile(supabase, params.id, auth.companyId);
+    if (!access) return NextResponse.json({ error: 'Swipe file not found' }, { status: 404 });
+
+    // If the caller is moving the file between folders, they must also be
+    // able to access the destination folder (own or shared). The file's
+    // company_id follows the destination folder's owner so the invariant
+    // (file.company_id = owning type.company_id) holds.
+    if (typeof updates.type_id === 'string' && updates.type_id !== access.file.type_id) {
+      const destAccess = await fetchAccessibleType(supabase, updates.type_id as string, auth.companyId);
+      if (!destAccess) return NextResponse.json({ error: 'Destination type not found' }, { status: 404 });
+      updates.company_id = destAccess.type.company_id;
+    }
+
     const { data, error } = await supabase
       .from('swipe_files')
       .update(updates)
       .eq('id', params.id)
-      .eq('company_id', auth.companyId)
       .select()
       .single();
 
@@ -57,11 +72,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const supabase = createServiceClient();
+
+    const access = await fetchAccessibleFile(supabase, params.id, auth.companyId);
+    if (!access) return NextResponse.json({ error: 'Swipe file not found' }, { status: 404 });
+
     const { error } = await supabase
       .from('swipe_files')
       .delete()
-      .eq('id', params.id)
-      .eq('company_id', auth.companyId);
+      .eq('id', params.id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });

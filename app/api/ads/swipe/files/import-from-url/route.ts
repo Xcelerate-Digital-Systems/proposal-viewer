@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { corsPreflight, withCors } from '@/lib/cors';
+import { canAccessType, visibleTypesOrFilter } from '@/lib/swipe-files/access';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -63,31 +64,33 @@ export async function POST(req: NextRequest) {
     const supabase = createServiceClient();
 
     // Resolve target type — accept either type_id or type_name (case-insensitive).
-    let resolvedTypeId: string | null = null;
+    // Accepts folders the caller owns OR folders shared with them.
+    let resolvedType: { id: string; company_id: string; shared_with_company_ids: string[] | null } | null = null;
     if (typeof type_id === 'string' && type_id.length > 0) {
       const { data: t } = await supabase
         .from('swipe_types')
-        .select('id')
+        .select('id, company_id, shared_with_company_ids')
         .eq('id', type_id)
-        .eq('company_id', auth.companyId)
         .single();
-      resolvedTypeId = t?.id ?? null;
+      if (t && canAccessType(t, auth.companyId)) resolvedType = t;
     } else if (typeof type_name === 'string' && type_name.length > 0) {
       const { data: t } = await supabase
         .from('swipe_types')
-        .select('id')
-        .eq('company_id', auth.companyId)
+        .select('id, company_id, shared_with_company_ids')
+        .or(visibleTypesOrFilter(auth.companyId))
         .ilike('name', type_name)
         .limit(1)
         .single();
-      resolvedTypeId = t?.id ?? null;
+      if (t) resolvedType = t;
     }
 
-    if (!resolvedTypeId) {
+    if (!resolvedType) {
       return withCors(
         NextResponse.json({ error: 'type_id or type_name not found for this company' }, { status: 400 })
       );
     }
+    const resolvedTypeId = resolvedType.id;
+    const owningCompanyId = resolvedType.company_id;
 
     // Download the media (if provided)
     let media_url: string | null = null;
@@ -95,7 +98,7 @@ export async function POST(req: NextRequest) {
     let thumbnail_url: string | null = null;
 
     if (typeof media_src_url === 'string' && media_src_url.length > 0) {
-      const uploaded = await downloadAndStore(media_src_url, auth.companyId, 'media');
+      const uploaded = await downloadAndStore(media_src_url, owningCompanyId, 'media');
       if ('error' in uploaded) {
         return withCors(NextResponse.json({ error: uploaded.error }, { status: 400 }));
       }
@@ -104,7 +107,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (typeof thumbnail_src_url === 'string' && thumbnail_src_url.length > 0) {
-      const uploaded = await downloadAndStore(thumbnail_src_url, auth.companyId, 'thumb');
+      const uploaded = await downloadAndStore(thumbnail_src_url, owningCompanyId, 'thumb');
       if (!('error' in uploaded)) thumbnail_url = uploaded.public_url;
     }
 
@@ -117,7 +120,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('swipe_files')
       .insert({
-        company_id: auth.companyId,
+        company_id: owningCompanyId,
         type_id: resolvedTypeId,
         title: safeTitle,
         headline: typeof headline === 'string' ? headline.trim() || null : null,

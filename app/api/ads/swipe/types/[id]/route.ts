@@ -5,6 +5,8 @@ import { getAuthContext } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const auth = await getAuthContext(req);
@@ -17,6 +19,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (body.sort_order !== undefined) updates.sort_order = body.sort_order;
     if (body.public_share_enabled !== undefined) updates.public_share_enabled = !!body.public_share_enabled;
 
+    let shareList: string[] | undefined;
+    if (body.shared_with_company_ids !== undefined) {
+      if (!Array.isArray(body.shared_with_company_ids)) {
+        return NextResponse.json({ error: 'shared_with_company_ids must be an array' }, { status: 400 });
+      }
+      const cleaned = Array.from(
+        new Set(
+          body.shared_with_company_ids
+            .map((v: unknown) => String(v).trim())
+            .filter((v: string) => UUID_RE.test(v) && v !== auth.companyId)
+        )
+      ) as string[];
+      shareList = cleaned;
+      updates.shared_with_company_ids = cleaned;
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
@@ -25,6 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const supabase = createServiceClient();
 
     // Look up the existing row so we can block rename attempts on standard types.
+    // PATCH is owner-only — partners can't rename/delete or change the share list.
     const { data: existing } = await supabase
       .from('swipe_types')
       .select('is_standard')
@@ -35,6 +54,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     if (existing.is_standard && updates.name !== undefined) {
       return NextResponse.json({ error: 'Standard ad types can\'t be renamed' }, { status: 403 });
+    }
+
+    // Validate that every share target is a real company the caller is
+    // actually a member of — prevents a user from broadcasting to random
+    // companies they have no relationship with.
+    if (shareList && shareList.length > 0) {
+      const { data: memberships } = await supabase
+        .from('team_members')
+        .select('company_id')
+        .eq('user_id', auth.member.user_id);
+
+      const allowed = new Set((memberships || []).map((m: { company_id: string }) => m.company_id));
+      const bad = shareList.filter((id) => !allowed.has(id));
+      if (bad.length > 0) {
+        return NextResponse.json(
+          { error: 'You can only share with companies you belong to' },
+          { status: 403 }
+        );
+      }
     }
 
     const { data, error } = await supabase

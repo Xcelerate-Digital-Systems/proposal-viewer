@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Folder, FolderOpen, MoreVertical, Pencil, Trash2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, Folder, FolderOpen, MoreVertical, Pencil, Trash2, ChevronRight, Users } from 'lucide-react';
 import { useSwipeFileContext } from '@/components/admin/ads/swipe/SwipeFileContext';
 import SwipeFolderModal from '@/components/admin/ads/swipe/SwipeFolderModal';
 import type { SwipeType } from '@/lib/supabase';
@@ -45,6 +45,10 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
         ) : (
           swipe.types.map((type) => {
             const active = type.id === currentTypeId;
+            const isOwned = type.company_id === swipe.companyId;
+            const isShared = !isOwned;
+            const isSharedOut =
+              isOwned && (type.shared_with_company_ids?.length || 0) > 0;
             return (
               <div key={type.id} className="group flex items-center gap-1 relative">
                 <Link
@@ -58,17 +62,27 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                     ? <FolderOpen size={15} className="text-[#8AD9D1] shrink-0" />
                     : <Folder size={15} className="text-white/40 group-hover:text-white/60 shrink-0" />}
                   <span className="flex-1 truncate">{type.name}</span>
+                  {(isShared || isSharedOut) && (
+                    <Users
+                      size={11}
+                      className="text-white/40 shrink-0"
+                      aria-label={isShared ? 'Shared with you' : 'Shared with a partner'}
+                    />
+                  )}
                   <span className="text-[10px] text-white/40 shrink-0">{type.file_count}</span>
                   {active && <ChevronRight size={12} className="text-[#8AD9D1]/50 shrink-0" />}
                 </Link>
-                <button
-                  onClick={() => setMenuFor(menuFor === type.id ? null : type.id)}
-                  className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-white/60"
-                  aria-label="Type actions"
-                >
-                  <MoreVertical size={13} />
-                </button>
-                {menuFor === type.id && (
+                {/* Owner-only actions: rename / delete / change share list. */}
+                {isOwned && (
+                  <button
+                    onClick={() => setMenuFor(menuFor === type.id ? null : type.id)}
+                    className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-white/60"
+                    aria-label="Type actions"
+                  >
+                    <MoreVertical size={13} />
+                  </button>
+                )}
+                {isOwned && menuFor === type.id && (
                   <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-white border border-edge rounded-lg shadow-lg py-1">
                     <div className="fixed inset-0 -z-10" onClick={() => setMenuFor(null)} />
                     <button
@@ -76,7 +90,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                       className="w-full text-left px-3 py-2 text-[13px] text-ink hover:bg-surface flex items-center gap-2"
                     >
                       <Pencil size={13} />
-                      {type.is_standard ? 'Edit description' : 'Rename'}
+                      {type.is_standard ? 'Edit & share' : 'Rename & share'}
                     </button>
                     {!type.is_standard && (
                       <button
@@ -122,13 +136,19 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
           }
           initialName={modal.type?.name || ''}
           initialDescription={modal.type?.description || ''}
+          initialShared={modal.type?.shared_with_company_ids || []}
           nameLocked={modal.type?.is_standard === true}
+          shareTargets={swipe.shareTargets}
           onClose={() => setModal({ open: false })}
           onSave={async (data) => {
             if (modal.type) {
               await swipe.updateType(modal.type.id, data);
             } else {
-              const result = await swipe.createType({ name: data.name!, description: data.description });
+              const result = await swipe.createType({
+                name: data.name!,
+                description: data.description,
+                shared_with_company_ids: data.shared_with_company_ids,
+              });
               if (result.data) router.push(`/ads/swipe/${result.data.id}`);
             }
             setModal({ open: false });

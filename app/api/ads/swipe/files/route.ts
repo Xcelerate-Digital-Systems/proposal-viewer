@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { fetchAccessibleType, visibleTypesOrFilter } from '@/lib/swipe-files/access';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,18 +14,41 @@ export async function GET(req: NextRequest) {
     const typeId = req.nextUrl.searchParams.get('type_id');
     const supabase = createServiceClient();
 
-    let query = supabase
+    // Single-folder query: authorize via the folder (which may be shared),
+    // not via the file's company_id — shared files are owned by the folder's
+    // owning company.
+    if (typeId) {
+      const access = await fetchAccessibleType(supabase, typeId, auth.companyId);
+      if (!access) return NextResponse.json({ error: 'Type not found' }, { status: 404 });
+
+      const { data, error } = await supabase
+        .from('swipe_files')
+        .select('*')
+        .eq('type_id', typeId)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ success: true, data });
+    }
+
+    // No type filter: return every file in every folder the caller can see.
+    const { data: visibleTypes } = await supabase
+      .from('swipe_types')
+      .select('id')
+      .or(visibleTypesOrFilter(auth.companyId));
+
+    const visibleIds = (visibleTypes || []).map((t: { id: string }) => t.id);
+    if (visibleIds.length === 0) return NextResponse.json({ success: true, data: [] });
+
+    const { data, error } = await supabase
       .from('swipe_files')
       .select('*')
-      .eq('company_id', auth.companyId)
+      .in('type_id', visibleIds)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
-    if (typeId) query = query.eq('type_id', typeId);
-
-    const { data, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
     return NextResponse.json({ success: true, data });
   } catch (err) {
     console.error('Swipe files GET error:', err);
@@ -48,18 +72,19 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    const { data: type } = await supabase
-      .from('swipe_types')
-      .select('id')
-      .eq('id', type_id)
-      .eq('company_id', auth.companyId)
-      .single();
-    if (!type) return NextResponse.json({ error: 'Type not found' }, { status: 404 });
+    // Callers can create files in any folder they can access — own or shared.
+    // The file's company_id is set to the *owning* company of the folder to
+    // preserve the invariant that swipe_files.company_id = swipe_types.company_id
+    // for their type. That keeps per-folder storage and downstream queries
+    // clean; partners still get read + edit + delete on the file via the
+    // shared-folder access check.
+    const access = await fetchAccessibleType(supabase, type_id, auth.companyId);
+    if (!access) return NextResponse.json({ error: 'Type not found' }, { status: 404 });
 
     const { data, error } = await supabase
       .from('swipe_files')
       .insert({
-        company_id: auth.companyId,
+        company_id: access.type.company_id,
         type_id,
         title: title.trim(),
         notes: notes?.trim() || null,

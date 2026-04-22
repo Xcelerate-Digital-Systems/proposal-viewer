@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { fetchAccessibleFile } from '@/lib/swipe-files/access';
 import OpenAI, { toFile } from 'openai';
 
 export const dynamic = 'force-dynamic';
@@ -19,14 +20,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const supabase = createServiceClient();
 
-    const { data: file, error: fetchErr } = await supabase
-      .from('swipe_files')
-      .select('id, media_type, media_url')
-      .eq('id', params.id)
-      .eq('company_id', auth.companyId)
-      .single();
-
-    if (fetchErr || !file) return NextResponse.json({ error: 'Swipe file not found' }, { status: 404 });
+    const access = await fetchAccessibleFile(supabase, params.id, auth.companyId);
+    if (!access) return NextResponse.json({ error: 'Swipe file not found' }, { status: 404 });
+    const file = access.file;
     if (file.media_type !== 'video') return NextResponse.json({ error: 'Only video swipes can be transcribed' }, { status: 400 });
     if (!file.media_url) return NextResponse.json({ error: 'No video file attached' }, { status: 400 });
 
@@ -64,7 +60,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .from('swipe_files')
       .update({ transcription: result.text, updated_at: new Date().toISOString() })
       .eq('id', params.id)
-      .eq('company_id', auth.companyId)
       .select()
       .single();
 

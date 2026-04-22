@@ -2,22 +2,50 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
+
+type ShareTarget = { id: string; name: string };
 
 type Props = {
   title: string;
   initialName?: string;
   initialDescription?: string;
+  initialShared?: string[];
   /** When true the name field is locked — used for standard folders. */
   nameLocked?: boolean;
+  /** Companies the current user can share this folder with. */
+  shareTargets?: ShareTarget[];
   onClose: () => void;
-  onSave: (data: { name?: string; description?: string }) => Promise<void>;
+  onSave: (data: {
+    name?: string;
+    description?: string;
+    shared_with_company_ids?: string[];
+  }) => Promise<void>;
 };
 
-export default function SwipeFolderModal({ title, initialName = '', initialDescription = '', nameLocked = false, onClose, onSave }: Props) {
+export default function SwipeFolderModal({
+  title,
+  initialName = '',
+  initialDescription = '',
+  initialShared = [],
+  nameLocked = false,
+  shareTargets = [],
+  onClose,
+  onSave,
+}: Props) {
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
+  const [shared, setShared] = useState<Set<string>>(new Set(initialShared));
   const [saving, setSaving] = useState(false);
+
+  const toggleShare = (id: string) => {
+    setShared((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +54,10 @@ export default function SwipeFolderModal({ title, initialName = '', initialDescr
     try {
       // When the name is locked (standard folder) omit it from the PATCH —
       // the server rejects any `name` field on standards even if unchanged.
-      await onSave(
-        nameLocked
-          ? { description: description.trim() || '' }
-          : { name: name.trim(), description: description.trim() || undefined }
-      );
+      const base = nameLocked
+        ? { description: description.trim() || '' }
+        : { name: name.trim(), description: description.trim() || undefined };
+      await onSave({ ...base, shared_with_company_ids: Array.from(shared) });
     } finally {
       setSaving(false);
     }
@@ -69,6 +96,36 @@ export default function SwipeFolderModal({ title, initialName = '', initialDescr
               className="w-full px-3 py-2.5 border border-edge rounded-lg text-sm focus:ring-2 focus:ring-teal/20 outline-none resize-none"
             />
           </div>
+          {shareTargets.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1.5">Share with</label>
+              <div className="border border-edge rounded-lg divide-y divide-edge overflow-hidden">
+                {shareTargets.map((t) => {
+                  const on = shared.has(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => toggleShare(t.id)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-left text-sm hover:bg-surface"
+                    >
+                      <span className="text-ink truncate">{t.name}</span>
+                      <span
+                        className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+                          on ? 'bg-teal border-teal text-white' : 'border-edge bg-white'
+                        }`}
+                      >
+                        {on && <Check size={11} strokeWidth={3} />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[11px] text-faint">
+                Selected agencies can read and edit this folder&apos;s swipes. Only you can rename, delete, or change sharing.
+              </p>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] text-muted hover:text-ink">Cancel</button>
             <button

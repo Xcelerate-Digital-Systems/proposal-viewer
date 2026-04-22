@@ -12,6 +12,12 @@ export type SwipeType = {
   share_token: string;
   public_share_enabled: boolean;
   is_standard: boolean;
+  /**
+   * Additional company_ids this folder is visible/writable to.
+   * The owning company_id retains exclusive control over folder metadata
+   * (rename, delete, share list). Partners may add/edit/delete files inside.
+   */
+  shared_with_company_ids: string[];
   created_at: string;
   updated_at: string;
 };

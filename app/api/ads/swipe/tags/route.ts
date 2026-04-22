@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { STANDARD_SWIPE_TAGS } from '@/lib/swipe-files/standard-tags';
+import { visibleTypesOrFilter } from '@/lib/swipe-files/access';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,10 +20,23 @@ export async function GET(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const supabase = createServiceClient();
-    const { data, error } = await supabase
-      .from('swipe_files')
-      .select('tags')
-      .eq('company_id', auth.companyId);
+
+    // Pull tags from every file in every folder visible to the caller — own
+    // folders plus those shared with them — so the tag picker includes tags
+    // used in shared folders too.
+    const { data: visibleTypes } = await supabase
+      .from('swipe_types')
+      .select('id')
+      .or(visibleTypesOrFilter(auth.companyId));
+
+    const visibleIds = (visibleTypes || []).map((t: { id: string }) => t.id);
+    let data: { tags: string[] | null }[] | null = [];
+    let error: { message: string } | null = null;
+    if (visibleIds.length > 0) {
+      const res = await supabase.from('swipe_files').select('tags').in('type_id', visibleIds);
+      data = res.data;
+      error = res.error;
+    }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

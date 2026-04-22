@@ -14,10 +14,13 @@ async function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : null;
 }
 
+export type ShareTarget = { id: string; name: string };
+
 export function useSwipeFiles(companyId: string | null) {
   const [types, setTypes] = useState<SwipeTypeWithCount[]>([]);
   const [filesByType, setFilesByType] = useState<Record<string, SwipeFile[]>>({});
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [shareTargets, setShareTargets] = useState<ShareTarget[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,10 +65,23 @@ export function useSwipeFiles(companyId: string | null) {
     }
   }, [companyId]);
 
-  useEffect(() => { fetchTypes(); fetchAllTags(); }, [fetchTypes, fetchAllTags]);
+  const fetchShareTargets = useCallback(async () => {
+    if (!companyId) return;
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch(`/api/share-targets?company_id=${companyId}`, { headers });
+    const json = await res.json();
+    if (res.ok) setShareTargets(json.data || []);
+  }, [companyId]);
+
+  useEffect(() => {
+    fetchTypes();
+    fetchAllTags();
+    fetchShareTargets();
+  }, [fetchTypes, fetchAllTags, fetchShareTargets]);
 
   /* ─── Types ─── */
-  const createType = async (data: { name: string; description?: string }) => {
+  const createType = async (data: { name: string; description?: string; shared_with_company_ids?: string[] }) => {
     const headers = await authHeaders();
     if (!headers) return { error: 'Not authenticated' };
     const res = await fetch(`/api/ads/swipe/types?company_id=${companyId}`, {
@@ -204,14 +220,17 @@ export function useSwipeFiles(companyId: string | null) {
   };
 
   return {
+    companyId,
     types,
     filesByType,
     allTags,
+    shareTargets,
     loading,
     error,
     fetchTypes,
     fetchFilesForType,
     fetchAllTags,
+    fetchShareTargets,
     createType, updateType, deleteType,
     createFile, updateFile, deleteFile,
     uploadMedia,
