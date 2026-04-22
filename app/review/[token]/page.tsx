@@ -18,6 +18,7 @@ import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewe
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
 import ReviewerNoteOverlay from '@/components/feedback/ReviewerNoteOverlay';
+import CompleteFeedbackButton from '@/components/feedback/CompleteFeedbackButton';
 
 
 export default function ReviewViewerPage({ params }: { params: { token: string } }) {
@@ -281,6 +282,13 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
             fontHeading={branding.font_heading}
           />
         )}
+        <CompleteFeedbackButton
+          shareToken={params.token}
+          reviewerName={guestName}
+          reviewerEmail={guestEmail}
+          accentColor={branding.accent_color}
+          hidden={showOnboarding}
+        />
 
         <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
           <div className="text-center max-w-sm">
@@ -365,6 +373,13 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           fontHeading={branding.font_heading}
         />
       )}
+      <CompleteFeedbackButton
+        shareToken={params.token}
+        reviewerName={guestName}
+        reviewerEmail={guestEmail}
+        accentColor={branding.accent_color}
+        hidden={showOnboarding}
+      />
       <FeedbackDetailView
         mode="client"
         project={project!}

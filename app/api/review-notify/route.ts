@@ -6,7 +6,12 @@ import { buildReviewUrl } from '@/lib/proposal-url';
 import crypto from 'crypto';
 import { isValidWebhookUrl } from '@/lib/sanitize';
 
-type ReviewEventType = 'review_comment_added' | 'review_comment_resolved' | 'review_item_approved' | 'review_item_revision_needed';
+type ReviewEventType =
+  | 'review_comment_added'
+  | 'review_comment_resolved'
+  | 'review_item_approved'
+  | 'review_item_revision_needed'
+  | 'review_feedback_marked_complete';
 
 // Maps review event_type to team_member notification preference column
 const PREF_MAP: Record<ReviewEventType, string> = {
@@ -14,6 +19,7 @@ const PREF_MAP: Record<ReviewEventType, string> = {
   review_comment_resolved: 'notify_review_comment_added',
   review_item_approved: 'notify_review_item_status',
   review_item_revision_needed: 'notify_review_item_status',
+  review_feedback_marked_complete: 'notify_review_item_status',
 };
 
 export async function POST(req: NextRequest) {
@@ -37,6 +43,7 @@ export async function POST(req: NextRequest) {
     const validEvents: ReviewEventType[] = [
       'review_comment_added', 'review_comment_resolved',
       'review_item_approved', 'review_item_revision_needed',
+      'review_feedback_marked_complete',
     ];
     if (!validEvents.includes(event_type)) {
       return NextResponse.json({ error: 'Invalid event_type' }, { status: 400 });
@@ -323,6 +330,16 @@ function buildReviewTeamEmail(params: {
       headline = 'Revision Needed';
       body = `<p><strong>"${escapeHtml(itemTitle || 'An item')}"</strong> needs revisions in <strong>"${escapeHtml(projectTitle)}"</strong>.</p>`;
       break;
+
+    case 'review_feedback_marked_complete': {
+      subject = `✅ Review finished on "${projectTitle}"`;
+      headline = 'Review Complete';
+      const msgBlock = commentContent
+        ? `<div style="background:#f3fafa;border-left:3px solid #017C87;padding:12px 16px;margin:16px 0;border-radius:4px;"><p style="margin:0;color:#374151;">${escapeHtml(commentContent)}</p></div>`
+        : '';
+      body = `<p><strong>${escapeHtml(commentAuthor || 'A reviewer')}</strong> has finished reviewing <strong>"${escapeHtml(projectTitle)}"</strong>.</p>${msgBlock}`;
+      break;
+    }
   }
 
   return {
