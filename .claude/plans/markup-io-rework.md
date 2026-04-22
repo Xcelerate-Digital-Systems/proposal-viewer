@@ -17,9 +17,9 @@
 | 10 — Emoji picker rework (emoji-mart) | ✅ Shipped | `42afee6` |
 | Widget priority UI (PR 3 widget parity) | ✅ Shipped | `06b590f` |
 | Admin completions feed (PR 7 follow-up) | ✅ Shipped | `883ad84` |
+| Widget video recording UI (PR 9 widget parity) | ✅ Shipped | `2f84557` |
 | 4b — Collapsed pill composer | ⏸ Deferred (user said no) | — |
 | 8c — Left sidebar comment list + device toggles | ⏸ Deferred (low value for our content model) | — |
-| Widget video recording UI | ⏸ Deferred | — |
 
 Bonus fix that predated the rework: email viewer sticky client toggle (`3072b6f`).
 
