@@ -63,9 +63,9 @@ export default function EmailMockupPreview({
 
   return (
     <div className="w-full max-w-[600px]">
-      {/* Client toggle */}
+      {/* Client toggle — sticky so it stays visible while scrolling long emails */}
       {showClientToggle && (
-        <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-lg p-1 max-w-[240px] mx-auto">
+        <div className="sticky top-0 z-10 flex items-center gap-1 mb-4 bg-gray-100 rounded-lg p-1 max-w-[240px] mx-auto shadow-sm">
           {CLIENT_OPTIONS.map((c) => (
             <button
               key={c.key}
