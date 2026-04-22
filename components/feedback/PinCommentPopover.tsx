@@ -148,6 +148,16 @@ export default function PinCommentPopover({
                 </a>
               )}
 
+              {/* Recorded video */}
+              {comment.video_url && (
+                <video
+                  src={comment.video_url}
+                  controls
+                  preload="metadata"
+                  className="mt-1.5 w-full max-w-[240px] rounded-lg bg-black"
+                />
+              )}
+
               {currentUserName && (
                 <div className="mt-1.5">
                   <ReactionBar

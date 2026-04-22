@@ -172,7 +172,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   }, [params.token, items]);
 
   // ── Submit comment via API ──
-  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: 'high' | 'medium' | 'low' | 'none', attachments?: import('@/lib/supabase').FeedbackCommentAttachment[]) => {
+  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: 'high' | 'medium' | 'low' | 'none', attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => {
     if (!guestName.trim()) return;
     saveGuestIdentity(guestName, guestEmail);
 
@@ -200,6 +200,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       highlight_element_path: highlightData?.elementPath ?? null,
       priority: priority ?? 'none',
       attachments: attachments || [],
+      video_url: videoUrl ?? null,
       version_id: versionIdForComment,
     };
 

@@ -22,6 +22,7 @@ type CommentWithItem = FeedbackComment & {
   item_url: string | null;
   reply_count: number;
   screenshot_url?: string | null;
+  video_url?: string | null;
   annotation_data?: unknown;
 };
 
@@ -146,6 +147,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
         item_url: item?.url || null,
         reply_count: replies.length,
         screenshot_url: (c as Record<string, unknown>).screenshot_url as string | null,
+        video_url: (c as Record<string, unknown>).video_url as string | null,
         annotation_data: ((c as Record<string, unknown>).annotation_data as Record<string, unknown> | null) ?? null,
       };
     });
@@ -565,6 +567,18 @@ function FeedbackModal({
                     src={comment.screenshot_url}
                     alt="Screenshot"
                     className="w-full object-contain max-h-[400px]"
+                  />
+                </div>
+              )}
+
+              {/* Video */}
+              {comment.video_url && (
+                <div className="rounded-xl border border-gray-200 overflow-hidden bg-black">
+                  <video
+                    src={comment.video_url}
+                    controls
+                    preload="metadata"
+                    className="w-full block max-h-[400px]"
                   />
                 </div>
               )}

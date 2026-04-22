@@ -1,20 +1,23 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Paperclip, Pencil, Send, Video } from 'lucide-react';
+import { Film, Paperclip, Pencil, Send, Video, X } from 'lucide-react';
 import AttachmentPicker, { type PendingAttachment } from './AttachmentPicker';
 import AttachFilesModal from './AttachFilesModal';
 import EmojiPicker from './EmojiPicker';
 import PrioritySelector from './PrioritySelector';
+import VideoRecorderModal from './VideoRecorderModal';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 import type { FeedbackMode } from '@/components/feedback/tools';
 
 interface PendingPinFormProps {
-  onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority) => Promise<void>;
+  onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority, videoUrl?: string | null) => Promise<void>;
   onCancel: () => void;
   /** Company ID for attachment uploads */
   companyId?: string;
+  /** Share token — required for the public-path video upload (reviewer side). */
+  shareToken?: string;
 
   // Identity — provide authorName for team, or guestName+onNameChange for guests
   /** Team: fixed author name — displayed as "Posting as {authorName}" */
@@ -58,6 +61,7 @@ export default function PendingPinForm({
   onSubmit,
   onCancel: _onCancel,
   companyId,
+  shareToken,
   authorName,
   guestName,
   onNameChange,
@@ -68,7 +72,9 @@ export default function PendingPinForm({
   const [submitting, setSubmitting] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
   const [priority, setPriority] = useState<FeedbackCommentPriority>('none');
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [showAttachModal, setShowAttachModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
   const [showDrawMenu, setShowDrawMenu] = useState(false);
   const drawMenuRef = useRef<HTMLDivElement>(null);
 
@@ -98,10 +104,11 @@ export default function PendingPinForm({
       attachments = await uploadAttachments(pendingFiles, companyId);
     }
 
-    await onSubmit(text, attachments, priority);
+    await onSubmit(text, attachments, priority, videoUrl);
     setText('');
     setPendingFiles([]);
     setPriority('none');
+    setVideoUrl(null);
     setSubmitting(false);
   };
 
@@ -150,6 +157,21 @@ export default function PendingPinForm({
         {pendingFiles.length > 0 && (
           <div className="mt-2">
             <AttachmentPicker attachments={pendingFiles} onChange={setPendingFiles} hideAddButton />
+          </div>
+        )}
+
+        {videoUrl && (
+          <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-teal/5 border border-teal/20">
+            <Film size={14} className="text-teal" />
+            <span className="text-xs text-gray-700 flex-1">Video recording attached</span>
+            <button
+              type="button"
+              onClick={() => setVideoUrl(null)}
+              className="p-0.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Remove video"
+            >
+              <X size={12} />
+            </button>
           </div>
         )}
       </div>
@@ -210,9 +232,10 @@ export default function PendingPinForm({
 
         <button
           type="button"
-          disabled
-          className="p-1.5 rounded-lg text-gray-300 cursor-not-allowed transition-colors relative"
-          title="Record video (coming soon)"
+          onClick={() => setShowVideoModal(true)}
+          disabled={!!videoUrl}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title={videoUrl ? 'Video already attached' : 'Record a video'}
         >
           <Video size={16} />
         </button>
@@ -234,6 +257,15 @@ export default function PendingPinForm({
           existing={pendingFiles}
           onClose={() => setShowAttachModal(false)}
           onConfirm={(files) => setPendingFiles(files)}
+        />
+      )}
+
+      {showVideoModal && (
+        <VideoRecorderModal
+          companyId={companyId ?? null}
+          shareToken={shareToken ?? null}
+          onClose={() => setShowVideoModal(false)}
+          onUploaded={(url) => setVideoUrl(url)}
         />
       )}
     </form>

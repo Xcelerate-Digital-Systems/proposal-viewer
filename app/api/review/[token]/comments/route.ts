@@ -36,6 +36,7 @@ export async function POST(
       highlight_element_path,
       version_id,
       priority,
+      video_url,
     } = body;
 
     const VALID_PRIORITIES = ['high', 'medium', 'low', 'none'] as const;
@@ -126,6 +127,7 @@ export async function POST(
         highlight_text: highlight_text ?? null,
         highlight_element_path: highlight_element_path ?? null,
         priority: safePriority,
+        video_url: typeof video_url === 'string' ? video_url : null,
         version_id: safeVersionId,
       })
       .select()

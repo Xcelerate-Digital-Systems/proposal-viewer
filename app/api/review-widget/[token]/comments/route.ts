@@ -101,6 +101,7 @@ export async function POST(
       highlight_end,
       highlight_element_path,
       priority,
+      video_url,
     } = body;
 
     const VALID_PRIORITIES = ['high', 'medium', 'low', 'none'] as const;
@@ -154,6 +155,7 @@ export async function POST(
         highlight_end: typeof highlight_end === 'number' ? highlight_end : null,
         highlight_element_path: highlight_element_path || null,
         priority: safePriority,
+        video_url: typeof video_url === 'string' ? video_url : null,
       })
       .select()
       .single();

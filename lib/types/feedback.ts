@@ -165,6 +165,7 @@ export type FeedbackComment = {
   annotation_data: Record<string, unknown> | null;
   attachments: FeedbackCommentAttachment[];
   screenshot_url: string | null;
+  video_url: string | null;
   priority: FeedbackCommentPriority;
   resolved: boolean;
   resolved_by: string | null;

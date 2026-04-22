@@ -14,12 +14,14 @@ interface PendingPinPopoverProps {
   pinY: number;
   /** Container element for positioning context (must be position: relative) */
   containerRef: React.RefObject<HTMLDivElement>;
-  /** Submit handler — receives content, attachments, and priority */
-  onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority) => Promise<void>;
+  /** Submit handler — receives content, attachments, priority, and an optional video URL */
+  onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority, videoUrl?: string | null) => Promise<void>;
   /** Cancel/dismiss handler — clears pending pin */
   onCancel: () => void;
   /** Company ID for attachment uploads */
   companyId?: string;
+  /** Share token — needed for the reviewer-side video upload path */
+  shareToken?: string;
 
   /** Team: fixed author name */
   authorName?: string;
@@ -41,6 +43,7 @@ export default function PendingPinPopover({
   onSubmit,
   onCancel,
   companyId,
+  shareToken,
   authorName,
   guestName,
   onNameChange,
@@ -85,6 +88,7 @@ export default function PendingPinPopover({
           onSubmit={onSubmit}
           onCancel={onCancel}
           companyId={companyId}
+          shareToken={shareToken}
           authorName={authorName}
           guestName={guestName}
           onNameChange={onNameChange}

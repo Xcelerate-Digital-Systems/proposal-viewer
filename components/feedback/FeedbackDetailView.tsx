@@ -63,7 +63,7 @@ interface ReviewDetailViewProps {
 
   // ── Callbacks ──
   /** Submit a new comment */
-  onSubmitComment: (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[]) => Promise<void>;
+  onSubmitComment: (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => Promise<void>;
   /** Resolve a comment (admin only) */
   onResolveComment?: (commentId: string) => Promise<void>;
   /** Unresolve a comment (admin only) */
@@ -275,12 +275,12 @@ export default function FeedbackDetailView({
   }, [textSelection, clearTextSelection]);
 
   const handleSubmitComment = useCallback(
-    async (content: string, pinX?: number, pinY?: number, parentId?: string, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[]) => {
+    async (content: string, pinX?: number, pinY?: number, parentId?: string, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => {
       if (!selectedItemId) return;
       const highlight = pendingHighlight
         ? { text: pendingHighlight.text, start: pendingHighlight.startOffset, end: pendingHighlight.endOffset, elementPath: pendingHighlight.elementPath }
         : undefined;
-      await onSubmitComment(selectedItemId, content, pinX, pinY, parentId, pendingAnnotation || undefined, pendingScreenshotUrl || undefined, highlight, priority, attachments);
+      await onSubmitComment(selectedItemId, content, pinX, pinY, parentId, pendingAnnotation || undefined, pendingScreenshotUrl || undefined, highlight, priority, attachments, videoUrl);
       setPendingAnnotation(null);
       setPendingScreenshotUrl(null);
       setPendingHighlight(null);
@@ -529,11 +529,12 @@ export default function FeedbackDetailView({
                   pinX={pendingPin.x}
                   pinY={pendingPin.y}
                   containerRef={imageContainerRef}
-                  onSubmit={async (content, attachments, priority) => {
-                    await handleSubmitComment(content, pendingPin.x, pendingPin.y, undefined, priority, attachments);
+                  onSubmit={async (content, attachments, priority, videoUrl) => {
+                    await handleSubmitComment(content, pendingPin.x, pendingPin.y, undefined, priority, attachments, videoUrl);
                   }}
                   onCancel={handleCancelPin}
                   companyId={companyId}
+                  shareToken={shareToken}
                   authorName={isAdmin ? authorName : undefined}
                   guestName={isClient ? guestName : undefined}
                   onNameChange={isClient ? onGuestNameChange : undefined}
@@ -548,11 +549,12 @@ export default function FeedbackDetailView({
                   pinY={pendingHighlight.rectPct.y}
                   containerRef={imageContainerRef}
                   quotedText={pendingHighlight.text}
-                  onSubmit={async (content, attachments, priority) => {
-                    await handleSubmitComment(content, undefined, undefined, undefined, priority, attachments);
+                  onSubmit={async (content, attachments, priority, videoUrl) => {
+                    await handleSubmitComment(content, undefined, undefined, undefined, priority, attachments, videoUrl);
                   }}
                   onCancel={() => setPendingHighlight(null)}
                   companyId={companyId}
+                  shareToken={shareToken}
                   authorName={isAdmin ? authorName : undefined}
                   guestName={isClient ? guestName : undefined}
                   onNameChange={isClient ? onGuestNameChange : undefined}
@@ -836,11 +838,12 @@ export default function FeedbackDetailView({
                 pinX={pendingPin.x}
                 pinY={pendingPin.y}
                 containerRef={imageContainerRef}
-                onSubmit={async (content, attachments, priority) => {
-                  await handleSubmitComment(content, pendingPin.x, pendingPin.y, undefined, priority, attachments);
+                onSubmit={async (content, attachments, priority, videoUrl) => {
+                  await handleSubmitComment(content, pendingPin.x, pendingPin.y, undefined, priority, attachments, videoUrl);
                 }}
                 onCancel={handleCancelPin}
                 companyId={companyId}
+                shareToken={shareToken}
                 authorName={isAdmin ? authorName : undefined}
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
@@ -855,11 +858,12 @@ export default function FeedbackDetailView({
                 pinY={pendingHighlight.rectPct.y}
                 containerRef={imageContainerRef}
                 quotedText={pendingHighlight.text}
-                onSubmit={async (content, attachments, priority) => {
-                  await handleSubmitComment(content, undefined, undefined, undefined, priority, attachments);
+                onSubmit={async (content, attachments, priority, videoUrl) => {
+                  await handleSubmitComment(content, undefined, undefined, undefined, priority, attachments, videoUrl);
                 }}
                 onCancel={() => setPendingHighlight(null)}
                 companyId={companyId}
+                shareToken={shareToken}
                 authorName={isAdmin ? authorName : undefined}
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}

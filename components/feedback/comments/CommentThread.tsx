@@ -198,6 +198,14 @@ export default function CommentThread({
           ) : (
             <p className="text-xs text-gray-600 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
           )}
+          {comment.video_url && (
+            <video
+              src={comment.video_url}
+              controls
+              preload="metadata"
+              className="mt-2 w-full max-w-[320px] rounded-lg bg-black"
+            />
+          )}
           <AttachmentList attachments={comment.attachments} />
           {currentUserName && (
             <div className="mt-1.5">
@@ -405,6 +413,14 @@ function ReplyItem({
           </div>
         ) : (
           <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">{reply.content}</p>
+        )}
+        {reply.video_url && (
+          <video
+            src={reply.video_url}
+            controls
+            preload="metadata"
+            className="mt-2 w-full max-w-[280px] rounded-lg bg-black"
+          />
         )}
         <AttachmentList attachments={reply.attachments} />
         {currentUserName && (

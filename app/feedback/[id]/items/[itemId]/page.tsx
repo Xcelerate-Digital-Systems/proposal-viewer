@@ -211,7 +211,7 @@ function ItemViewerContent({
   });
 
   // ── Submit comment ──
-  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[]) => {
+  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => {
     if (!content.trim()) return;
 
     const currentItem = items.find((i) => i.id === reviewItemId) || null;
@@ -247,6 +247,7 @@ function ItemViewerContent({
       highlight_element_path: highlightData?.elementPath ?? null,
       priority: priority ?? 'none',
       attachments: attachments || [],
+      video_url: videoUrl ?? null,
       // Pin the comment to whichever version the reviewer is currently looking
       // at. For replies, inherit the parent's version so threads stay coherent.
       version_id: parentId
