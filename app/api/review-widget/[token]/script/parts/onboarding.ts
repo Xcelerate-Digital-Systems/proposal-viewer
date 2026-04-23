@@ -11,12 +11,14 @@ function showOnboard(onDone){
   if(onboardEl)return;
   onboardEl=document.createElement("div");onboardEl.id="aviz-onboard";
   onboardEl.innerHTML='<div class="aviz-onboard-card">'
-    +'<h3>Welcome</h3>'
-    +'<p class="aviz-onboard-sub">Add your name so the team knows who\\u2019s leaving feedback. Your email is optional and only used to notify you of replies.</p>'
+    +'<span class="aviz-onboard-eyebrow">Feedback tool</span>'
+    +'<h3>Leave feedback on this page</h3>'
+    +'<p class="aviz-onboard-sub">You\\u2019ve been invited to review this page. Start by telling us who you are \\u2014 we\\u2019ll walk you through the feedback tools next.</p>'
     +'<div class="aviz-onboard-field"><label for="aviz-onboard-name">Your name</label>'
       +'<input id="aviz-onboard-name" type="text" autocomplete="name" placeholder="Jane Doe"/></div>'
     +'<div class="aviz-onboard-field"><label for="aviz-onboard-email">Email <span class="aviz-onboard-optional">(optional)</span></label>'
       +'<input id="aviz-onboard-email" type="email" autocomplete="email" placeholder="jane@example.com"/></div>'
+    +'<p class="aviz-onboard-fine">Your email is only used to notify you when someone replies to your feedback.</p>'
     +'<button class="aviz-onboard-submit" disabled>Continue</button>'
     +'</div>';
   document.body.appendChild(onboardEl);
@@ -44,7 +46,10 @@ function showOnboard(onDone){
     if(em&&em.indexOf("@")<1){emailInp.style.borderColor="#ef4444";return;}
     guestName=n;guestEmail=em;saveGuest();
     closeOnboard();
-    if(typeof onDone==="function")onDone();
+    if(typeof onDone==="function"){onDone();return;}
+    /* First-time flow: launch the guided tour after a short beat so the
+       modal fade-out finishes before the backdrop appears. */
+    if(typeof startTour==="function"){setTimeout(function(){startTour();},250);}
   }
 
   submit.addEventListener("click",commit);

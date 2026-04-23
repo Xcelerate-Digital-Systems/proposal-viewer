@@ -7,7 +7,7 @@ export function pinModeJS(): string {
    ══════════════════════════════════════════════════════════ */
 document.addEventListener("click",function(e){
   if(mode!=="pin")return;
-  var t=e.target;if(t.closest("#aviz-root")||t.closest("#aviz-onboard")||t.closest(".aviz-pin")||t.closest(".aviz-pin-form")||t.closest(".aviz-box")||t.closest(".aviz-text-ann")||t.closest(".aviz-text-input"))return;
+  var t=e.target;if(t.closest("#aviz-root")||t.closest("#aviz-onboard")||t.closest("#aviz-tour-backdrop")||t.closest(".aviz-tour-callout")||t.closest(".aviz-pin")||t.closest(".aviz-pin-form")||t.closest(".aviz-box")||t.closest(".aviz-text-ann")||t.closest(".aviz-text-input"))return;
   e.preventDefault();e.stopPropagation();
   var sx=window.pageXOffset||document.documentElement.scrollLeft;
   var sy=window.pageYOffset||document.documentElement.scrollTop;

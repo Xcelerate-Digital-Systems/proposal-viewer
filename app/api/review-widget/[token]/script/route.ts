@@ -15,6 +15,7 @@ import { priorityMenuJS } from './parts/priority-menu';
 import { videoModeJS } from './parts/video-mode';
 import { annotationsJS } from './parts/annotations';
 import { onboardingJS } from './parts/onboarding';
+import { tourJS } from './parts/tour';
 import { initJS } from './parts/init';
 
 const supabaseAdmin = createClient(
@@ -150,6 +151,7 @@ if(!__aviz_resolvedItem)return;
     videoModeJS(),
     annotationsJS(),
     onboardingJS(),
+    tourJS(),
     initJS(),
     '\n})();',
   ].join('\n');

@@ -7,7 +7,7 @@ export function boxModeJS(): string {
    ══════════════════════════════════════════════════════════ */
 document.addEventListener("mousedown",function(e){
   if(mode!=="box")return;
-  var t=e.target;if(t.closest("#aviz-root")||t.closest("#aviz-onboard")||t.closest(".aviz-pin")||t.closest(".aviz-pin-form")||t.closest(".aviz-box")||t.closest(".aviz-text-ann"))return;
+  var t=e.target;if(t.closest("#aviz-root")||t.closest("#aviz-onboard")||t.closest("#aviz-tour-backdrop")||t.closest(".aviz-tour-callout")||t.closest(".aviz-pin")||t.closest(".aviz-pin-form")||t.closest(".aviz-box")||t.closest(".aviz-text-ann"))return;
   e.preventDefault();e.stopPropagation();
   document.documentElement.style.userSelect="none";document.documentElement.style.webkitUserSelect="none";
   var sx=window.pageXOffset,sy=window.pageYOffset;

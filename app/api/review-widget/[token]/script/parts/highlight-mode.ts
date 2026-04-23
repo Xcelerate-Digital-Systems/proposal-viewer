@@ -43,7 +43,7 @@ document.addEventListener("mouseup",function(){
 
     /* Ignore selections inside the widget UI */
     var startEl=range.startContainer.nodeType===Node.TEXT_NODE?range.startContainer.parentNode:range.startContainer;
-    if(!startEl||startEl.closest("#aviz-root")||startEl.closest("#aviz-onboard")||startEl.closest(".aviz-pin-form")||startEl.closest(".aviz-text-input-wrap"))return;
+    if(!startEl||startEl.closest("#aviz-root")||startEl.closest("#aviz-onboard")||startEl.closest("#aviz-tour-backdrop")||startEl.closest(".aviz-tour-callout")||startEl.closest(".aviz-pin-form")||startEl.closest(".aviz-text-input-wrap"))return;
 
     var rect=range.getBoundingClientRect();
     var sx=window.pageXOffset||document.documentElement.scrollLeft;

@@ -48,6 +48,10 @@ loadComments(function(){refresh();startPolling();});
 if(!guestName){
   /* Delay onboarding slightly so the page isn't blocked on first paint. */
   setTimeout(function(){if(!guestName&&typeof showOnboard==="function")showOnboard();},600);
+}else if(typeof hasSeenTour==="function"&&!hasSeenTour()){
+  /* Returning guest who already entered their name but hasn't seen the
+     tool tour yet (e.g. onboarding existed before the tour shipped). */
+  setTimeout(function(){if(typeof startTour==="function")startTour();},800);
 }
 `;
 }

@@ -163,10 +163,14 @@ mark.aviz-hl.resolved{background:rgba(253,224,71,.28);}
 #aviz-onboard{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.55);
   display:flex;align-items:center;justify-content:center;padding:20px;
   animation:aviz-fadeIn .2s ease-out;}
-#aviz-onboard .aviz-onboard-card{width:100%;max-width:380px;background:#fff;border-radius:16px;
+#aviz-onboard .aviz-onboard-card{width:100%;max-width:400px;background:#fff;border-radius:16px;
   box-shadow:0 20px 60px rgba(0,0,0,.25);padding:24px;font-family:${FONT};}
-#aviz-onboard h3{font-size:18px;font-weight:600;color:#111;margin:0 0 6px 0;padding:0;font-family:${FONT};}
-#aviz-onboard p.aviz-onboard-sub{font-size:13px;color:#6b7280;margin:0 0 18px 0;padding:0;line-height:1.5;}
+#aviz-onboard .aviz-onboard-eyebrow{display:inline-block;font-size:10px;font-weight:600;color:${ACCENT};
+  text-transform:uppercase;letter-spacing:.5px;background:${ACCENT}14;padding:3px 8px;border-radius:6px;
+  margin:0 0 10px 0;font-family:${FONT};}
+#aviz-onboard h3{font-size:19px;font-weight:600;color:#111;margin:0 0 8px 0;padding:0;font-family:${FONT};line-height:1.3;}
+#aviz-onboard p.aviz-onboard-sub{font-size:13px;color:#6b7280;margin:0 0 18px 0;padding:0;line-height:1.55;}
+#aviz-onboard p.aviz-onboard-fine{font-size:11px;color:#9ca3af;margin:-6px 0 14px 0;padding:0;line-height:1.5;}
 #aviz-onboard label{display:block;font-size:11px;font-weight:500;color:#6b7280;margin:0 0 4px 0;padding:0;text-transform:uppercase;letter-spacing:.3px;}
 #aviz-onboard .aviz-onboard-field{margin:0 0 12px 0;padding:0;}
 #aviz-onboard .aviz-onboard-field:last-of-type{margin-bottom:18px;}
@@ -180,6 +184,41 @@ mark.aviz-hl.resolved{background:rgba(253,224,71,.28);}
 #aviz-onboard .aviz-onboard-submit:hover:not(:disabled){background:#015f68;}
 #aviz-onboard .aviz-onboard-submit:disabled{opacity:.5;cursor:not-allowed;}
 #aviz-onboard .aviz-onboard-optional{font-size:10px;color:#9ca3af;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px;}
+
+/* ── Guided tour (first-visit walkthrough of toolbar) ──── */
+#aviz-tour-backdrop{position:fixed;inset:0;z-index:2147483635;background:rgba(15,23,42,.55);
+  animation:aviz-fadeIn .2s ease-out;}
+html.aviz-tour-on #aviz-toolbar{pointer-events:none;z-index:2147483640;}
+html.aviz-tour-on .aviz-tool .aviz-tooltip{display:none;}
+html.aviz-tour-on .aviz-tool.aviz-tour-target{background:${ACCENT}18;color:${ACCENT};
+  box-shadow:0 0 0 3px ${ACCENT}55,0 0 22px ${ACCENT}99;animation:aviz-tourPulse 1.5s ease-in-out infinite;position:relative;z-index:1;}
+@keyframes aviz-tourPulse{
+  0%,100%{box-shadow:0 0 0 3px ${ACCENT}55,0 0 22px ${ACCENT}99;}
+  50%{box-shadow:0 0 0 7px ${ACCENT}2e,0 0 34px ${ACCENT};}
+}
+.aviz-tour-callout{position:fixed;z-index:2147483647;width:280px;max-width:calc(100vw - 32px);
+  background:#fff;border-radius:14px;padding:16px 18px;font-family:${FONT};
+  box-shadow:0 20px 60px rgba(0,0,0,.28),0 2px 6px rgba(0,0,0,.08);
+  animation:aviz-fadeIn .2s ease-out;}
+.aviz-tour-callout .aviz-tour-step{font-size:10px;font-weight:600;color:${ACCENT};
+  text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px 0;padding:0;}
+.aviz-tour-callout h4{font-size:15px;font-weight:600;color:#111;margin:0 0 6px 0;padding:0;
+  font-family:${FONT};line-height:1.3;}
+.aviz-tour-callout p{font-size:13px;color:#4b5563;line-height:1.55;margin:0 0 14px 0;padding:0;}
+.aviz-tour-callout .aviz-tour-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;padding:0;}
+.aviz-tour-callout .aviz-tour-skip{background:none;border:none;color:#9ca3af;font-size:12px;
+  font-weight:500;padding:6px 8px;margin:0;cursor:pointer;font-family:${FONT};border-radius:6px;
+  transition:color .15s,background .15s;}
+.aviz-tour-callout .aviz-tour-skip:hover{color:#6b7280;background:#f3f4f6;}
+.aviz-tour-callout .aviz-tour-next{background:${ACCENT};color:#fff;border:none;padding:8px 18px;
+  margin:0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:${FONT};
+  transition:background .15s;}
+.aviz-tour-callout .aviz-tour-next:hover{background:#015f68;}
+.aviz-tour-callout .aviz-tour-arrow{position:absolute;right:-7px;top:50%;transform:translateY(-50%);
+  width:14px;height:14px;background:#fff;border-right:1px solid rgba(0,0,0,.04);
+  border-top:1px solid rgba(0,0,0,.04);transform-origin:center;rotate:45deg;
+  box-shadow:2px -2px 4px rgba(0,0,0,.04);}
+.aviz-tour-callout.flipped .aviz-tour-arrow{right:auto;left:-7px;rotate:225deg;}
 
 /* ══════════════════════════════════════════════════════════
    COMMENTS PANEL  –  Feedbucket style
