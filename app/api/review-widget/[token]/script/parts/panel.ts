@@ -296,6 +296,14 @@ function bindThreadEvents(){
       var rName=inputArea.querySelector("input[placeholder=\\"Your name\\"]");
       var rText=inputArea.querySelector("textarea");
       var commentBtn=card.querySelector(".aviz-card-comment-btn");
+      /* Replace the Comment button with a clone to strip the aviz-reply-trigger
+         handler bound above, then re-point commentBtn at the live node so
+         updateBtn toggles disabled on the button actually in the DOM. */
+      if(commentBtn){
+        var newBtn=commentBtn.cloneNode(true);
+        commentBtn.parentNode.replaceChild(newBtn,commentBtn);
+        commentBtn=newBtn;
+      }
       (rText||rName).focus();
 
       function updateBtn(){
@@ -306,14 +314,12 @@ function bindThreadEvents(){
       rText.addEventListener("input",updateBtn);
 
       if(commentBtn){
-        var newBtn=commentBtn.cloneNode(true);
-        commentBtn.parentNode.replaceChild(newBtn,commentBtn);
-        newBtn.addEventListener("click",function(ev){
+        commentBtn.addEventListener("click",function(ev){
           ev.stopPropagation();
           var n=rName?rName.value.trim():guestName;
           var t=rText.value.trim();if(!n||!t)return;
           if(!guestName){guestName=n;saveGuest();}
-          newBtn.disabled=true;newBtn.textContent="Posting\\u2026";
+          commentBtn.disabled=true;commentBtn.textContent="Posting\\u2026";
           postComment({author_name:n,content:t,comment_type:"general",parent_comment_id:pid},function(){refresh();});
         });
       }

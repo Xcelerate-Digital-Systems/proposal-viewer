@@ -89,6 +89,7 @@ export default function WhiteboardSidebar({
 
   return (
     <div
+      data-wb-tour="sidebar"
       className="w-[220px] flex flex-col shrink-0 overflow-hidden"
       style={{
         backgroundColor: bgSecondary,

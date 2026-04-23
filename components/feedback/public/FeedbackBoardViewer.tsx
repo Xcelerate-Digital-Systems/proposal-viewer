@@ -178,7 +178,7 @@ export default function FeedbackBoardViewer({
   }
 
   return (
-    <div className="public-feedback-board w-full h-full bg-notebook">
+    <div data-wb-tour="canvas" className="public-feedback-board w-full h-full bg-notebook">
       {/* Hide all handle dots on the read-only client view — the handle DOM
           nodes stay in place so React Flow can still anchor edges to them,
           they just have no visible dot/border. */}

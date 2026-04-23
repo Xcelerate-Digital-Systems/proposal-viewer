@@ -15,6 +15,7 @@ import { fontFamily } from '@/lib/google-fonts';
 import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewer';
 import FeedbackNotFound from '@/components/feedback/FeedbackNotFound';
 import WhiteboardSidebar from '@/components/feedback/public/WhiteboardSidebar';
+import WhiteboardTour from '@/components/feedback/public/WhiteboardTour';
 import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
 
 /**
@@ -199,6 +200,12 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
             />
           </div>
         </div>
+
+        <WhiteboardTour
+          enabled={identityHydrated && !!guestName && !loading && !notFound}
+          accentColor={branding.accent_color}
+          fontHeading={branding.font_heading}
+        />
       </div>
     </>
   );
