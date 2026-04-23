@@ -97,7 +97,7 @@ toolBtns.questions.addEventListener("click",function(){/* soon */});
 var hlTags=["P","H1","H2","H3","H4","H5","H6","SPAN","A","BUTTON","IMG","TD","TH","LI","SECTION","DIV","HEADER","FOOTER","NAV","MAIN","ARTICLE"];
 document.addEventListener("mousemove",function(e){
   var t=e.target;
-  if(t.closest("#aviz-root")||t.closest(".aviz-pin")||t.closest(".aviz-box")||t.closest(".aviz-text-ann")||t.closest(".aviz-pin-form")||t.closest(".aviz-text-input"))return;
+  if(t.closest("#aviz-root")||t.closest("#aviz-onboard")||t.closest(".aviz-pin")||t.closest(".aviz-box")||t.closest(".aviz-text-ann")||t.closest(".aviz-pin-form")||t.closest(".aviz-text-input"))return;
 
   /* Same element — do nothing */
   if(t===highlightEl)return;

@@ -45,7 +45,7 @@ function findHighlightNodeAtOffset(target){
       var p=n.parentNode;
       if(!p)return NodeFilter.FILTER_REJECT;
       /* Skip widget UI + our own highlight wrappers */
-      if(p.closest&&(p.closest("#aviz-root")||p.closest("mark.aviz-hl")||p.closest(".aviz-pin-form")||p.closest(".aviz-text-input-wrap")||p.closest("#aviz-panel")))return NodeFilter.FILTER_REJECT;
+      if(p.closest&&(p.closest("#aviz-root")||p.closest("#aviz-onboard")||p.closest("mark.aviz-hl")||p.closest(".aviz-pin-form")||p.closest(".aviz-text-input-wrap")||p.closest("#aviz-panel")))return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
   });

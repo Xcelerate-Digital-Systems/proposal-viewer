@@ -19,7 +19,7 @@ sty.textContent=\`
 #aviz-root *{box-sizing:border-box;font-family:${FONT};line-height:1.45;}
 
 /* ── Crosshair cursor (always on outside widget UI) ────── */
-html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *){cursor:crosshair !important;}
+html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:crosshair !important;}
 
 /* ── Element hover highlight ───────────────────────────── */
 .aviz-el-hl{outline:2px solid ${HOVER_COLOR};outline-offset:2px;transition:outline-color .1s;box-shadow:0 0 0 1px ${HOVER_COLOR}40;}
