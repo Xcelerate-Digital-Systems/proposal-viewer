@@ -73,7 +73,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           setSlug={s.setSlug}
           website={s.website}
           setWebsite={s.setWebsite}
-          onSaveField={s.handleSaveField}
+          profileChanged={s.profileChanged}
+          profileSaved={s.profileSaved}
           logoUploading={s.logoUploading}
           fileInputRef={s.fileInputRef}
           onLogoUpload={s.handleLogoUpload}
@@ -127,7 +128,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           setSidebarTextColor={s.setSidebarTextColor}
           acceptTextColor={s.acceptTextColor}
           setAcceptTextColor={s.setAcceptTextColor}
-          onSave={s.handleSaveColors}
+          lastSaved={s.colorsSaved}
           bgImageUrl={s.bgImageUrl}
           bgImageUploading={s.bgImageUploading}
           bgImageOverlayOpacity={s.bgImageOverlayOpacity}

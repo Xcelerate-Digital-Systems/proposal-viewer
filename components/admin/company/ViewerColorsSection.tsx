@@ -1,8 +1,8 @@
 // components/admin/company/ViewerColorsSection.tsx
 'use client';
 
-import { ReactNode, useRef, useState } from 'react';
-import { Loader2, Palette, Upload, Trash2, ImageIcon } from 'lucide-react';
+import { ReactNode, useRef } from 'react';
+import { Check, Loader2, Palette, Upload, Trash2, ImageIcon } from 'lucide-react';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 
 interface ViewerColorsSectionProps {
@@ -19,7 +19,7 @@ interface ViewerColorsSectionProps {
   setSidebarTextColor: (v: string) => void;
   acceptTextColor: string;
   setAcceptTextColor: (v: string) => void;
-  onSave: () => void;
+  lastSaved?: boolean;
   // ── Background image ──
   bgImageUrl: string | null;
   bgImageUploading: boolean;
@@ -44,7 +44,7 @@ export default function ViewerColorsSection({
   setSidebarTextColor,
   acceptTextColor,
   setAcceptTextColor,
-  onSave,
+  lastSaved,
   bgImageUrl,
   bgImageUploading,
   bgImageOverlayOpacity,
@@ -57,21 +57,23 @@ export default function ViewerColorsSection({
 
   return (
     <div className="bg-white border border-edge rounded-[14px] p-5 ">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Palette size={15} className="text-faint" />
           <span className="text-sm font-medium text-muted">Viewer Colors</span>
         </div>
-        {isOwner && colorsChanged && (
-          <button
-            onClick={onSave}
-            disabled={saving === 'colors' || !/^#[0-9a-fA-F]{6}$/.test(accentColor) || !/^#[0-9a-fA-F]{6}$/.test(bgPrimary) || !/^#[0-9a-fA-F]{6}$/.test(bgSecondary) || !/^#[0-9a-fA-F]{6}$/.test(sidebarTextColor) || !/^#[0-9a-fA-F]{6}$/.test(acceptTextColor)}
-            className="px-4 py-1.5 bg-teal text-white text-sm rounded-lg hover:bg-teal-hover disabled:opacity-50 transition-colors"
-          >
-            {saving === 'colors' ? <Loader2 size={14} className="animate-spin" /> : 'Save Colors'}
-          </button>
+        {isOwner && saving === 'colors' && (
+          <span className="flex items-center gap-1.5 text-xs text-faint">
+            <Loader2 size={12} className="animate-spin" /> Saving…
+          </span>
+        )}
+        {isOwner && !colorsChanged && lastSaved && saving !== 'colors' && (
+          <span className="flex items-center gap-1.5 text-xs text-emerald-500">
+            <Check size={12} /> Saved
+          </span>
         )}
       </div>
+      <p className="text-xs text-faint mb-4">Changes save automatically.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Color controls */}

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CompanyData } from '@/lib/company-utils';
+import { CompanyData, isValidHex6 } from '@/lib/company-utils';
 import { setBrandingColors } from '@/components/ui/ColorPickerField';
 
 /* ─── Auth helper ────────────────────────────────────────────────────────── */
@@ -26,6 +26,7 @@ export function useCompanySettings(companyId: string) {
   const [name, setName]       = useState('');
   const [slug, setSlug]       = useState('');
   const [website, setWebsite] = useState('');
+  const [profileSaved, setProfileSaved] = useState(false);
 
   // Color fields
   const [accentColor, setAccentColor]           = useState('#01434A');
@@ -33,6 +34,7 @@ export function useCompanySettings(companyId: string) {
   const [bgSecondary, setBgSecondary]           = useState('#141414');
   const [sidebarTextColor, setSidebarTextColor] = useState('#ffffff');
   const [acceptTextColor, setAcceptTextColor]   = useState('#ffffff');
+  const [colorsSaved, setColorsSaved]           = useState(false);
 
   // Brand palette
   const [brandColors, setBrandColors]           = useState<string[]>([]);
@@ -151,10 +153,41 @@ export function useCompanySettings(companyId: string) {
       showFeedback(data.error || 'Failed to save', true);
     } else {
       setCompany(prev => prev ? { ...prev, ...data } : prev);
-      showFeedback('Saved');
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2000);
     }
     setSaving(null);
   };
+
+  // Autosave profile fields (debounced). Each field has its own validity
+  // guard so in-progress typing doesn't PATCH an empty name or tiny slug.
+  useEffect(() => {
+    if (!isOwner || !company) return;
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === company.name) return;
+    const timer = setTimeout(() => handleSaveField('name', trimmed), 800);
+    return () => clearTimeout(timer);
+  }, [name]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isOwner || !company) return;
+    if (slug.length < 2 || slug === company.slug) return;
+    const timer = setTimeout(() => handleSaveField('slug', slug), 800);
+    return () => clearTimeout(timer);
+  }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isOwner || !company) return;
+    if (website === (company.website || '')) return;
+    const timer = setTimeout(() => handleSaveField('website', website), 800);
+    return () => clearTimeout(timer);
+  }, [website]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const profileChanged = !!company && (
+    name.trim() !== company.name ||
+    slug !== company.slug ||
+    website !== (company.website || '')
+  );
 
   /* ── Save colors ───────────────────────────────────────────── */
 
@@ -179,10 +212,36 @@ export function useCompanySettings(companyId: string) {
       showFeedback(data.error || 'Failed to save', true);
     } else {
       setCompany(prev => prev ? { ...prev, ...data } : prev);
-      showFeedback('Branding saved');
+      setColorsSaved(true);
+      setTimeout(() => setColorsSaved(false), 2000);
     }
     setSaving(null);
   };
+
+  // Autosave viewer colours (debounced). Skips invalid hex values so
+  // we don't PATCH while a user is mid-typing in the hex input.
+  const colorsChanged =
+    accentColor !== (company?.accent_color || '#01434A') ||
+    bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
+    bgSecondary !== (company?.bg_secondary || '#141414') ||
+    sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
+    acceptTextColor !== (company?.accept_text_color || '#ffffff') ||
+    bgImageOverlayOpacity !== (company?.bg_image_overlay_opacity ?? 0.85);
+
+  useEffect(() => {
+    if (!colorsChanged || !isOwner || !company) return;
+    if (
+      !isValidHex6(accentColor) ||
+      !isValidHex6(bgPrimary) ||
+      !isValidHex6(bgSecondary) ||
+      !isValidHex6(sidebarTextColor) ||
+      !isValidHex6(acceptTextColor)
+    ) return;
+    const timer = setTimeout(() => {
+      handleSaveColors();
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [accentColor, bgPrimary, bgSecondary, sidebarTextColor, acceptTextColor, bgImageOverlayOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Save fonts ────────────────────────────────────────────── */
 
@@ -436,16 +495,6 @@ export function useCompanySettings(companyId: string) {
     }
   };
 
-  /* ── Derived ───────────────────────────────────────────────── */
-
-  const colorsChanged =
-    accentColor !== (company?.accent_color || '#01434A') ||
-    bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
-    bgSecondary !== (company?.bg_secondary || '#141414') ||
-    sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
-    acceptTextColor !== (company?.accept_text_color || '#ffffff') ||
-    bgImageOverlayOpacity !== (company?.bg_image_overlay_opacity ?? 0.85);
-
   return {
     // Core
     company,
@@ -459,7 +508,8 @@ export function useCompanySettings(companyId: string) {
     name, setName,
     slug, setSlug,
     website, setWebsite,
-    handleSaveField,
+    profileChanged,
+    profileSaved,
 
     // Logo
     logoUploading,
@@ -474,6 +524,7 @@ export function useCompanySettings(companyId: string) {
     sidebarTextColor, setSidebarTextColor,
     acceptTextColor, setAcceptTextColor,
     colorsChanged,
+    colorsSaved,
     handleSaveColors,
 
     // Background image
