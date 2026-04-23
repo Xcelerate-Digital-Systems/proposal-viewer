@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { corsPreflight, withCors } from '@/lib/cors';
-import { visibleTypesOrFilter } from '@/lib/swipe-files/access';
+import { getPartnerCompanyIds, visibleTypesOrFilter } from '@/lib/swipe-files/access';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,22 +45,31 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // First-time seed: only look at the caller's *own* types — shared folders
-    // from a partner company don't count toward the "has types yet" check.
-    const { data: ownTypes, error: ownErr } = await supabase
+    // First-time seed: fire only if the caller has no own folders AND no
+    // partner has already shared folders with them. Seeding on top of a
+    // partner's shared standards would create duplicate rows with the same
+    // names and split the swipes across two owners (which is exactly the
+    // bug that produced empty-folder duplicates for cross-company users).
+    const { data: visibleAny, error: visErr } = await supabase
       .from('swipe_types')
-      .select('id')
-      .eq('company_id', auth.companyId)
+      .select('id, company_id')
+      .or(visibleTypesOrFilter(auth.companyId))
       .limit(1);
 
-    if (ownErr) return NextResponse.json({ error: ownErr.message }, { status: 500 });
+    if (visErr) return NextResponse.json({ error: visErr.message }, { status: 500 });
 
-    if (!ownTypes || ownTypes.length === 0) {
+    if (!visibleAny || visibleAny.length === 0) {
+      // If this company already has a sharing relationship established with
+      // partner companies (e.g. via backfill or prior manual sharing), the
+      // newly-seeded standard folders inherit the same partner set so the
+      // user doesn't have to re-share 18 folders one by one.
+      const partners = await getPartnerCompanyIds(supabase, auth.companyId);
       const rows = STANDARD_AD_TYPES.map((name, idx) => ({
         company_id: auth.companyId,
         name,
         sort_order: idx,
         is_standard: true,
+        shared_with_company_ids: partners,
       }));
       const { error: seedErr } = await supabase.from('swipe_types').insert(rows);
       if (seedErr) return NextResponse.json({ error: seedErr.message }, { status: 500 });
@@ -120,6 +129,8 @@ export async function POST(req: NextRequest) {
 
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
+    const supabase = createServiceClient();
+
     let shareList: string[] = [];
     if (shared_with_company_ids !== undefined) {
       if (!Array.isArray(shared_with_company_ids)) {
@@ -132,22 +143,26 @@ export async function POST(req: NextRequest) {
             .filter((v: string) => UUID_RE.test(v) && v !== auth.companyId)
         )
       );
-    }
 
-    const supabase = createServiceClient();
-
-    if (shareList.length > 0) {
-      const { data: memberships } = await supabase
-        .from('team_members')
-        .select('company_id')
-        .eq('user_id', auth.member.user_id);
-      const allowed = new Set((memberships || []).map((m: { company_id: string }) => m.company_id));
-      if (shareList.some((id) => !allowed.has(id))) {
-        return NextResponse.json(
-          { error: 'You can only share with companies you belong to' },
-          { status: 403 }
-        );
+      if (shareList.length > 0) {
+        const { data: memberships } = await supabase
+          .from('team_members')
+          .select('company_id')
+          .eq('user_id', auth.member.user_id);
+        const allowed = new Set((memberships || []).map((m: { company_id: string }) => m.company_id));
+        if (shareList.some((id) => !allowed.has(id))) {
+          return NextResponse.json(
+            { error: 'You can only share with companies you belong to' },
+            { status: 403 }
+          );
+        }
       }
+    } else {
+      // No explicit share list supplied — inherit whatever partner set this
+      // company already uses on its existing folders. Skips the team_members
+      // check because the value is derived from existing DB state rather
+      // than user input.
+      shareList = await getPartnerCompanyIds(supabase, auth.companyId);
     }
 
     const { data: existing } = await supabase

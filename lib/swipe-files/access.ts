@@ -34,6 +34,44 @@ export function visibleTypesOrFilter(companyId: string): string {
 }
 
 /**
+ * Companies this company has an established sharing relationship with —
+ * either because we've shared folders to them, or because they've shared
+ * folders to us. Used to auto-populate shared_with_company_ids on new
+ * folders so a user who works across paired companies doesn't have to
+ * re-configure sharing every time they create a folder.
+ *
+ * The relationship is bootstrapped by share-xds-bld-backfill.sql (or any
+ * manual sharing the owner configures); from then on, new folders inherit
+ * the same partner set symmetrically.
+ */
+export async function getPartnerCompanyIds(
+  supabase: SupabaseClient,
+  companyId: string,
+): Promise<string[]> {
+  const [{ data: outgoing }, { data: incoming }] = await Promise.all([
+    supabase
+      .from('swipe_types')
+      .select('shared_with_company_ids')
+      .eq('company_id', companyId),
+    supabase
+      .from('swipe_types')
+      .select('company_id')
+      .contains('shared_with_company_ids', [companyId]),
+  ]);
+
+  const partners = new Set<string>();
+  (outgoing || []).forEach((row: { shared_with_company_ids: string[] | null }) => {
+    (row.shared_with_company_ids || []).forEach((id) => {
+      if (id && id !== companyId) partners.add(id);
+    });
+  });
+  (incoming || []).forEach((row: { company_id: string }) => {
+    if (row.company_id && row.company_id !== companyId) partners.add(row.company_id);
+  });
+  return Array.from(partners);
+}
+
+/**
  * Fetch a type row by id and verify the caller can access it.
  * Returns the row (plus owner flag) or null if missing/forbidden.
  */
