@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Globe, Code2, Copy, Check, Loader2, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Globe, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import FormActions from './FormActions';
 
-type Stage = 'loading' | 'domain' | 'install' | 'page';
+type Stage = 'loading' | 'domain' | 'page';
 
 interface WebpageItemFormProps {
   reviewProjectId: string;
@@ -28,16 +29,6 @@ function normaliseDomain(raw: string): string | null {
   }
 }
 
-function stripDomain(url: string, domain: string): string {
-  try {
-    if (url.startsWith(domain)) {
-      const rest = url.slice(domain.length);
-      return rest.startsWith('/') ? rest : `/${rest}`;
-    }
-  } catch { /* noop */ }
-  return url;
-}
-
 export default function WebpageItemForm({
   reviewProjectId,
   onSubmit,
@@ -46,18 +37,16 @@ export default function WebpageItemForm({
   uploading,
 }: WebpageItemFormProps) {
   const toast = useToast();
+  const router = useRouter();
   const [stage, setStage] = useState<Stage>('loading');
   const [project, setProject] = useState<FeedbackProject | null>(null);
 
   // Stage inputs
   const [domainInput, setDomainInput] = useState('');
   const [savingDomain, setSavingDomain] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const [title, setTitle] = useState('');
   const [pagePath, setPagePath] = useState('/');
-
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* ── Fetch project and decide initial stage ─────────────── */
   const fetchProject = useCallback(async () => {
@@ -82,34 +71,16 @@ export default function WebpageItemForm({
       if (data.script_installed_at) {
         setStage('page');
       } else if (data.root_domain) {
-        setDomainInput(data.root_domain);
-        setStage('install');
+        // Domain already set but script not yet detected — send them to the
+        // setup page which shows the snippet and polls for install.
+        onCancel();
+        router.push(`/feedback/${reviewProjectId}/setup`);
       } else {
         setStage('domain');
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchProject]);
-
-  /* ── Poll for install while on the install stage ────────── */
-  useEffect(() => {
-    if (stage !== 'install') return;
-
-    pollRef.current = setInterval(async () => {
-      const { data } = await supabase
-        .from('review_projects')
-        .select('script_installed_at')
-        .eq('id', reviewProjectId)
-        .single();
-      if (data?.script_installed_at) {
-        setProject((p) => p ? { ...p, script_installed_at: data.script_installed_at } : p);
-        setStage('page');
-      }
-    }, 3000);
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [stage, reviewProjectId]);
 
   /* ── Stage 1: save root domain ──────────────────────────── */
   const handleSaveDomain = async () => {
@@ -131,32 +102,17 @@ export default function WebpageItemForm({
     }
     setProject((p) => p ? { ...p, root_domain: domain } : p);
     setDomainInput(domain);
-    setStage('install');
-    setSavingDomain(false);
-  };
 
-  /* ── Stage 2: install script ────────────────────────────── */
-  const scriptTag = project?.share_token
-    ? `<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/review-widget/${project.share_token}/script" defer><\/script>`
-    : '';
-
-  const handleCopy = async () => {
-    if (!scriptTag) return;
-    try {
-      await navigator.clipboard.writeText(scriptTag);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = scriptTag;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
+    if (project?.script_installed_at) {
+      setStage('page');
+      setSavingDomain(false);
+    } else {
+      onCancel();
+      router.push(`/feedback/${reviewProjectId}/setup`);
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
-  /* ── Stage 3: add a page ────────────────────────────────── */
+  /* ── Stage 2: add a page ────────────────────────────────── */
   const pageUrl = project?.root_domain
     ? `${project.root_domain}${pagePath.startsWith('/') ? pagePath : `/${pagePath}`}`
     : pagePath;
@@ -229,96 +185,6 @@ export default function WebpageItemForm({
           submitLabel="Continue"
         />
       </form>
-    );
-  }
-
-  if (stage === 'install') {
-    return (
-      <div className="p-6 space-y-5 overflow-y-auto">
-        <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-teal/15 flex items-center justify-center shrink-0 mt-0.5">
-              <Code2 size={16} className="text-teal" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-gray-700">Install the script</p>
-              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                Paste this into the <code className="font-mono">&lt;head&gt;</code> of{' '}
-                <span className="font-mono text-gray-700">{project?.root_domain}</span>. We&apos;ll
-                detect it and move you to the next step automatically.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-              <Code2 size={13} />
-              Embed Code
-            </label>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
-            >
-              {copied ? (
-                <>
-                  <Check size={12} className="text-emerald-500" />
-                  <span className="text-emerald-600">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={12} />
-                  Copy
-                </>
-              )}
-            </button>
-          </div>
-          <div
-            onClick={handleCopy}
-            className="relative bg-gray-900 rounded-xl p-4 cursor-pointer group"
-          >
-            <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
-              {scriptTag || '/* Missing share token */'}
-            </pre>
-            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-amber-50 border border-amber-200">
-          <span className="relative flex w-2 h-2">
-            <span className="absolute inline-flex w-full h-full rounded-full bg-amber-400 opacity-75 animate-ping" />
-            <span className="relative inline-flex w-2 h-2 rounded-full bg-amber-500" />
-          </span>
-          <p className="text-xs font-medium text-amber-800">Waiting for install…</p>
-          <a
-            href={project?.root_domain || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-2 text-xs font-medium text-amber-900 underline underline-offset-2 hover:text-amber-700"
-          >
-            Open site
-          </a>
-        </div>
-
-        <div className="flex items-center justify-between pt-2">
-          <button
-            type="button"
-            onClick={() => setStage('domain')}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            ← Change domain
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
     );
   }
 
