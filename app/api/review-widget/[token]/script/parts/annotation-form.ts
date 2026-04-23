@@ -3,7 +3,7 @@
 export function annotationFormJS(): string {
   return `
 /* ══════════════════════════════════════════════════════════
-   SHARED ANNOTATION FORM (pin, box)
+   SHARED ANNOTATION FORM (pin, box, text_highlight)
    ══════════════════════════════════════════════════════════ */
 function showAnnotationForm(type,px,py,extra){
   removePendingAnnotation();
@@ -23,9 +23,16 @@ function showAnnotationForm(type,px,py,extra){
   /* Guest identity required before posting — trigger onboarding if missing */
   if(!guestName){if(typeof showOnboard==="function"){showOnboard(function(){showAnnotationForm(type,px,py,extra);});}return;}
 
+  var quoteHtml="";
+  if(type==="text_highlight"&&extra&&extra.quote){
+    var preview=extra.quote.length>180?extra.quote.slice(0,180)+"\\u2026":extra.quote;
+    quoteHtml='<div class="aviz-pf-quote">\\u201C'+esc(preview)+'\\u201D</div>';
+  }
+
   var f=document.createElement("div");f.className="aviz-pin-form";
   f.style.left=fx+"px";f.style.top=fy+"px";
   f.innerHTML='<h4>Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></h4>'
+    +quoteHtml
     +'<textarea class="aviz-ta aviz-pf-text" placeholder="Add a comment\\u2026" style="min-height:80px"></textarea>'
     +'<div class="aviz-pf-footer" style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;align-items:center">'
     +'<div class="aviz-pf-priority-slot" style="margin-right:auto"></div>'
@@ -45,6 +52,24 @@ function showAnnotationForm(type,px,py,extra){
     var n=guestName;
     var t=pfText.value.trim();
     if(!n||!t)return;
+
+    /* Text highlight: no screenshot, post directly with highlight offsets */
+    if(type==="text_highlight"&&extra){
+      pfSend.disabled=true;pfSend.textContent="Posting\\u2026";
+      postComment({
+        author_name:n,author_email:guestEmail||null,content:t,comment_type:"text_highlight",
+        highlight_text:extra.highlight_text,
+        highlight_start:extra.highlight_start,
+        highlight_end:extra.highlight_end,
+        highlight_element_path:extra.highlight_element_path,
+        priority:priorityCtrl.getValue()
+      },function(d){
+        removePendingAnnotation();refresh();armPinMode();
+        if(d)openPanel();
+      });
+      return;
+    }
+
     pfSend.disabled=true;pfSend.textContent="Capturing\\u2026";
 
     /* Hide form + existing annotations, keep only pending marker/box visible */

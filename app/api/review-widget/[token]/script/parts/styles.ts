@@ -103,7 +103,7 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *):not(#aviz-
 mark.aviz-hl{background:rgba(253,224,71,.55);padding:1px 2px;border-radius:2px;cursor:pointer;transition:background .15s;color:inherit;}
 mark.aviz-hl:hover{background:rgba(253,224,71,.8);}
 mark.aviz-hl.resolved{background:rgba(253,224,71,.28);}
-.aviz-hl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:3px;border-radius:9999px;background:${ACCENT};color:#fff;font-size:10px;font-weight:700;line-height:1;vertical-align:middle;cursor:pointer;user-select:none;font-style:normal;font-family:${FONT};}
+.aviz-hl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin:0 3px;border-radius:9999px;background:${PIN_COLOR};color:#fff;font-size:10px;font-weight:700;line-height:1;vertical-align:middle;cursor:pointer;user-select:none;font-style:normal;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2);font-family:${FONT};}
 
 /* ── Priority selector (shared across pin, text, highlight forms) ── */
 .aviz-priority{position:relative;display:inline-flex;}

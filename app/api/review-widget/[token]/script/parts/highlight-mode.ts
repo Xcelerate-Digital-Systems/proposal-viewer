@@ -55,64 +55,18 @@ document.addEventListener("mouseup",function(){
     var endOffset=getHighlightTextOffset(document.body,range.endContainer,range.endOffset);
     var elementPath=buildHighlightElementPath(range.startContainer);
 
-    /* Require guest identity before showing comment input */
-    if(!guestName){
-      if(typeof showOnboard==="function"){
-        showOnboard(function(){
-          /* After identity capture, re-prompt user to re-select */
-          barMsg.textContent="Re-select the text to leave a highlighted comment";
-          bar.classList.add("show");
-        });
-      }
-      return;
-    }
-
     /* Clear browser selection so the form isn't blocked by selection state */
     sel.removeAllRanges();
 
-    var wrap=document.createElement("div");wrap.className="aviz-text-input-wrap";
-    wrap.style.left=px+"px";wrap.style.top=(py+20)+"px";
-    var preview=text.length>120?text.slice(0,120)+"\\u2026":text;
-    wrap.innerHTML='<div class="aviz-pf-quote" style="max-width:300px">\\u201C'+esc(preview)+'\\u201D</div>'
-      +'<textarea class="aviz-ta aviz-text-comment" placeholder="Comment on the highlighted text\\u2026" rows="2" style="min-height:64px;width:100%"></textarea>'
-      +'<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;align-items:center">'
-      +'<span style="flex:1;font-size:11px;color:#9ca3af">Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></span>'
-      +'<div class="aviz-priority-slot"></div>'
-      +'<button class="aviz-btn aviz-btn-g aviz-text-cancel">Cancel</button>'
-      +'<button class="aviz-btn aviz-btn-p aviz-text-post">Post</button></div>';
-    document.body.appendChild(wrap);
-    var priorityCtrl=createPriorityControl();
-    wrap.querySelector(".aviz-priority-slot").appendChild(priorityCtrl.element);
-
-    var textEl=wrap.querySelector(".aviz-text-comment");
-    var postBtn=wrap.querySelector(".aviz-text-post");
-    var cancelBtn=wrap.querySelector(".aviz-text-cancel");
-    textEl.focus();
-
-    function cleanup(){wrap.remove();}
-
-    function doPost(){
-      var n=guestName;
-      var txt=textEl.value.trim();
-      if(!n||!txt)return;
-      postBtn.disabled=true;postBtn.textContent="Posting\\u2026";
-
-      postComment({
-        author_name:n,author_email:guestEmail||null,content:txt,comment_type:"text_highlight",
-        highlight_text:text,highlight_start:startOffset,highlight_end:endOffset,highlight_element_path:elementPath,
-        priority:priorityCtrl.getValue()
-      },function(d){
-        cleanup();refresh();armPinMode();
-        if(d)openPanel();
-      });
-    }
-
-    postBtn.addEventListener("click",doPost);
-    textEl.addEventListener("keydown",function(ev){
-      if(ev.key==="Enter"&&(ev.metaKey||ev.ctrlKey)){ev.preventDefault();doPost();}
-      if(ev.key==="Escape"){cleanup();}
+    /* Delegate to the shared annotation form. It handles guest onboarding,
+       priority, and posting; text_highlight branch skips the screenshot. */
+    showAnnotationForm("text_highlight",px,py,{
+      quote:text,
+      highlight_text:text,
+      highlight_start:startOffset,
+      highlight_end:endOffset,
+      highlight_element_path:elementPath
     });
-    cancelBtn.addEventListener("click",cleanup);
   },10);
 });
 `;
