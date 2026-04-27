@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, Link2, ExternalLink, Trash2,
-  FileText, Clock, Eye, CheckCircle2, X, PenLine, ScanEye } from 'lucide-react';
+  FileText, Clock, Eye, CheckCircle2, X, PenLine } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -24,7 +24,6 @@ interface ProposalDetailHeaderProps {
   proposalId: string;
   activeTab: 'pages' | 'text-pages' | 'design' | 'pricing' | 'packages' | 'contents' | 'cover' | 'details';
   customDomain?: string | null;
-  previewEditMode?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -91,7 +90,6 @@ export default function ProposalDetailHeader({
   proposalId,
   activeTab,
   customDomain,
-  previewEditMode = false,
 }: ProposalDetailHeaderProps) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -240,25 +238,6 @@ export default function ProposalDetailHeader({
             {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Link'}
           </button>
-
-          {/* Edit in Preview */}
-          {!previewEditMode ? (
-            <a
-              href={`/proposals/${proposalId}/inline-edit`}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-teal hover:bg-teal/5 border border-teal/20 transition-colors"
-            >
-              <ScanEye size={14} />
-              Edit in Preview
-            </a>
-          ) : (
-            <a
-              href={`/proposals/${proposalId}/pages`}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-teal bg-teal/5 border border-teal/20 transition-colors"
-            >
-              <ScanEye size={14} />
-              Exit Preview
-            </a>
-          )}
 
           {/* Preview */}
           <a

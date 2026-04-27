@@ -74,7 +74,7 @@ export default function ViewerPageContent({
       <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
         <ViewerBackground branding={branding} />
         <div ref={scrollRef} className="absolute inset-0 overflow-auto">
-          <div className="relative min-h-full">
+          <div className="relative min-h-full h-full">
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <TextPage
               textPage={currentTextPage as any}

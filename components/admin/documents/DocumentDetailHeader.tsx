@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Check, ExternalLink, Trash2, ScanEye } from 'lucide-react';
+import { ArrowLeft, Copy, Check, ExternalLink, Trash2 } from 'lucide-react';
 import { supabase, type Document as DocType } from '@/lib/supabase';
 import { buildDocumentUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -145,15 +145,6 @@ export default function DocumentDetailHeader({
             {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Link'}
           </button>
-
-          {/* Edit in Preview */}
-          <a
-            href={`/documents/${documentId}/inline-edit`}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-teal hover:bg-teal/5 border border-teal/20 transition-colors"
-          >
-            <ScanEye size={14} />
-            Edit in Preview
-          </a>
 
           {/* Preview */}
           <a

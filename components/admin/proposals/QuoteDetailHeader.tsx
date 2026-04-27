@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  DollarSign, Image, Settings, Package, AlignLeft, ScanEye, Pencil, List,
+  DollarSign, Image, Settings, Package, AlignLeft, Pencil, List,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -193,13 +193,6 @@ export default function QuoteDetailHeader({
             {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Link'}
           </button>
-          <a
-            href={`/proposals/${proposalId}/inline-edit`}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-teal hover:bg-teal/5 border border-teal/20 transition-colors"
-          >
-            <ScanEye size={14} />
-            Edit in Preview
-          </a>
           <a
             href={`/view/${proposal.share_token}`}
             target="_blank"

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, Trash2, ScanEye } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react';
 import { supabase, type ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
@@ -147,15 +147,6 @@ export default function TemplateDetailHeader({
           <span className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 bg-gray-100 border border-gray-200">
             {template.page_count} page{template.page_count !== 1 ? 's' : ''}
           </span>
-
-          {/* Edit in Preview */}
-          <a
-            href={`/templates/${templateId}/inline-edit`}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-teal hover:bg-teal/5 border border-teal/20 transition-colors"
-          >
-            <ScanEye size={14} />
-            Edit in Preview
-          </a>
 
           {/* Preview */}
           <a
