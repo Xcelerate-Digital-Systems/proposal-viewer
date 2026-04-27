@@ -54,7 +54,7 @@ export default function ViewerPageContent({
       <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
         <ViewerBackground branding={branding} />
         <div ref={scrollRef} className="absolute inset-0 overflow-auto">
-          <div className="relative min-h-full">
+          <div className="relative min-h-full h-full">
             <TocPage
               branding={branding}
               tocSettings={tocSettings}
