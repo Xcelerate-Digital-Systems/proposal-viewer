@@ -555,6 +555,72 @@ export default function FeedbackDetailView({
             )}
           </div>
 
+          {/* Filters + prev/next + count (middle cluster) */}
+          {!singleItemOnly && stripTypes.length > 1 && (
+            <>
+              <div
+                className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-200'}`}
+                style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+              />
+              <div className="shrink-0">
+                <TypeFilterTabs
+                  items={items}
+                  availableTypes={stripTypes}
+                  typeFilter={typeFilter}
+                  onFilterChange={handleFilterChange}
+                  variant={stripVariant}
+                  sidebarTextColor={headerBranded ? sidebarText : undefined}
+                  showCounts={false}
+                />
+              </div>
+            </>
+          )}
+
+          {!singleItemOnly && filteredItems.length > 1 && (
+            <>
+              <div
+                className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-200'}`}
+                style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+              />
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => goToItem(currentIdx - 1)}
+                  disabled={currentIdx <= 0}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                    headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                  style={headerBranded ? {
+                    border: `1px solid ${sidebarText}25`,
+                    color: sidebarText,
+                  } : undefined}
+                >
+                  <ChevronLeft size={13} />
+                  Previous
+                </button>
+                <span
+                  className={`text-xs tabular-nums whitespace-nowrap ${headerBranded ? '' : 'text-gray-400'}`}
+                  style={headerBranded ? { color: `${sidebarText}80` } : undefined}
+                >
+                  {currentIdx + 1} of {filteredItems.length}
+                </span>
+                <button
+                  onClick={() => goToItem(currentIdx + 1)}
+                  disabled={currentIdx >= filteredItems.length - 1}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                    headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                  style={headerBranded ? {
+                    border: `1px solid ${sidebarText}25`,
+                    color: sidebarText,
+                  } : undefined}
+                >
+                  Next
+                  <ChevronRight size={13} />
+                </button>
+              </div>
+            </>
+          )}
+
           {/* Spacer */}
           <div className="flex-1 min-w-0" />
 
@@ -779,92 +845,35 @@ export default function FeedbackDetailView({
               unresolvedCount={unresolvedComments.length}
               mode={feedbackMode}
               onModeChange={changeFeedbackMode}
-              className="absolute top-4 right-4"
+              className="absolute top-4 left-4"
             />
           </div>
+
+          {/* ── Right: vertical thumb strip (hidden in single-item) ── */}
+          {!singleItemOnly && filteredItems.length > 1 && (
+            <div
+              className={`shrink-0 ${headerBranded ? '' : 'border-l border-gray-200 bg-white'}`}
+              style={headerBranded ? {
+                backgroundColor: bgSecondary,
+                borderLeft: `1px solid ${sidebarText}15`,
+              } : undefined}
+            >
+              <ItemThumbStrip
+                filteredItems={filteredItems}
+                selectedItemId={selectedItemId}
+                onSelectItem={handleSidebarSelect}
+                comments={stripComments}
+                variant={stripVariant}
+                orientation="vertical"
+                textColor={headerBranded ? sidebarText : undefined}
+                accentColor={headerBranded ? accent : undefined}
+                fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
+                className="h-full w-[88px]"
+              />
+            </div>
+          )}
         </div>
 
-        {/* ── Bottom nav: filters + thumb strip + prev/next (hidden in single-item) ── */}
-        {!singleItemOnly && (filteredItems.length > 0 || stripTypes.length > 1) && (
-          <div
-            className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
-              headerBranded ? '' : 'border-t border-gray-200 bg-white'
-            }`}
-            style={headerBranded ? {
-              backgroundColor: bgSecondary,
-              borderTop: `1px solid ${sidebarText}15`,
-            } : undefined}
-          >
-            {stripTypes.length > 1 && (
-              <>
-                <div className="shrink-0">
-                  <TypeFilterTabs
-                    items={items}
-                    availableTypes={stripTypes}
-                    typeFilter={typeFilter}
-                    onFilterChange={handleFilterChange}
-                    variant={stripVariant}
-                    sidebarTextColor={headerBranded ? sidebarText : undefined}
-                    showCounts={false}
-                  />
-                </div>
-                <div
-                  className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-200'}`}
-                  style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
-                />
-              </>
-            )}
-
-            <ItemThumbStrip
-              filteredItems={filteredItems}
-              selectedItemId={selectedItemId}
-              onSelectItem={handleSidebarSelect}
-              comments={stripComments}
-              variant={stripVariant}
-              textColor={headerBranded ? sidebarText : undefined}
-              accentColor={headerBranded ? accent : undefined}
-              fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
-              className="flex-1 min-w-0"
-            />
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => goToItem(currentIdx - 1)}
-                disabled={currentIdx <= 0}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                  headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
-                style={headerBranded ? {
-                  border: `1px solid ${sidebarText}25`,
-                  color: sidebarText,
-                } : undefined}
-              >
-                <ChevronLeft size={15} />
-                Previous
-              </button>
-              <span
-                className={`text-xs tabular-nums whitespace-nowrap ${headerBranded ? '' : 'text-gray-400'}`}
-                style={headerBranded ? { color: `${sidebarText}80` } : undefined}
-              >
-                {currentIdx + 1} of {filteredItems.length}
-              </span>
-              <button
-                onClick={() => goToItem(currentIdx + 1)}
-                disabled={currentIdx >= filteredItems.length - 1}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                  headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
-                style={headerBranded ? {
-                  border: `1px solid ${sidebarText}25`,
-                  color: sidebarText,
-                } : undefined}
-              >
-                Next
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Finish-reviewing modal — driven by the header's Finish button */}

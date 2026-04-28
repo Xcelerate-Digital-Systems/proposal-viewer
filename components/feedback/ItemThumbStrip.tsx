@@ -43,6 +43,7 @@ interface ItemThumbStripProps {
   comments?: Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[];
 
   variant?: 'admin' | 'branded';
+  orientation?: 'horizontal' | 'vertical';
   textColor?: string;
   accentColor?: string;
   fontSidebar?: string;
@@ -57,11 +58,13 @@ export default function ItemThumbStrip({
   onSelectItem,
   comments = [],
   variant = 'admin',
+  orientation = 'horizontal',
   textColor,
   accentColor,
   fontSidebar,
   className,
 }: ItemThumbStripProps) {
+  const isVertical = orientation === 'vertical';
   const isAdmin = variant === 'admin';
   const text = isAdmin ? '#111827' : (textColor || '#ffffff');
   const accent = isAdmin ? '#017C87' : (accentColor || '#01434A');
@@ -73,16 +76,24 @@ export default function ItemThumbStrip({
     const node = scrollRef.current.querySelector<HTMLButtonElement>(
       `[data-thumb-id="${selectedItemId}"]`
     );
-    node?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, [selectedItemId]);
+    node?.scrollIntoView({
+      behavior: 'smooth',
+      block: isVertical ? 'center' : 'nearest',
+      inline: isVertical ? 'nearest' : 'center',
+    });
+  }, [selectedItemId, isVertical]);
 
   return (
     <div
       ref={scrollRef}
-      // py-1.5 gives the ring + notification badge room to sit inside the
-      // scroll container — with overflow-x:auto, CSS coerces overflow-y to
-      // auto too, so anything extending past the edge would otherwise clip.
-      className={`flex items-center gap-1.5 overflow-x-auto py-1.5 ${className || ''}`}
+      // The padding gives the ring + notification badge room to sit inside the
+      // scroll container — with overflow:auto, anything extending past the
+      // edge would otherwise clip.
+      className={`flex gap-1.5 ${
+        isVertical
+          ? 'flex-col items-center overflow-y-auto px-1.5 py-2'
+          : 'items-center overflow-x-auto py-1.5'
+      } ${className || ''}`}
       style={{ scrollbarWidth: 'thin' }}
     >
       {filteredItems.map((item) => {
@@ -103,7 +114,7 @@ export default function ItemThumbStrip({
             data-thumb-id={item.id}
             onClick={() => onSelectItem(item.id)}
             title={item.title}
-            className={`relative shrink-0 w-[64px] h-[40px] rounded-md overflow-hidden transition-all ${activeClass}`}
+            className={`relative shrink-0 ${isVertical ? 'w-[72px] h-[46px]' : 'w-[64px] h-[40px]'} rounded-md overflow-hidden transition-all ${activeClass}`}
             style={
               !isAdmin
                 ? {
