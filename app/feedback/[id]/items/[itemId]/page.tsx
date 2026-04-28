@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction } from '@/lib/supabase';
+import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackStatus } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -82,6 +82,8 @@ function ItemViewerContent({
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [reviewMode, setReviewMode] = useState<'comment' | 'browse'>('comment');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
 
@@ -402,6 +404,22 @@ function ItemViewerContent({
     }
   }, [projectId, router]);
 
+  // Admin can update item status from the same dropdown the client sees.
+  const updateItemStatus = useCallback(async (itemIdToUpdate: string, status: FeedbackStatus) => {
+    const previous = items.find((i) => i.id === itemIdToUpdate)?.status;
+    setItems((prev) => prev.map((i) => (i.id === itemIdToUpdate ? { ...i, status } : i)));
+    const { error } = await supabase
+      .from('review_items')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', itemIdToUpdate);
+    if (error) {
+      toast.error('Failed to update status');
+      if (previous) {
+        setItems((prev) => prev.map((i) => (i.id === itemIdToUpdate ? { ...i, status: previous } : i)));
+      }
+    }
+  }, [items, toast]);
+
   // ── Loading ──
   if (loading || !project) {
     return (
@@ -440,6 +458,14 @@ function ItemViewerContent({
           label: project.title || 'Back',
           onClick: () => router.push(`/feedback/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`),
         }}
+        onUpdateItemStatus={updateItemStatus}
+        browseMode={reviewMode === 'browse'}
+        reviewMode={reviewMode}
+        onReviewModeChange={setReviewMode}
+        reviewerName={authorName}
+        reviewerEmail={teamMember?.email || ''}
+        reviewSubmitted={reviewSubmitted}
+        onReviewSubmitted={() => setReviewSubmitted(true)}
       />
 
       {showAddVersion && currentItem && (

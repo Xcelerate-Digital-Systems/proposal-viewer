@@ -574,7 +574,7 @@ export default function FeedbackDetailView({
             )}
 
             {/* Client status picker */}
-            {isClient && onUpdateItemStatus && selectedItem && (
+            {onUpdateItemStatus && selectedItem && (
               <div className="shrink-0">
                 <ClientStatusControl
                   itemId={selectedItem.id}
@@ -591,8 +591,8 @@ export default function FeedbackDetailView({
               </div>
             )}
 
-            {/* ── Public review controls ── */}
-            {isClient && onReviewModeChange && reviewMode && (
+            {/* ── Review controls (Comment/Browse pill + reviewer avatar + Finish) ── */}
+            {onReviewModeChange && reviewMode && (
               <div
                 className="flex items-center rounded-full p-0.5 shrink-0"
                 style={{ backgroundColor: `${sidebarText}15` }}
@@ -618,7 +618,7 @@ export default function FeedbackDetailView({
               </div>
             )}
 
-            {isClient && reviewerName !== undefined && (
+            {reviewerName !== undefined && (
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
                 style={{ backgroundColor: branding?.accent_color || '#017C87' }}
@@ -628,7 +628,7 @@ export default function FeedbackDetailView({
               </div>
             )}
 
-            {isClient && onReviewSubmitted !== undefined && (
+            {onReviewSubmitted !== undefined && (
               reviewSubmitted ? (
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-semibold shrink-0">
                   Review submitted
