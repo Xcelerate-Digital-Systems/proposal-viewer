@@ -62,16 +62,54 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Look up company defaults (cover image) ─────────────────────────────
-    // Quotes don't inherit the company-level cover background.
-    let companyCoverImagePath: string | null = null;
-    if (!isQuote && !rest.cover_image_path) {
-      const { data: companyData } = await supabase
-        .from('companies')
-        .select('cover_image_path')
-        .eq('id', company_id)
-        .single();
-      companyCoverImagePath = companyData?.cover_image_path || null;
+    // ── Look up company branding defaults ──────────────────────────────────
+    // Quotes inherit all visual branding (cover styling, text-page styling,
+    // background image) so they match the company's look out of the box.
+    // Quotes do NOT inherit cover_image_path — that's reserved for proposals.
+    // Proposals inherit cover_image_path only (existing behavior).
+    const BRANDING_FIELDS = [
+      'cover_bg_style',
+      'cover_bg_color_1',
+      'cover_bg_color_2',
+      'cover_text_color',
+      'cover_subtitle_color',
+      'cover_button_bg',
+      'cover_overlay_opacity',
+      'cover_gradient_type',
+      'cover_gradient_angle',
+      'bg_image_path',
+      'bg_image_overlay_opacity',
+      'text_page_bg_color',
+      'text_page_text_color',
+      'text_page_heading_color',
+      'text_page_font_size',
+      'text_page_border_enabled',
+      'text_page_border_color',
+      'text_page_border_radius',
+      'text_page_layout',
+    ] as const;
+
+    const selectFields = isQuote
+      ? BRANDING_FIELDS.join(', ')
+      : ['cover_image_path', ...BRANDING_FIELDS].join(', ');
+
+    const { data: companyData } = await supabase
+      .from('companies')
+      .select(selectFields)
+      .eq('id', company_id)
+      .single();
+
+    const brandingDefaults: Record<string, unknown> = {};
+    if (companyData) {
+      const company = companyData as unknown as Record<string, unknown>;
+      if (!isQuote && !rest.cover_image_path && company.cover_image_path) {
+        brandingDefaults.cover_image_path = company.cover_image_path;
+      }
+      for (const field of BRANDING_FIELDS) {
+        if (rest[field] === undefined && company[field] !== null && company[field] !== undefined) {
+          brandingDefaults[field] = company[field];
+        }
+      }
     }
 
     // ── Insert the proposal record ────────────────────────────────────────
@@ -91,9 +129,7 @@ export async function POST(req: NextRequest) {
         created_by_name:   created_by_name || null,
         prepared_by:       prepared_by     || created_by_name || null,
         entity_type:       isQuote ? 'quote' : 'proposal',
-        ...(companyCoverImagePath && !rest.cover_image_path
-          ? { cover_image_path: companyCoverImagePath }
-          : {}),
+        ...brandingDefaults,
         ...rest,
       })
       .select('id')
