@@ -428,186 +428,10 @@ export default function FeedbackDetailView({
   );
 
   // ══════════════════════════════════════════════════════════════════
-  //  SINGLE ITEM MODE (no sidebar — individual item share)
-  // ══════════════════════════════════════════════════════════════════
-  if (singleItemOnly && selectedItem) {
-    return (
-      <>
-        {isClient && branding && (
-          <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
-        )}
-
-        {MobileGate}
-
-        <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-gray-50`}>
-          {/* Header */}
-          <div
-            className={`flex items-center justify-between gap-3 px-4 py-3 shrink-0 ${
-              hasBranding ? '' : 'bg-gray-50 border-b border-gray-200'
-            }`}
-            style={hasBranding ? { backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` } : undefined}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              {backAction && (
-                <button
-                  onClick={backAction.onClick}
-                  data-no-pin
-                  className={`flex items-center gap-1.5 text-sm transition-colors ${hasBranding ? 'hover:opacity-100' : 'text-gray-500 hover:text-gray-700'}`}
-                  style={hasBranding ? { color: `${sidebarText}99` } : undefined}
-                >
-                  <ArrowLeft size={14} className="shrink-0" />
-                  <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
-                </button>
-              )}
-              {hasBranding && branding?.logo_url ? (
-                <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
-              ) : hasBranding && branding?.name ? (
-                <span className="text-sm font-semibold"
-                  style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}>
-                  {branding.name}
-                </span>
-              ) : null}
-              {hasBranding && <span style={{ color: `${sidebarText}40` }}>·</span>}
-              <span
-                className={`text-sm font-semibold truncate ${hasBranding ? '' : 'text-gray-900'}`}
-                style={hasBranding ? { color: sidebarText } : undefined}
-              >
-                {selectedItem.title}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {isClient && onUpdateItemStatus && selectedItem && (
-                <ClientStatusControl
-                  itemId={selectedItem.id}
-                  status={selectedItem.status}
-                  onChange={onUpdateItemStatus}
-                />
-              )}
-              {renderHeaderActions?.(selectedItem)}
-            </div>
-          </div>
-
-          <FeedbackModeBar mode={feedbackMode} onCancel={() => changeFeedbackMode('idle')} />
-
-          <div className="flex-1 flex min-h-0">
-            <CommentsPanel
-              unresolvedComments={unresolvedComments}
-              resolvedComments={resolvedComments}
-              getReplies={getReplies}
-              hasComments={topLevelComments.length > 0}
-              highlightCommentId={highlightedCommentId}
-              onSubmitComment={handleSubmitComment}
-              onClose={() => setShowComments(false)}
-              authorName={isAdmin ? authorName : undefined}
-              guestName={isClient ? guestName : undefined}
-              onNameChange={isClient ? onGuestNameChange : undefined}
-              onResolve={onResolveComment}
-              onUnresolve={onUnresolveComment}
-              onEdit={isAdmin ? onEditComment : undefined}
-              onDelete={isAdmin ? onDeleteComment : undefined}
-              companyId={companyId}
-              closable={false}
-              className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-r border-gray-200 bg-white`}
-            />
-            <div className={`flex-1 relative ${isWebpageItem ? 'overflow-auto p-4' : 'overflow-auto flex items-center justify-center p-8'} bg-gray-50`}>
-              <ItemContentView
-                item={selectedItem}
-                placingPin={pinActive}
-                pendingPin={pendingPin}
-                pinComments={pinComments}
-                onImageClick={handleImageClick}
-                onPinClick={handlePinClick}
-                containerRef={imageContainerRef}
-                shareToken={shareToken || ''}
-                renderWebpage={isClient ? (item) => <WebpageClientPlaceholder item={item} /> : undefined}
-                highlightComments={highlightComments}
-                highlightedCommentId={highlightedCommentId}
-                onHighlightClick={handlePinClick}
-              />
-
-              <DrawingOverlay
-                mode={feedbackMode}
-                containerRef={imageContainerRef}
-                onAnnotationComplete={handleAnnotationComplete}
-                annotationComments={annotationComments}
-                highlightedCommentId={highlightedCommentId}
-                onAnnotationClick={handlePinClick}
-              />
-
-              {/* Pin comment popover (existing pins) */}
-              {popoverComment && popoverComment.pin_x != null && popoverComment.pin_y != null && (
-                <PinCommentPopover
-                  comment={popoverComment}
-                  replies={getReplies(popoverComment.id)}
-                  pinX={popoverComment.pin_x}
-                  pinY={popoverComment.pin_y}
-                  containerRef={imageContainerRef}
-                  onClose={() => setPopoverCommentId(null)}
-                  onReply={handlePopoverReply}
-                  onResolve={onResolveComment}
-                  onUnresolve={onUnresolveComment}
-                  onDelete={isAdmin ? onDeleteComment : undefined}
-                  authorName={isAdmin ? authorName : undefined}
-                  guestName={isClient ? guestName : undefined}
-                  onNameChange={isClient ? onGuestNameChange : undefined}
-                />
-              )}
-
-              {/* New-pin popover (anchored at click) */}
-              {pendingPin && !pendingHighlight && selectedItemId && (
-                <PendingPinPopover
-                  pinX={pendingPin.x}
-                  pinY={pendingPin.y}
-                  containerRef={imageContainerRef}
-                  onSubmit={async (content, attachments, priority, videoUrl) => {
-                    await handleSubmitComment(content, pendingPin.x, pendingPin.y, undefined, priority, attachments, videoUrl);
-                  }}
-                  onCancel={handleCancelPin}
-                  companyId={companyId}
-                  shareToken={shareToken}
-                  authorName={isAdmin ? authorName : undefined}
-                  guestName={isClient ? guestName : undefined}
-                  onNameChange={isClient ? onGuestNameChange : undefined}
-                  onOpenDrawing={(mode) => { handleCancelPin(); changeFeedbackMode(mode); }}
-                />
-              )}
-
-              {/* New-highlight popover (anchored at selection) — same composer as pin, with quoted text */}
-              {pendingHighlight && selectedItemId && (
-                <PendingPinPopover
-                  pinX={pendingHighlight.rectPct.x}
-                  pinY={pendingHighlight.rectPct.y}
-                  containerRef={imageContainerRef}
-                  quotedText={pendingHighlight.text}
-                  onSubmit={async (content, attachments, priority, videoUrl) => {
-                    await handleSubmitComment(content, undefined, undefined, undefined, priority, attachments, videoUrl);
-                  }}
-                  onCancel={() => setPendingHighlight(null)}
-                  companyId={companyId}
-                  shareToken={shareToken}
-                  authorName={isAdmin ? authorName : undefined}
-                  guestName={isClient ? guestName : undefined}
-                  onNameChange={isClient ? onGuestNameChange : undefined}
-                />
-              )}
-
-              <FeedbackToolbar
-                onToggleComments={() => setShowComments(!showComments)}
-                commentsOpen={showComments}
-                unresolvedCount={unresolvedComments.length}
-                mode={feedbackMode}
-                onModeChange={changeFeedbackMode}
-                className="absolute top-4 right-4"
-              />
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════════
-  //  HEADER + DETAIL MODE (default) — thumb strip in header, comments on left
+  //  HEADER + DETAIL MODE — thumb strip in header, comments on left.
+  //  Used for every entry point (admin, public project share, public item
+  //  share, deep-link from whiteboard). singleItemOnly hides item cycling
+  //  but keeps the same chrome.
   // ══════════════════════════════════════════════════════════════════
 
   // Determine which types to show in filter — hide when hideFilterBar is set
@@ -678,8 +502,8 @@ export default function FeedbackDetailView({
             )}
           </div>
 
-          {/* Filters */}
-          {stripTypes.length > 1 && (
+          {/* Filters — hidden when single-item share */}
+          {!singleItemOnly && stripTypes.length > 1 && (
             <>
               <div className="w-px h-6 bg-gray-200 shrink-0" />
               <div className="shrink-0">
@@ -696,42 +520,64 @@ export default function FeedbackDetailView({
             </>
           )}
 
-          {/* Thumb strip */}
-          <div className="w-px h-6 bg-gray-200 shrink-0" />
-          <ItemThumbStrip
-            filteredItems={filteredItems}
-            selectedItemId={selectedItemId}
-            onSelectItem={handleSidebarSelect}
-            comments={stripComments}
-            variant={stripVariant}
-            textColor={hasBranding ? sidebarText : undefined}
-            accentColor={hasBranding ? accent : undefined}
-            fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
-            className="flex-1 min-w-0"
-          />
+          {/* Thumb strip + prev/next — hidden when single-item share */}
+          {!singleItemOnly && (
+            <>
+              <div className="w-px h-6 bg-gray-200 shrink-0" />
+              <ItemThumbStrip
+                filteredItems={filteredItems}
+                selectedItemId={selectedItemId}
+                onSelectItem={handleSidebarSelect}
+                comments={stripComments}
+                variant={stripVariant}
+                textColor={hasBranding ? sidebarText : undefined}
+                accentColor={hasBranding ? accent : undefined}
+                fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
+                className="flex-1 min-w-0"
+              />
 
-          {/* Nav cluster — Previous / count / Next — swipe-file style */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => goToItem(currentIdx - 1)}
-              disabled={currentIdx <= 0}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft size={15} />
-              Previous
-            </button>
-            <span className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
-              {currentIdx + 1} of {filteredItems.length}
-            </span>
-            <button
-              onClick={() => goToItem(currentIdx + 1)}
-              disabled={currentIdx >= filteredItems.length - 1}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-              <ChevronRight size={15} />
-            </button>
-          </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => goToItem(currentIdx - 1)}
+                  disabled={currentIdx <= 0}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft size={15} />
+                  Previous
+                </button>
+                <span className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
+                  {currentIdx + 1} of {filteredItems.length}
+                </span>
+                <button
+                  onClick={() => goToItem(currentIdx + 1)}
+                  disabled={currentIdx >= filteredItems.length - 1}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Spacer to push trailing controls right when thumbs are hidden */}
+          {singleItemOnly && <div className="flex-1" />}
+
+          {/* Item title (single-item mode only — replaces the thumb strip's role) */}
+          {singleItemOnly && selectedItem && (
+            <>
+              <div
+                className={`w-px h-6 shrink-0 ${hasBranding ? '' : 'bg-gray-200'}`}
+                style={hasBranding ? { backgroundColor: `${sidebarText}25` } : undefined}
+              />
+              <span
+                className={`text-sm font-semibold truncate ${hasBranding ? '' : 'text-gray-900'}`}
+                style={hasBranding ? { color: sidebarText } : undefined}
+              >
+                {selectedItem.title}
+              </span>
+            </>
+          )}
 
           {/* Version picker — rendered only when the parent passes versions. */}
           {versions && versions.length > 0 && onVersionChange && (
