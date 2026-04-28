@@ -187,7 +187,7 @@ export default function FeedbackDetailView({
   const { accent, border, sidebarText, bgSecondary } = brandingColors;
 
   // hasBranding gates the logo/name divider in the header.
-  const hasBranding = !!(isClient && branding?.logo_url) || !!branding?.name;
+  const hasBranding = !!branding?.logo_url || !!branding?.name;
   // headerBranded drives the dark sidebar background on the header strip.
   // Always branded on the public review side (matches the whiteboard
   // pattern even when the company hasn't uploaded a logo). Branded on the
