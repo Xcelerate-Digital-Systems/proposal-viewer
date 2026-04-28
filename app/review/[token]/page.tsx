@@ -392,29 +392,13 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           fontHeading={branding.font_heading}
         />
       )}
-      {!showOnboarding && project && (
-        <ReviewTopBar
-          projectTitle={project.title}
-          clientName={project.client_name}
-          shareToken={params.token}
-          reviewerName={guestName}
-          reviewerEmail={guestEmail}
-          mode={reviewMode}
-          onModeChange={setReviewMode}
-          accentColor={branding.accent_color}
-          logoUrl={branding.logo_url}
-          companyName={branding.name}
-          fontHeading={branding.font_heading}
-          submitted={reviewSubmitted}
-          onSubmitted={() => setReviewSubmitted(true)}
-        />
-      )}
-      <div className="pt-12 min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col">
         <FeedbackDetailView
           mode="client"
           project={project!}
           items={items}
           comments={comments}
+          branding={branding}
           initialItemId={initialItemId}
           initialTypeFilter={urlType || autoTypeFilter}
           singleItemOnly={viewMode === 'item'}
@@ -431,6 +415,12 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           onVersionChange={selectedItem && selectedItem.type !== 'webpage' ? handleClientVersionChange : undefined}
           backAction={backAction}
           onUpdateItemStatus={handleUpdateItemStatus}
+          reviewMode={reviewMode}
+          onReviewModeChange={setReviewMode}
+          reviewerName={guestName}
+          reviewerEmail={guestEmail}
+          reviewSubmitted={reviewSubmitted}
+          onReviewSubmitted={() => setReviewSubmitted(true)}
         />
       </div>
     </>

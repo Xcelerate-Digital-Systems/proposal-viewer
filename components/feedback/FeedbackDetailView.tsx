@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Monitor,
+  MessageSquare, MousePointer2, ArrowRight, Pause,
 } from 'lucide-react';
+import CompleteFeedbackModal from './CompleteFeedbackModal';
 import type { FeedbackProject, FeedbackItem, FeedbackComment, FeedbackStatus } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
-import { REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
+import { REVIEW_STATUS_CONFIG, getFeedbackStatusDef } from '@/lib/feedback/status';
 import { applyVersion, type VersionView } from '@/lib/feedback/versions';
 import VersionPicker from '@/components/feedback/VersionPicker';
 import type { CompanyBranding } from '@/hooks/useProposal';
@@ -117,6 +119,16 @@ interface ReviewDetailViewProps {
   /** Client can change status (approve / request revision / reject). When
    *  provided, a status picker appears in the header. */
   onUpdateItemStatus?: (itemId: string, status: FeedbackStatus) => Promise<void> | void;
+
+  // ── Public review chrome (client mode only) ──
+  /** When provided, renders Comment/Browse pill, reviewer avatar, and Finish
+   *  reviewing button on the right of the header. */
+  reviewMode?: 'comment' | 'browse';
+  onReviewModeChange?: (mode: 'comment' | 'browse') => void;
+  reviewerName?: string;
+  reviewerEmail?: string;
+  reviewSubmitted?: boolean;
+  onReviewSubmitted?: () => void;
 }
 
 /* ─── Component ──────────────────────────────────────────────────── */
@@ -152,6 +164,12 @@ export default function FeedbackDetailView({
   onVersionChange,
   onAddVersion,
   onUpdateItemStatus,
+  reviewMode,
+  onReviewModeChange,
+  reviewerName,
+  reviewerEmail,
+  reviewSubmitted = false,
+  onReviewSubmitted,
 }: ReviewDetailViewProps) {
   const isAdmin = mode === 'admin';
   const isClient = mode === 'client';
@@ -162,6 +180,7 @@ export default function FeedbackDetailView({
   );
   const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter || null);
   const [showComments, setShowComments] = useState(true);
+  const [showFinishModal, setShowFinishModal] = useState(false);
 
   // ── Branding colors (client mode) ──
   const brandingColors = useBrandingColors(branding ?? {} as CompanyBranding);
@@ -451,6 +470,7 @@ export default function FeedbackDetailView({
   const stripTypes = hideFilterBar ? [] : (isAdmin && typeFilter ? [] : availableTypes);
 
   const stripVariant: 'admin' | 'branded' = isAdmin || !hasBranding ? 'admin' : 'branded';
+  const projectStatusDef = project.status ? getFeedbackStatusDef(project.status) : null;
   const stripComments = isAdmin
     ? allProjectComments
     : (comments as Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]);
@@ -464,7 +484,7 @@ export default function FeedbackDetailView({
       {MobileGate}
 
       <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-gray-50`}>
-        {/* ── Single-row header: back/logo · filters · ◄ thumbs ► · count · actions ── */}
+        {/* ── Row 1: brand + title + status | version + status control + actions | (client) Comment/Browse + avatar + Finish ── */}
         <div
           className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
             headerBranded ? '' : 'border-b border-gray-200 bg-white'
@@ -484,17 +504,11 @@ export default function FeedbackDetailView({
                 <ArrowLeft size={14} className="shrink-0" />
                 <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
               </button>
-            ) : (
-              <span
-                className={`text-sm font-semibold truncate max-w-[180px] ${headerBranded ? '' : 'text-gray-900'}`}
-                style={headerBranded ? { color: sidebarText } : undefined}
-              >
-                {project.title}
-              </span>
-            )}
+            ) : null}
+
             {hasBranding && branding?.logo_url && (
               <>
-                <span style={{ color: `${sidebarText}40` }}>·</span>
+                {backAction && <span style={{ color: `${sidebarText}40` }}>·</span>}
                 <img
                   src={branding.logo_url}
                   alt={branding.name}
@@ -504,7 +518,7 @@ export default function FeedbackDetailView({
             )}
             {hasBranding && !branding?.logo_url && branding?.name && (
               <>
-                <span style={{ color: `${sidebarText}40` }}>·</span>
+                {backAction && <span style={{ color: `${sidebarText}40` }}>·</span>}
                 <span
                   className="text-sm font-semibold"
                   style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
@@ -513,89 +527,41 @@ export default function FeedbackDetailView({
                 </span>
               </>
             )}
+
+            {/* Project title (always shown — replaces ReviewTopBar's title) */}
+            <span
+              className={`h-4 w-px ${headerBranded ? '' : 'bg-gray-200'}`}
+              style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+            />
+            <span
+              className={`text-sm font-medium truncate max-w-[200px] ${headerBranded ? '' : 'text-gray-900'}`}
+              style={headerBranded ? { color: sidebarText } : undefined}
+            >
+              {project.title}
+            </span>
+            {project.client_name && (
+              <span
+                className={`text-xs truncate hidden xl:inline ${headerBranded ? '' : 'text-gray-400'}`}
+                style={headerBranded ? { color: `${sidebarText}80` } : undefined}
+              >
+                · {project.client_name}
+              </span>
+            )}
+            {projectStatusDef && (
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-medium ${projectStatusDef.bg} ${projectStatusDef.text} ${projectStatusDef.border}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${projectStatusDef.dot}`} />
+                {projectStatusDef.label}
+              </span>
+            )}
           </div>
 
-          {/* Filters — hidden when single-item share */}
-          {!singleItemOnly && stripTypes.length > 1 && (
-            <>
-              <div className="w-px h-6 bg-gray-200 shrink-0" />
-              <div className="shrink-0">
-                <TypeFilterTabs
-                  items={items}
-                  availableTypes={stripTypes}
-                  typeFilter={typeFilter}
-                  onFilterChange={handleFilterChange}
-                  variant={stripVariant}
-                  sidebarTextColor={hasBranding ? sidebarText : undefined}
-                  showCounts={false}
-                />
-              </div>
-            </>
-          )}
+          {/* Spacer */}
+          <div className="flex-1 min-w-0" />
 
-          {/* Thumb strip + prev/next — hidden when single-item share */}
-          {!singleItemOnly && (
-            <>
-              <div className="w-px h-6 bg-gray-200 shrink-0" />
-              <ItemThumbStrip
-                filteredItems={filteredItems}
-                selectedItemId={selectedItemId}
-                onSelectItem={handleSidebarSelect}
-                comments={stripComments}
-                variant={stripVariant}
-                textColor={hasBranding ? sidebarText : undefined}
-                accentColor={hasBranding ? accent : undefined}
-                fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
-                className="flex-1 min-w-0"
-              />
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => goToItem(currentIdx - 1)}
-                  disabled={currentIdx <= 0}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft size={15} />
-                  Previous
-                </button>
-                <span className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
-                  {currentIdx + 1} of {filteredItems.length}
-                </span>
-                <button
-                  onClick={() => goToItem(currentIdx + 1)}
-                  disabled={currentIdx >= filteredItems.length - 1}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                  <ChevronRight size={15} />
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Spacer to push trailing controls right when thumbs are hidden */}
-          {singleItemOnly && <div className="flex-1" />}
-
-          {/* Item title (single-item mode only — replaces the thumb strip's role) */}
-          {singleItemOnly && selectedItem && (
-            <>
-              <div
-                className={`w-px h-6 shrink-0 ${hasBranding ? '' : 'bg-gray-200'}`}
-                style={hasBranding ? { backgroundColor: `${sidebarText}25` } : undefined}
-              />
-              <span
-                className={`text-sm font-semibold truncate ${hasBranding ? '' : 'text-gray-900'}`}
-                style={hasBranding ? { color: sidebarText } : undefined}
-              >
-                {selectedItem.title}
-              </span>
-            </>
-          )}
-
-          {/* Version picker — rendered only when the parent passes versions. */}
-          {versions && versions.length > 0 && onVersionChange && (
-            <>
-              <div className="w-px h-6 bg-gray-200 shrink-0" />
+          {/* Trailing controls */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Version picker */}
+            {versions && versions.length > 0 && onVersionChange && (
               <div className="shrink-0">
                 <VersionPicker
                   versions={versions}
@@ -605,13 +571,10 @@ export default function FeedbackDetailView({
                   compact
                 />
               </div>
-            </>
-          )}
+            )}
 
-          {/* Client status picker — approve / revision / reject */}
-          {isClient && onUpdateItemStatus && selectedItem && (
-            <>
-              <div className="w-px h-6 bg-gray-200 shrink-0" />
+            {/* Client status picker */}
+            {isClient && onUpdateItemStatus && selectedItem && (
               <div className="shrink-0">
                 <ClientStatusControl
                   itemId={selectedItem.id}
@@ -619,19 +582,162 @@ export default function FeedbackDetailView({
                   onChange={onUpdateItemStatus}
                 />
               </div>
-            </>
-          )}
+            )}
 
-          {/* Actions */}
-          {renderHeaderActions && (
-            <>
-              <div className="w-px h-6 bg-gray-200 shrink-0" />
+            {/* Custom actions (admin: share button etc.) */}
+            {renderHeaderActions && (
               <div className="flex items-center gap-2 shrink-0">
                 {renderHeaderActions(selectedItem)}
               </div>
-            </>
-          )}
+            )}
+
+            {/* ── Public review controls ── */}
+            {isClient && onReviewModeChange && reviewMode && (
+              <div
+                className="flex items-center rounded-full p-0.5 shrink-0"
+                style={{ backgroundColor: `${sidebarText}15` }}
+              >
+                <button
+                  type="button"
+                  onClick={() => onReviewModeChange('comment')}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold transition-colors"
+                  style={reviewMode === 'comment' ? { backgroundColor: `${sidebarText}26`, color: sidebarText } : { color: `${sidebarText}99` }}
+                >
+                  <MessageSquare size={12} />
+                  Comment
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReviewModeChange('browse')}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold transition-colors"
+                  style={reviewMode === 'browse' ? { backgroundColor: `${sidebarText}26`, color: sidebarText } : { color: `${sidebarText}99` }}
+                >
+                  <MousePointer2 size={12} />
+                  Browse
+                </button>
+              </div>
+            )}
+
+            {isClient && reviewerName !== undefined && (
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
+                style={{ backgroundColor: branding?.accent_color || '#017C87' }}
+                title={reviewerName || 'Reviewer'}
+              >
+                {(reviewerName.trim()[0] ?? 'R').toUpperCase()}
+              </div>
+            )}
+
+            {isClient && onReviewSubmitted !== undefined && (
+              reviewSubmitted ? (
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-semibold shrink-0">
+                  Review submitted
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowFinishModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[12px] font-semibold hover:brightness-110 transition-all shadow-sm shrink-0"
+                  style={{ backgroundColor: branding?.accent_color || '#017C87' }}
+                >
+                  Finish reviewing
+                  <ArrowRight size={12} />
+                </button>
+              )
+            )}
+          </div>
         </div>
+
+        {/* ── Row 2: filters + thumb strip + prev/next (hidden in single-item) ── */}
+        {!singleItemOnly && (filteredItems.length > 0 || stripTypes.length > 1) && (
+          <div
+            className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
+              headerBranded ? '' : 'border-b border-gray-200 bg-white'
+            }`}
+            style={headerBranded ? {
+              backgroundColor: `${bgSecondary}E6`,
+              borderBottom: `1px solid ${sidebarText}15`,
+              borderTop: `1px solid ${sidebarText}10`,
+            } : undefined}
+          >
+            {stripTypes.length > 1 && (
+              <>
+                <div className="shrink-0">
+                  <TypeFilterTabs
+                    items={items}
+                    availableTypes={stripTypes}
+                    typeFilter={typeFilter}
+                    onFilterChange={handleFilterChange}
+                    variant={stripVariant}
+                    sidebarTextColor={headerBranded ? sidebarText : undefined}
+                    showCounts={false}
+                  />
+                </div>
+                <div
+                  className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-200'}`}
+                  style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+                />
+              </>
+            )}
+
+            <ItemThumbStrip
+              filteredItems={filteredItems}
+              selectedItemId={selectedItemId}
+              onSelectItem={handleSidebarSelect}
+              comments={stripComments}
+              variant={stripVariant}
+              textColor={headerBranded ? sidebarText : undefined}
+              accentColor={headerBranded ? accent : undefined}
+              fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
+              className="flex-1 min-w-0"
+            />
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => goToItem(currentIdx - 1)}
+                disabled={currentIdx <= 0}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                  headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+                style={headerBranded ? {
+                  border: `1px solid ${sidebarText}25`,
+                  color: sidebarText,
+                } : undefined}
+              >
+                <ChevronLeft size={15} />
+                Previous
+              </button>
+              <span
+                className={`text-xs tabular-nums whitespace-nowrap ${headerBranded ? '' : 'text-gray-400'}`}
+                style={headerBranded ? { color: `${sidebarText}80` } : undefined}
+              >
+                {currentIdx + 1} of {filteredItems.length}
+              </span>
+              <button
+                onClick={() => goToItem(currentIdx + 1)}
+                disabled={currentIdx >= filteredItems.length - 1}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                  headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+                style={headerBranded ? {
+                  border: `1px solid ${sidebarText}25`,
+                  color: sidebarText,
+                } : undefined}
+              >
+                Next
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Comments-paused banner (client only — shown immediately below the header rows) */}
+        {isClient && project.pause_new_comments && (
+          <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-[12px] font-medium px-4 py-1.5 flex items-center justify-center gap-2 shrink-0">
+            <Pause size={12} />
+            The team has paused new comments for this review.
+          </div>
+        )}
 
         {/* Mode bar — appears when a drawing tool is active */}
         <FeedbackModeBar
@@ -761,6 +867,21 @@ export default function FeedbackDetailView({
           </div>
         </div>
       </div>
+
+      {/* Finish-reviewing modal — driven by the header's Finish button */}
+      {showFinishModal && isClient && shareToken && onReviewSubmitted && (
+        <CompleteFeedbackModal
+          shareToken={shareToken}
+          reviewerName={reviewerName ?? ''}
+          reviewerEmail={reviewerEmail ?? ''}
+          accentColor={branding?.accent_color || '#017C87'}
+          onClose={() => setShowFinishModal(false)}
+          onSubmitted={() => {
+            setShowFinishModal(false);
+            onReviewSubmitted();
+          }}
+        />
+      )}
     </>
   );
 }
