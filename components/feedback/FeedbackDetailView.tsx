@@ -8,7 +8,7 @@ import {
 import CompleteFeedbackModal from './CompleteFeedbackModal';
 import type { FeedbackProject, FeedbackItem, FeedbackComment, FeedbackStatus } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
-import { REVIEW_STATUS_CONFIG, getFeedbackStatusDef } from '@/lib/feedback/status';
+import { REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
 import { applyVersion, type VersionView } from '@/lib/feedback/versions';
 import VersionPicker from '@/components/feedback/VersionPicker';
 import type { CompanyBranding } from '@/hooks/useProposal';
@@ -470,7 +470,6 @@ export default function FeedbackDetailView({
   const stripTypes = hideFilterBar ? [] : (isAdmin && typeFilter ? [] : availableTypes);
 
   const stripVariant: 'admin' | 'branded' = isAdmin || !hasBranding ? 'admin' : 'branded';
-  const projectStatusDef = project.status ? getFeedbackStatusDef(project.status) : null;
   const stripComments = isAdmin
     ? allProjectComments
     : (comments as Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]);
@@ -545,12 +544,6 @@ export default function FeedbackDetailView({
                 style={headerBranded ? { color: `${sidebarText}80` } : undefined}
               >
                 · {project.client_name}
-              </span>
-            )}
-            {projectStatusDef && (
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-medium ${projectStatusDef.bg} ${projectStatusDef.text} ${projectStatusDef.border}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${projectStatusDef.dot}`} />
-                {projectStatusDef.label}
               </span>
             )}
           </div>
