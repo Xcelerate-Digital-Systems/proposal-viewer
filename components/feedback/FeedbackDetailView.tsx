@@ -167,8 +167,14 @@ export default function FeedbackDetailView({
   const brandingColors = useBrandingColors(branding ?? {} as CompanyBranding);
   const { accent, border, sidebarText, bgSecondary } = brandingColors;
 
-  // Use admin-style sidebar when no branding is provided (unbranded client mode)
-  const hasBranding = isClient && branding?.logo_url || branding?.name;
+  // hasBranding gates the logo/name divider in the header.
+  const hasBranding = !!(isClient && branding?.logo_url) || !!branding?.name;
+  // headerBranded drives the dark sidebar background on the header strip.
+  // Always branded on the public review side (matches the whiteboard
+  // pattern even when the company hasn't uploaded a logo). Branded on the
+  // admin side too whenever branding has been resolved (e.g. bg_secondary
+  // is set), so admin and client share the same chrome.
+  const headerBranded = isClient || !!branding?.bg_secondary;
 
   // ── Feedback hooks ──
   const {
@@ -461,9 +467,9 @@ export default function FeedbackDetailView({
         {/* ── Single-row header: back/logo · filters · ◄ thumbs ► · count · actions ── */}
         <div
           className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
-            hasBranding ? '' : 'border-b border-gray-200 bg-white'
+            headerBranded ? '' : 'border-b border-gray-200 bg-white'
           }`}
-          style={hasBranding ? { backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` } : undefined}
+          style={headerBranded ? { backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` } : undefined}
         >
           {/* Back + branding */}
           <div className="flex items-center gap-2 shrink-0 min-w-0">
@@ -471,17 +477,17 @@ export default function FeedbackDetailView({
               <button
                 onClick={backAction.onClick}
                 className={`flex items-center gap-1.5 text-sm transition-colors min-w-0 ${
-                  hasBranding ? '' : 'text-gray-500 hover:text-gray-700'
+                  headerBranded ? '' : 'text-gray-500 hover:text-gray-700'
                 }`}
-                style={hasBranding ? { color: `${sidebarText}99` } : undefined}
+                style={headerBranded ? { color: `${sidebarText}99` } : undefined}
               >
                 <ArrowLeft size={14} className="shrink-0" />
                 <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
               </button>
             ) : (
               <span
-                className={`text-sm font-semibold truncate max-w-[180px] ${hasBranding ? '' : 'text-gray-900'}`}
-                style={hasBranding ? { color: sidebarText } : undefined}
+                className={`text-sm font-semibold truncate max-w-[180px] ${headerBranded ? '' : 'text-gray-900'}`}
+                style={headerBranded ? { color: sidebarText } : undefined}
               >
                 {project.title}
               </span>

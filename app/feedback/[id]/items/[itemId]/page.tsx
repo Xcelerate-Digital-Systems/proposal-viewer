@@ -9,6 +9,8 @@ import { useToast } from '@/components/ui/Toast';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import AddVersionModal from '@/components/admin/feedback/AddVersionModal';
 import { useItemVersions } from '@/hooks/useItemVersions';
+import { type CompanyBranding } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 
 
 export default function ReviewItemViewerPage({
@@ -79,6 +81,7 @@ function ItemViewerContent({
   const [allProjectComments, setAllProjectComments] = useState<Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]>([]);
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
 
@@ -190,13 +193,24 @@ function ItemViewerContent({
     }
   }, [authorName, session?.user?.id]);
 
+  const fetchBranding = useCallback(async () => {
+    if (!companyId) return;
+    try {
+      const res = await fetch(`/api/company/branding?company_id=${companyId}`);
+      if (res.ok) setBranding(await res.json());
+    } catch {
+      // Fall back to DEFAULT_BRANDING — header just stays neutral.
+    }
+  }, [companyId]);
+
   useEffect(() => {
     fetchProject();
     fetchItems();
     fetchComments();
     fetchAllProjectComments();
     fetchReactions();
-  }, [fetchProject, fetchItems, fetchComments, fetchAllProjectComments, fetchReactions]);
+    fetchBranding();
+  }, [fetchProject, fetchItems, fetchComments, fetchAllProjectComments, fetchReactions, fetchBranding]);
 
   // ── Current item + its versions ──
   const currentItem = items.find((i) => i.id === itemId) || null;
@@ -404,6 +418,7 @@ function ItemViewerContent({
         project={project}
         items={items}
         comments={comments}
+        branding={branding}
         allProjectComments={allProjectComments}
         initialItemId={itemId}
         initialTypeFilter={typeFilter}
