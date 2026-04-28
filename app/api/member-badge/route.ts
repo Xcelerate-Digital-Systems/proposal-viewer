@@ -22,7 +22,12 @@ async function pathToDataUrl(
   const buffer = await fileData.arrayBuffer();
   const base64 = Buffer.from(buffer).toString('base64');
   const ext = storagePath.split('.').pop()?.toLowerCase();
-  const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+  const mime =
+    ext === 'png'  ? 'image/png'  :
+    ext === 'webp' ? 'image/webp' :
+    ext === 'gif'  ? 'image/gif'  :
+    ext === 'svg'  ? 'image/svg+xml' :
+    'image/jpeg';
   return `data:${mime};base64,${base64}`;
 }
 
