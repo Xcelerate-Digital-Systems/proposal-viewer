@@ -13,17 +13,14 @@ interface VersionPickerProps {
 }
 
 /**
- * Segmented v1 · v2 · v3 picker. Single-version items render nothing so we
- * don't clutter the header with a degenerate control; callers still get the
- * "+" button when they want to introduce a v2.
+ * Segmented v1 · v2 · v3 picker. Always renders at least the v1 pill so
+ * reviewers see which version they're looking at; the "+" button only
+ * shows when callers (admin) opt in via onAddVersion.
  */
 export default function VersionPicker({
   versions, activeVersionId, onChange, onAddVersion, compact = false,
 }: VersionPickerProps) {
   if (!versions.length) return null;
-
-  // Hide the picker entirely when a single-version item can't be bumped (e.g. webpage).
-  if (versions.length === 1 && !onAddVersion) return null;
 
   const active = versions.find((v) => (v.id ?? null) === activeVersionId) || versions[0];
 
