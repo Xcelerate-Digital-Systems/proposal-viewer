@@ -350,8 +350,15 @@ export default function FeedbackDetailView({
     baseHandleImageClick(e);
     if (pinActive) {
       setShowComments(true);
-      captureScreenshot(imageContainerRef.current, { cropAroundPct: { x: pctX, y: pctY } }).then((url) => {
-        if (url) setPendingScreenshotUrl(url);
+      // Wait two animation frames so React has flushed the pending pin into
+      // the DOM before html2canvas snapshots it — otherwise the screenshot
+      // captures the image without the pin marker.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          captureScreenshot(imageContainerRef.current, { cropAroundPct: { x: pctX, y: pctY } }).then((url) => {
+            if (url) setPendingScreenshotUrl(url);
+          });
+        });
       });
     }
   }, [browseMode, commentsLocked, baseHandleImageClick, pinActive, captureScreenshot, imageContainerRef]);
