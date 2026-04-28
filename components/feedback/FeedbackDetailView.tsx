@@ -165,7 +165,7 @@ export default function FeedbackDetailView({
 
   // ── Branding colors (client mode) ──
   const brandingColors = useBrandingColors(branding ?? {} as CompanyBranding);
-  const { accent, border, sidebarText } = brandingColors;
+  const { accent, border, sidebarText, bgSecondary } = brandingColors;
 
   // Use admin-style sidebar when no branding is provided (unbranded client mode)
   const hasBranding = isClient && branding?.logo_url || branding?.name;
@@ -441,13 +441,19 @@ export default function FeedbackDetailView({
 
         <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-gray-50`}>
           {/* Header */}
-          <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200 shrink-0">
+          <div
+            className={`flex items-center justify-between gap-3 px-4 py-3 shrink-0 ${
+              hasBranding ? '' : 'bg-gray-50 border-b border-gray-200'
+            }`}
+            style={hasBranding ? { backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` } : undefined}
+          >
             <div className="flex items-center gap-3 min-w-0">
               {backAction && (
                 <button
                   onClick={backAction.onClick}
                   data-no-pin
-                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  className={`flex items-center gap-1.5 text-sm transition-colors ${hasBranding ? 'hover:opacity-100' : 'text-gray-500 hover:text-gray-700'}`}
+                  style={hasBranding ? { color: `${sidebarText}99` } : undefined}
                 >
                   <ArrowLeft size={14} className="shrink-0" />
                   <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
@@ -456,13 +462,18 @@ export default function FeedbackDetailView({
               {hasBranding && branding?.logo_url ? (
                 <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
               ) : hasBranding && branding?.name ? (
-                <span className="text-sm font-semibold text-gray-800"
-                  style={{ fontFamily: fontFamily(branding.font_heading) }}>
+                <span className="text-sm font-semibold"
+                  style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}>
                   {branding.name}
                 </span>
               ) : null}
-              {hasBranding && <span className="text-gray-200">·</span>}
-              <span className="text-sm font-semibold text-gray-900 truncate">{selectedItem.title}</span>
+              {hasBranding && <span style={{ color: `${sidebarText}40` }}>·</span>}
+              <span
+                className={`text-sm font-semibold truncate ${hasBranding ? '' : 'text-gray-900'}`}
+                style={hasBranding ? { color: sidebarText } : undefined}
+              >
+                {selectedItem.title}
+              </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {isClient && onUpdateItemStatus && selectedItem && (
@@ -617,25 +628,36 @@ export default function FeedbackDetailView({
 
       <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-gray-50`}>
         {/* ── Single-row header: back/logo · filters · ◄ thumbs ► · count · actions ── */}
-        <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 bg-white shrink-0">
+        <div
+          className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
+            hasBranding ? '' : 'border-b border-gray-200 bg-white'
+          }`}
+          style={hasBranding ? { backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` } : undefined}
+        >
           {/* Back + branding */}
           <div className="flex items-center gap-2 shrink-0 min-w-0">
             {backAction ? (
               <button
                 onClick={backAction.onClick}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors min-w-0"
+                className={`flex items-center gap-1.5 text-sm transition-colors min-w-0 ${
+                  hasBranding ? '' : 'text-gray-500 hover:text-gray-700'
+                }`}
+                style={hasBranding ? { color: `${sidebarText}99` } : undefined}
               >
                 <ArrowLeft size={14} className="shrink-0" />
                 <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
               </button>
             ) : (
-              <span className="text-sm font-semibold text-gray-900 truncate max-w-[180px]">
+              <span
+                className={`text-sm font-semibold truncate max-w-[180px] ${hasBranding ? '' : 'text-gray-900'}`}
+                style={hasBranding ? { color: sidebarText } : undefined}
+              >
                 {project.title}
               </span>
             )}
             {hasBranding && branding?.logo_url && (
               <>
-                <span className="text-gray-200">·</span>
+                <span style={{ color: `${sidebarText}40` }}>·</span>
                 <img
                   src={branding.logo_url}
                   alt={branding.name}
@@ -645,10 +667,10 @@ export default function FeedbackDetailView({
             )}
             {hasBranding && !branding?.logo_url && branding?.name && (
               <>
-                <span className="text-gray-200">·</span>
+                <span style={{ color: `${sidebarText}40` }}>·</span>
                 <span
-                  className="text-sm font-semibold text-gray-800"
-                  style={{ fontFamily: fontFamily(branding.font_heading) }}
+                  className="text-sm font-semibold"
+                  style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
                 >
                   {branding.name}
                 </span>
