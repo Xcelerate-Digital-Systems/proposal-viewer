@@ -10,6 +10,7 @@ import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppeara
 import TierEditor from '@/components/admin/shared/TierEditor';
 import SplitPanelLayout from '@/components/admin/shared/SplitPanelLayout';
 import { usePackagesEditor, type UsePackagesEditorOptions } from './usePackagesEditor';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 /* ─── Props ───────────────────────────────────────────────────── */
 
@@ -19,6 +20,7 @@ export type PackagesTabEditorProps = UsePackagesEditorOptions;
 
 export default function PackagesTabEditor(props: PackagesTabEditorProps) {
   const editor = usePackagesEditor(props);
+  useReportSaveStatus(editor.saveStatus);
 
   const [showPreview, setShowPreview] = useState(true);
 
@@ -70,12 +72,6 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
           Add Page
         </button>
         <div className="ml-auto flex items-center gap-3 pr-1 pb-1.5">
-          {editor.saveStatus === 'saving' && <Loader2 size={14} className="animate-spin text-gray-300" />}
-          {editor.saveStatus === 'saved' && (
-            <span className="flex items-center gap-1 text-xs text-emerald-500">
-              <Check size={12} /> Saved
-            </span>
-          )}
           {editor.selectedId && (
             <button
               onClick={() => setShowPreview(!showPreview)}

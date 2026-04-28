@@ -1,81 +1,15 @@
 // app/templates/[id]/pricing/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import AdminLayout from '@/components/admin/AdminLayout';
-import TemplateDetailHeader from '@/components/admin/templates/TemplateDetailHeader';
 import TemplatePricingTab from '@/components/admin/templates/TemplatePricingTab';
+import { useTemplateDetail } from '@/components/admin/templates/TemplateDetailContext';
 
-/* ------------------------------------------------------------------ */
-/*  Entry point                                                        */
-/* ------------------------------------------------------------------ */
-
-export default function TemplatePricingPage({ params }: { params: { id: string } }) {
-  return (
-    <AdminLayout>
-      {(auth) => (
-        <PricingContent
-          templateId={params.id}
-          companyId={auth.companyId!}
-        />
-      )}
-    </AdminLayout>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Content                                                            */
-/* ------------------------------------------------------------------ */
-
-function PricingContent({
-  templateId,
-  companyId,
-}: {
-  templateId: string;
-  companyId: string;
-}) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-
-  const verifyTemplate = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('proposal_templates')
-      .select('id')
-      .eq('id', templateId)
-      .eq('company_id', companyId)
-      .single();
-
-    if (error || !data) {
-      router.push('/templates');
-      return;
-    }
-    setLoading(false);
-  }, [templateId, companyId, router]);
-
-  useEffect(() => {
-    verifyTemplate();
-  }, [verifyTemplate]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
-      </div>
-    );
-  }
+export default function TemplatePricingPage() {
+  const { template, companyId } = useTemplateDetail();
 
   return (
-    <div className="flex flex-col h-full">
-      <TemplateDetailHeader
-        templateId={templateId}
-        activeTab="pricing"
-      />
-
-      <div className="flex-1 min-h-0 px-6 lg:px-10 py-6 flex flex-col">
-        <TemplatePricingTab templateId={templateId} companyId={companyId} />
-      </div>
+    <div className="flex-1 min-h-0 px-6 lg:px-10 py-6 flex flex-col">
+      <TemplatePricingTab templateId={template.id} companyId={companyId} />
     </div>
   );
 }

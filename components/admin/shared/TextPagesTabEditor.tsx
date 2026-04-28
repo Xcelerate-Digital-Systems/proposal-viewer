@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Check, Loader2, Plus, Trash2, FileText } from 'lucide-react';
 import { useTextPagesEditor } from './useTextPagesEditor';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import InlineTextPageCanvas from './InlineTextPageCanvas';
 import TextPageSettingsSidebar from './TextPageSettingsSidebar';
 import { CompanyBranding } from '@/hooks/useProposal';
@@ -34,6 +35,7 @@ export default function TextPagesTabEditor({
     form, updateForm, saveStatus,
     adding, loaded, addPage, deletePage,
   } = useTextPagesEditor({ apiBase, entityKey, entityId, extraPostFields });
+  useReportSaveStatus(saveStatus);
 
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
 
@@ -134,14 +136,9 @@ export default function TextPagesTabEditor({
           Add Page
         </button>
 
-        {/* Save status — right-aligned in tab bar */}
+        {/* Save status moved to detail header (EditorSaveStatusBadge) */}
         <div className="ml-auto flex items-center gap-2 px-3 shrink-0">
-          {saveStatus === 'saving' && <Loader2 size={13} className="animate-spin text-gray-300" />}
-          {saveStatus === 'saved' && (
-            <span className="flex items-center gap-1 text-xs text-emerald-500">
-              <Check size={12} /> Saved
-            </span>
-          )}
+          {/* keep slot for layout balance even when nothing inside */}
         </div>
       </div>
       <div className="mb-4" />

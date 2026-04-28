@@ -1,17 +1,18 @@
 // components/admin/proposals/ProposalDetailHeader.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Copy, Check, Link2, ExternalLink, Trash2,
+  ArrowLeft, Copy, Check, ExternalLink, Trash2,
   FileText, Clock, Eye, CheckCircle2, X, PenLine } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
+import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
 import ProposalTabs from './ProposalTabs';
 
 /* ------------------------------------------------------------------ */
@@ -21,9 +22,9 @@ import ProposalTabs from './ProposalTabs';
 type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
 
 interface ProposalDetailHeaderProps {
-  proposalId: string;
-  activeTab: 'pages' | 'text-pages' | 'design' | 'pricing' | 'packages' | 'contents' | 'cover' | 'details';
+  proposal: Proposal;
   customDomain?: string | null;
+  onProposalChange?: (next: Proposal) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -31,55 +32,12 @@ interface ProposalDetailHeaderProps {
 /* ------------------------------------------------------------------ */
 
 const statusOptions: StatusOption<ProposalStatus>[] = [
-  {
-    value: 'draft',
-    label: 'Draft',
-    bg: 'bg-gray-100',
-    text: 'text-gray-500',
-    border: 'border-gray-200',
-    icon: <FileText size={13} />,
-  },
-  {
-    value: 'sent',
-    label: 'Sent',
-    bg: 'bg-blue-50',
-    text: 'text-blue-600',
-    border: 'border-blue-200',
-    icon: <Clock size={13} />,
-  },
-  {
-    value: 'viewed',
-    label: 'Viewed',
-    bg: 'bg-amber-50',
-    text: 'text-amber-600',
-    border: 'border-amber-200',
-    icon: <Eye size={13} />,
-  },
-  {
-    value:  'revision_requested',
-    label:  'Changes Requested',
-    bg:     'bg-amber-50',
-    text:   'text-amber-600',
-    border: 'border-amber-200',
-    icon:   <PenLine size={13} />,   // size={12} in ListCard
-  },
-
-  {
-    value: 'accepted',
-    label: 'Accepted',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-600',
-    border: 'border-emerald-200',
-    icon: <CheckCircle2 size={13} />,
-  },
-  {
-    value: 'declined',
-    label: 'Declined',
-    bg: 'bg-red-50',
-    text: 'text-red-500',
-    border: 'border-red-200',
-    icon: <X size={13} />,
-  },
+  { value: 'draft',    label: 'Draft',    bg: 'bg-gray-100',   text: 'text-gray-500',  border: 'border-gray-200',   icon: <FileText size={13} /> },
+  { value: 'sent',     label: 'Sent',     bg: 'bg-blue-50',    text: 'text-blue-600',  border: 'border-blue-200',   icon: <Clock size={13} /> },
+  { value: 'viewed',   label: 'Viewed',   bg: 'bg-amber-50',   text: 'text-amber-600', border: 'border-amber-200',  icon: <Eye size={13} /> },
+  { value: 'revision_requested', label: 'Changes Requested', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', icon: <PenLine size={13} /> },
+  { value: 'accepted', label: 'Accepted', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', icon: <CheckCircle2 size={13} /> },
+  { value: 'declined', label: 'Declined', bg: 'bg-red-50',     text: 'text-red-500',   border: 'border-red-200',    icon: <X size={13} /> },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -87,40 +45,18 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
 /* ------------------------------------------------------------------ */
 
 export default function ProposalDetailHeader({
-  proposalId,
-  activeTab,
+  proposal,
   customDomain,
+  onProposalChange,
 }: ProposalDetailHeaderProps) {
   const router = useRouter();
   const confirm = useConfirm();
   const toast = useToast();
 
-  const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  /* ── Fetch proposal ─────────────────────────────────────────── */
-
-  const fetchProposal = useCallback(async () => {
-    const { data } = await supabase
-      .from('proposals')
-      .select('*')
-      .eq('id', proposalId)
-      .single();
-
-    if (data) setProposal(data);
-    setLoading(false);
-  }, [proposalId]);
-
-  useEffect(() => {
-    fetchProposal();
-  }, [fetchProposal]);
-
-  /* ── Actions ────────────────────────────────────────────────── */
-
   const copyLink = () => {
-    if (!proposal) return;
-    const url = buildProposalUrl(proposal.share_token, customDomain, window.location.origin);
+    const url = buildProposalUrl(proposal.share_token, customDomain ?? null, window.location.origin);
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -128,11 +64,17 @@ export default function ProposalDetailHeader({
   };
 
   const handleStatusChange = async (newStatus: ProposalStatus) => {
-    if (!proposal) return;
-
     const updates: Record<string, unknown> = { status: newStatus };
     if (newStatus === 'sent' && proposal.status === 'draft') {
       updates.sent_at = new Date().toISOString();
+    }
+    // Moving back to draft (e.g. after fixing a mistake) clears the view-
+    // tracking fields so the next real send fires a fresh first-view
+    // notification instead of being suppressed by stale state.
+    if (newStatus === 'draft') {
+      updates.first_viewed_at = null;
+      updates.last_viewed_at = null;
+      updates.sent_at = null;
     }
 
     const { error } = await supabase
@@ -145,12 +87,11 @@ export default function ProposalDetailHeader({
     } else {
       const label = statusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
       toast.success(`Proposal marked as ${label}`);
-      setProposal((prev) => prev ? { ...prev, status: newStatus } as Proposal : prev);
+      onProposalChange?.({ ...proposal, status: newStatus } as Proposal);
     }
   };
 
   const deleteProposal = async () => {
-    if (!proposal) return;
     const ok = await confirm({
       title: 'Delete Proposal',
       message: `Delete "${proposal.title}"? This cannot be undone.`,
@@ -168,26 +109,6 @@ export default function ProposalDetailHeader({
     }
   };
 
-  /* ── Loading skeleton ───────────────────────────────────────── */
-
-  if (loading || !proposal) {
-    return (
-      <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
-        <div className="inline-flex items-center gap-1.5 text-sm text-gray-400 mb-3">
-          <ArrowLeft size={14} />
-          All Proposals
-        </div>
-        <div className="animate-pulse">
-          <div className="h-7 w-64 bg-gray-200 rounded mb-2" />
-          <div className="h-4 w-40 bg-gray-100 rounded mb-4" />
-          <div className="h-10 w-full bg-gray-100 rounded" />
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Render ─────────────────────────────────────────────────── */
-
   return (
     <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
       {/* Back link */}
@@ -202,9 +123,12 @@ export default function ProposalDetailHeader({
       {/* Title row */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
-            {proposal.title}
-          </h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
+              {proposal.title}
+            </h1>
+            <EditorSaveStatusBadge />
+          </div>
           <div className="flex items-center gap-3 mt-1">
             {proposal.client_name && (
               <span className="text-sm text-gray-400">{proposal.client_name}</span>
@@ -261,7 +185,7 @@ export default function ProposalDetailHeader({
       </div>
 
       {/* Tabs */}
-      <ProposalTabs proposalId={proposalId} activeTab={activeTab} />
+      <ProposalTabs proposalId={proposal.id} />
     </div>
   );
 }

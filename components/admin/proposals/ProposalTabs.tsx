@@ -2,44 +2,61 @@
 'use client';
 
 import Link from 'next/link';
-import { Pencil, DollarSign, Package, Image, Settings, Paintbrush, List, FileText } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Pencil, DollarSign, Package, Settings, Paintbrush, List, FileText } from 'lucide-react';
 
 interface ProposalTabsProps {
   proposalId: string;
-  activeTab: 'pages' | 'text-pages' | 'pricing' | 'packages' | 'contents' | 'cover' | 'design' | 'details';
 }
 
-const tabs: { key: string; label: string; icon: typeof Pencil; path: string }[] = [
-  { key: 'pages', label: 'Layout', icon: Pencil, path: 'pages' },
-  { key: 'contents', label: 'Table Of Contents', icon: List, path: 'contents' },
-  { key: 'design', label: 'Design', icon: Paintbrush, path: 'design' },
-  { key: 'cover', label: 'Cover', icon: Image, path: 'cover' },
-  { key: 'text-pages', label: 'Text', icon: FileText, path: 'text-pages' },
-  { key: 'pricing', label: 'Quote', icon: DollarSign, path: 'pricing' },
-  { key: 'packages', label: 'Packages', icon: Package, path: 'packages' },
-  { key: 'details', label: 'Details', icon: Settings, path: 'details' },
+type TabGroup = 'content' | 'setup';
+
+const tabs: { key: string; label: string; icon: typeof Pencil; path: string; group: TabGroup }[] = [
+  // Content — what the viewer sees
+  { key: 'pages',      label: 'Pages',    icon: Pencil,     path: 'pages',      group: 'content' },
+  { key: 'text-pages', label: 'Text',     icon: FileText,   path: 'text-pages', group: 'content' },
+  { key: 'pricing',    label: 'Quote',    icon: DollarSign, path: 'pricing',    group: 'content' },
+  { key: 'packages',   label: 'Packages', icon: Package,    path: 'packages',   group: 'content' },
+
+  // Setup — how it looks / how it's configured
+  { key: 'design',     label: 'Design',   icon: Paintbrush, path: 'design',     group: 'setup' },
+  { key: 'contents',   label: 'Contents', icon: List,       path: 'contents',   group: 'setup' },
+  { key: 'details',    label: 'Details',  icon: Settings,   path: 'details',    group: 'setup' },
 ];
 
+function activeKeyFromPath(pathname: string | null): string {
+  if (!pathname) return '';
+  // /proposals/[id]/<tab>...
+  const segments = pathname.split('/').filter(Boolean);
+  // segments[0]='proposals', segments[1]=id, segments[2]=tab
+  return segments[2] ?? '';
+}
 
-export default function ProposalTabs({ proposalId, activeTab }: ProposalTabsProps) {
+export default function ProposalTabs({ proposalId }: ProposalTabsProps) {
+  const pathname = usePathname();
+  const activeKey = activeKeyFromPath(pathname);
+
   return (
     <div className="flex items-center gap-1 -mb-px">
-      {tabs.map((tab) => {
-        const isActive = activeTab === tab.key;
+      {tabs.map((tab, i) => {
+        const isActive = activeKey === tab.key;
         const Icon = tab.icon;
+        const showDivider = i > 0 && tabs[i - 1].group !== tab.group;
 
         return (
-          <Link
-            key={tab.key}
-            href={`/proposals/${proposalId}/${tab.path}`}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${isActive
-              ? 'border-teal text-teal'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-          >
-            <Icon size={16} />
-            {tab.label}
-          </Link>
+          <div key={tab.key} className="flex items-center">
+            {showDivider && <div className="w-px h-5 bg-gray-200 mx-2" aria-hidden />}
+            <Link
+              href={`/proposals/${proposalId}/${tab.path}`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${isActive
+                ? 'border-teal text-teal'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              <Icon size={16} />
+              {tab.label}
+            </Link>
+          </div>
         );
       })}
     </div>

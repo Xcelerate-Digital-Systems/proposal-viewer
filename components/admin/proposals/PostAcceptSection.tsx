@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { inputClassName } from '@/components/ui/FormField';
 import { isValidHttpUrl } from '@/lib/sanitize';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 type PostAcceptAction = 'redirect' | 'message' | null;
 
@@ -58,6 +59,7 @@ export default function PostAcceptSection({
   const [redirectUrl, setRedirectUrl] = useState(initialRedirectUrl ?? '');
   const [message, setMessage] = useState(initialMessage ?? '');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  useReportSaveStatus(saveStatus);
 
   const isTemplate = table === 'proposal_templates';
 
@@ -139,12 +141,7 @@ export default function PostAcceptSection({
           </div>
         </div>
         <div className="h-5 flex items-center">
-          {saveStatus === 'saving' && <Loader2 size={13} className="animate-spin text-gray-300" />}
-          {saveStatus === 'saved' && (
-            <span className="flex items-center gap-1 text-xs text-emerald-500">
-              <Check size={12} /> Saved
-            </span>
-          )}
+          {/* save status surfaced in the detail header */}
         </div>
       </div>
 

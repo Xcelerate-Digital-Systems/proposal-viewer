@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import {
   EntityType,
   PageOrientation,
@@ -128,6 +129,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   /* ================================================================ */
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  useReportSaveStatus(saveStatus);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initializedRef = useRef(false);
   const tpInitializedRef = useRef(false);

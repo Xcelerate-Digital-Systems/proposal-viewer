@@ -8,6 +8,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import DocumentUploadModal from '@/components/admin/documents/DocumentUploadModal';
 import DocumentListCard from '@/components/admin/documents/DocumentListCard';
 import DocumentListRow from '@/components/admin/documents/DocumentListRow';
+import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 
 export default function DocumentsPage() {
   return (
@@ -74,6 +75,13 @@ function DocumentsContent({ companyId }: { companyId: string }) {
         (d.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
       )
     : documents;
+
+  const showRecent = !searchQuery && documents.length >= 8;
+  const recent = showRecent
+    ? [...documents]
+        .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at))
+        .slice(0, 3)
+    : [];
 
   return (
     <div className="flex flex-col h-full">
@@ -149,9 +157,11 @@ function DocumentsContent({ companyId }: { companyId: string }) {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
-          </div>
+          <EntityListSkeleton
+            viewMode={viewMode}
+            gridCols="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            gridGap="gap-5"
+          />
         ) : filtered.length === 0 && searchQuery ? (
           <div className="text-center py-20">
             <Search size={28} className="text-faint mx-auto mb-3" />
@@ -172,28 +182,65 @@ function DocumentsContent({ companyId }: { companyId: string }) {
               New Document
             </button>
           </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((doc) => (
-              <DocumentListCard
-                key={doc.id}
-                document={doc}
-                onRefresh={fetchDocuments}
-                customDomain={customDomain}
-              />
-            ))}
-          </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((doc) => (
-              <DocumentListRow
-                key={doc.id}
-                document={doc}
-                onRefresh={fetchDocuments}
-                customDomain={customDomain}
-              />
-            ))}
-          </div>
+          <>
+            {showRecent && (
+              <section className="mb-8">
+                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mb-3">
+                  Recently edited
+                </h2>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {recent.map((doc) => (
+                      <DocumentListCard
+                        key={`recent-${doc.id}`}
+                        document={doc}
+                        onRefresh={fetchDocuments}
+                        customDomain={customDomain}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recent.map((doc) => (
+                      <DocumentListRow
+                        key={`recent-${doc.id}`}
+                        document={doc}
+                        onRefresh={fetchDocuments}
+                        customDomain={customDomain}
+                      />
+                    ))}
+                  </div>
+                )}
+                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mt-8 mb-3">
+                  All documents · {documents.length}
+                </h2>
+              </section>
+            )}
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filtered.map((doc) => (
+                  <DocumentListCard
+                    key={doc.id}
+                    document={doc}
+                    onRefresh={fetchDocuments}
+                    customDomain={customDomain}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map((doc) => (
+                  <DocumentListRow
+                    key={doc.id}
+                    document={doc}
+                    onRefresh={fetchDocuments}
+                    customDomain={customDomain}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

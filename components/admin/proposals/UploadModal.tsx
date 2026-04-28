@@ -12,7 +12,7 @@ interface UploadModalProps {
   companyId: string;
   onClose: () => void;
   onSuccess: () => void;
-  initialTab?: 'upload' | 'template' | 'quote';
+  initialTab?: 'upload' | 'template' | 'quote' | 'quote-template';
 }
 
 const formatSize = (bytes: number | null) => {
@@ -22,9 +22,10 @@ const formatSize = (bytes: number | null) => {
 };
 
 const modalTitles = {
-  upload:   'New Proposal',
-  template: 'From Template',
-  quote:    'New Quote',
+  upload:           'New Proposal',
+  template:         'New Proposal from Template',
+  quote:            'New Quote',
+  'quote-template': 'New Quote from Template',
 };
 
 export default function UploadModal({ companyId, onClose, onSuccess, initialTab = 'upload' }: UploadModalProps) {
@@ -246,6 +247,18 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
           <div className="p-6">
             <CreateFromTemplate
               companyId={companyId}
+              entityType="proposal"
+              onBack={onClose}
+              onSuccess={() => { onSuccess(); onClose(); }}
+            />
+          </div>
+        )}
+
+        {mode === 'quote-template' && (
+          <div className="p-6">
+            <CreateFromTemplate
+              companyId={companyId}
+              entityType="quote"
               onBack={onClose}
               onSuccess={() => { onSuccess(); onClose(); }}
             />

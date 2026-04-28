@@ -13,6 +13,7 @@ import PricingTotals from '@/components/admin/pricing/PricingTotals';
 import PricingPaymentSchedule from '@/components/admin/pricing/PricingPaymentSchedule';
 import SplitPanelLayout from '@/components/admin/shared/SplitPanelLayout';
 import { usePricingEditor, type UsePricingEditorOptions } from './usePricingEditor';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 /* ─── Props ───────────────────────────────────────────────────── */
 
@@ -29,6 +30,7 @@ const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white
 
 export default function PricingTabEditor({ hideProposalDate, proposalId, ...props }: PricingTabEditorProps) {
   const editor = usePricingEditor(props);
+  useReportSaveStatus(editor.saveStatus);
 
   const [showPreview, setShowPreview] = useState(true);
 
@@ -122,12 +124,6 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
           Add Page
         </button>
         <div className="ml-auto flex items-center gap-3 pr-1 pb-1.5">
-          {editor.saveStatus === 'saving' && <Loader2 size={14} className="animate-spin text-gray-300" />}
-          {editor.saveStatus === 'saved' && (
-            <span className="flex items-center gap-1 text-xs text-emerald-500">
-              <Check size={12} /> Saved
-            </span>
-          )}
           {editor.selectedId && (
             <button
               onClick={() => setShowPreview(!showPreview)}

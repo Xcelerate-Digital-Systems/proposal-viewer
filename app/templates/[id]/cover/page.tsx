@@ -1,83 +1,8 @@
 // app/templates/[id]/cover/page.tsx
-'use client';
+// Cover and Design were merged into a single tab — redirect any
+// existing /cover bookmarks to /design.
+import { redirect } from 'next/navigation';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase, type ProposalTemplate } from '@/lib/supabase';
-import AdminLayout from '@/components/admin/AdminLayout';
-import TemplateDetailHeader from '@/components/admin/templates/TemplateDetailHeader';
-import TemplateCoverEditor from '@/components/admin/templates/TemplateCoverEditor';
-
-/* ------------------------------------------------------------------ */
-/*  Entry point                                                        */
-/* ------------------------------------------------------------------ */
-
-export default function TemplateCoverPage({ params }: { params: { id: string } }) {
-  return (
-    <AdminLayout>
-      {(auth) => (
-        <CoverContent
-          templateId={params.id}
-          companyId={auth.companyId!}
-        />
-      )}
-    </AdminLayout>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Content                                                            */
-/* ------------------------------------------------------------------ */
-
-function CoverContent({
-  templateId,
-  companyId,
-}: {
-  templateId: string;
-  companyId: string;
-}) {
-  const router = useRouter();
-  const [template, setTemplate] = useState<ProposalTemplate | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchTemplate = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('proposal_templates')
-      .select('*')
-      .eq('id', templateId)
-      .eq('company_id', companyId)
-      .single();
-
-    if (error || !data) {
-      router.push('/templates');
-      return;
-    }
-    setTemplate(data);
-    setLoading(false);
-  }, [templateId, companyId, router]);
-
-  useEffect(() => {
-    fetchTemplate();
-  }, [fetchTemplate]);
-
-  if (loading || !template) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full">
-      <TemplateDetailHeader
-        templateId={templateId}
-        activeTab="cover"
-      />
-
-      <div className="flex-1 px-6 lg:px-10 py-6">
-        <TemplateCoverEditor template={template} />
-      </div>
-    </div>
-  );
+export default function TemplateCoverRedirect({ params }: { params: { id: string } }) {
+  redirect(`/templates/${params.id}/design`);
 }

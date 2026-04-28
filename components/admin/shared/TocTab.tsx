@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import TocPreview from '@/components/admin/shared/TocPreview';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 
@@ -73,6 +74,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  useReportSaveStatus(saveStatus);
   const [settings, setSettings] = useState<TocSettings>(parseTocSettings(null));
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -335,12 +337,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          {saveStatus === 'saving' && <span className="text-xs text-gray-400">Saving…</span>}
-          {saveStatus === 'saved' && (
-            <span className="text-xs text-emerald-500 flex items-center gap-1">
-              <Check size={12} /> Saved
-            </span>
-          )}
+          {/* save status surfaced in the detail header */}
           <button
             onClick={() => updateSettings({ enabled: !settings.enabled })}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${

@@ -7,11 +7,13 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { template_name, template_description, file_path, company_id } = await req.json();
+    const { template_name, template_description, file_path, company_id, entity_type } = await req.json();
 
     if (!template_name || !file_path || !company_id) {
       return NextResponse.json({ error: 'Missing template_name, file_path, or company_id' }, { status: 400 });
     }
+
+    const resolvedEntityType: 'proposal' | 'quote' = entity_type === 'quote' ? 'quote' : 'proposal';
 
     const supabase = createServiceClient();
 
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
         name: template_name,
         description: template_description || null,
         company_id,
+        entity_type: resolvedEntityType,
       })
       .select()
       .single();

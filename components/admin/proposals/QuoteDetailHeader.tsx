@@ -1,19 +1,20 @@
 // components/admin/proposals/QuoteDetailHeader.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  DollarSign, Image, Settings, Package, AlignLeft, Pencil, List,
+  DollarSign, Paintbrush, Settings, Package, AlignLeft, Pencil, List,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
+import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -22,9 +23,9 @@ import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdow
 type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
 
 interface QuoteDetailHeaderProps {
-  proposalId: string;
-  activeTab: 'quote-pages' | 'quote-contents' | 'quote-cover' | 'quote-pricing' | 'quote-packages' | 'quote-text-pages' | 'quote-details';
+  proposal: Proposal;
   customDomain?: string | null;
+  onProposalChange?: (next: Proposal) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -40,51 +41,46 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
   { value: 'declined', label: 'Declined', bg: 'bg-red-50',      text: 'text-red-500',    border: 'border-red-200',    icon: <X size={13} /> },
 ];
 
-const tabs: { key: string; label: string; icon: typeof DollarSign; path: string }[] = [
-  { key: 'quote-pages',       label: 'Layout',            icon: Pencil,     path: 'quote-pages' },
-  { key: 'quote-contents',    label: 'Table Of Contents', icon: List,       path: 'quote-contents' },
-  { key: 'quote-cover',       label: 'Cover',             icon: Image,      path: 'quote-cover' },
-  { key: 'quote-pricing',     label: 'Quote',             icon: DollarSign, path: 'quote-pricing' },
-  { key: 'quote-packages',    label: 'Packages',          icon: Package,    path: 'quote-packages' },
-  { key: 'quote-text-pages',  label: 'Text Pages',        icon: AlignLeft,  path: 'quote-text-pages' },
-  { key: 'quote-details',     label: 'Details',           icon: Settings,   path: 'quote-details' },
+type TabGroup = 'content' | 'setup';
+
+const tabs: { key: string; label: string; icon: typeof DollarSign; path: string; group: TabGroup }[] = [
+  // Content
+  { key: 'quote-pages',       label: 'Pages',     icon: Pencil,     path: 'quote-pages',      group: 'content' },
+  { key: 'quote-text-pages',  label: 'Text',      icon: AlignLeft,  path: 'quote-text-pages', group: 'content' },
+  { key: 'quote-pricing',     label: 'Quote',     icon: DollarSign, path: 'quote-pricing',    group: 'content' },
+  { key: 'quote-packages',    label: 'Packages',  icon: Package,    path: 'quote-packages',   group: 'content' },
+
+  // Setup
+  { key: 'quote-cover',       label: 'Design',    icon: Paintbrush, path: 'quote-cover',      group: 'setup' },
+  { key: 'quote-contents',    label: 'Contents',  icon: List,       path: 'quote-contents',   group: 'setup' },
+  { key: 'quote-details',     label: 'Details',   icon: Settings,   path: 'quote-details',    group: 'setup' },
 ];
+
+function activeKeyFromPath(pathname: string | null): string {
+  if (!pathname) return '';
+  const segments = pathname.split('/').filter(Boolean);
+  return segments[2] ?? '';
+}
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
 export default function QuoteDetailHeader({
-  proposalId,
-  activeTab,
+  proposal,
   customDomain,
+  onProposalChange,
 }: QuoteDetailHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const confirm = useConfirm();
   const toast = useToast();
 
-  const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-
-  const fetchProposal = useCallback(async () => {
-    const { data } = await supabase
-      .from('proposals')
-      .select('*')
-      .eq('id', proposalId)
-      .single();
-
-    if (data) setProposal(data);
-    setLoading(false);
-  }, [proposalId]);
-
-  useEffect(() => {
-    fetchProposal();
-  }, [fetchProposal]);
+  const activeKey = activeKeyFromPath(pathname);
 
   const copyLink = () => {
-    if (!proposal) return;
-    const url = buildProposalUrl(proposal.share_token, customDomain, window.location.origin);
+    const url = buildProposalUrl(proposal.share_token, customDomain ?? null, window.location.origin);
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -92,10 +88,16 @@ export default function QuoteDetailHeader({
   };
 
   const handleStatusChange = async (newStatus: ProposalStatus) => {
-    if (!proposal) return;
     const updates: Record<string, unknown> = { status: newStatus };
     if (newStatus === 'sent' && proposal.status === 'draft') {
       updates.sent_at = new Date().toISOString();
+    }
+    // Reset view-tracking when moving back to draft so a later real send
+    // still triggers the first-view notification.
+    if (newStatus === 'draft') {
+      updates.first_viewed_at = null;
+      updates.last_viewed_at = null;
+      updates.sent_at = null;
     }
     const { error } = await supabase.from('proposals').update(updates).eq('id', proposal.id);
     if (error) {
@@ -103,12 +105,11 @@ export default function QuoteDetailHeader({
     } else {
       const label = statusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
       toast.success(`Quote marked as ${label}`);
-      setProposal((prev) => prev ? { ...prev, status: newStatus } as Proposal : prev);
+      onProposalChange?.({ ...proposal, status: newStatus } as Proposal);
     }
   };
 
   const deleteQuote = async () => {
-    if (!proposal) return;
     const ok = await confirm({
       title: 'Delete Quote',
       message: `Delete "${proposal.title}"? This cannot be undone.`,
@@ -125,22 +126,6 @@ export default function QuoteDetailHeader({
     }
   };
 
-  if (loading || !proposal) {
-    return (
-      <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
-        <div className="inline-flex items-center gap-1.5 text-sm text-gray-400 mb-3">
-          <ArrowLeft size={14} />
-          All Proposals
-        </div>
-        <div className="animate-pulse">
-          <div className="h-7 w-64 bg-gray-200 rounded mb-2" />
-          <div className="h-4 w-40 bg-gray-100 rounded mb-4" />
-          <div className="h-10 w-full bg-gray-100 rounded" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
       {/* Back link */}
@@ -155,13 +140,14 @@ export default function QuoteDetailHeader({
       {/* Title row */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
               {proposal.title}
             </h1>
             <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
               Quote
             </span>
+            <EditorSaveStatusBadge />
           </div>
           <div className="flex items-center gap-3 mt-1">
             {proposal.client_name && (
@@ -213,22 +199,25 @@ export default function QuoteDetailHeader({
 
       {/* Tabs */}
       <div className="flex items-center gap-1 -mb-px">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
+        {tabs.map((tab, i) => {
+          const isActive = activeKey === tab.key;
           const Icon = tab.icon;
+          const showDivider = i > 0 && tabs[i - 1].group !== tab.group;
           return (
-            <Link
-              key={tab.key}
-              href={`/proposals/${proposalId}/${tab.path}`}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                isActive
-                  ? 'border-teal text-teal'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Icon size={16} />
-              {tab.label}
-            </Link>
+            <div key={tab.key} className="flex items-center">
+              {showDivider && <div className="w-px h-5 bg-gray-200 mx-2" aria-hidden />}
+              <Link
+                href={`/proposals/${proposal.id}/${tab.path}`}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  isActive
+                    ? 'border-teal text-teal'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon size={16} />
+                {tab.label}
+              </Link>
+            </div>
           );
         })}
       </div>

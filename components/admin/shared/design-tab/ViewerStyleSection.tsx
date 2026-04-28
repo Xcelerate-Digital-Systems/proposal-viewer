@@ -3,7 +3,7 @@
 
 import { useRef } from 'react';
 import {
-  Check, Loader2, Upload, Trash2,
+  Loader2, Upload, Trash2,
   Image as ImageIcon, RotateCcw, Type, Palette, Hash,
 } from 'lucide-react';
 import FontSelect from '@/components/admin/shared/FontSelect';
@@ -114,16 +114,6 @@ export default function ViewerStyleSection({
           <Palette size={15} className="text-gray-400" />
           <h4 className="text-sm font-semibold text-gray-900">Viewer Style</h4>
         </div>
-        {saveStatus === 'saving' && (
-          <span className="flex items-center gap-1.5 text-xs text-gray-400">
-            <Loader2 size={12} className="animate-spin" /> Saving…
-          </span>
-        )}
-        {saveStatus === 'saved' && (
-          <span className="flex items-center gap-1.5 text-xs text-emerald-500">
-            <Check size={12} /> Saved
-          </span>
-        )}
       </div>
 
       <p className="text-xs text-gray-400 mb-5">

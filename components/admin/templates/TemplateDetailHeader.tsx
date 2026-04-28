@@ -1,13 +1,13 @@
 // components/admin/templates/TemplateDetailHeader.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react';
 import { supabase, type ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
 import TemplateTabs from './TemplateTabs';
 
 /* ------------------------------------------------------------------ */
@@ -15,46 +15,19 @@ import TemplateTabs from './TemplateTabs';
 /* ------------------------------------------------------------------ */
 
 interface TemplateDetailHeaderProps {
-  templateId: string;
-  activeTab: 'pages' | 'text-pages' | 'contents' | 'pricing' | 'packages' | 'cover' | 'design' | 'details';
+  template: ProposalTemplate;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function TemplateDetailHeader({
-  templateId,
-  activeTab,
-}: TemplateDetailHeaderProps) {
+export default function TemplateDetailHeader({ template }: TemplateDetailHeaderProps) {
   const router = useRouter();
   const confirm = useConfirm();
   const toast = useToast();
 
-  const [template, setTemplate] = useState<ProposalTemplate | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  /* ── Fetch template ─────────────────────────────────────────── */
-
-  const fetchTemplate = useCallback(async () => {
-    const { data } = await supabase
-      .from('proposal_templates')
-      .select('*')
-      .eq('id', templateId)
-      .single();
-
-    if (data) setTemplate(data);
-    setLoading(false);
-  }, [templateId]);
-
-  useEffect(() => {
-    fetchTemplate();
-  }, [fetchTemplate]);
-
-  /* ── Actions ────────────────────────────────────────────────── */
-
   const deleteTemplate = async () => {
-    if (!template) return;
     const ok = await confirm({
       title: 'Delete Template',
       message: `Delete "${template.name}" and all its pages? This cannot be undone.`,
@@ -97,26 +70,6 @@ export default function TemplateDetailHeader({
     }
   };
 
-  /* ── Loading skeleton ───────────────────────────────────────── */
-
-  if (loading || !template) {
-    return (
-      <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
-        <div className="inline-flex items-center gap-1.5 text-sm text-gray-400 mb-3">
-          <ArrowLeft size={14} />
-          All Templates
-        </div>
-        <div className="animate-pulse">
-          <div className="h-7 w-64 bg-gray-200 rounded mb-2" />
-          <div className="h-4 w-40 bg-gray-100 rounded mb-4" />
-          <div className="h-10 w-full bg-gray-100 rounded" />
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Render ─────────────────────────────────────────────────── */
-
   return (
     <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
       {/* Back link */}
@@ -131,9 +84,17 @@ export default function TemplateDetailHeader({
       {/* Title row */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
-            {template.name}
-          </h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
+              {template.name}
+            </h1>
+            {template.entity_type === 'quote' && (
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                Quote Template
+              </span>
+            )}
+            <EditorSaveStatusBadge />
+          </div>
           {template.description && (
             <p className="text-sm text-gray-400 mt-1 truncate max-w-[400px]">
               {template.description}
@@ -170,7 +131,7 @@ export default function TemplateDetailHeader({
       </div>
 
       {/* Tabs */}
-      <TemplateTabs templateId={templateId} activeTab={activeTab} />
+      <TemplateTabs templateId={template.id} />
     </div>
   );
 }

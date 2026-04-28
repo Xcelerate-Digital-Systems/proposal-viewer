@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import { FormField } from '@/components/ui/FormField';
@@ -10,9 +11,17 @@ interface CreateFromTemplateProps {
   companyId: string;
   onBack: () => void;
   onSuccess: () => void;
+  /** When set, only templates of this type are shown and the created proposal inherits the type. */
+  entityType?: 'proposal' | 'quote';
 }
 
-export default function CreateFromTemplate({ companyId, onBack, onSuccess }: CreateFromTemplateProps) {
+export default function CreateFromTemplate({
+  companyId,
+  onBack,
+  onSuccess,
+  entityType,
+}: CreateFromTemplateProps) {
+  const router = useRouter();
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ProposalTemplate | null>(null);
   const [pages, setPages] = useState<any[]>([]);
@@ -28,16 +37,19 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
   const [description, setDescription] = useState('');
 
   useEffect(() => {
-    supabase
+    let q = supabase
       .from('proposal_templates')
       .select('*')
       .eq('company_id', companyId)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setTemplates(data || []);
-        setLoading(false);
-      });
-  }, [companyId]);
+      .order('created_at', { ascending: false });
+    if (entityType) {
+      q = q.eq('entity_type', entityType);
+    }
+    q.then(({ data }) => {
+      setTemplates(data || []);
+      setLoading(false);
+    });
+  }, [companyId, entityType]);
 
   const selectTemplate = async (t: ProposalTemplate) => {
     setSelectedTemplate(t);
@@ -161,6 +173,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           page_names:      pageNames,
           company_id:      companyId,
           created_by_name: creatorName,
+          entity_type:     selectedTemplate.entity_type,
           // ── Cover / design fields copied from template ──────────────
           prepared_by:                    selectedTemplate.prepared_by || creatorName,
           prepared_by_member_id:          selectedTemplate.prepared_by_member_id || null,
@@ -232,7 +245,12 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
       }
 
       setStatus('Done!');
-      setTimeout(() => onSuccess(), 300);
+      // Navigate straight into the new entity so the user can keep working.
+      const dest = selectedTemplate.entity_type === 'quote'
+        ? `/proposals/${newProposal.proposal_id}/quote-pricing`
+        : `/proposals/${newProposal.proposal_id}/pages`;
+      onSuccess();
+      setTimeout(() => router.push(dest), 50);
     } catch (err: any) {
       console.error('Create from template failed:', err);
       const msg = err?.message || 'Unknown error';

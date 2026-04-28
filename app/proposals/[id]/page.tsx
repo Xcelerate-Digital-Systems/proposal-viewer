@@ -1,19 +1,7 @@
 // app/proposals/[id]/page.tsx
-'use client';
-
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// Server-side redirect to the default tab.
+import { redirect } from 'next/navigation';
 
 export default function ProposalDetailRedirect({ params }: { params: { id: string } }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace(`/proposals/${params.id}/pages`);
-  }, [params.id, router]);
-
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
-    </div>
-  );
+  redirect(`/proposals/${params.id}/pages`);
 }

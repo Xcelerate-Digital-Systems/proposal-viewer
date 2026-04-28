@@ -1,7 +1,8 @@
 // components/admin/page-editor/PageEditor.tsx
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import {
   DndContext, closestCenter, DragEndEvent,
   PointerSensor, useSensor, useSensors,
@@ -53,6 +54,16 @@ export default function PageEditor({
     pages, pagesLoaded, saveStatuses, processing,
     pdfPages, updatePage, reorderPages, replacePdfPage, flushSaves,
   } = editor;
+
+  // Aggregate per-page save status into a single tab-level status for the
+  // detail header badge. Per-row badges remain in place where they apply.
+  const aggregatedSaveStatus = useMemo(() => {
+    const values = Object.values(saveStatuses);
+    if (values.includes('saving')) return 'saving' as const;
+    if (values.includes('saved')) return 'saved' as const;
+    return 'idle' as const;
+  }, [saveStatuses]);
+  useReportSaveStatus(aggregatedSaveStatus);
 
   const actions = usePageEditorActions(editor);
   const {

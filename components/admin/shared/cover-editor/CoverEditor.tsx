@@ -2,9 +2,10 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Check, Loader2, Layout } from 'lucide-react';
+import { Layout } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import {
   EntityType,
   CoverEditorEntity,
@@ -46,6 +47,7 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
 
   /* ── Autosave state ────────────────────────────────────────── */
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  useReportSaveStatus(saveStatus);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initializedRef = useRef(false);
 
@@ -330,16 +332,6 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900">Cover Page Settings</h4>
-        {saveStatus === 'saving' && (
-          <span className="flex items-center gap-1.5 text-xs text-gray-400">
-            <Loader2 size={12} className="animate-spin" /> Saving…
-          </span>
-        )}
-        {saveStatus === 'saved' && (
-          <span className="flex items-center gap-1.5 text-xs text-emerald-500">
-            <Check size={12} /> Saved
-          </span>
-        )}
       </div>
 
       {/* ── Two-column split — fixed height, left scrolls ───── */}

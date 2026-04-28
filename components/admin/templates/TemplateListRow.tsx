@@ -84,9 +84,16 @@ if (pages && pages.length > 0) {
 
       {/* Name + description */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-medium text-ink truncate group-hover:text-teal transition-colors">
-          {t.name}
-        </h3>
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-sm font-medium text-ink truncate group-hover:text-teal transition-colors">
+            {t.name}
+          </h3>
+          {t.entity_type === 'quote' && (
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+              Quote
+            </span>
+          )}
+        </div>
         {t.description && (
           <p className="text-xs text-faint truncate">{t.description}</p>
         )}

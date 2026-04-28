@@ -171,6 +171,8 @@ export type ProposalTemplate = {
   id: string;
   name: string;
   description: string | null;
+  /** Whether this template is for full proposals or quick quotes. */
+  entity_type: 'proposal' | 'quote';
   page_count: number;
   cover_image_path: string | null;
   cover_enabled: boolean;

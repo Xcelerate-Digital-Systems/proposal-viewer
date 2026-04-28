@@ -1,105 +1,39 @@
 // app/proposals/[id]/design/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase, type Proposal } from '@/lib/supabase';
-import AdminLayout from '@/components/admin/AdminLayout';
-import ProposalDetailHeader from '@/components/admin/proposals/ProposalDetailHeader';
 import DesignTab from '@/components/admin/shared/DesignTab';
+import CoverEditor from '@/components/admin/proposals/CoverEditor';
+import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
 
-export default function ProposalDesignPage({ params }: { params: { id: string } }) {
-  return (
-    <AdminLayout>
-      {(auth) => (
-        <DesignContent proposalId={params.id} companyId={auth.companyId!} />
-      )}
-    </AdminLayout>
-  );
-}
-
-function DesignContent({ proposalId, companyId }: { proposalId: string; companyId: string }) {
-  const router = useRouter();
-  const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [customDomain, setCustomDomain] = useState<string | null>(null);
-  const [companyBgPrimary, setCompanyBgPrimary] = useState('#0f0f0f');
-
-  const fetchProposal = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('proposals')
-      .select('*')
-      .eq('id', proposalId)
-      .eq('company_id', companyId)
-      .single();
-
-    if (error || !data) {
-      router.push('/');
-      return;
-    }
-    setProposal(data);
-    setLoading(false);
-  }, [proposalId, companyId, router]);
-
-  const fetchCompany = useCallback(async () => {
-    const { data } = await supabase
-      .from('companies')
-      .select('custom_domain, domain_verified, bg_primary')
-      .eq('id', companyId)
-      .single();
-    if (data?.domain_verified && data.custom_domain) {
-      setCustomDomain(data.custom_domain);
-    }
-    if (data?.bg_primary) {
-      setCompanyBgPrimary(data.bg_primary);
-    }
-  }, [companyId]);
-
-  useEffect(() => {
-    fetchProposal();
-    fetchCompany();
-  }, [fetchProposal, fetchCompany]);
-
-  if (loading || !proposal) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
-      </div>
-    );
-  }
+export default function ProposalDesignPage() {
+  const { proposal, refetch, companyId, companyBgPrimary } = useProposalDetail();
 
   return (
-    <div className="flex flex-col h-full">
-      <ProposalDetailHeader
-        proposalId={proposalId}
-        activeTab="design"
-        customDomain={customDomain}
+    <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6 space-y-6">
+      <DesignTab
+        type="proposal"
+        entityId={proposal.id}
+        companyId={companyId}
+        initialBgImagePath={proposal.bg_image_path}
+        initialBgImageOverlayOpacity={proposal.bg_image_overlay_opacity}
+        companyBgPrimary={companyBgPrimary}
+        onSave={refetch}
+        initialPageOrientation={proposal.page_orientation || 'portrait'}
+        initialTextPageBgColor={proposal.text_page_bg_color ?? null}
+        initialTextPageTextColor={proposal.text_page_text_color ?? null}
+        initialTextPageHeadingColor={proposal.text_page_heading_color ?? null}
+        initialTextPageFontSize={proposal.text_page_font_size ?? null}
+        initialTextPageBorderEnabled={proposal.text_page_border_enabled ?? null}
+        initialTextPageBorderColor={proposal.text_page_border_color ?? null}
+        initialTextPageBorderRadius={proposal.text_page_border_radius ?? null}
+        initialTextPageLayout={proposal.text_page_layout ?? null}
+        initialTitleFontFamily={proposal.title_font_family ?? null}
+        initialTitleFontWeight={proposal.title_font_weight ?? null}
+        initialTitleFontSize={proposal.title_font_size ?? null}
+        initialPageNumCircleColor={proposal.page_num_circle_color ?? null}
+        initialPageNumTextColor={proposal.page_num_text_color ?? null}
       />
-      <div className="flex-1 px-6 lg:px-10 py-6">
-        <DesignTab
-          type="proposal"
-          entityId={proposalId}
-          companyId={companyId}
-          initialBgImagePath={proposal.bg_image_path}
-          initialBgImageOverlayOpacity={proposal.bg_image_overlay_opacity}
-          companyBgPrimary={companyBgPrimary}
-          onSave={fetchProposal}
-          initialPageOrientation={proposal.page_orientation || 'portrait'}
-          initialTextPageBgColor={proposal.text_page_bg_color ?? null}
-          initialTextPageTextColor={proposal.text_page_text_color ?? null}
-          initialTextPageHeadingColor={proposal.text_page_heading_color ?? null}
-          initialTextPageFontSize={proposal.text_page_font_size ?? null}
-          initialTextPageBorderEnabled={proposal.text_page_border_enabled ?? null}
-          initialTextPageBorderColor={proposal.text_page_border_color ?? null}
-          initialTextPageBorderRadius={proposal.text_page_border_radius ?? null}
-          initialTextPageLayout={proposal.text_page_layout ?? null}
-          initialTitleFontFamily={proposal.title_font_family ?? null}
-          initialTitleFontWeight={proposal.title_font_weight ?? null}
-          initialTitleFontSize={proposal.title_font_size ?? null}
-          initialPageNumCircleColor={proposal.page_num_circle_color ?? null}
-          initialPageNumTextColor={proposal.page_num_text_color ?? null}
-        />
-      </div>
+      <CoverEditor proposal={proposal} onSave={refetch} />
     </div>
   );
 }

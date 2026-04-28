@@ -12,6 +12,7 @@ interface TemplateUploadModalProps {
   companyId: string;
   onClose: () => void;
   onSuccess: () => void;
+  defaultEntityType?: 'proposal' | 'quote';
 }
 
 const formatSize = (bytes: number) => {
@@ -19,11 +20,17 @@ const formatSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export default function TemplateUploadModal({ companyId, onClose, onSuccess }: TemplateUploadModalProps) {
+export default function TemplateUploadModal({
+  companyId,
+  onClose,
+  onSuccess,
+  defaultEntityType = 'proposal',
+}: TemplateUploadModalProps) {
   const router = useRouter();
   const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [entityType, setEntityType] = useState<'proposal' | 'quote'>(defaultEntityType);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -40,7 +47,12 @@ export default function TemplateUploadModal({ companyId, onClose, onSuccess }: T
       setStatus('Creating template...');
       const { data, error } = await supabase
         .from('proposal_templates')
-        .insert({ name: name.trim(), description: description.trim() || null, company_id: companyId })
+        .insert({
+          name: name.trim(),
+          description: description.trim() || null,
+          company_id: companyId,
+          entity_type: entityType,
+        })
         .select('id')
         .single();
 
@@ -101,6 +113,7 @@ export default function TemplateUploadModal({ companyId, onClose, onSuccess }: T
         template_description: description.trim() || null,
         file_path: tempPath,
         company_id: companyId,
+        entity_type: entityType,
       }),
     });
 
@@ -132,6 +145,36 @@ export default function TemplateUploadModal({ companyId, onClose, onSuccess }: T
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Template type</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setEntityType('proposal')}
+                disabled={uploading}
+                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  entityType === 'proposal'
+                    ? 'bg-teal/10 border-teal text-teal'
+                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                Proposal
+              </button>
+              <button
+                type="button"
+                onClick={() => setEntityType('quote')}
+                disabled={uploading}
+                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  entityType === 'quote'
+                    ? 'bg-teal/10 border-teal text-teal'
+                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                Quote
+              </button>
+            </div>
+          </div>
+
           <FormFields
             fields={fieldsByType.template}
             values={{ name, description }}

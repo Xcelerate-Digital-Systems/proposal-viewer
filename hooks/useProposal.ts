@@ -124,8 +124,10 @@ export function useProposal(token: string) {
     } catch { /* No session */ }
     setIsTeamPreview(teamPreview);
 
-    // Only track views for actual client views
-    if (!teamPreview) {
+    // Only track views for actual client views, and never while in draft
+    // (drafts can be opened internally for QA — those views shouldn't count as
+    // "first seen by client" and shouldn't fire the proposal_viewed webhook).
+    if (!teamPreview && data.status !== 'draft') {
       const isFirstView = !data.first_viewed_at;
       const now = new Date().toISOString();
       const updates: Record<string, string> = { last_viewed_at: now };

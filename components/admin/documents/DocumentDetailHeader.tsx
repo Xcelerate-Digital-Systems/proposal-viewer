@@ -1,7 +1,7 @@
 // components/admin/documents/DocumentDetailHeader.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Copy, Check, ExternalLink, Trash2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { supabase, type Document as DocType } from '@/lib/supabase';
 import { buildDocumentUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
 import DocumentTabs from './DocumentTabs';
 
 /* ------------------------------------------------------------------ */
@@ -16,8 +17,7 @@ import DocumentTabs from './DocumentTabs';
 /* ------------------------------------------------------------------ */
 
 interface DocumentDetailHeaderProps {
-  documentId: string;
-  activeTab: 'pages' | 'text-pages' | 'contents' | 'cover' | 'design' | 'details';
+  document: DocType;
   customDomain?: string | null;
 }
 
@@ -26,40 +26,17 @@ interface DocumentDetailHeaderProps {
 /* ------------------------------------------------------------------ */
 
 export default function DocumentDetailHeader({
-  documentId,
-  activeTab,
+  document: doc,
   customDomain,
 }: DocumentDetailHeaderProps) {
   const router = useRouter();
   const confirm = useConfirm();
   const toast = useToast();
 
-  const [doc, setDoc] = useState<DocType | null>(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  /* ── Fetch document ─────────────────────────────────────────── */
-
-  const fetchDocument = useCallback(async () => {
-    const { data } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('id', documentId)
-      .single();
-
-    if (data) setDoc(data);
-    setLoading(false);
-  }, [documentId]);
-
-  useEffect(() => {
-    fetchDocument();
-  }, [fetchDocument]);
-
-  /* ── Actions ────────────────────────────────────────────────── */
-
   const copyLink = () => {
-    if (!doc) return;
-    const url = buildDocumentUrl(doc.share_token, customDomain, window.location.origin);
+    const url = buildDocumentUrl(doc.share_token, customDomain ?? null, window.location.origin);
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -67,7 +44,6 @@ export default function DocumentDetailHeader({
   };
 
   const deleteDocument = async () => {
-    if (!doc) return;
     const ok = await confirm({
       title: 'Delete Document',
       message: `Delete "${doc.title}"? This will remove the PDF permanently.`,
@@ -91,26 +67,6 @@ export default function DocumentDetailHeader({
     }
   };
 
-  /* ── Loading skeleton ───────────────────────────────────────── */
-
-  if (loading || !doc) {
-    return (
-      <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
-        <div className="inline-flex items-center gap-1.5 text-sm text-gray-400 mb-3">
-          <ArrowLeft size={14} />
-          All Documents
-        </div>
-        <div className="animate-pulse">
-          <div className="h-7 w-64 bg-gray-200 rounded mb-2" />
-          <div className="h-4 w-40 bg-gray-100 rounded mb-4" />
-          <div className="h-10 w-full bg-gray-100 rounded" />
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Render ─────────────────────────────────────────────────── */
-
   return (
     <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
       {/* Back link */}
@@ -125,9 +81,12 @@ export default function DocumentDetailHeader({
       {/* Title row */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
-            {doc.title}
-          </h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
+              {doc.title}
+            </h1>
+            <EditorSaveStatusBadge />
+          </div>
           {doc.description && (
             <p className="text-sm text-gray-400 mt-1 truncate max-w-[400px]">
               {doc.description}
@@ -168,7 +127,7 @@ export default function DocumentDetailHeader({
       </div>
 
       {/* Tabs */}
-      <DocumentTabs documentId={documentId} activeTab={activeTab} />
+      <DocumentTabs documentId={doc.id} />
     </div>
   );
 }

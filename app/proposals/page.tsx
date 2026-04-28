@@ -8,6 +8,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
 import ProposalListCard from '@/components/admin/proposals/ProposalListCard';
 import ProposalListRow from '@/components/admin/proposals/ProposalListRow';
+import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 
 type ViewMode = 'grid' | 'list';
 
@@ -27,7 +28,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadInitialTab, setUploadInitialTab] = useState<'upload' | 'template' | 'quote'>('upload');
+  const [uploadInitialTab, setUploadInitialTab] = useState<'upload' | 'template' | 'quote' | 'quote-template'>('upload');
   const [showNewDropdown, setShowNewDropdown] = useState(false);
   const newDropdownRef = useRef<HTMLDivElement>(null);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
@@ -87,7 +88,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const openModal = (tab: 'upload' | 'template' | 'quote') => {
+  const openModal = (tab: 'upload' | 'template' | 'quote' | 'quote-template') => {
     setUploadInitialTab(tab);
     setShowUpload(true);
     setShowNewDropdown(false);
@@ -99,6 +100,15 @@ function ProposalsContent({ companyId }: { companyId: string }) {
         (p.client_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
       )
     : proposals;
+
+  // "Recently edited" — only when the list is long enough that scrolling is real
+  // and no search is active. Sorted by updated_at, falling back to created_at.
+  const showRecent = !searchQuery && proposals.length >= 8;
+  const recent = showRecent
+    ? [...proposals]
+        .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at))
+        .slice(0, 3)
+    : [];
 
   return (
     <div className="flex flex-col h-full">
@@ -181,8 +191,8 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                 >
                   <LayoutTemplate size={15} className="text-gray-400 shrink-0" />
                   <div>
-                    <div className="font-medium">From Template</div>
-                    <div className="text-xs text-gray-400">Use an existing template</div>
+                    <div className="font-medium">Proposal from Template</div>
+                    <div className="text-xs text-gray-400">Use a proposal template</div>
                   </div>
                 </button>
                 <button
@@ -193,6 +203,16 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                   <div>
                     <div className="font-medium">New Quote</div>
                     <div className="text-xs text-gray-400">Send a quick quote</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => openModal('quote-template')}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-t border-gray-100"
+                >
+                  <LayoutTemplate size={15} className="text-gray-400 shrink-0" />
+                  <div>
+                    <div className="font-medium">Quote from Template</div>
+                    <div className="text-xs text-gray-400">Use a quote template</div>
                   </div>
                 </button>
               </div>
@@ -213,9 +233,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
-          </div>
+          <EntityListSkeleton viewMode={viewMode} />
         ) : filtered.length === 0 && searchQuery ? (
           <div className="text-center py-20">
             <Search size={28} className="text-faint mx-auto mb-3" />
@@ -236,28 +254,65 @@ function ProposalsContent({ companyId }: { companyId: string }) {
               New Proposal
             </button>
           </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((p) => (
-              <ProposalListCard
-                key={p.id}
-                proposal={p}
-                onRefresh={fetchProposals}
-                customDomain={customDomain}
-              />
-            ))}
-          </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((p) => (
-              <ProposalListRow
-                key={p.id}
-                proposal={p}
-                onRefresh={fetchProposals}
-                customDomain={customDomain}
-              />
-            ))}
-          </div>
+          <>
+            {showRecent && (
+              <section className="mb-8">
+                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mb-3">
+                  Recently edited
+                </h2>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {recent.map((p) => (
+                      <ProposalListCard
+                        key={`recent-${p.id}`}
+                        proposal={p}
+                        onRefresh={fetchProposals}
+                        customDomain={customDomain}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recent.map((p) => (
+                      <ProposalListRow
+                        key={`recent-${p.id}`}
+                        proposal={p}
+                        onRefresh={fetchProposals}
+                        customDomain={customDomain}
+                      />
+                    ))}
+                  </div>
+                )}
+                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mt-8 mb-3">
+                  All proposals · {proposals.length}
+                </h2>
+              </section>
+            )}
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filtered.map((p) => (
+                  <ProposalListCard
+                    key={p.id}
+                    proposal={p}
+                    onRefresh={fetchProposals}
+                    customDomain={customDomain}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map((p) => (
+                  <ProposalListRow
+                    key={p.id}
+                    proposal={p}
+                    onRefresh={fetchProposals}
+                    customDomain={customDomain}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

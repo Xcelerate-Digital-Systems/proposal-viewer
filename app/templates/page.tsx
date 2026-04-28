@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import TemplateUploadModal from '@/components/admin/templates/TemplateUploadModal';
 import TemplateListCard from '@/components/admin/templates/TemplateListCard';
 import TemplateListRow from '@/components/admin/templates/TemplateListRow';
+import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 
 export default function TemplatesPage() {
   return (
@@ -58,6 +59,13 @@ function TemplatesContent({ companyId }: { companyId: string }) {
         (t.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
       )
     : templates;
+
+  const showRecent = !searchQuery && templates.length >= 8;
+  const recent = showRecent
+    ? [...templates]
+        .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at))
+        .slice(0, 3)
+    : [];
 
   return (
     <div className="flex flex-col h-full">
@@ -133,9 +141,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
-          </div>
+          <EntityListSkeleton viewMode={viewMode} />
         ) : filtered.length === 0 && searchQuery ? (
           <div className="text-center py-20">
             <Search size={28} className="text-faint mx-auto mb-3" />
@@ -156,26 +162,61 @@ function TemplatesContent({ companyId }: { companyId: string }) {
               Upload Template PDF
             </button>
           </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((t) => (
-              <TemplateListCard
-                key={t.id}
-                template={t}
-                onRefresh={fetchTemplates}
-              />
-            ))}
-          </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((t) => (
-              <TemplateListRow
-                key={t.id}
-                template={t}
-                onRefresh={fetchTemplates}
-              />
-            ))}
-          </div>
+          <>
+            {showRecent && (
+              <section className="mb-8">
+                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mb-3">
+                  Recently edited
+                </h2>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {recent.map((t) => (
+                      <TemplateListCard
+                        key={`recent-${t.id}`}
+                        template={t}
+                        onRefresh={fetchTemplates}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recent.map((t) => (
+                      <TemplateListRow
+                        key={`recent-${t.id}`}
+                        template={t}
+                        onRefresh={fetchTemplates}
+                      />
+                    ))}
+                  </div>
+                )}
+                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mt-8 mb-3">
+                  All templates · {templates.length}
+                </h2>
+              </section>
+            )}
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filtered.map((t) => (
+                  <TemplateListCard
+                    key={t.id}
+                    template={t}
+                    onRefresh={fetchTemplates}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map((t) => (
+                  <TemplateListRow
+                    key={t.id}
+                    template={t}
+                    onRefresh={fetchTemplates}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
