@@ -63,8 +63,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Look up company defaults (cover image) ─────────────────────────────
+    // Quotes don't inherit the company-level cover background.
     let companyCoverImagePath: string | null = null;
-    if (!rest.cover_image_path) {
+    if (!isQuote && !rest.cover_image_path) {
       const { data: companyData } = await supabase
         .from('companies')
         .select('cover_image_path')
