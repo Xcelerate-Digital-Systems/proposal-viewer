@@ -648,89 +648,6 @@ export default function FeedbackDetailView({
           </div>
         </div>
 
-        {/* ── Row 2: filters + thumb strip + prev/next (hidden in single-item) ── */}
-        {!singleItemOnly && (filteredItems.length > 0 || stripTypes.length > 1) && (
-          <div
-            className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
-              headerBranded ? '' : 'border-b border-gray-200 bg-white'
-            }`}
-            style={headerBranded ? {
-              backgroundColor: `${bgSecondary}E6`,
-              borderBottom: `1px solid ${sidebarText}15`,
-              borderTop: `1px solid ${sidebarText}10`,
-            } : undefined}
-          >
-            {stripTypes.length > 1 && (
-              <>
-                <div className="shrink-0">
-                  <TypeFilterTabs
-                    items={items}
-                    availableTypes={stripTypes}
-                    typeFilter={typeFilter}
-                    onFilterChange={handleFilterChange}
-                    variant={stripVariant}
-                    sidebarTextColor={headerBranded ? sidebarText : undefined}
-                    showCounts={false}
-                  />
-                </div>
-                <div
-                  className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-200'}`}
-                  style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
-                />
-              </>
-            )}
-
-            <ItemThumbStrip
-              filteredItems={filteredItems}
-              selectedItemId={selectedItemId}
-              onSelectItem={handleSidebarSelect}
-              comments={stripComments}
-              variant={stripVariant}
-              textColor={headerBranded ? sidebarText : undefined}
-              accentColor={headerBranded ? accent : undefined}
-              fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
-              className="flex-1 min-w-0"
-            />
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => goToItem(currentIdx - 1)}
-                disabled={currentIdx <= 0}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                  headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
-                style={headerBranded ? {
-                  border: `1px solid ${sidebarText}25`,
-                  color: sidebarText,
-                } : undefined}
-              >
-                <ChevronLeft size={15} />
-                Previous
-              </button>
-              <span
-                className={`text-xs tabular-nums whitespace-nowrap ${headerBranded ? '' : 'text-gray-400'}`}
-                style={headerBranded ? { color: `${sidebarText}80` } : undefined}
-              >
-                {currentIdx + 1} of {filteredItems.length}
-              </span>
-              <button
-                onClick={() => goToItem(currentIdx + 1)}
-                disabled={currentIdx >= filteredItems.length - 1}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                  headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
-                style={headerBranded ? {
-                  border: `1px solid ${sidebarText}25`,
-                  color: sidebarText,
-                } : undefined}
-              >
-                Next
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Comments-paused banner (client only — shown immediately below the header rows) */}
         {isClient && project.pause_new_comments && (
           <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-[12px] font-medium px-4 py-1.5 flex items-center justify-center gap-2 shrink-0">
@@ -866,6 +783,88 @@ export default function FeedbackDetailView({
             />
           </div>
         </div>
+
+        {/* ── Bottom nav: filters + thumb strip + prev/next (hidden in single-item) ── */}
+        {!singleItemOnly && (filteredItems.length > 0 || stripTypes.length > 1) && (
+          <div
+            className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
+              headerBranded ? '' : 'border-t border-gray-200 bg-white'
+            }`}
+            style={headerBranded ? {
+              backgroundColor: bgSecondary,
+              borderTop: `1px solid ${sidebarText}15`,
+            } : undefined}
+          >
+            {stripTypes.length > 1 && (
+              <>
+                <div className="shrink-0">
+                  <TypeFilterTabs
+                    items={items}
+                    availableTypes={stripTypes}
+                    typeFilter={typeFilter}
+                    onFilterChange={handleFilterChange}
+                    variant={stripVariant}
+                    sidebarTextColor={headerBranded ? sidebarText : undefined}
+                    showCounts={false}
+                  />
+                </div>
+                <div
+                  className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-200'}`}
+                  style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+                />
+              </>
+            )}
+
+            <ItemThumbStrip
+              filteredItems={filteredItems}
+              selectedItemId={selectedItemId}
+              onSelectItem={handleSidebarSelect}
+              comments={stripComments}
+              variant={stripVariant}
+              textColor={headerBranded ? sidebarText : undefined}
+              accentColor={headerBranded ? accent : undefined}
+              fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
+              className="flex-1 min-w-0"
+            />
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => goToItem(currentIdx - 1)}
+                disabled={currentIdx <= 0}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                  headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+                style={headerBranded ? {
+                  border: `1px solid ${sidebarText}25`,
+                  color: sidebarText,
+                } : undefined}
+              >
+                <ChevronLeft size={15} />
+                Previous
+              </button>
+              <span
+                className={`text-xs tabular-nums whitespace-nowrap ${headerBranded ? '' : 'text-gray-400'}`}
+                style={headerBranded ? { color: `${sidebarText}80` } : undefined}
+              >
+                {currentIdx + 1} of {filteredItems.length}
+              </span>
+              <button
+                onClick={() => goToItem(currentIdx + 1)}
+                disabled={currentIdx >= filteredItems.length - 1}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                  headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+                style={headerBranded ? {
+                  border: `1px solid ${sidebarText}25`,
+                  color: sidebarText,
+                } : undefined}
+              >
+                Next
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Finish-reviewing modal — driven by the header's Finish button */}
