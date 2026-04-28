@@ -2,6 +2,55 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
 /**
+ * Fire-and-forget notification dispatch. We resolve the parent project's
+ * share_token (in case the request came in via an item-level token) and
+ * pass it to /api/review-notify, which gathers participants and emails.
+ */
+async function notifyParticipantsAsync(params: {
+  review_item_id: string;
+  itemProjectId: string;
+  author_name: string;
+  author_email?: string | null;
+  content: string;
+  parent_comment_id: string | null;
+}) {
+  try {
+    const supabase = createServiceClient();
+    const { data: project } = await supabase
+      .from('review_projects')
+      .select('share_token')
+      .eq('id', params.itemProjectId)
+      .maybeSingle();
+    if (!project?.share_token) return;
+
+    const { data: item } = await supabase
+      .from('review_items')
+      .select('title')
+      .eq('id', params.review_item_id)
+      .maybeSingle();
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+    await fetch(`${appUrl}/api/review-notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: 'review_comment_added',
+        share_token: project.share_token,
+        review_item_id: params.review_item_id,
+        comment_author: params.author_name,
+        comment_author_email: params.author_email ?? null,
+        comment_content: params.content,
+        item_title: item?.title ?? null,
+        parent_comment_id: params.parent_comment_id,
+        author_type: 'client',
+      }),
+    });
+  } catch (err) {
+    console.error('Failed to dispatch review notification:', err);
+  }
+}
+
+/**
  * POST /api/review/[token]/comments
  *
  * Post a comment on a feedback item. Token can be either:
@@ -137,6 +186,18 @@ export async function POST(
       console.error('Comment insert error:', insertErr);
       return NextResponse.json({ error: 'Failed to post comment' }, { status: 500 });
     }
+
+    // Fire participant notifications (top-level + reply). Resolve the
+    // project share token so /api/review-notify can locate the project even
+    // if the public URL was an item-level token.
+    void notifyParticipantsAsync({
+      review_item_id,
+      itemProjectId: item.review_project_id,
+      author_name,
+      author_email,
+      content,
+      parent_comment_id: parent_comment_id || null,
+    });
 
     return NextResponse.json(comment);
   } catch (err) {

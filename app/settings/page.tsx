@@ -7,6 +7,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import TeamMemberManager from '@/components/admin/settings/TeamMemberManager';
 import NotificationSection from '@/components/admin/settings/NotificationSection';
+import CompanyFeedbackEmailToggle from '@/components/admin/settings/CompanyFeedbackEmailToggle';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import { type TeamMember } from '@/lib/supabase';
@@ -109,6 +110,12 @@ function SettingsContent({ auth }: {
             />
           )}
         </div>
+
+        {isAdminOrOwner && companyId && (
+          <div className="mt-4 max-w-lg">
+            <CompanyFeedbackEmailToggle companyId={companyId} />
+          </div>
+        )}
       </div>
 
       {/* Webhooks */}

@@ -30,7 +30,9 @@ export async function POST(req: NextRequest) {
       share_token,
       review_item_id,
       comment_author,
+      comment_author_email,
       comment_content,
+      parent_comment_id,
       resolved_by,
       item_title,
       author_type = 'client',
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
     // Look up feedback project by share token
     const { data: project, error: projErr } = await supabase
       .from('review_projects')
-      .select('id, title, client_name, client_email, company_id, share_token')
+      .select('id, title, client_name, client_email, company_id, share_token, created_by')
       .eq('share_token', share_token)
       .single();
 
@@ -62,10 +64,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Feedback project not found' }, { status: 404 });
     }
 
-    // Get company info
+    // Get company info — including the company-level kill switch.
     const { data: company } = await supabase
       .from('companies')
-      .select('name, custom_domain, domain_verified')
+      .select('name, custom_domain, domain_verified, feedback_email_notifications_enabled')
       .eq('id', project.company_id)
       .single();
 
@@ -74,24 +76,49 @@ export async function POST(req: NextRequest) {
     const reviewUrl = buildReviewUrl(project.share_token, verifiedDomain, appUrl);
     const companyName = company?.name || 'Your agency';
 
+    // Company-level kill switch. Default to true if column missing (e.g.
+    // before migration ran) so existing setups keep working.
+    const notificationsEnabled =
+      company?.feedback_email_notifications_enabled !== false;
+
     let teamSent = 0;
     let clientSent = 0;
+    let participantsSent = 0;
 
-    if (author_type === 'team' && (event_type === 'review_comment_added' || event_type === 'review_comment_resolved')) {
-      // Team member acted → notify client
-      clientSent = await notifyReviewClient({
-        supabase, project, companyName, reviewUrl, event_type,
-        comment_author, comment_content, resolved_by, item_title,
-      });
-    } else {
-      // Client acted → notify team
-      teamSent = await notifyReviewTeam({
-        supabase, project, reviewUrl, appUrl, event_type,
-        comment_author, comment_content, resolved_by, item_title,
-      });
+    if (notificationsEnabled) {
+      if (event_type === 'review_comment_added') {
+        // Comments + replies fan out to every project participant who has
+        // left an email — team members, project owner, and guest reviewers.
+        // Per-team-member prefs are bypassed here; the company toggle is the
+        // single source of truth for this event.
+        participantsSent = await notifyReviewParticipants({
+          supabase,
+          project,
+          companyName,
+          reviewUrl,
+          comment_author,
+          comment_author_email,
+          comment_content,
+          item_title,
+          isReply: !!parent_comment_id,
+          parent_comment_id,
+        });
+      } else if (author_type === 'team' && event_type === 'review_comment_resolved') {
+        // Team member acted → notify client
+        clientSent = await notifyReviewClient({
+          supabase, project, companyName, reviewUrl, event_type,
+          comment_author, comment_content, resolved_by, item_title,
+        });
+      } else {
+        // Client acted → notify team
+        teamSent = await notifyReviewTeam({
+          supabase, project, reviewUrl, appUrl, event_type,
+          comment_author, comment_content, resolved_by, item_title,
+        });
+      }
     }
 
-    // Fire webhooks
+    // Fire webhooks regardless of email switch — they're independent.
     try {
       await fireReviewWebhooks({
         event_type, company_id: project.company_id, custom_domain: verifiedDomain,
@@ -102,11 +129,128 @@ export async function POST(req: NextRequest) {
       console.error('Review webhook dispatch error:', err);
     }
 
-    return NextResponse.json({ sent: teamSent + clientSent, team_sent: teamSent, client_sent: clientSent });
+    return NextResponse.json({
+      sent: teamSent + clientSent + participantsSent,
+      team_sent: teamSent,
+      client_sent: clientSent,
+      participants_sent: participantsSent,
+      notifications_enabled: notificationsEnabled,
+    });
   } catch (err) {
     console.error('Review notification error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+// --- Notify all project participants (comment authors + project owner) ---
+
+async function notifyReviewParticipants(params: {
+  supabase: ReturnType<typeof createServiceClient>;
+  project: { id: string; title: string; client_name: string; company_id: string; created_by: string | null };
+  companyName: string;
+  reviewUrl: string;
+  comment_author?: string;
+  comment_author_email?: string;
+  comment_content?: string;
+  item_title?: string;
+  isReply: boolean;
+  parent_comment_id?: string;
+}): Promise<number> {
+  const {
+    supabase, project, companyName, reviewUrl,
+    comment_author, comment_author_email, comment_content, item_title,
+    isReply, parent_comment_id,
+  } = params;
+
+  // Collect distinct emails of everyone who's already authored on this
+  // project (top-level + replies, team + guest).
+  const { data: itemRows } = await supabase
+    .from('review_items')
+    .select('id')
+    .eq('review_project_id', project.id);
+  const itemIds = (itemRows ?? []).map((r) => r.id as string);
+
+  const recipientEmails = new Set<string>();
+
+  if (itemIds.length > 0) {
+    const { data: authorRows } = await supabase
+      .from('review_comments')
+      .select('author_email')
+      .in('review_item_id', itemIds)
+      .not('author_email', 'is', null);
+    for (const row of authorRows ?? []) {
+      const email = (row as { author_email: string | null }).author_email?.trim().toLowerCase();
+      if (email) recipientEmails.add(email);
+    }
+  }
+
+  // Add the project owner (creator). created_by is an auth.users id, so
+  // resolve it via the team_members.user_id mapping.
+  if (project.created_by) {
+    const { data: owner } = await supabase
+      .from('team_members')
+      .select('email')
+      .eq('user_id', project.created_by)
+      .maybeSingle();
+    if (owner?.email) recipientEmails.add(owner.email.trim().toLowerCase());
+  }
+
+  // Don't email the author of the comment we're notifying about.
+  if (comment_author_email) {
+    recipientEmails.delete(comment_author_email.trim().toLowerCase());
+  }
+
+  if (recipientEmails.size === 0) return 0;
+
+  // For replies, fetch the parent comment so we can quote it in the email.
+  let parentContent: string | null = null;
+  let parentAuthor: string | null = null;
+  if (isReply && parent_comment_id) {
+    const { data: parent } = await supabase
+      .from('review_comments')
+      .select('content, author_name')
+      .eq('id', parent_comment_id)
+      .maybeSingle();
+    parentContent = parent?.content ?? null;
+    parentAuthor = parent?.author_name ?? null;
+  }
+
+  const { subject, html } = buildParticipantCommentEmail({
+    isReply,
+    projectTitle: project.title,
+    companyName,
+    reviewUrl,
+    commentAuthor: comment_author,
+    commentContent: comment_content,
+    itemTitle: item_title,
+    parentAuthor,
+    parentContent,
+  });
+
+  let sent = 0;
+  for (const email of Array.from(recipientEmails)) {
+    try {
+      await getResend().emails.send({ from: FROM_EMAIL, to: email, subject, html });
+      sent++;
+    } catch (err) {
+      console.error(`Failed to notify participant ${email}:`, err);
+    }
+  }
+
+  // One log row per dispatch (not per recipient) — keeps the log compact.
+  try {
+    await supabase.from('notification_log').insert({
+      team_member_id: null as unknown as string,
+      event_type: isReply ? 'review_comment_replied' : 'review_comment_added',
+      event_ref: `participants_${Date.now()}`,
+      company_id: project.company_id,
+      review_project_id: project.id,
+    });
+  } catch (err) {
+    console.error('Notification log insert failed:', err);
+  }
+
+  return sent;
 }
 
 // --- Notify team members ---
@@ -361,6 +505,80 @@ function buildReviewTeamEmail(params: {
         </td></tr>
         <tr><td style="padding:16px 32px;border-top:1px solid #e5e7eb;">
           <p style="margin:0;color:#9ca3af;font-size:12px;">Manage notifications in your <a href="${dashboardUrl}/settings" style="color:#017C87;text-decoration:none;">settings</a>.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`,
+  };
+}
+
+function buildParticipantCommentEmail(params: {
+  isReply: boolean;
+  projectTitle: string;
+  companyName: string;
+  reviewUrl: string;
+  commentAuthor?: string;
+  commentContent?: string;
+  itemTitle?: string;
+  parentAuthor: string | null;
+  parentContent: string | null;
+}): { subject: string; html: string } {
+  const {
+    isReply, projectTitle, companyName, reviewUrl,
+    commentAuthor, commentContent, itemTitle, parentAuthor, parentContent,
+  } = params;
+
+  const author = commentAuthor || 'Someone';
+  const itemRef = itemTitle ? ` on "${escapeHtml(itemTitle)}"` : '';
+
+  const subject = isReply
+    ? `↩️ ${author} replied in "${projectTitle}"`
+    : `💬 ${author} commented on "${projectTitle}"`;
+
+  const headline = isReply ? 'New reply' : 'New comment';
+
+  const parentBlock = isReply && parentContent
+    ? `
+      <p style="margin:16px 0 4px;color:#6b7280;font-size:13px;">
+        ${escapeHtml(parentAuthor || 'Original comment')} wrote:
+      </p>
+      <div style="background:#f9fafb;border-left:3px solid #d1d5db;padding:10px 14px;margin:0 0 16px;border-radius:4px;">
+        <p style="margin:0;color:#6b7280;font-size:14px;">${escapeHtml(parentContent)}</p>
+      </div>
+    `
+    : '';
+
+  const lead = isReply
+    ? `<p><strong>${escapeHtml(author)}</strong> replied${itemRef} in <strong>"${escapeHtml(projectTitle)}"</strong>:</p>`
+    : `<p><strong>${escapeHtml(author)}</strong> commented${itemRef} in <strong>"${escapeHtml(projectTitle)}"</strong>:</p>`;
+
+  const body = `
+    ${parentBlock}
+    ${lead}
+    <div style="background:#f3fafa;border-left:3px solid #017C87;padding:12px 16px;margin:16px 0;border-radius:4px;">
+      <p style="margin:0;color:#374151;">${escapeHtml(commentContent || '')}</p>
+    </div>
+  `;
+
+  return {
+    subject,
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+        <tr><td style="background:#043946;padding:20px 32px;"><span style="color:#ffffff;font-weight:700;font-size:16px;">${escapeHtml(companyName)}</span></td></tr>
+        <tr><td style="padding:32px;">
+          <h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">${headline}</h1>
+          <div style="color:#6b7280;font-size:15px;line-height:1.6;">${body}</div>
+          <div style="margin-top:28px;">
+            <a href="${reviewUrl}" style="display:inline-block;background:#017C87;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">Open in feedback</a>
+          </div>
+        </td></tr>
+        <tr><td style="padding:16px 32px;border-top:1px solid #e5e7eb;">
+          <p style="margin:0;color:#9ca3af;font-size:12px;">You're receiving this because you've left feedback on this project.</p>
         </td></tr>
       </table>
     </td></tr>

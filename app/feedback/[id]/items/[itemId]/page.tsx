@@ -267,7 +267,7 @@ function ItemViewerContent({
       setComments((prev) => [...prev, data]);
       setAllProjectComments((prev) => [...prev, data]);
 
-      // Notify webhook
+      // Notify webhook + participants
       if (project?.share_token) {
         fetch('/api/review-notify', {
           method: 'POST',
@@ -277,8 +277,10 @@ function ItemViewerContent({
             share_token: project.share_token,
             review_item_id: reviewItemId,
             comment_author: authorName,
+            comment_author_email: teamMember?.email || null,
             comment_content: content.trim(),
             item_title: currentItem?.title,
+            parent_comment_id: parentId || null,
             author_type: 'team',
           }),
         }).catch(() => {});

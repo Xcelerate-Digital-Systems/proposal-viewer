@@ -229,6 +229,27 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     }
 
     setAllComments((prev) => [...prev, data as FeedbackComment]);
+
+    // Notify project participants of the reply.
+    if (project?.share_token) {
+      const item = items.find((i) => i.id === parent.review_item_id);
+      fetch('/api/review-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'review_comment_added',
+          share_token: project.share_token,
+          review_item_id: parent.review_item_id,
+          comment_author: authorName,
+          comment_author_email: teamMember?.email || null,
+          comment_content: trimmed,
+          item_title: item?.title,
+          parent_comment_id: parent.id,
+          author_type: 'team',
+        }),
+      }).catch(() => {});
+    }
+
     return true;
   };
 
