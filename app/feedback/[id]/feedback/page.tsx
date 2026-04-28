@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft,  MessageSquare, CheckCircle2, Circle, X, Globe, Image as ImageIcon, Mail, Smartphone, Monitor, ChevronDown, ChevronUp, ExternalLink, Clock, Send, Trash2, } from 'lucide-react';
-import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
+import { MessageSquare, CheckCircle2, Circle, X, Globe, Image as ImageIcon, Mail, Smartphone, Monitor, ChevronDown, ChevronUp, ExternalLink, Clock, Send, Trash2 } from 'lucide-react';
+import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
+import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 import { getPriorityDef, PRIORITY_OPTIONS } from '@/components/feedback/comments/PrioritySelector';
@@ -95,6 +95,8 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [selectedComment, setSelectedComment] = useState<CommentWithItem | null>(null);
   const [completions, setCompletions] = useState<ReviewCompletion[]>([]);
   const [completionsOpen, setCompletionsOpen] = useState(false);
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
+  const [showAddItem, setShowAddItem] = useState(false);
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
 
@@ -145,10 +147,22 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     setLoading(false);
   }, [projectId]);
 
+  const fetchCustomDomain = useCallback(async () => {
+    const { data } = await supabase
+      .from('companies')
+      .select('custom_domain, domain_verified')
+      .eq('id', companyId)
+      .single();
+    if (data?.domain_verified && data.custom_domain) {
+      setCustomDomain(data.custom_domain);
+    }
+  }, [companyId]);
+
   useEffect(() => {
     fetchProject();
     fetchData();
-  }, [fetchProject, fetchData]);
+    fetchCustomDomain();
+  }, [fetchProject, fetchData, fetchCustomDomain]);
 
   // Build enriched top-level comments with item info + reply counts
   const enrichedComments: CommentWithItem[] = useMemo(() => {
@@ -283,33 +297,30 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky header — compact */}
-      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-4 border-b border-gray-200 lg:border-b-0">
-        {project && (
-          <>
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex items-center gap-3">
-                <Link
-                  href="/feedback"
-                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-                  title="All Projects"
-                >
-                  <ArrowLeft size={16} />
-                </Link>
-                <div className="min-w-0">
-                  <h1 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
-                    {project.title}
-                  </h1>
-                  {project.client_name && (
-                    <p className="text-xs text-gray-400 truncate">{project.client_name}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            <ProjectTabs projectId={projectId} activeTab="feedback" hasWebpages={items.some((i) => i.type === 'webpage')} />
-          </>
-        )}
-      </div>
+      {project && (
+        <FeedbackProjectHeader
+          projectId={projectId}
+          project={project}
+          setProject={setProject}
+          customDomain={customDomain}
+          hasWebpages={hasWebpages}
+          activeTab="feedback"
+          onAddItem={() => setShowAddItem(true)}
+        />
+      )}
+
+      {showAddItem && project && session?.user?.id && (
+        <AddFeedbackItemModal
+          reviewProjectId={project.id}
+          companyId={companyId}
+          userId={session.user.id}
+          nextSortOrder={items.length}
+          onClose={() => setShowAddItem(false)}
+          onSuccess={() => {
+            fetchData();
+          }}
+        />
+      )}
 
       {/* Scrollable content */}
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">

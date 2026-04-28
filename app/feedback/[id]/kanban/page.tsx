@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Plus, ArrowLeft } from 'lucide-react';
-import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
+import { Plus } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
+import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import KanbanBoard from '@/components/admin/feedback/kanban/KanbanBoard';
 import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
 
@@ -50,6 +49,7 @@ function KanbanContent({
   const [commentCounts, setCommentCounts] = useState<Record<string, { total: number; unresolved: number }>>({});
   const [loading, setLoading] = useState(true);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
 
   const fetchProject = useCallback(async () => {
     const { data } = await supabase
@@ -91,11 +91,23 @@ function KanbanContent({
     setCommentCounts(counts);
   }, []);
 
+  const fetchCustomDomain = useCallback(async () => {
+    const { data } = await supabase
+      .from('companies')
+      .select('custom_domain, domain_verified')
+      .eq('id', companyId)
+      .single();
+    if (data?.domain_verified && data.custom_domain) {
+      setCustomDomain(data.custom_domain);
+    }
+  }, [companyId]);
+
   useEffect(() => {
     fetchProject();
     fetchItems();
     fetchCommentCounts();
-  }, [fetchProject, fetchItems, fetchCommentCounts]);
+    fetchCustomDomain();
+  }, [fetchProject, fetchItems, fetchCommentCounts, fetchCustomDomain]);
 
   const handleOpen = useCallback((itemId: string) => {
     const item = items.find((i) => i.id === itemId);
@@ -112,39 +124,17 @@ function KanbanContent({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-4 border-b border-gray-200 lg:border-b-0">
-        {project && (
-          <>
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex items-center gap-3">
-                <Link href="/feedback" className="text-gray-400 hover:text-gray-600 transition-colors shrink-0" title="All Projects">
-                  <ArrowLeft size={16} />
-                </Link>
-                <div className="min-w-0">
-                  <h1 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
-                    {project.title}
-                  </h1>
-                  <p className="text-xs text-gray-400 truncate">
-                    {project.client_name}
-                    {project.client_name && project.description && ' · '}
-                    {project.description}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setShowAddItem(true)}
-                  className="flex items-center gap-2 bg-teal text-white px-3.5 py-2 rounded-lg text-[13px] font-medium hover:bg-teal-hover transition-colors"
-                >
-                  <Plus size={15} />
-                  Add Item
-                </button>
-              </div>
-            </div>
-            <ProjectTabs projectId={projectId} activeTab="kanban" hasWebpages={hasWebpages} />
-          </>
-        )}
-      </div>
+      {project && (
+        <FeedbackProjectHeader
+          projectId={projectId}
+          project={project}
+          setProject={setProject}
+          customDomain={customDomain}
+          hasWebpages={hasWebpages}
+          activeTab="kanban"
+          onAddItem={() => setShowAddItem(true)}
+        />
+      )}
 
       <div className="flex-1 px-6 lg:px-10 pt-4 pb-8 overflow-hidden">
         {showAddItem && project && (
@@ -154,14 +144,8 @@ function KanbanContent({
             userId={userId}
             nextSortOrder={items.length}
             onClose={() => setShowAddItem(false)}
-            onSuccess={(created) => {
+            onSuccess={() => {
               fetchItems();
-              if (!created) return;
-              if (created.type === 'webpage' && created.url) {
-                window.open(created.url, '_blank');
-                return;
-              }
-              router.push(`/feedback/${projectId}/items/${created.id}`);
             }}
           />
         )}

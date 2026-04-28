@@ -2,13 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Plus, ArrowLeft, Copy, Check, Image } from 'lucide-react';
-import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
-import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackShareMode } from '@/lib/supabase';
-import { buildReviewProjectUrl } from '@/lib/proposal-url';
+import { Plus, Image } from 'lucide-react';
+import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
+import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import FeedbackItemCard from '@/components/admin/feedback/FeedbackItemCard';
 import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
 /* ------------------------------------------------------------------ */
@@ -65,7 +63,6 @@ function ItemsContent({
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddItem, setShowAddItem] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter);
 
@@ -117,28 +114,11 @@ function ItemsContent({
     }
   }, [companyId]);
 
-  const toggleShareMode = useCallback(async (mode: FeedbackShareMode) => {
-    if (!project) return;
-    await supabase
-      .from('review_projects')
-      .update({ share_mode: mode, updated_at: new Date().toISOString() })
-      .eq('id', project.id);
-    setProject((prev) => prev ? { ...prev, share_mode: mode } : prev);
-  }, [project]);
-
   useEffect(() => {
     fetchProject();
     fetchItems();
     fetchCustomDomain();
   }, [fetchProject, fetchItems, fetchCustomDomain]);
-
-  const copyLink = () => {
-    if (!project) return;
-    const url = buildReviewProjectUrl(project.share_token, customDomain, window.location.origin);
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleOpenViewer = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
@@ -161,45 +141,17 @@ function ItemsContent({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky header — compact (title + actions in one row, tabs below) */}
-      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-4 border-b border-gray-200 lg:border-b-0">
-        {project && (
-          <>
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex items-center gap-3">
-                <Link
-                  href="/feedback"
-                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-                  title="All Projects"
-                >
-                  <ArrowLeft size={16} />
-                </Link>
-                <div className="min-w-0">
-                  <h1 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
-                    {project.title}
-                  </h1>
-                  <p className="text-xs text-gray-400 truncate">
-                    {project.client_name}
-                    {project.client_name && project.description && ' · '}
-                    {project.description}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setShowAddItem(true)}
-                  className="flex items-center gap-2 bg-teal text-white px-3.5 py-2 rounded-lg text-[13px] font-medium hover:bg-teal-hover transition-colors"
-                >
-                  <Plus size={15} />
-                  Add Item
-                </button>
-              </div>
-            </div>
-            <ProjectTabs projectId={projectId} activeTab="items" hasWebpages={items.some((i) => i.type === 'webpage')} />
-          </>
-        )}
-      </div>
+      {project && (
+        <FeedbackProjectHeader
+          projectId={projectId}
+          project={project}
+          setProject={setProject}
+          customDomain={customDomain}
+          hasWebpages={items.some((i) => i.type === 'webpage')}
+          activeTab="items"
+          onAddItem={() => setShowAddItem(true)}
+        />
+      )}
 
       {/* Scrollable content */}
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-4 lg:pt-0">
@@ -211,15 +163,8 @@ function ItemsContent({
             userId={userId}
             nextSortOrder={items.length}
             onClose={() => setShowAddItem(false)}
-            onSuccess={(created) => {
+            onSuccess={() => {
               fetchItems();
-              if (!created) return;
-              // Webpages: feedback happens on the live page, not the viewer
-              if (created.type === 'webpage' && created.url) {
-                window.open(created.url, '_blank');
-                return;
-              }
-              router.push(`/feedback/${projectId}/items/${created.id}`);
             }}
           />
         )}

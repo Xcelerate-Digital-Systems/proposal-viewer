@@ -479,6 +479,25 @@ export default function FeedbackDetailView({
           <FeedbackModeBar mode={feedbackMode} onCancel={() => changeFeedbackMode('idle')} />
 
           <div className="flex-1 flex min-h-0">
+            <CommentsPanel
+              unresolvedComments={unresolvedComments}
+              resolvedComments={resolvedComments}
+              getReplies={getReplies}
+              hasComments={topLevelComments.length > 0}
+              highlightCommentId={highlightedCommentId}
+              onSubmitComment={handleSubmitComment}
+              onClose={() => setShowComments(false)}
+              authorName={isAdmin ? authorName : undefined}
+              guestName={isClient ? guestName : undefined}
+              onNameChange={isClient ? onGuestNameChange : undefined}
+              onResolve={onResolveComment}
+              onUnresolve={onUnresolveComment}
+              onEdit={isAdmin ? onEditComment : undefined}
+              onDelete={isAdmin ? onDeleteComment : undefined}
+              companyId={companyId}
+              closable={false}
+              className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-r border-gray-200 bg-white`}
+            />
             <div className={`flex-1 relative ${isWebpageItem ? 'overflow-auto p-4' : 'overflow-auto flex items-center justify-center p-8'} bg-gray-50`}>
               <ItemContentView
                 item={selectedItem}
@@ -570,26 +589,6 @@ export default function FeedbackDetailView({
                 className="absolute top-4 right-4"
               />
             </div>
-
-            <CommentsPanel
-              unresolvedComments={unresolvedComments}
-              resolvedComments={resolvedComments}
-              getReplies={getReplies}
-              hasComments={topLevelComments.length > 0}
-              highlightCommentId={highlightedCommentId}
-              onSubmitComment={handleSubmitComment}
-              onClose={() => setShowComments(false)}
-              authorName={isAdmin ? authorName : undefined}
-              guestName={isClient ? guestName : undefined}
-              onNameChange={isClient ? onGuestNameChange : undefined}
-              onResolve={onResolveComment}
-              onUnresolve={onUnresolveComment}
-              onEdit={isAdmin ? onEditComment : undefined}
-              onDelete={isAdmin ? onDeleteComment : undefined}
-              companyId={companyId}
-              closable={false}
-              className={`${showComments ? 'flex' : 'hidden'} w-[340px] shrink-0 flex-col border-l border-gray-200 bg-white`}
-            />
           </div>
         </div>
       </>

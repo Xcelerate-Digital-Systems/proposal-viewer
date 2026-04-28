@@ -8,6 +8,7 @@ import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type Fee
 import { buildVersionList } from '@/lib/feedback/versions';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
+import { useBrandingColors } from '@/hooks/useBrandingColors';
 import { useGuestIdentity } from '@/hooks/useGuestIdentity';
 import { isValidHttpUrl } from '@/lib/sanitize';
 import { usePinFeedback } from '@/hooks/usePinFeedback';
@@ -58,6 +59,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   // ── Guest identity ──
   const { guestName, guestEmail, setGuestName, saveGuestIdentity, hydrated: identityHydrated } = useGuestIdentity();
   const { setPendingPin } = usePinFeedback();
+  const { bgSecondary, sidebarText } = useBrandingColors(branding);
 
   // Show onboarding modal once storage has been read and no name is stored.
   const showOnboarding = identityHydrated && !guestName && !loading && !notFound;
@@ -307,6 +309,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
             logoUrl={branding.logo_url}
             companyName={branding.name}
             fontHeading={branding.font_heading}
+            branding={branding}
             submitted={reviewSubmitted}
             onSubmitted={() => setReviewSubmitted(true)}
           />
@@ -325,8 +328,14 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         </div>
 
         <div className="hidden lg:flex min-h-screen flex-col bg-gray-50 pt-12">
-          <div className="px-4 py-2 bg-white border-b border-gray-200 shrink-0 text-right">
-            <p className="text-xs text-gray-400">
+          <div
+            className="px-4 py-2 shrink-0 text-right"
+            style={{
+              backgroundColor: bgSecondary,
+              borderBottom: `1px solid ${sidebarText}15`,
+            }}
+          >
+            <p className="text-xs" style={{ color: `${sidebarText}80` }}>
               Click any item to view details and leave feedback
             </p>
           </div>
