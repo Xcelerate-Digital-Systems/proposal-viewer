@@ -488,7 +488,7 @@ export default function FeedbackDetailView({
           className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
             headerBranded ? '' : 'border-b border-gray-200 bg-white'
           }`}
-          style={headerBranded ? { backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` } : undefined}
+          style={headerBranded ? { backgroundColor: bgSecondary, borderBottom: `2px solid ${branding?.accent_color || accent}` } : undefined}
         >
           {/* Back + branding */}
           <div className="flex items-center gap-2 shrink-0 min-w-0">
