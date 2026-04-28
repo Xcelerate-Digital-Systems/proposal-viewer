@@ -129,12 +129,11 @@ async function handlePdfUpload(req: NextRequest) {
       }
     }
 
-    // Rebuild merged PDF so template preview stays in sync
-    try {
-      await rebuildTemplateMerged(templateId);
-    } catch (err) {
+    // Fire-and-forget: rebuild merged PDF in the background so the response
+    // returns immediately (large templates can take many seconds to merge).
+    rebuildTemplateMerged(templateId).catch((err) => {
       console.error('Non-fatal: failed to rebuild merged PDF after page add:', err);
-    }
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -179,12 +178,10 @@ async function handleInsertPdf(body: Record<string, unknown>) {
       return NextResponse.json({ error: error ?? 'Insert failed' }, { status: 500 });
     }
 
-    // Rebuild merged PDF so template preview stays in sync
-    try {
-      await rebuildTemplateMerged(template_id as string);
-    } catch (err) {
+    // Fire-and-forget: rebuild merged PDF in the background.
+    rebuildTemplateMerged(template_id as string).catch((err) => {
       console.error('Non-fatal: failed to rebuild merged PDF after page add:', err);
-    }
+    });
 
     return NextResponse.json({ success: true, page, totalPages });
   } catch (err) {
@@ -211,12 +208,11 @@ async function handleReplacePdf(body: Record<string, unknown>) {
       return NextResponse.json({ error: error ?? 'Replace failed' }, { status: 500 });
     }
 
-    // Rebuild merged PDF so template preview stays in sync
-    try {
-      await rebuildTemplateMerged(template_id as string);
-    } catch (err) {
+    // Fire-and-forget: rebuild merged PDF in the background. Large templates
+    // can take many seconds to re-merge, which previously left the UI hanging.
+    rebuildTemplateMerged(template_id as string).catch((err) => {
       console.error('Non-fatal: failed to rebuild merged PDF after page replace:', err);
-    }
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -352,12 +348,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: error ?? 'Delete failed' }, { status: status ?? 500 });
     }
 
-    // Rebuild merged PDF so template preview stays in sync
-    try {
-      await rebuildTemplateMerged(template_id);
-    } catch (err) {
+    // Fire-and-forget: rebuild merged PDF in the background.
+    rebuildTemplateMerged(template_id).catch((err) => {
       console.error('Non-fatal: failed to rebuild merged PDF after page delete:', err);
-    }
+    });
 
     return NextResponse.json({ success: true, totalPages });
   } catch (err) {

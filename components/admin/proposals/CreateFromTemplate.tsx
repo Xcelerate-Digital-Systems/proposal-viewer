@@ -57,7 +57,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
     e.preventDefault();
     if (!selectedTemplate || !title.trim() || !clientName.trim()) return;
 
-    if (!selectedTemplate.file_path) {
+    if (pages.length === 0) {
       setStatus('Template has no pages — please add pages to the template first.');
       return;
     }
@@ -65,6 +65,28 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
     setCreating(true);
 
     try {
+      // ── 0. Ensure merged PDF is current ─────────────────────────────
+      // The merged PDF is rebuilt fire-and-forget after page edits, which
+      // can be killed on Vercel before completing. Force a fresh rebuild
+      // here so the proposal is created from up-to-date pages.
+      setStatus('Preparing template...');
+      const rebuildRes = await fetch('/api/templates/rebuild-merged', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ template_id: selectedTemplate.id }),
+      });
+      if (!rebuildRes.ok) {
+        setStatus('Failed to prepare template. Please try again.');
+        setCreating(false);
+        return;
+      }
+      const { file_path: freshFilePath } = await rebuildRes.json();
+      if (!freshFilePath) {
+        setStatus('Template has no pages — please add pages to the template first.');
+        setCreating(false);
+        return;
+      }
+
       // ── 1. Get creator name ─────────────────────────────────────────
       const { data: sessionData } = await supabase.auth.getSession();
       let creatorName: string | null = null;
@@ -134,7 +156,7 @@ export default function CreateFromTemplate({ companyId, onBack, onSuccess }: Cre
           client_email:    clientEmail.trim()    || null,
           crm_identifier:  crmIdentifier.trim()  || null,
           description:     description.trim()    || null,
-          file_path:       selectedTemplate.file_path,
+          file_path:       freshFilePath,
           file_size_bytes: (selectedTemplate as any).file_size_bytes ?? 0,
           page_names:      pageNames,
           company_id:      companyId,

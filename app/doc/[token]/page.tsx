@@ -287,7 +287,7 @@ const handleCompositeDownload = useCallback(async () => {
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
-              <div className="relative min-h-full">
+              <div className="relative min-h-full h-full">
                 <TocPage
                   branding={branding}
                   tocSettings={tocSettings}
@@ -306,7 +306,7 @@ const handleCompositeDownload = useCallback(async () => {
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
-              <div className="relative min-h-full">
+              <div className="relative min-h-full h-full">
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <TextPage
                   textPage={currentTextPage as any}

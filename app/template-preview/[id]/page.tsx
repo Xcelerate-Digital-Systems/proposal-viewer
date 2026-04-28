@@ -311,7 +311,7 @@ useEffect(() => {
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
-              <div className="relative min-h-full">
+              <div className="relative min-h-full h-full">
                 <TocPage
                   branding={branding}
                   tocSettings={tocSettings}
@@ -330,7 +330,7 @@ useEffect(() => {
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
-              <div className="relative min-h-full">
+              <div className="relative min-h-full h-full">
                 <TextPage
                   textPage={currentTextPage}
                   branding={branding}
