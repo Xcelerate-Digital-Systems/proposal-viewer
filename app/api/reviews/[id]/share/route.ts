@@ -17,7 +17,6 @@ export async function PATCH(
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (auth.accountType !== 'agency') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const supabase = createServiceClient();
 
