@@ -9,6 +9,19 @@
 
 export type FeedbackShareMode = 'list' | 'board';
 
+/** Which tabs the public project share link exposes. */
+export type FeedbackSharedViews = {
+  board: boolean;
+  kanban: boolean;
+  items: boolean;
+};
+
+export const DEFAULT_SHARED_VIEWS: FeedbackSharedViews = {
+  board: true,
+  kanban: false,
+  items: true,
+};
+
 export type FeedbackProject = {
   id: string;
   company_id: string;
@@ -20,6 +33,7 @@ export type FeedbackProject = {
   share_token: string;
   board_share_token: string | null;
   share_mode: FeedbackShareMode;
+  shared_views: FeedbackSharedViews;
   root_domain: string | null;
   script_installed_at: string | null;
   reviewer_note: string | null;

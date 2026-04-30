@@ -105,12 +105,18 @@ export async function GET(
       itemVersions = versionRes.data || [];
     }
 
-    // Load board data if share_mode is 'board'
+    // Load board data whenever the board tab is shared (or when share_mode
+    // legacy flag indicates board). Fetched up front so the tabbed viewer
+    // can switch tabs without an extra round trip.
+    const sharedViews = (project.shared_views as { board?: boolean } | null) ?? null;
+    const wantsBoard = sharedViews?.board === true || project.share_mode === 'board';
+
     let boardEdges: unknown[] = [];
     let boardNotes: unknown[] = [];
+    let boardShapes: unknown[] = [];
 
-    if (project.share_mode === 'board') {
-      const [edgesRes, notesRes] = await Promise.all([
+    if (wantsBoard) {
+      const [edgesRes, notesRes, shapesRes] = await Promise.all([
         supabase
           .from('review_board_edges')
           .select('*')
@@ -119,10 +125,16 @@ export async function GET(
           .from('review_board_notes')
           .select('*')
           .eq('review_project_id', project.id),
+        supabase
+          .from('review_board_shapes')
+          .select('*')
+          .eq('review_project_id', project.id),
       ]);
 
       boardEdges = edgesRes.data || [];
       boardNotes = notesRes.data || [];
+      // review_board_shapes may not exist in older DB snapshots — tolerate.
+      boardShapes = shapesRes.error ? [] : (shapesRes.data || []);
     }
 
     return NextResponse.json({
@@ -133,6 +145,7 @@ export async function GET(
       itemVersions,
       boardEdges,
       boardNotes,
+      boardShapes,
     });
   } catch (err) {
     console.error('Review fetch error:', err);

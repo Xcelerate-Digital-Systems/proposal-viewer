@@ -2,6 +2,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { DEFAULT_SHARED_VIEWS, type FeedbackSharedViews } from '@/lib/types/feedback';
+
+/**
+ * PATCH /api/reviews/[id]/share
+ *
+ * Update which tabs the project's public share link exposes.
+ * Body: { shared_views: { board: boolean; kanban: boolean; items: boolean } }
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (auth.accountType !== 'agency') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const supabase = createServiceClient();
+
+    const { data: project, error: projErr } = await supabase
+      .from('review_projects')
+      .select('id, company_id')
+      .eq('id', params.id)
+      .single();
+
+    if (projErr || !project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    if (project.company_id !== auth.companyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const body = await req.json();
+    const incoming = (body?.shared_views ?? {}) as Partial<FeedbackSharedViews>;
+    const next: FeedbackSharedViews = {
+      board: typeof incoming.board === 'boolean' ? incoming.board : DEFAULT_SHARED_VIEWS.board,
+      kanban: typeof incoming.kanban === 'boolean' ? incoming.kanban : DEFAULT_SHARED_VIEWS.kanban,
+      items: typeof incoming.items === 'boolean' ? incoming.items : DEFAULT_SHARED_VIEWS.items,
+    };
+
+    const { error: updateErr } = await supabase
+      .from('review_projects')
+      .update({ shared_views: next, updated_at: new Date().toISOString() })
+      .eq('id', project.id);
+
+    if (updateErr) return NextResponse.json({ error: 'Failed to update sharing settings' }, { status: 500 });
+
+    return NextResponse.json({ shared_views: next });
+  } catch (err) {
+    console.error('Share PATCH error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
 
 /**
  * POST /api/reviews/[id]/share

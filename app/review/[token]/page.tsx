@@ -1,10 +1,11 @@
 // app/review/[token]/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Image as ImageIcon, ArrowLeft, Monitor } from 'lucide-react';
-import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackItemVersion, type FeedbackStatus } from '@/lib/supabase';
+import { Image as ImageIcon, Monitor } from 'lucide-react';
+import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackBoardShape, type FeedbackItemVersion, type FeedbackStatus } from '@/lib/supabase';
+import { DEFAULT_SHARED_VIEWS, type FeedbackSharedViews } from '@/lib/types/feedback';
 import { buildVersionList } from '@/lib/feedback/versions';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
@@ -16,6 +17,8 @@ import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewer';
+import PublicKanbanView from '@/components/feedback/public/PublicKanbanView';
+import PublicTabBar, { type PublicTab } from '@/components/feedback/public/PublicTabBar';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
 import ReviewerNoteOverlay from '@/components/feedback/ReviewerNoteOverlay';
@@ -33,11 +36,12 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [boardEdges, setBoardEdges] = useState<FeedbackBoardEdge[]>([]);
   const [boardNotes, setBoardNotes] = useState<FeedbackBoardNote[]>([]);
+  const [boardShapes, setBoardShapes] = useState<FeedbackBoardShape[]>([]);
   const [itemVersions, setItemVersions] = useState<FeedbackItemVersion[]>([]);
   /** Per-item override of which version the client is looking at. Missing = use item.active_version_id. */
   const [clientVersionOverrides, setClientVersionOverrides] = useState<Record<string, string | null>>({});
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
-  const [showBoardView, setShowBoardView] = useState(true);
+  const [currentTab, setCurrentTab] = useState<PublicTab>('items');
   const [viewMode, setViewMode] = useState<'project' | 'item'>('project');
   const [initialItemId, setInitialItemId] = useState<string | null>(null);
   const [autoTypeFilter, setAutoTypeFilter] = useState<string | null>(null);
@@ -85,13 +89,24 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         // Board data
         if (data.boardEdges) setBoardEdges(data.boardEdges);
         if (data.boardNotes) setBoardNotes(data.boardNotes);
+        if (data.boardShapes) setBoardShapes(data.boardShapes);
         if (data.itemVersions) setItemVersions(data.itemVersions);
 
-        // If share_mode is board, start in board view — unless deep-linked to an item
-        if (data.project.share_mode === 'board' && !urlItem) {
-          setShowBoardView(true);
+        // Pick the initial tab based on shared_views + url params. Deep
+        // links to a specific item always land on the items tab so the
+        // detail view renders straight away.
+        const sharedViews: FeedbackSharedViews =
+          (data.project.shared_views as FeedbackSharedViews | null) ?? DEFAULT_SHARED_VIEWS;
+        if (urlItem) {
+          setCurrentTab('items');
+        } else if (data.project.share_mode === 'board' && sharedViews.board) {
+          setCurrentTab('board');
+        } else if (sharedViews.board) {
+          setCurrentTab('board');
+        } else if (sharedViews.kanban) {
+          setCurrentTab('kanban');
         } else {
-          setShowBoardView(false);
+          setCurrentTab('items');
         }
 
         // Select initial item based on URL params
@@ -237,15 +252,24 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     }
   }, [guestName]);
 
-  // ── Board → item detail navigation ──
+  // ── Board / Kanban → item detail navigation ──
+  // Switches the tabbed shell to the items tab and pre-selects the clicked
+  // item so the detail view loads immediately. Falls back gracefully when
+  // the items tab isn't enabled — clients see the deep-linked detail anyway
+  // because singleItemOnly works without the tab being visible.
   const handleBoardItemClick = useCallback((itemId: string) => {
     setInitialItemId(itemId);
     setSelectedItemId(itemId);
-    // Auto-filter to same type as clicked item
     const clickedItem = items.find((i) => i.id === itemId);
     if (clickedItem?.type) setAutoTypeFilter(clickedItem.type);
-    setShowBoardView(false);
+    setCurrentTab('items');
   }, [items]);
+
+  // Resolve which tabs the project share link exposes.
+  const sharedViews: FeedbackSharedViews = useMemo(
+    () => (project?.shared_views as FeedbackSharedViews | null) ?? DEFAULT_SHARED_VIEWS,
+    [project?.shared_views]
+  );
 
   // ── Early returns ──
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
@@ -265,12 +289,39 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     );
   }
 
-  const isBoardMode = project?.share_mode === 'board';
+  const isSingleItem = viewMode === 'item';
+  const enabledTabCount =
+    (sharedViews.board ? 1 : 0) + (sharedViews.kanban ? 1 : 0) + (sharedViews.items ? 1 : 0);
 
   // ══════════════════════════════════════════════════════════════════
-  //  BOARD VIEW — genuinely different UI, stays in this route
+  //  EMPTY-SHARE STATE — no tabs are exposed
   // ══════════════════════════════════════════════════════════════════
-  if (isBoardMode && showBoardView) {
+  if (!isSingleItem && enabledTabCount === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-gray-500">Nothing shared yet</h2>
+          <p className="text-sm text-gray-400 mt-1">The project owner hasn&apos;t enabled any shared views.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Back action for items-tab/single-item: explicit ?back= wins; otherwise
+  // fall back to switching to the board tab if it's enabled.
+  const isSafeBackPath = urlBack != null && urlBack.startsWith('/') && !urlBack.startsWith('//');
+  const backAction = urlBack && (isValidHttpUrl(urlBack) || isSafeBackPath)
+    ? { label: 'Back', onClick: () => { window.location.href = urlBack; } }
+    : (!isSingleItem && sharedViews.board)
+      ? { label: 'Back to Board', onClick: () => setCurrentTab('board') }
+      : (!isSingleItem && sharedViews.kanban)
+        ? { label: 'Back to Kanban', onClick: () => setCurrentTab('kanban') }
+        : undefined;
+
+  // ══════════════════════════════════════════════════════════════════
+  //  BOARD or KANBAN TAB — full-screen branded layout
+  // ══════════════════════════════════════════════════════════════════
+  if (!isSingleItem && (currentTab === 'board' || currentTab === 'kanban')) {
     return (
       <>
         <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
@@ -328,47 +379,54 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         </div>
 
         <div className="hidden lg:flex min-h-screen flex-col bg-gray-50 pt-12">
-          <div
-            className="px-4 py-2 shrink-0 text-right"
-            style={{
-              backgroundColor: bgSecondary,
-              borderBottom: `1px solid ${sidebarText}15`,
-            }}
-          >
-            <p className="text-xs" style={{ color: `${sidebarText}80` }}>
-              Click any item to view details and leave feedback
-            </p>
-          </div>
+          <PublicTabBar
+            current={currentTab}
+            views={sharedViews}
+            onChange={setCurrentTab}
+            bgSecondary={bgSecondary}
+            sidebarText={sidebarText}
+          />
 
-          <div className="flex-1 min-h-0">
-            <FeedbackBoardViewer
-              items={items}
-              boardEdges={boardEdges}
-              boardNotes={boardNotes}
-              comments={comments}
-              branding={branding}
-              onSelectItem={handleBoardItemClick}
-            />
-          </div>
+          {currentTab === 'board' && (
+            <>
+              <div
+                className="px-4 py-2 shrink-0 text-right"
+                style={{
+                  backgroundColor: bgSecondary,
+                  borderBottom: `1px solid ${sidebarText}15`,
+                }}
+              >
+                <p className="text-xs" style={{ color: `${sidebarText}80` }}>
+                  Click any item to view details and leave feedback
+                </p>
+              </div>
+              <div className="flex-1 min-h-0">
+                <FeedbackBoardViewer
+                  items={items}
+                  boardEdges={boardEdges}
+                  boardNotes={boardNotes}
+                  boardShapes={boardShapes}
+                  comments={comments}
+                  branding={branding}
+                  onSelectItem={handleBoardItemClick}
+                />
+              </div>
+            </>
+          )}
+
+          {currentTab === 'kanban' && (
+            <div className="flex-1 min-h-0 pt-4">
+              <PublicKanbanView
+                items={items}
+                comments={comments}
+                onSelectItem={handleBoardItemClick}
+              />
+            </div>
+          )}
         </div>
       </>
     );
   }
-
-  // ══════════════════════════════════════════════════════════════════
-  //  DETAIL VIEW — single item or sidebar+detail, delegated to shared
-  // ══════════════════════════════════════════════════════════════════
-
-  // Determine back action: ?back= absolute URL OR same-origin path, else
-  // board-mode fallback. Relative paths (e.g. /whiteboard/xxx when the item
-  // link comes from a shared whiteboard) are also accepted — they just need
-  // to start with a single slash to avoid protocol-relative URLs.
-  const isSafeBackPath = urlBack != null && urlBack.startsWith('/') && !urlBack.startsWith('//');
-  const backAction = urlBack && (isValidHttpUrl(urlBack) || isSafeBackPath)
-    ? { label: 'Back to Board', onClick: () => { window.location.href = urlBack; } }
-    : isBoardMode
-      ? { label: 'Back to Board', onClick: () => setShowBoardView(true) }
-      : undefined;
 
   return (
     <>
@@ -393,6 +451,15 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         />
       )}
       <div className="min-h-screen flex flex-col">
+        {!isSingleItem && enabledTabCount > 1 && (
+          <PublicTabBar
+            current={currentTab}
+            views={sharedViews}
+            onChange={setCurrentTab}
+            bgSecondary={bgSecondary}
+            sidebarText={sidebarText}
+          />
+        )}
         <FeedbackDetailView
           mode="client"
           project={project!}

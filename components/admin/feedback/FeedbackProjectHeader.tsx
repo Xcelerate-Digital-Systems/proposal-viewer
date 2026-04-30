@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { ArrowLeft, Plus, FileText, Pause, Play } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import ReviewerNoteModal from '@/components/admin/feedback/ReviewerNoteModal';
-import ShareButton from '@/components/feedback/ShareButton';
-import { buildReviewProjectUrl, buildReviewWhiteboardUrl } from '@/lib/proposal-url';
+import ShareMenu from '@/components/feedback/ShareMenu';
+import { buildReviewProjectUrl } from '@/lib/proposal-url';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
+import { DEFAULT_SHARED_VIEWS } from '@/lib/types/feedback';
 import { useToast } from '@/components/ui/Toast';
 
 interface Props {
@@ -17,8 +18,6 @@ interface Props {
   customDomain: string | null;
   hasWebpages: boolean;
   activeTab: 'board' | 'kanban' | 'items' | 'feedback';
-  /** Which share scope this tab links to. Board tab → board view; the rest → items view. */
-  shareView?: 'board' | 'items';
   onAddItem?: () => void;
 }
 
@@ -29,18 +28,13 @@ export default function FeedbackProjectHeader({
   customDomain,
   hasWebpages,
   activeTab,
-  shareView,
   onAddItem,
 }: Props) {
   const toast = useToast();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [togglingPause, setTogglingPause] = useState(false);
 
-  const view = shareView ?? (activeTab === 'board' ? 'board' : 'items');
-  const token = view === 'board' ? project.board_share_token : project.share_token;
-  const buildUrl = view === 'board'
-    ? (t: string) => buildReviewWhiteboardUrl(t, customDomain, window.location.origin)
-    : (t: string) => buildReviewProjectUrl(t, customDomain, window.location.origin);
+  const buildUrl = (t: string) => buildReviewProjectUrl(t, customDomain, window.location.origin);
 
   const togglePauseComments = async () => {
     if (togglingPause) return;
@@ -112,20 +106,13 @@ export default function FeedbackProjectHeader({
             )}
           </button>
 
-          <ShareButton
-            token={token}
-            view={view}
+          <ShareMenu
             projectId={project.id}
+            shareToken={project.share_token}
+            sharedViews={project.shared_views ?? DEFAULT_SHARED_VIEWS}
             buildUrl={buildUrl}
-            label={token ? 'Copy link' : 'Share'}
-            permanent
-            onTokenChange={(t) =>
-              setProject((prev) => {
-                if (!prev) return prev;
-                return view === 'board'
-                  ? { ...prev, board_share_token: t }
-                  : { ...prev, share_token: t ?? prev.share_token };
-              })
+            onViewsChange={(next) =>
+              setProject((prev) => (prev ? { ...prev, shared_views: next } : prev))
             }
           />
 
