@@ -18,6 +18,7 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import FeedbackBoardViewer from '@/components/feedback/public/FeedbackBoardViewer';
 import PublicKanbanView from '@/components/feedback/public/PublicKanbanView';
+import PublicItemsGrid from '@/components/feedback/public/PublicItemsGrid';
 import PublicTabBar, { type PublicTab } from '@/components/feedback/public/PublicTabBar';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
@@ -46,6 +47,10 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   const [initialItemId, setInitialItemId] = useState<string | null>(null);
   const [autoTypeFilter, setAutoTypeFilter] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  /** When set, replace whichever tab the user is on with the single-item
+   *  detail view. Null returns to the tab's default content (grid / board /
+   *  kanban). Drives the back-button affordance and hides the tab strip. */
+  const [inlineItemId, setInlineItemId] = useState<string | null>(null);
   const [reviewMode, setReviewMode] = useState<ReviewMode>('comment');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
@@ -125,6 +130,9 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         }
         setInitialItemId(startId);
         setSelectedItemId(startId);
+        // Deep links (?item=…) and per-item share tokens drop straight into
+        // the inline detail view so reviewers don't see the grid first.
+        if (urlItem || data.mode === 'item') setInlineItemId(startId);
 
         // Load branding
         const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`);
@@ -252,17 +260,20 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     }
   }, [guestName]);
 
-  // ── Board / Kanban → item detail navigation ──
-  // Switches the tabbed shell to the items tab and pre-selects the clicked
-  // item so the detail view loads immediately. Falls back gracefully when
-  // the items tab isn't enabled — clients see the deep-linked detail anyway
-  // because singleItemOnly works without the tab being visible.
+  // ── Item card → inline detail view ──
+  // Renders the item detail in place of the current tab content (board /
+  // kanban / items grid) instead of jumping to a different tab. Webpage
+  // items still open externally so reviewers can see the live page.
   const handleBoardItemClick = useCallback((itemId: string) => {
+    const clickedItem = items.find((i) => i.id === itemId);
+    if (clickedItem?.type === 'webpage' && clickedItem.widget_installed_at && clickedItem.url) {
+      window.open(clickedItem.url, '_blank');
+      return;
+    }
     setInitialItemId(itemId);
     setSelectedItemId(itemId);
-    const clickedItem = items.find((i) => i.id === itemId);
     if (clickedItem?.type) setAutoTypeFilter(clickedItem.type);
-    setCurrentTab('items');
+    setInlineItemId(itemId);
   }, [items]);
 
   // Resolve which tabs the project share link exposes.
@@ -307,24 +318,27 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
     );
   }
 
-  // Back action for items-tab/single-item: explicit ?back= wins; otherwise
-  // fall back to switching to the board tab if it's enabled.
+  // The detail view is shown for per-item shares (token resolved to an
+  // item) AND for inline drill-downs from the grid / board / kanban.
+  const isShowingDetail = isSingleItem || !!inlineItemId;
+
+  // Back action: explicit ?back= URL wins. Otherwise inline drill-downs
+  // close back to the active tab. Per-item-token shares have no fallback.
   const isSafeBackPath = urlBack != null && urlBack.startsWith('/') && !urlBack.startsWith('//');
   const backAction = urlBack && (isValidHttpUrl(urlBack) || isSafeBackPath)
     ? { label: 'Back', onClick: () => { window.location.href = urlBack; } }
-    : (!isSingleItem && sharedViews.board)
-      ? { label: 'Back to Board', onClick: () => setCurrentTab('board') }
-      : (!isSingleItem && sharedViews.kanban)
-        ? { label: 'Back to Kanban', onClick: () => setCurrentTab('kanban') }
-        : undefined;
+    : (inlineItemId && !isSingleItem)
+      ? { label: 'Back', onClick: () => setInlineItemId(null) }
+      : undefined;
 
   // ══════════════════════════════════════════════════════════════════
-  //  BOARD or KANBAN TAB — full-screen branded layout
+  //  SINGLE-ITEM DETAIL — item-token shares OR inline drill-down
+  //  FeedbackDetailView ships its own header + back button, so we skip
+  //  the project-level ReviewTopBar / tab strip in this state.
   // ══════════════════════════════════════════════════════════════════
-  if (!isSingleItem && (currentTab === 'board' || currentTab === 'kanban')) {
+  if (isShowingDetail) {
     return (
       <>
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
         <GuestOnboardingModal
           open={showOnboarding}
           onSubmit={(name, email) => saveGuestIdentity(name, email)}
@@ -345,91 +359,47 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
             fontHeading={branding.font_heading}
           />
         )}
-        {!showOnboarding && project && (
-          <ReviewTopBar
-            projectTitle={project.title}
-            clientName={project.client_name}
-            projectStatus={project.status}
-            commentsPaused={project.pause_new_comments}
+        <div className="min-h-screen flex flex-col">
+          <FeedbackDetailView
+            mode="client"
+            project={project!}
+            items={items}
+            comments={comments}
+            branding={branding}
+            initialItemId={inlineItemId ?? initialItemId}
+            initialTypeFilter={urlType || autoTypeFilter}
+            singleItemOnly
+            hideFilterBar={!!autoTypeFilter}
+            guestName={guestName}
+            onGuestNameChange={setGuestName}
+            onSubmitComment={submitComment}
+            onItemChange={handleItemChange}
             shareToken={params.token}
+            companyId={project?.company_id}
+            browseMode={reviewMode === 'browse'}
+            versions={selectedItem && selectedItem.type !== 'webpage' ? selectedItemVersions : undefined}
+            activeVersionId={resolvedActiveVersionId}
+            onVersionChange={selectedItem && selectedItem.type !== 'webpage' ? handleClientVersionChange : undefined}
+            backAction={backAction}
+            onUpdateItemStatus={handleUpdateItemStatus}
+            reviewMode={reviewMode}
+            onReviewModeChange={setReviewMode}
             reviewerName={guestName}
             reviewerEmail={guestEmail}
-            mode={reviewMode}
-            onModeChange={setReviewMode}
-            accentColor={branding.accent_color}
-            logoUrl={branding.logo_url}
-            companyName={branding.name}
-            fontHeading={branding.font_heading}
-            branding={branding}
-            submitted={reviewSubmitted}
-            onSubmitted={() => setReviewSubmitted(true)}
+            reviewSubmitted={reviewSubmitted}
+            onReviewSubmitted={() => setReviewSubmitted(true)}
           />
-        )}
-
-        <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
-          <div className="text-center max-w-sm">
-            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <Monitor size={24} className="text-gray-400" />
-            </div>
-            <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
-            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-              Please open this review on a desktop browser for the best experience.
-            </p>
-          </div>
-        </div>
-
-        <div className="hidden lg:flex min-h-screen flex-col bg-gray-50 pt-12">
-          <PublicTabBar
-            current={currentTab}
-            views={sharedViews}
-            onChange={setCurrentTab}
-            bgSecondary={bgSecondary}
-            sidebarText={sidebarText}
-          />
-
-          {currentTab === 'board' && (
-            <>
-              <div
-                className="px-4 py-2 shrink-0 text-right"
-                style={{
-                  backgroundColor: bgSecondary,
-                  borderBottom: `1px solid ${sidebarText}15`,
-                }}
-              >
-                <p className="text-xs" style={{ color: `${sidebarText}80` }}>
-                  Click any item to view details and leave feedback
-                </p>
-              </div>
-              <div className="flex-1 min-h-0">
-                <FeedbackBoardViewer
-                  items={items}
-                  boardEdges={boardEdges}
-                  boardNotes={boardNotes}
-                  boardShapes={boardShapes}
-                  comments={comments}
-                  branding={branding}
-                  onSelectItem={handleBoardItemClick}
-                />
-              </div>
-            </>
-          )}
-
-          {currentTab === 'kanban' && (
-            <div className="flex-1 min-h-0 pt-4">
-              <PublicKanbanView
-                items={items}
-                comments={comments}
-                onSelectItem={handleBoardItemClick}
-              />
-            </div>
-          )}
         </div>
       </>
     );
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  TAB VIEWS — Board / Kanban / Items grid share one branded shell
+  // ══════════════════════════════════════════════════════════════════
   return (
     <>
+      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
       <GuestOnboardingModal
         open={showOnboarding}
         onSubmit={(name, email) => saveGuestIdentity(name, email)}
@@ -450,45 +420,101 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           fontHeading={branding.font_heading}
         />
       )}
-      <div className="min-h-screen flex flex-col">
-        {!isSingleItem && enabledTabCount > 1 && (
-          <PublicTabBar
-            current={currentTab}
-            views={sharedViews}
-            onChange={setCurrentTab}
-            bgSecondary={bgSecondary}
-            sidebarText={sidebarText}
-          />
-        )}
-        <FeedbackDetailView
-          mode="client"
-          project={project!}
-          items={items}
-          comments={comments}
-          branding={branding}
-          initialItemId={initialItemId}
-          initialTypeFilter={urlType || autoTypeFilter}
-          singleItemOnly={viewMode === 'item'}
-          hideFilterBar={!!autoTypeFilter}
-          guestName={guestName}
-          onGuestNameChange={setGuestName}
-          onSubmitComment={submitComment}
-          onItemChange={handleItemChange}
+      {!showOnboarding && project && (
+        <ReviewTopBar
+          projectTitle={project.title}
+          clientName={project.client_name}
+          projectStatus={project.status}
+          commentsPaused={project.pause_new_comments}
           shareToken={params.token}
-          companyId={project?.company_id}
-          browseMode={reviewMode === 'browse'}
-          versions={selectedItem && selectedItem.type !== 'webpage' ? selectedItemVersions : undefined}
-          activeVersionId={resolvedActiveVersionId}
-          onVersionChange={selectedItem && selectedItem.type !== 'webpage' ? handleClientVersionChange : undefined}
-          backAction={backAction}
-          onUpdateItemStatus={handleUpdateItemStatus}
-          reviewMode={reviewMode}
-          onReviewModeChange={setReviewMode}
           reviewerName={guestName}
           reviewerEmail={guestEmail}
-          reviewSubmitted={reviewSubmitted}
-          onReviewSubmitted={() => setReviewSubmitted(true)}
+          mode={reviewMode}
+          onModeChange={setReviewMode}
+          accentColor={branding.accent_color}
+          logoUrl={branding.logo_url}
+          companyName={branding.name}
+          fontHeading={branding.font_heading}
+          branding={branding}
+          submitted={reviewSubmitted}
+          onSubmitted={() => setReviewSubmitted(true)}
         />
+      )}
+
+      {currentTab !== 'items' && (
+        <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Monitor size={24} className="text-gray-400" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              Please open this review on a desktop browser for the best experience.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`${
+          currentTab === 'items' ? 'flex' : 'hidden lg:flex'
+        } min-h-screen flex-col bg-gray-50 pt-12`}
+      >
+        <PublicTabBar
+          current={currentTab}
+          views={sharedViews}
+          onChange={setCurrentTab}
+          bgSecondary={bgSecondary}
+          sidebarText={sidebarText}
+        />
+
+        {currentTab === 'board' && (
+          <>
+            <div
+              className="px-4 py-2 shrink-0 text-right"
+              style={{
+                backgroundColor: bgSecondary,
+                borderBottom: `1px solid ${sidebarText}15`,
+              }}
+            >
+              <p className="text-xs" style={{ color: `${sidebarText}80` }}>
+                Click any item to view details and leave feedback
+              </p>
+            </div>
+            <div className="flex-1 min-h-0">
+              <FeedbackBoardViewer
+                items={items}
+                boardEdges={boardEdges}
+                boardNotes={boardNotes}
+                boardShapes={boardShapes}
+                comments={comments}
+                branding={branding}
+                onSelectItem={handleBoardItemClick}
+              />
+            </div>
+          </>
+        )}
+
+        {currentTab === 'kanban' && (
+          <div className="flex-1 min-h-0 pt-4">
+            <PublicKanbanView
+              items={items}
+              comments={comments}
+              onSelectItem={handleBoardItemClick}
+            />
+          </div>
+        )}
+
+        {currentTab === 'items' && (
+          <div className="flex-1 min-h-0">
+            <PublicItemsGrid
+              items={items}
+              comments={comments}
+              initialTypeFilter={urlType || autoTypeFilter}
+              onSelectItem={handleBoardItemClick}
+            />
+          </div>
+        )}
       </div>
     </>
   );
