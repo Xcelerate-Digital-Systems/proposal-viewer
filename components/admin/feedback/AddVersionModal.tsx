@@ -131,10 +131,10 @@ export default function AddVersionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-[0_24px_48px_rgba(20,20,40,0.18)] w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Upload Version {nextVersionNumber}</h3>
+            <h3 className="text-base font-semibold tracking-tight text-ink">Upload Version {nextVersionNumber}</h3>
             <p className="text-[12px] text-gray-500 mt-0.5 truncate max-w-[360px]">{item.title}</p>
           </div>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600"><X size={18} /></button>
@@ -217,14 +217,14 @@ export default function AddVersionModal({
           <button
             onClick={onClose}
             disabled={busy}
-            className="px-3 py-2 text-[13px] text-gray-600 hover:bg-gray-50 rounded-lg disabled:opacity-50"
+            className="px-3 py-1.5 text-[13px] text-gray-600 hover:bg-gray-50 rounded-full disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={busy}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-teal text-white text-[13px] font-medium rounded-lg hover:bg-teal-hover disabled:opacity-60 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-1.5 bg-teal text-white text-[13px] font-semibold rounded-full hover:bg-teal-hover disabled:opacity-60 transition-colors shadow-sm"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
             {busy ? 'Saving…' : 'Save Version'}
@@ -237,7 +237,7 @@ export default function AddVersionModal({
 
 /* ─── Tiny presentational bits ─────────────────────────────────────── */
 
-const inputCls = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/40';
+const inputCls = 'w-full px-3 py-2 bg-gray-50 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-teal/30';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

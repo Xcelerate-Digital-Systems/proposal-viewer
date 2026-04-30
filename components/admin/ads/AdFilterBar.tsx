@@ -31,7 +31,7 @@ function FilterSelect({
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="bg-surface border border-edge rounded-lg px-2.5 py-1.5 text-[13px] text-ink outline-none focus:ring-2 focus:ring-teal/20 min-w-[130px]"
+        className="bg-surface border border-gray-100 rounded-lg px-2.5 py-1.5 text-[13px] text-ink outline-none focus:ring-2 focus:ring-teal/20 min-w-[130px]"
       >
         <option value="">All</option>
         {options.map((opt) => (

@@ -92,7 +92,7 @@ export default function AdminSidebar({
         key={item.href}
         href={item.href}
         onClick={() => setMobileOpen(false)}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
+        className={`flex items-center gap-3 px-3 py-2 rounded-full text-sm font-medium transition-colors group ${
           active
             ? 'bg-white/10 text-white'
             : 'text-white/60 hover:text-white hover:bg-[#013036]'
@@ -117,7 +117,7 @@ export default function AdminSidebar({
         key={section.key}
         href={section.defaultHref}
         onClick={() => setMobileOpen(false)}
-        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group text-white/60 hover:text-white hover:bg-[#013036]"
+        className="flex items-center gap-3 px-3 py-2 rounded-full text-sm font-medium transition-colors group text-white/60 hover:text-white hover:bg-[#013036]"
       >
         <Icon size={18} className="text-white/40 group-hover:text-white/60" />
         <span className="flex-1">{section.label}</span>
@@ -164,7 +164,7 @@ export default function AdminSidebar({
       <Link
         href="/dashboard"
         onClick={() => setMobileOpen(false)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors mb-1"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors mb-1"
       >
         <ArrowLeft size={14} />
         <span>Back</span>
@@ -243,7 +243,7 @@ export default function AdminSidebar({
         </div>
         <button
           onClick={onSignOut}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors"
         >
           <LogOut size={16} />
           Sign out

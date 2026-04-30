@@ -99,7 +99,7 @@ export default function ReviewerNoteModal({
             onChange={(e) => setNote(e.target.value)}
             rows={6}
             placeholder="Type here"
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 text-sm text-ink placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-teal/20"
           />
           <label className="flex items-center gap-2 mt-3 text-sm text-gray-700 cursor-pointer select-none">
             <input
@@ -116,14 +116,14 @@ export default function ReviewerNoteModal({
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 rounded-lg hover:bg-white transition-colors"
+            className="px-4 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 rounded-full hover:bg-white transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!dirty || saving}
-            className="px-5 py-2 rounded-lg bg-teal text-white text-sm font-semibold hover:bg-teal-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-5 py-1.5 rounded-full bg-teal text-white text-sm font-semibold hover:bg-teal-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
             {saving ? 'Saving…' : 'Save note'}
           </button>

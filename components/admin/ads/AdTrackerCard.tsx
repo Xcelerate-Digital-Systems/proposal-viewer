@@ -28,7 +28,7 @@ export default function AdTrackerCard({ tracker, onClick, onDelete }: Props) {
   return (
     <div
       onClick={onClick}
-      className="bg-white border border-edge rounded-xl p-5 hover:border-teal/30 cursor-pointer transition-colors group relative"
+      className="bg-white border border-gray-100 rounded-xl p-5 hover:border-teal/30 cursor-pointer transition-colors group relative"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center">
@@ -47,7 +47,7 @@ export default function AdTrackerCard({ tracker, onClick, onDelete }: Props) {
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-edge rounded-lg shadow-lg z-10 py-1 min-w-[140px]">
+            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg z-10 py-1 min-w-[140px]">
               <button
                 onClick={(e) => {
                   e.stopPropagation();

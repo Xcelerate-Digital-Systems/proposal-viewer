@@ -135,7 +135,7 @@ function ClientsContent({
           {clients.map((client) => (
             <div
               key={client.id}
-              className="bg-white border border-edge rounded-[14px]  hover:border-edge-hover hover: transition-all flex flex-col"
+              className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)]   hover: transition-all flex flex-col"
             >
               {/* Card header */}
               <div className="p-5 flex-1">
@@ -173,7 +173,7 @@ function ClientsContent({
               </div>
 
               {/* Card footer */}
-              <div className="px-5 py-3 border-t border-edge">
+              <div className="px-5 py-3 border-t border-gray-100">
                 <button
                   onClick={() => handleEnter(client)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
@@ -259,9 +259,9 @@ function CreateClientModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white border border-edge rounded-2xl shadow-lg w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-[0_24px_48px_rgba(20,20,40,0.18)] w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-ink">New Client</h2>
           <button onClick={onClose} className="text-faint hover:text-muted transition-colors">
             <X size={18} />
@@ -279,7 +279,7 @@ function CreateClientModal({
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Acme Plumbing"
-              className="w-full bg-surface border border-edge rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+              className="w-full bg-surface rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 "
               autoFocus
             />
           </div>
@@ -293,7 +293,7 @@ function CreateClientModal({
                 setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
               }
               placeholder="acme-plumbing"
-              className="w-full bg-surface border border-edge rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+              className="w-full bg-surface rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 "
             />
             <p className="text-xs text-faint mt-1">Used for internal identification</p>
           </div>
@@ -306,7 +306,7 @@ function CreateClientModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-edge">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm text-muted hover:text-ink transition-colors"

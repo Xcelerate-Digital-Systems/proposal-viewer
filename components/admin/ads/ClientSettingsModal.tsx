@@ -49,7 +49,7 @@ export default function ClientSettingsModal({
         </div>
 
         {/* Tab strip */}
-        <div className="px-6 mt-4 border-b border-edge shrink-0">
+        <div className="px-6 mt-4 border-b border-gray-100 shrink-0">
           <div className="flex gap-1">
             <TabButton
               active={tab === 'standards'}

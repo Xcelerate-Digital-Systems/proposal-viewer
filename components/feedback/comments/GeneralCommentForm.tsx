@@ -77,25 +77,25 @@ export default function GeneralCommentForm({
   };
 
   return (
-    <div className="border-t border-gray-200 px-4 py-3 shrink-0">
+    <div className="px-4 pt-3 pb-5 shrink-0">
       {!expanded ? (
         <button
           onClick={() => setExpanded(true)}
-          className="w-full text-left px-3 py-2.5 rounded-lg text-xs text-gray-400 border border-gray-200 hover:border-gray-300 transition-colors"
+          className="w-full text-left px-4 py-3 rounded-2xl text-[13px] text-gray-400 bg-white shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)] hover:text-gray-600 transition-colors"
         >
           Leave a general comment…
         </button>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-2">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)] px-4 py-3 space-y-2">
           {authorName ? (
-            <p className="text-[10px] text-gray-400">Posting as {authorName}</p>
+            <p className="text-[11px] text-gray-400">Posting as {authorName}</p>
           ) : (
             <input
               type="text"
               value={guestName || ''}
               onChange={(e) => onNameChange?.(e.target.value)}
               placeholder="Your name"
-              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              className="w-full px-3 py-2 rounded-xl bg-[#F5F1EE] text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
             />
           )}
 
@@ -106,9 +106,9 @@ export default function GeneralCommentForm({
               rows={2}
               autoFocus
               placeholder="Your comment…"
-              className="w-full px-2.5 py-2 pr-8 rounded-lg border border-gray-200 text-xs text-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              className="w-full px-0 py-1 pr-8 text-[13px] text-ink placeholder:text-gray-400 bg-transparent resize-none focus:outline-none leading-relaxed"
             />
-            <div className="absolute bottom-1.5 right-1.5">
+            <div className="absolute bottom-1 right-0">
               <EmojiPicker onSelect={(emoji) => setText((prev) => prev + emoji)} />
             </div>
           </div>
@@ -119,14 +119,14 @@ export default function GeneralCommentForm({
             <button
               type="button"
               onClick={() => { setExpanded(false); setPendingFiles([]); }}
-              className="text-xs px-2 py-1 text-gray-400 hover:text-gray-600"
+              className="text-[12px] px-2 py-1 text-gray-400 hover:text-ink"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isDisabled}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal text-white text-xs font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-teal text-white text-[12px] font-semibold hover:bg-teal-hover disabled:opacity-40 transition-colors"
             >
               <Send size={11} />
               Post

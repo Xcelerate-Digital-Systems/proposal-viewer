@@ -293,7 +293,7 @@ function TeamContent({
                                         Make Member
                                       </button>
                                     )}
-                                    <div className="border-t border-edge my-1" />
+                                    <div className="border-t border-gray-100 my-1" />
                                   </>
                                 )}
                                 <button

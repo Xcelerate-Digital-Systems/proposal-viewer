@@ -92,13 +92,13 @@ export default function AddFeedbackItemModal({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       <div
-        className={`relative bg-white rounded-xl shadow-2xl mx-4 ${
+        className={`relative bg-white rounded-2xl shadow-[0_24px_48px_rgba(20,20,40,0.18)] mx-4 ${
           isWide ? 'w-full max-w-4xl' : 'w-full max-w-lg'
         } max-h-[90vh] flex flex-col`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900 font-[family-name:var(--font-display)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+          <h2 className="text-lg font-semibold tracking-tight text-ink font-[family-name:var(--font-display)]">
             {step === 'type' ? 'Add Item' : (TITLES[itemType] || 'New Item')}
           </h2>
           <button
@@ -118,21 +118,21 @@ export default function AddFeedbackItemModal({
                 <button
                   key={opt.value}
                   onClick={() => handleTypeSelect(opt.value, opt.enabled)}
-                  className={`w-full flex items-center gap-4 p-4 rounded-lg border text-left transition-colors ${
+                  className={`w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-colors ${
                     opt.enabled
-                      ? 'border-gray-200 hover:border-teal hover:bg-teal/5 cursor-pointer'
-                      : 'border-gray-100 opacity-50 cursor-not-allowed'
+                      ? 'bg-gray-50 hover:bg-teal/5 cursor-pointer'
+                      : 'bg-gray-50/50 opacity-50 cursor-not-allowed'
                   }`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                       opt.enabled ? 'bg-teal/10' : 'bg-gray-100'
                     }`}
                   >
                     <Icon size={20} className={opt.enabled ? 'text-teal' : 'text-gray-400'} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{opt.label}</p>
+                    <p className="text-sm font-medium text-ink">{opt.label}</p>
                     <p className="text-xs text-gray-400">
                       {opt.description}
                       {!opt.enabled && ' (coming soon)'}

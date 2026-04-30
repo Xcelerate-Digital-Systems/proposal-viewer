@@ -102,7 +102,7 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
   return (
     <div className="space-y-6">
       {/* Send Invite Form */}
-      <div className="bg-white border border-edge rounded-[14px] p-5 ">
+      <div className="bg-white border border-gray-100 rounded-[14px] p-5 ">
         <h3 className="text-sm font-medium text-ink mb-4 flex items-center gap-2">
           <UserPlus size={16} className="text-teal" />
           Invite Team Member
@@ -116,12 +116,12 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="flex-1 px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+              className="flex-1 px-3 py-2 rounded-lg bg-surface border border-gray-100 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 /40"
             />
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as 'owner' | 'admin' | 'member')}
-              className="px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+              className="px-3 py-2 rounded-lg bg-surface border border-gray-100 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 /40"
             >
               {canInviteOwner && <option value="owner">Owner</option>}
               <option value="admin">Admin</option>
@@ -171,7 +171,7 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
                 {pendingInvites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between bg-white border border-edge rounded-lg px-4 py-3 "
+                    className="flex items-center justify-between bg-white border border-gray-100 rounded-lg px-4 py-3 "
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-ink truncate">{invite.email}</p>
@@ -234,7 +234,7 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
                 {acceptedInvites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between bg-surface border border-edge rounded-lg px-4 py-3"
+                    className="flex items-center justify-between bg-surface border border-gray-100 rounded-lg px-4 py-3"
                   >
                     <div>
                       <p className="text-sm text-muted truncate">{invite.email}</p>
@@ -260,7 +260,7 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
                 {expiredInvites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between bg-surface/50 border border-edge rounded-lg px-4 py-3 opacity-60"
+                    className="flex items-center justify-between bg-surface/50 border border-gray-100 rounded-lg px-4 py-3 opacity-60"
                   >
                     <div>
                       <p className="text-sm text-faint truncate">{invite.email}</p>

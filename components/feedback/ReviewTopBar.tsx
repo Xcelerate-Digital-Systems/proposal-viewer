@@ -84,7 +84,7 @@ export default function ReviewTopBar({
   return (
     <>
       <div
-        className={`fixed top-0 inset-x-0 z-30 h-12 flex items-center px-4 gap-4 ${branded ? '' : 'bg-white border-b border-gray-200'}`}
+        className={`fixed top-0 inset-x-0 z-30 h-12 flex items-center px-4 gap-4 ${branded ? '' : 'bg-white border-b border-gray-100'}`}
         style={barStyle}
       >
         {/* Left — brand + project */}
@@ -100,7 +100,7 @@ export default function ReviewTopBar({
             </span>
           ) : null}
           {(logoUrl || companyName) && (
-            <span className={`h-4 w-px ${branded ? '' : 'bg-gray-200'}`} style={dividerColor} />
+            <span className={`h-4 w-px ${branded ? '' : 'bg-gray-100'}`} style={dividerColor} />
           )}
           <div className="min-w-0 flex items-center gap-2">
             <span
@@ -118,7 +118,7 @@ export default function ReviewTopBar({
               </span>
             )}
             {statusDef && (
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-medium ${statusDef.bg} ${statusDef.text} ${statusDef.border}`}>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${statusDef.bg} ${statusDef.text}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${statusDef.dot}`} />
                 {statusDef.label}
               </span>
@@ -128,7 +128,7 @@ export default function ReviewTopBar({
 
         {/* Centre — Comment / Browse toggle */}
         <div
-          className={`flex items-center rounded-full p-0.5 shrink-0 ${branded ? '' : 'bg-gray-100'}`}
+          className={`flex items-center rounded-full p-0.5 shrink-0 ${branded ? '' : 'bg-[#F5F1EE]'}`}
           style={togglePillBg}
         >
           <button
@@ -173,7 +173,7 @@ export default function ReviewTopBar({
             {initials}
           </div>
           {submitted ? (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-semibold">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[12px] font-semibold">
               Review submitted
             </span>
           ) : (

@@ -482,11 +482,11 @@ export default function FeedbackDetailView({
 
       {MobileGate}
 
-      <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-gray-50`}>
+      <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-white`}>
         {/* ── Row 1: brand + title + status | version + status control + actions | (client) Comment/Browse + avatar + Finish ── */}
         <div
-          className={`flex items-center gap-3 px-4 py-2 shrink-0 ${
-            headerBranded ? '' : 'border-b border-gray-200 bg-white'
+          className={`flex items-center gap-3 px-5 py-3 shrink-0 ${
+            headerBranded ? '' : 'bg-white shadow-[0_1px_0_rgba(20,20,40,0.05)]'
           }`}
           style={headerBranded ? { backgroundColor: bgSecondary, borderBottom: `2px solid ${branding?.accent_color || accent}` } : undefined}
         >
@@ -529,11 +529,11 @@ export default function FeedbackDetailView({
 
             {/* Project title (always shown — replaces ReviewTopBar's title) */}
             <span
-              className={`h-4 w-px ${headerBranded ? '' : 'bg-gray-200'}`}
+              className={`h-4 w-px ${headerBranded ? '' : 'bg-gray-100'}`}
               style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
             />
             <span
-              className={`text-sm font-medium truncate max-w-[200px] ${headerBranded ? '' : 'text-gray-900'}`}
+              className={`text-[15px] font-semibold tracking-tight truncate max-w-[220px] ${headerBranded ? '' : 'text-ink'}`}
               style={headerBranded ? { color: sidebarText } : undefined}
             >
               {project.title}
@@ -552,7 +552,7 @@ export default function FeedbackDetailView({
           {!singleItemOnly && stripTypes.length > 1 && (
             <>
               <div
-                className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-200'}`}
+                className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
                 style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
               />
               <div className="shrink-0">
@@ -572,15 +572,15 @@ export default function FeedbackDetailView({
           {!singleItemOnly && filteredItems.length > 1 && (
             <>
               <div
-                className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-200'}`}
+                className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
                 style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
               />
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => goToItem(currentIdx - 1)}
                   disabled={currentIdx <= 0}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                    headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                    headerBranded ? '' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                   }`}
                   style={headerBranded ? {
                     border: `1px solid ${sidebarText}25`,
@@ -599,8 +599,8 @@ export default function FeedbackDetailView({
                 <button
                   onClick={() => goToItem(currentIdx + 1)}
                   disabled={currentIdx >= filteredItems.length - 1}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                    headerBranded ? '' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                    headerBranded ? '' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                   }`}
                   style={headerBranded ? {
                     border: `1px solid ${sidebarText}25`,
@@ -689,7 +689,7 @@ export default function FeedbackDetailView({
 
             {onReviewSubmitted !== undefined && (
               reviewSubmitted ? (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-semibold shrink-0">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[12px] font-semibold shrink-0">
                   Review submitted
                 </span>
               ) : (
@@ -740,7 +740,7 @@ export default function FeedbackDetailView({
               onEdit={isAdmin ? onEditComment : undefined}
               onDelete={isAdmin ? onDeleteComment : undefined}
               companyId={companyId}
-              className="w-[340px] shrink-0 border-r border-gray-200 bg-white flex flex-col"
+              className="w-[360px] shrink-0 bg-[#FBF8F5] flex flex-col"
             />
           )}
 
@@ -748,7 +748,7 @@ export default function FeedbackDetailView({
           <div
             className={`flex-1 relative ${
               isWebpageItem ? 'overflow-auto p-4' : 'overflow-auto flex items-center justify-center p-6'
-            } bg-gray-50 min-w-0`}
+            } bg-white min-w-0`}
           >
             <ItemContentView
               item={selectedItem}
@@ -842,29 +842,7 @@ export default function FeedbackDetailView({
             />
           </div>
 
-          {/* ── Right: vertical thumb strip (hidden in single-item) ── */}
-          {!singleItemOnly && filteredItems.length > 1 && (
-            <div
-              className={`shrink-0 ${headerBranded ? '' : 'border-l border-gray-200 bg-white'}`}
-              style={headerBranded ? {
-                backgroundColor: bgSecondary,
-                borderLeft: `1px solid ${sidebarText}15`,
-              } : undefined}
-            >
-              <ItemThumbStrip
-                filteredItems={filteredItems}
-                selectedItemId={selectedItemId}
-                onSelectItem={handleSidebarSelect}
-                comments={stripComments}
-                variant={stripVariant}
-                orientation="vertical"
-                textColor={headerBranded ? sidebarText : undefined}
-                accentColor={headerBranded ? accent : undefined}
-                fontSidebar={hasBranding && branding ? fontFamily(branding.font_sidebar) : undefined}
-                className="h-full w-[88px]"
-              />
-            </div>
-          )}
+          {/* Vertical thumb strip removed — header prev/next handles navigation. */}
         </div>
 
       </div>

@@ -414,7 +414,7 @@ export default function AdCreativesTable({
   return (
     <div className="h-full overflow-auto bg-[#F3F4F6]">
       <table className="w-full min-w-[3200px]">
-        <thead className="bg-white border-b border-edge sticky top-0 z-10">
+        <thead className="bg-white border-b border-gray-100 sticky top-0 z-10">
           {/* Group header row */}
           <tr>
             {COLUMN_GROUPS.map((group, i) => (
@@ -464,7 +464,7 @@ export default function AdCreativesTable({
                     </button>
 
                     {menuOpenId === c.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-edge rounded-lg shadow-lg z-20 py-1 min-w-[140px]">
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg z-20 py-1 min-w-[140px]">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

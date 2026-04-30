@@ -100,7 +100,7 @@ export default function AudienceTab({ trackerStandards, onSaveTrackerStandards }
           onChange={(e) => setPersonaInput(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Add a persona (e.g. Tradies, Homeowners)"
-          className="flex-1 px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30"
+          className="flex-1 px-3 py-2 bg-surface border border-gray-100 rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 /30"
         />
         <button
           type="button"

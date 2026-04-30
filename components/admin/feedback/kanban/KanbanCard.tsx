@@ -47,7 +47,7 @@ export default function KanbanCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative bg-white rounded-xl border border-gray-200 p-3 hover:border-gray-300 hover:shadow-sm transition-all ${
+      className={`group relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all ${
         isDragging ? 'ring-2 ring-teal/40' : ''
       }`}
     >
@@ -55,18 +55,18 @@ export default function KanbanCard({
       <div
         {...listeners}
         {...attributes}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing rounded-xl"
+        className="absolute inset-0 cursor-grab active:cursor-grabbing rounded-2xl"
         aria-label={`Drag ${item.title}`}
       />
 
       <div className="relative flex items-start gap-2.5">
-        <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${meta.iconBg}`}>
-          <Icon size={14} className={meta.iconColor} />
+        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.iconBg}`}>
+          <Icon size={15} className={meta.iconColor} />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-1.5">
-            <h4 className="text-sm font-medium text-gray-900 truncate leading-tight flex-1 min-w-0">
+            <h4 className="text-[13px] font-medium text-ink truncate leading-tight flex-1 min-w-0">
               {item.title}
             </h4>
             {item.version > 1 && (
@@ -77,7 +77,7 @@ export default function KanbanCard({
         </div>
       </div>
 
-      <div className="relative mt-2.5 pt-2.5 border-t border-gray-100 flex items-center justify-between">
+      <div className="relative mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-1 text-[11px] text-gray-500">
           <MessageSquareText size={11} />
           <span>

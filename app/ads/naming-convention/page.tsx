@@ -107,7 +107,7 @@ function NamingConvention() {
   return (
     <div className="min-h-screen bg-canvas">
       {/* Header */}
-      <div className="border-b border-edge bg-white">
+      <div className="border-b border-gray-100 bg-white">
         <div className="max-w-5xl mx-auto px-8 py-6">
           <button
             type="button"
@@ -156,7 +156,7 @@ function NamingConvention() {
             {SEGMENT_CODES.map((row, i) => (
               <div
                 key={row.code}
-                className={`flex gap-5 px-6 py-4 ${i < SEGMENT_CODES.length - 1 ? 'border-b border-edge' : ''}`}
+                className={`flex gap-5 px-6 py-4 ${i < SEGMENT_CODES.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
                 <span className="font-mono text-[12px] text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
@@ -180,7 +180,7 @@ function NamingConvention() {
             {ANGLES.map((row, i) => (
               <div
                 key={row.code}
-                className={`flex gap-5 px-5 py-3 ${i < ANGLES.length - 1 ? 'border-b border-edge' : ''}`}
+                className={`flex gap-5 px-5 py-3 ${i < ANGLES.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
                 <span className="font-mono text-[12px] text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
@@ -227,7 +227,7 @@ function NamingConvention() {
             {PERSONA_EXAMPLES.map((row, i) => (
               <div
                 key={row.code}
-                className={`flex gap-5 px-5 py-3 ${i < PERSONA_EXAMPLES.length - 1 ? 'border-b border-edge' : ''}`}
+                className={`flex gap-5 px-5 py-3 ${i < PERSONA_EXAMPLES.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
                 <span className="font-mono text-[12px] text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
@@ -245,7 +245,7 @@ function NamingConvention() {
             {FORMAT_CODES.map((row, i) => (
               <div
                 key={row.code}
-                className={`flex items-center gap-4 px-5 py-3 ${i < FORMAT_CODES.length - 1 ? 'border-b border-edge' : ''}`}
+                className={`flex items-center gap-4 px-5 py-3 ${i < FORMAT_CODES.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
                 <span className="font-mono text-[12px] text-teal w-[80px] shrink-0">{row.code}</span>
                 <span className="text-[13px] text-muted">{row.label}</span>
@@ -290,7 +290,7 @@ function NamingConvention() {
         </section>
 
         {/* Andromeda explainer */}
-        <section className="pt-4 border-t border-edge">
+        <section className="pt-4 border-t border-gray-100">
           <div className="flex items-center gap-2.5 mb-4">
             <Sparkles size={16} className="text-teal" />
             <h2 className="text-[16px] font-semibold text-ink">Meta Andromeda, explained simply</h2>
@@ -363,7 +363,7 @@ function NamingConvention() {
               {REMIX_TABLE.map((row, i) => (
                 <div
                   key={row.element}
-                  className={`grid grid-cols-[1fr_140px_140px] px-4 py-3 text-[13px] items-center ${i < REMIX_TABLE.length - 1 ? 'border-b border-edge' : ''}`}
+                  className={`grid grid-cols-[1fr_140px_140px] px-4 py-3 text-[13px] items-center ${i < REMIX_TABLE.length - 1 ? 'border-b border-gray-100' : ''}`}
                 >
                   <div className="text-ink">{row.element}</div>
                   <div className="text-center text-muted">{row.baked ? 'Yes' : 'No'}</div>

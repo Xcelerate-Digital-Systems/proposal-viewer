@@ -362,7 +362,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
         ) : (
           <div className="max-w-4xl space-y-4">
             {completions.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setCompletionsOpen((o) => !o)}
@@ -409,7 +409,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             )}
 
             {/* Open / Resolved toggle */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] overflow-hidden">
               {/* Filter bar */}
               <div className="flex items-center gap-4 px-5 py-3 border-b border-gray-100 flex-wrap">
                 <button

@@ -20,10 +20,10 @@ interface PriorityOptionDef {
 }
 
 export const PRIORITY_OPTIONS: PriorityOptionDef[] = [
-  { value: 'high', label: 'High', icon: AlertCircle, iconClass: 'text-red-500', badgeClass: 'bg-red-50 text-red-700 border-red-200' },
-  { value: 'medium', label: 'Medium', icon: CircleMinus, iconClass: 'text-amber-500', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { value: 'low', label: 'Low', icon: CircleArrowDown, iconClass: 'text-emerald-500', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { value: 'none', label: 'None', icon: Check, iconClass: 'text-blue-500', badgeClass: 'bg-gray-50 text-gray-500 border-gray-200' },
+  { value: 'high', label: 'High', icon: AlertCircle, iconClass: 'text-rose-500', badgeClass: 'bg-rose-100 text-rose-700' },
+  { value: 'medium', label: 'Medium', icon: CircleMinus, iconClass: 'text-amber-500', badgeClass: 'bg-amber-100 text-amber-700' },
+  { value: 'low', label: 'Low', icon: CircleArrowDown, iconClass: 'text-emerald-500', badgeClass: 'bg-emerald-100 text-emerald-700' },
+  { value: 'none', label: 'None', icon: Check, iconClass: 'text-blue-500', badgeClass: 'bg-gray-100 text-gray-500' },
 ];
 
 export function getPriorityDef(priority: FeedbackCommentPriority): PriorityOptionDef {

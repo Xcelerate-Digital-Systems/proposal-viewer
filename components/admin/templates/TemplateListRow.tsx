@@ -75,7 +75,7 @@ if (pages && pages.length > 0) {
   return (
     <div
       onClick={() => router.push(`/templates/${t.id}/pages`)}
-      className="flex items-center gap-4 px-4 py-3 bg-white rounded-[12px] border border-edge hover:border-edge-hover cursor-pointer transition-colors group"
+      className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group"
     >
       {/* Template icon badge */}
       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium shrink-0 bg-teal-tint text-teal">

@@ -51,7 +51,7 @@ function AdsIndex() {
       </p>
       <button
         onClick={() => setShowCreate(true)}
-        className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+        className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
       >
         <Plus size={16} />
         New Client

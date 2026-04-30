@@ -149,7 +149,7 @@ export default function ReferenceModal({ type, onClose }: Props) {
         className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <h2 className="text-base font-semibold text-ink">{TITLES[type]}</h2>
           <button
             onClick={onClose}

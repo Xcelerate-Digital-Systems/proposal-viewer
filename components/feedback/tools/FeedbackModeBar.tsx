@@ -22,11 +22,11 @@ export default function FeedbackModeBar({ mode, onCancel }: FeedbackModeBarProps
   if (!message) return null;
 
   return (
-    <div className="flex items-center justify-center gap-3 px-4 py-2.5 bg-teal text-white text-sm font-medium shadow-md z-40 shrink-0 animate-in slide-in-from-top duration-200">
-      <span className="text-[13px]">{message}</span>
+    <div className="flex items-center justify-center gap-3 px-4 py-2.5 bg-teal text-white text-[13px] font-medium z-40 shrink-0 animate-in slide-in-from-top duration-200 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
+      <span>{message}</span>
       <button
         onClick={onCancel}
-        className="px-3 py-1 rounded-md bg-white/20 hover:bg-white/30 text-[12px] font-medium transition-colors"
+        className="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-[12px] font-medium transition-colors"
       >
         Cancel
       </button>

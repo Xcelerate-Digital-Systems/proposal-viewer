@@ -86,7 +86,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-6 flex items-center gap-4">
+      <div className="bg-ivory shadow-[0_1px_0_rgba(20,20,40,0.05)] px-6 lg:px-10 py-6 flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold text-ink">
             Documents
@@ -98,7 +98,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
 
         <div className="flex items-center gap-3">
           {/* View toggle */}
-          <div className="flex items-center bg-surface rounded-[10px] p-1 gap-0.5">
+          <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
             <button
               onClick={() => toggleView('grid')}
               className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
@@ -124,7 +124,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
           </div>
 
           {/* Search */}
-          <div className="hidden md:flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2.5 w-[200px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
+          <div className="hidden md:flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[200px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
             <Search size={16} className="text-faint shrink-0" />
             <input
               type="text"
@@ -138,7 +138,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
           {/* New document */}
           <button
             onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+            className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
           >
             <Plus size={16} />
             New Document
@@ -176,7 +176,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
             <p className="text-sm text-faint">Upload a PDF to create a shareable document</p>
             <button
               onClick={() => setShowUpload(true)}
-              className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+              className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
             >
               <Plus size={16} />
               New Document

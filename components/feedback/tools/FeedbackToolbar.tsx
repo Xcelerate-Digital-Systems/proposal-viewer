@@ -37,7 +37,7 @@ export default function FeedbackToolbar({
 
   return (
     <div
-      className={`flex flex-col items-center gap-1 bg-paper rounded-xl shadow-sketch-lg border-2 border-sketch-ink/70 p-1.5 z-30 ${className}`}
+      className={`flex flex-col items-center gap-1 bg-white rounded-2xl shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_24px_rgba(20,20,40,0.06)] p-1.5 z-30 ${className}`}
     >
       {/* Drawing tools */}
       {onModeChange && (
@@ -67,7 +67,7 @@ export default function FeedbackToolbar({
             icon={<Highlighter size={18} />}
           />
 
-          <div className="w-5 h-px bg-sketch-ink/25 my-0.5" />
+          <div className="w-5 h-px bg-gray-100 my-0.5" />
         </>
       )}
 
@@ -101,10 +101,10 @@ function ToolButton({
   return (
     <button
       onClick={onClick}
-      className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors group ${
+      className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors group ${
         active
-          ? 'bg-teal text-white shadow-sketch'
-          : 'text-sketch-ink/70 hover:bg-paper-dark hover:text-sketch-ink'
+          ? 'bg-teal text-white shadow-sm'
+          : 'text-gray-500 hover:bg-gray-50 hover:text-ink'
       }`}
       title={tooltip}
     >
@@ -113,9 +113,9 @@ function ToolButton({
       {/* Badge */}
       {badge != null && (
         <span
-          className={`absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-bold px-1 ${
+          className={`absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-semibold px-1 ${
             active
-              ? 'bg-paper text-teal'
+              ? 'bg-white text-teal'
               : 'bg-teal text-white'
           }`}
         >
@@ -124,7 +124,7 @@ function ToolButton({
       )}
 
       {/* Tooltip */}
-      <span className="absolute right-full mr-2 px-2 py-1 rounded-md bg-sketch-ink text-paper font-hand text-sm whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-sketch">
+      <span className="absolute right-full mr-2 px-2.5 py-1 rounded-lg bg-ink text-white text-[11px] font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-sm">
         {tooltip}
       </span>
     </button>

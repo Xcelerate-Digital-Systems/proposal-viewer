@@ -27,7 +27,7 @@ export default function VersionPicker({
   return (
     <div className="flex items-center gap-1">
       <div
-        className={`inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 ${
+        className={`inline-flex items-center gap-0.5 rounded-full bg-gray-50 ${
           compact ? 'p-0.5' : 'p-1'
         }`}
         title="Select version"
@@ -39,9 +39,9 @@ export default function VersionPicker({
             <button
               key={v.id ?? 'v1'}
               onClick={() => onChange(v.id)}
-              className={`${compact ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-0.5 text-[12px]'} font-semibold rounded-md transition-colors tabular-nums ${
+              className={`${compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-[12px]'} font-semibold rounded-full transition-colors tabular-nums ${
                 isActive
-                  ? 'bg-white text-gray-800 shadow-sm'
+                  ? 'bg-white text-ink shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
               title={v.notes || `Version ${v.versionNumber}`}
@@ -55,7 +55,7 @@ export default function VersionPicker({
       {onAddVersion && (
         <button
           onClick={onAddVersion}
-          className={`${compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1.5 text-[12px]'} inline-flex items-center gap-1 rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 font-medium transition-colors`}
+          className={`${compact ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-[12px]'} inline-flex items-center gap-1 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 font-medium transition-colors`}
           title="Upload a new version"
         >
           <Plus size={compact ? 11 : 12} />

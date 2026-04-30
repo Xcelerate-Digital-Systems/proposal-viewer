@@ -194,14 +194,14 @@ function AnglesContent() {
         <p className="text-[13px] text-muted">Core angle categories for structuring your ad messaging. Each angle family represents a different psychological lever.</p>
       </div>
       {ANGLE_CATEGORIES.map((cat) => (
-        <div key={cat.name} className="border border-edge rounded-xl overflow-hidden">
+        <div key={cat.name} className="border border-gray-100 rounded-xl overflow-hidden">
           <div className="px-4 py-3 bg-surface/50">
             <p className="text-[14px] font-semibold text-ink">{cat.name}</p>
             <p className="text-[12px] text-muted mt-0.5">{cat.description}</p>
           </div>
           <table className="w-full">
             <thead>
-              <tr className="border-t border-edge bg-surface/30">
+              <tr className="border-t border-gray-100 bg-surface/30">
                 <th className="px-4 py-2 text-left text-[11px] font-semibold text-muted uppercase tracking-wider">Angle Idea</th>
                 <th className="px-4 py-2 text-left text-[11px] font-semibold text-muted uppercase tracking-wider">Example Hook / Headline</th>
                 <th className="px-4 py-2 text-left text-[11px] font-semibold text-muted uppercase tracking-wider w-[120px]">Sophistication</th>
@@ -231,14 +231,14 @@ function FormatsContent() {
         <p className="text-[13px] text-muted">Available creative format types grouped by creative family. Choose the format that best fits your angle and target audience.</p>
       </div>
       {FORMAT_FAMILIES.map((fam) => (
-        <div key={fam.name} className="border border-edge rounded-xl overflow-hidden">
+        <div key={fam.name} className="border border-gray-100 rounded-xl overflow-hidden">
           <div className="px-4 py-3 bg-surface/50">
             <p className="text-[14px] font-semibold text-ink">{fam.name}</p>
             <p className="text-[12px] text-muted mt-0.5">{fam.description}</p>
           </div>
           <table className="w-full">
             <thead>
-              <tr className="border-t border-edge bg-surface/30">
+              <tr className="border-t border-gray-100 bg-surface/30">
                 <th className="px-4 py-2 text-left text-[11px] font-semibold text-muted uppercase tracking-wider w-[220px]">Format Archetype</th>
                 <th className="px-4 py-2 text-left text-[11px] font-semibold text-muted uppercase tracking-wider">Example Creative Approach</th>
               </tr>
@@ -309,7 +309,7 @@ function AwarenessContent() {
         <p className="text-[13px] text-muted">Eugene Schwartz&apos;s 5 stages of awareness — describes how aware your audience is of their problem, the solution, and you. You need to meet them where they are at.</p>
       </div>
       {stages.map((stage) => (
-        <div key={stage.level} className="border border-edge rounded-xl p-5">
+        <div key={stage.level} className="border border-gray-100 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-full bg-teal/10 text-teal flex items-center justify-center text-sm font-bold shrink-0">
               {stage.level}
@@ -347,7 +347,7 @@ function SophisticationContent() {
         <p className="text-[13px] text-muted">Describes how familiar your audience is with promises, solutions, and marketing claims in your category — guiding how bold, specific, or unique your message needs to be. As markets mature, simple claims stop working.</p>
       </div>
       {MARKET_SOPHISTICATION_LEVELS.map((level) => (
-        <div key={level.value} className="border border-edge rounded-xl p-5">
+        <div key={level.value} className="border border-gray-100 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold shrink-0">
               {level.level}

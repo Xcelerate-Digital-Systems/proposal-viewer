@@ -135,7 +135,7 @@ function EditCreative({ companyId }: { companyId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-4">
+      <div className="bg-ivory shadow-[0_1px_0_rgba(20,20,40,0.05)] px-6 lg:px-10 py-4">
         <div className="flex items-center gap-3">
           <button
             onClick={goBack}

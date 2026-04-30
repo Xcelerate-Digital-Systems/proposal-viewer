@@ -94,7 +94,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Summer Sale"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
             autoFocus
           />
         </div>
@@ -135,7 +135,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
             onChange={(e) => setAdCopy(e.target.value)}
             rows={3}
             placeholder="The main body copy shown above the image…"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-y min-h-[72px]"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  resize-y min-h-[72px]"
           />
         </div>
 
@@ -146,7 +146,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
             value={adHeadline}
             onChange={(e) => setAdHeadline(e.target.value)}
             placeholder="Short punchy headline…"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
           />
         </div>
 
@@ -155,7 +155,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
           <select
             value={adCta}
             onChange={(e) => setAdCta(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal bg-white"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20  bg-white"
           >
             {CTA_OPTIONS.map((cta) => (
               <option key={cta} value={cta}>{cta}</option>

@@ -79,7 +79,7 @@ export default function StandardsPanel({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center">
               <Target size={16} className="text-teal" />
@@ -144,7 +144,7 @@ export default function StandardsPanel({
                       value={campaignStandards.metric_label || ''}
                       onChange={(e) => setCampaignStandards({ ...campaignStandards, metric_label: e.target.value })}
                       placeholder="CPL"
-                      className="w-full px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30"
+                      className="w-full px-3 py-2 bg-surface border border-gray-100 rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 /30"
                     />
                   </div>
                   <div className="flex-1">
@@ -163,7 +163,7 @@ export default function StandardsPanel({
         )}
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-edge flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-4 py-2 text-[13px] text-muted hover:text-ink rounded-lg hover:bg-surface transition-colors"
@@ -214,7 +214,7 @@ function StandardInput({
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
           placeholder={placeholder}
-          className={`w-full py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${prefix ? 'pl-7 pr-3' : 'px-3'} ${suffix ? 'pr-8' : ''}`}
+          className={`w-full py-2 bg-surface border border-gray-100 rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 /30 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${prefix ? 'pl-7 pr-3' : 'px-3'} ${suffix ? 'pr-8' : ''}`}
         />
         {suffix && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-faint">{suffix}</span>

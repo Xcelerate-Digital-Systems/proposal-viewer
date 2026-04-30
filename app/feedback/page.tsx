@@ -120,10 +120,10 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-6">
+      <div className="bg-ivory px-6 lg:px-10 py-6 shadow-[0_1px_0_rgba(20,20,40,0.05)]">
         <div className="flex items-center gap-4 mb-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold text-ink">
+            <h1 className="text-2xl font-semibold tracking-tight text-ink">
               Feedback
             </h1>
             <p className="text-sm text-muted mt-1">
@@ -133,10 +133,10 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
 
           <div className="flex items-center gap-3">
             {/* View toggle */}
-            <div className="flex items-center bg-surface rounded-[10px] p-1 gap-0.5">
+            <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
               <button
                 onClick={() => toggleView('grid')}
-                className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
+                className={`w-[34px] h-[30px] rounded-full flex items-center justify-center transition-all ${
                   viewMode === 'grid'
                     ? 'bg-white shadow-sm text-ink'
                     : 'text-faint hover:text-muted'
@@ -147,7 +147,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               </button>
               <button
                 onClick={() => toggleView('list')}
-                className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
+                className={`w-[34px] h-[30px] rounded-full flex items-center justify-center transition-all ${
                   viewMode === 'list'
                     ? 'bg-white shadow-sm text-ink'
                     : 'text-faint hover:text-muted'
@@ -159,8 +159,8 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             </div>
 
             {/* Search */}
-            <div className="hidden md:flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2.5 w-[200px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
-              <Search size={16} className="text-faint shrink-0" />
+            <div className="hidden md:flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[220px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
+              <Search size={15} className="text-faint shrink-0" />
               <input
                 type="text"
                 placeholder="Search projects..."
@@ -173,7 +173,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             {/* New project */}
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 transition-colors shadow-sm"
             >
               <Plus size={16} />
               New Project
@@ -187,7 +187,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
-              className={`px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+              className={`px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors ${
                 filter === tab.key
                   ? 'bg-ink text-white'
                   : 'text-muted hover:text-ink hover:bg-surface'
@@ -235,7 +235,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             {filter === 'active' && (
               <button
                 onClick={() => setShowCreate(true)}
-                className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+                className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
               >
                 <Plus size={16} />
                 New Project

@@ -104,7 +104,7 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Brand Video – 30s"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
             autoFocus
           />
         </div>
@@ -118,7 +118,7 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
             placeholder="https://youtube.com/watch?v=… or https://vimeo.com/…"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
           />
           <p className="text-[10px] text-gray-400 mt-1">YouTube, Vimeo, or direct video URL</p>
         </div>

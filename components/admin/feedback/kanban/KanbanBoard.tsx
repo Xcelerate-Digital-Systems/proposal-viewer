@@ -145,8 +145,8 @@ function KanbanColumn({
       {/* Droppable list */}
       <div
         ref={setNodeRef}
-        className={`flex-1 rounded-xl border-2 border-dashed p-2 space-y-2 min-h-[120px] transition-colors ${
-          isOver ? 'border-teal bg-teal/5' : 'border-gray-200 bg-gray-50/50'
+        className={`flex-1 rounded-2xl p-3 space-y-2.5 min-h-[140px] transition-colors ${
+          isOver ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-gray-50'
         }`}
       >
         {items.length === 0 ? (

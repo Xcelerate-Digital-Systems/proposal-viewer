@@ -60,7 +60,7 @@ export default function FeedbackProjectHeader({
   };
 
   return (
-    <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-4 border-b border-gray-200 lg:border-b-0">
+    <div className="sticky top-0 z-10 bg-white px-6 lg:px-10 pt-5">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex items-center gap-3">
           <Link
@@ -71,7 +71,7 @@ export default function FeedbackProjectHeader({
             <ArrowLeft size={16} />
           </Link>
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
+            <h1 className="text-[17px] font-semibold tracking-tight text-ink font-[family-name:var(--font-display)] truncate">
               {project.title}
             </h1>
             <p className="text-xs text-gray-400 truncate">
@@ -86,10 +86,10 @@ export default function FeedbackProjectHeader({
           <button
             onClick={togglePauseComments}
             disabled={togglingPause}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors disabled:opacity-50 ${
               project.pause_new_comments
-                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200/70'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
             }`}
             title={project.pause_new_comments ? 'Reopen comments for reviewers' : 'Pause new reviewer comments'}
           >
@@ -99,7 +99,7 @@ export default function FeedbackProjectHeader({
 
           <button
             onClick={() => setShowNoteModal(true)}
-            className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors"
             title={project.reviewer_note ? 'Edit reviewer note' : 'Add a note for reviewers'}
           >
             <FileText size={14} />
@@ -132,7 +132,7 @@ export default function FeedbackProjectHeader({
           {onAddItem && (
             <button
               onClick={onAddItem}
-              className="flex items-center gap-2 bg-teal text-white px-3.5 py-2 rounded-lg text-[13px] font-medium hover:bg-teal-hover transition-colors"
+              className="flex items-center gap-2 bg-teal text-white px-4 py-1.5 rounded-full text-[13px] font-semibold hover:bg-teal-hover transition-colors shadow-sm"
             >
               <Plus size={15} />
               Add Item

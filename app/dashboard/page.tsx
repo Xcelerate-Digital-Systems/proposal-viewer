@@ -40,7 +40,7 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, iconBg, iconColor, footer }: StatCardProps) {
   return (
-    <div className="bg-white rounded-[14px] border border-edge p-6 flex flex-col gap-3">
+    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-6 flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -78,7 +78,7 @@ const STATUS_CONFIG = {
 function ProposalRow({ name, meta, status, isLast }: ProposalRowProps) {
   const cfg = STATUS_CONFIG[status];
   return (
-    <div className={`flex items-center gap-3.5 px-6 py-3.5 ${!isLast ? 'border-b border-edge' : ''}`}>
+    <div className={`flex items-center gap-3.5 px-6 py-3.5 ${!isLast ? 'border-b border-gray-100' : ''}`}>
       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cfg.dot }} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-ink truncate">{name}</p>
@@ -109,7 +109,7 @@ interface ActivityItemProps {
 
 function ActivityItem({ initials, avatarBg, avatarColor, text, time, isLast }: ActivityItemProps) {
   return (
-    <div className={`flex items-start gap-3 px-6 py-4 ${!isLast ? 'border-b border-edge' : ''}`}>
+    <div className={`flex items-start gap-3 px-6 py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}>
       <div
         className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
         style={{ backgroundColor: avatarBg }}
@@ -139,7 +139,7 @@ interface QuickActionProps {
 
 function QuickAction({ number, numBg, numColor, text, time, isLast }: QuickActionProps) {
   return (
-    <div className={`flex items-start gap-3 px-6 py-4 ${!isLast ? 'border-b border-edge' : ''}`}>
+    <div className={`flex items-start gap-3 px-6 py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}>
       <div
         className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
         style={{ backgroundColor: numBg }}
@@ -279,7 +279,7 @@ function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-6 flex items-center gap-4">
+      <div className="bg-ivory shadow-[0_1px_0_rgba(20,20,40,0.05)] px-6 lg:px-10 py-6 flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold text-ink">
             {getGreeting()}, {firstName}
@@ -292,17 +292,17 @@ function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: 
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-surface rounded-[10px] px-3.5 py-2.5 w-[220px]">
+          <div className="flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[220px]">
             <Search size={16} className="text-faint" />
             <span className="text-[13px] text-faint">Search...</span>
           </div>
-          <button className="w-[38px] h-[38px] rounded-[10px] border border-[#E8E8E8] bg-white flex items-center justify-center hover:bg-surface transition-colors">
+          <button className="w-[38px] h-[38px] rounded-full border border-gray-100 bg-white flex items-center justify-center hover:bg-surface transition-colors">
             <Bell size={18} className="text-muted" />
           </button>
           {!isClient && (
             <Link
               href="/proposals"
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
             >
               <Plus size={16} />
               New Proposal
@@ -318,7 +318,7 @@ function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: 
           {loading ? (
             <div className={`grid grid-cols-2 ${isSuperAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
               {Array.from({ length: isSuperAdmin ? 4 : 3 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-[14px] border border-edge p-6 h-[120px] animate-pulse">
+                <div key={i} className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-6 h-[120px] animate-pulse">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-7 h-7 rounded-lg bg-surface" />
                     <div className="h-4 w-24 bg-surface rounded" />
@@ -401,8 +401,8 @@ function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: 
           {/* Bottom row: Recent Proposals + Activity/Quick Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 min-h-0">
             {/* Recent Proposals */}
-            <div className="bg-white rounded-[14px] border border-edge flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
+            <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <h2 className="text-[15px] font-semibold text-ink">
                   {isClient ? 'Your Proposals' : 'Recent Proposals'}
                 </h2>
@@ -453,8 +453,8 @@ function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: 
             </div>
 
             {/* Activity (agency) / Quick Actions (client) */}
-            <div className="bg-white rounded-[14px] border border-edge flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b border-edge">
+            <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] flex flex-col overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
                 <h2 className="text-[15px] font-semibold text-ink">
                   {isClient ? 'Quick Actions' : 'Activity'}
                 </h2>

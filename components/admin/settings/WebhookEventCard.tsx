@@ -159,7 +159,7 @@ export default function WebhookEventCard({
   };
 
   return (
-    <div className={`bg-white border border-edge rounded-[14px] overflow-hidden  transition-opacity ${hasEndpoint && !enabled ? 'opacity-60' : ''}`}>
+    <div className={`bg-white border border-gray-100 rounded-[14px] overflow-hidden  transition-opacity ${hasEndpoint && !enabled ? 'opacity-60' : ''}`}>
       <div className="px-5 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Icon size={16} className={hasEndpoint && enabled ? 'text-teal' : 'text-faint'} />
@@ -206,7 +206,7 @@ export default function WebhookEventCard({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://your-server.com/webhooks"
-            className="w-full px-3 py-2 rounded-lg border border-edge bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+            className="w-full px-3 py-2 rounded-lg border border-gray-100 bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 /40 placeholder:text-faint"
           />
         </div>
 
@@ -221,7 +221,7 @@ export default function WebhookEventCard({
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
                 placeholder="Used to verify webhook authenticity"
-                className="w-full px-3 py-2 pr-16 rounded-lg border border-edge bg-surface text-sm text-ink font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint placeholder:font-sans"
+                className="w-full px-3 py-2 pr-16 rounded-lg border border-gray-100 bg-surface text-sm text-ink font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 /40 placeholder:text-faint placeholder:font-sans"
               />
               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                 {secret && (
@@ -249,7 +249,7 @@ export default function WebhookEventCard({
             <button
               type="button"
               onClick={generateSecret}
-              className="px-2.5 py-2 rounded-lg border border-edge bg-surface text-faint hover:text-muted hover:bg-surface transition-colors shrink-0"
+              className="px-2.5 py-2 rounded-lg border border-gray-100 bg-surface text-faint hover:text-muted hover:bg-surface transition-colors shrink-0"
               title="Generate random secret"
             >
               <RefreshCw size={13} />
@@ -262,7 +262,7 @@ export default function WebhookEventCard({
             <button
               onClick={handleSendTest}
               disabled={sendingTest}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-edge text-muted hover:text-teal hover:border-teal/40 hover:bg-teal/5 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-100 text-muted hover:text-teal hover:border-teal/40 hover:bg-teal/5 transition-colors disabled:opacity-50"
               title="Send a sample payload to this endpoint"
             >
               {sendingTest ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}

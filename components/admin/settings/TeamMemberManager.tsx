@@ -177,7 +177,7 @@ function MemberRow({
               <img
                 src={avatarUrl}
                 alt={member.name}
-                className="w-10 h-10 rounded-full object-cover border border-edge"
+                className="w-10 h-10 rounded-full object-cover border border-gray-100"
               />
               {canEdit && (
                 <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
@@ -213,7 +213,7 @@ function MemberRow({
               )}
             </button>
           ) : (
-            <div className="w-10 h-10 rounded-full bg-surface border border-edge flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-surface border border-gray-100 flex items-center justify-center">
               <span className="text-sm font-medium text-faint">
                 {member.name.charAt(0).toUpperCase()}
               </span>
@@ -242,7 +242,7 @@ function MemberRow({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+              className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-surface border border-gray-100 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 /40"
             />
             {nameChanged && (
               <button
@@ -369,7 +369,7 @@ export default function TeamMemberManager({
               <Loader2 size={20} className="animate-spin text-faint" />
             </div>
           ) : (
-            <div className="bg-white border border-edge rounded-[14px] overflow-hidden  divide-y divide-edge">
+            <div className="bg-white border border-gray-100 rounded-[14px] overflow-hidden  divide-y divide-edge">
               {otherMembers.map((m) => (
                 <MemberRow
                   key={m.id}

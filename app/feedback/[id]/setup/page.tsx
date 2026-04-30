@@ -93,7 +93,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
   return (
     <div className="flex flex-col h-full">
       {/* Sticky header — compact */}
-      <div className="sticky top-0 z-10 bg-gray-50 px-6 lg:px-10 pt-4 border-b border-gray-200 lg:border-b-0">
+      <div className="sticky top-0 z-10 bg-white px-6 lg:px-10 pt-5">
         {project && (
           <>
             <div className="flex items-center justify-between gap-4">
@@ -106,7 +106,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
                   <ArrowLeft size={16} />
                 </Link>
                 <div className="min-w-0">
-                  <h1 className="text-base font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
+                  <h1 className="text-[17px] font-semibold tracking-tight text-ink font-[family-name:var(--font-display)] truncate">
                     {project.title}
                   </h1>
                   {project.client_name && (
@@ -157,7 +157,7 @@ function NotStartedCard({ projectId }: { projectId: string }) {
       </p>
       <Link
         href={`/feedback/${projectId}/items`}
-        className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-teal text-white text-sm font-semibold rounded-full hover:bg-teal-hover transition-colors shadow-sm"
       >
         <Plus size={16} />
         Add a webpage
@@ -201,7 +201,7 @@ function StatusCard({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-6 space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
@@ -285,7 +285,7 @@ function StatusCard({
       )}
 
       {!installed && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-100">
           <span className="relative flex w-2 h-2">
             <span className="absolute inline-flex w-full h-full rounded-full bg-amber-400 opacity-75 animate-ping" />
             <span className="relative inline-flex w-2 h-2 rounded-full bg-amber-500" />

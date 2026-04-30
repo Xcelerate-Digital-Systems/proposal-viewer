@@ -132,13 +132,13 @@ export default function CustomSelect({
   const dropdown = open && pos ? createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[9999] bg-white rounded-xl border border-edge shadow-lg overflow-hidden flex flex-col"
+      className="fixed z-[9999] bg-white rounded-xl border border-gray-100 shadow-lg overflow-hidden flex flex-col"
       style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxHeight }}
     >
       {/* Search */}
       {searchable && (
         <div className="px-2 pt-2 pb-1">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-surface rounded-lg border border-edge">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-surface rounded-lg border border-gray-100">
             <Search size={13} className="text-faint shrink-0" />
             <input
               ref={searchInputRef}
@@ -224,7 +224,7 @@ export default function CustomSelect({
         type="button"
         onClick={handleOpen}
         className={`
-          w-full flex items-center justify-between gap-1.5 px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] transition-all outline-none
+          w-full flex items-center justify-between gap-1.5 px-3 py-2 bg-surface border border-gray-100 rounded-lg text-[13px] transition-all outline-none
           ${open ? 'ring-2 ring-teal/20 border-teal/30' : 'hover:border-edge'}
           ${current ? 'text-ink' : 'text-faint'}
         `}

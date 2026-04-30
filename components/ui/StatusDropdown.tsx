@@ -73,11 +73,11 @@ export default function StatusDropdown<T extends string = string>({
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
         className={`
-          flex items-center justify-between gap-2 rounded-lg font-medium border transition-colors
-          ${current.bg} ${current.text} ${current.border}
+          flex items-center justify-between gap-2 rounded-full font-medium transition-colors
+          ${current.bg} ${current.text}
           ${disabled ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 cursor-pointer'}
           ${fullWidth ? 'w-full' : ''}
-          ${isCompact ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1.5 text-xs'}
+          ${isCompact ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-[11px]'}
         `}
       >
         <span className="flex items-center gap-1.5 min-w-0 truncate">
@@ -92,7 +92,7 @@ export default function StatusDropdown<T extends string = string>({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[160px]">
+        <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white rounded-xl border border-gray-100 shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
           {options.map((opt) => (
             <button
               key={opt.value}

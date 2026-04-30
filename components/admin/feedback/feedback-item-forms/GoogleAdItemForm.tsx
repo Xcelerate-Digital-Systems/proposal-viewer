@@ -107,7 +107,7 @@ export default function GoogleAdItemForm({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Brand Keywords – Search Campaign"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
             autoFocus
           />
         </div>
@@ -143,7 +143,7 @@ export default function GoogleAdItemForm({
             onChange={(e) => setHeadline(e.target.value)}
             placeholder="Your ad headline"
             maxLength={90}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
           />
           <p className="text-[10px] text-gray-400 mt-0.5 text-right">{headline.length}/90</p>
         </div>
@@ -158,7 +158,7 @@ export default function GoogleAdItemForm({
                 rows={2}
                 maxLength={90}
                 placeholder="First description line…"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-y min-h-[56px]"
+                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  resize-y min-h-[56px]"
               />
               <p className="text-[10px] text-gray-400 mt-0.5 text-right">{description1.length}/90</p>
             </div>
@@ -171,7 +171,7 @@ export default function GoogleAdItemForm({
                 rows={2}
                 maxLength={90}
                 placeholder="Second description line (optional)…"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-y min-h-[56px]"
+                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  resize-y min-h-[56px]"
               />
               <p className="text-[10px] text-gray-400 mt-0.5 text-right">{description2.length}/90</p>
             </div>
@@ -216,7 +216,7 @@ export default function GoogleAdItemForm({
             value={displayUrl}
             onChange={(e) => setDisplayUrl(e.target.value)}
             placeholder="example.com"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
           />
         </div>
 
@@ -227,7 +227,7 @@ export default function GoogleAdItemForm({
             value={finalUrl}
             onChange={(e) => setFinalUrl(e.target.value)}
             placeholder="https://example.com/landing-page"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
           />
         </div>
 

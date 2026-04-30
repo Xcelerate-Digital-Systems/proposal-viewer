@@ -169,7 +169,7 @@ export default function WebpageItemForm({
             value={domainInput}
             onChange={(e) => setDomainInput(e.target.value)}
             placeholder="https://example.com"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors"
+            className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  transition-colors"
             autoFocus
           />
           <p className="text-xs text-gray-400 mt-1.5">
@@ -207,7 +207,7 @@ export default function WebpageItemForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Initial Offer Page"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors"
+          className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  transition-colors"
           autoFocus
         />
       </div>

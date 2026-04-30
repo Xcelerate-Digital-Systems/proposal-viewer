@@ -134,7 +134,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-edge bg-white px-6 lg:px-10 py-5">
+      <div className="border-b border-gray-100 bg-white px-6 lg:px-10 py-5">
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-semibold text-ink truncate">{tracker.name}</h1>
@@ -172,7 +172,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             {/* Client settings — Standards + Audience for this client */}
             <button
               onClick={() => setShowClientSettings(true)}
-              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
             >
               <Settings2 size={16} />
               Client settings
@@ -181,7 +181,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
             {/* Share */}
             <button
               onClick={() => setShowShare(true)}
-              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 transition-colors"
+              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
             >
               <Share2 size={16} />
               Share
@@ -257,7 +257,7 @@ function TrackerDetail({ companyId }: { companyId: string }) {
       <div className="flex-1 overflow-hidden overflow-y-auto">
         {activePanel ? (
           <div className="flex flex-col h-full">
-            <div className="flex items-center gap-3 px-6 lg:px-10 py-4 border-b border-edge bg-ivory">
+            <div className="flex items-center gap-3 px-6 lg:px-10 py-4 bg-ivory shadow-[0_1px_0_rgba(20,20,40,0.05)]">
               <button
                 onClick={clearPanel}
                 className="flex items-center gap-1.5 text-[13px] text-muted hover:text-ink transition-colors"

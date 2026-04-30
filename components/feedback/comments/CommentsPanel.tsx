@@ -68,7 +68,7 @@ export default function CommentsPanel({
   guestName,
   onNameChange,
   companyId,
-  className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col border-l border-gray-200 bg-white',
+  className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col bg-[#FBF8F5]',
   closable = true,
 }: CommentsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -87,13 +87,14 @@ export default function CommentsPanel({
   return (
     <div className={className}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
+      <div className="flex items-start justify-between px-5 pt-5 pb-3 shrink-0">
         <div>
-          <span className="text-sm font-semibold text-gray-900">Comments</span>
-          {unresolvedComments.length > 0 && (
-            <span className="ml-1.5 text-xs text-gray-400">
-              ({unresolvedComments.length} open)
-            </span>
+          <h2 className="text-base font-semibold text-ink tracking-tight">Comments</h2>
+          {(unresolvedComments.length > 0 || resolvedComments.length > 0) && (
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              {unresolvedComments.length} open
+              {resolvedComments.length > 0 && ` · ${resolvedComments.length} resolved`}
+            </p>
           )}
         </div>
         <button
@@ -105,7 +106,7 @@ export default function CommentsPanel({
       </div>
 
       {/* Threads */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
         {/* Unresolved threads */}
         {unresolvedComments.map((c) => (
           <CommentThread
@@ -137,9 +138,9 @@ export default function CommentsPanel({
 
         {/* Empty state */}
         {!hasComments && (
-          <div className="text-center py-8">
-            <MapPin size={24} className="mx-auto mb-2 text-gray-200" />
-            <p className="text-xs text-gray-400">
+          <div className="text-center py-12">
+            <MapPin size={28} className="mx-auto mb-3 text-gray-300" />
+            <p className="text-[13px] text-gray-400">
               Click anywhere on the content to leave a comment.
             </p>
           </div>

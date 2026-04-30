@@ -138,7 +138,7 @@ export default function AdBulkUploadModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="text-base font-semibold text-ink">Bulk Upload</h2>
             <p className="text-xs text-faint mt-0.5">
@@ -217,7 +217,7 @@ export default function AdBulkUploadModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-edge shrink-0 bg-white rounded-b-2xl">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-100 shrink-0 bg-white rounded-b-2xl">
           <button onClick={onClose} className="px-4 py-2 text-[13px] text-muted hover:text-ink">
             {finished ? 'Close' : 'Cancel'}
           </button>
@@ -240,7 +240,7 @@ export default function AdBulkUploadModal({
 }
 
 function StatusIcon({ status }: { status: Status }) {
-  if (status === 'pending') return <span className="w-4 h-4 rounded-full border border-edge" />;
+  if (status === 'pending') return <span className="w-4 h-4 rounded-full border border-gray-100" />;
   if (status === 'uploading') return <Loader2 size={14} className="text-teal animate-spin" />;
   if (status === 'done') return <Check size={14} className="text-teal" />;
   return <AlertCircle size={14} className="text-red-600" />;

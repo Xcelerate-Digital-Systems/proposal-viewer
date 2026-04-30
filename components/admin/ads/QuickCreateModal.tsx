@@ -44,7 +44,7 @@ export default function QuickCreateModal({ onClose, onCreate }: Props) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-ink">New Creative</h2>
           <button
             onClick={onClose}
@@ -62,7 +62,7 @@ export default function QuickCreateModal({ onClose, onCreate }: Props) {
               value={adName}
               onChange={(e) => setAdName(e.target.value)}
               placeholder="Use the naming convention"
-              className="w-full px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 transition-all"
+              className="w-full px-3 py-2 bg-surface border border-gray-100 rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 /30 transition-all"
               autoFocus
             />
           </div>

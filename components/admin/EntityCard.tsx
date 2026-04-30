@@ -82,11 +82,11 @@ export default function EntityCard({
   const aspectClass = aspectRatio === '4/3' ? 'aspect-[4/3]' : 'aspect-[16/10]';
 
   return (
-    <div className="bg-white rounded-[14px] border border-edge hover:border-edge-hover transition-colors flex flex-col">
+    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_24px_rgba(20,20,40,0.06)] transition-shadow flex flex-col">
       {/* ── Visual header — link to open ─────────────────────── */}
       <Link
         href={href}
-        className={`block w-full ${aspectClass} rounded-t-[14px] overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative border-b border-edge`}
+        className={`block w-full ${aspectClass} rounded-t-2xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative`}
         style={cover.enabled ? { backgroundColor: cover.bgColor1 || '#0f0f0f' } : undefined}
       >
         {cover.enabled ? (
@@ -148,7 +148,7 @@ export default function EntityCard({
         )}
 
         {/* Date overlay */}
-        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-faint border border-edge">
+        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-medium text-faint shadow-sm">
           {formatDate(createdAt)}
         </span>
 
@@ -187,7 +187,7 @@ export default function EntityCard({
         <div className="flex-1" />
 
         {/* ── Actions ──────────────────────────────────────── */}
-        <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3.5 px-3.5">
+        <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3.5 px-3.5">
           <div className="flex items-center gap-0.5">{actions}</div>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}

@@ -78,7 +78,7 @@ export default function ClientShareModal({
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-base font-semibold text-ink">Share ad tracker</h2>
             <p className="text-[12px] text-faint mt-0.5">{clientName}</p>
@@ -118,7 +118,7 @@ export default function ClientShareModal({
                   <input
                     readOnly
                     value={viewUrl}
-                    className="flex-1 px-3 py-2 bg-surface border border-edge rounded-[10px] text-[12px] text-ink outline-none"
+                    className="flex-1 px-3 py-2 bg-surface border border-gray-100 rounded-[10px] text-[12px] text-ink outline-none"
                     onFocus={(e) => e.currentTarget.select()}
                   />
                   <button
@@ -140,7 +140,7 @@ export default function ClientShareModal({
                   <input
                     readOnly
                     value={aiUrl}
-                    className="flex-1 px-3 py-2 bg-surface border border-edge rounded-[10px] text-[12px] text-ink outline-none"
+                    className="flex-1 px-3 py-2 bg-surface border border-gray-100 rounded-[10px] text-[12px] text-ink outline-none"
                     onFocus={(e) => e.currentTarget.select()}
                   />
                   <button
@@ -156,7 +156,7 @@ export default function ClientShareModal({
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-edge">
+              <div className="pt-3 border-t border-gray-100">
                 <button
                   onClick={handleRevoke}
                   disabled={working}

@@ -67,7 +67,7 @@ export default function ImageItemForm({ onSubmit, onBack, onCancel, uploading }:
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Homepage Hero Banner"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition-colors"
+          className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  transition-colors"
           autoFocus
         />
       </div>

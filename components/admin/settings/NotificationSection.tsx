@@ -23,7 +23,7 @@ export default function NotificationSection({
   accentLabel,
 }: NotificationSectionProps) {
   return (
-    <div className="bg-white border border-edge rounded-[14px]  overflow-hidden">
+    <div className="bg-white border border-gray-100 rounded-[14px]  overflow-hidden">
       <div className="px-4 py-3 border-b border-edge flex items-center gap-2">
         <span className="text-sm font-semibold text-ink">{title}</span>
         {accentLabel && (

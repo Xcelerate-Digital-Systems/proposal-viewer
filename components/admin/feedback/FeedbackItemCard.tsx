@@ -243,11 +243,11 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
   const thumbnailUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-colors flex flex-col">
+    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_24px_rgba(20,20,40,0.06)] transition-shadow flex flex-col">
       {/* Thumbnail — click to open viewer */}
       <button
         onClick={() => onOpenViewer(item.id)}
-        className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-b border-gray-100 relative rounded-t-xl"
+        className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative rounded-t-2xl"
       >
         {item.type === 'webpage' ? (
           // Webpage: prefer_screenshot overrides, else iframe if URL, else screenshot, else icon
@@ -390,7 +390,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
         )}
 
         {/* Type badge overlay */}
-        <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-500 capitalize border border-gray-200/60">
+        <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-500 capitalize shadow-sm">
           {item.type === 'ad'
             ? 'Meta Ad'
             : item.type === 'webpage'
@@ -400,7 +400,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
 
         {/* Version badge */}
         {item.version > 1 && (
-          <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-500 border border-gray-200/60">
+          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-medium text-gray-500 shadow-sm">
             v{item.version}
           </span>
         )}
@@ -420,7 +420,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                   if (e.key === 'Enter') handleSaveTitle();
                   if (e.key === 'Escape') { setEditing(false); setEditTitle(item.title); }
                 }}
-                className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal min-w-0"
+                className="flex-1 px-2.5 py-1.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 min-w-0"
                 autoFocus
               />
               <button
@@ -461,7 +461,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                 if (e.key === 'Escape') { setEditingUrl(false); setEditUrl(item.url || ''); }
               }}
               placeholder="https://example.com/page"
-              className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal min-w-0"
+              className="flex-1 px-2.5 py-1.5 bg-gray-50 rounded-xl text-xs text-ink font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 min-w-0"
               autoFocus
             />
             <button
@@ -518,7 +518,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[160px]">
+                <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-xl border border-gray-100 shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
                   <button
                     onClick={handleShare}
                     disabled={sharing}

@@ -171,10 +171,10 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200">
+      <div className="bg-white rounded-2xl shadow-[0_24px_48px_rgba(20,20,40,0.18)] w-full max-w-lg border border-gray-200">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-gray-900">
             {modalTitles[mode]}
           </h2>
@@ -280,7 +280,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 onChange={(e) => setQuoteForm({ ...quoteForm, title: e.target.value })}
                 placeholder="e.g. Website Redesign Quote"
                 required
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
               />
             </div>
             <div>
@@ -293,7 +293,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 onChange={(e) => setQuoteForm({ ...quoteForm, client_name: e.target.value })}
                 placeholder="e.g. Acme Corp"
                 required
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
               />
             </div>
             <div>
@@ -305,7 +305,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 value={quoteForm.client_email}
                 onChange={(e) => setQuoteForm({ ...quoteForm, client_email: e.target.value })}
                 placeholder="client@example.com"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
               />
             </div>
             <button

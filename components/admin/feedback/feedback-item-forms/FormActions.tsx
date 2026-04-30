@@ -39,10 +39,10 @@ export default function FormActions({
           <button
             type="button"
             onClick={previewToggle.onToggle}
-            className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
               previewToggle.visible
-                ? 'bg-teal/10 text-teal border-teal'
-                : 'text-gray-500 border-gray-200 hover:border-gray-300'
+                ? 'bg-teal/10 text-teal'
+                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
             }`}
           >
             {previewToggle.visible ? 'Hide Preview' : 'Show Preview'}
@@ -53,14 +53,14 @@ export default function FormActions({
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+          className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={disabled}
-          className="px-5 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-5 py-2 bg-teal text-white text-sm font-semibold rounded-full hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           {uploading ? 'Saving…' : (submitLabel || 'Add Item')}
         </button>

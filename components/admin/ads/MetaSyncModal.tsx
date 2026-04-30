@@ -309,7 +309,7 @@ export default function MetaSyncModal({ trackerId, onClose, onComplete }: Props)
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="text-base font-semibold text-ink">Sync from Meta</h2>
             <p className="text-xs text-faint mt-0.5">
@@ -364,7 +364,7 @@ export default function MetaSyncModal({ trackerId, onClose, onComplete }: Props)
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center gap-2 px-6 py-4 border-t border-edge shrink-0 bg-white rounded-b-2xl">
+        <div className="flex justify-between items-center gap-2 px-6 py-4 border-t border-gray-100 shrink-0 bg-white rounded-b-2xl">
           <div className="text-xs text-faint">
             {step === 'selection' && !loadingAds && !loadError && (
               <>
@@ -628,7 +628,7 @@ function SelectionStep({
                 )}
               </div>
 
-              <div className="shrink-0 w-16 h-16 rounded-lg bg-surface border border-edge overflow-hidden flex items-center justify-center">
+              <div className="shrink-0 w-16 h-16 rounded-lg bg-surface border border-gray-100 overflow-hidden flex items-center justify-center">
                 {ad.thumbnail_url || ad.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -653,7 +653,7 @@ function SelectionStep({
                   )}
                   <StatusPill status={ad.effective_status} />
                   {ad.media_type === 'video' && (
-                    <span className="shrink-0 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface text-muted border border-edge">
+                    <span className="shrink-0 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface text-muted border border-gray-100">
                       Video
                     </span>
                   )}
@@ -758,7 +758,7 @@ function ImportingStep({
 }
 
 function RowStatusIcon({ status }: { status: ImportStatus }) {
-  if (status === 'pending') return <span className="w-4 h-4 rounded-full border border-edge" />;
+  if (status === 'pending') return <span className="w-4 h-4 rounded-full border border-gray-100" />;
   if (status === 'importing') return <Loader2 size={14} className="text-teal animate-spin" />;
   if (status === 'done') return <Check size={14} className="text-teal" />;
   return <AlertCircle size={14} className="text-red-600" />;

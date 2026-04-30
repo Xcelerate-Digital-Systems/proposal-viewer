@@ -127,7 +127,7 @@ export default function QuoteDetailHeader({
   };
 
   return (
-    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-200 lg:border-b-0">
+    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-100 lg:border-b-0">
       {/* Back link */}
       <Link
         href="/"

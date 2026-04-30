@@ -140,7 +140,7 @@ function Section({ title, children }: {
   title: string; open?: boolean; onToggle?: () => void; children: React.ReactNode;
 }) {
   return (
-    <div className="border border-edge rounded-xl overflow-hidden">
+    <div className="border border-gray-100 rounded-xl overflow-hidden">
       <div className="px-4 py-3 bg-surface/50">
         <span className="text-[13px] font-semibold text-ink">{title}</span>
       </div>
@@ -192,7 +192,7 @@ const EDITOR_TABS: { key: EditorTab; label: string }[] = [
   { key: 'results', label: 'Results' },
 ];
 
-const inputClass = 'w-full px-3 py-2 bg-surface border border-edge rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/30 transition-all';
+const inputClass = 'w-full px-3 py-2 bg-surface border border-gray-100 rounded-lg text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 /30 transition-all';
 
 const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreativeForm(
   { trackerId, companyId, editingId, personas = [], onClose, onSave, hideFooter = false },
@@ -462,7 +462,7 @@ const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreati
         ) : (
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
             {/* ─── Tab strip ─────────────────────────────────────────────────── */}
-            <div className="px-6 pt-4 border-b border-edge flex items-center gap-1 flex-wrap">
+            <div className="px-6 pt-4 border-b border-gray-100 flex items-center gap-1 flex-wrap">
               {EDITOR_TABS.map((tab) => {
                 const active = activeTab === tab.key;
                 return (
@@ -498,12 +498,12 @@ const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreati
                       onChange={handleFileChange}
                     />
                     {uploading ? (
-                      <div className="w-[180px] h-[180px] rounded-xl bg-surface border border-edge flex items-center justify-center">
+                      <div className="w-[180px] h-[180px] rounded-xl bg-surface border border-gray-100 flex items-center justify-center">
                         <Loader2 size={24} className="text-teal animate-spin" />
                       </div>
                     ) : form.image_url ? (
                       <div className="flex flex-col gap-2">
-                        <div className="w-[180px] h-[180px] rounded-xl overflow-hidden bg-surface border border-edge relative">
+                        <div className="w-[180px] h-[180px] rounded-xl overflow-hidden bg-surface border border-gray-100 relative">
                           {isVideo ? (
                             <video src={form.image_url} className="w-full h-full object-cover" controls />
                           ) : (
@@ -518,7 +518,7 @@ const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreati
                         <button
                           type="button"
                           onClick={() => fileRef.current?.click()}
-                          className="w-[180px] inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-muted bg-surface hover:bg-edge border border-edge rounded-lg transition-colors"
+                          className="w-[180px] inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-muted bg-surface hover:bg-edge border border-gray-100 rounded-lg transition-colors"
                         >
                           <Upload size={13} />
                           Replace
@@ -823,7 +823,7 @@ const AdCreativeForm = forwardRef<AdCreativeFormHandle, Props>(function AdCreati
 
         {/* Footer */}
         {!loadingEdit && !hideFooter && (
-          <div className="flex items-center gap-3 px-6 py-4 border-t border-edge shrink-0">
+          <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100 shrink-0">
             <button
               type="button"
               onClick={onClose}
