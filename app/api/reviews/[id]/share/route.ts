@@ -27,7 +27,13 @@ export async function PATCH(
       .single();
 
     if (projErr || !project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    if (project.company_id !== auth.companyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    // Super admins (jack viewing a client project) bypass the company-id
+    // ownership check; everyone else must match the project's company.
+    const isSuperAdmin = (auth.member as { is_super_admin?: boolean } | null)?.is_super_admin === true;
+    if (!isSuperAdmin && project.company_id !== auth.companyId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const body = await req.json();
     const incoming = (body?.shared_views ?? {}) as Partial<FeedbackSharedViews>;
