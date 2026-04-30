@@ -1,10 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ChevronLeft, MoreHorizontal, Lock, Check, ExternalLink, Image as ImageIcon } from 'lucide-react';
-import type { MetaLeadFormData, MetaLeadFormQuestion } from '@/lib/types/feedback';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  ChevronLeft, MoreHorizontal, Lock, Check, ExternalLink,
+  Image as ImageIcon, Pencil, ChevronDown,
+} from 'lucide-react';
+import {
+  type MetaLeadFormData,
+  type MetaLeadFormQuestion,
+  type MetaLeadFormQuestionType,
+  type MetaLeadFormCompletionScreen,
+  isMetaLeadFormPrefillType,
+  getCompletionScreens,
+} from '@/lib/types/feedback';
 
-export type MetaLeadFormPage = 'intro' | 'questions' | 'privacy' | 'completion';
+export type MetaLeadFormPage =
+  | 'intro'
+  | 'custom_questions'
+  | 'contact_info'
+  | 'privacy'
+  | 'review'
+  | 'completion';
 
 interface MetaLeadFormMockupPreviewProps {
   data: MetaLeadFormData;
@@ -16,13 +32,19 @@ interface MetaLeadFormMockupPreviewProps {
   accentColor?: string;
   /** Render in dark mode for the public viewer. */
   dark?: boolean;
+  /** When the form has multiple completion screens, controls which one renders.
+   *  When omitted the user picks via the in-mockup dropdown. */
+  completionScreenId?: string;
+  onCompletionScreenChange?: (id: string) => void;
 }
 
-const PAGES: { key: MetaLeadFormPage; label: string }[] = [
-  { key: 'intro', label: 'Intro' },
-  { key: 'questions', label: 'Questions' },
-  { key: 'privacy', label: 'Privacy' },
-  { key: 'completion', label: 'Done' },
+const ALL_PAGES: { key: MetaLeadFormPage; label: string }[] = [
+  { key: 'intro',            label: 'Intro' },
+  { key: 'custom_questions', label: 'Questions' },
+  { key: 'contact_info',     label: 'Contact' },
+  { key: 'privacy',          label: 'Privacy' },
+  { key: 'review',           label: 'Review' },
+  { key: 'completion',       label: 'Done' },
 ];
 
 export default function MetaLeadFormMockupPreview({
@@ -32,11 +54,31 @@ export default function MetaLeadFormMockupPreview({
   showPageNav = true,
   accentColor,
   dark = false,
+  completionScreenId,
+  onCompletionScreenChange,
 }: MetaLeadFormMockupPreviewProps) {
+  const customQuestions = useMemo(
+    () => data.questions.filter((q) => !isMetaLeadFormPrefillType(q.type)),
+    [data.questions],
+  );
+  const prefillQuestions = useMemo(
+    () => data.questions.filter((q) => isMetaLeadFormPrefillType(q.type)),
+    [data.questions],
+  );
+
+  // Hide pages that have no content (no custom questions / no contact fields).
+  const visiblePages = useMemo<MetaLeadFormPage[]>(() => {
+    const out: MetaLeadFormPage[] = ['intro'];
+    if (customQuestions.length > 0) out.push('custom_questions');
+    if (prefillQuestions.length > 0) out.push('contact_info');
+    out.push('privacy', 'review', 'completion');
+    return out;
+  }, [customQuestions.length, prefillQuestions.length]);
+
   const [internalPage, setInternalPage] = useState<MetaLeadFormPage>('intro');
   const activePage = page ?? internalPage;
+  const safePage: MetaLeadFormPage = visiblePages.includes(activePage) ? activePage : 'intro';
 
-  // Keep internal state in sync if parent stops controlling.
   useEffect(() => {
     if (page) setInternalPage(page);
   }, [page]);
@@ -46,12 +88,32 @@ export default function MetaLeadFormMockupPreview({
     onPageChange?.(next);
   };
 
+  // Walk the visible pages in order so Continue/Next buttons advance correctly.
+  const goNext = () => {
+    const i = visiblePages.indexOf(safePage);
+    const next = visiblePages[i + 1];
+    if (next) setPage(next);
+  };
+
   const fbBlue = accentColor || '#1877F2';
   const businessName = data.business_name?.trim() || 'Your Business';
 
+  // Completion-screen state — internal when uncontrolled.
+  const screens = useMemo(() => getCompletionScreens(data), [data]);
+  const [internalScreenId, setInternalScreenId] = useState<string>(screens[0].id);
+  const activeScreenId =
+    completionScreenId && screens.some((s) => s.id === completionScreenId)
+      ? completionScreenId
+      : (screens.some((s) => s.id === internalScreenId) ? internalScreenId : screens[0].id);
+  const activeScreen = screens.find((s) => s.id === activeScreenId) || screens[0];
+
+  const setScreen = (id: string) => {
+    if (!completionScreenId) setInternalScreenId(id);
+    onCompletionScreenChange?.(id);
+  };
+
   return (
     <div className="flex flex-col items-center gap-3 w-full">
-      {/* Phone frame */}
       <div
         className="relative shrink-0"
         style={{
@@ -63,7 +125,6 @@ export default function MetaLeadFormMockupPreview({
           boxShadow: '0 24px 48px rgba(0,0,0,0.18), inset 0 0 0 2px #2a2a2a',
         }}
       >
-        {/* Screen */}
         <div
           className="relative w-full h-full overflow-hidden flex flex-col"
           style={{
@@ -72,7 +133,6 @@ export default function MetaLeadFormMockupPreview({
             color: dark ? '#f5f5f5' : '#050505',
           }}
         >
-          {/* Status bar */}
           <div className="flex items-center justify-between px-5 pt-2 pb-1 text-[11px] font-semibold"
             style={{ color: dark ? '#f5f5f5' : '#050505' }}>
             <span>9:41</span>
@@ -83,70 +143,91 @@ export default function MetaLeadFormMockupPreview({
             </span>
           </div>
 
-          {/* Top app bar */}
           <div className="flex items-center justify-between px-3 py-2 border-b"
             style={{ borderColor: dark ? '#222' : '#e4e6e9' }}>
             <button className="p-1" style={{ color: dark ? '#f5f5f5' : '#050505' }}>
               <ChevronLeft size={20} />
             </button>
             <span className="text-[13px] font-semibold truncate max-w-[180px]">
-              {activePage === 'completion' ? 'Thanks!' : 'Form'}
+              {safePage === 'completion' ? 'Thanks!' : safePage === 'review' ? 'Review' : 'Form'}
             </span>
             <button className="p-1" style={{ color: dark ? '#f5f5f5' : '#050505' }}>
               <MoreHorizontal size={20} />
             </button>
           </div>
 
-          {/* Page body — scrollable */}
           <div className="flex-1 overflow-y-auto">
-            {activePage === 'intro' && (
-              <IntroPage
-                data={data}
-                fbBlue={fbBlue}
-                onContinue={() => setPage('questions')}
-                dark={dark}
-              />
+            {safePage === 'intro' && (
+              <IntroPage data={data} fbBlue={fbBlue} onContinue={goNext} dark={dark} />
             )}
-            {activePage === 'questions' && (
+            {safePage === 'custom_questions' && (
               <QuestionsPage
-                data={data}
+                title="A few quick questions"
+                subtitle={`${businessName} would like you to answer the following.`}
+                questions={customQuestions}
                 fbBlue={fbBlue}
-                onNext={() => setPage('privacy')}
-                businessName={businessName}
+                onNext={goNext}
                 dark={dark}
+                buttonLabel="Next"
               />
             )}
-            {activePage === 'privacy' && (
+            {safePage === 'contact_info' && (
+              <QuestionsPage
+                title="Your contact info"
+                subtitle="We've filled this in for you. Edit if needed."
+                questions={prefillQuestions}
+                fbBlue={fbBlue}
+                onNext={goNext}
+                dark={dark}
+                buttonLabel="Next"
+                prefilled
+              />
+            )}
+            {safePage === 'privacy' && (
               <PrivacyPage
                 data={data}
                 fbBlue={fbBlue}
-                onSubmit={() => setPage('completion')}
+                onSubmit={goNext}
                 businessName={businessName}
                 dark={dark}
               />
             )}
-            {activePage === 'completion' && (
-              <CompletionPage data={data} fbBlue={fbBlue} dark={dark} />
+            {safePage === 'review' && (
+              <ReviewPage
+                customQuestions={customQuestions}
+                prefillQuestions={prefillQuestions}
+                fbBlue={fbBlue}
+                onSubmit={goNext}
+                dark={dark}
+              />
+            )}
+            {safePage === 'completion' && (
+              <CompletionPage
+                screen={activeScreen}
+                screens={screens}
+                fbBlue={fbBlue}
+                dark={dark}
+                hasLogic={!!data.completion_logic && (data.completion_logic.rules.length > 0)}
+                onPickScreen={setScreen}
+              />
             )}
           </div>
         </div>
 
-        {/* Notch */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 rounded-b-2xl pointer-events-none"
           style={{ width: 110, height: 22, background: '#0a0a0a' }}
         />
       </div>
 
-      {/* Page navigator */}
       {showPageNav && (
         <div className="flex items-center gap-1 rounded-full p-1 border"
           style={{
             borderColor: dark ? '#ffffff18' : '#e5e7eb',
             backgroundColor: dark ? '#ffffff08' : '#f9fafb',
           }}>
-          {PAGES.map((p) => {
-            const active = activePage === p.key;
+          {ALL_PAGES.filter((p) => visiblePages.includes(p.key)).map((p) => {
+            const active = safePage === p.key;
             return (
               <button
                 key={p.key}
@@ -178,7 +259,6 @@ function IntroPage({
   const subtle = dark ? '#a8a8a8' : '#65676b';
   return (
     <div className="flex flex-col">
-      {/* Cover image */}
       <div
         className="w-full overflow-hidden flex items-center justify-center"
         style={{
@@ -220,34 +300,48 @@ function IntroPage({
 }
 
 /* ================================================================== */
-/*  Questions                                                          */
+/*  Questions (used for Custom and Contact pages)                      */
 /* ================================================================== */
 
 function QuestionsPage({
-  data, fbBlue, onNext, businessName, dark,
-}: { data: MetaLeadFormData; fbBlue: string; onNext: () => void; businessName: string; dark: boolean }) {
+  title, subtitle, questions, fbBlue, onNext, buttonLabel, dark, prefilled,
+}: {
+  title: string;
+  subtitle: string;
+  questions: MetaLeadFormQuestion[];
+  fbBlue: string;
+  onNext: () => void;
+  buttonLabel: string;
+  dark: boolean;
+  prefilled?: boolean;
+}) {
   const subtle = dark ? '#a8a8a8' : '#65676b';
   const fieldBg = dark ? '#1a1a1a' : '#f0f2f5';
   const border = dark ? '#2a2a2a' : '#dadde1';
-  const questions = data.questions || [];
 
   return (
     <div className="flex flex-col">
       <div className="px-4 pt-4 pb-2">
-        <h2 className="text-[16px] font-bold leading-tight">Your contact info</h2>
-        <p className="text-[12px] leading-snug mt-1" style={{ color: subtle }}>
-          {businessName} would like you to fill out the following.
-        </p>
+        <h2 className="text-[16px] font-bold leading-tight">{title}</h2>
+        <p className="text-[12px] leading-snug mt-1" style={{ color: subtle }}>{subtitle}</p>
       </div>
 
       <div className="px-4 py-2 flex flex-col gap-3">
         {questions.length === 0 && (
           <div className="text-[12px] italic py-6 text-center" style={{ color: subtle }}>
-            No questions added yet.
+            No questions on this page yet.
           </div>
         )}
         {questions.map((q) => (
-          <QuestionField key={q.id} question={q} fieldBg={fieldBg} border={border} subtle={subtle} dark={dark} />
+          <QuestionField
+            key={q.id}
+            question={q}
+            fieldBg={fieldBg}
+            border={border}
+            subtle={subtle}
+            dark={dark}
+            prefilled={prefilled}
+          />
         ))}
       </div>
 
@@ -258,23 +352,33 @@ function QuestionsPage({
           style={{ backgroundColor: fbBlue }}
           type="button"
         >
-          Next
+          {buttonLabel}
         </button>
       </div>
     </div>
   );
 }
 
+const PREFILL_SAMPLES: Partial<Record<MetaLeadFormQuestionType, string>> = {
+  email: 'jamie@example.com',
+  phone: '+1 (555) 010-2233',
+  full_name: 'Jamie Carter',
+  first_name: 'Jamie',
+  last_name: 'Carter',
+  city: 'Sydney',
+};
+
 function QuestionField({
-  question, fieldBg, border, subtle, dark,
+  question, fieldBg, border, subtle, dark, prefilled,
 }: {
   question: MetaLeadFormQuestion;
   fieldBg: string;
   border: string;
   subtle: string;
   dark: boolean;
+  prefilled?: boolean;
 }) {
-  const placeholderByType: Record<string, string> = {
+  const placeholderByType: Partial<Record<MetaLeadFormQuestionType, string>> = {
     short_answer: 'Type your answer',
     email: 'name@example.com',
     phone: '+1 555 000 0000',
@@ -285,6 +389,7 @@ function QuestionField({
   };
 
   const label = question.label?.trim() || labelForType(question.type);
+  const sampleValue = prefilled ? PREFILL_SAMPLES[question.type] : null;
   const placeholder = placeholderByType[question.type] || 'Type your answer';
 
   if (question.type === 'multiple_choice') {
@@ -320,15 +425,19 @@ function QuestionField({
       </label>
       <div
         className="px-3 py-2.5 rounded-md text-[12px]"
-        style={{ backgroundColor: fieldBg, border: `1px solid ${border}`, color: subtle }}
+        style={{
+          backgroundColor: fieldBg,
+          border: `1px solid ${border}`,
+          color: sampleValue ? (dark ? '#f5f5f5' : '#050505') : subtle,
+        }}
       >
-        {placeholder}
+        {sampleValue ?? placeholder}
       </div>
     </div>
   );
 }
 
-function labelForType(type: MetaLeadFormQuestion['type']): string {
+function labelForType(type: MetaLeadFormQuestionType): string {
   switch (type) {
     case 'email': return 'Email';
     case 'phone': return 'Phone number';
@@ -338,7 +447,6 @@ function labelForType(type: MetaLeadFormQuestion['type']): string {
     case 'city': return 'City';
     case 'short_answer': return 'Short answer';
     case 'multiple_choice': return 'Choose one';
-    default: return 'Question';
   }
 }
 
@@ -358,7 +466,7 @@ function PrivacyPage({
           <span className="text-[12px] font-semibold">Privacy</span>
         </div>
         <p className="text-[12px] leading-snug" style={{ color: subtle }}>
-          By clicking Submit, you agree to send your info to {businessName} who agrees to use it according to their privacy policy. Meta will also use it subject to the Meta Privacy Policy, including to autofill forms for ads.
+          By clicking Continue, you agree to send your info to {businessName} who agrees to use it according to their privacy policy. Meta will also use it subject to the Meta Privacy Policy, including to autofill forms for ads.
         </p>
 
         <a
@@ -395,6 +503,76 @@ function PrivacyPage({
           style={{ backgroundColor: fbBlue }}
           type="button"
         >
+          Continue
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Review                                                             */
+/* ================================================================== */
+
+function ReviewPage({
+  customQuestions, prefillQuestions, fbBlue, onSubmit, dark,
+}: {
+  customQuestions: MetaLeadFormQuestion[];
+  prefillQuestions: MetaLeadFormQuestion[];
+  fbBlue: string;
+  onSubmit: () => void;
+  dark: boolean;
+}) {
+  const subtle = dark ? '#a8a8a8' : '#65676b';
+  const border = dark ? '#222' : '#e4e6e9';
+
+  const sample = (q: MetaLeadFormQuestion): string => {
+    if (q.type === 'multiple_choice') {
+      const opts = q.options?.length ? q.options : ['Option 1'];
+      return opts[0];
+    }
+    return PREFILL_SAMPLES[q.type] ?? 'Sample answer';
+  };
+
+  return (
+    <div className="flex flex-col">
+      <div className="px-4 pt-4 pb-2">
+        <h2 className="text-[16px] font-bold leading-tight">Review your info</h2>
+        <p className="text-[12px] leading-snug mt-1" style={{ color: subtle }}>
+          Tap to edit anything that's not quite right.
+        </p>
+      </div>
+
+      <div className="px-4 py-2 flex flex-col gap-2">
+        {[...customQuestions, ...prefillQuestions].length === 0 && (
+          <div className="text-[12px] italic py-6 text-center" style={{ color: subtle }}>
+            Nothing to review.
+          </div>
+        )}
+        {[...customQuestions, ...prefillQuestions].map((q) => (
+          <div
+            key={q.id}
+            className="flex items-start justify-between gap-2 px-3 py-2 rounded-md border"
+            style={{ borderColor: border }}
+          >
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: subtle }}>
+                {q.label?.trim() || labelForType(q.type)}
+              </div>
+              <div className="text-[12px] mt-0.5 truncate">{sample(q)}</div>
+            </div>
+            <Pencil size={12} className="mt-0.5 shrink-0" style={{ color: subtle }} />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-auto px-4 pb-4 pt-2">
+        <button
+          onClick={(e) => { e.stopPropagation(); onSubmit(); }}
+          className="w-full py-3 rounded-full text-[14px] font-semibold text-white"
+          style={{ backgroundColor: fbBlue }}
+          type="button"
+        >
           Submit
         </button>
       </div>
@@ -407,11 +585,55 @@ function PrivacyPage({
 /* ================================================================== */
 
 function CompletionPage({
-  data, fbBlue, dark,
-}: { data: MetaLeadFormData; fbBlue: string; dark: boolean }) {
+  screen, screens, fbBlue, dark, hasLogic, onPickScreen,
+}: {
+  screen: MetaLeadFormCompletionScreen;
+  screens: MetaLeadFormCompletionScreen[];
+  fbBlue: string;
+  dark: boolean;
+  hasLogic: boolean;
+  onPickScreen: (id: string) => void;
+}) {
   const subtle = dark ? '#a8a8a8' : '#65676b';
+  const showPicker = screens.length > 1;
+
   return (
     <div className="flex flex-col h-full">
+      {showPicker && (
+        <div
+          className="px-3 py-2 flex items-center gap-2 text-[10px] border-b"
+          style={{
+            borderColor: dark ? '#222' : '#e4e6e9',
+            color: subtle,
+            backgroundColor: dark ? '#0e0e0e' : '#f9fafb',
+          }}
+        >
+          <span className="font-semibold uppercase tracking-wider shrink-0">
+            {hasLogic ? 'Logic preview' : 'Preview screen'}
+          </span>
+          <div className="relative flex-1">
+            <select
+              value={screen.id}
+              onChange={(e) => onPickScreen(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full appearance-none pl-2 pr-6 py-1 rounded-md text-[11px] border focus:outline-none"
+              style={{
+                borderColor: dark ? '#2a2a2a' : '#dadde1',
+                backgroundColor: dark ? '#000' : '#fff',
+                color: dark ? '#f5f5f5' : '#050505',
+              }}
+            >
+              {screens.map((s, i) => (
+                <option key={s.id} value={s.id}>
+                  {s.headline?.trim() || `Screen ${i + 1}`}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+      )}
+
       <div className="px-4 pt-8 pb-4 flex flex-col items-center text-center gap-3">
         <div
           className="w-14 h-14 rounded-full flex items-center justify-center"
@@ -420,10 +642,10 @@ function CompletionPage({
           <Check size={28} className="text-white" strokeWidth={3} />
         </div>
         <h2 className="text-[18px] font-bold leading-tight">
-          {data.completion_headline?.trim() || 'Thanks, you’re all set.'}
+          {screen.headline?.trim() || 'Thanks, you’re all set.'}
         </h2>
         <p className="text-[13px] leading-snug whitespace-pre-wrap" style={{ color: subtle }}>
-          {data.completion_description?.trim() || 'You can close this form now or visit our website.'}
+          {screen.description?.trim() || 'You can close this form now.'}
         </p>
       </div>
 
@@ -433,7 +655,7 @@ function CompletionPage({
           style={{ backgroundColor: fbBlue }}
           type="button"
         >
-          {data.completion_button_label?.trim() || 'View Website'}
+          {screen.button_label?.trim() || 'View Website'}
         </button>
       </div>
     </div>

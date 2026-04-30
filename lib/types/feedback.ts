@@ -74,6 +74,36 @@ export type MetaLeadFormQuestion = {
   required?: boolean;
 };
 
+/** Pre-fill question types — Meta auto-fills these from the user's profile, so
+ *  they render on the "Contact Info" page after custom questions. */
+export const META_LEAD_FORM_PREFILL_TYPES: ReadonlyArray<MetaLeadFormQuestionType> = [
+  'email', 'phone', 'full_name', 'first_name', 'last_name', 'city',
+];
+
+export function isMetaLeadFormPrefillType(type: MetaLeadFormQuestionType): boolean {
+  return (META_LEAD_FORM_PREFILL_TYPES as ReadonlyArray<string>).includes(type);
+}
+
+/** A single thank-you / completion page. A form may have several when
+ *  `completion_logic` routes different multiple-choice answers to different
+ *  screens. The first screen is always the default. */
+export type MetaLeadFormCompletionScreen = {
+  id: string;
+  headline: string;
+  description: string;
+  button_label: string;
+  button_url: string;
+};
+
+/** Optional conditional routing — pick a multiple-choice question and map each
+ *  of its options to a completion screen. Anything unmapped uses
+ *  `default_screen_id`. */
+export type MetaLeadFormCompletionLogic = {
+  question_id: string;
+  default_screen_id: string;
+  rules: { option: string; screen_id: string }[];
+};
+
 /** Shape stored in `review_items.meta_lead_form_data` (jsonb). */
 export type MetaLeadFormData = {
   cover_url: string | null;
@@ -84,11 +114,34 @@ export type MetaLeadFormData = {
   questions: MetaLeadFormQuestion[];
   privacy_policy_url: string;
   privacy_policy_label: string;
-  completion_headline: string;
-  completion_description: string;
-  completion_button_label: string;
-  completion_url: string;
+  /** Multi-screen completion — first entry is the default. */
+  completion_screens?: MetaLeadFormCompletionScreen[];
+  /** Optional conditional routing. Null/undefined means always use the default screen. */
+  completion_logic?: MetaLeadFormCompletionLogic | null;
+  /** @deprecated legacy single-screen fields — read via getCompletionScreens(). */
+  completion_headline?: string;
+  /** @deprecated */
+  completion_description?: string;
+  /** @deprecated */
+  completion_button_label?: string;
+  /** @deprecated */
+  completion_url?: string;
 };
+
+/** Returns the form's completion screens, migrating legacy flat fields when needed.
+ *  Always returns at least one screen. */
+export function getCompletionScreens(data: MetaLeadFormData): MetaLeadFormCompletionScreen[] {
+  if (data.completion_screens && data.completion_screens.length > 0) {
+    return data.completion_screens;
+  }
+  return [{
+    id: 'default',
+    headline: data.completion_headline || '',
+    description: data.completion_description || '',
+    button_label: data.completion_button_label || '',
+    button_url: data.completion_url || '',
+  }];
+}
 
 /** Workflow status, applied to both projects and items. String values are DB-bound. */
 export type FeedbackStatus =
