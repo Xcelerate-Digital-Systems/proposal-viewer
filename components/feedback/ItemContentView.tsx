@@ -6,6 +6,7 @@ import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/Ad
 import EmailMockupPreview from '@/components/admin/feedback/EmailMockupPreview';
 import SmsMockupPreview from '@/components/admin/feedback/SmsMockupPreview';
 import GoogleAdMockupPreview from '@/components/admin/feedback/GoogleAdMockupPreview';
+import MetaLeadFormMockupPreview from '@/components/admin/feedback/MetaLeadFormMockupPreview';
 import PinOverlay from './PinOverlay';
 import { HighlightOverlay } from '@/components/feedback/tools';
 import WebpageEmbedView from './item-content/WebpageEmbedView';
@@ -219,6 +220,37 @@ export default function ItemContentView({
             <p className="text-sm">No PDF available</p>
           </div>
         )}
+        <PinOverlay
+          pinComments={pinComments}
+          pendingPin={pendingPin}
+          onPinClick={onPinClick}
+        />
+      </div>
+    );
+  }
+
+  // Meta Lead Form items — render multi-page lead form mockup with pin overlay
+  if (item.type === 'meta_lead_form') {
+    const data = item.meta_lead_form_data;
+    if (!data) {
+      return (
+        <div className="text-center">
+          <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
+          <p className="text-sm text-gray-400">Lead form not configured</p>
+        </div>
+      );
+    }
+    return (
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-md mx-auto"
+        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        onClick={onImageClick}
+      >
+        <MetaLeadFormMockupPreview
+          data={data}
+          accentColor={accentColor}
+        />
         <PinOverlay
           pinComments={pinComments}
           pendingPin={pendingPin}

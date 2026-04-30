@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, type LucideIcon } from 'lucide-react';
+import { X, Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, ClipboardList, type LucideIcon } from 'lucide-react';
 import { type FeedbackItemType } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useFeedbackItemSubmit, type CreatedItemSummary } from './feedback-item-forms/useFeedbackItemSubmit';
@@ -13,6 +13,7 @@ import WebpageItemForm from './feedback-item-forms/WebpageItemForm';
 import VideoItemForm from './feedback-item-forms/VideoItemForm';
 import PdfItemForm from './feedback-item-forms/PdfItemForm';
 import GoogleAdItemForm from './feedback-item-forms/GoogleAdItemForm';
+import MetaLeadFormItemForm from './feedback-item-forms/MetaLeadFormItemForm';
 
 /* ─── Types ────────────────────────────────────────────────────── */
 
@@ -29,6 +30,7 @@ const typeOptions: { value: FeedbackItemType; label: string; icon: LucideIcon; d
   { value: 'image', label: 'Image', icon: Image, description: 'Upload a design, screenshot, or photo', enabled: true },
   { value: 'video', label: 'Video', icon: Video, description: 'YouTube, Vimeo, or upload a video file', enabled: true },
   { value: 'ad', label: 'Meta Ad', icon: Megaphone, description: 'Facebook / Instagram ad mockup', enabled: true },
+  { value: 'meta_lead_form', label: 'Meta Lead Form', icon: ClipboardList, description: 'Multi-page Meta lead form mockup', enabled: true },
   { value: 'google_ad', label: 'Google Ad', icon: Search, description: 'Google Search or Display ad mockup', enabled: true },
   { value: 'email', label: 'Email', icon: Mail, description: 'Subject line, preheader & body text', enabled: true },
   { value: 'sms', label: 'SMS', icon: Smartphone, description: 'Text message preview with character count', enabled: true },
@@ -40,6 +42,7 @@ const TITLES: Partial<Record<FeedbackItemType, string>> = {
   image: 'Upload Image',
   video: 'New Video',
   ad: 'New Meta Ad Mockup',
+  meta_lead_form: 'New Meta Lead Form',
   google_ad: 'New Google Ad',
   email: 'New Email',
   sms: 'New SMS',
@@ -62,7 +65,7 @@ export default function AddFeedbackItemModal({
   const [itemType, setItemType] = useState<FeedbackItemType>('image');
   const [isWide, setIsWide] = useState(false);
 
-  const { uploading, submitPayload, submitWithFile } = useFeedbackItemSubmit({
+  const { uploading, submitPayload, submitWithFile, uploadAsset } = useFeedbackItemSubmit({
     reviewProjectId,
     companyId,
     userId,
@@ -165,6 +168,16 @@ export default function AddFeedbackItemModal({
         )}
         {step === 'details' && itemType === 'pdf' && (
           <PdfItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} />
+        )}
+        {step === 'details' && itemType === 'meta_lead_form' && (
+          <MetaLeadFormItemForm
+            onSubmit={submitPayload}
+            onUploadAsset={uploadAsset}
+            onBack={handleBack}
+            onCancel={onClose}
+            uploading={uploading}
+            onPreviewChange={handlePreviewChange}
+          />
         )}
         {step === 'details' && itemType === 'webpage' && (
           <WebpageItemForm

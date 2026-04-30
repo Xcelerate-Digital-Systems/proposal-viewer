@@ -17,12 +17,13 @@ interface AddVersionModalProps {
   onUploadAsset: (file: File) => Promise<string | null>;
 }
 
-type AssetKind = 'file' | 'text' | 'ad' | 'google_ad';
+type AssetKind = 'file' | 'text' | 'ad' | 'google_ad' | 'meta_lead_form';
 
 function assetKindForType(type: FeedbackItem['type']): AssetKind {
   if (type === 'email' || type === 'sms') return 'text';
   if (type === 'ad') return 'ad';
   if (type === 'google_ad') return 'google_ad';
+  if (type === 'meta_lead_form') return 'meta_lead_form';
   return 'file'; // image, video, pdf
 }
 
@@ -30,7 +31,7 @@ function fileAccept(type: FeedbackItem['type']): string {
   if (type === 'image') return 'image/*';
   if (type === 'video') return 'video/*';
   if (type === 'pdf')   return 'application/pdf';
-  if (type === 'ad' || type === 'google_ad') return 'image/*';
+  if (type === 'ad' || type === 'google_ad' || type === 'meta_lead_form') return 'image/*';
   return '*';
 }
 
@@ -61,6 +62,12 @@ export default function AddVersionModal({
   const [adHeadline, setAdHeadline] = useState(item.ad_headline ?? '');
   const [adCopy, setAdCopy] = useState(item.ad_copy ?? '');
   const [adCta, setAdCta] = useState(item.ad_cta ?? '');
+
+  // Meta lead form (copy-iteration version: swap cover + edit headline/description/CTA)
+  const lf = item.meta_lead_form_data;
+  const [lfHeadline, setLfHeadline] = useState(lf?.intro_headline ?? '');
+  const [lfDescription, setLfDescription] = useState(lf?.intro_description ?? '');
+  const [lfCta, setLfCta] = useState(lf?.cta ?? 'Continue');
 
   // Google ad copy
   const [gadHeadline, setGadHeadline] = useState(item.google_ad_headline ?? '');
@@ -106,6 +113,27 @@ export default function AddVersionModal({
         assets.ad_copy = adCopy || null;
         assets.ad_cta = adCta || null;
         assets.ad_platform = item.ad_platform;
+      }
+
+      if (kind === 'meta_lead_form') {
+        if (!lf) {
+          toast.error('Lead form not configured');
+          setUploading(false);
+          return;
+        }
+        let coverUrl = lf.cover_url;
+        if (file) {
+          const url = await onUploadAsset(file);
+          if (!url) { setUploading(false); return; }
+          coverUrl = url;
+        }
+        assets.meta_lead_form_data = {
+          ...lf,
+          cover_url: coverUrl,
+          intro_headline: lfHeadline,
+          intro_description: lfDescription,
+          cta: lfCta,
+        };
       }
 
       if (kind === 'google_ad') {
@@ -177,6 +205,24 @@ export default function AddVersionModal({
               <Field label="Call to action">
                 <input className={inputCls} value={adCta} onChange={(e) => setAdCta(e.target.value)} />
               </Field>
+            </>
+          )}
+
+          {kind === 'meta_lead_form' && (
+            <>
+              <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
+              <Field label="Intro headline">
+                <input className={inputCls} value={lfHeadline} onChange={(e) => setLfHeadline(e.target.value)} />
+              </Field>
+              <Field label="Intro description">
+                <textarea className={`${inputCls} min-h-[80px]`} value={lfDescription} onChange={(e) => setLfDescription(e.target.value)} />
+              </Field>
+              <Field label="CTA button">
+                <input className={inputCls} value={lfCta} onChange={(e) => setLfCta(e.target.value)} />
+              </Field>
+              <p className="text-[11px] text-gray-500 -mt-1">
+                To edit questions or other pages, edit the item directly.
+              </p>
             </>
           )}
 

@@ -8,7 +8,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   MessageSquareText, ExternalLink, Globe, Mail, Smartphone,
-  Image as ImageIcon, Video, FileText, Megaphone, Search,
+  Image as ImageIcon, Video, FileText, Megaphone, Search, ClipboardList,
 } from 'lucide-react';
 import type {
   FeedbackItem, FeedbackItemType, FeedbackStatus, FeedbackComment,
@@ -35,6 +35,7 @@ const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; i
   pdf:       { label: 'PDF',       Icon: FileText,   iconBg: 'bg-red-50',     iconColor: 'text-red-600' },
   ad:        { label: 'Meta Ad',   Icon: Megaphone,  iconBg: 'bg-blue-50',    iconColor: 'text-blue-600' },
   google_ad: { label: 'Google Ad', Icon: Search,     iconBg: 'bg-indigo-50',  iconColor: 'text-indigo-600' },
+  meta_lead_form: { label: 'Lead Form', Icon: ClipboardList, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
 };
 
 /** Reviewers can move items into these statuses. Mirrors the public status

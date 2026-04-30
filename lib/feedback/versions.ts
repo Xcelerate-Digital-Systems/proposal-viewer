@@ -16,6 +16,7 @@ export type VersionAssets = Pick<
   | 'image_url' | 'video_url' | 'pdf_url'
   | 'google_ad_format' | 'google_ad_headline' | 'google_ad_description1'
   | 'google_ad_description2' | 'google_ad_display_url' | 'google_ad_final_url'
+  | 'meta_lead_form_data'
 >;
 
 /**
@@ -81,6 +82,7 @@ export function extractAssets(src: FeedbackItem | FeedbackItemVersion): VersionA
     google_ad_description2: src.google_ad_description2,
     google_ad_display_url: src.google_ad_display_url,
     google_ad_final_url: src.google_ad_final_url,
+    meta_lead_form_data: src.meta_lead_form_data,
   };
 }
 

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, Plus, X, ChevronDown, ChevronRight, CheckCircle2,
-  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye,
+  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList,
 } from 'lucide-react';
 import { useFeedbackBoardContext } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
@@ -19,6 +19,7 @@ const TYPE_ICONS: Record<FeedbackItemType, React.ReactNode> = {
   ad: <Megaphone size={13} />,
   google_ad: <Megaphone size={13} />,
   pdf: <FileText size={13} />,
+  meta_lead_form: <ClipboardList size={13} />,
 };
 
 const TYPE_LABELS: Record<FeedbackItemType, string> = {
@@ -30,6 +31,7 @@ const TYPE_LABELS: Record<FeedbackItemType, string> = {
   ad: 'Meta Ad',
   google_ad: 'Google Ad',
   pdf: 'PDF',
+  meta_lead_form: 'Lead Form',
 };
 
 export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: () => void }) {

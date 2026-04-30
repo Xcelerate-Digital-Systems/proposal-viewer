@@ -142,5 +142,26 @@ export function useFeedbackItemSubmit({
     [reviewProjectId, companyId, userId, nextSortOrder, toast, onSuccess, onClose],
   );
 
-  return { uploading, submitPayload, submitWithFile };
+  /** Upload a single asset and return its public URL. Used by forms that
+   *  store the URL inside a jsonb payload (e.g. meta_lead_form covers). */
+  const uploadAsset = useCallback(
+    async (file: File): Promise<string | null> => {
+      const ext = file.name.split('.').pop() || 'bin';
+      const path = `reviews/${companyId}/${reviewProjectId}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-assets')
+        .upload(path, file, { contentType: file.type });
+      if (uploadError) {
+        toast.error('Failed to upload file');
+        return null;
+      }
+      const { data: urlData } = supabase.storage
+        .from('company-assets')
+        .getPublicUrl(path);
+      return urlData.publicUrl;
+    },
+    [companyId, reviewProjectId, toast],
+  );
+
+  return { uploading, submitPayload, submitWithFile, uploadAsset };
 }

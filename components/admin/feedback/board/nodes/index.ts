@@ -6,5 +6,6 @@ export { default as VideoNode } from './VideoNode';
 export { default as EmailNode } from './EmailNode';
 export { default as SMSNode } from './SMSNode';
 export { default as FacebookNode } from './FacebookNode';
+export { default as MetaLeadFormNode } from './MetaLeadFormNode';
 export { NODE_LAYOUTS } from './nodeConfig';
 export type { ReviewItemNodeData } from './FeedbackItemNode';

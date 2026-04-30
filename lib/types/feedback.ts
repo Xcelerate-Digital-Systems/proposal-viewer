@@ -53,7 +53,42 @@ export type FeedbackItemType =
   | 'video'
   | 'sms'
   | 'google_ad'
-  | 'pdf';
+  | 'pdf'
+  | 'meta_lead_form';
+
+export type MetaLeadFormQuestionType =
+  | 'short_answer'
+  | 'email'
+  | 'phone'
+  | 'full_name'
+  | 'first_name'
+  | 'last_name'
+  | 'city'
+  | 'multiple_choice';
+
+export type MetaLeadFormQuestion = {
+  id: string;
+  type: MetaLeadFormQuestionType;
+  label: string;
+  options?: string[];
+  required?: boolean;
+};
+
+/** Shape stored in `review_items.meta_lead_form_data` (jsonb). */
+export type MetaLeadFormData = {
+  cover_url: string | null;
+  intro_headline: string;
+  intro_description: string;
+  business_name: string | null;
+  cta: string;
+  questions: MetaLeadFormQuestion[];
+  privacy_policy_url: string;
+  privacy_policy_label: string;
+  completion_headline: string;
+  completion_description: string;
+  completion_button_label: string;
+  completion_url: string;
+};
 
 /** Workflow status, applied to both projects and items. String values are DB-bound. */
 export type FeedbackStatus =
@@ -104,6 +139,8 @@ export type FeedbackItem = {
   google_ad_description2: string | null;
   google_ad_display_url: string | null;
   google_ad_final_url: string | null;
+  // Meta Lead Form (jsonb blob — see MetaLeadFormData)
+  meta_lead_form_data: MetaLeadFormData | null;
   // Meta
   status: FeedbackStatus;
   version: number;
@@ -148,6 +185,7 @@ export type FeedbackItemVersion = {
   google_ad_description2: string | null;
   google_ad_display_url: string | null;
   google_ad_final_url: string | null;
+  meta_lead_form_data: MetaLeadFormData | null;
   created_at: string;
   created_by: string | null;
 };

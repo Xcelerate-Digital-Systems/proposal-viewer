@@ -14,6 +14,7 @@ import SMSNode from './SMSNode';
 import FacebookNode from './FacebookNode';
 import GoogleAdNode from './GoogleAdNode';
 import PdfNode from './PdfNode';
+import MetaLeadFormNode from './MetaLeadFormNode';
 
 /* ─── Node data interface ──────────────────────────────────────── */
 
@@ -35,6 +36,7 @@ const NODE_COMPONENTS: Record<string, React.ComponentType<NodeItemProps>> = {
   ad: FacebookNode,
   google_ad: GoogleAdNode,
   pdf: PdfNode,
+  meta_lead_form: MetaLeadFormNode,
 };
 
 /* ─── Dispatcher ───────────────────────────────────────────────── */
