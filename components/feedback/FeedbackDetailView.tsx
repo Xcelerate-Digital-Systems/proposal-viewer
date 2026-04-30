@@ -748,26 +748,31 @@ export default function FeedbackDetailView({
           {/* ── Main content area ── */}
           <div
             className={`flex-1 relative ${
-              isWebpageItem ? 'overflow-auto p-4' : 'overflow-auto flex items-center justify-center p-6'
+              isWebpageItem ? 'overflow-auto p-4' : 'overflow-auto p-6'
             } bg-white min-w-0`}
           >
-            <ItemContentView
-              item={selectedItem}
-              placingPin={pinActive}
-              pendingPin={pendingPin}
-              pinComments={pinComments}
-              onImageClick={handleImageClick}
-              onPinClick={handlePinClick}
-              containerRef={imageContainerRef}
-              shareToken={shareToken || ''}
-              renderWebpage={isClient ? (item) => <WebpageClientPlaceholder item={item} /> : undefined}
-              emptyText="No items to show"
-              highlightComments={highlightComments}
-              highlightedCommentId={highlightedCommentId}
-              onHighlightClick={handlePinClick}
-              accentColor={branding?.accent_color || accent}
-              brandName={project.client_name || undefined}
-            />
+            {/* Inner wrapper centers content for short items but lets tall
+                items (long emails, full SMS threads) flow from the top so
+                the toggle / header isn't clipped under the scroll viewport. */}
+            <div className={isWebpageItem ? '' : 'min-h-full flex items-center justify-center'}>
+              <ItemContentView
+                item={selectedItem}
+                placingPin={pinActive}
+                pendingPin={pendingPin}
+                pinComments={pinComments}
+                onImageClick={handleImageClick}
+                onPinClick={handlePinClick}
+                containerRef={imageContainerRef}
+                shareToken={shareToken || ''}
+                renderWebpage={isClient ? (item) => <WebpageClientPlaceholder item={item} /> : undefined}
+                emptyText="No items to show"
+                highlightComments={highlightComments}
+                highlightedCommentId={highlightedCommentId}
+                onHighlightClick={handlePinClick}
+                accentColor={branding?.accent_color || accent}
+                brandName={project.client_name || undefined}
+              />
+            </div>
 
             <DrawingOverlay
               mode={feedbackMode}

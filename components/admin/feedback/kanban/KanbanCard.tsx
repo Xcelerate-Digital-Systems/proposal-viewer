@@ -51,15 +51,13 @@ export default function KanbanCard({
         isDragging ? 'ring-2 ring-teal/40' : ''
       }`}
     >
-      {/* Full-card drag surface sits behind the interactive footer so click-to-open still works. */}
+      {/* Top half is the drag handle — large, obvious grab target. */}
       <div
         {...listeners}
         {...attributes}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing rounded-2xl"
+        className="flex items-start gap-2.5 cursor-grab active:cursor-grabbing -m-3.5 p-3.5 rounded-t-2xl"
         aria-label={`Drag ${item.title}`}
-      />
-
-      <div className="relative flex items-start gap-2.5">
+      >
         <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.iconBg}`}>
           <Icon size={15} className={meta.iconColor} />
         </div>
@@ -77,7 +75,7 @@ export default function KanbanCard({
         </div>
       </div>
 
-      <div className="relative mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-1 text-[11px] text-gray-500">
           <MessageSquareText size={11} />
           <span>
