@@ -458,7 +458,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
       <div
         className={`${
           currentTab === 'items' ? 'flex' : 'hidden lg:flex'
-        } min-h-screen flex-col bg-gray-50 pt-12`}
+        } h-dvh flex-col bg-gray-50 pt-12 overflow-hidden`}
       >
         <PublicTabBar
           current={currentTab}
@@ -508,7 +508,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         )}
 
         {currentTab === 'items' && (
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <PublicItemsGrid
               items={items}
               comments={comments}
