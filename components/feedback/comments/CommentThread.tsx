@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { CornerDownRight, Send, CheckCircle2, RotateCcw, Pencil, Trash2, X, Check, MoreHorizontal } from 'lucide-react';
+import { useState } from 'react';
+import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import EmojiPicker from './EmojiPicker';
 import AttachmentList from './AttachmentList';
 import ReactionBar from './ReactionBar';
+import ReplyItem from './ReplyItem';
+import ThreadMenu from './ThreadMenu';
 import { getPriorityDef } from './PrioritySelector';
 import { useCommentReactions } from '@/hooks/useCommentReactions';
 
@@ -309,194 +311,6 @@ export default function CommentThread({
             </button>
           </div>
         </form>
-      )}
-    </div>
-  );
-}
-
-function ReplyItem({
-  reply,
-  currentUserName,
-  onEdit,
-  onDelete,
-}: {
-  reply: FeedbackComment;
-  currentUserName: string | null;
-  onEdit?: (content: string) => Promise<void>;
-  onDelete?: () => Promise<void>;
-}) {
-  const confirm = useConfirm();
-  const rIsTeam = reply.author_type === 'team';
-  const { reactions, toggle } = useCommentReactions(reply.id, { currentUserName });
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState(reply.content);
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    const trimmed = editText.trim();
-    if (!trimmed || trimmed === reply.content || !onEdit) {
-      setEditing(false);
-      setEditText(reply.content);
-      return;
-    }
-    setSaving(true);
-    await onEdit(trimmed);
-    setSaving(false);
-    setEditing(false);
-  };
-
-  const handleDelete = async () => {
-    if (!onDelete) return;
-    const ok = await confirm({
-      title: 'Delete reply',
-      message: 'Delete this reply?',
-      confirmLabel: 'Delete',
-      destructive: true,
-    });
-    if (!ok) return;
-    await onDelete();
-  };
-
-  return (
-    <div className="flex items-start gap-3 group">
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold ${
-        rIsTeam ? 'bg-teal/10 text-teal' : 'bg-violet-100 text-violet-700'
-      }`}>
-        {reply.author_name.charAt(0).toUpperCase()}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium text-ink">{reply.author_name}</span>
-          {rIsTeam && (
-            <span className="text-[10px] font-medium bg-teal/10 text-teal px-2 py-0.5 rounded-full">
-              Team
-            </span>
-          )}
-          <span className="text-[11px] text-gray-400">{timeAgo(reply.created_at)}</span>
-          {(onEdit || onDelete) && !editing && (
-            <div className="ml-auto opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-              <ThreadMenu
-                align="end"
-                onEdit={onEdit ? () => { setEditText(reply.content); setEditing(true); } : undefined}
-                onDelete={onDelete ? handleDelete : undefined}
-              />
-            </div>
-          )}
-        </div>
-        {editing ? (
-          <div className="mt-1 space-y-1.5">
-            <textarea
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 rounded-xl bg-[#F5F1EE] text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none"
-              autoFocus
-            />
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={handleSave}
-                disabled={saving || !editText.trim()}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal text-white text-[10px] font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
-              >
-                <Check size={10} />
-                Save
-              </button>
-              <button
-                onClick={() => { setEditing(false); setEditText(reply.content); }}
-                disabled={saving}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 text-[10px] font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
-              >
-                <X size={10} />
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <p className="text-[13px] text-gray-700 leading-relaxed mt-0.5 whitespace-pre-wrap">{reply.content}</p>
-        )}
-        {reply.video_url && (
-          <video
-            src={reply.video_url}
-            controls
-            preload="metadata"
-            className="mt-2 w-full max-w-[280px] rounded-lg bg-black"
-          />
-        )}
-        <AttachmentList attachments={reply.attachments} />
-        {currentUserName && (
-          <div className="mt-1.5">
-            <ReactionBar
-              commentId={reply.id}
-              reactions={reactions}
-              currentUserName={currentUserName}
-              onToggleReaction={(_id, emoji) => toggle(emoji)}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Three-dot menu for edit/delete actions ─────────────────────── */
-
-function ThreadMenu({
-  onEdit,
-  onDelete,
-  align = 'end',
-  className,
-}: {
-  onEdit?: () => void;
-  onDelete?: () => void;
-  align?: 'start' | 'end';
-  className?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as HTMLElement)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  return (
-    <div ref={rootRef} className={`relative inline-flex ${className ?? ''}`}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-        aria-label="More actions"
-      >
-        <MoreHorizontal size={12} />
-      </button>
-      {open && (
-        <div
-          className={`absolute z-30 top-full mt-1 ${align === 'end' ? 'right-0' : 'left-0'} bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[120px]`}
-        >
-          {onEdit && (
-            <button
-              onClick={() => { setOpen(false); onEdit(); }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-700 hover:bg-gray-50 text-left"
-            >
-              <Pencil size={12} className="text-gray-400" />
-              Edit
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={() => { setOpen(false); onDelete(); }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-red-600 hover:bg-red-50 text-left"
-            >
-              <Trash2 size={12} />
-              Delete
-            </button>
-          )}
-        </div>
       )}
     </div>
   );
