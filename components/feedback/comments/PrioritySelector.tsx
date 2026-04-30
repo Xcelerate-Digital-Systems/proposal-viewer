@@ -53,17 +53,26 @@ export default function PrioritySelector({ value, onChange, compact = true }: Pr
         onClick={() => setOpen((o) => !o)}
         className={
           compact
-            ? 'p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors'
-            : 'flex items-center gap-1.5 px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50'
+            ? `inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                value === 'none'
+                  ? 'text-gray-500 hover:text-ink hover:bg-gray-100'
+                  : current.badgeClass
+              }`
+            : 'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs text-gray-600 bg-gray-50 hover:bg-gray-100'
         }
         title={`Priority: ${current.label}`}
       >
         {value === 'none' ? (
-          <Flag size={16} className="text-gray-400" />
+          <>
+            <Flag size={12} className="text-gray-400" />
+            <span>Priority</span>
+          </>
         ) : (
-          <CurrentIcon size={16} className={current.iconClass} />
+          <>
+            <CurrentIcon size={12} className={current.iconClass} />
+            <span>{current.label}</span>
+          </>
         )}
-        {!compact && <span>{current.label}</span>}
       </button>
 
       {open && (

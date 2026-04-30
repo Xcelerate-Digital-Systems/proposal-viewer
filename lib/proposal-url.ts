@@ -44,7 +44,7 @@ export function buildReviewProjectUrl(
   fallbackOrigin?: string
 ): string {
   const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  return `${origin}/project/${shareToken}`;
+  return `${origin}/review/${shareToken}`;
 }
 
 /**

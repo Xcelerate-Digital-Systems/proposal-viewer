@@ -810,6 +810,7 @@ export default function FeedbackDetailView({
                 containerRef={imageContainerRef}
                 onSubmit={async (content, attachments, priority, videoUrl) => {
                   await handleSubmitComment(content, pendingPin.x, pendingPin.y, undefined, priority, attachments, videoUrl);
+                  handleCancelPin();
                 }}
                 onCancel={handleCancelPin}
                 companyId={companyId}
@@ -830,6 +831,7 @@ export default function FeedbackDetailView({
                 quotedText={pendingHighlight.text}
                 onSubmit={async (content, attachments, priority, videoUrl) => {
                   await handleSubmitComment(content, undefined, undefined, undefined, priority, attachments, videoUrl);
+                  setPendingHighlight(null);
                 }}
                 onCancel={() => setPendingHighlight(null)}
                 companyId={companyId}

@@ -76,6 +76,7 @@ export default function PinCommentPopover({
     setReplyText('');
     setShowReply(false);
     setSubmitting(false);
+    onClose();
   };
 
   // Close on Escape

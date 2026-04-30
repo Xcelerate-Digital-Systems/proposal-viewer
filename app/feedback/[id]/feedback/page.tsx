@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, CheckCircle2, Circle, X, Globe, Image as ImageIcon, Mail, Smartphone, Monitor, ChevronDown, ChevronUp, ExternalLink, Clock, Send, Trash2 } from 'lucide-react';
+import { MessageSquare, CheckCircle2, Circle, X, Globe, Image as ImageIcon, Mail, Smartphone, Monitor, ChevronDown, ChevronUp, ExternalLink, Clock, Send, Trash2, RotateCcw } from 'lucide-react';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment } from '@/lib/supabase';
@@ -480,7 +480,13 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                     <FeedbackRow
                       key={comment.id}
                       comment={comment}
-                      onClick={() => setSelectedComment(comment)}
+                      onSelect={() => setSelectedComment(comment)}
+                      onViewItem={() =>
+                        router.push(
+                          `/feedback/${projectId}/items/${comment.review_item_id}?type=${encodeURIComponent(comment.item_type)}`
+                        )
+                      }
+                      onToggleResolve={() => handleToggleResolve(comment, !comment.resolved)}
                     />
                   ))}
                 </div>
@@ -517,15 +523,28 @@ const TYPE_ICONS: Record<string, typeof Globe> = {
   ad: Monitor,
 };
 
-function FeedbackRow({ comment, onClick }: { comment: CommentWithItem; onClick: () => void }) {
+function FeedbackRow({
+  comment,
+  onSelect,
+  onViewItem,
+  onToggleResolve,
+}: {
+  comment: CommentWithItem;
+  onSelect: () => void;
+  onViewItem: () => void;
+  onToggleResolve: () => void;
+}) {
   const TypeIcon = TYPE_ICONS[comment.item_type] || MessageSquare;
   const priorityDef = comment.priority && comment.priority !== 'none' ? getPriorityDef(comment.priority) : null;
   const PriorityIcon = priorityDef?.icon;
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+    <div
+      onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
+      className="group w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-gray-50 transition-colors cursor-pointer"
     >
       {/* Thread number badge */}
       <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -546,11 +565,11 @@ function FeedbackRow({ comment, onClick }: { comment: CommentWithItem; onClick: 
           </p>
           {priorityDef && PriorityIcon && (
             <span
-              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[9px] font-medium uppercase shrink-0 ${priorityDef.badgeClass}`}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0 ${priorityDef.badgeClass}`}
               title={`Priority: ${priorityDef.label}`}
             >
-              <PriorityIcon size={9} className={priorityDef.iconClass} />
-              {priorityDef.label}
+              <PriorityIcon size={10} className={priorityDef.iconClass} />
+              {priorityDef.label} priority
             </span>
           )}
         </div>
@@ -572,11 +591,38 @@ function FeedbackRow({ comment, onClick }: { comment: CommentWithItem; onClick: 
         </div>
       </div>
 
-      {/* Resolved indicator */}
+      {/* Row actions */}
+      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => { e.stopPropagation(); onViewItem(); }}
+          title="Open item"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-gray-500 hover:text-ink hover:bg-gray-100 transition-colors"
+        >
+          <ExternalLink size={11} />
+          View item
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleResolve(); }}
+          title={comment.resolved ? 'Reopen' : 'Mark resolved'}
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+            comment.resolved
+              ? 'text-amber-700 hover:bg-amber-50'
+              : 'text-emerald-700 hover:bg-emerald-50'
+          }`}
+        >
+          {comment.resolved ? <RotateCcw size={11} /> : <CheckCircle2 size={11} />}
+          {comment.resolved ? 'Reopen' : 'Resolve'}
+        </button>
+      </div>
+
+      {/* Resolved indicator (when row is not hovered) */}
       {comment.resolved && (
-        <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-1" />
+        <CheckCircle2
+          size={16}
+          className="text-emerald-500 shrink-0 mt-1 group-hover:hidden focus-within:hidden"
+        />
       )}
-    </button>
+    </div>
   );
 }
 

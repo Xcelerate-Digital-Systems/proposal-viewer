@@ -92,7 +92,7 @@ export default function KanbanBoard({ items, commentCounts, onOpen, onItemsChang
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 lg:-mx-10 px-6 lg:px-10 min-h-[60vh]">
+      <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 lg:-mx-10 px-6 lg:px-10 h-full">
         {COLUMN_ORDER.map((status) => (
           <KanbanColumn
             key={status}
@@ -134,9 +134,9 @@ function KanbanColumn({
   const def = getFeedbackStatusDef(status);
 
   return (
-    <div className="shrink-0 w-[280px] flex flex-col">
+    <div className="shrink-0 w-[280px] flex flex-col h-full min-h-0">
       {/* Column header */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 shrink-0">
         <span className={`w-2 h-2 rounded-full ${def.dot}`} />
         <h3 className="text-[13px] font-semibold text-gray-800">{def.label}</h3>
         <span className="text-[11px] font-medium text-gray-400">{items.length}</span>
@@ -145,7 +145,7 @@ function KanbanColumn({
       {/* Droppable list */}
       <div
         ref={setNodeRef}
-        className={`flex-1 rounded-2xl p-3 space-y-2.5 min-h-[140px] transition-colors ${
+        className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors ${
           isOver ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-gray-50'
         }`}
       >
