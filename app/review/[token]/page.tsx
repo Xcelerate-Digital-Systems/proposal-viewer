@@ -496,11 +496,13 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
         )}
 
         {currentTab === 'kanban' && (
-          <div className="flex-1 min-h-0 pt-4">
+          <div className="flex-1 min-h-0">
             <PublicKanbanView
               items={items}
               comments={comments}
+              branding={branding}
               onSelectItem={handleBoardItemClick}
+              onUpdateStatus={handleUpdateItemStatus}
             />
           </div>
         )}

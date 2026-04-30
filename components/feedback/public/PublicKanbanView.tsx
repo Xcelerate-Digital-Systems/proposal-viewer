@@ -1,17 +1,29 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import {
+  DndContext, DragEndEvent, DragOverlay, DragStartEvent,
+  PointerSensor, useDraggable, useDroppable, useSensor, useSensors,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import {
   MessageSquareText, ExternalLink, Globe, Mail, Smartphone,
   Image as ImageIcon, Video, FileText, Megaphone, Search,
 } from 'lucide-react';
-import type { FeedbackItem, FeedbackItemType, FeedbackStatus, FeedbackComment } from '@/lib/types/feedback';
+import type {
+  FeedbackItem, FeedbackItemType, FeedbackStatus, FeedbackComment,
+} from '@/lib/types/feedback';
 import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
+import type { CompanyBranding } from '@/hooks/useProposal';
 
 interface PublicKanbanViewProps {
   items: FeedbackItem[];
   comments: FeedbackComment[];
   onSelectItem: (itemId: string) => void;
+  /** Persists a status change. Throws / rejects when the update fails so we
+   *  can roll back the optimistic UI move. */
+  onUpdateStatus: (itemId: string, status: FeedbackStatus) => Promise<void> | void;
+  branding: CompanyBranding;
 }
 
 const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; iconBg: string; iconColor: string }> = {
@@ -25,12 +37,29 @@ const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; i
   google_ad: { label: 'Google Ad', Icon: Search,     iconBg: 'bg-indigo-50',  iconColor: 'text-indigo-600' },
 };
 
+/** Reviewers can move items into these statuses. Mirrors the public status
+ *  endpoint allowlist. Anything else is rejected server-side anyway. */
+const CLIENT_ALLOWED_STATUSES: FeedbackStatus[] = [
+  'client_review',
+  'revision_needed',
+  'approved',
+  'rejected',
+];
+
 /**
- * Read-only kanban for public reviewers. Same column layout as the admin
- * board but no drag handles and no status mutations — clients tap a card
- * to open the item detail view where they can comment.
+ * Public Kanban — read-only history columns plus forward-only drag-drop.
+ * Reviewers can move a card into a later status (e.g. client_review →
+ * approved) but never backwards. Visual parity with the admin board, with
+ * the agency's accent colour applied to the column headers + drop ring.
  */
-export default function PublicKanbanView({ items, comments, onSelectItem }: PublicKanbanViewProps) {
+export default function PublicKanbanView({
+  items, comments, onSelectItem, onUpdateStatus, branding,
+}: PublicKanbanViewProps) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const accent = branding.accent_color || '#0f766e';
+
   const commentCounts = useMemo(() => {
     const counts: Record<string, { total: number; unresolved: number }> = {};
     for (const c of comments) {
@@ -58,72 +87,249 @@ export default function PublicKanbanView({ items, comments, onSelectItem }: Publ
     return map;
   }, [items]);
 
+  const activeItem = activeId ? items.find((i) => i.id === activeId) ?? null : null;
+
+  const handleDragStart = useCallback((ev: DragStartEvent) => {
+    setActiveId(String(ev.active.id));
+  }, []);
+
+  const handleDragEnd = useCallback(async (ev: DragEndEvent) => {
+    setActiveId(null);
+    const itemId = String(ev.active.id);
+    const overId = ev.over?.id ? String(ev.over.id) : null;
+    if (!overId || !overId.startsWith('column-')) return;
+
+    const targetStatus = overId.slice('column-'.length) as FeedbackStatus;
+    const current = items.find((i) => i.id === itemId);
+    if (!current) return;
+
+    const fromIdx = REVIEW_STATUS_ORDER.indexOf(current.status);
+    const toIdx = REVIEW_STATUS_ORDER.indexOf(targetStatus);
+    // Forward-only + only land in client-allowed columns.
+    if (fromIdx === -1 || toIdx <= fromIdx) return;
+    if (!CLIENT_ALLOWED_STATUSES.includes(targetStatus)) return;
+
+    await onUpdateStatus(itemId, targetStatus);
+  }, [items, onUpdateStatus]);
+
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 px-6 lg:px-10 h-full">
-      {REVIEW_STATUS_ORDER.map((status) => {
-        const def = getFeedbackStatusDef(status);
-        const columnItems = columns[status];
-        return (
-          <div key={status} className="shrink-0 w-[280px] flex flex-col h-full min-h-0">
-            <div className="flex items-center gap-2 mb-3 shrink-0">
-              <span className={`w-2 h-2 rounded-full ${def.dot}`} />
-              <h3 className="text-[13px] font-semibold text-gray-800">{def.label}</h3>
-              <span className="text-[11px] font-medium text-gray-400">{columnItems.length}</span>
-            </div>
-            <div className="flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto bg-gray-50">
-              {columnItems.length === 0 ? (
-                <div className="text-[11px] text-gray-400 italic text-center py-4">Empty</div>
-              ) : (
-                columnItems.map((item) => {
-                  const meta = TYPE_META[item.type];
-                  const Icon = meta.Icon;
-                  const counts = commentCounts[item.id] ?? { total: 0, unresolved: 0 };
-                  const isWebpage = item.type === 'webpage';
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => onSelectItem(item.id)}
-                      className="w-full text-left group relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all"
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.iconBg}`}>
-                          <Icon size={15} className={meta.iconColor} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start gap-1.5">
-                            <h4 className="text-[13px] font-medium text-ink truncate leading-tight flex-1 min-w-0">
-                              {item.title}
-                            </h4>
-                            {item.version > 1 && (
-                              <span className="text-[10px] font-semibold text-gray-400 shrink-0">v{item.version}</span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-gray-400 mt-0.5 truncate">{meta.label}</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                          <MessageSquareText size={11} />
-                          <span>
-                            {counts.total}
-                            {counts.unresolved > 0 && (
-                              <span className="text-amber-600 ml-0.5 font-semibold">({counts.unresolved})</span>
-                            )}
-                          </span>
-                        </div>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-teal">
-                          {isWebpage ? <ExternalLink size={11} /> : null}
-                          Open
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex gap-4 overflow-x-auto px-6 lg:px-10 py-6 h-full">
+        {REVIEW_STATUS_ORDER.map((status) => {
+          const fromIdx = activeItem ? REVIEW_STATUS_ORDER.indexOf(activeItem.status) : -1;
+          const toIdx = REVIEW_STATUS_ORDER.indexOf(status);
+          const isDropAllowed = activeItem
+            ? toIdx > fromIdx && CLIENT_ALLOWED_STATUSES.includes(status)
+            : false;
+
+          return (
+            <KanbanColumn
+              key={status}
+              status={status}
+              items={columns[status]}
+              commentCounts={commentCounts}
+              onSelectItem={onSelectItem}
+              accent={accent}
+              dragActive={!!activeItem}
+              isDropAllowed={isDropAllowed}
+            />
+          );
+        })}
+      </div>
+
+      <DragOverlay>
+        {activeItem ? (
+          <div className="opacity-90 rotate-1">
+            <KanbanCardView
+              item={activeItem}
+              counts={commentCounts[activeItem.id] ?? { total: 0, unresolved: 0 }}
+              isDragging={false}
+              accent={accent}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+/* ─── Column ───────────────────────────────────────────────────── */
+
+function KanbanColumn({
+  status, items, commentCounts, onSelectItem, accent, dragActive, isDropAllowed,
+}: {
+  status: FeedbackStatus;
+  items: FeedbackItem[];
+  commentCounts: Record<string, { total: number; unresolved: number }>;
+  onSelectItem: (itemId: string) => void;
+  accent: string;
+  dragActive: boolean;
+  isDropAllowed: boolean;
+}) {
+  // Disabled (backwards / not-client-allowed) drop zones don't register, so
+  // dnd-kit's `over` never fires for them.
+  const { setNodeRef, isOver } = useDroppable({
+    id: `column-${status}`,
+    disabled: dragActive && !isDropAllowed,
+  });
+  const def = getFeedbackStatusDef(status);
+
+  const ringStyle = isOver
+    ? { backgroundColor: `${accent}15`, boxShadow: `0 0 0 2px ${accent}55 inset` }
+    : undefined;
+
+  return (
+    <div className="shrink-0 w-[280px] flex flex-col h-full min-h-0">
+      <div className="flex items-center gap-2 mb-3 shrink-0">
+        <span className={`w-2 h-2 rounded-full ${def.dot}`} />
+        <h3 className="text-[13px] font-semibold text-gray-800">{def.label}</h3>
+        <span className="text-[11px] font-medium text-gray-400">{items.length}</span>
+      </div>
+
+      <div
+        ref={setNodeRef}
+        style={ringStyle}
+        className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors ${
+          dragActive && !isDropAllowed ? 'bg-gray-50 opacity-60' : 'bg-gray-50'
+        }`}
+      >
+        {items.length === 0 ? (
+          <div className="text-[11px] text-gray-400 italic text-center py-4">
+            {dragActive && !isDropAllowed ? 'Locked' : 'Empty'}
+          </div>
+        ) : (
+          items.map((item) => (
+            <DraggableKanbanCard
+              key={item.id}
+              item={item}
+              counts={commentCounts[item.id] ?? { total: 0, unresolved: 0 }}
+              onSelectItem={onSelectItem}
+              accent={accent}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Card (draggable wrapper + presentational view) ──────────────── */
+
+function DraggableKanbanCard({
+  item, counts, onSelectItem, accent,
+}: {
+  item: FeedbackItem;
+  counts: { total: number; unresolved: number };
+  onSelectItem: (itemId: string) => void;
+  accent: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: item.id,
+    data: { kind: 'item' },
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  const meta = TYPE_META[item.type];
+  const Icon = meta.Icon;
+  const isWebpage = item.type === 'webpage';
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div
+        className={`relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all ${
+          isDragging ? 'ring-2' : ''
+        }`}
+        style={isDragging ? { boxShadow: `0 0 0 2px ${accent}66` } : undefined}
+      >
+        {/* Top half acts as the drag handle — large grab target. */}
+        <div
+          {...listeners}
+          {...attributes}
+          className="flex items-start gap-2.5 cursor-grab active:cursor-grabbing -m-3.5 p-3.5 rounded-t-2xl"
+          aria-label={`Drag ${item.title}`}
+        >
+          <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.iconBg}`}>
+            <Icon size={15} className={meta.iconColor} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-1.5">
+              <h4 className="text-[13px] font-medium text-ink truncate leading-tight flex-1 min-w-0">
+                {item.title}
+              </h4>
+              {item.version > 1 && (
+                <span className="text-[10px] font-semibold text-gray-400 shrink-0">v{item.version}</span>
               )}
             </div>
+            <p className="text-[11px] text-gray-400 mt-0.5 truncate">{meta.label}</p>
           </div>
-        );
-      })}
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-1 text-[11px] text-gray-500">
+            <MessageSquareText size={11} />
+            <span>
+              {counts.total}
+              {counts.unresolved > 0 && (
+                <span className="text-amber-600 ml-0.5 font-semibold">({counts.unresolved})</span>
+              )}
+            </span>
+          </div>
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onSelectItem(item.id); }}
+            className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium"
+            style={{ color: accent }}
+          >
+            {isWebpage ? <ExternalLink size={11} /> : null}
+            Open
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KanbanCardView({
+  item, counts, isDragging, accent,
+}: {
+  item: FeedbackItem;
+  counts: { total: number; unresolved: number };
+  isDragging: boolean;
+  accent: string;
+}) {
+  const meta = TYPE_META[item.type];
+  const Icon = meta.Icon;
+  return (
+    <div
+      className={`relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] p-3.5 ${
+        isDragging ? 'ring-2' : ''
+      }`}
+      style={isDragging ? { boxShadow: `0 0 0 2px ${accent}66` } : undefined}
+    >
+      <div className="flex items-start gap-2.5">
+        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.iconBg}`}>
+          <Icon size={15} className={meta.iconColor} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[13px] font-medium text-ink truncate leading-tight">{item.title}</h4>
+          <p className="text-[11px] text-gray-400 mt-0.5 truncate">{meta.label}</p>
+        </div>
+      </div>
+      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-1 text-[11px] text-gray-500">
+          <MessageSquareText size={11} />
+          <span>
+            {counts.total}
+            {counts.unresolved > 0 && (
+              <span className="text-amber-600 ml-0.5 font-semibold">({counts.unresolved})</span>
+            )}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
