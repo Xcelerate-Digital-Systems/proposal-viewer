@@ -766,6 +766,7 @@ export default function FeedbackDetailView({
               highlightedCommentId={highlightedCommentId}
               onHighlightClick={handlePinClick}
               accentColor={branding?.accent_color || accent}
+              brandName={project.client_name || undefined}
             />
 
             <DrawingOverlay

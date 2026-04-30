@@ -53,6 +53,8 @@ interface ItemContentViewProps {
   onHighlightClick?: (commentId: string) => void;
   /** Brand accent color — applied to mockup preview toggles (Inbox/Email, FB/IG, etc.) */
   accentColor?: string;
+  /** Business / brand name — shown as the page/sender name in ad, email and SMS mockups. */
+  brandName?: string;
 }
 
 /* ================================================================== */
@@ -74,7 +76,9 @@ export default function ItemContentView({
   highlightedCommentId,
   onHighlightClick,
   accentColor,
+  brandName,
 }: ItemContentViewProps) {
+  const displayBrandName = brandName?.trim() || 'Your Brand';
   if (!item) {
     return (
       <div className="text-center">
@@ -98,7 +102,7 @@ export default function ItemContentView({
         style={{ cursor: placingPin ? 'crosshair' : 'default' }}
         onClick={onImageClick}
       >
-        <EmailContentView item={item} accentColor={accentColor} />
+        <EmailContentView item={item} accentColor={accentColor} brandName={displayBrandName} />
         <PinOverlay
           pinComments={pinComments}
           pendingPin={pendingPin}
@@ -125,7 +129,7 @@ export default function ItemContentView({
       >
         <SmsMockupPreview
           body={item.sms_body || ''}
-          senderName="Your Brand"
+          senderName={displayBrandName}
           client="imessage"
           showClientToggle
           accentColor={accentColor}
@@ -308,7 +312,7 @@ export default function ItemContentView({
               primaryText={item.ad_copy || ''}
               ctaText={item.ad_cta || 'Learn More'}
               platform={(item.ad_platform as AdPlatform) || 'facebook_feed'}
-              pageName="Your Brand"
+              pageName={displayBrandName}
               showPlatformToggle
               accentColor={accentColor}
             />
@@ -357,9 +361,11 @@ export default function ItemContentView({
 function EmailContentView({
   item,
   accentColor,
+  brandName,
 }: {
   item: FeedbackItem;
   accentColor?: string;
+  brandName?: string;
 }) {
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -367,7 +373,7 @@ function EmailContentView({
         subject={item.email_subject || ''}
         preheader={item.email_preheader || ''}
         body={item.email_body || ''}
-        senderName="Your Brand"
+        senderName={brandName || 'Your Brand'}
         client="inbox_preview"
         showClientToggle
         accentColor={accentColor}

@@ -82,6 +82,7 @@ function ItemViewerContent({
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [reviewMode, setReviewMode] = useState<'comment' | 'browse'>('comment');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
@@ -196,12 +197,17 @@ function ItemViewerContent({
   }, [authorName, session?.user?.id]);
 
   const fetchBranding = useCallback(async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      setBrandingLoaded(true);
+      return;
+    }
     try {
       const res = await fetch(`/api/company/branding?company_id=${companyId}`);
       if (res.ok) setBranding(await res.json());
     } catch {
       // Fall back to DEFAULT_BRANDING — header just stays neutral.
+    } finally {
+      setBrandingLoaded(true);
     }
   }, [companyId]);
 
@@ -421,10 +427,16 @@ function ItemViewerContent({
   }, [items, toast]);
 
   // ── Loading ──
-  if (loading || !project) {
+  // Wait for branding before painting anything so we don't flash the default
+  // teal accent before the agency's brand color settles in.
+  if (!brandingLoaded || loading || !project) {
+    const accent = branding.accent_color || '#017C87';
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+      <div className="flex items-center justify-center h-full bg-white">
+        <div
+          className="w-6 h-6 border-2 rounded-full animate-spin"
+          style={{ borderColor: `${accent}33`, borderTopColor: accent }}
+        />
       </div>
     );
   }
