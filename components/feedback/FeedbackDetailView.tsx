@@ -1,31 +1,24 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import {
-  ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Monitor,
-  MessageSquare, MousePointer2, ArrowRight, Pause,
-} from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { ExternalLink, Monitor, Pause } from 'lucide-react';
 import CompleteFeedbackModal from './CompleteFeedbackModal';
+import FeedbackHeaderBar from './FeedbackHeaderBar';
 import type { FeedbackProject, FeedbackItem, FeedbackComment, FeedbackStatus } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
-import { REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
 import { applyVersion, type VersionView } from '@/lib/feedback/versions';
-import VersionPicker from '@/components/feedback/VersionPicker';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { usePinFeedback } from '@/hooks/usePinFeedback';
 import { useScreenshotCapture } from '@/hooks/useScreenshotCapture';
 import { useCommentFilters } from '@/hooks/useCommentFilters';
 import { useBrandingColors } from '@/hooks/useBrandingColors';
-import { fontFamily } from '@/lib/google-fonts';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { CommentsPanel } from '@/components/feedback/comments';
 import ItemContentView from '@/components/feedback/ItemContentView';
-import ItemThumbStrip from '@/components/feedback/ItemThumbStrip';
-import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
 import PinCommentPopover from '@/components/feedback/PinCommentPopover';
 import PendingPinPopover from '@/components/feedback/PendingPinPopover';
 import WebpageClientPlaceholder from '@/components/feedback/WebpageClientPlaceholder';
-import { FeedbackToolbar, FeedbackModeBar, DrawingOverlay, HighlightOverlay } from '@/components/feedback/tools';
+import { FeedbackToolbar, FeedbackModeBar, DrawingOverlay } from '@/components/feedback/tools';
 import type { AnnotationData } from '@/components/feedback/tools';
 import { useTextHighlight, type TextHighlightData } from '@/hooks/useTextHighlight';
 
@@ -483,229 +476,38 @@ export default function FeedbackDetailView({
       {MobileGate}
 
       <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-white`}>
-        {/* ── Row 1: brand + title + status | version + status control + actions | (client) Comment/Browse + avatar + Finish ── */}
-        <div
-          className={`flex items-center gap-3 px-5 py-3 shrink-0 ${
-            headerBranded ? '' : 'bg-white shadow-[0_1px_0_rgba(20,20,40,0.05)]'
-          }`}
-          style={headerBranded ? { backgroundColor: bgSecondary, borderBottom: `2px solid ${branding?.accent_color || accent}` } : undefined}
-        >
-          {/* Back + branding */}
-          <div className="flex items-center gap-2 shrink-0 min-w-0">
-            {backAction ? (
-              <button
-                onClick={backAction.onClick}
-                className={`flex items-center gap-1.5 text-sm transition-colors min-w-0 ${
-                  headerBranded ? '' : 'text-gray-500 hover:text-gray-700'
-                }`}
-                style={headerBranded ? { color: `${sidebarText}99` } : undefined}
-              >
-                <ArrowLeft size={14} className="shrink-0" />
-                <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
-              </button>
-            ) : null}
-
-            {hasBranding && branding?.logo_url && (
-              <>
-                {backAction && <span style={{ color: `${sidebarText}40` }}>·</span>}
-                <img
-                  src={branding.logo_url}
-                  alt={branding.name}
-                  className="h-5 w-auto max-w-[100px] object-contain"
-                />
-              </>
-            )}
-            {hasBranding && !branding?.logo_url && branding?.name && (
-              <>
-                {backAction && <span style={{ color: `${sidebarText}40` }}>·</span>}
-                <span
-                  className="text-sm font-semibold"
-                  style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
-                >
-                  {branding.name}
-                </span>
-              </>
-            )}
-
-            {/* Project title (always shown — replaces ReviewTopBar's title) */}
-            <span
-              className={`h-4 w-px ${headerBranded ? '' : 'bg-gray-100'}`}
-              style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
-            />
-            <span
-              className={`text-[15px] font-semibold tracking-tight truncate max-w-[220px] ${headerBranded ? '' : 'text-ink'}`}
-              style={headerBranded ? { color: sidebarText } : undefined}
-            >
-              {project.title}
-            </span>
-            {project.client_name && (
-              <span
-                className={`text-xs truncate hidden xl:inline ${headerBranded ? '' : 'text-gray-400'}`}
-                style={headerBranded ? { color: `${sidebarText}80` } : undefined}
-              >
-                · {project.client_name}
-              </span>
-            )}
-          </div>
-
-          {/* Filters + prev/next + count (middle cluster) */}
-          {!singleItemOnly && stripTypes.length > 1 && (
-            <>
-              <div
-                className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
-                style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
-              />
-              <div className="shrink-0">
-                <TypeFilterTabs
-                  items={items}
-                  availableTypes={stripTypes}
-                  typeFilter={typeFilter}
-                  onFilterChange={handleFilterChange}
-                  variant={stripVariant}
-                  sidebarTextColor={headerBranded ? sidebarText : undefined}
-                  showCounts={false}
-                />
-              </div>
-            </>
-          )}
-
-          {!singleItemOnly && filteredItems.length > 1 && (
-            <>
-              <div
-                className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
-                style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
-              />
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => goToItem(currentIdx - 1)}
-                  disabled={currentIdx <= 0}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                    headerBranded ? '' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                  }`}
-                  style={headerBranded ? {
-                    border: `1px solid ${sidebarText}25`,
-                    color: sidebarText,
-                  } : undefined}
-                >
-                  <ChevronLeft size={13} />
-                  Previous
-                </button>
-                <span
-                  className={`text-xs tabular-nums whitespace-nowrap ${headerBranded ? '' : 'text-gray-400'}`}
-                  style={headerBranded ? { color: `${sidebarText}80` } : undefined}
-                >
-                  {currentIdx + 1} of {filteredItems.length}
-                </span>
-                <button
-                  onClick={() => goToItem(currentIdx + 1)}
-                  disabled={currentIdx >= filteredItems.length - 1}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                    headerBranded ? '' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                  }`}
-                  style={headerBranded ? {
-                    border: `1px solid ${sidebarText}25`,
-                    color: sidebarText,
-                  } : undefined}
-                >
-                  Next
-                  <ChevronRight size={13} />
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Spacer */}
-          <div className="flex-1 min-w-0" />
-
-          {/* Trailing controls */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Version picker */}
-            {versions && versions.length > 0 && onVersionChange && (
-              <div className="shrink-0">
-                <VersionPicker
-                  versions={versions}
-                  activeVersionId={activeVersionId}
-                  onChange={onVersionChange}
-                  onAddVersion={onAddVersion}
-                  compact
-                />
-              </div>
-            )}
-
-            {/* Client status picker */}
-            {onUpdateItemStatus && selectedItem && (
-              <div className="shrink-0">
-                <ClientStatusControl
-                  itemId={selectedItem.id}
-                  status={selectedItem.status}
-                  onChange={onUpdateItemStatus}
-                />
-              </div>
-            )}
-
-            {/* Custom actions (admin: share button etc.) */}
-            {renderHeaderActions && (
-              <div className="flex items-center gap-2 shrink-0">
-                {renderHeaderActions(selectedItem)}
-              </div>
-            )}
-
-            {/* ── Review controls (Comment/Browse pill + reviewer avatar + Finish) ── */}
-            {onReviewModeChange && reviewMode && (
-              <div
-                className="flex items-center rounded-full p-0.5 shrink-0"
-                style={{ backgroundColor: `${sidebarText}15` }}
-              >
-                <button
-                  type="button"
-                  onClick={() => onReviewModeChange('comment')}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold transition-colors"
-                  style={reviewMode === 'comment' ? { backgroundColor: `${sidebarText}26`, color: sidebarText } : { color: `${sidebarText}99` }}
-                >
-                  <MessageSquare size={12} />
-                  Comment
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onReviewModeChange('browse')}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold transition-colors"
-                  style={reviewMode === 'browse' ? { backgroundColor: `${sidebarText}26`, color: sidebarText } : { color: `${sidebarText}99` }}
-                >
-                  <MousePointer2 size={12} />
-                  Browse
-                </button>
-              </div>
-            )}
-
-            {reviewerName !== undefined && (
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
-                style={{ backgroundColor: branding?.accent_color || '#017C87' }}
-                title={reviewerName || 'Reviewer'}
-              >
-                {(reviewerName.trim()[0] ?? 'R').toUpperCase()}
-              </div>
-            )}
-
-            {onReviewSubmitted !== undefined && (
-              reviewSubmitted ? (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[12px] font-semibold shrink-0">
-                  Review submitted
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowFinishModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[12px] font-semibold hover:brightness-110 transition-all shadow-sm shrink-0"
-                  style={{ backgroundColor: branding?.accent_color || '#017C87' }}
-                >
-                  Finish reviewing
-                  <ArrowRight size={12} />
-                </button>
-              )
-            )}
-          </div>
-        </div>
+        <FeedbackHeaderBar
+          project={project}
+          items={items}
+          selectedItem={selectedItem}
+          filteredItems={filteredItems}
+          typeFilter={typeFilter}
+          stripTypes={stripTypes}
+          stripVariant={stripVariant}
+          currentIdx={currentIdx}
+          singleItemOnly={!!singleItemOnly}
+          onFilterChange={handleFilterChange}
+          onGoToItem={goToItem}
+          branding={branding}
+          headerBranded={headerBranded}
+          hasBranding={hasBranding}
+          accent={accent}
+          sidebarText={sidebarText}
+          bgSecondary={bgSecondary}
+          backAction={backAction}
+          versions={versions}
+          activeVersionId={activeVersionId}
+          onVersionChange={onVersionChange}
+          onAddVersion={onAddVersion}
+          onUpdateItemStatus={onUpdateItemStatus}
+          renderHeaderActions={renderHeaderActions}
+          reviewMode={reviewMode}
+          onReviewModeChange={onReviewModeChange}
+          reviewerName={reviewerName}
+          reviewSubmitted={reviewSubmitted}
+          onOpenFinishModal={() => setShowFinishModal(true)}
+          hasFinishHandler={onReviewSubmitted !== undefined}
+        />
 
         {/* Comments-paused banner (client only — shown immediately below the header rows) */}
         {isClient && project.pause_new_comments && (
@@ -876,87 +678,3 @@ export default function FeedbackDetailView({
   );
 }
 
-/* ─── Client status picker ─────────────────────────────────────────── */
-
-// Limited set of statuses a client is allowed to set from the review link.
-// Mirrors the allowlist in /api/review/[token]/items/[itemId]/status.
-const CLIENT_STATUS_OPTIONS: FeedbackStatus[] = [
-  'client_review',
-  'revision_needed',
-  'approved',
-  'rejected',
-];
-
-function ClientStatusControl({
-  itemId,
-  status,
-  onChange,
-}: {
-  itemId: string;
-  status: FeedbackStatus;
-  onChange: (itemId: string, next: FeedbackStatus) => Promise<void> | void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
-
-  const current = REVIEW_STATUS_CONFIG[status];
-
-  const handlePick = async (next: FeedbackStatus) => {
-    setOpen(false);
-    if (next === status) return;
-    try {
-      setPending(true);
-      await onChange(itemId, next);
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return (
-    <div ref={ref} className="relative inline-block" data-no-pin>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        disabled={pending}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${current.bg} ${current.text} ${current.border} hover:brightness-95 disabled:opacity-60`}
-      >
-        <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
-        {current.label}
-        <ChevronDown size={12} className="opacity-60" />
-      </button>
-      {open && (
-        <div
-          className="absolute top-full right-0 mt-1 z-50 w-44 bg-white rounded-lg border border-gray-200 shadow-lg py-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {CLIENT_STATUS_OPTIONS.map((opt) => {
-            const def = REVIEW_STATUS_CONFIG[opt];
-            return (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => handlePick(opt)}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left hover:bg-gray-50 transition-colors ${
-                  opt === status ? 'bg-gray-50' : ''
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full shrink-0 ${def.dot}`} />
-                <span className="text-gray-700 truncate">{def.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
