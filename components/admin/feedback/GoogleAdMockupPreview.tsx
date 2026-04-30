@@ -16,6 +16,8 @@ interface GoogleAdMockupPreviewProps {
   creativeUrl?: string;
   showFormatToggle?: boolean;
   onFormatChange?: (format: GoogleAdFormat) => void;
+  /** Brand accent color for the active toggle pill */
+  accentColor?: string;
 }
 
 /* ─── Search Ad Mockup ───────────────────────────────────────────── */
@@ -105,6 +107,7 @@ export default function GoogleAdMockupPreview({
   creativeUrl,
   showFormatToggle = false,
   onFormatChange,
+  accentColor,
 }: GoogleAdMockupPreviewProps) {
   const [format, setFormat] = useState<GoogleAdFormat>(initialFormat);
 
@@ -117,17 +120,17 @@ export default function GoogleAdMockupPreview({
     <div className="space-y-3">
       {showFormatToggle && (
         <div className="flex justify-center">
-          <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+          <div className="inline-flex rounded-full p-1 bg-gray-50">
             {(['search', 'display'] as GoogleAdFormat[]).map((f) => (
               <button
                 key={f}
                 type="button"
                 onClick={() => handleFormatChange(f)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                  format === f
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                className="px-3.5 py-1 rounded-full text-[12px] font-semibold transition-colors"
+                style={{
+                  backgroundColor: format === f ? (accentColor || '#017C87') : 'transparent',
+                  color: format === f ? '#ffffff' : '#6b7280',
+                }}
               >
                 {f === 'search' ? 'Search Ad' : 'Display Ad'}
               </button>

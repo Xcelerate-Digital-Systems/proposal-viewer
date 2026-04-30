@@ -719,6 +719,7 @@ export default function FeedbackDetailView({
         <FeedbackModeBar
           mode={feedbackMode}
           onCancel={() => changeFeedbackMode('idle')}
+          accentColor={branding?.accent_color || accent}
         />
 
         {/* ── Body: comments (left) + content (right) ── */}
@@ -764,6 +765,7 @@ export default function FeedbackDetailView({
               highlightComments={highlightComments}
               highlightedCommentId={highlightedCommentId}
               onHighlightClick={handlePinClick}
+              accentColor={branding?.accent_color || accent}
             />
 
             <DrawingOverlay
@@ -839,6 +841,7 @@ export default function FeedbackDetailView({
               mode={feedbackMode}
               onModeChange={changeFeedbackMode}
               className="absolute top-4 left-4"
+              accentColor={branding?.accent_color || accent}
             />
           </div>
 

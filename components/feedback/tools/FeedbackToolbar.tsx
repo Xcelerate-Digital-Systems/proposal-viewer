@@ -20,6 +20,8 @@ interface FeedbackToolbarProps {
 
   /** Additional className for positioning */
   className?: string;
+  /** Brand accent color — applied to the active tool button. Defaults to teal. */
+  accentColor?: string;
 }
 
 export default function FeedbackToolbar({
@@ -29,6 +31,7 @@ export default function FeedbackToolbar({
   mode = 'idle',
   onModeChange,
   className = '',
+  accentColor,
 }: FeedbackToolbarProps) {
   const handleToolClick = (tool: FeedbackMode) => {
     if (!onModeChange) return;
@@ -47,24 +50,28 @@ export default function FeedbackToolbar({
             onClick={() => handleToolClick('arrow')}
             tooltip="Arrow"
             icon={<MoveUpRight size={18} />}
+            accentColor={accentColor}
           />
           <ToolButton
             active={mode === 'box'}
             onClick={() => handleToolClick('box')}
             tooltip="Rectangle"
             icon={<Square size={18} />}
+            accentColor={accentColor}
           />
           <ToolButton
             active={mode === 'text'}
             onClick={() => handleToolClick('text')}
             tooltip="Text"
             icon={<Type size={18} />}
+            accentColor={accentColor}
           />
           <ToolButton
             active={mode === 'highlight'}
             onClick={() => handleToolClick('highlight')}
             tooltip="Highlight Text"
             icon={<Highlighter size={18} />}
+            accentColor={accentColor}
           />
 
           <div className="w-5 h-px bg-gray-100 my-0.5" />
@@ -78,6 +85,7 @@ export default function FeedbackToolbar({
         tooltip="Comments"
         icon={<MessageSquare size={18} />}
         badge={unresolvedCount > 0 ? unresolvedCount : undefined}
+        accentColor={accentColor}
       />
     </div>
   );
@@ -91,21 +99,23 @@ function ToolButton({
   tooltip,
   icon,
   badge,
+  accentColor,
 }: {
   active: boolean;
   onClick: () => void;
   tooltip: string;
   icon: React.ReactNode;
   badge?: number;
+  accentColor?: string;
 }) {
+  const accent = accentColor || '#017C87';
   return (
     <button
       onClick={onClick}
       className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors group ${
-        active
-          ? 'bg-teal text-white shadow-sm'
-          : 'text-gray-500 hover:bg-gray-50 hover:text-ink'
+        active ? 'text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-ink'
       }`}
+      style={active ? { backgroundColor: accent } : undefined}
       title={tooltip}
     >
       {icon}
@@ -113,11 +123,11 @@ function ToolButton({
       {/* Badge */}
       {badge != null && (
         <span
-          className={`absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-semibold px-1 ${
-            active
-              ? 'bg-white text-teal'
-              : 'bg-teal text-white'
-          }`}
+          className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-semibold px-1"
+          style={{
+            backgroundColor: active ? '#ffffff' : accent,
+            color: active ? accent : '#ffffff',
+          }}
         >
           {badge > 99 ? '99+' : badge}
         </span>

@@ -51,6 +51,8 @@ interface ItemContentViewProps {
   highlightedCommentId?: string | null;
   /** Click a text highlight → navigate to comment */
   onHighlightClick?: (commentId: string) => void;
+  /** Brand accent color — applied to mockup preview toggles (Inbox/Email, FB/IG, etc.) */
+  accentColor?: string;
 }
 
 /* ================================================================== */
@@ -71,6 +73,7 @@ export default function ItemContentView({
   highlightComments = [],
   highlightedCommentId,
   onHighlightClick,
+  accentColor,
 }: ItemContentViewProps) {
   if (!item) {
     return (
@@ -95,7 +98,7 @@ export default function ItemContentView({
         style={{ cursor: placingPin ? 'crosshair' : 'default' }}
         onClick={onImageClick}
       >
-        <EmailContentView item={item} />
+        <EmailContentView item={item} accentColor={accentColor} />
         <PinOverlay
           pinComments={pinComments}
           pendingPin={pendingPin}
@@ -125,6 +128,7 @@ export default function ItemContentView({
           senderName="Your Brand"
           client="imessage"
           showClientToggle
+          accentColor={accentColor}
         />
         <PinOverlay
           pinComments={pinComments}
@@ -246,6 +250,7 @@ export default function ItemContentView({
           finalUrl={item.google_ad_final_url || ''}
           creativeUrl={item.ad_creative_url || ''}
           showFormatToggle
+          accentColor={accentColor}
         />
         <PinOverlay
           pinComments={pinComments}
@@ -305,6 +310,7 @@ export default function ItemContentView({
               platform={(item.ad_platform as AdPlatform) || 'facebook_feed'}
               pageName="Your Brand"
               showPlatformToggle
+              accentColor={accentColor}
             />
           </div>
         )}
@@ -350,8 +356,10 @@ export default function ItemContentView({
 
 function EmailContentView({
   item,
+  accentColor,
 }: {
   item: FeedbackItem;
+  accentColor?: string;
 }) {
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -362,6 +370,7 @@ function EmailContentView({
         senderName="Your Brand"
         client="inbox_preview"
         showClientToggle
+        accentColor={accentColor}
       />
     </div>
   );
