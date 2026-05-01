@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Check, ChevronDown, X, MessageSquare, CornerDownRight,
-  CheckCheck, Layers, Package,
+  CheckCheck, Layers, Package, RotateCcw,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -16,6 +16,21 @@ type Assignee = {
   notify_resolve: boolean;
   notify_status: boolean;
   notify_new_version: boolean;
+};
+
+type GuestPrefs = {
+  notify_comment: boolean;
+  notify_reply: boolean;
+  notify_resolve: boolean;
+  notify_status: boolean;
+  notify_new_version: boolean;
+};
+
+type Guest = {
+  email: string;
+  name: string;
+  removed: boolean;
+  prefs: GuestPrefs;
 };
 
 type PrefKey =
@@ -44,6 +59,7 @@ export default function ProjectAssigneesPanel({
 }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [assignees, setAssignees] = useState<Assignee[]>([]);
+  const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [savingFor, setSavingFor] = useState<string | null>(null);
@@ -66,17 +82,24 @@ export default function ProjectAssigneesPanel({
     });
   }, []);
 
+  const guestsUrl = `/api/feedback-projects/${projectId}/guests?company_id=${companyId}`;
+
   const refresh = useCallback(async () => {
-    const res = await authedFetch(buildUrl());
-    if (!res.ok) {
-      setLoading(false);
-      return;
+    const [a, g] = await Promise.all([
+      authedFetch(buildUrl()),
+      authedFetch(guestsUrl),
+    ]);
+    if (a.ok) {
+      const data = await a.json();
+      setMembers(data.members || []);
+      setAssignees(data.assignees || []);
     }
-    const data = await res.json();
-    setMembers(data.members || []);
-    setAssignees(data.assignees || []);
+    if (g.ok) {
+      const data = await g.json();
+      setGuests(data.guests || []);
+    }
     setLoading(false);
-  }, [authedFetch, buildUrl]);
+  }, [authedFetch, buildUrl, guestsUrl]);
 
   useEffect(() => {
     refresh();
@@ -109,6 +132,33 @@ export default function ProjectAssigneesPanel({
     );
     setSavingFor(null);
     refresh();
+  };
+
+  const toggleGuestPref = async (email: string, key: PrefKey) => {
+    const guest = guests.find((g) => g.email === email);
+    if (!guest) return;
+    const next = !guest.prefs[key];
+    setGuests((prev) =>
+      prev.map((g) =>
+        g.email === email ? { ...g, prefs: { ...g.prefs, [key]: next } } : g
+      )
+    );
+    const res = await authedFetch(guestsUrl, {
+      method: 'PATCH',
+      body: JSON.stringify({ email, prefs: { [key]: next } }),
+    });
+    if (!res.ok) refresh();
+  };
+
+  const setGuestRemoved = async (email: string, removed: boolean) => {
+    setGuests((prev) =>
+      prev.map((g) => (g.email === email ? { ...g, removed } : g))
+    );
+    const res = await authedFetch(guestsUrl, {
+      method: 'PATCH',
+      body: JSON.stringify({ email, removed }),
+    });
+    if (!res.ok) refresh();
   };
 
   const togglePref = async (memberId: string, key: PrefKey) => {
@@ -234,6 +284,81 @@ export default function ProjectAssigneesPanel({
             ))}
           </div>
         )}
+      </div>
+
+      {/* Guests — auto-listed once they comment with an email or are the
+          project's primary client_email. */}
+      <div className="pt-4 border-t border-gray-100">
+        <div className="mb-2">
+          <h3 className="text-sm font-semibold text-ink mb-1">Guests</h3>
+          <p className="text-[13px] text-gray-500">
+            Clients and outside reviewers who&apos;ve commented on this project. Toggle which event
+            types they get emails about, or remove them entirely.
+          </p>
+        </div>
+
+        <div className="border border-gray-100 rounded-xl bg-white divide-y divide-gray-100">
+          {guests.length === 0 ? (
+            <div className="px-4 py-6 text-[13px] text-gray-400 text-center">
+              No guests yet. They&apos;ll appear here once they leave a comment with their email.
+            </div>
+          ) : (
+            guests.map((g) => (
+              <div key={g.email} className={`px-4 py-3 ${g.removed ? 'opacity-50' : ''}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-ink truncate">
+                      {g.name || g.email}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">{g.email}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGuestRemoved(g.email, !g.removed)}
+                    className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 shrink-0"
+                  >
+                    {g.removed ? (
+                      <>
+                        <RotateCcw size={14} />
+                        Restore
+                      </>
+                    ) : (
+                      <>
+                        <X size={14} />
+                        Remove
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {!g.removed && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {PREF_DEFS.map((p) => {
+                      const Icon = p.icon;
+                      const on = g.prefs[p.key];
+                      return (
+                        <button
+                          key={p.key}
+                          type="button"
+                          onClick={() => toggleGuestPref(g.email, p.key)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                            on
+                              ? 'bg-teal/10 text-teal'
+                              : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                          }`}
+                          title={`${on ? 'On' : 'Off'} — ${p.label}`}
+                        >
+                          <Icon size={11} />
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

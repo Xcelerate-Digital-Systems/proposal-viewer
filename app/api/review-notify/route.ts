@@ -250,7 +250,52 @@ async function collectRecipients(params: {
 
   if (excludeEmail) recipients.delete(excludeEmail);
 
+  // Apply guest-recipient overrides: if the project has stored prefs for
+  // any of the (non-team-member) emails we collected, use them. Default
+  // for emails with no row remains "all events on".
+  await applyGuestPrefs({
+    supabase,
+    projectId,
+    recipients,
+    prefColumn: prefColumn as keyof GuestPrefRow,
+  });
+
   return recipients;
+}
+
+type GuestPrefRow = {
+  email: string;
+  notify_comment: boolean;
+  notify_reply: boolean;
+  notify_resolve: boolean;
+  notify_status: boolean;
+  notify_new_version: boolean;
+  removed_at: string | null;
+};
+
+async function applyGuestPrefs(params: {
+  supabase: ReturnType<typeof createServiceClient>;
+  projectId: string;
+  recipients: Set<string>;
+  prefColumn: keyof GuestPrefRow;
+}) {
+  const { supabase, projectId, recipients, prefColumn } = params;
+  if (recipients.size === 0) return;
+
+  const { data: rows } = await supabase
+    .from('review_project_guest_recipients')
+    .select('email, notify_comment, notify_reply, notify_resolve, notify_status, notify_new_version, removed_at')
+    .eq('review_project_id', projectId)
+    .in('email', Array.from(recipients));
+
+  for (const row of (rows ?? []) as GuestPrefRow[]) {
+    const email = row.email.trim().toLowerCase();
+    if (row.removed_at) {
+      recipients.delete(email);
+      continue;
+    }
+    if (row[prefColumn] === false) recipients.delete(email);
+  }
 }
 
 async function buildCommentEmailForBatch(params: {
