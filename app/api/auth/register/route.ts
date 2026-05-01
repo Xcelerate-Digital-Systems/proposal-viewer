@@ -17,15 +17,16 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Check if team member already exists
+    // Check if team member already exists. A single user can belong to
+    // multiple companies, so any existing row is enough to short-circuit.
     const { data: existing } = await supabase
       .from('team_members')
       .select('id')
       .eq('user_id', user_id)
-      .single();
+      .limit(1);
 
-    if (existing) {
-      return NextResponse.json({ id: existing.id });
+    if (existing && existing.length > 0) {
+      return NextResponse.json({ id: existing[0].id });
     }
 
     // Open signup is disabled — accounts only via invite.

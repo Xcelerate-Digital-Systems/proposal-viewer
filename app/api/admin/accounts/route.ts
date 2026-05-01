@@ -15,14 +15,16 @@ async function verifySuperAdmin(req: NextRequest) {
   const { data: { user } } = await supabaseAdmin.auth.getUser(token);
   if (!user) return null;
 
-  const { data: member } = await supabaseAdmin
+  // A user can have rows in multiple companies; pick the first super-admin
+  // row if any.
+  const { data: members } = await supabaseAdmin
     .from('team_members')
     .select('*')
     .eq('user_id', user.id)
     .eq('is_super_admin', true)
-    .single();
+    .limit(1);
 
-  return member;
+  return members?.[0] ?? null;
 }
 
 // GET: List all agency accounts (account_type = 'agency' only)
