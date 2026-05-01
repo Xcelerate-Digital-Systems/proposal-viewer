@@ -26,7 +26,7 @@ export async function GET(
   const [{ data: assignees }, { data: members }] = await Promise.all([
     supabase
       .from('review_project_assignees')
-      .select('team_member_id, created_at')
+      .select('team_member_id, created_at, notify_comment, notify_reply, notify_resolve, notify_status, notify_new_version')
       .eq('review_project_id', params.id),
     supabase
       .from('team_members')
@@ -86,6 +86,51 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  return NextResponse.json({ success: true });
+}
+
+// PATCH — toggle individual notification preferences for an assignee.
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const auth = await getAuthContext(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { team_member_id, prefs } = await req.json();
+  if (!team_member_id || !prefs || typeof prefs !== 'object') {
+    return NextResponse.json({ error: 'team_member_id and prefs required' }, { status: 400 });
+  }
+
+  const allowed = ['notify_comment', 'notify_reply', 'notify_resolve', 'notify_status', 'notify_new_version'];
+  const update: Record<string, boolean> = {};
+  for (const key of allowed) {
+    if (typeof prefs[key] === 'boolean') update[key] = prefs[key];
+  }
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: 'No valid prefs supplied' }, { status: 400 });
+  }
+
+  const supabase = createServiceClient();
+
+  const { data: project } = await supabase
+    .from('review_projects')
+    .select('id, company_id')
+    .eq('id', params.id)
+    .single();
+  if (!project || project.company_id !== auth.companyId) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  const { error } = await supabase
+    .from('review_project_assignees')
+    .update(update)
+    .eq('review_project_id', params.id)
+    .eq('team_member_id', team_member_id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }
 

@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
       supabase,
       projectId: project.id,
       reviewItemId: review_item_id ?? null,
+      eventType: event_type,
       isComment,
       isReply,
       isNewVersion,
@@ -162,6 +163,7 @@ async function collectRecipients(params: {
   supabase: ReturnType<typeof createServiceClient>;
   projectId: string;
   reviewItemId: string | null;
+  eventType: ReviewEventType;
   isComment: boolean;
   isReply: boolean;
   isNewVersion: boolean;
@@ -170,23 +172,37 @@ async function collectRecipients(params: {
   excludeEmail: string | null;
 }): Promise<Set<string>> {
   const {
-    supabase, projectId, reviewItemId, isComment, isReply, isNewVersion,
+    supabase, projectId, reviewItemId, eventType, isComment, isReply, isNewVersion,
     parentCommentId, projectClientEmail, excludeEmail,
   } = params;
   const recipients = new Set<string>();
 
-  // Assigned agency team members get every event on this project.
+  // Pick the per-assignee toggle column that gates this event.
+  const prefColumn: string = isReply
+    ? 'notify_reply'
+    : isComment
+    ? 'notify_comment'
+    : eventType === 'review_comment_resolved'
+    ? 'notify_resolve'
+    : isNewVersion
+    ? 'notify_new_version'
+    : 'notify_status';
+
+  // Assigned agency team members get the event when their toggle is on.
   const { data: assignees } = await supabase
     .from('review_project_assignees')
     .select('team_member:team_members(email)')
-    .eq('review_project_id', projectId);
+    .eq('review_project_id', projectId)
+    .eq(prefColumn, true);
 
-  for (const row of assignees ?? []) {
+  for (const row of (assignees ?? []) as unknown as Array<{
+    team_member: { email: string | null } | { email: string | null }[] | null;
+  }>) {
     // Supabase types the joined relation as either an array or a single
     // object depending on inference; normalise both shapes.
-    const rel = (row as { team_member: { email: string | null } | { email: string | null }[] | null }).team_member;
-    const members = Array.isArray(rel) ? rel : rel ? [rel] : [];
-    for (const tm of members) {
+    const rel = row.team_member;
+    const teamMembers = Array.isArray(rel) ? rel : rel ? [rel] : [];
+    for (const tm of teamMembers) {
       const email = tm?.email?.trim().toLowerCase();
       if (email) recipients.add(email);
     }
