@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Plus, History, ChevronDown, Check } from 'lucide-react';
+import { Plus, History, ChevronDown, Check, Pencil } from 'lucide-react';
 import type { VersionView } from '@/lib/feedback/versions';
 
 interface VersionPickerProps {
@@ -10,6 +10,8 @@ interface VersionPickerProps {
   onChange: (versionId: string | null) => void;
   /** If omitted, the "+" button is hidden — used on the public/client side. */
   onAddVersion?: () => void;
+  /** Optional admin affordance: opens the editor for the given version. */
+  onEditVersion?: (versionId: string | null) => void;
   compact?: boolean;
 }
 
@@ -19,7 +21,7 @@ interface VersionPickerProps {
  * button only renders when callers (admin) opt in via onAddVersion.
  */
 export default function VersionPicker({
-  versions, activeVersionId, onChange, onAddVersion, compact = false,
+  versions, activeVersionId, onChange, onAddVersion, onEditVersion, compact = false,
 }: VersionPickerProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -58,32 +60,50 @@ export default function VersionPicker({
           {ordered.map((v) => {
             const isActive = (v.id ?? null) === (active.id ?? null);
             return (
-              <button
+              <div
                 key={v.id ?? 'v1'}
-                type="button"
-                onClick={() => {
-                  onChange(v.id);
-                  setOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 hover:bg-gray-50 flex items-start gap-2 ${
+                className={`group flex items-start gap-2 px-3 py-2 hover:bg-gray-50 ${
                   isActive ? 'bg-gray-50' : ''
                 }`}
               >
-                <span className="text-[12px] font-semibold text-ink tabular-nums shrink-0 mt-0.5">
-                  v{v.versionNumber}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] text-gray-500 truncate">
-                    {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
-                  </p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    {formatTimestamp(v.createdAt)}
-                  </p>
-                </div>
-                {isActive && (
-                  <Check size={12} className="text-teal shrink-0 mt-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(v.id);
+                    setOpen(false);
+                  }}
+                  className="flex items-start gap-2 flex-1 min-w-0 text-left"
+                >
+                  <span className="text-[12px] font-semibold text-ink tabular-nums shrink-0 mt-0.5">
+                    v{v.versionNumber}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] text-gray-500 truncate">
+                      {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {formatTimestamp(v.createdAt)}
+                    </p>
+                  </div>
+                  {isActive && (
+                    <Check size={12} className="text-teal shrink-0 mt-1" />
+                  )}
+                </button>
+                {onEditVersion && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditVersion(v.id);
+                      setOpen(false);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-ink transition-opacity p-1 -m-1 shrink-0"
+                    title={`Edit v${v.versionNumber}`}
+                  >
+                    <Pencil size={12} />
+                  </button>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>

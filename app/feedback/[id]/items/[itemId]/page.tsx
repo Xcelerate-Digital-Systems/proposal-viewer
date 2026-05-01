@@ -78,6 +78,7 @@ function ItemViewerContent({
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [comments, setComments] = useState<FeedbackComment[]>([]);
   const [showAddVersion, setShowAddVersion] = useState(false);
+  const [editingVersionId, setEditingVersionId] = useState<string | null | undefined>(undefined);
   const [allProjectComments, setAllProjectComments] = useState<Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]>([]);
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -225,7 +226,7 @@ function ItemViewerContent({
   const supportsVersions = currentItem && currentItem.type !== 'webpage';
   const {
     versions, activeVersionId, creating: creatingVersion,
-    setActiveVersion, createVersion, uploadAsset,
+    setActiveVersion, createVersion, updateVersion, uploadAsset,
   } = useItemVersions({
     item: supportsVersions ? currentItem : null,
     companyId,
@@ -470,6 +471,11 @@ function ItemViewerContent({
         activeVersionId={activeVersionId}
         onVersionChange={supportsVersions ? setActiveVersion : undefined}
         onAddVersion={supportsVersions ? () => setShowAddVersion(true) : undefined}
+        onEditVersion={
+          supportsVersions
+            ? (versionId) => setEditingVersionId(versionId)
+            : undefined
+        }
         backAction={{
           label: project.title || 'Back',
           onClick: () => router.push(`/feedback/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`),
@@ -494,6 +500,26 @@ function ItemViewerContent({
           onUploadAsset={uploadAsset}
         />
       )}
+
+      {editingVersionId !== undefined && currentItem && (() => {
+        const editing = versions.find((v) => (v.id ?? null) === editingVersionId);
+        if (!editing) {
+          setEditingVersionId(undefined);
+          return null;
+        }
+        return (
+          <AddVersionModal
+            item={currentItem}
+            nextVersionNumber={editing.versionNumber}
+            creating={false}
+            editingVersion={editing}
+            onUpdate={updateVersion}
+            onSubmit={createVersion}
+            onClose={() => setEditingVersionId(undefined)}
+            onUploadAsset={uploadAsset}
+          />
+        );
+      })()}
     </>
   );
 }

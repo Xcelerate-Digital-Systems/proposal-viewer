@@ -130,6 +130,50 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
     [itemId, companyId, userId, nextVersionNumber, persistActiveVersion, toast, item]
   );
 
+  /**
+   * Edit an existing version's assets and notes. v1 (id === null) writes
+   * back to review_items; v2+ updates the matching review_item_versions row.
+   */
+  const updateVersion = useCallback(
+    async (
+      versionId: string | null,
+      patch: { notes?: string | null; assets: Partial<FeedbackItemVersion> }
+    ): Promise<boolean> => {
+      if (!itemId) return false;
+
+      if (versionId === null) {
+        // v1 lives on the review_items row itself — no `notes` column,
+        // but it has `updated_at`.
+        const { error } = await supabase
+          .from('review_items')
+          .update({ ...patch.assets, updated_at: new Date().toISOString() })
+          .eq('id', itemId);
+        if (error) {
+          toast.error('Failed to update version');
+          return false;
+        }
+      } else {
+        // review_item_versions has `notes` but no `updated_at` column.
+        const versionUpdates: Record<string, unknown> = { ...patch.assets };
+        if (patch.notes !== undefined) versionUpdates.notes = patch.notes;
+        const { data, error } = await supabase
+          .from('review_item_versions')
+          .update(versionUpdates)
+          .eq('id', versionId)
+          .select()
+          .single();
+        if (error || !data) {
+          toast.error('Failed to update version');
+          return false;
+        }
+        setRows((prev) => prev.map((r) => (r.id === versionId ? (data as FeedbackItemVersion) : r)));
+      }
+      toast.success('Version updated');
+      return true;
+    },
+    [itemId, toast]
+  );
+
   /** Upload a single file to storage and return its public URL. */
   const uploadAsset = useCallback(
     async (file: File): Promise<string | null> => {
@@ -156,6 +200,7 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
     creating,
     setActiveVersion: persistActiveVersion,
     createVersion,
+    updateVersion,
     uploadAsset,
     refreshVersions: fetchVersions,
   };

@@ -112,6 +112,8 @@ interface ReviewDetailViewProps {
   onVersionChange?: (versionId: string | null) => void;
   /** When provided, the version picker shows a "+" button that calls this. */
   onAddVersion?: () => void;
+  /** Open the editor for an existing version (admin only). */
+  onEditVersion?: (versionId: string | null) => void;
 
   // ── Client status update ──
   /** Client can change status (approve / request revision / reject). When
@@ -161,6 +163,7 @@ export default function FeedbackDetailView({
   activeVersionId = null,
   onVersionChange,
   onAddVersion,
+  onEditVersion,
   onUpdateItemStatus,
   reviewMode,
   onReviewModeChange,
@@ -534,6 +537,7 @@ export default function FeedbackDetailView({
           activeVersionId={activeVersionId}
           onVersionChange={onVersionChange}
           onAddVersion={onAddVersion}
+          onEditVersion={onEditVersion}
           onUpdateItemStatus={onUpdateItemStatus}
           renderHeaderActions={renderHeaderActions}
           reviewMode={reviewMode}

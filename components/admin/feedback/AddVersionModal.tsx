@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Upload, Loader2 } from 'lucide-react';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
+import type { VersionView } from '@/lib/feedback/versions';
 import { useToast } from '@/components/ui/Toast';
 
 interface AddVersionModalProps {
@@ -15,6 +16,16 @@ interface AddVersionModalProps {
     assets: Partial<FeedbackItemVersion>;
   }) => Promise<FeedbackItemVersion | null>;
   onUploadAsset: (file: File) => Promise<string | null>;
+  /**
+   * When provided, the modal switches to edit mode: prefills from this
+   * version, hides the version-number heading, and calls `onUpdate`
+   * instead of `onSubmit` to save in place.
+   */
+  editingVersion?: VersionView;
+  onUpdate?: (
+    versionId: string | null,
+    patch: { notes?: string | null; assets: Partial<FeedbackItemVersion> }
+  ) => Promise<boolean>;
 }
 
 type AssetKind = 'file' | 'text' | 'ad' | 'google_ad' | 'meta_lead_form';
@@ -45,36 +56,42 @@ function fileTargetField(type: FeedbackItem['type']): keyof FeedbackItemVersion 
 
 export default function AddVersionModal({
   item, nextVersionNumber, creating, onClose, onSubmit, onUploadAsset,
+  editingVersion, onUpdate,
 }: AddVersionModalProps) {
   const toast = useToast();
   const kind = assetKindForType(item.type);
 
+  const isEditing = !!editingVersion;
+  // In edit mode, prefill from the version being edited; otherwise prefill
+  // from the item (so v2 starts as a copy of v1's content).
+  const seed = editingVersion?.assets ?? item;
+
   const [file, setFile] = useState<File | null>(null);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(editingVersion?.notes ?? '');
 
   // Text variants
-  const [emailSubject, setEmailSubject] = useState(item.email_subject ?? '');
-  const [emailPreheader, setEmailPreheader] = useState(item.email_preheader ?? '');
-  const [emailBody, setEmailBody] = useState(item.email_body ?? '');
-  const [smsBody, setSmsBody] = useState(item.sms_body ?? '');
+  const [emailSubject, setEmailSubject] = useState(seed.email_subject ?? '');
+  const [emailPreheader, setEmailPreheader] = useState(seed.email_preheader ?? '');
+  const [emailBody, setEmailBody] = useState(seed.email_body ?? '');
+  const [smsBody, setSmsBody] = useState(seed.sms_body ?? '');
 
   // Meta ad copy
-  const [adHeadline, setAdHeadline] = useState(item.ad_headline ?? '');
-  const [adCopy, setAdCopy] = useState(item.ad_copy ?? '');
-  const [adCta, setAdCta] = useState(item.ad_cta ?? '');
+  const [adHeadline, setAdHeadline] = useState(seed.ad_headline ?? '');
+  const [adCopy, setAdCopy] = useState(seed.ad_copy ?? '');
+  const [adCta, setAdCta] = useState(seed.ad_cta ?? '');
 
   // Meta lead form (copy-iteration version: swap cover + edit headline/description/CTA)
-  const lf = item.meta_lead_form_data;
+  const lf = seed.meta_lead_form_data ?? item.meta_lead_form_data;
   const [lfHeadline, setLfHeadline] = useState(lf?.intro_headline ?? '');
   const [lfDescription, setLfDescription] = useState(lf?.intro_description ?? '');
   const [lfCta, setLfCta] = useState(lf?.cta ?? 'Continue');
 
   // Google ad copy
-  const [gadHeadline, setGadHeadline] = useState(item.google_ad_headline ?? '');
-  const [gadDesc1, setGadDesc1] = useState(item.google_ad_description1 ?? '');
-  const [gadDesc2, setGadDesc2] = useState(item.google_ad_description2 ?? '');
-  const [gadDisplayUrl, setGadDisplayUrl] = useState(item.google_ad_display_url ?? '');
-  const [gadFinalUrl, setGadFinalUrl] = useState(item.google_ad_final_url ?? '');
+  const [gadHeadline, setGadHeadline] = useState(seed.google_ad_headline ?? '');
+  const [gadDesc1, setGadDesc1] = useState(seed.google_ad_description1 ?? '');
+  const [gadDesc2, setGadDesc2] = useState(seed.google_ad_description2 ?? '');
+  const [gadDisplayUrl, setGadDisplayUrl] = useState(seed.google_ad_display_url ?? '');
+  const [gadFinalUrl, setGadFinalUrl] = useState(seed.google_ad_final_url ?? '');
 
   const [uploading, setUploading] = useState(false);
   const busy = uploading || creating;
@@ -85,10 +102,12 @@ export default function AddVersionModal({
 
     try {
       if (kind === 'file') {
-        if (!file) { toast.error('Choose a file'); setUploading(false); return; }
-        const url = await onUploadAsset(file);
-        if (!url) { setUploading(false); return; }
-        (assets as Record<string, unknown>)[fileTargetField(item.type) as string] = url;
+        if (!file && !isEditing) { toast.error('Choose a file'); setUploading(false); return; }
+        if (file) {
+          const url = await onUploadAsset(file);
+          if (!url) { setUploading(false); return; }
+          (assets as Record<string, unknown>)[fileTargetField(item.type) as string] = url;
+        }
       }
 
       if (kind === 'text') {
@@ -150,8 +169,16 @@ export default function AddVersionModal({
         assets.google_ad_final_url = gadFinalUrl || null;
       }
 
-      const result = await onSubmit({ notes: notes.trim() || null, assets });
-      if (result) onClose();
+      if (isEditing && onUpdate && editingVersion) {
+        const ok = await onUpdate(editingVersion.id, {
+          notes: notes.trim() || null,
+          assets,
+        });
+        if (ok) onClose();
+      } else {
+        const result = await onSubmit({ notes: notes.trim() || null, assets });
+        if (result) onClose();
+      }
     } finally {
       setUploading(false);
     }
@@ -162,7 +189,11 @@ export default function AddVersionModal({
       <div className="bg-white rounded-2xl shadow-[0_24px_48px_rgba(20,20,40,0.18)] w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-ink">Upload Version {nextVersionNumber}</h3>
+            <h3 className="text-base font-semibold tracking-tight text-ink">
+              {isEditing
+                ? `Edit Version ${editingVersion?.versionNumber ?? ''}`
+                : `Upload Version ${nextVersionNumber}`}
+            </h3>
             <p className="text-[12px] text-gray-500 mt-0.5 truncate max-w-[360px]">{item.title}</p>
           </div>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600"><X size={18} /></button>
@@ -170,7 +201,7 @@ export default function AddVersionModal({
 
         <div className="p-5 space-y-4">
           {kind === 'file' && (
-            <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} />
+            <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional={isEditing} />
           )}
 
           {kind === 'text' && item.type === 'email' && (
@@ -273,7 +304,7 @@ export default function AddVersionModal({
             className="inline-flex items-center gap-2 px-4 py-1.5 bg-teal text-white text-[13px] font-semibold rounded-full hover:bg-teal-hover disabled:opacity-60 transition-colors shadow-sm"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-            {busy ? 'Saving…' : 'Save Version'}
+            {busy ? 'Saving…' : isEditing ? 'Save Changes' : 'Save Version'}
           </button>
         </div>
       </div>
