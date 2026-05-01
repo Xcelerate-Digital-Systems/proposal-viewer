@@ -258,7 +258,11 @@ function ItemViewerContent({
       author_user_id: session?.user?.id || null,
       author_type: 'team',
       content: content.trim(),
-      comment_type: highlightData ? 'text_highlight' : annotationData ? (annotationData as Record<string, unknown>).type as string : (pinX != null ? 'pin' : 'general'),
+      comment_type: highlightData
+        ? 'text_highlight'
+        : (annotationData && typeof (annotationData as Record<string, unknown>).type === 'string')
+          ? (annotationData as Record<string, unknown>).type as string
+          : (pinX != null ? 'pin' : 'general'),
       pin_x: pinX ?? null,
       pin_y: pinY ?? null,
       annotation_data: annotationData || null,

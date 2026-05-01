@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Star,
   Reply,
@@ -55,6 +55,9 @@ export default function EmailMockupPreview({
   dark = false,
 }: EmailMockupPreviewProps) {
   const [currentClient, setCurrentClient] = useState<EmailClient>(client);
+  // Sync to the controlled prop so the parent can drive the active client
+  // (e.g. when navigating to a pin scoped to a specific client).
+  useEffect(() => { setCurrentClient(client); }, [client]);
 
   const handleClientChange = (c: EmailClient) => {
     setCurrentClient(c);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, Camera, Phone, Video } from 'lucide-react';
 
 export type SmsClient = 'imessage' | 'android';
@@ -34,6 +34,7 @@ export default function SmsMockupPreview({
   accentColor,
 }: SmsMockupPreviewProps) {
   const [currentClient, setCurrentClient] = useState<SmsClient>(client);
+  useEffect(() => { setCurrentClient(client); }, [client]);
 
   const handleClientChange = (c: SmsClient) => {
     setCurrentClient(c);

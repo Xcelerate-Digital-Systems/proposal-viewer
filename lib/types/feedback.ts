@@ -176,6 +176,37 @@ export type FeedbackItemStatus = FeedbackStatus;
 
 export type GoogleAdFormat = 'search' | 'display';
 
+/** Identifier of a sub-view inside a mockup (e.g. lead-form page,
+ *  email client, ad platform). Plain string so each mockup can use its own
+ *  union without needing to know about the others. `null` = the item has
+ *  no sub-views (image, video, pdf, webpage). */
+export type FeedbackItemView = string | null;
+
+/** Default sub-view to show when an item is first opened. Pins persist their
+ *  view in `annotation_data.view`, so this also defines which pins are
+ *  visible by default. */
+export function defaultViewForItem(item: { type: FeedbackItemType; ad_platform?: string | null; google_ad_format?: GoogleAdFormat | null }): FeedbackItemView {
+  switch (item.type) {
+    case 'meta_lead_form': return 'intro';
+    case 'email':          return 'inbox_preview';
+    case 'sms':            return 'imessage';
+    case 'google_ad':      return item.google_ad_format || 'search';
+    case 'ad':             return item.ad_platform || 'facebook_feed';
+    default:               return null;
+  }
+}
+
+/** Reads the view a pin/annotation/highlight was created on. Returns null
+ *  for legacy comments without a stored view — those won't match any view
+ *  and therefore won't render on view-scoped mockups. */
+export function getCommentView(annotation_data: unknown): FeedbackItemView {
+  if (annotation_data && typeof annotation_data === 'object') {
+    const v = (annotation_data as Record<string, unknown>).view;
+    if (typeof v === 'string') return v;
+  }
+  return null;
+}
+
 export type FeedbackItem = {
   id: string;
   review_project_id: string;

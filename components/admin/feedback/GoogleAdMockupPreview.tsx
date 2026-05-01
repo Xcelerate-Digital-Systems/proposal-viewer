@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { GoogleAdFormat } from '@/lib/types/feedback';
 
 /* ─── Types ──────────────────────────────────────────────────────── */
@@ -110,6 +110,7 @@ export default function GoogleAdMockupPreview({
   accentColor,
 }: GoogleAdMockupPreviewProps) {
   const [format, setFormat] = useState<GoogleAdFormat>(initialFormat);
+  useEffect(() => { setFormat(initialFormat); }, [initialFormat]);
 
   const handleFormatChange = (f: GoogleAdFormat) => {
     setFormat(f);

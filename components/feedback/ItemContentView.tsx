@@ -1,18 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Image as ImageIcon, FileText } from 'lucide-react';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
-import EmailMockupPreview from '@/components/admin/feedback/EmailMockupPreview';
-import SmsMockupPreview from '@/components/admin/feedback/SmsMockupPreview';
+import EmailMockupPreview, { type EmailClient } from '@/components/admin/feedback/EmailMockupPreview';
+import SmsMockupPreview, { type SmsClient } from '@/components/admin/feedback/SmsMockupPreview';
 import GoogleAdMockupPreview from '@/components/admin/feedback/GoogleAdMockupPreview';
-import MetaLeadFormMockupPreview from '@/components/admin/feedback/MetaLeadFormMockupPreview';
+import MetaLeadFormMockupPreview, { type MetaLeadFormPage } from '@/components/admin/feedback/MetaLeadFormMockupPreview';
 import PinOverlay from './PinOverlay';
 import { HighlightOverlay } from '@/components/feedback/tools';
 import WebpageEmbedView from './item-content/WebpageEmbedView';
 import WebpagePreviewView from './item-content/WebpagePreviewView';
 import type { FeedbackItem, FeedbackComment } from '@/lib/supabase';
-import type { GoogleAdFormat } from '@/lib/types/feedback';
+import {
+  type GoogleAdFormat,
+  type FeedbackItemView,
+  defaultViewForItem,
+  getCommentView,
+} from '@/lib/types/feedback';
 
 /* ================================================================== */
 /*  Types                                                              */
@@ -48,6 +53,13 @@ interface ItemContentViewProps {
   accentColor?: string;
   /** Business / brand name — shown as the page/sender name in ad, email and SMS mockups. */
   brandName?: string;
+  /** Currently active sub-view of the mockup (e.g. lead-form page, email
+   *  client, ad platform). Controlled — when null, defaults to the item's
+   *  natural starting view via `defaultViewForItem()`. */
+  activeView?: FeedbackItemView;
+  /** Notify the parent when the user toggles a sub-view. The parent stores
+   *  this so pin/highlight/drawing creation can scope to the active view. */
+  onViewChange?: (view: FeedbackItemView) => void;
 }
 
 /* ================================================================== */
@@ -70,8 +82,30 @@ export default function ItemContentView({
   onHighlightClick,
   accentColor,
   brandName,
+  activeView,
+  onViewChange,
 }: ItemContentViewProps) {
   const displayBrandName = brandName?.trim() || 'Your Brand';
+
+  // Resolve the controlled view, falling back to each item's natural default.
+  // For items with no sub-views (image, video, pdf, webpage) this stays null
+  // and the per-branch pin filter is bypassed.
+  const currentView = useMemo<FeedbackItemView>(
+    () => (activeView !== undefined ? activeView : (item ? defaultViewForItem(item) : null)),
+    [activeView, item],
+  );
+
+  // For sub-view-scoped mockups, only show pins / highlights placed on the
+  // current view. Single-view items pass through unchanged.
+  const visiblePins = useMemo(() => {
+    if (currentView == null) return pinComments;
+    return pinComments.filter((c) => getCommentView(c.annotation_data) === currentView);
+  }, [pinComments, currentView]);
+  const visibleHighlights = useMemo(() => {
+    if (currentView == null) return highlightComments;
+    return highlightComments.filter((c) => getCommentView(c.annotation_data) === currentView);
+  }, [highlightComments, currentView]);
+
   if (!item) {
     return (
       <div className="text-center">
@@ -88,6 +122,7 @@ export default function ItemContentView({
 
   // Email items — render the email mockup preview with pin overlay
   if (isEmail) {
+    const client = (currentView as EmailClient | null) || 'inbox_preview';
     return (
       <div
         ref={containerRef}
@@ -95,15 +130,24 @@ export default function ItemContentView({
         style={{ cursor: placingPin ? 'crosshair' : 'default' }}
         onClick={onImageClick}
       >
-        <EmailContentView item={item} accentColor={accentColor} brandName={displayBrandName} />
+        <EmailMockupPreview
+          subject={item.email_subject || ''}
+          preheader={item.email_preheader || ''}
+          body={item.email_body || ''}
+          senderName={displayBrandName}
+          client={client}
+          showClientToggle
+          accentColor={accentColor}
+          onClientChange={(c) => onViewChange?.(c)}
+        />
         <PinOverlay
-          pinComments={pinComments}
+          pinComments={visiblePins}
           pendingPin={pendingPin}
           onPinClick={onPinClick}
         />
         <HighlightOverlay
           containerRef={containerRef as React.RefObject<HTMLElement>}
-          highlightComments={highlightComments}
+          highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
         />
@@ -113,6 +157,7 @@ export default function ItemContentView({
 
   // SMS items — render the SMS mockup preview with pin overlay
   if (item.type === 'sms') {
+    const client = (currentView as SmsClient | null) || 'imessage';
     return (
       <div
         ref={containerRef}
@@ -123,18 +168,19 @@ export default function ItemContentView({
         <SmsMockupPreview
           body={item.sms_body || ''}
           senderName={displayBrandName}
-          client="imessage"
+          client={client}
           showClientToggle
           accentColor={accentColor}
+          onClientChange={(c) => onViewChange?.(c)}
         />
         <PinOverlay
-          pinComments={pinComments}
+          pinComments={visiblePins}
           pendingPin={pendingPin}
           onPinClick={onPinClick}
         />
         <HighlightOverlay
           containerRef={containerRef as React.RefObject<HTMLElement>}
-          highlightComments={highlightComments}
+          highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
         />
@@ -240,6 +286,7 @@ export default function ItemContentView({
         </div>
       );
     }
+    const page = (currentView as MetaLeadFormPage | null) || 'intro';
     return (
       <div
         ref={containerRef}
@@ -249,10 +296,12 @@ export default function ItemContentView({
       >
         <MetaLeadFormMockupPreview
           data={data}
+          page={page}
+          onPageChange={(p) => onViewChange?.(p)}
           accentColor={accentColor}
         />
         <PinOverlay
-          pinComments={pinComments}
+          pinComments={visiblePins}
           pendingPin={pendingPin}
           onPinClick={onPinClick}
         />
@@ -262,6 +311,7 @@ export default function ItemContentView({
 
   // Google Ad items — render Google Ad mockup with pin overlay
   if (item.type === 'google_ad') {
+    const format = (currentView as GoogleAdFormat | null) || (item.google_ad_format as GoogleAdFormat) || 'search';
     return (
       <div
         ref={containerRef}
@@ -270,7 +320,7 @@ export default function ItemContentView({
         onClick={onImageClick}
       >
         <GoogleAdMockupPreview
-          format={(item.google_ad_format as GoogleAdFormat) || 'search'}
+          format={format}
           headline={item.google_ad_headline || item.ad_headline || ''}
           description1={item.google_ad_description1 || ''}
           description2={item.google_ad_description2 || ''}
@@ -279,15 +329,16 @@ export default function ItemContentView({
           creativeUrl={item.ad_creative_url || ''}
           showFormatToggle
           accentColor={accentColor}
+          onFormatChange={(f) => onViewChange?.(f)}
         />
         <PinOverlay
-          pinComments={pinComments}
+          pinComments={visiblePins}
           pendingPin={pendingPin}
           onPinClick={onPinClick}
         />
         <HighlightOverlay
           containerRef={containerRef as React.RefObject<HTMLElement>}
-          highlightComments={highlightComments}
+          highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
         />
@@ -335,10 +386,11 @@ export default function ItemContentView({
               headline={item.ad_headline || ''}
               primaryText={item.ad_copy || ''}
               ctaText={item.ad_cta || 'Learn More'}
-              platform={(item.ad_platform as AdPlatform) || 'facebook_feed'}
+              platform={(currentView as AdPlatform | null) || (item.ad_platform as AdPlatform) || 'facebook_feed'}
               pageName={displayBrandName}
               showPlatformToggle
               accentColor={accentColor}
+              onPlatformChange={(p) => onViewChange?.(p)}
             />
           </div>
         )}
@@ -355,13 +407,13 @@ export default function ItemContentView({
 
         {/* Pin overlay */}
         <PinOverlay
-          pinComments={pinComments}
+          pinComments={visiblePins}
           pendingPin={pendingPin}
           onPinClick={onPinClick}
         />
         <HighlightOverlay
           containerRef={containerRef as React.RefObject<HTMLElement>}
-          highlightComments={highlightComments}
+          highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
         />
@@ -378,30 +430,3 @@ export default function ItemContentView({
   );
 }
 
-/* ================================================================== */
-/*  Email content view — renders the email mockup with client toggle   */
-/* ================================================================== */
-
-function EmailContentView({
-  item,
-  accentColor,
-  brandName,
-}: {
-  item: FeedbackItem;
-  accentColor?: string;
-  brandName?: string;
-}) {
-  return (
-    <div className="w-full max-w-2xl mx-auto">
-      <EmailMockupPreview
-        subject={item.email_subject || ''}
-        preheader={item.email_preheader || ''}
-        body={item.email_body || ''}
-        senderName={brandName || 'Your Brand'}
-        client="inbox_preview"
-        showClientToggle
-        accentColor={accentColor}
-      />
-    </div>
-  );
-}

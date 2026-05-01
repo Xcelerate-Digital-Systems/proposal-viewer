@@ -5,7 +5,12 @@ import { ExternalLink, Monitor, Pause } from 'lucide-react';
 import CompleteFeedbackModal from './CompleteFeedbackModal';
 import FeedbackHeaderBar from './FeedbackHeaderBar';
 import type { FeedbackProject, FeedbackItem, FeedbackComment, FeedbackStatus } from '@/lib/supabase';
-import type { FeedbackCommentPriority } from '@/lib/types/feedback';
+import {
+  type FeedbackCommentPriority,
+  type FeedbackItemView,
+  defaultViewForItem,
+  getCommentView,
+} from '@/lib/types/feedback';
 import { applyVersion, type VersionView } from '@/lib/feedback/versions';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { usePinFeedback } from '@/hooks/usePinFeedback';
@@ -205,18 +210,6 @@ export default function FeedbackDetailView({
   // ── Drawing annotation state ──
   const [pendingAnnotation, setPendingAnnotation] = useState<AnnotationData | null>(null);
 
-  // Filter annotation comments (have annotation_data) — note this runs BEFORE
-  // `versionScopedComments` is declared because of the file order; we inline
-  // the version filter here so pins/drawings on v2 don't leak into v1's view.
-  const annotationComments = useMemo(
-    () => comments.filter((c) =>
-      c.review_item_id === selectedItemId &&
-      (c as unknown as Record<string, unknown>).annotation_data != null &&
-      (!versions || versions.length <= 1 || (c.version_id ?? null) === (activeVersionId ?? null))
-    ),
-    [comments, selectedItemId, versions, activeVersionId]
-  );
-
   // Handle annotation completion from DrawingOverlay
   const handleAnnotationComplete = useCallback(
     (pinX: number, pinY: number, annotation: AnnotationData) => {
@@ -235,6 +228,13 @@ export default function FeedbackDetailView({
 
   // ── Pin-to-comment scroll state ──
   const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
+
+  // ── Active mockup sub-view (lead-form page, email client, ad platform, etc.)
+  // Lifted out of ItemContentView so we can: (a) scope new pins / drawings
+  // / highlights to the current view, and (b) jump to a pin's stored view
+  // when the reviewer clicks it from the comments list. Null = use the
+  // item's natural default. Reset on item change. ──
+  const [activeView, setActiveView] = useState<FeedbackItemView>(null);
 
   // ── Derived data ──
   const availableTypes = useMemo(() => {
@@ -268,6 +268,28 @@ export default function FeedbackDetailView({
     return applyVersion(rawSelectedItem, activeVersion);
   }, [rawSelectedItem, activeVersion]);
 
+  // Resolve the active sub-view: explicit override, else item's natural default.
+  // Null for items without sub-views (image, video, pdf, webpage).
+  const currentMockupView = useMemo<FeedbackItemView>(
+    () => (activeView !== null ? activeView : (selectedItem ? defaultViewForItem(selectedItem) : null)),
+    [activeView, selectedItem],
+  );
+
+  // Filter annotation comments (drawings — arrow / box / text). Excludes
+  // pin-only comments that just store `{ view }` (no `type`). Scoped to the
+  // active version + the current sub-view so drawings on the lead form's
+  // intro page don't bleed onto the questions page.
+  const annotationComments = useMemo(() => {
+    return comments.filter((c) => {
+      if (c.review_item_id !== selectedItemId) return false;
+      if (versions && versions.length > 1 && (c.version_id ?? null) !== (activeVersionId ?? null)) return false;
+      const ann = (c as unknown as { annotation_data: Record<string, unknown> | null }).annotation_data;
+      if (!ann || typeof ann.type !== 'string') return false;
+      if (currentMockupView == null) return true;
+      return getCommentView(ann) === currentMockupView;
+    });
+  }, [comments, selectedItemId, versions, activeVersionId, currentMockupView]);
+
   // ── Text highlight state (available for all content types) ──
   const { selection: textSelection, clearSelection: clearTextSelection } = useTextHighlight({
     containerRef: imageContainerRef as React.RefObject<HTMLElement>,
@@ -298,12 +320,22 @@ export default function FeedbackDetailView({
       const highlight = pendingHighlight
         ? { text: pendingHighlight.text, start: pendingHighlight.startOffset, end: pendingHighlight.endOffset, elementPath: pendingHighlight.elementPath }
         : undefined;
-      await onSubmitComment(selectedItemId, content, pinX, pinY, parentId, pendingAnnotation || undefined, pendingScreenshotUrl || undefined, highlight, priority, attachments, videoUrl);
+
+      // Stamp the comment with the current sub-view so view-scoped mockups
+      // (lead form pages, email clients, ad platforms, etc.) show the pin /
+      // highlight / drawing only on the view it was placed on. Items without
+      // sub-views resolve to null and we omit the field entirely.
+      const isAnnotation = pinX != null || !!pendingAnnotation || !!highlight;
+      const annotationPayload = isAnnotation && currentMockupView != null
+        ? { ...(pendingAnnotation || {}), view: currentMockupView }
+        : (pendingAnnotation || undefined);
+
+      await onSubmitComment(selectedItemId, content, pinX, pinY, parentId, annotationPayload, pendingScreenshotUrl || undefined, highlight, priority, attachments, videoUrl);
       setPendingAnnotation(null);
       setPendingScreenshotUrl(null);
       setPendingHighlight(null);
     },
-    [selectedItemId, onSubmitComment, pendingAnnotation, pendingScreenshotUrl, pendingHighlight]
+    [selectedItemId, currentMockupView, onSubmitComment, pendingAnnotation, pendingScreenshotUrl, pendingHighlight]
   );
 
   const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
@@ -381,12 +413,14 @@ export default function FeedbackDetailView({
     }
   }, [browseMode, commentsLocked, baseHandleImageClick, pinActive, captureScreenshot, imageContainerRef]);
 
-  // ── Existing pin clicked → show popover ──
+  // ── Existing pin clicked → switch to its view (if scoped), then show popover ──
   const handlePinClick = useCallback((commentId?: string) => {
-    if (commentId) {
-      setPopoverCommentId((prev) => prev === commentId ? null : commentId);
-    }
-  }, []);
+    if (!commentId) return;
+    const c = comments.find((x) => x.id === commentId);
+    const pinView = c ? getCommentView(c.annotation_data) : null;
+    if (pinView) setActiveView(pinView);
+    setPopoverCommentId((prev) => prev === commentId ? null : commentId);
+  }, [comments]);
 
   // ── Reply via popover ──
   const handlePopoverReply = useCallback(async (content: string, parentId: string) => {
@@ -400,9 +434,10 @@ export default function FeedbackDetailView({
     [popoverCommentId, comments]
   );
 
-  // Close popover when item changes
+  // Close popover and reset active sub-view when item changes
   useEffect(() => {
     setPopoverCommentId(null);
+    setActiveView(null);
   }, [selectedItemId]);
 
   // ── Navigate items ──
@@ -573,6 +608,8 @@ export default function FeedbackDetailView({
                 onHighlightClick={handlePinClick}
                 accentColor={branding?.accent_color || accent}
                 brandName={project.client_name || undefined}
+                activeView={activeView}
+                onViewChange={setActiveView}
               />
             </div>
 

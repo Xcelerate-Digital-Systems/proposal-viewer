@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe, ChevronRight } from 'lucide-react';
 
 export type AdPlatform = 'facebook_feed' | 'instagram_feed' | 'instagram_story';
@@ -47,6 +47,7 @@ export default function AdMockupPreview({
   dark = false,
 }: AdMockupPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<AdPlatform>(platform);
+  useEffect(() => { setActivePlatform(platform); }, [platform]);
 
   const handlePlatformChange = (p: AdPlatform) => {
     setActivePlatform(p);
