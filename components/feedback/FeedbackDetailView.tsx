@@ -708,6 +708,9 @@ export default function FeedbackDetailView({
           reviewerName={reviewerName ?? ''}
           reviewerEmail={reviewerEmail ?? ''}
           accentColor={branding?.accent_color || '#017C87'}
+          items={items}
+          activeItemId={selectedItemId}
+          mode={singleItemOnly ? 'item' : 'project'}
           onClose={() => setShowFinishModal(false)}
           onSubmitted={() => {
             setShowFinishModal(false);

@@ -21,7 +21,16 @@ export async function POST(
       reviewer_name,
       reviewer_email,
       message,
-    } = body as { reviewer_name?: string; reviewer_email?: string; message?: string };
+      item_statuses,
+    } = body as {
+      reviewer_name?: string;
+      reviewer_email?: string;
+      message?: string;
+      /** Optional bulk status updates the reviewer is choosing as part of
+       *  finishing — applied silently (no per-item status emails) since
+       *  the single feedback_marked_complete email summarises the batch. */
+      item_statuses?: Array<{ item_id: string; status: string }>;
+    };
 
     const { data: project, error: projErr } = await supabase
       .from('review_projects')
@@ -51,6 +60,37 @@ export async function POST(
     if (insertErr) {
       console.error('review_completions insert failed:', insertErr);
       return NextResponse.json({ error: 'Failed to record completion' }, { status: 500 });
+    }
+
+    // Apply bulk status updates silently — the only email that goes out for
+    // this flow is the feedback_marked_complete one fired below.
+    const CLIENT_ALLOWED = new Set(['client_review', 'revision_needed', 'approved', 'rejected']);
+    if (Array.isArray(item_statuses) && item_statuses.length > 0) {
+      const filtered = item_statuses.filter(
+        (s) => s && typeof s.item_id === 'string' && typeof s.status === 'string' && CLIENT_ALLOWED.has(s.status)
+      );
+      if (filtered.length > 0) {
+        // Verify every item belongs to this project before updating.
+        const ids = filtered.map((s) => s.item_id);
+        const { data: ownedItems } = await supabase
+          .from('review_items')
+          .select('id')
+          .in('id', ids)
+          .eq('review_project_id', project.id);
+        const ownedIds = new Set((ownedItems ?? []).map((r) => r.id as string));
+
+        const now = new Date().toISOString();
+        await Promise.all(
+          filtered
+            .filter((s) => ownedIds.has(s.item_id))
+            .map((s) =>
+              supabase
+                .from('review_items')
+                .update({ status: s.status, updated_at: now })
+                .eq('id', s.item_id)
+            )
+        );
+      }
     }
 
     // Fire team email + webhook asynchronously — the reviewer's UX doesn't
