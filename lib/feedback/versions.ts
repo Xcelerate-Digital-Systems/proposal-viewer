@@ -86,7 +86,23 @@ export function extractAssets(src: FeedbackItem | FeedbackItemVersion): VersionA
   };
 }
 
-/** Merge a view's assets onto the base item so downstream code can use `item.image_url` etc. directly. */
+/**
+ * Merge a view's assets onto the base item so downstream code can use
+ * `item.image_url` etc. directly.
+ *
+ * v1 *is* the item, so its assets are canonical and overwrite everything.
+ * v2+ is a patch — the user only fills in fields they want to change in
+ * AddVersionModal, leaving everything else null. Treat null/undefined as
+ * "unchanged" so unedited fields fall through to v1's values, otherwise
+ * a version that only updates ad_copy would blank out the headline,
+ * image, CTA, etc.
+ */
 export function applyVersion(item: FeedbackItem, version: VersionView): FeedbackItem {
-  return { ...item, ...version.assets };
+  if (version.id === null) return { ...item, ...version.assets };
+
+  const merged: Record<string, unknown> = { ...item };
+  for (const [key, value] of Object.entries(version.assets)) {
+    if (value !== null && value !== undefined) merged[key] = value;
+  }
+  return merged as FeedbackItem;
 }

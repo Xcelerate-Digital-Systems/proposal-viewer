@@ -1,6 +1,7 @@
 'use client';
 
-import { Plus, History } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Plus, History, ChevronDown, Check } from 'lucide-react';
 import type { VersionView } from '@/lib/feedback/versions';
 
 interface VersionPickerProps {
@@ -13,44 +14,80 @@ interface VersionPickerProps {
 }
 
 /**
- * Segmented v1 · v2 · v3 picker. Always renders at least the v1 pill so
- * reviewers see which version they're looking at; the "+" button only
- * shows when callers (admin) opt in via onAddVersion.
+ * Dropdown showing the active version with a chevron. Opens a menu listing
+ * every version (latest first) with notes + relative timestamp. The "+"
+ * button only renders when callers (admin) opt in via onAddVersion.
  */
 export default function VersionPicker({
   versions, activeVersionId, onChange, onAddVersion, compact = false,
 }: VersionPickerProps) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [open]);
+
   if (!versions.length) return null;
 
   const active = versions.find((v) => (v.id ?? null) === activeVersionId) || versions[0];
+  const ordered = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
+
+  const padding = compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-[12px]';
 
   return (
-    <div className="flex items-center gap-1">
-      <div
-        className={`inline-flex items-center gap-0.5 rounded-full bg-gray-50 ${
-          compact ? 'p-0.5' : 'p-1'
-        }`}
+    <div ref={wrapperRef} className="relative flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`inline-flex items-center gap-1 rounded-full bg-gray-50 ${padding} font-semibold text-ink hover:bg-gray-100 transition-colors`}
         title="Select version"
       >
-        <History size={compact ? 12 : 13} className="text-gray-400 ml-1 shrink-0" />
-        {versions.map((v) => {
-          const isActive = (v.id ?? null) === (active.id ?? null);
-          return (
-            <button
-              key={v.id ?? 'v1'}
-              onClick={() => onChange(v.id)}
-              className={`${compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-[12px]'} font-semibold rounded-full transition-colors tabular-nums ${
-                isActive
-                  ? 'bg-white text-ink shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              title={v.notes || `Version ${v.versionNumber}`}
-            >
-              v{v.versionNumber}
-            </button>
-          );
-        })}
-      </div>
+        <History size={compact ? 12 : 13} className="text-gray-400" />
+        <span className="tabular-nums">v{active.versionNumber}</span>
+        <ChevronDown size={compact ? 11 : 12} className="text-gray-400" />
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-1 z-30 w-64 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-72 overflow-y-auto">
+          {ordered.map((v) => {
+            const isActive = (v.id ?? null) === (active.id ?? null);
+            return (
+              <button
+                key={v.id ?? 'v1'}
+                type="button"
+                onClick={() => {
+                  onChange(v.id);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 hover:bg-gray-50 flex items-start gap-2 ${
+                  isActive ? 'bg-gray-50' : ''
+                }`}
+              >
+                <span className="text-[12px] font-semibold text-ink tabular-nums shrink-0 mt-0.5">
+                  v{v.versionNumber}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] text-gray-500 truncate">
+                    {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    {formatTimestamp(v.createdAt)}
+                  </p>
+                </div>
+                {isActive && (
+                  <Check size={12} className="text-teal shrink-0 mt-1" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {onAddVersion && (
         <button
@@ -64,4 +101,17 @@ export default function VersionPicker({
       )}
     </div>
   );
+}
+
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso);
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
