@@ -20,7 +20,7 @@ export default function FeedbackProjectSettingsPage({
         <SettingsContent
           projectId={params.id}
           companyId={auth.companyId!}
-          teamMemberId={auth.teamMember?.id ?? null}
+          userId={auth.session?.user?.id ?? null}
         />
       )}
     </AdminLayout>
@@ -30,11 +30,11 @@ export default function FeedbackProjectSettingsPage({
 function SettingsContent({
   projectId,
   companyId,
-  teamMemberId,
+  userId,
 }: {
   projectId: string;
   companyId: string;
-  teamMemberId: string | null;
+  userId: string | null;
 }) {
   const router = useRouter();
   const [project, setProject] = useState<FeedbackProject | null>(null);
@@ -109,7 +109,7 @@ function SettingsContent({
             <ProjectAssigneesPanel
               projectId={projectId}
               companyId={companyId}
-              currentTeamMemberId={teamMemberId}
+              currentUserId={userId}
             />
           </div>
         )}

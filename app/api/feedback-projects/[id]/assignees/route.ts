@@ -30,7 +30,7 @@ export async function GET(
       .eq('review_project_id', params.id),
     supabase
       .from('team_members')
-      .select('id, name, email, role')
+      .select('id, user_id, name, email, role')
       .eq('company_id', auth.companyId)
       .order('name'),
   ]);

@@ -4,17 +4,19 @@ import { useEffect, useState, useCallback } from 'react';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-type Member = { id: string; name: string | null; email: string; role: string | null };
+type Member = { id: string; user_id: string | null; name: string | null; email: string; role: string | null };
 type Assignee = { team_member_id: string };
 
 export default function ProjectAssigneesPanel({
   projectId,
   companyId,
-  currentTeamMemberId,
+  currentUserId,
 }: {
   projectId: string;
   companyId: string;
-  currentTeamMemberId: string | null;
+  /** Auth user id — used to identify "self" in the list, even when the user
+   *  has multiple team_members rows across companies. */
+  currentUserId: string | null;
 }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [assignees, setAssignees] = useState<Assignee[]>([]);
@@ -60,8 +62,8 @@ export default function ProjectAssigneesPanel({
   const assignedMembers = members.filter((m) => assignedIds.has(m.id));
   const unassignedMembers = members.filter((m) => !assignedIds.has(m.id));
 
-  const ownTeamMember = currentTeamMemberId
-    ? members.find((m) => m.id === currentTeamMemberId) ?? null
+  const ownTeamMember = currentUserId
+    ? members.find((m) => m.user_id === currentUserId) ?? null
     : null;
 
   const add = async (memberId: string) => {

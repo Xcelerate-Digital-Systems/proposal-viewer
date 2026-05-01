@@ -42,11 +42,18 @@ export function useAuth() {
   }, []);
 
   const fetchTeamMember = useCallback(async (userId: string) => {
-    let { data: member } = await supabase
+    // A single auth user can have a team_members row in multiple companies
+    // (e.g. a super-admin who's also a member of an agency they manage).
+    // Pick the super-admin row when one exists, otherwise the oldest row,
+    // and treat that as the user's "home" identity. Cross-company access
+    // continues to flow through the existing company-override mechanism.
+    const { data: rows } = await supabase
       .from('team_members')
       .select('*')
       .eq('user_id', userId)
-      .maybeSingle();
+      .order('is_super_admin', { ascending: false })
+      .order('created_at', { ascending: true });
+    let member = rows?.[0] ?? null;
 
     // Self-heal: a logged-in user with no team_members row probably came in
     // via magic link and never went through /api/auth/register. If there's a
@@ -66,8 +73,9 @@ export function useAuth() {
                 .from('team_members')
                 .select('*')
                 .eq('user_id', userId)
-                .maybeSingle();
-              member = refetch.data;
+                .order('is_super_admin', { ascending: false })
+                .order('created_at', { ascending: true });
+              member = refetch.data?.[0] ?? null;
             }
           }
         }

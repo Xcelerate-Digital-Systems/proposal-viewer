@@ -89,11 +89,16 @@ export async function getAuthContext(req: NextRequest) {
   if (!user) return null;
 
   const supabase = createServiceClient();
-  const { data: member } = await supabase
+  // A user can have rows in multiple companies; prefer the super-admin row
+  // if any, then fall back to the oldest. Cross-company access still flows
+  // through the company-override branch below.
+  const { data: members } = await supabase
     .from('team_members')
     .select('*')
     .eq('user_id', user.id)
-    .single();
+    .order('is_super_admin', { ascending: false })
+    .order('created_at', { ascending: true });
+  const member = members?.[0] ?? null;
 
   if (!member) return null;
 
