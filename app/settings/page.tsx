@@ -7,13 +7,11 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import TeamMemberManager from '@/components/admin/settings/TeamMemberManager';
 import NotificationSection from '@/components/admin/settings/NotificationSection';
-import CompanyFeedbackEmailToggle from '@/components/admin/settings/CompanyFeedbackEmailToggle';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import { type TeamMember } from '@/lib/supabase';
 import {
   NOTIFICATION_OPTIONS,
-  REVIEW_NOTIFICATION_OPTIONS,
 } from '@/components/admin/settings/settings-config';
 
 export default function SettingsPage() {
@@ -91,7 +89,7 @@ function SettingsContent({ auth }: {
           </div>
         </div>
 
-        <div className={`grid gap-4 ${isSuperAdmin ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
+        <div className="grid gap-4 grid-cols-1 max-w-lg">
           <NotificationSection
             title="Proposals"
             options={NOTIFICATION_OPTIONS}
@@ -99,23 +97,11 @@ function SettingsContent({ auth }: {
             saving={saving}
             onToggle={handleToggle}
           />
-          {isSuperAdmin && (
-            <NotificationSection
-              title="Feedback"
-              options={REVIEW_NOTIFICATION_OPTIONS}
-              teamMember={teamMember}
-              saving={saving}
-              onToggle={handleToggle}
-              accentLabel="Feedback"
-            />
-          )}
         </div>
 
-        {isAdminOrOwner && companyId && (
-          <div className="mt-4 max-w-lg">
-            <CompanyFeedbackEmailToggle companyId={companyId} />
-          </div>
-        )}
+        <p className="mt-4 max-w-lg text-xs text-faint">
+          Feedback project notifications are now controlled per-project. Open a project &rarr; Settings tab to manage who&apos;s assigned.
+        </p>
       </div>
 
       {/* Webhooks */}

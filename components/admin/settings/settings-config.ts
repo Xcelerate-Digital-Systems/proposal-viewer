@@ -63,23 +63,6 @@ export const NOTIFICATION_OPTIONS: NotificationOption[] = [
   },
 ];
 
-/* ─── Review notification options ────────────────────────────── */
-
-export const REVIEW_NOTIFICATION_OPTIONS: NotificationOption[] = [
-  {
-    key: 'notify_review_comment_added',
-    label: 'Feedback Comment Added',
-    description: 'When a client or team member comments on a feedback item',
-    icon: MessageSquare,
-  },
-  {
-    key: 'notify_review_item_status',
-    label: 'Feedback Item Status Changed',
-    description: 'When a feedback item is approved or needs revision',
-    icon: AlertCircle,
-  },
-];
-
 /* ─── Proposal webhook events ────────────────────────────────── */
 
 export const WEBHOOK_EVENTS: WebhookEvent[] = [

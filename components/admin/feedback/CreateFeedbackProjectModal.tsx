@@ -30,19 +30,42 @@ export default function CreateFeedbackProjectModal({
     if (!title.trim()) return;
 
     setSaving(true);
-    const { error } = await supabase.from('review_projects').insert({
-      company_id: companyId,
-      title: title.trim(),
-      description: description.trim() || null,
-      client_name: clientName.trim() || null,
-      client_email: clientEmail.trim() || null,
-      created_by: userId,
-    });
+    const { data: created, error } = await supabase
+      .from('review_projects')
+      .insert({
+        company_id: companyId,
+        title: title.trim(),
+        description: description.trim() || null,
+        client_name: clientName.trim() || null,
+        client_email: clientEmail.trim() || null,
+        created_by: userId,
+      })
+      .select('id')
+      .single();
 
-    if (error) {
+    if (error || !created) {
       toast.error('Failed to create project');
       setSaving(false);
       return;
+    }
+
+    // Add the creator as the first project assignee so they receive
+    // notifications by default.
+    if (userId) {
+      const { data: tm } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .maybeSingle();
+      if (tm?.id) {
+        await supabase
+          .from('review_project_assignees')
+          .upsert(
+            { review_project_id: created.id, team_member_id: tm.id },
+            { onConflict: 'review_project_id,team_member_id' }
+          );
+      }
     }
 
     toast.success('Feedback project created');

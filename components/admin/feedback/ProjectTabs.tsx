@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import {
-  LayoutGrid, GitBranch, MessageSquare, Settings, Columns3,
+  LayoutGrid, GitBranch, MessageSquare, Settings, Columns3, Bell,
 } from 'lucide-react';
 
 interface ProjectTabsProps {
   projectId: string;
-  activeTab: 'items' | 'board' | 'kanban' | 'feedback' | 'setup';
+  activeTab: 'items' | 'board' | 'kanban' | 'feedback' | 'setup' | 'settings';
   hasWebpages?: boolean;
 }
 
@@ -17,6 +17,7 @@ const tabs: { key: string; label: string; icon: typeof LayoutGrid; path: string;
   { key: 'items', label: 'Items', icon: LayoutGrid, path: 'items' },
   { key: 'feedback', label: 'Feedback', icon: MessageSquare, path: 'feedback' },
   { key: 'setup', label: 'Setup', icon: Settings, path: 'setup', webpageOnly: true },
+  { key: 'settings', label: 'Settings', icon: Bell, path: 'settings' },
 ];
 
 export default function ProjectTabs({ projectId, activeTab, hasWebpages = false }: ProjectTabsProps) {

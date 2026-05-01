@@ -114,9 +114,20 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
       setRows((prev) => [...prev, row]);
       await persistActiveVersion(row.id);
       toast.success(`Version ${row.version_number} added`);
+
+      // Fire "ready for review" notifications: assignees + project client +
+      // anyone who's previously commented on this item. Best-effort; we don't
+      // surface failures since the version itself is saved.
+      void notifyNewVersion({
+        item,
+        version: row,
+        userId,
+        companyId,
+      });
+
       return row;
     },
-    [itemId, companyId, userId, nextVersionNumber, persistActiveVersion, toast]
+    [itemId, companyId, userId, nextVersionNumber, persistActiveVersion, toast, item]
   );
 
   /** Upload a single file to storage and return its public URL. */
@@ -148,4 +159,49 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
     uploadAsset,
     refreshVersions: fetchVersions,
   };
+}
+
+async function notifyNewVersion(params: {
+  item: FeedbackItem | null;
+  version: FeedbackItemVersion;
+  userId: string | null;
+  companyId: string;
+}) {
+  const { item, userId, companyId } = params;
+  if (!item) return;
+
+  // Look up the project's share_token + the uploader's display name so the
+  // email reads naturally. Both are best-effort.
+  const [{ data: project }, { data: member }] = await Promise.all([
+    supabase
+      .from('review_projects')
+      .select('share_token')
+      .eq('id', item.review_project_id)
+      .maybeSingle(),
+    userId
+      ? supabase
+          .from('team_members')
+          .select('name, email')
+          .eq('user_id', userId)
+          .eq('company_id', companyId)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { name: string | null; email: string | null } | null }),
+  ]);
+
+  if (!project?.share_token) return;
+
+  const appUrl = (typeof window !== 'undefined' ? window.location.origin : '').replace(/\/+$/, '');
+  void fetch(`${appUrl}/api/review-notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event_type: 'review_item_new_version',
+      share_token: project.share_token,
+      review_item_id: item.id,
+      item_title: item.title,
+      comment_author: member?.name || 'A team member',
+      comment_author_email: member?.email || null,
+      comment_content: params.version.notes || null,
+    }),
+  }).catch(() => {});
 }

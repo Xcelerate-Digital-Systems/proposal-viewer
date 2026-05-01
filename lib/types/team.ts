@@ -13,8 +13,6 @@ export type TeamMember = {
   notify_proposal_accepted: boolean;
   notify_comment_added: boolean;
   notify_comment_resolved: boolean;
-  notify_review_comment_added: boolean;
-  notify_review_item_status: boolean;
   created_at: string;
   updated_at: string;
 };
