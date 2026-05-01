@@ -13,7 +13,7 @@ import {
 import type {
   FeedbackItem, FeedbackItemType, FeedbackStatus, FeedbackComment,
 } from '@/lib/types/feedback';
-import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
+import { getFeedbackStatusDef } from '@/lib/feedback/status';
 import type { CompanyBranding } from '@/hooks/useProposal';
 
 interface PublicKanbanViewProps {
@@ -38,8 +38,11 @@ const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; i
   meta_lead_form: { label: 'Lead Form', Icon: ClipboardList, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
 };
 
-/** Reviewers can move items into these statuses. Mirrors the public status
- *  endpoint allowlist. Anything else is rejected server-side anyway. */
+/** Statuses the client can both see and drop into on the public board.
+ *  Internal statuses (draft, in_progress, internal_review, archived) are
+ *  hidden entirely so the client view only surfaces what they can act on.
+ *  Mirrors the public status endpoint allowlist — anything else is rejected
+ *  server-side anyway. */
 const CLIENT_ALLOWED_STATUSES: FeedbackStatus[] = [
   'client_review',
   'revision_needed',
@@ -48,10 +51,12 @@ const CLIENT_ALLOWED_STATUSES: FeedbackStatus[] = [
 ];
 
 /**
- * Public Kanban — read-only history columns plus forward-only drag-drop.
- * Reviewers can move a card into a later status (e.g. client_review →
- * approved) but never backwards. Visual parity with the admin board, with
- * the agency's accent colour applied to the column headers + drop ring.
+ * Public Kanban — only the client-actionable columns are shown, and cards
+ * can be dragged freely between them in either direction. Items that are
+ * still in an internal status (draft / in_progress / internal_review /
+ * archived) are filtered out so the client view stays focused. Visual parity
+ * with the admin board, with the agency's accent colour applied to the
+ * column headers + drop ring.
  */
 export default function PublicKanbanView({
   items, comments, onSelectItem, onUpdateStatus, branding,
@@ -74,15 +79,16 @@ export default function PublicKanbanView({
   }, [comments]);
 
   const columns = useMemo(() => {
-    const map: Record<FeedbackStatus, FeedbackItem[]> = REVIEW_STATUS_ORDER.reduce((acc, s) => {
+    const map: Record<FeedbackStatus, FeedbackItem[]> = CLIENT_ALLOWED_STATUSES.reduce((acc, s) => {
       acc[s] = [];
       return acc;
     }, {} as Record<FeedbackStatus, FeedbackItem[]>);
     for (const item of items) {
-      const key = (REVIEW_STATUS_ORDER.includes(item.status) ? item.status : 'draft') as FeedbackStatus;
-      map[key].push(item);
+      // Skip items in internal statuses — they don't appear on the client board.
+      if (!CLIENT_ALLOWED_STATUSES.includes(item.status)) continue;
+      map[item.status].push(item);
     }
-    for (const key of REVIEW_STATUS_ORDER) {
+    for (const key of CLIENT_ALLOWED_STATUSES) {
       map[key].sort((a, b) => a.sort_order - b.sort_order);
     }
     return map;
@@ -104,11 +110,10 @@ export default function PublicKanbanView({
     const current = items.find((i) => i.id === itemId);
     if (!current) return;
 
-    const fromIdx = REVIEW_STATUS_ORDER.indexOf(current.status);
-    const toIdx = REVIEW_STATUS_ORDER.indexOf(targetStatus);
-    // Forward-only + only land in client-allowed columns.
-    if (fromIdx === -1 || toIdx <= fromIdx) return;
+    // Allow free movement between any client-allowed columns (both directions).
+    // Server-side endpoint also enforces this allowlist.
     if (!CLIENT_ALLOWED_STATUSES.includes(targetStatus)) return;
+    if (current.status === targetStatus) return;
 
     await onUpdateStatus(itemId, targetStatus);
   }, [items, onUpdateStatus]);
@@ -116,12 +121,10 @@ export default function PublicKanbanView({
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto px-6 lg:px-10 py-6 h-full">
-        {REVIEW_STATUS_ORDER.map((status) => {
-          const fromIdx = activeItem ? REVIEW_STATUS_ORDER.indexOf(activeItem.status) : -1;
-          const toIdx = REVIEW_STATUS_ORDER.indexOf(status);
-          const isDropAllowed = activeItem
-            ? toIdx > fromIdx && CLIENT_ALLOWED_STATUSES.includes(status)
-            : false;
+        {CLIENT_ALLOWED_STATUSES.map((status) => {
+          // Any client-allowed column is a valid drop target except the source
+          // column itself.
+          const isDropAllowed = activeItem ? activeItem.status !== status : false;
 
           return (
             <KanbanColumn
