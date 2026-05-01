@@ -365,7 +365,18 @@ const PREFILL_SAMPLES: Partial<Record<MetaLeadFormQuestionType, string>> = {
   full_name: 'Jamie Carter',
   first_name: 'Jamie',
   last_name: 'Carter',
+  street_address: '123 Main St',
   city: 'Sydney',
+  state: 'NSW',
+  province: 'NSW',
+  country: 'Australia',
+  post_code: '2000',
+  date_of_birth: '12 / 04 / 1992',
+  gender: 'Female',
+  company_name: 'Acme Inc.',
+  job_title: 'Marketing Manager',
+  work_email: 'jamie@acme.com',
+  work_phone: '+1 (555) 010-7788',
 };
 
 function QuestionField({
@@ -385,7 +396,18 @@ function QuestionField({
     full_name: 'Your full name',
     first_name: 'First name',
     last_name: 'Last name',
+    street_address: 'Street address',
     city: 'City',
+    state: 'State',
+    province: 'Province',
+    country: 'Country',
+    post_code: 'Post code',
+    date_of_birth: 'DD / MM / YYYY',
+    gender: 'Gender',
+    company_name: 'Company name',
+    job_title: 'Job title',
+    work_email: 'name@company.com',
+    work_phone: '+1 555 000 0000',
   };
 
   const label = question.label?.trim() || labelForType(question.type);
@@ -444,7 +466,18 @@ function labelForType(type: MetaLeadFormQuestionType): string {
     case 'full_name': return 'Full name';
     case 'first_name': return 'First name';
     case 'last_name': return 'Last name';
+    case 'street_address': return 'Street address';
     case 'city': return 'City';
+    case 'state': return 'State';
+    case 'province': return 'Province';
+    case 'country': return 'Country';
+    case 'post_code': return 'Post code';
+    case 'date_of_birth': return 'Date of birth';
+    case 'gender': return 'Gender';
+    case 'company_name': return 'Company name';
+    case 'job_title': return 'Job title';
+    case 'work_email': return 'Work email';
+    case 'work_phone': return 'Work phone number';
     case 'short_answer': return 'Short answer';
     case 'multiple_choice': return 'Choose one';
   }

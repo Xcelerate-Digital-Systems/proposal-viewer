@@ -57,14 +57,28 @@ export type FeedbackItemType =
   | 'meta_lead_form';
 
 export type MetaLeadFormQuestionType =
+  // Custom
   | 'short_answer'
+  | 'multiple_choice'
+  // Pre-fill — user info
   | 'email'
   | 'phone'
   | 'full_name'
   | 'first_name'
   | 'last_name'
+  | 'street_address'
   | 'city'
-  | 'multiple_choice';
+  | 'state'
+  | 'province'
+  | 'country'
+  | 'post_code'
+  | 'date_of_birth'
+  | 'gender'
+  // Pre-fill — work info
+  | 'company_name'
+  | 'job_title'
+  | 'work_email'
+  | 'work_phone';
 
 export type MetaLeadFormQuestion = {
   id: string;
@@ -77,7 +91,10 @@ export type MetaLeadFormQuestion = {
 /** Pre-fill question types — Meta auto-fills these from the user's profile, so
  *  they render on the "Contact Info" page after custom questions. */
 export const META_LEAD_FORM_PREFILL_TYPES: ReadonlyArray<MetaLeadFormQuestionType> = [
-  'email', 'phone', 'full_name', 'first_name', 'last_name', 'city',
+  'email', 'phone', 'full_name', 'first_name', 'last_name',
+  'street_address', 'city', 'state', 'province', 'country', 'post_code',
+  'date_of_birth', 'gender',
+  'company_name', 'job_title', 'work_email', 'work_phone',
 ];
 
 export function isMetaLeadFormPrefillType(type: MetaLeadFormQuestionType): boolean {

@@ -27,16 +27,40 @@ interface MetaLeadFormItemFormProps {
   onPreviewChange?: (visible: boolean) => void;
 }
 
-const QUESTION_TYPES: { value: MetaLeadFormQuestionType; label: string; group: 'custom' | 'prefill' }[] = [
-  { value: 'short_answer',    label: 'Short answer',    group: 'custom' },
-  { value: 'multiple_choice', label: 'Multiple choice', group: 'custom' },
-  { value: 'email',           label: 'Email',           group: 'prefill' },
-  { value: 'phone',           label: 'Phone number',    group: 'prefill' },
-  { value: 'full_name',       label: 'Full name',       group: 'prefill' },
-  { value: 'first_name',      label: 'First name',      group: 'prefill' },
-  { value: 'last_name',       label: 'Last name',       group: 'prefill' },
-  { value: 'city',            label: 'City',            group: 'prefill' },
+type QuestionTypeMeta = {
+  value: MetaLeadFormQuestionType;
+  label: string;
+  group: 'custom' | 'user_info' | 'work_info';
+};
+
+const QUESTION_TYPES: QuestionTypeMeta[] = [
+  // Custom
+  { value: 'short_answer',    label: 'Short answer',     group: 'custom' },
+  { value: 'multiple_choice', label: 'Multiple choice',  group: 'custom' },
+  // User info
+  { value: 'email',           label: 'Email',            group: 'user_info' },
+  { value: 'phone',           label: 'Phone number',     group: 'user_info' },
+  { value: 'full_name',       label: 'Full name',        group: 'user_info' },
+  { value: 'first_name',      label: 'First name',       group: 'user_info' },
+  { value: 'last_name',       label: 'Last name',        group: 'user_info' },
+  { value: 'street_address',  label: 'Street address',   group: 'user_info' },
+  { value: 'city',            label: 'City',             group: 'user_info' },
+  { value: 'state',           label: 'State',            group: 'user_info' },
+  { value: 'province',        label: 'Province',         group: 'user_info' },
+  { value: 'country',         label: 'Country',          group: 'user_info' },
+  { value: 'post_code',       label: 'Post code',        group: 'user_info' },
+  { value: 'date_of_birth',   label: 'Date of birth',    group: 'user_info' },
+  { value: 'gender',          label: 'Gender',           group: 'user_info' },
+  // Work info
+  { value: 'company_name',    label: 'Company name',     group: 'work_info' },
+  { value: 'job_title',       label: 'Job title',        group: 'work_info' },
+  { value: 'work_email',      label: 'Work email',       group: 'work_info' },
+  { value: 'work_phone',      label: 'Work phone',       group: 'work_info' },
 ];
+
+const CUSTOM_TYPES = QUESTION_TYPES.filter((t) => t.group === 'custom');
+const USER_INFO_TYPES = QUESTION_TYPES.filter((t) => t.group === 'user_info');
+const WORK_INFO_TYPES = QUESTION_TYPES.filter((t) => t.group === 'work_info');
 
 function newQuestion(type: MetaLeadFormQuestionType = 'short_answer'): MetaLeadFormQuestion {
   return {
@@ -46,6 +70,10 @@ function newQuestion(type: MetaLeadFormQuestionType = 'short_answer'): MetaLeadF
     options: type === 'multiple_choice' ? ['Option 1', 'Option 2'] : undefined,
     required: true,
   };
+}
+
+function isPrefillTypeFor(type: MetaLeadFormQuestionType): boolean {
+  return isMetaLeadFormPrefillType(type);
 }
 
 function newScreen(headline = 'Thanks, you’re all set.'): MetaLeadFormCompletionScreen {
@@ -117,6 +145,10 @@ export default function MetaLeadFormItemForm({
     () => questions.filter((q) => !isMetaLeadFormPrefillType(q.type)),
     [questions]
   );
+  const prefillQuestions = useMemo(
+    () => questions.filter((q) => isMetaLeadFormPrefillType(q.type)),
+    [questions]
+  );
   const multipleChoiceQuestions = useMemo(
     () => questions.filter((q) => q.type === 'multiple_choice'),
     [questions]
@@ -148,21 +180,30 @@ export default function MetaLeadFormItemForm({
   };
   const removeQuestion = (id: string) => {
     setQuestions((qs) => qs.filter((q) => q.id !== id));
-    // If logic referenced the removed question, clear it.
     setLogic((l) => (l && l.question_id === id ? null : l));
   };
-  const moveQuestion = (id: string, dir: -1 | 1) => {
+  /** Swap with the previous/next question that belongs to the same group
+   *  (custom or prefill). This keeps section ordering stable. */
+  const moveWithinGroup = (id: string, dir: -1 | 1) => {
     setQuestions((qs) => {
       const idx = qs.findIndex((q) => q.id === id);
       if (idx === -1) return qs;
-      const next = idx + dir;
-      if (next < 0 || next >= qs.length) return qs;
+      const target = qs[idx];
+      const isPrefill = isPrefillTypeFor(target.type);
+      // Find next neighbour in same group
+      let swapIdx = -1;
+      const step = dir;
+      for (let i = idx + step; i >= 0 && i < qs.length; i += step) {
+        if (isPrefillTypeFor(qs[i].type) === isPrefill) { swapIdx = i; break; }
+      }
+      if (swapIdx === -1) return qs;
       const copy = [...qs];
-      [copy[idx], copy[next]] = [copy[next], copy[idx]];
+      [copy[idx], copy[swapIdx]] = [copy[swapIdx], copy[idx]];
       return copy;
     });
   };
-  const addQuestion = () => setQuestions((qs) => [...qs, newQuestion()]);
+  const addCustomQuestion = () => setQuestions((qs) => [...qs, newQuestion('short_answer')]);
+  const addPrefillQuestion = () => setQuestions((qs) => [...qs, newQuestion('email')]);
 
   const updateScreen = (id: string, patch: Partial<MetaLeadFormCompletionScreen>) => {
     setScreens((ss) => ss.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -285,123 +326,72 @@ export default function MetaLeadFormItemForm({
           </Field>
         </Section>
 
-        <Section title={`Questions (${questions.length})`} onJump={() => setPreviewPage('custom_questions')}>
+        <Section
+          title={`Custom Questions (${customQuestions.length})`}
+          onJump={() => setPreviewPage('custom_questions')}
+        >
           <p className="text-[11px] text-gray-500 -mt-1">
-            Custom questions show first; pre-fill questions (email / phone / name / city) appear on the Contact page.
+            Shown first on the form. Use these for qualifying questions specific to your offer.
           </p>
           <div className="space-y-2">
-            {questions.map((q, i) => {
-              const isPrefill = isMetaLeadFormPrefillType(q.type);
+            {customQuestions.map((q) => {
+              const idx = customQuestions.findIndex((x) => x.id === q.id);
               return (
-                <div key={q.id} className="border border-gray-200 rounded-xl p-3 bg-gray-50/50">
-                  <div className="flex items-center gap-1 mb-2">
-                    <GripVertical size={14} className="text-gray-300" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                      Q{i + 1}
-                    </span>
-                    <span
-                      className={`ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider ${
-                        isPrefill
-                          ? 'bg-violet-50 text-violet-700'
-                          : 'bg-amber-50 text-amber-700'
-                      }`}
-                      title={isPrefill ? 'Renders on the Contact Info page' : 'Renders on the Questions page'}
-                    >
-                      {isPrefill ? 'Pre-fill' : 'Custom'}
-                    </span>
-                    <select
-                      value={q.type}
-                      onChange={(e) => {
-                        const type = e.target.value as MetaLeadFormQuestionType;
-                        updateQuestion(q.id, {
-                          type,
-                          options: type === 'multiple_choice'
-                            ? (q.options?.length ? q.options : ['Option 1', 'Option 2'])
-                            : undefined,
-                        });
-                      }}
-                      className="ml-2 text-[12px] px-2 py-1 rounded-md border border-gray-200 bg-white"
-                    >
-                      <optgroup label="Custom">
-                        {QUESTION_TYPES.filter((t) => t.group === 'custom').map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Pre-fill">
-                        {QUESTION_TYPES.filter((t) => t.group === 'prefill').map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </optgroup>
-                    </select>
-                    <div className="ml-auto flex items-center gap-0.5">
-                      <button type="button" onClick={() => moveQuestion(q.id, -1)}
-                        className="p-1 rounded hover:bg-gray-200 text-gray-500 disabled:opacity-30" disabled={i === 0}>
-                        <ChevronUp size={13} />
-                      </button>
-                      <button type="button" onClick={() => moveQuestion(q.id, 1)}
-                        className="p-1 rounded hover:bg-gray-200 text-gray-500 disabled:opacity-30" disabled={i === questions.length - 1}>
-                        <ChevronDown size={13} />
-                      </button>
-                      <button type="button" onClick={() => removeQuestion(q.id)}
-                        className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <input type="text" value={q.label}
-                    onChange={(e) => updateQuestion(q.id, { label: e.target.value })}
-                    placeholder={`Question label (default: ${labelFallback(q.type)})`}
-                    className={`${inputCls} mb-2`} />
-
-                  {q.type === 'multiple_choice' && (
-                    <div className="space-y-1.5 pl-2 border-l-2 border-gray-200">
-                      {(q.options || []).map((opt, oi) => (
-                        <div key={oi} className="flex items-center gap-1.5">
-                          <input type="text" value={opt}
-                            onChange={(e) => {
-                              const next = [...(q.options || [])];
-                              next[oi] = e.target.value;
-                              updateQuestion(q.id, { options: next });
-                            }}
-                            placeholder={`Option ${oi + 1}`}
-                            className="flex-1 px-2 py-1.5 bg-white rounded-md text-[12px] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal/20" />
-                          <button type="button"
-                            onClick={() => {
-                              const next = (q.options || []).filter((_, j) => j !== oi);
-                              updateQuestion(q.id, { options: next });
-                            }}
-                            className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ))}
-                      <button type="button"
-                        onClick={() => updateQuestion(q.id, { options: [...(q.options || []), `Option ${(q.options?.length || 0) + 1}`] })}
-                        className="text-[11px] text-teal hover:text-teal-hover font-medium inline-flex items-center gap-1">
-                        <Plus size={11} /> Add option
-                      </button>
-                    </div>
-                  )}
-
-                  <label className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-600">
-                    <input type="checkbox" checked={!!q.required}
-                      onChange={(e) => updateQuestion(q.id, { required: e.target.checked })}
-                      className="accent-teal" />
-                    Required
-                  </label>
-                </div>
+                <QuestionCard
+                  key={q.id}
+                  question={q}
+                  positionLabel={`Q${idx + 1}`}
+                  typeOptions={CUSTOM_TYPES}
+                  isFirst={idx === 0}
+                  isLast={idx === customQuestions.length - 1}
+                  onUpdate={(patch) => updateQuestion(q.id, patch)}
+                  onMove={(dir) => moveWithinGroup(q.id, dir)}
+                  onRemove={() => removeQuestion(q.id)}
+                />
               );
             })}
-
-            <button type="button" onClick={addQuestion}
+            <button type="button" onClick={addCustomQuestion}
               className="w-full px-3 py-2 rounded-xl text-[13px] font-medium text-teal hover:bg-teal/5 border border-dashed border-gray-300 hover:border-teal transition-colors inline-flex items-center justify-center gap-1.5">
-              <Plus size={14} /> Add question
+              <Plus size={14} /> Add custom question
             </button>
           </div>
-          {customQuestions.length === 0 && questions.length > 0 && (
+        </Section>
+
+        <Section
+          title={`General Contact Details (${prefillQuestions.length})`}
+          onJump={() => setPreviewPage('contact_info')}
+        >
+          <p className="text-[11px] text-gray-500 -mt-1">
+            Pre-fill fields shown after the custom questions. Meta autofills these from the user's profile.
+          </p>
+          <div className="space-y-2">
+            {prefillQuestions.map((q) => {
+              const idx = prefillQuestions.findIndex((x) => x.id === q.id);
+              return (
+                <QuestionCard
+                  key={q.id}
+                  question={q}
+                  positionLabel={`F${idx + 1}`}
+                  typeOptions={[
+                    { groupLabel: 'User Info', items: USER_INFO_TYPES },
+                    { groupLabel: 'Work Info', items: WORK_INFO_TYPES },
+                  ]}
+                  isFirst={idx === 0}
+                  isLast={idx === prefillQuestions.length - 1}
+                  onUpdate={(patch) => updateQuestion(q.id, patch)}
+                  onMove={(dir) => moveWithinGroup(q.id, dir)}
+                  onRemove={() => removeQuestion(q.id)}
+                />
+              );
+            })}
+            <button type="button" onClick={addPrefillQuestion}
+              className="w-full px-3 py-2 rounded-xl text-[13px] font-medium text-teal hover:bg-teal/5 border border-dashed border-gray-300 hover:border-teal transition-colors inline-flex items-center justify-center gap-1.5">
+              <Plus size={14} /> Add contact field
+            </button>
+          </div>
+          {prefillQuestions.length === 0 && (
             <p className="text-[11px] text-amber-700 bg-amber-50 px-2 py-1 rounded">
-              No custom questions yet — only contact info will be collected.
+              No contact fields yet — at minimum add an email or phone so leads are reachable.
             </p>
           )}
         </Section>
@@ -498,6 +488,122 @@ export default function MetaLeadFormItemForm({
         </div>
       )}
     </form>
+  );
+}
+
+/* ─── Question card ─────────────────────────────────────────────── */
+
+type TypeOptionList =
+  | QuestionTypeMeta[]
+  | { groupLabel: string; items: QuestionTypeMeta[] }[];
+
+function isGrouped(opts: TypeOptionList): opts is { groupLabel: string; items: QuestionTypeMeta[] }[] {
+  return Array.isArray(opts) && opts.length > 0 && 'groupLabel' in (opts[0] as object);
+}
+
+function QuestionCard({
+  question, positionLabel, typeOptions, isFirst, isLast,
+  onUpdate, onMove, onRemove,
+}: {
+  question: MetaLeadFormQuestion;
+  positionLabel: string;
+  typeOptions: TypeOptionList;
+  isFirst: boolean;
+  isLast: boolean;
+  onUpdate: (patch: Partial<MetaLeadFormQuestion>) => void;
+  onMove: (dir: -1 | 1) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="border border-gray-200 rounded-xl p-3 bg-gray-50/50">
+      <div className="flex items-center gap-1 mb-2">
+        <GripVertical size={14} className="text-gray-300" />
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+          {positionLabel}
+        </span>
+        <select
+          value={question.type}
+          onChange={(e) => {
+            const type = e.target.value as MetaLeadFormQuestionType;
+            onUpdate({
+              type,
+              options: type === 'multiple_choice'
+                ? (question.options?.length ? question.options : ['Option 1', 'Option 2'])
+                : undefined,
+            });
+          }}
+          className="ml-2 text-[12px] px-2 py-1 rounded-md border border-gray-200 bg-white"
+        >
+          {isGrouped(typeOptions)
+            ? typeOptions.map((g) => (
+                <optgroup key={g.groupLabel} label={g.groupLabel}>
+                  {g.items.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </optgroup>
+              ))
+            : typeOptions.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+        </select>
+        <div className="ml-auto flex items-center gap-0.5">
+          <button type="button" onClick={() => onMove(-1)}
+            className="p-1 rounded hover:bg-gray-200 text-gray-500 disabled:opacity-30" disabled={isFirst}>
+            <ChevronUp size={13} />
+          </button>
+          <button type="button" onClick={() => onMove(1)}
+            className="p-1 rounded hover:bg-gray-200 text-gray-500 disabled:opacity-30" disabled={isLast}>
+            <ChevronDown size={13} />
+          </button>
+          <button type="button" onClick={onRemove}
+            className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+
+      <input type="text" value={question.label}
+        onChange={(e) => onUpdate({ label: e.target.value })}
+        placeholder={`Label (default: ${labelFallback(question.type)})`}
+        className={`${inputCls} mb-2`} />
+
+      {question.type === 'multiple_choice' && (
+        <div className="space-y-1.5 pl-2 border-l-2 border-gray-200">
+          {(question.options || []).map((opt, oi) => (
+            <div key={oi} className="flex items-center gap-1.5">
+              <input type="text" value={opt}
+                onChange={(e) => {
+                  const next = [...(question.options || [])];
+                  next[oi] = e.target.value;
+                  onUpdate({ options: next });
+                }}
+                placeholder={`Option ${oi + 1}`}
+                className="flex-1 px-2 py-1.5 bg-white rounded-md text-[12px] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal/20" />
+              <button type="button"
+                onClick={() => {
+                  const next = (question.options || []).filter((_, j) => j !== oi);
+                  onUpdate({ options: next });
+                }}
+                className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+          <button type="button"
+            onClick={() => onUpdate({ options: [...(question.options || []), `Option ${(question.options?.length || 0) + 1}`] })}
+            className="text-[11px] text-teal hover:text-teal-hover font-medium inline-flex items-center gap-1">
+            <Plus size={11} /> Add option
+          </button>
+        </div>
+      )}
+
+      <label className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-600">
+        <input type="checkbox" checked={!!question.required}
+          onChange={(e) => onUpdate({ required: e.target.checked })}
+          className="accent-teal" />
+        Required
+      </label>
+    </div>
   );
 }
 
@@ -664,7 +770,18 @@ function labelFallback(type: MetaLeadFormQuestionType): string {
     case 'full_name': return 'Full name';
     case 'first_name': return 'First name';
     case 'last_name': return 'Last name';
+    case 'street_address': return 'Street address';
     case 'city': return 'City';
+    case 'state': return 'State';
+    case 'province': return 'Province';
+    case 'country': return 'Country';
+    case 'post_code': return 'Post code';
+    case 'date_of_birth': return 'Date of birth';
+    case 'gender': return 'Gender';
+    case 'company_name': return 'Company name';
+    case 'job_title': return 'Job title';
+    case 'work_email': return 'Work email';
+    case 'work_phone': return 'Work phone number';
     case 'short_answer': return 'Short answer';
     case 'multiple_choice': return 'Choose one';
   }
