@@ -442,6 +442,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
           branding={branding}
           submitted={reviewSubmitted}
           onSubmitted={() => setReviewSubmitted(true)}
+          items={items}
         />
       )}
 

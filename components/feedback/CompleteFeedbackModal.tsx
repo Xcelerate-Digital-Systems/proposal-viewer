@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronDown, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
 import type { FeedbackItem, FeedbackStatus } from '@/lib/types/feedback';
 
 interface CompleteFeedbackModalProps {
@@ -19,16 +21,103 @@ interface CompleteFeedbackModalProps {
   /** When `mode === 'item'`, the id of the single item the reviewer is on. */
   activeItemId?: string | null;
   /** 'item' = render one status picker for the active item; 'project' =
-   *  list every non-approved item with its own picker. */
+   *  list every item currently in client review with its own picker. */
   mode?: 'item' | 'project';
 }
 
-const CLIENT_STATUS_OPTIONS: { value: FeedbackStatus; label: string }[] = [
-  { value: 'client_review', label: 'In review' },
-  { value: 'revision_needed', label: 'Needs revision' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
+const CLIENT_STATUS_OPTIONS: FeedbackStatus[] = [
+  'client_review',
+  'revision_needed',
+  'approved',
+  'rejected',
 ];
+
+// Pill-style dropdown that mirrors the header's ClientStatusControl. Unlike
+// that component it's controlled (no fetch on change) so the reviewer can
+// stage edits before submitting.
+function StatusPill({
+  value,
+  onChange,
+}: {
+  value: FeedbackStatus;
+  onChange: (next: FeedbackStatus) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const current = REVIEW_STATUS_CONFIG[value] ?? REVIEW_STATUS_CONFIG.client_review;
+
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t)) return;
+      if (menuRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const onScroll = () => setOpen(false);
+    document.addEventListener('mousedown', onDoc);
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onScroll);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${current.bg} ${current.text} ${current.border} hover:brightness-95`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+        {current.label}
+        <ChevronDown size={12} className="opacity-60" />
+      </button>
+      {open && pos && typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="fixed z-[2147483647] w-44 bg-white rounded-lg border border-gray-200 shadow-lg py-1"
+            style={{ top: pos.top, right: pos.right }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {CLIENT_STATUS_OPTIONS.map((opt) => {
+              const def = REVIEW_STATUS_CONFIG[opt];
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onChange(opt);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left hover:bg-gray-50 transition-colors ${
+                    opt === value ? 'bg-gray-50' : ''
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${def.dot}`} />
+                  <span className="text-gray-700 truncate">{def.label}</span>
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
 
 export default function CompleteFeedbackModal({
   shareToken,
@@ -46,15 +135,23 @@ export default function CompleteFeedbackModal({
   const [submitting, setSubmitting] = useState(false);
 
   // Items the modal will let the reviewer update. In `item` mode that's
-  // just the active item (if not already approved); in `project` mode it's
-  // every non-approved item.
+  // just the active item (if not already approved). In `project` mode it's
+  // every item the client hasn't yet finalised — anything not approved,
+  // rejected or archived.
+  const PENDING_FOR_CLIENT = new Set<FeedbackStatus>([
+    'draft',
+    'in_progress',
+    'internal_review',
+    'client_review',
+    'revision_needed',
+  ]);
   const editableItems = useMemo(() => {
     if (!items) return [] as FeedbackItem[];
     if (mode === 'item') {
       const it = items.find((i) => i.id === activeItemId);
       return it && it.status !== 'approved' ? [it] : [];
     }
-    return items.filter((i) => i.status !== 'approved');
+    return items.filter((i) => PENDING_FOR_CLIENT.has(i.status));
   }, [items, mode, activeItemId]);
 
   // Track the chosen status per item, seeded with whatever is current.
@@ -65,14 +162,11 @@ export default function CompleteFeedbackModal({
   });
 
   useEffect(() => {
-    // When the editable item set changes, reseed any newly-included items
-    // without clobbering choices the reviewer has already made.
     setStatusMap((prev) => {
       const next = { ...prev };
       for (const i of editableItems) {
         if (next[i.id] === undefined) next[i.id] = i.status;
       }
-      // Drop entries for items no longer in scope (e.g. just got approved).
       for (const id of Object.keys(next)) {
         if (!editableItems.some((i) => i.id === id)) delete next[id];
       }
@@ -88,11 +182,21 @@ export default function CompleteFeedbackModal({
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  const [bulkChoice, setBulkChoice] = useState<FeedbackStatus>('approved');
+
+  const setAllStatuses = (next: FeedbackStatus) => {
+    setBulkChoice(next);
+    setStatusMap((prev) => {
+      const updated = { ...prev };
+      for (const it of editableItems) updated[it.id] = next;
+      return updated;
+    });
+  };
+
   const handleFinish = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
-      // Only send the rows where the reviewer actually changed something.
       const item_statuses = editableItems
         .filter((i) => statusMap[i.id] && statusMap[i.id] !== i.status)
         .map((i) => ({ item_id: i.id, status: statusMap[i.id] }));
@@ -124,6 +228,7 @@ export default function CompleteFeedbackModal({
   };
 
   const showStatusList = editableItems.length > 0;
+  const showBulkRow = mode === 'project' && editableItems.length > 1;
 
   return (
     <div
@@ -159,30 +264,29 @@ export default function CompleteFeedbackModal({
         <div className="px-6 pb-5 space-y-4 overflow-y-auto">
           {showStatusList && (
             <div className="space-y-2">
-              <p className="text-[12px] font-medium text-gray-500 uppercase tracking-wider">
-                {mode === 'item' ? 'Set status' : 'Set status for each item'}
+              <p className="text-[13px] text-gray-600">
+                {mode === 'item'
+                  ? 'Let us know where this item stands before you finish.'
+                  : 'These items are waiting on your decision — set a status for each before submitting.'}
               </p>
               <div className="border border-gray-100 rounded-xl divide-y divide-gray-100">
+                {showBulkRow && (
+                  <div className="flex items-center gap-3 px-3 py-2 bg-gray-50/60">
+                    <p className="flex-1 min-w-0 text-[13px] font-medium text-gray-700">
+                      Set all items to
+                    </p>
+                    <StatusPill value={bulkChoice} onChange={setAllStatuses} />
+                  </div>
+                )}
                 {editableItems.map((it) => (
                   <div key={it.id} className="flex items-center gap-3 px-3 py-2">
                     <p className="flex-1 min-w-0 truncate text-[13px] text-gray-800">{it.title}</p>
-                    <select
+                    <StatusPill
                       value={statusMap[it.id] ?? it.status}
-                      onChange={(e) =>
-                        setStatusMap((prev) => ({
-                          ...prev,
-                          [it.id]: e.target.value as FeedbackStatus,
-                        }))
+                      onChange={(next) =>
+                        setStatusMap((prev) => ({ ...prev, [it.id]: next }))
                       }
-                      className="text-[12px] px-2 py-1 rounded-lg border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2"
-                      style={{ ['--tw-ring-color' as string]: `${accentColor}25` }}
-                    >
-                      {CLIENT_STATUS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 ))}
               </div>

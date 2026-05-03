@@ -5,7 +5,7 @@ import { MessageSquare, MousePointer2, ArrowRight, Pause } from 'lucide-react';
 import CompleteFeedbackModal from './CompleteFeedbackModal';
 import { fontFamily } from '@/lib/google-fonts';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
-import type { FeedbackStatus } from '@/lib/types/feedback';
+import type { FeedbackItem, FeedbackStatus } from '@/lib/types/feedback';
 import type { CompanyBranding } from '@/hooks/useProposal';
 
 export type ReviewMode = 'comment' | 'browse';
@@ -33,6 +33,9 @@ interface ReviewTopBarProps {
   submitted: boolean;
   /** Called after the reviewer successfully posts their completion. */
   onSubmitted: () => void;
+  /** All items in the project — used by the Finish modal to render a per-item
+   *  status picker so the reviewer can resolve everything in one go. */
+  items?: FeedbackItem[];
 }
 
 /**
@@ -60,6 +63,7 @@ export default function ReviewTopBar({
   branding,
   submitted,
   onSubmitted,
+  items,
 }: ReviewTopBarProps) {
   const [showFinish, setShowFinish] = useState(false);
   const headingFont = fontHeading ? fontFamily(fontHeading) : undefined;
@@ -203,6 +207,8 @@ export default function ReviewTopBar({
           reviewerName={reviewerName}
           reviewerEmail={reviewerEmail}
           accentColor={accentColor}
+          items={items}
+          mode="project"
           onClose={() => setShowFinish(false)}
           onSubmitted={onSubmitted}
         />
