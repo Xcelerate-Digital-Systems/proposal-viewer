@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, Loader2 } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -25,6 +25,7 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete }: 
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(reply.content);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = async () => {
     const trimmed = editText.trim();
@@ -48,7 +49,8 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete }: 
       destructive: true,
     });
     if (!ok) return;
-    await onDelete();
+    setDeleting(true);
+    try { await onDelete(); } finally { setDeleting(false); }
   };
 
   return (
@@ -69,7 +71,13 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete }: 
             </span>
           )}
           <span className="text-[11px] text-gray-400">{timeAgo(reply.created_at)}</span>
-          {(onEdit || onDelete) && !editing && (
+          {deleting && (
+            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+              <Loader2 size={10} className="animate-spin" />
+              Deleting…
+            </span>
+          )}
+          {(onEdit || onDelete) && !editing && !deleting && (
             <div className="ml-auto opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
               <ThreadMenu
                 align="end"
@@ -94,8 +102,8 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete }: 
                 disabled={saving || !editText.trim()}
                 className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal text-white text-[10px] font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
               >
-                <Check size={10} />
-                Save
+                {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                {saving ? 'Saving…' : 'Save'}
               </button>
               <button
                 onClick={() => { setEditing(false); setEditText(reply.content); }}

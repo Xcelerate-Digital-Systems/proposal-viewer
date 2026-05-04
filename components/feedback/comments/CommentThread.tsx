@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check } from 'lucide-react';
+import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check, Loader2 } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -66,6 +66,19 @@ export default function CommentThread({
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(comment.content);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleResolve = async () => {
+    if (!onResolve || resolving) return;
+    setResolving(true);
+    try { await onResolve(); } finally { setResolving(false); }
+  };
+  const handleUnresolve = async () => {
+    if (!onUnresolve || resolving) return;
+    setResolving(true);
+    try { await onUnresolve(); } finally { setResolving(false); }
+  };
 
   const isGuest = !authorName;
   const replyDisabled = isGuest
@@ -106,7 +119,8 @@ export default function CommentThread({
       destructive: true,
     });
     if (!ok) return;
-    await onDelete();
+    setDeleting(true);
+    try { await onDelete(); } finally { setDeleting(false); }
   };
 
   const isTeam = comment.author_type === 'team';
@@ -184,8 +198,8 @@ export default function CommentThread({
                   disabled={savingEdit || !editText.trim()}
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-teal text-white text-[10px] font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
                 >
-                  <Check size={10} />
-                  Save
+                  {savingEdit ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                  {savingEdit ? 'Saving…' : 'Save'}
                 </button>
                 <button
                   onClick={() => { setEditing(false); setEditText(comment.content); }}
@@ -251,21 +265,29 @@ export default function CommentThread({
           )}
           {!comment.resolved && onResolve && (
             <button
-              onClick={onResolve}
-              className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-emerald-600 transition-colors"
+              onClick={handleResolve}
+              disabled={resolving || deleting}
+              className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-emerald-600 transition-colors disabled:opacity-50"
             >
-              <CheckCircle2 size={12} />
-              Resolve
+              {resolving ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+              {resolving ? 'Resolving…' : 'Resolve'}
             </button>
           )}
           {comment.resolved && onUnresolve && (
             <button
-              onClick={onUnresolve}
-              className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-amber-600 transition-colors"
+              onClick={handleUnresolve}
+              disabled={resolving || deleting}
+              className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-amber-600 transition-colors disabled:opacity-50"
             >
-              <RotateCcw size={12} />
-              Reopen
+              {resolving ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+              {resolving ? 'Reopening…' : 'Reopen'}
             </button>
+          )}
+          {deleting && (
+            <span className="flex items-center gap-1 text-[12px] text-gray-400">
+              <Loader2 size={12} className="animate-spin" />
+              Deleting…
+            </span>
           )}
           {(onEdit || onDelete) && (
             <ThreadMenu
@@ -307,7 +329,7 @@ export default function CommentThread({
               disabled={replyDisabled}
               className="w-8 h-8 rounded-full bg-teal text-white inline-flex items-center justify-center disabled:opacity-40 hover:bg-teal-hover transition-colors"
             >
-              <Send size={12} />
+              {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
             </button>
           </div>
         </form>
