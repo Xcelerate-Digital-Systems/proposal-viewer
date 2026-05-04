@@ -386,7 +386,7 @@ export default function ItemContentView({
       >
         {/* Ad mockup */}
         {isAd && (
-          <div className="select-none">
+          <div>
             <AdMockupPreview
               creativeUrl={item.ad_creative_url!}
               headline={item.ad_headline || ''}

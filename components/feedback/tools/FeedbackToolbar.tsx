@@ -134,7 +134,7 @@ function ToolButton({
       )}
 
       {/* Tooltip */}
-      <span className="absolute right-full mr-2 px-2.5 py-1 rounded-lg bg-ink text-white text-[11px] font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-sm">
+      <span className="absolute right-full mr-2 z-[60] px-2.5 py-1 rounded-lg bg-ink text-white text-[11px] font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-sm">
         {tooltip}
       </span>
     </button>
