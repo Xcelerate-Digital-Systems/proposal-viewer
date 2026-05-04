@@ -49,6 +49,8 @@ interface ItemContentViewProps {
   highlightedCommentId?: string | null;
   /** Click a text highlight → navigate to comment */
   onHighlightClick?: (commentId: string) => void;
+  /** In-progress highlight (teal) shown while reviewer composes */
+  pendingHighlight?: { start: number; end: number } | null;
   /** Brand accent color — applied to mockup preview toggles (Inbox/Email, FB/IG, etc.) */
   accentColor?: string;
   /** Business / brand name — shown as the page/sender name in ad, email and SMS mockups. */
@@ -80,6 +82,7 @@ export default function ItemContentView({
   highlightComments = [],
   highlightedCommentId,
   onHighlightClick,
+  pendingHighlight,
   accentColor,
   brandName,
   activeView,
@@ -150,6 +153,7 @@ export default function ItemContentView({
           highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
+          pendingHighlight={pendingHighlight}
         />
       </div>
     );
@@ -183,6 +187,7 @@ export default function ItemContentView({
           highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
+          pendingHighlight={pendingHighlight}
         />
       </div>
     );
@@ -341,6 +346,7 @@ export default function ItemContentView({
           highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
+          pendingHighlight={pendingHighlight}
         />
       </div>
     );
@@ -416,6 +422,7 @@ export default function ItemContentView({
           highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
+          pendingHighlight={pendingHighlight}
         />
       </div>
     );

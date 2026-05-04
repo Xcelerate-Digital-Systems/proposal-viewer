@@ -1,7 +1,7 @@
 // hooks/useTextHighlight.ts
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export interface TextHighlightData {
   text: string;
@@ -59,56 +59,33 @@ function getTextOffset(container: HTMLElement, targetNode: Node, nodeOffset: num
   return offset;
 }
 
+/**
+ * Captures a finalized text selection within `containerRef` on pointer
+ * release. We deliberately do NOT react to `selectionchange` — that fires
+ * mid-drag and would commit a partial selection (single word) before the
+ * user finishes choosing the range. Listening for mouseup/touchend instead
+ * lets the user drag freely across multiple lines.
+ */
 export function useTextHighlight({ containerRef, enabled }: UseTextHighlightOptions) {
   const [selection, setSelection] = useState<TextHighlightData | null>(null);
-  const [buttonPos, setButtonPos] = useState<{ x: number; y: number } | null>(null);
-  const selectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSelectionChange = useCallback(() => {
-    if (!enabled || !containerRef.current) {
-      setSelection(null);
-      setButtonPos(null);
-      return;
-    }
+  const captureSelection = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.rangeCount) {
-      // Delay clearing so clicking the "Add Comment" button doesn't race
-      selectionTimeoutRef.current = setTimeout(() => {
-        setSelection(null);
-        setButtonPos(null);
-      }, 200);
-      return;
-    }
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
 
     const range = sel.getRangeAt(0);
-    const container = containerRef.current;
-
-    // Ensure selection is within our container
-    if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
-      setSelection(null);
-      setButtonPos(null);
-      return;
-    }
-
-    if (selectionTimeoutRef.current) {
-      clearTimeout(selectionTimeoutRef.current);
-      selectionTimeoutRef.current = null;
-    }
+    if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) return;
 
     const text = sel.toString().trim();
-    if (!text) {
-      setSelection(null);
-      setButtonPos(null);
-      return;
-    }
+    if (!text) return;
 
     const startOffset = getTextOffset(container, range.startContainer, range.startOffset);
     const endOffset = getTextOffset(container, range.endContainer, range.endOffset);
     const elementPath = buildElementPath(range.startContainer, container);
 
-    // Compute selection rect as % of the container so popovers can anchor reliably
-    // even after the browser selection is cleared.
     const rect = range.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     const anchorXpx = (rect.left + rect.right) / 2 - containerRect.left;
@@ -118,39 +95,43 @@ export function useTextHighlight({ containerRef, enabled }: UseTextHighlightOpti
       y: containerRect.height > 0 ? (anchorYpx / containerRect.height) * 100 : 50,
     };
 
-    setSelection({
-      text,
-      startOffset,
-      endOffset,
-      elementPath,
-      rectPct,
-    });
-
-    setButtonPos({
-      x: rect.right - containerRect.left,
-      y: rect.top - containerRect.top - 36,
-    });
-  }, [enabled, containerRef]);
+    setSelection({ text, startOffset, endOffset, elementPath, rectPct });
+  }, [containerRef]);
 
   useEffect(() => {
     if (!enabled) {
       setSelection(null);
-      setButtonPos(null);
       return;
     }
 
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
-      if (selectionTimeoutRef.current) clearTimeout(selectionTimeoutRef.current);
+    // Wait one tick after pointer release so the browser has finalized the
+    // Selection object before we read it.
+    const onPointerUp = () => {
+      setTimeout(captureSelection, 0);
     };
-  }, [enabled, handleSelectionChange]);
+
+    document.addEventListener('mouseup', onPointerUp);
+    document.addEventListener('touchend', onPointerUp);
+    return () => {
+      document.removeEventListener('mouseup', onPointerUp);
+      document.removeEventListener('touchend', onPointerUp);
+    };
+  }, [enabled, captureSelection]);
 
   const clearSelection = useCallback(() => {
     setSelection(null);
-    setButtonPos(null);
     window.getSelection()?.removeAllRanges();
   }, []);
 
-  return { selection, buttonPos, clearSelection };
+  /**
+   * Reset the captured-selection state without touching the browser's
+   * native Selection. Use after handing off the data to a popover so a
+   * subsequent drag can re-trigger capture, while the highlighted text
+   * stays visible to the user.
+   */
+  const resetSelection = useCallback(() => {
+    setSelection(null);
+  }, []);
+
+  return { selection, clearSelection, resetSelection };
 }

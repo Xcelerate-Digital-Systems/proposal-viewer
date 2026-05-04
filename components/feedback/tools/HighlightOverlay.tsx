@@ -12,6 +12,12 @@ interface HighlightOverlayProps {
   highlightedCommentId?: string | null;
   /** Click a highlight → navigate to comment */
   onHighlightClick?: (commentId: string) => void;
+  /**
+   * Pending (in-progress) highlight — the reviewer just selected text and
+   * is composing a comment. Rendered in teal so it visually persists even
+   * after the textarea steals focus and collapses the browser selection.
+   */
+  pendingHighlight?: { start: number; end: number } | null;
 }
 
 function findNodeAtOffset(
@@ -43,6 +49,7 @@ export default function HighlightOverlay({
   highlightComments,
   highlightedCommentId,
   onHighlightClick,
+  pendingHighlight,
 }: HighlightOverlayProps) {
   const marksRef = useRef<HTMLElement[]>([]);
 
@@ -61,17 +68,57 @@ export default function HighlightOverlay({
     marksRef.current = [];
 
     const container = containerRef.current;
-    if (!container || highlightComments.length === 0) return;
+    if (!container || (highlightComments.length === 0 && !pendingHighlight)) return;
 
-    // Sort by start offset descending so wrapping earlier ranges doesn't
-    // shift the offsets of later ones.
-    const sorted = [...highlightComments]
-      .filter((c) => c.highlight_start != null && c.highlight_end != null)
-      .sort((a, b) => (b.highlight_start ?? 0) - (a.highlight_start ?? 0));
+    // Build a unified list of ranges to render. Pending highlight gets a
+    // teal mark; saved comments get the yellow markup.io look. Sort by
+    // start offset descending so wrapping earlier ranges doesn't shift the
+    // offsets of later ones.
+    type RenderRange =
+      | { kind: 'comment'; start: number; end: number; comment: FeedbackComment }
+      | { kind: 'pending'; start: number; end: number };
 
-    for (const comment of sorted) {
-      const start = comment.highlight_start!;
-      const end = comment.highlight_end!;
+    const ranges: RenderRange[] = [];
+    for (const c of highlightComments) {
+      if (c.highlight_start != null && c.highlight_end != null) {
+        ranges.push({ kind: 'comment', start: c.highlight_start, end: c.highlight_end, comment: c });
+      }
+    }
+    if (pendingHighlight) {
+      ranges.push({ kind: 'pending', start: pendingHighlight.start, end: pendingHighlight.end });
+    }
+    const sorted = ranges.sort((a, b) => b.start - a.start);
+
+    for (const r of sorted) {
+      const start = r.start;
+      const end = r.end;
+      if (r.kind === 'pending') {
+        const startPos = findNodeAtOffset(container, start);
+        const endPos = findNodeAtOffset(container, end);
+        if (!startPos || !endPos) continue;
+        try {
+          const range = document.createRange();
+          range.setStart(startPos.node, startPos.offset);
+          range.setEnd(endPos.node, endPos.offset);
+
+          const mark = document.createElement('mark');
+          mark.className = 'review-highlight-pending';
+          Object.assign(mark.style, {
+            backgroundColor: 'rgba(1, 124, 135, 0.32)',
+            boxShadow: '0 0 0 1px rgba(1, 124, 135, 0.55)',
+            color: 'inherit',
+            padding: '1px 2px',
+            borderRadius: '2px',
+          } as Partial<CSSStyleDeclaration>);
+          range.surroundContents(mark);
+          marksRef.current.push(mark);
+        } catch {
+          // surroundContents fails if the range spans element boundaries; skip.
+        }
+        continue;
+      }
+
+      const comment = r.comment;
 
       const startPos = findNodeAtOffset(container, start);
       const endPos = findNodeAtOffset(container, end);
@@ -140,7 +187,7 @@ export default function HighlightOverlay({
         // surroundContents fails if the range spans element boundaries; skip.
       }
     }
-  }, [containerRef, highlightComments, highlightedCommentId, onHighlightClick]);
+  }, [containerRef, highlightComments, highlightedCommentId, onHighlightClick, pendingHighlight]);
 
   useEffect(() => {
     const timer = setTimeout(applyHighlights, 100);

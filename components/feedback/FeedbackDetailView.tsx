@@ -294,7 +294,7 @@ export default function FeedbackDetailView({
   }, [comments, selectedItemId, versions, activeVersionId, currentMockupView]);
 
   // ── Text highlight state (available for all content types) ──
-  const { selection: textSelection, clearSelection: clearTextSelection } = useTextHighlight({
+  const { selection: textSelection, clearSelection: clearTextSelection, resetSelection: resetTextSelection } = useTextHighlight({
     containerRef: imageContainerRef as React.RefObject<HTMLElement>,
     enabled: !browseMode && !(!isAdmin && !!project?.pause_new_comments) && (feedbackMode === 'idle' || feedbackMode === 'highlight'),
   });
@@ -308,14 +308,20 @@ export default function FeedbackDetailView({
     [comments, selectedItemId, versions, activeVersionId]
   );
 
-  // Auto-open comment form when text is selected — no extra button needed
+  // Auto-open comment form when text is selected — no extra button needed.
+  // Note: we deliberately don't wipe the browser's Selection here; we want
+  // the highlighted text to stay visible while the reviewer composes the
+  // comment. resetTextSelection clears only the hook's internal state so
+  // the next drag can re-trigger capture. A teal <mark> overlay (rendered
+  // below) keeps the range visually marked even after the textarea steals
+  // focus and collapses the native selection.
   useEffect(() => {
     if (textSelection) {
       setPendingHighlight(textSelection);
       setShowComments(true);
-      clearTextSelection();
+      resetTextSelection();
     }
-  }, [textSelection, clearTextSelection]);
+  }, [textSelection, resetTextSelection]);
 
   const handleSubmitComment = useCallback(
     async (content: string, pinX?: number, pinY?: number, parentId?: string, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => {
@@ -610,6 +616,11 @@ export default function FeedbackDetailView({
                 highlightComments={highlightComments}
                 highlightedCommentId={highlightedCommentId}
                 onHighlightClick={handlePinClick}
+                pendingHighlight={
+                  pendingHighlight
+                    ? { start: pendingHighlight.startOffset, end: pendingHighlight.endOffset }
+                    : null
+                }
                 accentColor={branding?.accent_color || accent}
                 brandName={project.client_name || undefined}
                 activeView={activeView}
@@ -675,8 +686,9 @@ export default function FeedbackDetailView({
                 onSubmit={async (content, attachments, priority, videoUrl) => {
                   await handleSubmitComment(content, undefined, undefined, undefined, priority, attachments, videoUrl);
                   setPendingHighlight(null);
+                  clearTextSelection();
                 }}
-                onCancel={() => setPendingHighlight(null)}
+                onCancel={() => { setPendingHighlight(null); clearTextSelection(); }}
                 companyId={companyId}
                 shareToken={shareToken}
                 authorName={isAdmin ? authorName : undefined}
