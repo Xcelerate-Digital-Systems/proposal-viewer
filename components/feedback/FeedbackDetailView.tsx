@@ -709,7 +709,7 @@ export default function FeedbackDetailView({
               unresolvedCount={unresolvedComments.length}
               mode={feedbackMode}
               onModeChange={changeFeedbackMode}
-              className="absolute top-4 left-4"
+              className="absolute top-4 right-4"
               accentColor={branding?.accent_color || accent}
             />
           </div>
