@@ -117,6 +117,17 @@ function showAnnotationForm(type,px,py,extra){
 }
 
 function removePendingAnnotation(){
+  /* Unwrap any pending text-highlight mark so the page DOM is left
+     untouched after the reviewer cancels or submits. */
+  var pm=window.__avizPendingHighlightMark;
+  if(pm&&pm.parentNode){
+    var parent=pm.parentNode;
+    while(pm.firstChild)parent.insertBefore(pm.firstChild,pm);
+    parent.removeChild(pm);
+    if(parent.normalize)parent.normalize();
+  }
+  window.__avizPendingHighlightMark=null;
+
   if(!pendingAnnotation)return;
   pendingAnnotation.form.remove();
   if(pendingAnnotation.marker)pendingAnnotation.marker.remove();

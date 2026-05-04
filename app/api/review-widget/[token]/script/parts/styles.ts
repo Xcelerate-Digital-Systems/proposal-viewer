@@ -18,8 +18,11 @@ sty.textContent=\`
 #aviz-root{box-sizing:border-box;margin:0;padding:0;font-family:${FONT};line-height:1.45;}
 #aviz-root *{box-sizing:border-box;font-family:${FONT};line-height:1.45;}
 
-/* ── Crosshair cursor (always on outside widget UI) ────── */
-html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:crosshair !important;}
+/* ── Per-mode cursor (matches the active tool) ─────────── */
+html.aviz-mode-pin,html.aviz-mode-pin *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *),
+html.aviz-mode-box,html.aviz-mode-box *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:crosshair !important;}
+html.aviz-mode-text,html.aviz-mode-text *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *),
+html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:text !important;}
 
 /* ── Element hover highlight ───────────────────────────── */
 .aviz-el-hl{outline:2px solid ${HOVER_COLOR};outline-offset:2px;transition:outline-color .3s;box-shadow:0 0 0 1px ${HOVER_COLOR}40;}
@@ -101,6 +104,7 @@ html.aviz-active,html.aviz-active *:not(#aviz-root):not(#aviz-root *):not(#aviz-
 
 /* ── Text highlight marks ──────────────────────────────── */
 mark.aviz-hl{background:rgba(253,224,71,.55);padding:1px 2px;border-radius:2px;cursor:pointer;transition:background .3s;color:inherit;}
+mark.aviz-hl-pending{background:rgba(253,224,71,.7);padding:1px 2px;border-radius:2px;color:inherit;}
 mark.aviz-hl:hover{background:rgba(253,224,71,.8);}
 mark.aviz-hl.resolved{background:rgba(253,224,71,.28);}
 .aviz-hl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin:0 3px;border-radius:9999px;background:${PIN_COLOR};color:#fff;font-size:10px;font-weight:700;line-height:1;vertical-align:middle;cursor:pointer;user-select:none;font-style:normal;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2);font-family:${FONT};}

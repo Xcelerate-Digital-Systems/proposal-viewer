@@ -70,15 +70,15 @@ bar.querySelector("#aviz-bar-cancel").addEventListener("click",function(){armPin
 toolBtns.pin.addEventListener("click",function(){closePanel();armPinMode();});
 toolBtns.box.addEventListener("click",function(){
   if(mode==="box"){armPinMode();return;}
-  closePanel();setActiveTool("box");setMode("box","Click and drag to draw a box");
+  closePanel();setActiveTool("box");setMode("box","");
 });
 toolBtns.text.addEventListener("click",function(){
   if(mode==="text"){armPinMode();return;}
-  closePanel();setActiveTool("text");setMode("text","Click anywhere to add text");
+  closePanel();setActiveTool("text");setMode("text","");
 });
 toolBtns.highlight.addEventListener("click",function(){
   if(mode==="highlight"){armPinMode();return;}
-  closePanel();setActiveTool("highlight");setMode("highlight","Select text on the page to leave a highlighted comment");
+  closePanel();setActiveTool("highlight");setMode("highlight","");
 });
 toolBtns.video.addEventListener("click",function(){
   closePanel();

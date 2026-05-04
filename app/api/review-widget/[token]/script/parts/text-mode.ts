@@ -23,7 +23,7 @@ document.addEventListener("click",function(e){
         /* Replay the click at the same coordinates once identity is set */
         var ev=new MouseEvent("click",{clientX:cex,clientY:cey,bubbles:true,cancelable:true});
         /* Re-enter text mode so the listener runs */
-        setActiveTool("text");setMode("text","Click anywhere to add text");
+        setActiveTool("text");setMode("text","");
         document.elementFromPoint(cex,cey).dispatchEvent(ev);
       });
     }

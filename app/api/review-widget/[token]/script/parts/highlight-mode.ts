@@ -55,6 +55,21 @@ document.addEventListener("mouseup",function(){
     var endOffset=getHighlightTextOffset(document.body,range.endContainer,range.endOffset);
     var elementPath=buildHighlightElementPath(range.startContainer);
 
+    /* Wrap the live selection in a yellow <mark> so it stays visually
+       highlighted while the reviewer composes (the textarea steals focus
+       and collapses the native selection). The mark is removed when the
+       form closes — see annotation-form for the cleanup. */
+    var pendingMark=null;
+    try{
+      pendingMark=document.createElement("mark");
+      pendingMark.className="aviz-hl-pending";
+      range.surroundContents(pendingMark);
+      window.__avizPendingHighlightMark=pendingMark;
+    }catch(err){
+      /* Range crosses element boundaries — fall back to no pending mark */
+      window.__avizPendingHighlightMark=null;
+    }
+
     /* Clear browser selection so the form isn't blocked by selection state */
     sel.removeAllRanges();
 

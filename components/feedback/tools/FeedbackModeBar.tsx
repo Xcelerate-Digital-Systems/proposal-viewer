@@ -12,9 +12,6 @@ interface FeedbackModeBarProps {
 }
 
 const MODE_MESSAGES: Partial<Record<FeedbackMode, string>> = {
-  arrow: 'Click and drag to draw an arrow',
-  box: 'Click and drag to draw a rectangle',
-  text: 'Click anywhere to add a text box',
   screenshot: 'Capturing screenshot…',
 };
 

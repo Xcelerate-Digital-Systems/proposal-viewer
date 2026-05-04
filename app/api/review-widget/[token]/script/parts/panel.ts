@@ -268,11 +268,13 @@ function bindThreadEvents(){
     btn.addEventListener("click",function(e){
       e.stopPropagation();
       var cid=btn.getAttribute("data-id");var cur=btn.getAttribute("data-resolved")==="true";
+      var origHTML=btn.innerHTML;
       btn.disabled=true;
+      btn.textContent=cur?"Reopening\\u2026":"Resolving\\u2026";
       fetch(C.api+"?item="+C.item+"&comment_id="+cid+"&resolve="+(cur?"false":"true"),{method:"PATCH",headers:{"Content-Type":"application/json"}})
         .then(function(r){return r.json();}).then(function(){
           comments.forEach(function(c){if(c.id===cid)c.resolved=!cur;});refresh();
-        }).catch(function(){btn.disabled=false;});
+        }).catch(function(){btn.disabled=false;btn.innerHTML=origHTML;});
     });
   });
 
@@ -428,9 +430,10 @@ function bindThreadEvents(){
       var msg=kind==="comment"?"Delete this comment and all its replies?":"Delete this reply?";
       if(!confirm(msg))return;
 
+      btn.disabled=true;btn.textContent="Deleting\\u2026";
       fetch(C.api+"?item="+C.item+"&comment_id="+cid,{method:"DELETE"})
         .then(function(r){return r.json();}).then(function(d){
-          if(d.error){alert(d.error);return;}
+          if(d.error){alert(d.error);btn.disabled=false;btn.textContent="Delete";return;}
           /* Remove from local array */
           if(kind==="comment"){
             comments=comments.filter(function(c){return c.id!==cid&&c.parent_comment_id!==cid;});
@@ -439,7 +442,7 @@ function bindThreadEvents(){
           }
           if(expandedCardId===cid)expandedCardId=null;
           refresh();
-        }).catch(function(err){alert("Failed to delete");});
+        }).catch(function(err){alert("Failed to delete");btn.disabled=false;btn.textContent="Delete";});
     });
   });
 }
