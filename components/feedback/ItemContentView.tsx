@@ -25,8 +25,8 @@ import {
 
 interface ItemContentViewProps {
   item: FeedbackItem | null;
-  /** Whether user is placing a pin */
-  placingPin: boolean;
+  /** CSS cursor for the content surface — varies by active feedback tool */
+  cursorStyle?: string;
   /** Current pending pin position (image/ad items only) */
   pendingPin: { x: number; y: number } | null;
   /** Top-level pin comments */
@@ -70,7 +70,7 @@ interface ItemContentViewProps {
 
 export default function ItemContentView({
   item,
-  placingPin,
+  cursorStyle = 'default',
   pendingPin,
   pinComments,
   onImageClick,
@@ -130,7 +130,7 @@ export default function ItemContentView({
       <div
         ref={containerRef}
         className="relative w-full max-w-2xl mx-auto"
-        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
         <EmailMockupPreview
@@ -166,7 +166,7 @@ export default function ItemContentView({
       <div
         ref={containerRef}
         className="relative w-full max-w-md mx-auto"
-        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
         <SmsMockupPreview
@@ -205,7 +205,7 @@ export default function ItemContentView({
       <div
         ref={containerRef}
         className="relative w-full max-w-3xl mx-auto"
-        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
         {isYouTube && youtubeId ? (
@@ -255,7 +255,7 @@ export default function ItemContentView({
       <div
         ref={containerRef}
         className="relative w-full max-w-3xl mx-auto"
-        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
         {pdfSrc ? (
@@ -296,7 +296,7 @@ export default function ItemContentView({
       <div
         ref={containerRef}
         className="relative w-full max-w-md mx-auto"
-        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
         <MetaLeadFormMockupPreview
@@ -321,7 +321,7 @@ export default function ItemContentView({
       <div
         ref={containerRef}
         className="relative w-full max-w-2xl mx-auto"
-        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
         <GoogleAdMockupPreview
@@ -381,7 +381,7 @@ export default function ItemContentView({
       <div
         ref={containerRef}
         className="relative max-w-full max-h-full"
-        style={{ cursor: placingPin ? 'crosshair' : 'default' }}
+        style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
         {/* Ad mockup */}

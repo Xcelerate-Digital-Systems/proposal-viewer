@@ -604,7 +604,13 @@ export default function FeedbackDetailView({
             <div className={isWebpageItem ? '' : 'min-h-full flex items-center justify-center'}>
               <ItemContentView
                 item={selectedItem}
-                placingPin={pinActive}
+                cursorStyle={
+                  feedbackMode === 'highlight' ? 'text'
+                    : feedbackMode === 'text' ? 'text'
+                    : feedbackMode === 'arrow' || feedbackMode === 'box' ? 'crosshair'
+                    : pinActive ? 'crosshair'
+                    : 'default'
+                }
                 pendingPin={pendingPin}
                 pinComments={pinComments}
                 onImageClick={handleImageClick}

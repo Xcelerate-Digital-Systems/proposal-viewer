@@ -103,9 +103,10 @@ export default function HighlightOverlay({
 
           const mark = document.createElement('mark');
           mark.className = 'review-highlight-pending';
+          // Match the saved-highlight yellow so the visual treatment stays
+          // consistent between in-progress and committed highlights.
           Object.assign(mark.style, {
-            backgroundColor: 'rgba(1, 124, 135, 0.32)',
-            boxShadow: '0 0 0 1px rgba(1, 124, 135, 0.55)',
+            backgroundColor: 'rgba(254, 240, 138, 0.7)',
             color: 'inherit',
             padding: '1px 2px',
             borderRadius: '2px',

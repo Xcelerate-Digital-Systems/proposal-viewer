@@ -40,7 +40,7 @@ export default function FeedbackToolbar({
 
   return (
     <div
-      className={`flex flex-col items-center gap-1 bg-white rounded-2xl shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_24px_rgba(20,20,40,0.06)] p-1.5 z-30 ${className}`}
+      className={`flex flex-col items-center gap-1 bg-white rounded-2xl shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_24px_rgba(20,20,40,0.06)] p-1.5 z-50 ${className}`}
     >
       {/* Drawing tools */}
       {onModeChange && (
