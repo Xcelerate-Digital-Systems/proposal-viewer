@@ -97,8 +97,8 @@ export default function VersionPicker({
                       onEditVersion(v.id);
                       setOpen(false);
                     }}
-                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-ink transition-opacity p-1 -m-1 shrink-0"
-                    title={`Edit v${v.versionNumber}`}
+                    className="text-gray-400 hover:text-ink transition-colors p-1 -m-1 shrink-0"
+                    title={`Edit v${v.versionNumber} content`}
                   >
                     <Pencil size={12} />
                   </button>

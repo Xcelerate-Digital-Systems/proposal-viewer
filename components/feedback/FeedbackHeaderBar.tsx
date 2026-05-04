@@ -2,7 +2,7 @@
 
 import {
   ArrowLeft, ChevronLeft, ChevronRight,
-  MessageSquare, MousePointer2, ArrowRight,
+  MessageSquare, MousePointer2, ArrowRight, Pencil,
 } from 'lucide-react';
 import { fontFamily } from '@/lib/google-fonts';
 import VersionPicker from '@/components/feedback/VersionPicker';
@@ -249,7 +249,7 @@ export default function FeedbackHeaderBar({
       {/* Trailing controls */}
       <div className="flex items-center gap-2 shrink-0">
         {versions && versions.length > 0 && onVersionChange && (
-          <div className="shrink-0">
+          <div className="shrink-0 flex items-center gap-1">
             <VersionPicker
               versions={versions}
               activeVersionId={activeVersionId}
@@ -258,6 +258,17 @@ export default function FeedbackHeaderBar({
               onEditVersion={onEditVersion}
               compact
             />
+            {onEditVersion && (
+              <button
+                type="button"
+                onClick={() => onEditVersion(activeVersionId)}
+                className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-600 hover:bg-gray-100 hover:text-ink transition-colors"
+                title="Edit this version's content"
+              >
+                <Pencil size={11} />
+                Edit
+              </button>
+            )}
           </div>
         )}
 
