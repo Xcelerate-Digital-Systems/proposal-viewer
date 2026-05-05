@@ -8,11 +8,13 @@ var C={
   item:__aviz_resolvedItem,
   api:"${c.apiBase}/api/review-widget/${c.token}/comments",
   ssApi:"${c.apiBase}/api/review-widget/${c.token}/screenshot",
+  reactionsApi:"${c.apiBase}/api/review-widget/${c.token}/reactions",
   accent:"#017C87"
 };
 
 var SK="review_guest_identity";
 var comments=[];
+var reactions=[];
 var annotations=[];
 var mode="idle";
 var panelOpen=false;
@@ -44,7 +46,31 @@ function api(path,opts){
     .then(function(r){return r.json();});
 }
 function loadComments(cb){
-  api("?item="+C.item).then(function(d){comments=d.comments||[];loading=false;if(cb)cb();}).catch(function(){loading=false;if(cb)cb();});
+  api("?item="+C.item).then(function(d){comments=d.comments||[];loading=false;loadReactions(cb);}).catch(function(){loading=false;if(cb)cb();});
+}
+function loadReactions(cb){
+  fetch(C.reactionsApi+"?item="+C.item).then(function(r){return r.json();})
+    .then(function(d){reactions=d.reactions||[];if(cb)cb();})
+    .catch(function(){if(cb)cb();});
+}
+function toggleReaction(commentId,emoji,cb){
+  if(!guestName){if(typeof showOnboard==="function"){showOnboard(function(){toggleReaction(commentId,emoji,cb);});}return;}
+  /* Optimistic update */
+  var existing=null;
+  for(var i=0;i<reactions.length;i++){
+    var r=reactions[i];
+    if(r.review_comment_id===commentId&&r.emoji===emoji&&r.author_name===guestName){existing=r;break;}
+  }
+  if(existing){
+    reactions=reactions.filter(function(r){return r!==existing;});
+  } else {
+    reactions.push({id:"tmp-"+Date.now(),review_comment_id:commentId,emoji:emoji,author_name:guestName,author_user_id:null,created_at:new Date().toISOString()});
+  }
+  if(typeof renderThreads==="function")renderThreads();
+  fetch(C.reactionsApi,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({comment_id:commentId,emoji:emoji,author_name:guestName})})
+    .then(function(r){return r.json();}).then(function(){loadReactions(cb);})
+    .catch(function(){if(cb)cb();});
 }
 function postComment(body,cb){
   body.review_item_id=C.item;

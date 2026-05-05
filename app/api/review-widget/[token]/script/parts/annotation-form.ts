@@ -117,16 +117,18 @@ function showAnnotationForm(type,px,py,extra){
 }
 
 function removePendingAnnotation(){
-  /* Unwrap any pending text-highlight mark so the page DOM is left
-     untouched after the reviewer cancels or submits. */
-  var pm=window.__avizPendingHighlightMark;
-  if(pm&&pm.parentNode){
-    var parent=pm.parentNode;
+  /* Unwrap every pending text-highlight mark (a multi-element selection
+     wraps each contained text node, so there can be more than one) so the
+     page DOM is left untouched after the reviewer cancels or submits. */
+  var pms=document.querySelectorAll("mark.aviz-hl-pending");
+  for(var i=0;i<pms.length;i++){
+    var pm=pms[i];var parent=pm.parentNode;if(!parent)continue;
     while(pm.firstChild)parent.insertBefore(pm.firstChild,pm);
     parent.removeChild(pm);
     if(parent.normalize)parent.normalize();
   }
   window.__avizPendingHighlightMark=null;
+  window.__avizPendingHighlight=null;
 
   if(!pendingAnnotation)return;
   pendingAnnotation.form.remove();

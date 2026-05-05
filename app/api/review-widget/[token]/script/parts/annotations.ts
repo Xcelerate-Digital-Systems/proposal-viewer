@@ -59,7 +59,7 @@ function findHighlightNodeAtOffset(target){
 }
 
 function unwrapExistingHighlights(){
-  var marks=document.querySelectorAll("mark.aviz-hl");
+  var marks=document.querySelectorAll("mark.aviz-hl, mark.aviz-hl-pending");
   for(var i=0;i<marks.length;i++){
     var m=marks[i];
     var badges=m.querySelectorAll(".aviz-hl-badge");
@@ -71,6 +71,57 @@ function unwrapExistingHighlights(){
   }
 }
 
+/* Wrap a [start,end] offset range with a <mark> of the given class. Falls
+   back to wrapping each contained text node individually when the range
+   crosses element boundaries (surroundContents would throw). */
+function wrapOffsetRange(start,end,markClass,onCreate){
+  if(start==null||end==null||end<=start)return null;
+  var startPos=findHighlightNodeAtOffset(start);
+  var endPos=findHighlightNodeAtOffset(end);
+  if(!startPos||!endPos)return null;
+  try{
+    var range=document.createRange();
+    range.setStart(startPos.node,startPos.offset);
+    range.setEnd(endPos.node,endPos.offset);
+    var mark=document.createElement("mark");
+    mark.className=markClass;
+    range.surroundContents(mark);
+    if(onCreate)onCreate(mark);
+    return mark;
+  }catch(e){
+    /* Range spans element boundaries — wrap each contained text node */
+    var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null);
+    var accumulated=0,first=null,node;
+    while((node=walker.nextNode())){
+      var len=(node.textContent||"").length;
+      var nodeStart=accumulated;var nodeEnd=accumulated+len;
+      accumulated+=len;
+      if(nodeEnd<=start||nodeStart>=end)continue;
+      if(node.parentNode&&node.parentNode.closest&&(node.parentNode.closest("#aviz-root")||node.parentNode.closest("mark.aviz-hl")||node.parentNode.closest("mark.aviz-hl-pending")))continue;
+      var s=Math.max(0,start-nodeStart);
+      var en=Math.min(len,end-nodeStart);
+      if(en<=s)continue;
+      try{
+        var r=document.createRange();
+        r.setStart(node,s);r.setEnd(node,en);
+        var m=document.createElement("mark");
+        m.className=markClass;
+        r.surroundContents(m);
+        if(!first){first=m;if(onCreate)onCreate(m);}
+      }catch(_){/* skip this segment */}
+    }
+    return first;
+  }
+}
+
+function renderPendingHighlight(){
+  var ph=window.__avizPendingHighlight;
+  if(!ph)return;
+  wrapOffsetRange(ph.start,ph.end,"aviz-hl-pending",function(m){
+    window.__avizPendingHighlightMark=m;
+  });
+}
+
 function renderTextHighlights(){
   unwrapExistingHighlights();
   /* Sort descending so wrapping earlier ranges doesn't shift later offsets */
@@ -80,17 +131,8 @@ function renderTextHighlights(){
   }).sort(function(a,b){return (b.highlight_start||0)-(a.highlight_start||0);});
 
   highlights.forEach(function(c){
-    var startPos=findHighlightNodeAtOffset(c.highlight_start);
-    var endPos=findHighlightNodeAtOffset(c.highlight_end);
-    if(!startPos||!endPos)return;
-    try{
-      var range=document.createRange();
-      range.setStart(startPos.node,startPos.offset);
-      range.setEnd(endPos.node,endPos.offset);
-      var mark=document.createElement("mark");
-      mark.className="aviz-hl"+(c.resolved?" resolved":"");
+    wrapOffsetRange(c.highlight_start,c.highlight_end,"aviz-hl"+(c.resolved?" resolved":""),function(mark){
       mark.setAttribute("data-comment-id",c.id);
-      range.surroundContents(mark);
       mark.addEventListener("click",function(e){e.stopPropagation();openPanel();scrollToThread(c.id);});
       if(c.thread_number!=null){
         var badge=document.createElement("span");
@@ -100,8 +142,9 @@ function renderTextHighlights(){
         badge.addEventListener("click",function(e){e.stopPropagation();openPanel();scrollToThread(c.id);});
         mark.appendChild(badge);
       }
-    }catch(e){/* range spans element boundaries — skip */}
+    });
   });
+  renderPendingHighlight();
 }
 
 var resizeTimer;

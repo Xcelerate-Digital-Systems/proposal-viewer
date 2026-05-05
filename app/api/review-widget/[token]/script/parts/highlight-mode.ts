@@ -55,20 +55,13 @@ document.addEventListener("mouseup",function(){
     var endOffset=getHighlightTextOffset(document.body,range.endContainer,range.endOffset);
     var elementPath=buildHighlightElementPath(range.startContainer);
 
-    /* Wrap the live selection in a yellow <mark> so it stays visually
-       highlighted while the reviewer composes (the textarea steals focus
-       and collapses the native selection). The mark is removed when the
-       form closes — see annotation-form for the cleanup. */
-    var pendingMark=null;
-    try{
-      pendingMark=document.createElement("mark");
-      pendingMark.className="aviz-hl-pending";
-      range.surroundContents(pendingMark);
-      window.__avizPendingHighlightMark=pendingMark;
-    }catch(err){
-      /* Range crosses element boundaries — fall back to no pending mark */
-      window.__avizPendingHighlightMark=null;
-    }
+    /* Persist the pending range as offsets so renderAnnotations() can
+       re-create the yellow mark on every refresh — survives multi-element
+       selections (where surroundContents would throw) and any subsequent
+       refresh that unwraps existing marks. */
+    window.__avizPendingHighlight={start:startOffset,end:endOffset};
+    window.__avizPendingHighlightMark=null;
+    if(typeof renderPendingHighlight==="function")renderPendingHighlight();
 
     /* Clear browser selection so the form isn't blocked by selection state */
     sel.removeAllRanges();
