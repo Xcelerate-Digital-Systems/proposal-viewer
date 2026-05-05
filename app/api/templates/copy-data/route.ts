@@ -1,6 +1,7 @@
 // app/api/templates/copy-data/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,14 +17,29 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServiceClient();
-    const { template_id, proposal_id, company_id } = await req.json();
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!template_id || !proposal_id || !company_id) {
+    const supabase = createServiceClient();
+    const { template_id, proposal_id } = await req.json();
+
+    if (!template_id || !proposal_id) {
       return NextResponse.json(
-        { error: 'template_id, proposal_id, and company_id are required' },
+        { error: 'template_id and proposal_id are required' },
         { status: 400 }
       );
+    }
+
+    // company_id is always derived from the authenticated session and used to
+    // verify both the template and proposal belong to the caller.
+    const company_id = auth.companyId;
+
+    const [{ data: tmpl }, { data: prop }] = await Promise.all([
+      supabase.from('proposal_templates').select('id').eq('id', template_id).eq('company_id', company_id).maybeSingle(),
+      supabase.from('proposals').select('id').eq('id', proposal_id).eq('company_id', company_id).maybeSingle(),
+    ]);
+    if (!tmpl || !prop) {
+      return NextResponse.json({ error: 'Template or proposal not found' }, { status: 404 });
     }
 
     // ── 1. Fetch all non-pdf rows from template ──────────────────────────────

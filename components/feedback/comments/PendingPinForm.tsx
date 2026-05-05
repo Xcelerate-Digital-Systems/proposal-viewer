@@ -37,13 +37,15 @@ const MAX_FILES = 5;
 
 async function uploadAttachments(
   pending: PendingAttachment[],
-  companyId: string
+  shareToken: string
 ): Promise<FeedbackCommentAttachment[]> {
   const results: FeedbackCommentAttachment[] = [];
   for (const pa of pending) {
     const formData = new FormData();
     formData.append('file', pa.file);
-    formData.append('company_id', companyId);
+    // share_token is the proof-of-access for public callers; the server
+    // resolves it to a company_id and ignores any client-supplied value.
+    formData.append('share_token', shareToken);
 
     const res = await fetch('/api/review-comments/attachments', {
       method: 'POST',
@@ -100,8 +102,8 @@ export default function PendingPinForm({
     setSubmitting(true);
 
     let attachments: FeedbackCommentAttachment[] | undefined;
-    if (pendingFiles.length > 0 && companyId) {
-      attachments = await uploadAttachments(pendingFiles, companyId);
+    if (pendingFiles.length > 0 && shareToken) {
+      attachments = await uploadAttachments(pendingFiles, shareToken);
     }
 
     await onSubmit(text, attachments, priority, videoUrl);

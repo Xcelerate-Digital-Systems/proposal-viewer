@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Upload, FileText, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
+import { authedFetch } from '@/lib/api-fetch';
 
 interface DocumentUploadModalProps {
   companyId: string;
@@ -80,7 +81,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
       // ── Step 3: Split into individual pages (awaited, with status) ─
       setStatus('Splitting into pages...');
 
-      const splitRes = await fetch('/api/proposals/split', {
+      const splitRes = await authedFetch('/api/proposals/split', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entity_id: insertedDoc.id, entity_type: 'document' }),

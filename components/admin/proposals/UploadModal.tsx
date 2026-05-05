@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Upload, FileText, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
+import { authedFetch } from '@/lib/api-fetch';
 import CreateFromTemplate from './CreateFromTemplate';
 
 interface UploadModalProps {
@@ -84,7 +85,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
         creatorName = member?.name || null;
       }
 
-      const res = await fetch('/api/proposals', {
+      const res = await authedFetch('/api/proposals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -137,7 +138,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
         creatorName = member?.name || null;
       }
 
-      const res = await fetch('/api/proposals', {
+      const res = await authedFetch('/api/proposals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

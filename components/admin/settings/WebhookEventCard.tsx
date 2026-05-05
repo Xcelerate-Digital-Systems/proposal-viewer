@@ -9,6 +9,7 @@ import {
 import { supabase, type WebhookEndpoint } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { isValidWebhookUrl } from '@/lib/sanitize';
+import { authedFetch } from '@/lib/api-fetch';
 
 interface WebhookEventCardProps {
   eventKey: string;
@@ -61,7 +62,7 @@ export default function WebhookEventCard({
     if (!endpoint) return;
     setSendingTest(true);
     try {
-      const res = await fetch('/api/webhooks/test', {
+      const res = await authedFetch('/api/webhooks/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint_id: endpoint.id }),

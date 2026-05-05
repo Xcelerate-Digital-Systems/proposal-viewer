@@ -43,8 +43,8 @@ interface CommentsPanelProps {
   onDelete?: (commentId: string) => Promise<void>;
 
   // Attachments
-  /** Company ID for attachment uploads */
-  companyId?: string;
+  /** Public review share_token — required so uploads can prove access. */
+  shareToken?: string;
 
   /** Desktop: static panel. Mobile: full-screen overlay. Default classes handle both. */
   className?: string;
@@ -67,7 +67,7 @@ export default function CommentsPanel({
   onDelete,
   guestName,
   onNameChange,
-  companyId,
+  shareToken,
   className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col bg-[#FBF8F5]',
   closable = true,
 }: CommentsPanelProps) {
@@ -152,7 +152,7 @@ export default function CommentsPanel({
         authorName={authorName}
         guestName={guestName}
         onNameChange={onNameChange}
-        companyId={companyId}
+        shareToken={shareToken}
         onSubmit={async (content) => {
           await onSubmitComment(content);
         }}

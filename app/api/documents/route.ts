@@ -1,12 +1,29 @@
 // app/api/documents/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
+
+const PROTECTED_FIELDS = new Set([
+  'id', 'company_id', 'share_token',
+  'created_at', 'updated_at',
+]);
+
+function stripProtected<T extends Record<string, unknown>>(input: T): Partial<T> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(input)) {
+    if (!PROTECTED_FIELDS.has(k)) out[k] = v;
+  }
+  return out as Partial<T>;
+}
 
 // PATCH — Update top-level fields on a document (e.g. page_order)
 export async function PATCH(req: NextRequest) {
   try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const supabase = createServiceClient();
     const body = await req.json();
     const { id, ...fields } = body;
@@ -17,8 +34,9 @@ export async function PATCH(req: NextRequest) {
 
     const { error } = await supabase
       .from('documents')
-      .update(fields)
-      .eq('id', id);
+      .update(stripProtected(fields))
+      .eq('id', id)
+      .eq('company_id', auth.companyId);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

@@ -1,6 +1,8 @@
 // app/api/proposals/split/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { splitProposalPages, SplitEntityType } from '@/lib/split-proposal-pages';
+import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +31,9 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
   try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await req.json();
     const { entity_id, entity_type = 'proposal', force = false } = body;
 
@@ -45,6 +50,19 @@ export async function POST(req: NextRequest) {
         { error: 'entity_type must be "proposal" or "document"' },
         { status: 400 },
       );
+    }
+
+    // Verify the entity belongs to the caller's company before doing the split.
+    const supabase = createServiceClient();
+    const table = entity_type === 'document' ? 'documents' : 'proposals';
+    const { data: entity } = await supabase
+      .from(table)
+      .select('id')
+      .eq('id', entity_id)
+      .eq('company_id', auth.companyId)
+      .maybeSingle();
+    if (!entity) {
+      return NextResponse.json({ error: 'Entity not found' }, { status: 404 });
     }
 
     const result = await splitProposalPages(entity_id, entity_type as SplitEntityType, force);

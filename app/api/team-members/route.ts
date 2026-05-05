@@ -1,11 +1,15 @@
 // app/api/team-members/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = req.nextUrl;
     const memberId = searchParams.get('id');
 
@@ -15,17 +19,18 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServiceClient();
 
+    // Scope by company so a caller can't enumerate other tenants' members.
     const { data, error } = await supabase
       .from('team_members')
       .select('id, name, avatar_path')
       .eq('id', memberId)
+      .eq('company_id', auth.companyId)
       .single();
 
     if (error || !data) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    // Resolve signed avatar URL if present
     let avatarUrl: string | null = null;
     if (data.avatar_path) {
       const { data: signed } = await supabase.storage

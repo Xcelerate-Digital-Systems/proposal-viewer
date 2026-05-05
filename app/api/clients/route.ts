@@ -1,12 +1,12 @@
 // app/api/clients/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Use the shared no-store-fetch service client. The bare createClient()
+// allows Next.js's Data Cache to cache PostgREST GETs, which has previously
+// caused stale-auth bugs in this codebase.
+const supabaseAdmin = createServiceClient();
 
 /**
  * Verify the caller is an agency owner/admin (or super admin).

@@ -1,6 +1,8 @@
 // app/api/templates/rebuild-merged/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { rebuildTemplateMerged } from '@/lib/rebuild-template-merged';
+import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,17 +10,30 @@ export const dynamic = 'force-dynamic';
  * POST /api/templates/rebuild-merged
  *
  * Merges all template_pages into a single PDF and stores it as
- * proposal_templates.file_path. Can be called directly for backfilling
- * existing templates, or used as a manual rebuild trigger.
+ * proposal_templates.file_path.
  *
  * Body: { template_id: string }
  */
 export async function POST(req: NextRequest) {
   try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { template_id } = await req.json();
 
     if (!template_id) {
       return NextResponse.json({ error: 'template_id is required' }, { status: 400 });
+    }
+
+    const supabase = createServiceClient();
+    const { data: tmpl } = await supabase
+      .from('proposal_templates')
+      .select('id')
+      .eq('id', template_id)
+      .eq('company_id', auth.companyId)
+      .maybeSingle();
+    if (!tmpl) {
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
     const filePath = await rebuildTemplateMerged(template_id);

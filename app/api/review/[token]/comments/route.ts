@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { isValidHttpUrl } from '@/lib/sanitize';
 
 /**
  * Fire-and-forget notification dispatch. We resolve the parent project's
@@ -142,6 +143,12 @@ export async function POST(
       thread_number = (existing?.[0]?.thread_number ?? 0) + 1;
     }
 
+    // Validate URL fields — reject anything that isn't http(s).
+    const safeScreenshotUrl =
+      typeof screenshot_url === 'string' && isValidHttpUrl(screenshot_url) ? screenshot_url : null;
+    const safeVideoUrl =
+      typeof video_url === 'string' && isValidHttpUrl(video_url) ? video_url : null;
+
     // Validate version_id if supplied — must belong to this item, else null.
     let safeVersionId: string | null = null;
     if (version_id && typeof version_id === 'string') {
@@ -170,13 +177,13 @@ export async function POST(
         pin_y: pin_y ?? null,
         attachments: attachments || [],
         annotation_data: annotation_data || null,
-        screenshot_url: screenshot_url || null,
+        screenshot_url: safeScreenshotUrl,
         highlight_start: highlight_start ?? null,
         highlight_end: highlight_end ?? null,
         highlight_text: highlight_text ?? null,
         highlight_element_path: highlight_element_path ?? null,
         priority: safePriority,
-        video_url: typeof video_url === 'string' ? video_url : null,
+        video_url: safeVideoUrl,
         version_id: safeVersionId,
       })
       .select()

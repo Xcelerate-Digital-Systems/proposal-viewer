@@ -1,6 +1,7 @@
 // app/api/webhooks/test/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 import crypto from 'crypto';
 import { isValidWebhookUrl } from '@/lib/sanitize';
 
@@ -109,6 +110,9 @@ const REVIEW_EVENT_TYPES = new Set([
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { endpoint_id } = await req.json();
 
     if (!endpoint_id) {
@@ -121,6 +125,7 @@ export async function POST(req: NextRequest) {
       .from('webhook_endpoints')
       .select('*')
       .eq('id', endpoint_id)
+      .eq('company_id', auth.companyId)
       .single();
 
     if (error || !endpoint) {

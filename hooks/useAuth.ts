@@ -175,13 +175,18 @@ export function useAuth() {
     if (error) return { error };
 
     if (data.user) {
+      // The Supabase signUp call returns a session for email/password —
+      // forward its access_token so the API can verify the user identity
+      // server-side instead of trusting the body's user_id.
+      const accessToken = data.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
-          user_id: data.user.id,
           name,
-          email,
           invite_token: inviteToken || undefined,
         }),
       });

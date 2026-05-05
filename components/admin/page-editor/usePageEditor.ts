@@ -3,6 +3,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import type { UnifiedPage, PageType } from '@/lib/page-operations';
@@ -57,7 +58,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
 
   const loadPages = useCallback(async () => {
     try {
-      const res = await fetch(`${apiBase}?${idKey}=${entityId}`);
+      const res = await authedFetch(`${apiBase}?${idKey}=${entityId}`);
       if (!res.ok) return;
       const data: UnifiedPage[] = await res.json();
       setPages(data);
@@ -129,7 +130,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
     debounces.current[pageId] = setTimeout(async () => {
       delete debounces.current[pageId];
       try {
-        const res = await fetch(`${apiBase}?id=${pageId}`, {
+        const res = await authedFetch(`${apiBase}?id=${pageId}`, {
           method:  'PUT',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify(changes),
@@ -157,7 +158,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
   const updatePageImmediate = useCallback(async (pageId: string, changes: Partial<UnifiedPage>) => {
     setPages((prev) => prev.map((p) => p.id !== pageId ? p : { ...p, ...changes }));
     try {
-      await fetch(`${apiBase}?id=${pageId}`, {
+      await authedFetch(`${apiBase}?id=${pageId}`, {
         method:  'PUT',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(changes),
@@ -184,7 +185,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
     }
   ): Promise<UnifiedPage | null> => {
     try {
-      const res = await fetch(apiBase, {
+      const res = await authedFetch(apiBase, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -223,7 +224,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
 
     setProcessing(true);
     try {
-      const res = await fetch(apiBase, {
+      const res = await authedFetch(apiBase, {
         method:  'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -262,7 +263,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
     });
 
     try {
-      const res = await fetch(`${apiBase}/reorder`, {
+      const res = await authedFetch(`${apiBase}/reorder`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -310,7 +311,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
         return false;
       }
 
-      const res = await fetch(apiBase, {
+      const res = await authedFetch(apiBase, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -371,7 +372,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
       }
 
       // API finalises the swap using the service-role key (moves file, updates DB)
-      const res = await fetch(apiBase, {
+      const res = await authedFetch(apiBase, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -421,7 +422,7 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
     const saves = pages
       .filter((p) => pendingIds.has(p.id))
       .map((p) =>
-        fetch(`${apiBase}?id=${p.id}`, {
+        authedFetch(`${apiBase}?id=${p.id}`, {
           method:  'PUT',
           headers: { 'Content-Type': 'application/json' },
           // Send full page as changes — server only applies defined fields

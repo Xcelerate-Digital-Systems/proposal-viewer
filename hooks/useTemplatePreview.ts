@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, PageNameEntry, TocSettings, parseTocSettings } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
 import { CompanyBranding, ProposalTextPage, PageUrlEntry } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 
@@ -122,7 +123,7 @@ export function useTemplatePreview(templateId: string) {
 
       // 3. Fetch all pages — server-side signing via page-urls route (same pattern as proposals/documents)
       try {
-        const pagesRes = await fetch(`/api/templates/page-urls?entity_id=${templateId}`, { cache: 'no-store' });
+        const pagesRes = await authedFetch(`/api/templates/page-urls?entity_id=${templateId}`, { cache: 'no-store' });
         if (pagesRes.ok) {
           const pageUrlData = await pagesRes.json();
           setPageUrls(pageUrlData.pages ?? []);

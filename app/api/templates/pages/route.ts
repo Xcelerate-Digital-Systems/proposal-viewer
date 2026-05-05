@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 import {
   getPages,
   addPage,
@@ -16,6 +17,41 @@ import { rebuildTemplateMerged } from '@/lib/rebuild-template-merged';
 
 export const dynamic = 'force-dynamic';
 
+// Verify the template belongs to the authenticated caller's company.
+async function ownsTemplate(req: NextRequest, templateId: string) {
+  const auth = await getAuthContext(req);
+  if (!auth) return null;
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from('proposal_templates')
+    .select('company_id')
+    .eq('id', templateId)
+    .eq('company_id', auth.companyId)
+    .maybeSingle();
+  return data ? { auth, companyId: data.company_id as string } : null;
+}
+
+// For PUT/DELETE that operate on a page id, resolve the page → template, then
+// verify template ownership.
+async function ownsPage(req: NextRequest, pageId: string) {
+  const auth = await getAuthContext(req);
+  if (!auth) return null;
+  const supabase = createServiceClient();
+  const { data: page } = await supabase
+    .from('template_pages_v2')
+    .select('template_id')
+    .eq('id', pageId)
+    .maybeSingle();
+  if (!page?.template_id) return null;
+  const { data: tmpl } = await supabase
+    .from('proposal_templates')
+    .select('company_id')
+    .eq('id', page.template_id)
+    .eq('company_id', auth.companyId)
+    .maybeSingle();
+  return tmpl ? { auth, templateId: page.template_id as string, companyId: tmpl.company_id as string } : null;
+}
+
 /* ─── GET — fetch all pages for a template ───────────────────────────────── */
 
 export async function GET(req: NextRequest) {
@@ -27,6 +63,9 @@ export async function GET(req: NextRequest) {
     if (!templateId) {
       return NextResponse.json({ error: 'template_id required' }, { status: 400 });
     }
+
+    const ownership = await ownsTemplate(req, templateId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { pages, error } = await getPages(supabase, 'template', templateId);
 
@@ -61,8 +100,19 @@ export async function POST(req: NextRequest) {
     return handlePdfUpload(req);
   }
 
-  // Peek at op before routing
+  // Peek at op before routing. All paths require a verified template_id.
   const body = await req.json();
+  const templateId = body.template_id as string | undefined;
+  if (!templateId) {
+    return NextResponse.json({ error: 'template_id is required' }, { status: 400 });
+  }
+  const ownership = await ownsTemplate(req, templateId);
+  if (!ownership) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  // Force company_id to the verified value so handlers below can't be tricked.
+  body.company_id = ownership.companyId;
+
   if (body.op === 'insert_pdf') return handleInsertPdf(body);
   if (body.op === 'replace_pdf') return handleReplacePdf(body);
   return handleJsonAdd(body);
@@ -74,16 +124,19 @@ async function handlePdfUpload(req: NextRequest) {
     const formData = await req.formData();
 
     const templateId   = formData.get('template_id') as string;
-    const companyId    = formData.get('company_id') as string;
     const afterPos     = parseInt(formData.get('after_position') as string, 10);
     const file         = formData.get('file') as File;
     const mode         = (formData.get('mode') as string) || 'auto';
     // For replace mode: the id of the page to replace
     const replacePageId = formData.get('page_id') as string | null;
 
-    if (!templateId || !companyId || !file) {
+    if (!templateId || !file) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    const ownership = await ownsTemplate(req, templateId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const companyId = ownership.companyId;
 
     // Extract first page from uploaded PDF
     const pdfBytes     = await file.arrayBuffer();
@@ -291,6 +344,9 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
+    const ownership = await ownsPage(req, pageId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await req.json();
     const {
       title, indent, enabled, link_url, link_label,
@@ -338,6 +394,9 @@ export async function DELETE(req: NextRequest) {
     if (!template_id || !page_id) {
       return NextResponse.json({ error: 'template_id and page_id are required' }, { status: 400 });
     }
+
+    const ownership = await ownsTemplate(req, template_id);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { success, totalPages, error, status } = await deletePage(supabase, 'template', {
       entityId: template_id,

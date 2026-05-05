@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
 import { FormField } from '@/components/ui/FormField';
 
 interface CreateFromTemplateProps {
@@ -82,7 +83,7 @@ export default function CreateFromTemplate({
       // can be killed on Vercel before completing. Force a fresh rebuild
       // here so the proposal is created from up-to-date pages.
       setStatus('Preparing template...');
-      const rebuildRes = await fetch('/api/templates/rebuild-merged', {
+      const rebuildRes = await authedFetch('/api/templates/rebuild-merged', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ template_id: selectedTemplate.id }),
@@ -159,7 +160,7 @@ export default function CreateFromTemplate({
       // ── 3. Create proposal + split pages ───────────────────────────
       setStatus('Creating proposal...');
 
-      const res = await fetch('/api/proposals', {
+      const res = await authedFetch('/api/proposals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -231,7 +232,7 @@ export default function CreateFromTemplate({
       // ── 4. Copy template data (pricing, text pages, packages) ───────
       setStatus('Copying template data...');
       try {
-        await fetch('/api/templates/copy-data', {
+        await authedFetch('/api/templates/copy-data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

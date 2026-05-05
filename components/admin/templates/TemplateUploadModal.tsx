@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Upload, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
 
@@ -105,7 +106,7 @@ export default function TemplateUploadModal({
     setStatus('Splitting into pages...');
 
     // Call split API
-    const res = await fetch('/api/templates/split', {
+    const res = await authedFetch('/api/templates/split', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

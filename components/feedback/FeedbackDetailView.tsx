@@ -587,7 +587,7 @@ export default function FeedbackDetailView({
               onUnresolve={onUnresolveComment}
               onEdit={isAdmin ? onEditComment : undefined}
               onDelete={isAdmin ? onDeleteComment : undefined}
-              companyId={companyId}
+              shareToken={shareToken}
               className="w-[360px] shrink-0 bg-[#FBF8F5] flex flex-col"
             />
           )}

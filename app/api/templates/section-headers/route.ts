@@ -1,12 +1,16 @@
 // app/api/templates/section-headers/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
 // GET — Fetch section headers for a template
 export async function GET(req: NextRequest) {
   try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const supabase = createServiceClient();
     const templateId = req.nextUrl.searchParams.get('template_id');
 
@@ -18,10 +22,11 @@ export async function GET(req: NextRequest) {
       .from('proposal_templates')
       .select('section_headers')
       .eq('id', templateId)
+      .eq('company_id', auth.companyId)
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
     return NextResponse.json(data?.section_headers || []);
@@ -34,6 +39,9 @@ export async function GET(req: NextRequest) {
 // POST — Save section headers for a template
 export async function POST(req: NextRequest) {
   try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const supabase = createServiceClient();
     const body = await req.json();
     const { template_id, section_headers } = body;
@@ -50,11 +58,12 @@ export async function POST(req: NextRequest) {
       .from('proposal_templates')
       .update({ section_headers })
       .eq('id', template_id)
+      .eq('company_id', auth.companyId)
       .select('section_headers')
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
     return NextResponse.json(data?.section_headers || []);

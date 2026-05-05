@@ -2,16 +2,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { template_name, template_description, file_path, company_id, entity_type } = await req.json();
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!template_name || !file_path || !company_id) {
-      return NextResponse.json({ error: 'Missing template_name, file_path, or company_id' }, { status: 400 });
+    const { template_name, template_description, file_path, entity_type } = await req.json();
+
+    if (!template_name || !file_path) {
+      return NextResponse.json({ error: 'Missing template_name or file_path' }, { status: 400 });
     }
+
+    // company_id is always derived from the authenticated session.
+    const company_id = auth.companyId;
 
     const resolvedEntityType: 'proposal' | 'quote' = entity_type === 'quote' ? 'quote' : 'proposal';
 

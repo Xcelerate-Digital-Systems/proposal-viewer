@@ -1,19 +1,38 @@
 // app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/lib/supabase-server';
-import { isValidEmail } from '@/lib/sanitize';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { user_id, name, email, invite_token } = await req.json();
+    // The user must already be authenticated against Supabase Auth (signUp
+    // returns a session immediately for email/password). Trust the verified
+    // identity, never the body — otherwise an attacker with a leaked invite
+    // token could attach their own auth user to a victim's company.
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
 
-    if (!user_id || !name || !email) {
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    const { data: { user } } = await supabaseAuth.auth.getUser(token);
+    if (!user || !user.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { name, invite_token } = await req.json().catch(() => ({}));
+    if (!name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (!isValidEmail(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
-    }
+    const userId = user.id;
+    const email = user.email.toLowerCase();
 
     const supabase = createServiceClient();
 
@@ -22,7 +41,7 @@ export async function POST(req: NextRequest) {
     const { data: existing } = await supabase
       .from('team_members')
       .select('id')
-      .eq('user_id', user_id)
+      .eq('user_id', userId)
       .limit(1);
 
     if (existing && existing.length > 0) {
@@ -33,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (!invite_token) {
       return NextResponse.json(
         { error: 'Sign-up requires an invite. Ask your team owner to invite you.' },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -52,17 +71,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This invite has expired' }, { status: 400 });
     }
 
-    if (invite.email.toLowerCase() !== email.toLowerCase()) {
+    if (invite.email.toLowerCase() !== email) {
       return NextResponse.json(
         { error: 'This invite was sent to a different email address' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { data, error } = await supabase
       .from('team_members')
       .insert({
-        user_id,
+        user_id: userId,
         name,
         email,
         role: invite.role,
