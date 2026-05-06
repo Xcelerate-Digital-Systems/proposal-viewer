@@ -48,6 +48,14 @@ export default function CoverPage({
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(resolvedClientLogoUrl ?? null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(resolvedAvatarUrl ?? null);
   const [loaded, setLoaded] = useState(!!hideButton); // Skip fade-in for export
+  const [exiting, setExiting] = useState(false);
+
+  const COVER_FADE_MS = 700;
+  const handleStart = () => {
+    if (exiting) return;
+    setExiting(true);
+    setTimeout(onStart, COVER_FADE_MS);
+  };
 
   // Resolved member data (from prepared_by_member_id when direct fields are absent)
   const [resolvedName, setResolvedName] = useState<string | null>(resolvedPreparedByName ?? null);
@@ -215,7 +223,7 @@ export default function CoverPage({
 
   return (
     <div
-      className={`${hideButton ? 'w-full h-full' : 'h-dvh w-screen'} flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      className={`${hideButton ? 'w-full h-full' : 'h-dvh w-screen'} flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${loaded && !exiting ? 'opacity-100' : 'opacity-0'}`}
       style={{ backgroundColor: bgColor1 }}
     >
       {!hideButton && (
@@ -357,7 +365,7 @@ export default function CoverPage({
               <div className={hasPreparedByRow || hasDateRow ? 'mt-5' : 'mt-6'} />
 
               <button
-                onClick={onStart}
+                onClick={handleStart}
                 className="px-8 py-3.5 text-sm font-semibold tracking-wider uppercase rounded-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 style={{
                   backgroundColor: btnBg,

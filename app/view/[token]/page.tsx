@@ -41,15 +41,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     );
   }
 
-  if (v.showCover && v.proposal?.cover_enabled) {
-    return (
-      <>
-        <GoogleFontLoader fonts={[v.branding.font_heading, v.branding.font_body, v.branding.font_sidebar, v.branding.title_font_family]} />
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <CoverPage proposal={v.proposal as any} branding={v.branding} onStart={() => v.setShowCover(false)} />
-      </>
-    );
-  }
+  const showingCover = v.showCover && v.proposal?.cover_enabled;
 
   // ── Main viewer ────────────────────────────────────────────────────────
 
@@ -59,6 +51,14 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       style={{ backgroundColor: v.bgPrimary, height: '100dvh' }}
     >
       <GoogleFontLoader fonts={[v.branding.font_heading, v.branding.font_body, v.branding.font_sidebar, v.branding.title_font_family]} />
+
+      {/* Cover overlay — fades out on Start, revealing the viewer underneath */}
+      {showingCover && (
+        <div className="fixed inset-0 z-50">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <CoverPage proposal={v.proposal as any} branding={v.branding} onStart={() => v.setShowCover(false)} />
+        </div>
+      )}
 
       {/* Modals */}
       {v.proposal && (
