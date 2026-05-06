@@ -55,14 +55,26 @@ export default function CoverPage({
   // Fetch signed URL for cover image (skip if pre-resolved)
   useEffect(() => {
     if (resolvedBgUrl !== undefined) return;
-    if (proposal.cover_image_path) {
-      supabase.storage
-        .from('proposals')
-        .createSignedUrl(proposal.cover_image_path, 3600)
-        .then(({ data }) => {
-          if (data?.signedUrl) setBgUrl(data.signedUrl);
-        });
-    }
+    if (!proposal.cover_image_path) return;
+
+    let cancelled = false;
+    supabase.storage
+      .from('proposals')
+      .createSignedUrl(proposal.cover_image_path, 3600)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (data?.signedUrl) {
+          setBgUrl(data.signedUrl);
+        } else if (error) {
+          // Reveal the cover anyway — falls back to the solid/gradient bg.
+          setBgUrl('');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBgUrl('');
+      });
+
+    return () => { cancelled = true; };
   }, [proposal.cover_image_path, resolvedBgUrl]);
 
   // Fetch client logo via member-badge API → base64 data URL (avoids ERR_BLOCKED_BY_ORB)
@@ -111,20 +123,31 @@ export default function CoverPage({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [(proposal as any).prepared_by_member_id, proposal.prepared_by, proposal.cover_avatar_path, proposal.cover_show_avatar, resolvedPreparedByName]);
 
-  // Wait for cover image to fully load before revealing
+  // Wait for cover image to fully load before revealing. Always reveal after
+  // a max wait — a stalled signed-URL fetch or slow image must never trap the
+  // cover at opacity-0 (which would render as a blank/white screen).
   useEffect(() => {
     if (hideButton) return; // Export mode — already visible
-    if (proposal.cover_image_path && !bgUrl) return;
+
+    const MAX_WAIT_MS = 1500;
+    const fallbackTimer = setTimeout(() => setLoaded(true), MAX_WAIT_MS);
 
     if (bgUrl) {
       const img = new Image();
-      img.onload = () => setTimeout(() => setLoaded(true), 50);
-      img.onerror = () => setTimeout(() => setLoaded(true), 50);
+      const reveal = () => {
+        clearTimeout(fallbackTimer);
+        setTimeout(() => setLoaded(true), 50);
+      };
+      img.onload = reveal;
+      img.onerror = reveal;
       img.src = bgUrl;
-    } else {
+    } else if (!proposal.cover_image_path) {
+      clearTimeout(fallbackTimer);
       const timer = setTimeout(() => setLoaded(true), 100);
       return () => clearTimeout(timer);
     }
+
+    return () => clearTimeout(fallbackTimer);
   }, [bgUrl, proposal.cover_image_path, hideButton]);
 
   const subtitle = proposal.cover_subtitle || `Prepared for ${proposal.client_name}`;
