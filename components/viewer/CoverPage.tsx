@@ -223,7 +223,7 @@ export default function CoverPage({
 
   return (
     <div
-      className={`${hideButton ? 'w-full h-full' : 'h-dvh w-screen'} flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${loaded && !exiting ? 'opacity-100' : 'opacity-0'}`}
+      className={`${hideButton ? 'w-full h-full' : 'h-dvh w-screen'} flex flex-col justify-between relative overflow-hidden transition-opacity duration-700 ${exiting ? 'opacity-0' : 'opacity-100'}`}
       style={{ backgroundColor: bgColor1 }}
     >
       {!hideButton && (
@@ -235,15 +235,17 @@ export default function CoverPage({
         `}</style>
       )}
 
-      {/* Background: either uploaded image or the branding bg */}
+      {/* Background: either uploaded image or the branding bg.
+          The wrapper's bgColor1 is already painted, so we fade these in
+          on top of it once `loaded` flips — no flash of the viewer behind. */}
       {bgUrl ? (
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ backgroundImage: `url(${bgUrl})`, ...animStyle }}
         />
       ) : (
         <div
-          className="absolute inset-0"
+          className={`absolute inset-0 transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           style={{
             backgroundColor: baseBg,
             backgroundImage: baseBgImage,
@@ -255,7 +257,7 @@ export default function CoverPage({
       {/* Overlay — only needed when there's a background image */}
       {bgUrl && (
         <div
-          className="absolute inset-0"
+          className={`absolute inset-0 transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           style={{
             background: typeof imageOverlay === 'string' && imageOverlay.includes('-gradient(')
               ? imageOverlay
