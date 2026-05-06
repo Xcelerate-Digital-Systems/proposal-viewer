@@ -5,6 +5,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+// Fields with the same name on `companies` and on the entity tables
+// (proposals / proposal_templates / documents).
 export const COMPANY_BRANDING_FIELDS = [
   'cover_bg_style',
   'cover_bg_color_1',
@@ -27,6 +29,14 @@ export const COMPANY_BRANDING_FIELDS = [
   'text_page_layout',
 ] as const;
 
+// Fields whose column name differs between `companies` and the entity tables.
+// On `companies`, `cover_button_text` stores the button TEXT COLOR. On
+// entities the same value lives under `cover_button_text_color`, while the
+// entity's `cover_button_text` column holds the button LABEL string.
+const COMPANY_TO_ENTITY_FIELD_MAP: Record<string, string> = {
+  cover_button_text: 'cover_button_text_color',
+};
+
 const COVER_IMAGE_FIELD = 'cover_image_path';
 
 export interface CompanyDefaultsOptions {
@@ -48,7 +58,11 @@ export async function getCompanyEntityDefaults(
   companyId: string,
   { overrides = {} }: CompanyDefaultsOptions = {},
 ): Promise<Record<string, unknown>> {
-  const selectFields = [COVER_IMAGE_FIELD, ...COMPANY_BRANDING_FIELDS].join(', ');
+  const selectFields = [
+    COVER_IMAGE_FIELD,
+    ...COMPANY_BRANDING_FIELDS,
+    ...Object.keys(COMPANY_TO_ENTITY_FIELD_MAP),
+  ].join(', ');
 
   const { data, error } = await supabase
     .from('companies')
@@ -75,6 +89,16 @@ export async function getCompanyEntityDefaults(
       company[field] !== undefined
     ) {
       defaults[field] = company[field];
+    }
+  }
+
+  for (const [companyField, entityField] of Object.entries(COMPANY_TO_ENTITY_FIELD_MAP)) {
+    if (
+      overrides[entityField] === undefined &&
+      company[companyField] !== null &&
+      company[companyField] !== undefined
+    ) {
+      defaults[entityField] = company[companyField];
     }
   }
 
