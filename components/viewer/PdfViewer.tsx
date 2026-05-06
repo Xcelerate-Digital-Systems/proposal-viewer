@@ -39,7 +39,9 @@ export default function PdfViewer({
   const contentRef = useRef<HTMLDivElement>(null);
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
   const [nativePdfWidth, setNativePdfWidth] = useState<number | null>(null);
+  const [pdfAspectRatio, setPdfAspectRatio] = useState<number | null>(null);
   const [renderedPage, setRenderedPage] = useState(currentPage);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [scale, setScale] = useState(1);
@@ -66,6 +68,19 @@ export default function PdfViewer({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // ── Container height measurement (drives portrait fit-to-screen) ──
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [scrollRef]);
 
   // ── Page transition on change ────────────────────────────────────
   useEffect(() => {
@@ -125,9 +140,12 @@ export default function PdfViewer({
 
   // ── Capture native PDF page width on first load ──────────────────
   const handlePageLoadSuccess = useCallback(
-    (page: { originalWidth: number }) => {
+    (page: { originalWidth: number; originalHeight: number }) => {
       if (nativePdfWidth === null) {
         setNativePdfWidth(Math.round(page.originalWidth * 1.5));
+        if (page.originalHeight > 0) {
+          setPdfAspectRatio(page.originalWidth / page.originalHeight);
+        }
       }
     },
     [nativePdfWidth]
@@ -171,9 +189,16 @@ export default function PdfViewer({
   const resetZoom = useCallback(() => setScale(1), []);
 
   // Never render wider than the PDF's native width (scaled)
-  const renderWidth = nativePdfWidth
+  let renderWidth = nativePdfWidth
     ? Math.min(containerWidth, nativePdfWidth)
     : containerWidth;
+
+  // For portrait pages, also cap by container height so the page fits the
+  // viewport without vertical scrolling (subject to user zoom).
+  if (pdfAspectRatio && pdfAspectRatio < 1 && containerHeight > 0) {
+    const heightCappedWidth = containerHeight * pdfAspectRatio;
+    renderWidth = Math.min(renderWidth, heightCappedWidth);
+  }
 
   const showZoomControls = scale !== 1;
 

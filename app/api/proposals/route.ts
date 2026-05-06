@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { splitProposalPages } from '@/lib/split-proposal-pages';
 import { addPage } from '@/lib/page-operations';
+import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,50 +72,9 @@ export async function POST(req: NextRequest) {
     const companyId = auth.companyId;
 
     // ── Look up company branding defaults ──────────────────────────────────
-    const BRANDING_FIELDS = [
-      'cover_bg_style',
-      'cover_bg_color_1',
-      'cover_bg_color_2',
-      'cover_text_color',
-      'cover_subtitle_color',
-      'cover_button_bg',
-      'cover_overlay_opacity',
-      'cover_gradient_type',
-      'cover_gradient_angle',
-      'bg_image_path',
-      'bg_image_overlay_opacity',
-      'text_page_bg_color',
-      'text_page_text_color',
-      'text_page_heading_color',
-      'text_page_font_size',
-      'text_page_border_enabled',
-      'text_page_border_color',
-      'text_page_border_radius',
-      'text_page_layout',
-    ] as const;
-
-    const selectFields = isQuote
-      ? BRANDING_FIELDS.join(', ')
-      : ['cover_image_path', ...BRANDING_FIELDS].join(', ');
-
-    const { data: companyData } = await supabase
-      .from('companies')
-      .select(selectFields)
-      .eq('id', companyId)
-      .single();
-
-    const brandingDefaults: Record<string, unknown> = {};
-    if (companyData) {
-      const company = companyData as unknown as Record<string, unknown>;
-      if (!isQuote && !rest.cover_image_path && company.cover_image_path) {
-        brandingDefaults.cover_image_path = company.cover_image_path;
-      }
-      for (const field of BRANDING_FIELDS) {
-        if (rest[field] === undefined && company[field] !== null && company[field] !== undefined) {
-          brandingDefaults[field] = company[field];
-        }
-      }
-    }
+    const brandingDefaults = await getCompanyEntityDefaults(supabase, companyId, {
+      overrides: rest,
+    });
 
     // Strip server-controlled fields from `rest` before spreading.
     const safeRest = stripProtected(rest);

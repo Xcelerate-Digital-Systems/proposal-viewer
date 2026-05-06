@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 
 export const maxDuration = 60;
 
@@ -39,6 +40,8 @@ export async function POST(req: NextRequest) {
     const pageCount = pdfDoc.getPageCount();
 
     // Create the template record (without file_path yet — we set it after moving the file)
+    const brandingDefaults = await getCompanyEntityDefaults(supabase, company_id);
+
     const { data: template, error: templateError } = await supabase
       .from('proposal_templates')
       .insert({
@@ -46,6 +49,7 @@ export async function POST(req: NextRequest) {
         description: template_description || null,
         company_id,
         entity_type: resolvedEntityType,
+        ...brandingDefaults,
       })
       .select()
       .single();

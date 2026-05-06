@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,60 @@ function stripProtected<T extends Record<string, unknown>>(input: T): Partial<T>
     if (!PROTECTED_FIELDS.has(k)) out[k] = v;
   }
   return out as Partial<T>;
+}
+
+// POST — Create a new document (PDF already uploaded to storage by client).
+// Applies company-level cover/branding defaults to the new record.
+export async function POST(req: NextRequest) {
+  try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const supabase = createServiceClient();
+    const body = await req.json();
+
+    const { title, description, file_path, file_size_bytes, ...rest } = body;
+
+    if (!title || !file_path) {
+      return NextResponse.json(
+        { error: 'Missing required fields: title, file_path' },
+        { status: 400 },
+      );
+    }
+
+    const safeRest = stripProtected(rest);
+    const brandingDefaults = await getCompanyEntityDefaults(supabase, auth.companyId, {
+      overrides: safeRest,
+    });
+
+    const { data: doc, error: insertError } = await supabase
+      .from('documents')
+      .insert({
+        title,
+        description:     description     || null,
+        file_path,
+        file_size_bytes: file_size_bytes ?? 0,
+        page_names:      [],
+        company_id:      auth.companyId,
+        ...brandingDefaults,
+        ...safeRest,
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !doc) {
+      console.error('Document insert error:', insertError?.message);
+      return NextResponse.json(
+        { error: insertError?.message ?? 'Failed to create document' },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ success: true, document_id: doc.id });
+  } catch (err) {
+    console.error('Document POST error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 // PATCH — Update top-level fields on a document (e.g. page_order)

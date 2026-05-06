@@ -35,8 +35,6 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
     setUploadProgress(0);
     setStatus('Uploading PDF...');
 
-    const { supabase } = await import('@/lib/supabase');
-
     // ── Step 1: Upload PDF to storage ──────────────────────────────
     try {
       // Sanitize filename — Supabase storage rejects spaces and special chars
@@ -62,21 +60,24 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
         xhr.send(file);
       });
 
-      // ── Step 2: Insert document record ────────────────────────────
-      const { data: insertedDoc, error: dbError } = await supabase
-        .from('documents')
-        .insert({
+      // ── Step 2: Insert document record (server applies company defaults) ─
+      const createRes = await authedFetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           title: form.title,
           description: form.description || null,
           file_path: filePath,
           file_size_bytes: file.size,
-          page_names: [],
-          company_id: companyId,
-        })
-        .select('id')
-        .single();
+        }),
+      });
 
-      if (dbError) throw dbError;
+      if (!createRes.ok) {
+        const err = await createRes.json().catch(() => ({}));
+        throw new Error(err.error ?? `Server error: ${createRes.status}`);
+      }
+
+      const { document_id: insertedDocId } = await createRes.json();
 
       // ── Step 3: Split into individual pages (awaited, with status) ─
       setStatus('Splitting into pages...');
@@ -84,7 +85,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
       const splitRes = await authedFetch('/api/proposals/split', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entity_id: insertedDoc.id, entity_type: 'document' }),
+        body: JSON.stringify({ entity_id: insertedDocId, entity_type: 'document' }),
       });
 
       if (!splitRes.ok) {

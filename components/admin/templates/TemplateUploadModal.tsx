@@ -4,7 +4,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Upload, FileText, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { authedFetch } from '@/lib/api-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
@@ -46,27 +45,27 @@ export default function TemplateUploadModal({
     // No PDF — create a blank template and navigate to it
     if (!file) {
       setStatus('Creating template...');
-      const { data, error } = await supabase
-        .from('proposal_templates')
-        .insert({
+      const res = await authedFetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || null,
-          company_id: companyId,
           entity_type: entityType,
-        })
-        .select('id')
-        .single();
+        }),
+      });
 
-      if (error || !data) {
+      if (!res.ok) {
         toast.error('Failed to create template.');
         setUploading(false);
         setStatus('');
         return;
       }
 
+      const { template_id } = await res.json();
       toast.success('Template created!');
       onSuccess();
-      router.push(`/templates/${data.id}/pages`);
+      router.push(`/templates/${template_id}/pages`);
       return;
     }
 
