@@ -154,6 +154,8 @@ export type Proposal = {
   project_photos: unknown;
   /** Active Proposal Style preset id — used by the picker to highlight the right card. */
   cover_preset_id: string | null;
+  /** Quote-only: background colour for the area surrounding the floating quote card. */
+  quote_page_bg_color: string | null;
 };
 
 // ─── Proposal Comment ─────────────────────────────────────────────────────────

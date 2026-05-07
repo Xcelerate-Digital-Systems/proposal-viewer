@@ -21,6 +21,7 @@ import BadgesSection from './sections/BadgesSection';
 import NextStepsSection from './sections/NextStepsSection';
 import TermsSection from './sections/TermsSection';
 import ProjectPhotosSection from './sections/ProjectPhotosSection';
+import BackgroundsSection from './sections/BackgroundsSection';
 import SectionCard from './SectionCard';
 import LineItemsLibraryBar from './LineItemsLibraryBar';
 import LoadTemplateBar from './LoadTemplateBar';
@@ -53,6 +54,8 @@ export default function QuoteBuilder({ proposal, companyId, onRefetch }: QuoteBu
             companyId={companyId}
             onSaved={onRefetch}
           />
+
+          <BackgroundsSection proposal={proposal} onSaved={onRefetch} />
 
           {/* Pointer to fine-grained cover controls (image upload, fonts,
               prepared-by avatar) which still live on the dedicated tab. */}

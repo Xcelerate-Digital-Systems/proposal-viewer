@@ -80,10 +80,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     // think of the quote as a printed card floating on a desk. The
     // surrounding bg is fixed light gray so the card always has contrast;
     // text_page_bg_color (Design tab) controls the *quote document* itself.
+    const pageBg = v.proposal.quote_page_bg_color || '#eeece6';
     return (
       <div
         className="h-screen overflow-y-auto print:h-auto print:overflow-visible quote-print-root"
-        style={{ backgroundColor: '#eeece6' }}
+        style={{ backgroundColor: pageBg }}
       >
         <GoogleFontLoader
           fonts={[

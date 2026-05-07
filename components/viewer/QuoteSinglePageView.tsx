@@ -108,6 +108,34 @@ function parsePhotos(raw: unknown): string[] {
   return raw.filter((p): p is string => typeof p === 'string');
 }
 
+/* ── Layout primitives — hoisted out of the component so they don't get
+   remounted on every keystroke. Defining components inline causes React to
+   treat each render as a new component type, which destroys the DOM tree
+   inside them and resets focus / scroll position. */
+
+function Section({ children }: { children: React.ReactNode }) {
+  return <section className="px-8 sm:px-14 py-10 print:py-7">{children}</section>;
+}
+
+function SectionLabel({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style: React.CSSProperties;
+}) {
+  return <div style={style}>{children}</div>;
+}
+
+function Hairline({ color }: { color: string }) {
+  return (
+    <div
+      className="mx-8 sm:mx-14 print:mx-0"
+      style={{ height: 1, backgroundColor: color }}
+    />
+  );
+}
+
 /* ── Component ──────────────────────────────────────────────────────────── */
 
 export default function QuoteSinglePageView({
@@ -250,18 +278,6 @@ export default function QuoteSinglePageView({
   };
   const mutedStyle: React.CSSProperties = { color: muted };
 
-  /* ── Section primitives bound to the resolved tokens ─────── */
-
-  const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-    <div style={labelStyle}>{children}</div>
-  );
-  const Section = ({ children }: { children: React.ReactNode }) => (
-    <section className="px-8 sm:px-14 py-10 print:py-7">{children}</section>
-  );
-  const Hairline = () => (
-    <div className="mx-8 sm:mx-14 print:mx-0" style={{ height: 1, backgroundColor: hairline }} />
-  );
-
   /* ── Photo positioning ─────────────────────────────────────── */
 
   const heroUrl = photoPaths[0] ? photoUrls[photoPaths[0]] : coverImgUrl;
@@ -298,8 +314,10 @@ export default function QuoteSinglePageView({
   return (
     <article style={articleStyle}>
       {/* ── Cover ─────────────────────────────────────────────── */}
+      {/* min-h-[60vh] so the cover dominates the first viewport on the public
+          viewer — gives the "cover-first" feel without needing a click-through. */}
       <header
-        className="relative px-8 sm:px-14 pt-10 pb-12"
+        className="relative px-8 sm:px-14 pt-10 pb-12 min-h-[60vh] flex flex-col print:min-h-0"
         style={{ background: headerBg, color: headerText }}
       >
         <div
@@ -339,7 +357,7 @@ export default function QuoteSinglePageView({
         </h1>
 
         <div
-          className="flex items-end justify-between gap-6 pt-6"
+          className="flex items-end justify-between gap-6 pt-6 mt-auto"
           style={{ borderTop: `1px solid ${withAlpha(headerText, 0.1)}` }}
         >
           <div className="min-w-0">
@@ -409,10 +427,10 @@ export default function QuoteSinglePageView({
       {extras.about_us && (
         <>
           <Section>
-            <SectionLabel>About</SectionLabel>
+            <SectionLabel style={labelStyle}>About</SectionLabel>
             <p className="leading-[1.7] whitespace-pre-wrap max-w-2xl">{extras.about_us}</p>
           </Section>
-          <Hairline />
+          <Hairline color={hairline} />
         </>
       )}
 
@@ -435,7 +453,7 @@ export default function QuoteSinglePageView({
               </div>
             )}
           </Section>
-          <Hairline />
+          <Hairline color={hairline} />
         </>
       )}
 
@@ -448,7 +466,7 @@ export default function QuoteSinglePageView({
               style={{ backgroundImage: `url(${featureUrl})` }}
             />
           </Section>
-          <Hairline />
+          <Hairline color={hairline} />
         </>
       )}
 
@@ -456,10 +474,10 @@ export default function QuoteSinglePageView({
       {proposal.description && (
         <>
           <Section>
-            <SectionLabel>Scope of Works</SectionLabel>
+            <SectionLabel style={labelStyle}>Scope of Works</SectionLabel>
             <p className="leading-[1.7] whitespace-pre-wrap max-w-2xl">{proposal.description}</p>
           </Section>
-          <Hairline />
+          <Hairline color={hairline} />
         </>
       )}
 
@@ -467,7 +485,7 @@ export default function QuoteSinglePageView({
       {items.length > 0 && (
         <>
           <Section>
-            <SectionLabel>Breakdown</SectionLabel>
+            <SectionLabel style={labelStyle}>Breakdown</SectionLabel>
             <table className="w-full" style={TABULAR}>
               <thead>
                 <tr
@@ -515,7 +533,7 @@ export default function QuoteSinglePageView({
               </tbody>
             </table>
           </Section>
-          <Hairline />
+          <Hairline color={hairline} />
         </>
       )}
 
@@ -523,7 +541,7 @@ export default function QuoteSinglePageView({
       {optionalItems.length > 0 && (
         <>
           <Section>
-            <SectionLabel>Optional Add-Ons</SectionLabel>
+            <SectionLabel style={labelStyle}>Optional Add-Ons</SectionLabel>
             <p className="text-xs leading-relaxed mb-4 max-w-2xl" style={{ color: muted }}>
               Not included in the total above — let us know which (if any) to include.
             </p>
@@ -555,13 +573,13 @@ export default function QuoteSinglePageView({
               })}
             </div>
           </Section>
-          <Hairline />
+          <Hairline color={hairline} />
         </>
       )}
 
       {/* ── Investment ────────────────────────────────────────── */}
       <Section>
-        <SectionLabel>Investment</SectionLabel>
+        <SectionLabel style={labelStyle}>Investment</SectionLabel>
         <div style={{ border: `1px solid ${hairline}`, borderRadius: 4 }}>
           <div className="grid grid-cols-1 sm:grid-cols-2">
             <div
@@ -631,13 +649,13 @@ export default function QuoteSinglePageView({
           </div>
         )}
       </Section>
-      <Hairline />
+      <Hairline color={hairline} />
 
       {/* ── Next Steps ────────────────────────────────────────── */}
       {extras.next_steps.length > 0 && (
         <>
           <Section>
-            <SectionLabel>Next Steps</SectionLabel>
+            <SectionLabel style={labelStyle}>Next Steps</SectionLabel>
             <ol className="space-y-3 text-[15px] max-w-xl">
               {extras.next_steps.map((step, i) => (
                 <li key={i} className="flex gap-4">
@@ -652,7 +670,7 @@ export default function QuoteSinglePageView({
               ))}
             </ol>
           </Section>
-          <Hairline />
+          <Hairline color={hairline} />
         </>
       )}
 
@@ -660,7 +678,7 @@ export default function QuoteSinglePageView({
       {extras.terms && (
         <>
           <Section>
-            <SectionLabel>Terms</SectionLabel>
+            <SectionLabel style={labelStyle}>Terms</SectionLabel>
             <p
               className="text-[12.5px] whitespace-pre-wrap leading-[1.7] max-w-2xl"
               style={{ color: muted }}
@@ -668,7 +686,7 @@ export default function QuoteSinglePageView({
               {extras.terms}
             </p>
           </Section>
-          <Hairline />
+          <Hairline color={hairline} />
         </>
       )}
 

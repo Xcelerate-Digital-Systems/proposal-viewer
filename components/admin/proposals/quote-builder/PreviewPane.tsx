@@ -119,7 +119,10 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
           <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
         </button>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div
+        className="flex-1 min-h-0 overflow-y-auto"
+        style={{ backgroundColor: proposal.quote_page_bg_color || '#eeece6' }}
+      >
         <GoogleFontLoader
           fonts={[
             branding.font_heading,
