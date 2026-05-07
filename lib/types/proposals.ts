@@ -146,6 +146,8 @@ export type Proposal = {
   text_page_border_radius: string | null;
   text_page_layout: string | null;
   entity_type: 'proposal' | 'quote';
+  /** JSONB blob of quote-only content blocks (about_us, testimonial, terms, badges). */
+  quote_extras: unknown;
 };
 
 // ─── Proposal Comment ─────────────────────────────────────────────────────────

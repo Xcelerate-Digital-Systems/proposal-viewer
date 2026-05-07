@@ -11,9 +11,10 @@ interface PricingTabProps {
     items: PricingLineItem[];
     replaceItems: (items: PricingLineItem[]) => void;
   }) => ReactNode;
+  hidePreview?: boolean;
 }
 
-export default function PricingTab({ proposalId, lineItemsToolbar }: PricingTabProps) {
+export default function PricingTab({ proposalId, lineItemsToolbar, hidePreview }: PricingTabProps) {
   return (
     <PricingTabEditor
       apiBase="/api/proposals/pages"
@@ -22,6 +23,7 @@ export default function PricingTab({ proposalId, lineItemsToolbar }: PricingTabP
       companyId={null}
       proposalId={proposalId}
       lineItemsToolbar={lineItemsToolbar}
+      hidePreview={hidePreview}
     />
   );
 }

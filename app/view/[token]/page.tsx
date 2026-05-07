@@ -1,6 +1,7 @@
 // app/view/[token]/page.tsx
 'use client';
 
+import { useEffect, useState } from 'react';
 import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import Sidebar from '@/components/viewer/Sidebar';
@@ -12,10 +13,40 @@ import PageLinkButton from '@/components/viewer/PageLinkButton';
 import PageNumberBadge from '@/components/viewer/PageNumberBadge';
 import ViewerModals from '@/components/viewer/ViewerModals';
 import ViewerPageContent from '@/components/viewer/ViewerPageContent';
+import QuoteSinglePageView from '@/components/viewer/QuoteSinglePageView';
 import { useViewerPage } from '@/components/viewer/useViewerPage';
+import { supabase, type ProposalPricing } from '@/lib/supabase';
 
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
   const v = useViewerPage(params.token);
+
+  // Fetch company contact info for the quote header (phone/email aren't in branding).
+  const [companyContact, setCompanyContact] = useState<{
+    name: string;
+    phone: string | null;
+    email: string | null;
+  } | null>(null);
+  const companyIdForFetch = v.proposal?.entity_type === 'quote' ? v.proposal.company_id : null;
+  useEffect(() => {
+    if (!companyIdForFetch) return;
+    let cancelled = false;
+    supabase
+      .from('companies')
+      .select('name, phone, contact_email')
+      .eq('id', companyIdForFetch)
+      .single()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setCompanyContact({
+          name: (data.name as string) ?? '',
+          phone: (data.phone as string) ?? null,
+          email: (data.contact_email as string) ?? null,
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyIdForFetch]);
 
   // ── Early returns (after all hooks) ──────────────────────────────────
 
@@ -36,6 +67,33 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           </div>
           <h2 className="text-xl font-semibold text-white mb-2">Proposal Not Found</h2>
           <p className="text-[#666] text-sm">This link may have expired or been removed.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Quote viewer (single-page scroll, QuoteWin-style) ───────────────
+  // Bypasses the multi-page paginator entirely. Cover is the top of the
+  // scroll, not a separate click-through.
+  if (v.proposal?.entity_type === 'quote') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <GoogleFontLoader fonts={[v.branding.font_heading, v.branding.font_body]} />
+        <div className="max-w-3xl mx-auto py-6 px-4">
+          <div className="rounded-2xl overflow-hidden shadow-sm bg-white">
+            <QuoteSinglePageView
+              proposal={v.proposal}
+              pricing={(v.pricing as unknown as ProposalPricing | null) ?? null}
+              branding={v.branding}
+              accepted={v.accepted}
+              companyName={companyContact?.name || v.branding.name}
+              companyPhone={companyContact?.phone ?? null}
+              companyEmail={companyContact?.email ?? null}
+              onAccept={async (name) => {
+                await v.acceptProposal(name);
+              }}
+            />
+          </div>
         </div>
       </div>
     );

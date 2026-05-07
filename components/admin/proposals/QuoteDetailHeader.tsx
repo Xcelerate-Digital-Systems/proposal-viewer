@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  DollarSign, Paintbrush, Settings, Package, AlignLeft, Pencil, List, Wand2,
+  DollarSign, Paintbrush, Wand2,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -43,18 +43,14 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
 
 type TabGroup = 'content' | 'setup';
 
+// Quotes are intentionally a slim two-tab experience: everything content-side
+// happens in the single-page Builder; Design covers cover/branding overrides.
+// The legacy quote-pages / quote-text-pages / quote-pricing / quote-packages /
+// quote-contents / quote-details routes still exist (so old bookmarks resolve)
+// but are no longer surfaced in the nav.
 const tabs: { key: string; label: string; icon: typeof DollarSign; path: string; group: TabGroup }[] = [
-  // Content
   { key: 'quote-builder',     label: 'Builder',   icon: Wand2,      path: 'quote-builder',    group: 'content' },
-  { key: 'quote-pages',       label: 'Pages',     icon: Pencil,     path: 'quote-pages',      group: 'content' },
-  { key: 'quote-text-pages',  label: 'Text',      icon: AlignLeft,  path: 'quote-text-pages', group: 'content' },
-  { key: 'quote-pricing',     label: 'Quote',     icon: DollarSign, path: 'quote-pricing',    group: 'content' },
-  { key: 'quote-packages',    label: 'Packages',  icon: Package,    path: 'quote-packages',   group: 'content' },
-
-  // Setup
   { key: 'quote-cover',       label: 'Design',    icon: Paintbrush, path: 'quote-cover',      group: 'setup' },
-  { key: 'quote-contents',    label: 'Contents',  icon: List,       path: 'quote-contents',   group: 'setup' },
-  { key: 'quote-details',     label: 'Details',   icon: Settings,   path: 'quote-details',    group: 'setup' },
 ];
 
 function activeKeyFromPath(pathname: string | null): string {

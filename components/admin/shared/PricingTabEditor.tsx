@@ -33,17 +33,23 @@ export type PricingTabEditorProps = UsePricingEditorOptions & {
     items: PricingLineItem[];
     replaceItems: (items: PricingLineItem[]) => void;
   }) => ReactNode;
+  /**
+   * When true, the embedded right-pane preview is suppressed entirely (the
+   * Preview toggle disappears too). Used by the Quote Builder which provides
+   * its own master preview pane and doesn't want a duplicate inside pricing.
+   */
+  hidePreview?: boolean;
 };
 
 /* ─── Component ───────────────────────────────────────────────── */
 
 const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400';
 
-export default function PricingTabEditor({ hideProposalDate, proposalId, lineItemsToolbar, ...props }: PricingTabEditorProps) {
+export default function PricingTabEditor({ hideProposalDate, proposalId, lineItemsToolbar, hidePreview, ...props }: PricingTabEditorProps) {
   const editor = usePricingEditor(props);
   useReportSaveStatus(editor.saveStatus);
 
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(!hidePreview);
 
   /* ── Job fields (per-proposal toggle) ──────────────────────── */
 
@@ -135,7 +141,7 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
           Add Page
         </button>
         <div className="ml-auto flex items-center gap-3 pr-1 pb-1.5">
-          {editor.selectedId && (
+          {editor.selectedId && !hidePreview && (
             <button
               onClick={() => setShowPreview(!showPreview)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
