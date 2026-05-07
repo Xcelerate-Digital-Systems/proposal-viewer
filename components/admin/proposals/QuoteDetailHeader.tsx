@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  DollarSign, Paintbrush, Settings, Package, AlignLeft, Pencil, List,
+  DollarSign, Paintbrush, Settings, Package, AlignLeft, Pencil, List, Wand2,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -45,6 +45,7 @@ type TabGroup = 'content' | 'setup';
 
 const tabs: { key: string; label: string; icon: typeof DollarSign; path: string; group: TabGroup }[] = [
   // Content
+  { key: 'quote-builder',     label: 'Builder',   icon: Wand2,      path: 'quote-builder',    group: 'content' },
   { key: 'quote-pages',       label: 'Pages',     icon: Pencil,     path: 'quote-pages',      group: 'content' },
   { key: 'quote-text-pages',  label: 'Text',      icon: AlignLeft,  path: 'quote-text-pages', group: 'content' },
   { key: 'quote-pricing',     label: 'Quote',     icon: DollarSign, path: 'quote-pricing',    group: 'content' },

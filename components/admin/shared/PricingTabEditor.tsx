@@ -14,6 +14,8 @@ import PricingPaymentSchedule from '@/components/admin/pricing/PricingPaymentSch
 import SplitPanelLayout from '@/components/admin/shared/SplitPanelLayout';
 import { usePricingEditor, type UsePricingEditorOptions } from './usePricingEditor';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
+import type { PricingLineItem } from '@/lib/types/packages';
+import type { ReactNode } from 'react';
 
 /* ─── Props ───────────────────────────────────────────────────── */
 
@@ -22,13 +24,22 @@ export type PricingTabEditorProps = UsePricingEditorOptions & {
   hideProposalDate?: boolean;
   /** Proposal ID — enables the job/site fields toggle (omit for templates) */
   proposalId?: string;
+  /**
+   * Optional slot rendered above the line items table. Receives the current
+   * items array plus a `replaceItems` callback so the slot can power "From
+   * Library" / "Save as Template" actions without owning pricing state.
+   */
+  lineItemsToolbar?: (api: {
+    items: PricingLineItem[];
+    replaceItems: (items: PricingLineItem[]) => void;
+  }) => ReactNode;
 };
 
 /* ─── Component ───────────────────────────────────────────────── */
 
 const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400';
 
-export default function PricingTabEditor({ hideProposalDate, proposalId, ...props }: PricingTabEditorProps) {
+export default function PricingTabEditor({ hideProposalDate, proposalId, lineItemsToolbar, ...props }: PricingTabEditorProps) {
   const editor = usePricingEditor(props);
   useReportSaveStatus(editor.saveStatus);
 
@@ -196,6 +207,10 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, ...prop
                     onShowDiscountChange={(v) => editor.updateForm({ showDiscount: v })}
                     onShowTotalChange={(v) => editor.updateForm({ showTotal: v })}
                   />
+                  {lineItemsToolbar?.({
+                    items: editor.form.items,
+                    replaceItems: (items) => editor.updateForm({ items }),
+                  })}
                   <PricingLineItems
                     items={editor.form.items}
                     onChange={(items) => editor.updateForm({ items })}
