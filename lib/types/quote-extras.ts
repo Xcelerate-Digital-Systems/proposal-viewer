@@ -9,6 +9,8 @@ export interface QuoteExtras {
   terms: string;
   /** Up to three short trust badges shown under the cover (e.g. "Licensed & Insured"). */
   badges: string[];
+  /** Editable "Next Steps" lines shown above the accept form. Up to four. */
+  next_steps: string[];
 }
 
 export const DEFAULT_QUOTE_TERMS = `Payment is due within 14 days of invoice date. A deposit of 30% is required before work commences. All prices include GST.`;
@@ -19,12 +21,19 @@ export const DEFAULT_QUOTE_BADGES: string[] = [
   '10+ Years Experience',
 ];
 
+export const DEFAULT_QUOTE_NEXT_STEPS: string[] = [
+  'Review the quote at your own pace.',
+  'Sign below to confirm — your name is your signature.',
+  "Once accepted, we'll be in touch to arrange scheduling.",
+];
+
 export const DEFAULT_QUOTE_EXTRAS: QuoteExtras = {
   about_us: '',
   testimonial: '',
   testimonial_author: '',
   terms: DEFAULT_QUOTE_TERMS,
   badges: [...DEFAULT_QUOTE_BADGES],
+  next_steps: [...DEFAULT_QUOTE_NEXT_STEPS],
 };
 
 export function parseQuoteExtras(raw: unknown): QuoteExtras {
@@ -42,5 +51,9 @@ export function parseQuoteExtras(raw: unknown): QuoteExtras {
       Array.isArray(r.badges) && r.badges.every((b) => typeof b === 'string')
         ? (r.badges as string[]).slice(0, 3)
         : [...DEFAULT_QUOTE_BADGES],
+    next_steps:
+      Array.isArray(r.next_steps) && r.next_steps.every((s) => typeof s === 'string')
+        ? (r.next_steps as string[]).slice(0, 4)
+        : [...DEFAULT_QUOTE_NEXT_STEPS],
   };
 }

@@ -364,24 +364,24 @@ export default function QuoteSinglePageView({
       <Hairline />
 
       {/* ── Next Steps ────────────────────────────────────────── */}
-      <Section>
-        <SectionLabel>Next Steps</SectionLabel>
-        <ol className="space-y-3 text-[15px] text-ink/85 max-w-xl">
-          {[
-            'Review the quote at your own pace.',
-            'Sign below to confirm — your name is your signature.',
-            "Once accepted, we'll be in touch to arrange scheduling.",
-          ].map((step, i) => (
-            <li key={i} className="flex gap-4">
-              <span className="text-faint text-xs tracking-[0.1em] mt-1 w-6 shrink-0">
-                0{i + 1}
-              </span>
-              <span className="leading-[1.6]">{step}</span>
-            </li>
-          ))}
-        </ol>
-      </Section>
-      <Hairline />
+      {extras.next_steps.length > 0 && (
+        <>
+          <Section>
+            <SectionLabel>Next Steps</SectionLabel>
+            <ol className="space-y-3 text-[15px] text-ink/85 max-w-xl">
+              {extras.next_steps.map((step, i) => (
+                <li key={i} className="flex gap-4">
+                  <span className="text-faint text-xs tracking-[0.1em] mt-1 w-6 shrink-0">
+                    0{i + 1}
+                  </span>
+                  <span className="leading-[1.6]">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </Section>
+          <Hairline />
+        </>
+      )}
 
       {/* ── Terms ─────────────────────────────────────────────── */}
       {extras.terms && (
