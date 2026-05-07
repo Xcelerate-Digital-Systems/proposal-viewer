@@ -1,8 +1,7 @@
 // components/viewer/QuoteSinglePageView.tsx
-// Single-page quote viewer. Editorial, restrained — leans on a serif display
-// face, hairline dividers and tabular numerals to feel like a premium printed
-// document rather than a SaaS template. Used by both the public viewer at
-// /view/[token] (entity_type='quote') and the in-app builder preview pane.
+// Single-page quote viewer. Editorial layout with sans-serif throughout —
+// hairline dividers, tabular numerals, restrained palette. Project photos
+// (when uploaded) replace the cover hero / sit before the Scope section.
 
 'use client';
 
@@ -29,16 +28,9 @@ interface QuoteSinglePageViewProps {
   companyName?: string;
   companyPhone?: string | null;
   companyEmail?: string | null;
-  /** Reserved for future use — currently no compact-specific styling. */
+  /** Reserved — currently no compact-specific styling. */
   compact?: boolean;
 }
-
-/* ── Style tokens ───────────────────────────────────────────────────────── */
-
-// System serif stack — Iowan on Apple, Source Serif/Garamond elsewhere.
-// Cheap, no font load, still feels editorial.
-const SERIF =
-  "'Iowan Old Style', 'Apple Garamond', 'Source Serif Pro', Garamond, 'Times New Roman', Georgia, serif";
 
 const TABULAR: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
 
@@ -81,6 +73,11 @@ function formatValidUntil(pricing: ProposalPricing | null): string | null {
   return start.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function parsePhotos(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((p): p is string => typeof p === 'string');
+}
+
 /* ── Section primitives ─────────────────────────────────────────────────── */
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -112,28 +109,52 @@ export default function QuoteSinglePageView({
   companyPhone,
   companyEmail,
 }: QuoteSinglePageViewProps) {
-  const [bgUrl, setBgUrl] = useState<string | null>(resolvedBgUrl ?? null);
+  const photoPaths = parsePhotos(proposal.project_photos);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [coverImgUrl, setCoverImgUrl] = useState<string | null>(resolvedBgUrl ?? null);
   const extras = parseQuoteExtras(proposal.quote_extras);
   const [accepted, setAccepted] = useState(!!initialAccepted);
   const [agree, setAgree] = useState(false);
   const [signerName, setSignerName] = useState('');
   const [accepting, setAccepting] = useState(false);
 
+  // Resolve signed URLs for project photos
+  useEffect(() => {
+    if (photoPaths.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const next: Record<string, string> = {};
+      for (const path of photoPaths) {
+        const { data } = await supabase.storage
+          .from('proposals')
+          .createSignedUrl(path, 3600);
+        if (data?.signedUrl) next[path] = data.signedUrl;
+      }
+      if (!cancelled) setPhotoUrls(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoPaths.join('|')]);
+
+  // Resolve fallback cover image from cover_image_path (only used when no
+  // project photos are set — Photo 1 takes precedence as the hero).
   useEffect(() => {
     if (resolvedBgUrl !== undefined && resolvedBgUrl !== null) return;
+    if (photoPaths.length > 0) return;
     if (!proposal.cover_image_path) return;
     let cancelled = false;
     supabase.storage
       .from('proposals')
       .createSignedUrl(proposal.cover_image_path, 3600)
       .then(({ data }) => {
-        if (cancelled) return;
-        if (data?.signedUrl) setBgUrl(data.signedUrl);
+        if (!cancelled && data?.signedUrl) setCoverImgUrl(data.signedUrl);
       });
     return () => {
       cancelled = true;
     };
-  }, [proposal.cover_image_path, resolvedBgUrl]);
+  }, [proposal.cover_image_path, resolvedBgUrl, photoPaths.length]);
 
   const items: PricingLineItem[] = pricing?.items ?? [];
   const subtotal = pricingEffectiveSubtotal(items);
@@ -147,6 +168,10 @@ export default function QuoteSinglePageView({
   const headerText = proposal.cover_text_color ?? '#ffffff';
   const headerSubtle = proposal.cover_subtitle_color ?? 'rgba(255,255,255,0.55)';
   const displayCompanyName = companyName || branding.name;
+
+  // Photo 1 = cover hero (overrides cover_image_path). Photo 2 = pre-scope.
+  const heroUrl = photoPaths[0] ? photoUrls[photoPaths[0]] : coverImgUrl;
+  const featureUrl = photoPaths[1] ? photoUrls[photoPaths[1]] : null;
 
   const handleAccept = async () => {
     if (!onAccept || !agree || !signerName.trim()) return;
@@ -166,7 +191,6 @@ export default function QuoteSinglePageView({
         className="relative px-8 sm:px-14 pt-10 pb-12"
         style={{ background: headerBg, color: headerText }}
       >
-        {/* Top meta row */}
         <div className="flex items-center justify-between text-[11px] tracking-[0.12em] uppercase mb-12 opacity-80">
           <span style={{ color: headerText }}>{displayCompanyName}</span>
           <span className="flex items-center gap-4" style={{ color: headerSubtle }}>
@@ -175,47 +199,58 @@ export default function QuoteSinglePageView({
           </span>
         </div>
 
-        {/* Optional photo */}
-        {bgUrl && (
+        {heroUrl && (
           <div
             className="rounded-sm overflow-hidden mb-12 aspect-[16/7] bg-center bg-cover"
-            style={{ backgroundImage: `url(${bgUrl})` }}
+            style={{ backgroundImage: `url(${heroUrl})` }}
           />
         )}
 
-        {/* Display title */}
-        <div className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-4" style={{ color: headerSubtle }}>
-          Proposal &amp; Quote
+        <div
+          className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-4"
+          style={{ color: headerSubtle }}
+        >
+          Quote
         </div>
         <h1
-          className="font-normal leading-[1.05] mb-10 max-w-3xl"
-          style={{ fontFamily: SERIF, fontSize: 'clamp(2rem, 4.5vw, 3.5rem)', color: headerText }}
+          className="font-semibold leading-[1.05] mb-10 max-w-3xl tracking-tight"
+          style={{ fontSize: 'clamp(2rem, 4.5vw, 3.5rem)', color: headerText }}
         >
           {proposal.title || 'Your Project Quote'}
         </h1>
 
-        {/* Bottom meta — prepared for / total */}
         <div className="flex items-end justify-between gap-6 pt-6 border-t border-white/10">
-          <div>
-            <div className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-1" style={{ color: headerSubtle }}>
+          <div className="min-w-0">
+            <div
+              className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-1"
+              style={{ color: headerSubtle }}
+            >
               Prepared for
             </div>
-            <div className="text-base" style={{ color: headerText }}>
+            <div className="text-base truncate" style={{ color: headerText }}>
               {proposal.client_name || '—'}
             </div>
+            {proposal.client_organisation && (
+              <div className="text-xs opacity-80 truncate" style={{ color: headerSubtle }}>
+                {proposal.client_organisation}
+              </div>
+            )}
             {proposal.site_address && (
-              <div className="text-xs opacity-70 mt-0.5" style={{ color: headerSubtle }}>
+              <div className="text-xs opacity-70 mt-0.5 truncate" style={{ color: headerSubtle }}>
                 {proposal.site_address}
               </div>
             )}
           </div>
           <div className="text-right">
-            <div className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-1" style={{ color: headerSubtle }}>
+            <div
+              className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-1"
+              style={{ color: headerSubtle }}
+            >
               Total
             </div>
             <div
-              className="font-normal"
-              style={{ fontFamily: SERIF, fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', color: headerText, ...TABULAR }}
+              className="font-semibold tracking-tight"
+              style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', color: headerText, ...TABULAR }}
             >
               {formatAUD(total)}
             </div>
@@ -246,13 +281,13 @@ export default function QuoteSinglePageView({
         </>
       )}
 
-      {/* ── Testimonial — editorial pull-quote ────────────────── */}
+      {/* ── Testimonial ───────────────────────────────────────── */}
       {extras.testimonial && (
         <>
           <Section>
             <blockquote
               className="italic text-ink/85 leading-[1.5] max-w-2xl"
-              style={{ fontFamily: SERIF, fontSize: 'clamp(1.125rem, 1.6vw, 1.5rem)' }}
+              style={{ fontSize: 'clamp(1.125rem, 1.6vw, 1.5rem)' }}
             >
               &ldquo;{extras.testimonial}&rdquo;
             </blockquote>
@@ -261,6 +296,19 @@ export default function QuoteSinglePageView({
                 {extras.testimonial_author.replace(/^[—-]\s*/, '— ')}
               </div>
             )}
+          </Section>
+          <Hairline />
+        </>
+      )}
+
+      {/* ── Feature image (Photo 2) ───────────────────────────── */}
+      {featureUrl && (
+        <>
+          <Section>
+            <div
+              className="aspect-[16/7] bg-center bg-cover rounded-sm"
+              style={{ backgroundImage: `url(${featureUrl})` }}
+            />
           </Section>
           <Hairline />
         </>
@@ -326,8 +374,8 @@ export default function QuoteSinglePageView({
             <div className="px-6 py-7">
               <div className="text-[10px] tracking-[0.18em] uppercase text-faint mb-2">Total</div>
               <div
-                className="font-normal text-ink"
-                style={{ fontFamily: SERIF, fontSize: 'clamp(2.25rem, 4vw, 3rem)', ...TABULAR }}
+                className="font-semibold text-ink tracking-tight"
+                style={{ fontSize: 'clamp(2.25rem, 4vw, 3rem)', ...TABULAR }}
               >
                 {formatAUD(total)}
               </div>
@@ -343,8 +391,8 @@ export default function QuoteSinglePageView({
                   {deposit.label}
                 </div>
                 <div
-                  className="font-normal text-ink"
-                  style={{ fontFamily: SERIF, fontSize: 'clamp(2.25rem, 4vw, 3rem)', ...TABULAR }}
+                  className="font-semibold text-ink tracking-tight"
+                  style={{ fontSize: 'clamp(2.25rem, 4vw, 3rem)', ...TABULAR }}
                 >
                   {formatAUD(deposit.amount)}
                 </div>
@@ -405,10 +453,7 @@ export default function QuoteSinglePageView({
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink text-paper mb-5">
                   <Check size={16} />
                 </div>
-                <h3
-                  className="text-2xl text-ink font-normal mb-2"
-                  style={{ fontFamily: SERIF }}
-                >
+                <h3 className="text-2xl text-ink font-semibold tracking-tight mb-2">
                   Quote Accepted
                 </h3>
                 <p className="text-sm text-muted">
@@ -417,47 +462,44 @@ export default function QuoteSinglePageView({
               </>
             ) : (
               <>
-                <h3
-                  className="text-3xl text-ink font-normal mb-2"
-                  style={{ fontFamily: SERIF }}
-                >
-                  Ready to begin?
+                <h3 className="text-2xl sm:text-3xl text-ink font-semibold tracking-tight mb-2">
+                  Ready to lock in your project?
                 </h3>
                 <p className="text-sm text-muted mb-8">
-                  Type your full name below — that's your signature on this quote.
+                  Sign below to confirm your project and secure your quoted price.
                 </p>
 
-                <label className="flex items-start gap-3 mb-5 text-left text-[13px] text-ink/70">
+                <label className="flex items-start gap-3 mb-5 text-left text-[13px] text-ink/80 px-4 py-3 rounded-lg border border-edge bg-white">
                   <input
                     type="checkbox"
                     checked={agree}
                     onChange={(e) => setAgree(e.target.checked)}
-                    className="mt-1 accent-ink"
+                    className="mt-0.5 accent-ink"
                   />
-                  <span>I have read and agree to the scope, pricing and terms above.</span>
+                  <span>I have read and agree to the proposal details and terms above.</span>
                 </label>
 
-                <div className="relative mb-6">
+                <div className="text-left mb-6">
+                  <label className="block text-[10px] tracking-[0.18em] uppercase text-faint mb-1.5">
+                    Type your full name to confirm
+                  </label>
                   <input
                     type="text"
                     value={signerName}
                     onChange={(e) => setSignerName(e.target.value)}
-                    placeholder="Your full name"
-                    className="w-full pb-2 pt-1 bg-transparent border-0 border-b border-ink/30 text-center text-lg focus:outline-none focus:border-ink"
-                    style={{ fontFamily: SERIF }}
+                    placeholder="e.g. John Smith"
+                    className="w-full px-3 py-2.5 rounded-lg border border-edge bg-white text-sm focus:outline-none focus:border-ink transition-colors"
                   />
-                  <div className="text-[10px] tracking-[0.22em] uppercase text-faint mt-2">
-                    Signature
-                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleAccept}
                   disabled={!agree || !signerName.trim() || accepting}
-                  className="w-full px-6 py-3.5 rounded-sm bg-ink text-paper text-sm tracking-[0.1em] uppercase hover:bg-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-full px-6 py-3 rounded-lg bg-ink text-paper text-sm font-medium hover:bg-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                 >
-                  {accepting ? 'Confirming…' : 'Accept Quote'}
+                  <Check size={14} />
+                  {accepting ? 'Confirming…' : 'Accept & Confirm Quote'}
                 </button>
               </>
             )}

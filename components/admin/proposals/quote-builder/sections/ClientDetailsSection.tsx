@@ -15,6 +15,7 @@ interface ClientDetailsSectionProps {
 
 interface SavedCustomer {
   client_name: string;
+  client_organisation: string | null;
   client_email: string | null;
   crm_identifier: string | null;
   site_address: string | null;
@@ -22,6 +23,7 @@ interface SavedCustomer {
 
 const TEST_CUSTOMER: SavedCustomer = {
   client_name: 'Test Customer',
+  client_organisation: 'Demo Co Pty Ltd',
   client_email: 'test@example.com',
   crm_identifier: '0400 000 000',
   site_address: '1 Demo Street, Sydney NSW 2000',
@@ -29,6 +31,7 @@ const TEST_CUSTOMER: SavedCustomer = {
 
 const FIELDS = [
   { key: 'client_name', label: 'Client Name', placeholder: 'e.g. Jane Smith', required: true },
+  { key: 'client_organisation', label: 'Organisation', placeholder: 'e.g. Acme Constructions Pty Ltd' },
   { key: 'client_email', label: 'Email', placeholder: 'name@example.com' },
   { key: 'crm_identifier', label: 'Phone / CRM ID', placeholder: '04xx xxx xxx' },
   { key: 'site_address', label: 'Project Address', placeholder: '123 Main St, Suburb' },
@@ -45,6 +48,7 @@ export default function ClientDetailsSection({
   const [mode, setMode] = useState<'real' | 'test'>('real');
   const [form, setForm] = useState<Record<FieldKey, string>>({
     client_name: proposal.client_name ?? '',
+    client_organisation: proposal.client_organisation ?? '',
     client_email: proposal.client_email ?? '',
     crm_identifier: proposal.crm_identifier ?? '',
     site_address: proposal.site_address ?? '',
@@ -61,7 +65,7 @@ export default function ClientDetailsSection({
     (async () => {
       const { data } = await supabase
         .from('proposals')
-        .select('client_name, client_email, crm_identifier, site_address, updated_at')
+        .select('client_name, client_organisation, client_email, crm_identifier, site_address, updated_at')
         .eq('company_id', companyId)
         .not('client_name', 'is', null)
         .order('updated_at', { ascending: false })
@@ -75,6 +79,7 @@ export default function ClientDetailsSection({
         seen.add(key);
         distinct.push({
           client_name: row.client_name as string,
+          client_organisation: ((row as Record<string, unknown>).client_organisation ?? null) as string | null,
           client_email: (row.client_email ?? null) as string | null,
           crm_identifier: (row.crm_identifier ?? null) as string | null,
           site_address: (row.site_address ?? null) as string | null,
@@ -100,6 +105,7 @@ export default function ClientDetailsSection({
       realSnapshot.current = { ...form };
       setForm({
         client_name: TEST_CUSTOMER.client_name,
+        client_organisation: TEST_CUSTOMER.client_organisation ?? '',
         client_email: TEST_CUSTOMER.client_email ?? '',
         crm_identifier: TEST_CUSTOMER.crm_identifier ?? '',
         site_address: TEST_CUSTOMER.site_address ?? '',
@@ -113,6 +119,7 @@ export default function ClientDetailsSection({
   const pickCustomer = (c: SavedCustomer) => {
     const next = {
       client_name: c.client_name,
+      client_organisation: c.client_organisation ?? '',
       client_email: c.client_email ?? '',
       crm_identifier: c.crm_identifier ?? '',
       site_address: c.site_address ?? '',
@@ -132,6 +139,7 @@ export default function ClientDetailsSection({
       .from('proposals')
       .update({
         client_name: form.client_name.trim(),
+        client_organisation: form.client_organisation.trim() || null,
         client_email: form.client_email.trim() || null,
         crm_identifier: form.crm_identifier.trim() || null,
         site_address: form.site_address.trim() || null,
@@ -148,6 +156,7 @@ export default function ClientDetailsSection({
 
   const dirty =
     form.client_name !== (proposal.client_name ?? '') ||
+    form.client_organisation !== (proposal.client_organisation ?? '') ||
     form.client_email !== (proposal.client_email ?? '') ||
     form.crm_identifier !== (proposal.crm_identifier ?? '') ||
     form.site_address !== (proposal.site_address ?? '');

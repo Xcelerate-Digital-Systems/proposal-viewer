@@ -146,8 +146,14 @@ export type Proposal = {
   text_page_border_radius: string | null;
   text_page_layout: string | null;
   entity_type: 'proposal' | 'quote';
-  /** JSONB blob of quote-only content blocks (about_us, testimonial, terms, badges). */
+  /** JSONB blob of quote-only content blocks (about_us, testimonial, terms, badges, next_steps). */
   quote_extras: unknown;
+  /** Optional organisation/company name for the quote's recipient. */
+  client_organisation: string | null;
+  /** Array of storage paths (proposals bucket). Photo 1 = cover hero, Photo 2 = pre-scope feature. */
+  project_photos: unknown;
+  /** Active Proposal Style preset id — used by the picker to highlight the right card. */
+  cover_preset_id: string | null;
 };
 
 // ─── Proposal Comment ─────────────────────────────────────────────────────────

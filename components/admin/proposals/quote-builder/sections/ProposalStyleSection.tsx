@@ -9,6 +9,7 @@ import {
   COVER_PRESETS,
   type CoverPreset,
   type CoverPresetFields,
+  resolveCustomBrand,
 } from '@/lib/proposal-templates/cover-presets';
 import SectionCard from '../SectionCard';
 
@@ -24,26 +25,6 @@ function buildPreviewBackground(fields: CoverPresetFields): string {
   return `linear-gradient(${angle}deg, ${fields.cover_bg_color_1}, ${fields.cover_bg_color_2})`;
 }
 
-/**
- * Heuristic for "currently active preset". A preset matches when its
- * background colour, style, and text colour all match the proposal — close
- * enough for the picker to highlight the right card.
- */
-function detectActivePreset(proposal: Proposal): string | null {
-  for (const preset of COVER_PRESETS) {
-    if (preset.fromCompanyBrand) continue; // skip — needs company lookup
-    const f = preset.fields;
-    if (
-      proposal.cover_bg_style === f.cover_bg_style &&
-      (proposal.cover_bg_color_1 ?? '').toLowerCase() === f.cover_bg_color_1.toLowerCase() &&
-      (proposal.cover_text_color ?? '').toLowerCase() === f.cover_text_color.toLowerCase()
-    ) {
-      return preset.id;
-    }
-  }
-  return null;
-}
-
 export default function ProposalStyleSection({
   proposal,
   companyId,
@@ -51,33 +32,27 @@ export default function ProposalStyleSection({
 }: ProposalStyleSectionProps) {
   const toast = useToast();
   const [savingId, setSavingId] = useState<string | null>(null);
-  const activeId = detectActivePreset(proposal);
+  // Active preset is now stored explicitly on the proposal — much more
+  // reliable than trying to infer it from cover colours.
+  const activeId = proposal.cover_preset_id;
 
   const applyPreset = async (preset: CoverPreset) => {
     setSavingId(preset.id);
     try {
       let fields: CoverPresetFields = preset.fields;
 
-      // Custom Brand reads from the company's branding defaults.
       if (preset.fromCompanyBrand) {
         const { data: company } = await supabase
           .from('companies')
-          .select('bg_primary, cover_button_text, cover_button_bg')
+          .select('accent_color, cover_button_text, cover_button_bg')
           .eq('id', companyId)
           .single();
-        fields = {
-          ...preset.fields,
-          cover_bg_color_1: company?.bg_primary ?? preset.fields.cover_bg_color_1,
-          cover_bg_color_2: company?.bg_primary ?? preset.fields.cover_bg_color_2,
-          cover_button_bg: company?.cover_button_bg ?? preset.fields.cover_button_bg,
-          cover_button_text_color:
-            company?.cover_button_text ?? preset.fields.cover_button_text_color,
-        };
+        fields = resolveCustomBrand(preset.fields, company ?? {});
       }
 
       const { error } = await supabase
         .from('proposals')
-        .update(fields)
+        .update({ ...fields, cover_preset_id: preset.id })
         .eq('id', proposal.id);
 
       if (error) throw error;
@@ -94,12 +69,15 @@ export default function ProposalStyleSection({
   return (
     <SectionCard
       title="Proposal Style"
-      description="Choose a pre-made cover style for your quote."
+      description="Choose a pre-made cover style for your quote. Pick Custom Brand to use your company's accent colour."
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {COVER_PRESETS.map((preset) => {
           const isActive = activeId === preset.id;
           const isSaving = savingId === preset.id;
+          // For Custom Brand, the preview card uses the literals — once
+          // applied to a quote it'll re-render against the real brand row.
+          const cardBg = buildPreviewBackground(preset.fields);
           return (
             <button
               key={preset.id}
@@ -114,15 +92,23 @@ export default function ProposalStyleSection({
             >
               <div
                 className="aspect-[16/10] flex items-end p-3 relative"
-                style={{ background: buildPreviewBackground(preset.fields) }}
+                style={{ background: cardBg }}
               >
+                {/* Subtle radial highlight to give the card depth */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      'radial-gradient(circle at 75% 25%, rgba(255,255,255,0.18), transparent 55%)',
+                  }}
+                />
                 {isActive && (
-                  <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white text-teal flex items-center justify-center shadow">
+                  <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white text-teal flex items-center justify-center shadow z-10">
                     <Check size={12} />
                   </span>
                 )}
                 <div
-                  className="space-y-1.5 w-full"
+                  className="space-y-1.5 w-full relative z-10"
                   style={{ color: preset.fields.cover_text_color }}
                 >
                   <div className="h-1.5 rounded-full w-1/4 bg-current opacity-60" />

@@ -20,6 +20,7 @@ import TestimonialSection from './sections/TestimonialSection';
 import BadgesSection from './sections/BadgesSection';
 import NextStepsSection from './sections/NextStepsSection';
 import TermsSection from './sections/TermsSection';
+import ProjectPhotosSection from './sections/ProjectPhotosSection';
 import SectionCard from './SectionCard';
 import LineItemsLibraryBar from './LineItemsLibraryBar';
 import PreviewPane from './PreviewPane';
@@ -33,7 +34,9 @@ interface QuoteBuilderProps {
 export default function QuoteBuilder({ proposal, companyId, onRefetch }: QuoteBuilderProps) {
   return (
     <div className="px-6 lg:px-10 py-6">
-      <div className="flex gap-6 items-start">
+      {/* No items-start here — the aside needs to stretch the full column
+          height so position:sticky on the preview can pin while scrolling. */}
+      <div className="flex gap-6">
         {/* Left: stacked sections */}
         <div className="flex-1 min-w-0 space-y-5">
           <ProposalStyleSection
@@ -69,6 +72,8 @@ export default function QuoteBuilder({ proposal, companyId, onRefetch }: QuoteBu
           />
 
           <ProjectDetailsSection proposal={proposal} onSaved={onRefetch} />
+
+          <ProjectPhotosSection proposal={proposal} onSaved={onRefetch} />
 
           <SectionCard
             title="Line Items & Pricing"
