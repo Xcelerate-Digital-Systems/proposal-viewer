@@ -64,8 +64,10 @@ export default function QuoteBuilder({ proposal, companyId, onRefetch }: QuoteBu
           <TermsSection proposal={proposal} onSaved={onRefetch} />
         </div>
 
-        {/* Right: sticky live preview */}
-        <aside className="hidden xl:block w-[420px] shrink-0">
+        {/* Right: sticky live preview. Wider at 2xl so the cover + breakdown
+            table don't get squashed. Hidden under xl — at that point the
+            builder takes the full width and you preview via the header. */}
+        <aside className="hidden xl:block w-[540px] 2xl:w-[640px] shrink-0">
           <PreviewPane proposal={proposal} companyId={companyId} />
         </aside>
       </div>

@@ -121,7 +121,6 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
           companyName={companyMeta.name}
           companyPhone={companyMeta.phone}
           companyEmail={companyMeta.email}
-          compact
         />
       </div>
     </div>
