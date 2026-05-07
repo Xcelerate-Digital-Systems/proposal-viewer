@@ -107,3 +107,26 @@ body {
 .animate-slide-up {
   animation: slideUp 0.25s ease-out;
 }
+/* ── Quote viewer print styles ─────────────────────────────────────────────
+   Triggered by the "Download PDF" button on /view/[token] for quotes —
+   strips the surrounding page chrome and lets the browser's native PDF
+   exporter render just the document. The .quote-print-root class is set on
+   the public viewer's outer wrapper so we can target it precisely without
+   touching the proposal viewer's print behaviour. */
+
+@media print {
+  body.quote-print-active,
+  body:has(.quote-print-root) {
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  .quote-print-root {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
+}

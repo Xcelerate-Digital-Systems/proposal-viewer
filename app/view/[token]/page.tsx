@@ -76,20 +76,14 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   // Bypasses the multi-page paginator entirely. Cover is the top of the
   // scroll, not a separate click-through.
   if (v.proposal?.entity_type === 'quote') {
-    // The root <body> uses `overflow-hidden` (set in app/layout.tsx) so we
-    // need our own scroll container or the page can't scroll. h-screen +
-    // overflow-y-auto gives the quote a single tall scrollable area while
-    // respecting the layout chrome.
-    //
-    // Page background falls through three tiers: per-quote → company-level
-    // branding → neutral default. Same model as proposals so the Design tab
-    // controls actually take effect on the public link.
-    const pageBg =
-      v.proposal.text_page_bg_color || v.branding.text_page_bg_color || '#f5f5f5';
+    // Page-around bg is intentionally separate from the document bg —
+    // think of the quote as a printed card floating on a desk. The
+    // surrounding bg is fixed light gray so the card always has contrast;
+    // text_page_bg_color (Design tab) controls the *quote document* itself.
     return (
       <div
-        className="h-screen overflow-y-auto"
-        style={{ backgroundColor: pageBg }}
+        className="h-screen overflow-y-auto print:h-auto print:overflow-visible quote-print-root"
+        style={{ backgroundColor: '#eeece6' }}
       >
         <GoogleFontLoader
           fonts={[
@@ -99,18 +93,37 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             v.proposal.title_font_family,
           ]}
         />
-        <div className="max-w-3xl mx-auto py-6 px-4">
-          <div className="rounded-2xl overflow-hidden shadow-sm">
+        {/* Floating download chip — uses native browser PDF print so we
+            don't need a server-side PDF pipeline. Hidden in the printout. */}
+        <div className="max-w-3xl mx-auto px-4 pt-4 flex justify-end print:hidden">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="text-xs tracking-[0.14em] uppercase text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Download PDF
+          </button>
+        </div>
+        <div className="max-w-3xl mx-auto pb-10 px-4 print:max-w-none print:px-0 print:pb-0">
+          <div className="rounded-2xl overflow-hidden shadow-sm print:rounded-none print:shadow-none">
             <QuoteSinglePageView
               proposal={v.proposal}
               pricing={(v.pricing as unknown as ProposalPricing | null) ?? null}
               branding={v.branding}
               accepted={v.accepted}
+              declined={v.declined}
+              revisionRequested={v.revisionRequested}
               companyName={companyContact?.name || v.branding.name}
               companyPhone={companyContact?.phone ?? null}
               companyEmail={companyContact?.email ?? null}
               onAccept={async (name) => {
                 await v.acceptProposal(name);
+              }}
+              onDecline={async (name, reason) => {
+                await v.declineProposal(name, reason);
+              }}
+              onRequestRevision={async (name, notes) => {
+                await v.requestRevision(name, notes);
               }}
             />
           </div>

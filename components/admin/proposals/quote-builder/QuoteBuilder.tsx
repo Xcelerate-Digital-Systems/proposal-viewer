@@ -23,6 +23,7 @@ import TermsSection from './sections/TermsSection';
 import ProjectPhotosSection from './sections/ProjectPhotosSection';
 import SectionCard from './SectionCard';
 import LineItemsLibraryBar from './LineItemsLibraryBar';
+import LoadTemplateBar from './LoadTemplateBar';
 import PreviewPane from './PreviewPane';
 
 interface QuoteBuilderProps {
@@ -39,6 +40,14 @@ export default function QuoteBuilder({ proposal, companyId, onRefetch }: QuoteBu
       <div className="flex gap-6">
         {/* Left: stacked sections */}
         <div className="flex-1 min-w-0 space-y-5">
+          <div className="flex items-center justify-end">
+            <LoadTemplateBar
+              proposal={proposal}
+              companyId={companyId}
+              onApplied={onRefetch}
+            />
+          </div>
+
           <ProposalStyleSection
             proposal={proposal}
             companyId={companyId}
