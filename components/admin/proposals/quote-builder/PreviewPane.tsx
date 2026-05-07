@@ -7,6 +7,7 @@ import { supabase, type Proposal, type ProposalPricing } from '@/lib/supabase';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import QuoteSinglePageView from '@/components/viewer/QuoteSinglePageView';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 
 interface PreviewPaneProps {
   proposal: Proposal;
@@ -68,10 +69,12 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
         }
       }
 
-      // Company meta for cover header
+      // Company meta for cover header + fonts that the Design tab can set.
       const { data: company } = await supabase
         .from('companies')
-        .select('name, phone, contact_email, bg_primary, accent_color')
+        .select(
+          'name, phone, contact_email, bg_primary, accent_color, font_heading, font_body, title_font_family',
+        )
         .eq('id', companyId)
         .single();
       if (company) {
@@ -85,6 +88,9 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
           name: (company.name as string) ?? prev.name,
           bg_primary: (company.bg_primary as string) ?? prev.bg_primary,
           accent_color: (company.accent_color as string) ?? prev.accent_color,
+          font_heading: (company.font_heading as string) ?? prev.font_heading,
+          font_body: (company.font_body as string) ?? prev.font_body,
+          title_font_family: (company.title_font_family as string) ?? prev.title_font_family,
         }));
       }
     } finally {
@@ -114,6 +120,14 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
         </button>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
+        <GoogleFontLoader
+          fonts={[
+            branding.font_heading,
+            branding.font_body,
+            branding.title_font_family,
+            proposal.title_font_family,
+          ]}
+        />
         <QuoteSinglePageView
           proposal={proposal}
           pricing={pricing}

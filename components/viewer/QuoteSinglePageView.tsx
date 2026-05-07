@@ -34,6 +34,12 @@ interface QuoteSinglePageViewProps {
 
 const TABULAR: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
 
+/** Wraps a Google-Font display name as a CSS family, falling back gracefully. */
+function fontStack(name: string | null | undefined, fallback: string): string {
+  if (!name) return fallback;
+  return `'${name}', ${fallback}`;
+}
+
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
 function buildHeaderBackground(p: Proposal): string {
@@ -169,6 +175,34 @@ export default function QuoteSinglePageView({
   const headerSubtle = proposal.cover_subtitle_color ?? 'rgba(255,255,255,0.55)';
   const displayCompanyName = companyName || branding.name;
 
+  // Design tab fields → applied to body. Three-tier cascade: per-quote
+  // override → company branding default → neutral fallback. Mirrors how
+  // proposals resolve these so the Design tab works the same way for both.
+  const bodyBg =
+    proposal.text_page_bg_color || branding.text_page_bg_color || '#FAFAFA';
+  const bodyText =
+    proposal.text_page_text_color || branding.text_page_text_color || '#1E2432';
+  const headingColor =
+    proposal.text_page_heading_color || branding.text_page_heading_color || bodyText;
+  const headingFontFamily = fontStack(branding.font_heading, 'inherit');
+  const bodyFontFamily = fontStack(branding.font_body, 'inherit');
+  const titleFontFamily = fontStack(
+    proposal.title_font_family || branding.title_font_family || branding.font_heading,
+    'inherit',
+  );
+  const titleFontWeight = proposal.title_font_weight || branding.title_font_weight || '600';
+
+  const articleStyle: React.CSSProperties = {
+    backgroundColor: bodyBg,
+    color: bodyText,
+    fontFamily: bodyFontFamily,
+    ...TABULAR,
+  };
+  const headingStyle: React.CSSProperties = {
+    fontFamily: headingFontFamily,
+    color: headingColor,
+  };
+
   // Photo 1 = cover hero (overrides cover_image_path). Photo 2 = pre-scope.
   const heroUrl = photoPaths[0] ? photoUrls[photoPaths[0]] : coverImgUrl;
   const featureUrl = photoPaths[1] ? photoUrls[photoPaths[1]] : null;
@@ -185,7 +219,7 @@ export default function QuoteSinglePageView({
   };
 
   return (
-    <article className="bg-paper text-ink" style={TABULAR}>
+    <article className="bg-paper text-ink" style={articleStyle}>
       {/* ── Cover ─────────────────────────────────────────────── */}
       <header
         className="relative px-8 sm:px-14 pt-10 pb-12"
@@ -213,8 +247,13 @@ export default function QuoteSinglePageView({
           Quote
         </div>
         <h1
-          className="font-semibold leading-[1.05] mb-10 max-w-3xl tracking-tight"
-          style={{ fontSize: 'clamp(2rem, 4.5vw, 3.5rem)', color: headerText }}
+          className="leading-[1.05] mb-10 max-w-3xl tracking-tight"
+          style={{
+            fontSize: proposal.title_font_size || 'clamp(2rem, 4.5vw, 3.5rem)',
+            color: headerText,
+            fontFamily: titleFontFamily,
+            fontWeight: titleFontWeight,
+          }}
         >
           {proposal.title || 'Your Project Quote'}
         </h1>
@@ -249,8 +288,14 @@ export default function QuoteSinglePageView({
               Total
             </div>
             <div
-              className="font-semibold tracking-tight"
-              style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', color: headerText, ...TABULAR }}
+              className="tracking-tight"
+              style={{
+                fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
+                color: headerText,
+                fontFamily: titleFontFamily,
+                fontWeight: titleFontWeight,
+                ...TABULAR,
+              }}
             >
               {formatAUD(total)}
             </div>
@@ -374,8 +419,14 @@ export default function QuoteSinglePageView({
             <div className="px-6 py-7">
               <div className="text-[10px] tracking-[0.18em] uppercase text-faint mb-2">Total</div>
               <div
-                className="font-semibold text-ink tracking-tight"
-                style={{ fontSize: 'clamp(2.25rem, 4vw, 3rem)', ...TABULAR }}
+                className="tracking-tight"
+                style={{
+                  fontSize: 'clamp(2.25rem, 4vw, 3rem)',
+                  color: headingColor,
+                  fontFamily: titleFontFamily,
+                  fontWeight: titleFontWeight,
+                  ...TABULAR,
+                }}
               >
                 {formatAUD(total)}
               </div>
@@ -453,7 +504,10 @@ export default function QuoteSinglePageView({
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink text-paper mb-5">
                   <Check size={16} />
                 </div>
-                <h3 className="text-2xl text-ink font-semibold tracking-tight mb-2">
+                <h3
+                  className="text-2xl tracking-tight mb-2"
+                  style={{ ...headingStyle, fontFamily: titleFontFamily, fontWeight: titleFontWeight }}
+                >
                   Quote Accepted
                 </h3>
                 <p className="text-sm text-muted">
@@ -462,7 +516,10 @@ export default function QuoteSinglePageView({
               </>
             ) : (
               <>
-                <h3 className="text-2xl sm:text-3xl text-ink font-semibold tracking-tight mb-2">
+                <h3
+                  className="text-2xl sm:text-3xl tracking-tight mb-2"
+                  style={{ ...headingStyle, fontFamily: titleFontFamily, fontWeight: titleFontWeight }}
+                >
                   Ready to lock in your project?
                 </h3>
                 <p className="text-sm text-muted mb-8">

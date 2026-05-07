@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  DollarSign, Paintbrush, Wand2,
+  DollarSign, Paintbrush, Wand2, Palette,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -51,6 +51,7 @@ type TabGroup = 'content' | 'setup';
 const tabs: { key: string; label: string; icon: typeof DollarSign; path: string; group: TabGroup }[] = [
   { key: 'quote-builder',     label: 'Builder',   icon: Wand2,      path: 'quote-builder',    group: 'content' },
   { key: 'quote-cover',       label: 'Cover',     icon: Paintbrush, path: 'quote-cover',      group: 'setup' },
+  { key: 'quote-design',      label: 'Design',    icon: Palette,    path: 'quote-design',     group: 'setup' },
 ];
 
 function activeKeyFromPath(pathname: string | null): string {

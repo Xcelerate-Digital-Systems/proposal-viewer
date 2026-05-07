@@ -76,11 +76,31 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   // Bypasses the multi-page paginator entirely. Cover is the top of the
   // scroll, not a separate click-through.
   if (v.proposal?.entity_type === 'quote') {
+    // The root <body> uses `overflow-hidden` (set in app/layout.tsx) so we
+    // need our own scroll container or the page can't scroll. h-screen +
+    // overflow-y-auto gives the quote a single tall scrollable area while
+    // respecting the layout chrome.
+    //
+    // Page background falls through three tiers: per-quote → company-level
+    // branding → neutral default. Same model as proposals so the Design tab
+    // controls actually take effect on the public link.
+    const pageBg =
+      v.proposal.text_page_bg_color || v.branding.text_page_bg_color || '#f5f5f5';
     return (
-      <div className="min-h-screen bg-gray-50">
-        <GoogleFontLoader fonts={[v.branding.font_heading, v.branding.font_body]} />
+      <div
+        className="h-screen overflow-y-auto"
+        style={{ backgroundColor: pageBg }}
+      >
+        <GoogleFontLoader
+          fonts={[
+            v.branding.font_heading,
+            v.branding.font_body,
+            v.branding.title_font_family,
+            v.proposal.title_font_family,
+          ]}
+        />
         <div className="max-w-3xl mx-auto py-6 px-4">
-          <div className="rounded-2xl overflow-hidden shadow-sm bg-white">
+          <div className="rounded-2xl overflow-hidden shadow-sm">
             <QuoteSinglePageView
               proposal={v.proposal}
               pricing={(v.pricing as unknown as ProposalPricing | null) ?? null}
