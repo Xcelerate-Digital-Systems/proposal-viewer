@@ -94,6 +94,7 @@ export default function TestimonialSection({ proposal, onSaved }: Props) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onBlur={() => dirty && save()}
         rows={4}
         placeholder='"They turned up exactly when they said…"'
         className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y mb-3"
@@ -102,6 +103,7 @@ export default function TestimonialSection({ proposal, onSaved }: Props) {
         type="text"
         value={author}
         onChange={(e) => setAuthor(e.target.value)}
+        onBlur={() => dirty && save()}
         placeholder="— Sarah T., Mosman NSW"
         className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
       />

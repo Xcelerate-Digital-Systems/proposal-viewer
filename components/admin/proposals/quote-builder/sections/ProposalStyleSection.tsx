@@ -91,7 +91,7 @@ export default function ProposalStyleSection({
               } ${isSaving ? 'opacity-60' : ''}`}
             >
               <div
-                className="aspect-[16/10] flex items-end p-3 relative"
+                className="aspect-[16/10] flex flex-col justify-between p-3 relative"
                 style={{ background: cardBg }}
               >
                 {/* Subtle radial highlight to give the card depth */}
@@ -107,13 +107,27 @@ export default function ProposalStyleSection({
                     <Check size={12} />
                   </span>
                 )}
+                {/* Top-row tiny "QUOTE" tag — mirrors what shows in the cover */}
                 <div
-                  className="space-y-1.5 w-full relative z-10"
+                  className="relative z-10 text-[7px] font-medium tracking-[0.2em] uppercase opacity-60"
                   style={{ color: preset.fields.cover_text_color }}
                 >
-                  <div className="h-1.5 rounded-full w-1/4 bg-current opacity-60" />
-                  <div className="h-1.5 rounded-full w-3/4 bg-current opacity-90" />
-                  <div className="h-1.5 rounded-full w-1/2 bg-current opacity-50" />
+                  Quote
+                </div>
+                {/* Sample title + total — gives a real feel for the preset */}
+                <div className="relative z-10" style={{ color: preset.fields.cover_text_color }}>
+                  <div
+                    className="text-[11px] font-semibold leading-tight tracking-tight mb-1"
+                    style={{ fontFamily: 'inherit' }}
+                  >
+                    Bathroom Renovation
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <div className="text-[6px] opacity-60 tracking-[0.18em] uppercase">Total</div>
+                    <div className="text-[10px] font-semibold tabular-nums opacity-90">
+                      $24,200
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="px-3 py-2 bg-white">

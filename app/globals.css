@@ -114,6 +114,21 @@ body {
    the public viewer's outer wrapper so we can target it precisely without
    touching the proposal viewer's print behaviour. */
 
+/* Investment block — second cell. On mobile (single column) the divider
+   sits on top of the cell; on sm+ (two columns) it moves to the left. The
+   border-color is set inline so each quote inherits its own hairline tone. */
+.quote-investment-cell-2 {
+  border-top-width: 1px;
+  border-top-style: solid;
+}
+@media (min-width: 640px) {
+  .quote-investment-cell-2 {
+    border-top-width: 0;
+    border-left-width: 1px;
+    border-left-style: solid;
+  }
+}
+
 @media print {
   body.quote-print-active,
   body:has(.quote-print-root) {
@@ -124,6 +139,15 @@ body {
     background: #fff !important;
     height: auto !important;
     overflow: visible !important;
+  }
+  /* Force print-color-adjust so the cover gradient + section bgs render in
+     PDF export. Without this, Chrome/Safari strip background-color +
+     background-image when printing — quote ends up looking white-on-white. */
+  .quote-print-root,
+  .quote-print-root * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
   @page {
     margin: 12mm;

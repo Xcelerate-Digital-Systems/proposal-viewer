@@ -53,6 +53,7 @@ export default function TermsSection({ proposal, onSaved }: Props) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onBlur={() => dirty && save()}
         rows={6}
         placeholder="Payment is due within…"
         className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"

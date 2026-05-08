@@ -85,6 +85,7 @@ export default function ProjectDetailsSection({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => dirty && save()}
             placeholder="e.g. Full Bathroom Renovation"
             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
@@ -115,6 +116,7 @@ export default function ProjectDetailsSection({
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            onBlur={() => dirty && save()}
             rows={6}
             placeholder="Describe what's included in this quote. This appears prominently on the customer's quote."
             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"

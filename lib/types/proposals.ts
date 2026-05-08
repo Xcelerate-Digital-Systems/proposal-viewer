@@ -156,6 +156,8 @@ export type Proposal = {
   cover_preset_id: string | null;
   /** Quote-only: background colour for the area surrounding the floating quote card. */
   quote_page_bg_color: string | null;
+  /** Quote-only: per-company human-readable number (renders as "Q-014" etc.). */
+  quote_number: number | null;
 };
 
 // ─── Proposal Comment ─────────────────────────────────────────────────────────

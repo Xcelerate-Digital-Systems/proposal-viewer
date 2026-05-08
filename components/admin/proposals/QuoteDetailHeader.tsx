@@ -7,10 +7,11 @@ import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  DollarSign, Paintbrush, Wand2, Palette,
+  DollarSign, Paintbrush, Wand2, Palette, Files,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
+import { formatQuoteNumber } from '@/lib/quote-number';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
@@ -107,6 +108,32 @@ export default function QuoteDetailHeader({
     }
   };
 
+  const duplicateQuote = async () => {
+    const ok = await confirm({
+      title: 'Duplicate quote?',
+      message: `Create a draft copy of "${proposal.title}" with a new quote number. Line items and design carry over; client info too.`,
+      confirmLabel: 'Duplicate',
+    });
+    if (!ok) return;
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const res = await fetch(`/api/proposals/${proposal.id}/duplicate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.session?.access_token ?? ''}`,
+        },
+      });
+      const json = await res.json();
+      if (!res.ok || !json.id) throw new Error(json.error ?? 'Failed');
+      toast.success('Quote duplicated');
+      router.push(`/proposals/${json.id}/quote-builder`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to duplicate');
+    }
+  };
+
   const deleteQuote = async () => {
     const ok = await confirm({
       title: 'Delete Quote',
@@ -145,6 +172,11 @@ export default function QuoteDetailHeader({
             <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
               Quote
             </span>
+            {formatQuoteNumber(proposal.quote_number) && (
+              <span className="text-[11px] font-medium text-gray-400 tabular-nums shrink-0">
+                {formatQuoteNumber(proposal.quote_number)}
+              </span>
+            )}
             <EditorSaveStatusBadge />
           </div>
           <div className="flex items-center gap-3 mt-1">
@@ -185,6 +217,13 @@ export default function QuoteDetailHeader({
             <ExternalLink size={14} />
             Preview
           </a>
+          <button
+            onClick={duplicateQuote}
+            className="p-2 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+            title="Duplicate quote"
+          >
+            <Files size={16} />
+          </button>
           <button
             onClick={deleteQuote}
             className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"

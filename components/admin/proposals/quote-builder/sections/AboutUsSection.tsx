@@ -81,6 +81,7 @@ export default function AboutUsSection({ proposal, onSaved }: Props) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onBlur={() => dirty && save()}
         rows={5}
         placeholder="We are a fully licensed renovation company with…"
         className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"

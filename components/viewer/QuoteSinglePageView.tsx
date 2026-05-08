@@ -19,6 +19,7 @@ import {
 } from '@/lib/supabase';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { parseQuoteExtras } from '@/lib/types/quote-extras';
+import { formatQuoteNumber } from '@/lib/quote-number';
 
 interface QuoteSinglePageViewProps {
   proposal: Proposal;
@@ -317,17 +318,17 @@ export default function QuoteSinglePageView({
       {/* min-h-[60vh] so the cover dominates the first viewport on the public
           viewer — gives the "cover-first" feel without needing a click-through. */}
       <header
-        className="relative px-8 sm:px-14 pt-10 pb-12 min-h-[60vh] flex flex-col print:min-h-0"
+        className="relative px-6 sm:px-14 pt-8 sm:pt-10 pb-10 sm:pb-12 min-h-[60vh] flex flex-col print:min-h-0"
         style={{ background: headerBg, color: headerText }}
       >
         <div
-          className="flex items-center justify-between text-[11px] tracking-[0.12em] uppercase mb-12 opacity-80"
+          className="flex flex-wrap items-center justify-between gap-2 text-[11px] tracking-[0.12em] uppercase mb-8 sm:mb-12 opacity-80"
           style={{ fontFamily: headingFontFamily }}
         >
           <span style={{ color: headerText }}>{displayCompanyName}</span>
-          <span className="flex items-center gap-4" style={{ color: headerSubtle }}>
+          <span className="flex items-center gap-x-4 gap-y-1 flex-wrap" style={{ color: headerSubtle }}>
             {companyPhone && <span>{companyPhone}</span>}
-            {companyEmail && <span>{companyEmail}</span>}
+            {companyEmail && <span className="break-all">{companyEmail}</span>}
           </span>
         </div>
 
@@ -339,10 +340,16 @@ export default function QuoteSinglePageView({
         )}
 
         <div
-          className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-4"
+          className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-4 flex items-center gap-3"
           style={{ color: headerSubtle, fontFamily: headingFontFamily }}
         >
-          Quote
+          <span>Quote</span>
+          {formatQuoteNumber(proposal.quote_number) && (
+            <>
+              <span className="opacity-50">·</span>
+              <span style={TABULAR}>{formatQuoteNumber(proposal.quote_number)}</span>
+            </>
+          )}
         </div>
         <h1
           className="leading-[1.05] mb-10 max-w-3xl tracking-tight"
@@ -357,7 +364,7 @@ export default function QuoteSinglePageView({
         </h1>
 
         <div
-          className="flex items-end justify-between gap-6 pt-6 mt-auto"
+          className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6 pt-6 mt-auto"
           style={{ borderTop: `1px solid ${withAlpha(headerText, 0.1)}` }}
         >
           <div className="min-w-0">
@@ -381,7 +388,7 @@ export default function QuoteSinglePageView({
               </div>
             )}
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <div
               className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-1"
               style={{ color: headerSubtle, fontFamily: headingFontFamily }}
@@ -400,6 +407,14 @@ export default function QuoteSinglePageView({
             >
               {formatAUD(total)}
             </div>
+            {validUntil && (
+              <div
+                className="text-[10px] tracking-[0.18em] uppercase mt-2 opacity-60"
+                style={{ color: headerSubtle, fontFamily: headingFontFamily }}
+              >
+                Valid until {validUntil}
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -486,7 +501,8 @@ export default function QuoteSinglePageView({
         <>
           <Section>
             <SectionLabel style={labelStyle}>Breakdown</SectionLabel>
-            <table className="w-full" style={TABULAR}>
+            <div className="overflow-x-auto -mx-2 px-2">
+            <table className="w-full min-w-[480px]" style={TABULAR}>
               <thead>
                 <tr
                   className="text-[10px] tracking-[0.18em] uppercase"
@@ -532,6 +548,7 @@ export default function QuoteSinglePageView({
                 ))}
               </tbody>
             </table>
+            </div>
           </Section>
           <Hairline color={hairline} />
         </>
@@ -582,10 +599,7 @@ export default function QuoteSinglePageView({
         <SectionLabel style={labelStyle}>Investment</SectionLabel>
         <div style={{ border: `1px solid ${hairline}`, borderRadius: 4 }}>
           <div className="grid grid-cols-1 sm:grid-cols-2">
-            <div
-              className="px-6 py-7"
-              style={{ borderBottom: `1px solid ${hairline}` }}
-            >
+            <div className="px-6 py-7">
               <div style={labelStyle}>Total</div>
               <div
                 className="tracking-tight"
@@ -607,11 +621,8 @@ export default function QuoteSinglePageView({
             </div>
             {deposit ? (
               <div
-                className="px-6 py-7"
-                style={{
-                  borderBottom: `1px solid ${hairline}`,
-                  borderLeft: `1px solid ${hairline}`,
-                }}
+                className="px-6 py-7 quote-investment-cell-2"
+                style={{ borderColor: hairline }}
               >
                 <div style={labelStyle}>{deposit.label}</div>
                 <div
@@ -632,11 +643,8 @@ export default function QuoteSinglePageView({
               </div>
             ) : (
               <div
-                className="px-6 py-7 flex items-center text-xs"
-                style={{
-                  color: muted,
-                  borderLeft: `1px solid ${hairline}`,
-                }}
+                className="px-6 py-7 flex items-center text-xs quote-investment-cell-2"
+                style={{ color: muted, borderColor: hairline }}
               >
                 No deposit required.
               </div>

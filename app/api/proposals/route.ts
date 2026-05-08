@@ -79,6 +79,17 @@ export async function POST(req: NextRequest) {
     // Strip server-controlled fields from `rest` before spreading.
     const safeRest = stripProtected(rest);
 
+    // Quote numbering — atomic increment of companies.next_quote_number so two
+    // simultaneous creates can't collide on the same value. UPDATE…RETURNING
+    // does this in a single round-trip.
+    let quoteNumber: number | null = null;
+    if (isQuote) {
+      const { data: counter } = await supabase.rpc('claim_next_quote_number', {
+        p_company_id: companyId,
+      });
+      if (typeof counter === 'number') quoteNumber = counter;
+    }
+
     const { data: proposal, error: insertError } = await supabase
       .from('proposals')
       .insert({
@@ -95,6 +106,7 @@ export async function POST(req: NextRequest) {
         created_by_name:   created_by_name || null,
         prepared_by:       prepared_by     || created_by_name || null,
         entity_type:       isQuote ? 'quote' : 'proposal',
+        quote_number:      quoteNumber,
         ...brandingDefaults,
         ...safeRest,
       })
