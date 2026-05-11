@@ -64,7 +64,7 @@ function showAnnotationForm(type,px,py,extra){
         highlight_element_path:extra.highlight_element_path,
         priority:priorityCtrl.getValue()
       },function(d){
-        removePendingAnnotation();refresh();armPinMode();
+        clearPendingHighlight();removePendingAnnotation();refresh();armPinMode();
         if(d)openPanel();
       });
       return;
@@ -99,7 +99,7 @@ function showAnnotationForm(type,px,py,extra){
           payload.annotation_data={type:"box",width:extra.w,height:extra.h};
         }
         postComment(payload,function(d){
-          removePendingAnnotation();refresh();
+          clearPendingHighlight();removePendingAnnotation();refresh();
           if(d)openPanel();
         });
       }
@@ -113,13 +113,15 @@ function showAnnotationForm(type,px,py,extra){
   });
 
   pfText.addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();pfSend.click();}});
-  f.querySelector(".aviz-pf-cancel").addEventListener("click",function(){removePendingAnnotation();});
+  f.querySelector(".aviz-pf-cancel").addEventListener("click",function(){clearPendingHighlight();removePendingAnnotation();});
 }
 
-function removePendingAnnotation(){
-  /* Unwrap every pending text-highlight mark (a multi-element selection
-     wraps each contained text node, so there can be more than one) so the
-     page DOM is left untouched after the reviewer cancels or submits. */
+/* Unwrap every pending text-highlight mark and clear the pending state.
+   Split out from removePendingAnnotation so showAnnotationForm() can call
+   removePendingAnnotation() at the start (to tear down the previous form +
+   marker + box) WITHOUT destroying the new pending highlight that was just
+   placed by highlight-mode immediately before opening the form. */
+function clearPendingHighlight(){
   var pms=document.querySelectorAll("mark.aviz-hl-pending");
   for(var i=0;i<pms.length;i++){
     var pm=pms[i];var parent=pm.parentNode;if(!parent)continue;
@@ -129,7 +131,9 @@ function removePendingAnnotation(){
   }
   window.__avizPendingHighlightMark=null;
   window.__avizPendingHighlight=null;
+}
 
+function removePendingAnnotation(){
   if(!pendingAnnotation)return;
   pendingAnnotation.form.remove();
   if(pendingAnnotation.marker)pendingAnnotation.marker.remove();

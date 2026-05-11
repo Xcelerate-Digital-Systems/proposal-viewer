@@ -28,19 +28,22 @@ html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-ro
 .aviz-el-hl{outline:2px solid ${HOVER_COLOR};outline-offset:2px;transition:outline-color .3s;box-shadow:0 0 0 1px ${HOVER_COLOR}40;}
 
 /* ── Pin marker ────────────────────────────────────────── */
-.aviz-pin{position:absolute;z-index:2147483639;width:28px;height:28px;border-radius:50%;
-  background:${PIN_COLOR};color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;
-  justify-content:center;cursor:pointer;transform:translate(-50%,-50%);
-  box-shadow:0 2px 8px rgba(0,0,0,.25);border:2px solid #fff;
-  transition:transform .3s,box-shadow .3s;}
-.aviz-pin:hover{transform:translate(-50%,-50%) scale(1.15);box-shadow:0 4px 12px rgba(0,0,0,.3);}
+/* !important throughout this section — host pages frequently reset div
+   backgrounds, borders, and box-shadows, which silently makes the pending
+   marker invisible while the comment form is open. */
+.aviz-pin{position:absolute !important;z-index:2147483639 !important;width:28px !important;height:28px !important;border-radius:50% !important;
+  background:${PIN_COLOR} !important;color:#fff !important;font-size:13px !important;font-weight:700 !important;display:flex !important;align-items:center !important;
+  justify-content:center !important;cursor:pointer;transform:translate(-50%,-50%) !important;
+  box-shadow:0 2px 8px rgba(0,0,0,.25) !important;border:2px solid #fff !important;
+  transition:transform .3s,box-shadow .3s;font-family:${FONT};line-height:1;}
+.aviz-pin:hover{transform:translate(-50%,-50%) scale(1.15) !important;box-shadow:0 4px 12px rgba(0,0,0,.3) !important;}
 .aviz-pin.pending{animation:aviz-pinPulse .8s ease-in-out infinite alternate;}
 @keyframes aviz-pinPulse{from{box-shadow:0 2px 8px rgba(0,0,0,.25);}to{box-shadow:0 2px 16px ${PIN_COLOR}60;}}
 
 /* ── Box drawing ───────────────────────────────────────── */
-.aviz-draw-box{position:absolute;z-index:2147483639;border:2px dashed ${ACCENT};background:${ACCENT}10;pointer-events:none;}
-.aviz-box{position:absolute;z-index:2147483639;border:2px solid ${ACCENT};background:${ACCENT}08;cursor:pointer;transition:opacity .3s;}
-.aviz-box:hover{background:${ACCENT}15;}
+.aviz-draw-box{position:absolute !important;z-index:2147483639 !important;border:2px dashed ${ACCENT} !important;background:${ACCENT}10 !important;pointer-events:none !important;}
+.aviz-box{position:absolute !important;z-index:2147483639 !important;border:2px solid ${ACCENT} !important;background:${ACCENT}08 !important;cursor:pointer;transition:opacity .3s;}
+.aviz-box:hover{background:${ACCENT}15 !important;}
 .aviz-box.pending{animation:aviz-boxPulse .8s ease-in-out infinite alternate;}
 @keyframes aviz-boxPulse{from{border-color:${ACCENT};}to{border-color:${ACCENT}80;}}
 
