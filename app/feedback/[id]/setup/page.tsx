@@ -183,7 +183,14 @@ function StatusCard({
   const [showEmbed, setShowEmbed] = useState(!installed);
 
   const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
-  const scriptTag = `<script src="${apiBase}/api/review-widget/${project.share_token}/script" defer><\/script>`;
+  const scriptSrc = `${apiBase}/api/review-widget/${project.share_token}/script`;
+  const scriptTag = `<script>
+(function(){
+  var s=document.createElement('script');s.defer=true;
+  s.src=${JSON.stringify(scriptSrc)};
+  document.head.appendChild(s);
+})();
+<\/script>`;
 
   const handleCopy = async () => {
     try {

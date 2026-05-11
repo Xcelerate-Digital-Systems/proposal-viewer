@@ -97,16 +97,24 @@ html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-ro
 /* ── Annotation form (floating card) ───────────────────── */
 .aviz-pin-form{position:absolute;z-index:2147483643;width:${POPOVER_STYLE.widthPx}px;max-width:calc(100vw - 40px);background:${POPOVER_STYLE.background};border-radius:16px;
   box-shadow:${POPOVER_STYLE.boxShadow};padding:16px;border:1px solid ${POPOVER_STYLE.borderColor};
-  animation:aviz-fadeIn .15s ease-out;}
+  animation:aviz-fadeIn .15s ease-out;
+  font-family:${FONT} !important;line-height:1.45 !important;color:#111827;font-style:normal;}
+.aviz-pin-form *{font-family:${FONT} !important;line-height:1.45 !important;box-sizing:border-box;}
 @keyframes aviz-fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.aviz-pin-form h4{font-size:11px;font-weight:500;color:#9ca3af;margin:0 0 8px 0;padding:0;}
+.aviz-pin-form h4{font-size:11px;font-weight:500;color:#9ca3af;margin:0 0 8px 0;padding:0;font-style:normal;text-transform:none;letter-spacing:normal;}
+.aviz-pin-form h4 strong{font-weight:600;}
+.aviz-pin-form textarea,.aviz-pin-form input{font-family:${FONT} !important;color:#111827;}
 .aviz-pf-quote{margin:0 0 10px 0;padding:6px 10px;border-left:3px solid #fde047;background:#fefce8;border-radius:0 6px 6px 0;font-size:11px;color:#92400e;font-style:italic;}
 
-/* ── Text highlight marks ──────────────────────────────── */
-mark.aviz-hl{background:rgba(253,224,71,.55);padding:1px 2px;border-radius:2px;cursor:pointer;transition:background .3s;color:inherit;}
-mark.aviz-hl-pending{background:rgba(253,224,71,.7);padding:1px 2px;border-radius:2px;color:inherit;}
-mark.aviz-hl:hover{background:rgba(253,224,71,.8);}
-mark.aviz-hl.resolved{background:rgba(253,224,71,.28);}
+/* ── Text highlight marks ──────────────────────────────────
+   !important is required because many host pages style <mark>
+   themselves (or reset background/color), which would otherwise
+   make the pending highlight invisible. */
+mark.aviz-hl,mark.aviz-hl-pending{display:inline !important;padding:1px 2px !important;border-radius:2px !important;color:inherit !important;font:inherit !important;text-decoration:none !important;}
+mark.aviz-hl{background:rgba(253,224,71,.55) !important;cursor:pointer;transition:background .3s;}
+mark.aviz-hl-pending{background:rgba(253,224,71,.85) !important;box-shadow:0 0 0 1px rgba(202,138,4,.35) !important;}
+mark.aviz-hl:hover{background:rgba(253,224,71,.8) !important;}
+mark.aviz-hl.resolved{background:rgba(253,224,71,.28) !important;}
 .aviz-hl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin:0 3px;border-radius:9999px;background:${PIN_COLOR};color:#fff;font-size:10px;font-weight:700;line-height:1;vertical-align:middle;cursor:pointer;user-select:none;font-style:normal;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2);font-family:${FONT};}
 
 /* ── Priority selector (shared across pin, text, highlight forms) ── */

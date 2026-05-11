@@ -102,15 +102,20 @@ function loadH2C(cb){
   document.head.appendChild(s);
 }
 
-/* ── Auto-screenshot (hides widget UI but keeps pin marker, crops around pin) ──
-   opts.cropAround = { x, y } — page coordinates to centre the 16:9 crop on.
-   When omitted, returns the full viewport capture unchanged. */
+/* ── Auto-screenshot (captures the current viewport — what's in view) ──
+   The pending pin/box marker is appended to <body> directly so it remains
+   visible in the capture. We hide only the widget toolbar/panel and the
+   open comment form. opts.cropAround is accepted for backwards compatibility
+   but is intentionally ignored — cropping at a fixed 16:9 around the pin
+   on multi-DPR displays misaligned the crop and often cut the pin out of
+   frame. The full viewport is always more useful context for a reviewer. */
 function captureAutoScreenshot(cb,opts){
   root.style.display="none";
   var form=document.querySelector(".aviz-pin-form");if(form)form.style.display="none";
   loadH2C(function(){
     html2canvas(document.body,{
       useCORS:true,allowTaint:true,
+      scale:window.devicePixelRatio||1,
       scrollX:-window.scrollX,scrollY:-window.scrollY,
       windowWidth:document.documentElement.clientWidth,
       windowHeight:document.documentElement.clientHeight,
@@ -119,26 +124,7 @@ function captureAutoScreenshot(cb,opts){
       x:window.scrollX,y:window.scrollY
     }).then(function(canvas){
       root.style.display="";if(form)form.style.display="";
-      var out=canvas;
-      if(opts&&opts.cropAround){
-        try{
-          /* Pin coords are in PAGE space; canvas captured the viewport at
-             scrollX/scrollY, so subtract scroll to get canvas-local px. */
-          var pinX=opts.cropAround.x-window.scrollX;
-          var pinY=opts.cropAround.y-window.scrollY;
-          var dw=Math.min(canvas.width,1280);
-          var dh=Math.min(canvas.height,Math.round(dw*9/16));
-          if(dw>20&&dh>20){
-            var sx=Math.max(0,Math.min(canvas.width-dw,Math.round(pinX-dw/2)));
-            var sy=Math.max(0,Math.min(canvas.height-dh,Math.round(pinY-dh/2)));
-            var dest=document.createElement("canvas");dest.width=dw;dest.height=dh;
-            var ctx=dest.getContext("2d");
-            ctx.drawImage(canvas,sx,sy,dw,dh,0,0,dw,dh);
-            out=dest;
-          }
-        }catch(e){/* fall back to full canvas */}
-      }
-      cb(out.toDataURL("image/jpeg",0.85));
+      cb(canvas.toDataURL("image/jpeg",0.85));
     }).catch(function(err){
       root.style.display="";if(form)form.style.display="";
       console.error("Auto-screenshot failed:",err);cb(null);
