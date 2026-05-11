@@ -14,11 +14,12 @@ function GoogleLogo({ size = 30 }: { size?: number }) {
 }
 
 export default function GoogleAdNode(props: NodeItemProps) {
+  const label = props.item.type === 'google_banner_ad' ? 'Google Banner Ad' : 'Google Search Ad';
   return (
     <IconShell
       {...props}
       icon={<GoogleLogo size={34} />}
-      label="Google Ad"
+      label={label}
       tint="#FEF3C7"
     />
   );

@@ -14,8 +14,7 @@ export type VersionAssets = Pick<
   | 'email_subject' | 'email_preheader' | 'email_body'
   | 'sms_body'
   | 'image_url' | 'video_url' | 'pdf_url'
-  | 'google_ad_format' | 'google_ad_headline' | 'google_ad_description1'
-  | 'google_ad_description2' | 'google_ad_display_url' | 'google_ad_final_url'
+  | 'google_ad_data'
   | 'meta_lead_form_data'
 >;
 
@@ -76,12 +75,7 @@ export function extractAssets(src: FeedbackItem | FeedbackItemVersion): VersionA
     image_url: src.image_url,
     video_url: src.video_url,
     pdf_url: src.pdf_url,
-    google_ad_format: src.google_ad_format,
-    google_ad_headline: src.google_ad_headline,
-    google_ad_description1: src.google_ad_description1,
-    google_ad_description2: src.google_ad_description2,
-    google_ad_display_url: src.google_ad_display_url,
-    google_ad_final_url: src.google_ad_final_url,
+    google_ad_data: src.google_ad_data,
     meta_lead_form_data: src.meta_lead_form_data,
   };
 }

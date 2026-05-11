@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, Plus, X, ChevronDown, ChevronRight, CheckCircle2,
-  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList,
+  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList, Search, RectangleHorizontal,
 } from 'lucide-react';
 import { useFeedbackBoardContext } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
@@ -17,7 +17,8 @@ const TYPE_ICONS: Record<FeedbackItemType, React.ReactNode> = {
   image: <ImageIcon size={13} />,
   video: <Video size={13} />,
   ad: <Megaphone size={13} />,
-  google_ad: <Megaphone size={13} />,
+  google_search_ad: <Search size={13} />,
+  google_banner_ad: <RectangleHorizontal size={13} />,
   pdf: <FileText size={13} />,
   meta_lead_form: <ClipboardList size={13} />,
 };
@@ -29,7 +30,8 @@ const TYPE_LABELS: Record<FeedbackItemType, string> = {
   image: 'Image',
   video: 'Video',
   ad: 'Meta Ad',
-  google_ad: 'Google Ad',
+  google_search_ad: 'Google Search Ad',
+  google_banner_ad: 'Google Banner Ad',
   pdf: 'PDF',
   meta_lead_form: 'Lead Form',
 };

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, ClipboardList, type LucideIcon } from 'lucide-react';
+import { X, Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, ClipboardList, RectangleHorizontal, type LucideIcon } from 'lucide-react';
 import { type FeedbackItemType } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useFeedbackItemSubmit, type CreatedItemSummary } from './feedback-item-forms/useFeedbackItemSubmit';
@@ -12,7 +12,8 @@ import SmsItemForm from './feedback-item-forms/SmsItemForm';
 import WebpageItemForm from './feedback-item-forms/WebpageItemForm';
 import VideoItemForm from './feedback-item-forms/VideoItemForm';
 import PdfItemForm from './feedback-item-forms/PdfItemForm';
-import GoogleAdItemForm from './feedback-item-forms/GoogleAdItemForm';
+import GoogleSearchAdItemForm from './feedback-item-forms/GoogleSearchAdItemForm';
+import GoogleBannerAdItemForm from './feedback-item-forms/GoogleBannerAdItemForm';
 import MetaLeadFormItemForm from './feedback-item-forms/MetaLeadFormItemForm';
 
 /* ─── Types ────────────────────────────────────────────────────── */
@@ -31,7 +32,8 @@ const typeOptions: { value: FeedbackItemType; label: string; icon: LucideIcon; d
   { value: 'video', label: 'Video', icon: Video, description: 'YouTube, Vimeo, or upload a video file', enabled: true },
   { value: 'ad', label: 'Meta Ad', icon: Megaphone, description: 'Facebook / Instagram ad mockup', enabled: true },
   { value: 'meta_lead_form', label: 'Meta Lead Form', icon: ClipboardList, description: 'Multi-page Meta lead form mockup', enabled: true },
-  { value: 'google_ad', label: 'Google Ad', icon: Search, description: 'Google Search or Display ad mockup', enabled: true },
+  { value: 'google_search_ad', label: 'Google Search Ad', icon: Search, description: 'Headlines, descriptions, sitelinks & call extension', enabled: true },
+  { value: 'google_banner_ad', label: 'Google Banner Ad', icon: RectangleHorizontal, description: 'Display network banner creative', enabled: true },
   { value: 'email', label: 'Email', icon: Mail, description: 'Subject line, preheader & body text', enabled: true },
   { value: 'sms', label: 'SMS', icon: Smartphone, description: 'Text message preview with character count', enabled: true },
   { value: 'pdf', label: 'PDF', icon: FileText, description: 'Upload a PDF document for review', enabled: true },
@@ -43,7 +45,8 @@ const TITLES: Partial<Record<FeedbackItemType, string>> = {
   video: 'New Video',
   ad: 'New Meta Ad Mockup',
   meta_lead_form: 'New Meta Lead Form',
-  google_ad: 'New Google Ad',
+  google_search_ad: 'New Google Search Ad',
+  google_banner_ad: 'New Google Banner Ad',
   email: 'New Email',
   sms: 'New SMS',
   pdf: 'Upload PDF',
@@ -163,8 +166,11 @@ export default function AddFeedbackItemModal({
         {step === 'details' && itemType === 'video' && (
           <VideoItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} />
         )}
-        {step === 'details' && itemType === 'google_ad' && (
-          <GoogleAdItemForm onSubmit={submitWithFile} onSubmitPayload={submitPayload} onBack={handleBack} onCancel={onClose} uploading={uploading} onPreviewChange={handlePreviewChange} />
+        {step === 'details' && itemType === 'google_search_ad' && (
+          <GoogleSearchAdItemForm onSubmit={submitPayload} onBack={handleBack} onCancel={onClose} uploading={uploading} onPreviewChange={handlePreviewChange} />
+        )}
+        {step === 'details' && itemType === 'google_banner_ad' && (
+          <GoogleBannerAdItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} onPreviewChange={handlePreviewChange} />
         )}
         {step === 'details' && itemType === 'pdf' && (
           <PdfItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} />

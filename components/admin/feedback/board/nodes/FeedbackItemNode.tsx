@@ -34,7 +34,8 @@ const NODE_COMPONENTS: Record<string, React.ComponentType<NodeItemProps>> = {
   email: EmailNode,
   sms: SMSNode,
   ad: FacebookNode,
-  google_ad: GoogleAdNode,
+  google_search_ad: GoogleAdNode,
+  google_banner_ad: GoogleAdNode,
   pdf: PdfNode,
   meta_lead_form: MetaLeadFormNode,
 };

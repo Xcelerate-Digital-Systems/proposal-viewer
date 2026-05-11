@@ -52,7 +52,8 @@ export type FeedbackItemType =
   | 'image'
   | 'video'
   | 'sms'
-  | 'google_ad'
+  | 'google_search_ad'
+  | 'google_banner_ad'
   | 'pdf'
   | 'meta_lead_form';
 
@@ -174,7 +175,45 @@ export type FeedbackStatus =
 /** @deprecated Use `FeedbackStatus`. */
 export type FeedbackItemStatus = FeedbackStatus;
 
-export type GoogleAdFormat = 'search' | 'display';
+/** Sitelink asset attached to a Google Search ad. */
+export type GoogleAdSitelink = {
+  id: string;
+  text: string;
+  description1?: string;
+  description2?: string;
+  url: string;
+};
+
+/** Shape stored in `review_items.google_ad_data` (jsonb) for search + banner ads. */
+export type GoogleAdData = {
+  final_url: string;
+  display_url: string;
+  /** Display path segment 1 — e.g. "products" → example.com/products. Max 15 chars. */
+  path1?: string;
+  /** Display path segment 2 — e.g. "skip-bins" → example.com/products/skip-bins. Max 15 chars. */
+  path2?: string;
+  business_name?: string;
+  /** Up to 15 headlines, each ≤30 chars. Google rotates these. */
+  headlines: string[];
+  /** Up to 4 descriptions, each ≤90 chars. */
+  descriptions: string[];
+  /** Up to 6 sitelinks. */
+  sitelinks: GoogleAdSitelink[];
+  /** Call extension phone number (E.164 or local). Shown in preview. */
+  call_phone?: string;
+  /** Banner-ad only: uploaded creative URL. Search ads ignore this. */
+  banner_image_url?: string;
+};
+
+export function emptyGoogleAdData(): GoogleAdData {
+  return {
+    final_url: '',
+    display_url: '',
+    headlines: [],
+    descriptions: [],
+    sitelinks: [],
+  };
+}
 
 /** Identifier of a sub-view inside a mockup (e.g. lead-form page,
  *  email client, ad platform). Plain string so each mockup can use its own
@@ -185,12 +224,11 @@ export type FeedbackItemView = string | null;
 /** Default sub-view to show when an item is first opened. Pins persist their
  *  view in `annotation_data.view`, so this also defines which pins are
  *  visible by default. */
-export function defaultViewForItem(item: { type: FeedbackItemType; ad_platform?: string | null; google_ad_format?: GoogleAdFormat | null }): FeedbackItemView {
+export function defaultViewForItem(item: { type: FeedbackItemType; ad_platform?: string | null }): FeedbackItemView {
   switch (item.type) {
     case 'meta_lead_form': return 'intro';
     case 'email':          return 'inbox_preview';
     case 'sms':            return 'imessage';
-    case 'google_ad':      return item.google_ad_format || 'search';
     case 'ad':             return item.ad_platform || 'facebook_feed';
     default:               return null;
   }
@@ -233,13 +271,8 @@ export type FeedbackItem = {
   image_url: string | null;
   video_url: string | null;
   pdf_url: string | null;
-  // Google Ad fields
-  google_ad_format: GoogleAdFormat | null;
-  google_ad_headline: string | null;
-  google_ad_description1: string | null;
-  google_ad_description2: string | null;
-  google_ad_display_url: string | null;
-  google_ad_final_url: string | null;
+  // Google Ad (jsonb blob — see GoogleAdData)
+  google_ad_data: GoogleAdData | null;
   // Meta Lead Form (jsonb blob — see MetaLeadFormData)
   meta_lead_form_data: MetaLeadFormData | null;
   // Meta
@@ -280,12 +313,7 @@ export type FeedbackItemVersion = {
   image_url: string | null;
   video_url: string | null;
   pdf_url: string | null;
-  google_ad_format: GoogleAdFormat | null;
-  google_ad_headline: string | null;
-  google_ad_description1: string | null;
-  google_ad_description2: string | null;
-  google_ad_display_url: string | null;
-  google_ad_final_url: string | null;
+  google_ad_data: GoogleAdData | null;
   meta_lead_form_data: MetaLeadFormData | null;
   created_at: string;
   created_by: string | null;

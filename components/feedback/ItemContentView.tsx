@@ -5,7 +5,9 @@ import { Image as ImageIcon, FileText } from 'lucide-react';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
 import EmailMockupPreview, { type EmailClient } from '@/components/admin/feedback/EmailMockupPreview';
 import SmsMockupPreview, { type SmsClient } from '@/components/admin/feedback/SmsMockupPreview';
-import GoogleAdMockupPreview from '@/components/admin/feedback/GoogleAdMockupPreview';
+import GoogleSearchAdMockupPreview from '@/components/admin/feedback/GoogleSearchAdMockupPreview';
+import GoogleBannerAdMockupPreview from '@/components/admin/feedback/GoogleBannerAdMockupPreview';
+import { emptyGoogleAdData } from '@/lib/types/feedback';
 import MetaLeadFormMockupPreview, { type MetaLeadFormPage } from '@/components/admin/feedback/MetaLeadFormMockupPreview';
 import PinOverlay from './PinOverlay';
 import { HighlightOverlay } from '@/components/feedback/tools';
@@ -13,7 +15,6 @@ import WebpageEmbedView from './item-content/WebpageEmbedView';
 import WebpagePreviewView from './item-content/WebpagePreviewView';
 import type { FeedbackItem, FeedbackComment } from '@/lib/supabase';
 import {
-  type GoogleAdFormat,
   type FeedbackItemView,
   defaultViewForItem,
   getCommentView,
@@ -314,28 +315,26 @@ export default function ItemContentView({
     );
   }
 
-  // Google Ad items — render Google Ad mockup with pin overlay
-  if (item.type === 'google_ad') {
-    const format = (currentView as GoogleAdFormat | null) || (item.google_ad_format as GoogleAdFormat) || 'search';
+  // Google Search / Banner ad items — render the matching mockup with pin overlay.
+  // Both reads come from the shared google_ad_data jsonb; the discriminator is item.type.
+  if (item.type === 'google_search_ad' || item.type === 'google_banner_ad') {
+    const data = item.google_ad_data || emptyGoogleAdData();
     return (
       <div
         ref={containerRef}
-        className="relative w-full max-w-2xl mx-auto"
+        className="relative w-full max-w-2xl mx-auto flex justify-center"
         style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
-        <GoogleAdMockupPreview
-          format={format}
-          headline={item.google_ad_headline || item.ad_headline || ''}
-          description1={item.google_ad_description1 || ''}
-          description2={item.google_ad_description2 || ''}
-          displayUrl={item.google_ad_display_url || 'www.example.com'}
-          finalUrl={item.google_ad_final_url || ''}
-          creativeUrl={item.ad_creative_url || ''}
-          showFormatToggle
-          accentColor={accentColor}
-          onFormatChange={(f) => onViewChange?.(f)}
-        />
+        {item.type === 'google_search_ad' ? (
+          <GoogleSearchAdMockupPreview data={data} />
+        ) : (
+          <GoogleBannerAdMockupPreview
+            headline={data.headlines?.[0] || item.ad_headline || ''}
+            displayUrl={data.display_url || ''}
+            creativeUrl={data.banner_image_url || item.ad_creative_url || ''}
+          />
+        )}
         <PinOverlay
           pinComments={visiblePins}
           pendingPin={pendingPin}

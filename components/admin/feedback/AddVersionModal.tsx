@@ -28,12 +28,13 @@ interface AddVersionModalProps {
   ) => Promise<boolean>;
 }
 
-type AssetKind = 'file' | 'text' | 'ad' | 'google_ad' | 'meta_lead_form';
+type AssetKind = 'file' | 'text' | 'ad' | 'google_search_ad' | 'google_banner_ad' | 'meta_lead_form';
 
 function assetKindForType(type: FeedbackItem['type']): AssetKind {
   if (type === 'email' || type === 'sms') return 'text';
   if (type === 'ad') return 'ad';
-  if (type === 'google_ad') return 'google_ad';
+  if (type === 'google_search_ad') return 'google_search_ad';
+  if (type === 'google_banner_ad') return 'google_banner_ad';
   if (type === 'meta_lead_form') return 'meta_lead_form';
   return 'file'; // image, video, pdf
 }
@@ -42,7 +43,7 @@ function fileAccept(type: FeedbackItem['type']): string {
   if (type === 'image') return 'image/*';
   if (type === 'video') return 'video/*';
   if (type === 'pdf')   return 'application/pdf';
-  if (type === 'ad' || type === 'google_ad' || type === 'meta_lead_form') return 'image/*';
+  if (type === 'ad' || type === 'google_banner_ad' || type === 'meta_lead_form') return 'image/*';
   return '*';
 }
 
@@ -86,12 +87,15 @@ export default function AddVersionModal({
   const [lfDescription, setLfDescription] = useState(lf?.intro_description ?? '');
   const [lfCta, setLfCta] = useState(lf?.cta ?? 'Continue');
 
-  // Google ad copy
-  const [gadHeadline, setGadHeadline] = useState(seed.google_ad_headline ?? '');
-  const [gadDesc1, setGadDesc1] = useState(seed.google_ad_description1 ?? '');
-  const [gadDesc2, setGadDesc2] = useState(seed.google_ad_description2 ?? '');
-  const [gadDisplayUrl, setGadDisplayUrl] = useState(seed.google_ad_display_url ?? '');
-  const [gadFinalUrl, setGadFinalUrl] = useState(seed.google_ad_final_url ?? '');
+  // Google ad — versioning lets the user swap a small set of headline/description
+  // variants while keeping the base item's sitelinks, paths, and call extension.
+  const gad = seed.google_ad_data ?? item.google_ad_data ?? null;
+  const [gadHeadline1, setGadHeadline1] = useState(gad?.headlines?.[0] ?? '');
+  const [gadHeadline2, setGadHeadline2] = useState(gad?.headlines?.[1] ?? '');
+  const [gadHeadline3, setGadHeadline3] = useState(gad?.headlines?.[2] ?? '');
+  const [gadDesc1, setGadDesc1] = useState(gad?.descriptions?.[0] ?? '');
+  const [gadDesc2, setGadDesc2] = useState(gad?.descriptions?.[1] ?? '');
+  const [gadFinalUrl, setGadFinalUrl] = useState(gad?.final_url ?? '');
 
   const [uploading, setUploading] = useState(false);
   const busy = uploading || creating;
@@ -155,18 +159,37 @@ export default function AddVersionModal({
         };
       }
 
-      if (kind === 'google_ad') {
+      if (kind === 'google_search_ad') {
+        const base = item.google_ad_data;
+        if (!base) { toast.error('Base ad not configured'); setUploading(false); return; }
+        const headlines = [gadHeadline1, gadHeadline2, gadHeadline3, ...(base.headlines.slice(3))]
+          .map((h) => (h || '').trim()).filter(Boolean);
+        const descriptions = [gadDesc1, gadDesc2, ...(base.descriptions.slice(2))]
+          .map((d) => (d || '').trim()).filter(Boolean);
+        assets.google_ad_data = {
+          ...base,
+          final_url: gadFinalUrl.trim() || base.final_url,
+          headlines,
+          descriptions,
+        };
+      }
+
+      if (kind === 'google_banner_ad') {
+        const base = item.google_ad_data;
+        if (!base) { toast.error('Base ad not configured'); setUploading(false); return; }
+        let bannerImageUrl = base.banner_image_url;
         if (file) {
           const url = await onUploadAsset(file);
           if (!url) { setUploading(false); return; }
-          assets.ad_creative_url = url;
+          bannerImageUrl = url;
+          assets.ad_creative_url = url; // keep list/card thumbnails in sync
         }
-        assets.google_ad_format = item.google_ad_format;
-        assets.google_ad_headline = gadHeadline || null;
-        assets.google_ad_description1 = gadDesc1 || null;
-        assets.google_ad_description2 = gadDesc2 || null;
-        assets.google_ad_display_url = gadDisplayUrl || null;
-        assets.google_ad_final_url = gadFinalUrl || null;
+        assets.google_ad_data = {
+          ...base,
+          final_url: gadFinalUrl.trim() || base.final_url,
+          headlines: [(gadHeadline1.trim() || base.headlines[0] || '')],
+          banner_image_url: bannerImageUrl,
+        };
       }
 
       if (isEditing && onUpdate && editingVersion) {
@@ -257,26 +280,25 @@ export default function AddVersionModal({
             </>
           )}
 
-          {kind === 'google_ad' && (
+          {kind === 'google_search_ad' && (
             <>
-              {item.google_ad_format === 'display' && (
-                <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
-              )}
-              <Field label="Headline">
-                <input className={inputCls} value={gadHeadline} onChange={(e) => setGadHeadline(e.target.value)} />
-              </Field>
-              <Field label="Description 1">
-                <input className={inputCls} value={gadDesc1} onChange={(e) => setGadDesc1(e.target.value)} />
-              </Field>
-              <Field label="Description 2">
-                <input className={inputCls} value={gadDesc2} onChange={(e) => setGadDesc2(e.target.value)} />
-              </Field>
-              <Field label="Display URL">
-                <input className={inputCls} value={gadDisplayUrl} onChange={(e) => setGadDisplayUrl(e.target.value)} />
-              </Field>
-              <Field label="Final URL">
-                <input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} />
-              </Field>
+              <p className="text-[11px] text-gray-500 -mt-1">
+                Versions swap the first three headlines and two descriptions. Sitelinks, paths, and call extension stay from the base item.
+              </p>
+              <Field label="Headline 1"><input className={inputCls} value={gadHeadline1} onChange={(e) => setGadHeadline1(e.target.value.slice(0, 30))} /></Field>
+              <Field label="Headline 2"><input className={inputCls} value={gadHeadline2} onChange={(e) => setGadHeadline2(e.target.value.slice(0, 30))} /></Field>
+              <Field label="Headline 3"><input className={inputCls} value={gadHeadline3} onChange={(e) => setGadHeadline3(e.target.value.slice(0, 30))} /></Field>
+              <Field label="Description 1"><input className={inputCls} value={gadDesc1} onChange={(e) => setGadDesc1(e.target.value.slice(0, 90))} /></Field>
+              <Field label="Description 2"><input className={inputCls} value={gadDesc2} onChange={(e) => setGadDesc2(e.target.value.slice(0, 90))} /></Field>
+              <Field label="Final URL"><input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} /></Field>
+            </>
+          )}
+
+          {kind === 'google_banner_ad' && (
+            <>
+              <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
+              <Field label="Headline"><input className={inputCls} value={gadHeadline1} onChange={(e) => setGadHeadline1(e.target.value)} /></Field>
+              <Field label="Final URL"><input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} /></Field>
             </>
           )}
 

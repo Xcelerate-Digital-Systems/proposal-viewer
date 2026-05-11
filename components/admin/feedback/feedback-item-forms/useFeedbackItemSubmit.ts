@@ -106,8 +106,12 @@ export function useFeedbackItemSubmit({
         // Set type-specific URL fields based on the uploaded file
         if (payload.type === 'ad') {
           fullPayload.ad_creative_url = imageUrl;
-        } else if (payload.type === 'google_ad') {
-          fullPayload.ad_creative_url = imageUrl;
+        } else if (payload.type === 'google_banner_ad') {
+          // Banner image lives inside the google_ad_data jsonb so the type
+          // owns its own asset reference instead of relying on ad_creative_url.
+          const existing = (payload.google_ad_data as Record<string, unknown> | undefined) || {};
+          fullPayload.google_ad_data = { ...existing, banner_image_url: imageUrl };
+          fullPayload.ad_creative_url = imageUrl; // kept for list/card thumbnails
         } else if (payload.type === 'video') {
           fullPayload.video_url = imageUrl;
         } else if (payload.type === 'pdf') {

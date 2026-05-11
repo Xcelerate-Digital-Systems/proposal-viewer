@@ -426,6 +426,7 @@ export const NODE_LAYOUTS: Record<string, NodeLayout> = {
   email: 'icon',
   sms: 'icon',
   ad: 'icon',
-  google_ad: 'icon',
+  google_search_ad: 'icon',
+  google_banner_ad: 'icon',
   meta_lead_form: 'card',
 };
