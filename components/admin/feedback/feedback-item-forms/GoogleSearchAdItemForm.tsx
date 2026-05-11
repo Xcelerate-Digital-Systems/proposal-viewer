@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Plus, Trash2, Link2, Phone, AlignLeft, Type, Building2, Slash } from 'lucide-react';
 import type { GoogleAdData, GoogleAdSitelink } from '@/lib/types/feedback';
-import GoogleSearchAdMockupPreview from '@/components/admin/feedback/GoogleSearchAdMockupPreview';
 import FormActions from './FormActions';
 
 interface Props {
@@ -53,18 +52,16 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
   const [descriptions, setDescriptions] = useState<string[]>(['', '']);
   const [sitelinks, setSitelinks] = useState<GoogleAdSitelink[]>([]);
   const [callPhone, setCallPhone] = useState('');
-  const [showPreview, setShowPreview] = useState(true);
+
+  /* Open the modal at its wide layout — there's no preview pane, but the
+     Google Ads-style sections need more horizontal room than the default
+     narrow modal width. */
+  useEffect(() => { onPreviewChange?.(true); }, [onPreviewChange]);
 
   /* Collapsible sections — open by default for the headline+desc+sitelink+call core */
   const [open, setOpen] = useState<Record<string, boolean>>({
     url: true, path: true, headlines: true, descriptions: true, sitelinks: false, call: false, business: false,
   });
-
-  const togglePreview = () => {
-    const next = !showPreview;
-    setShowPreview(next);
-    onPreviewChange?.(next);
-  };
 
   const toggle = (k: string) => setOpen((p) => ({ ...p, [k]: !p[k] }));
 
@@ -118,8 +115,8 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex">
-      <div className={`${showPreview ? 'w-1/2 border-r border-gray-200' : 'w-full'} p-5 space-y-3 overflow-y-auto`}>
+    <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 p-6 space-y-3 overflow-y-auto">
         <div>
           <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Item Title <span className="text-red-400">*</span></label>
           <input
@@ -295,32 +292,16 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
           />
           <CharCount value={businessName} limit={25} />
         </Section>
+      </div>
 
+      <div className="border-t border-gray-100 px-6 py-3">
         <FormActions
           onBack={onBack}
           onCancel={onCancel}
           disabled={!canSubmit || uploading}
           uploading={uploading}
-          previewToggle={{ visible: showPreview, enabled: true, onToggle: togglePreview }}
         />
       </div>
-
-      {showPreview && (
-        <div className="w-1/2 p-5 overflow-y-auto bg-gray-50 flex items-start justify-center">
-          <GoogleSearchAdMockupPreview
-            data={{
-              final_url: finalUrl,
-              display_url: displayUrl,
-              path1, path2,
-              business_name: businessName,
-              headlines: trimmedHeadlines.length ? trimmedHeadlines : ['Your headline here'],
-              descriptions: trimmedDescriptions.length ? trimmedDescriptions : ['Your description appears here.'],
-              sitelinks: trimmedSitelinks,
-              call_phone: callPhone || undefined,
-            }}
-          />
-        </div>
-      )}
     </form>
   );
 }

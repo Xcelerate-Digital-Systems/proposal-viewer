@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import GoogleBannerAdMockupPreview from '@/components/admin/feedback/GoogleBannerAdMockupPreview';
 import FormActions from './FormActions';
 
 interface Props {
@@ -24,13 +23,10 @@ export default function GoogleBannerAdItemForm({ onSubmit, onBack, onCancel, upl
   const [finalUrl, setFinalUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(true);
 
-  const togglePreview = () => {
-    const next = !showPreview;
-    setShowPreview(next);
-    onPreviewChange?.(next);
-  };
+  /* Open the modal at its wide layout — banner upload + headline reads better
+     with the wider canvas, even though there's no preview pane. */
+  useEffect(() => { onPreviewChange?.(true); }, [onPreviewChange]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -78,8 +74,8 @@ export default function GoogleBannerAdItemForm({ onSubmit, onBack, onCancel, upl
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex">
-      <div className={`${showPreview ? 'w-1/2 border-r border-gray-200' : 'w-full'} p-6 space-y-4 overflow-y-auto`}>
+    <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
         <div>
           <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Item Title <span className="text-red-400">*</span></label>
           <input
@@ -137,21 +133,16 @@ export default function GoogleBannerAdItemForm({ onSubmit, onBack, onCancel, upl
             className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
           />
         </div>
+      </div>
 
+      <div className="border-t border-gray-100 px-6 py-3">
         <FormActions
           onBack={onBack}
           onCancel={onCancel}
           disabled={!canSubmit}
           uploading={uploading}
-          previewToggle={{ visible: showPreview, enabled: !!headline.trim() || !!preview, onToggle: togglePreview }}
         />
       </div>
-
-      {showPreview && (
-        <div className="w-1/2 p-6 overflow-y-auto bg-gray-50 flex items-start justify-center">
-          <GoogleBannerAdMockupPreview headline={headline || 'Your headline'} displayUrl={displayUrl || 'example.com'} creativeUrl={preview || undefined} />
-        </div>
-      )}
     </form>
   );
 }
