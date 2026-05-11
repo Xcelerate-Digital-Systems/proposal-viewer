@@ -180,7 +180,7 @@ function StatusCard({
   installed: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const [showEmbed, setShowEmbed] = useState(!installed);
+  const [showEmbed, setShowEmbed] = useState(true);
 
   const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
   const scriptSrc = `${apiBase}/api/review-widget/${project.share_token}/script`;
