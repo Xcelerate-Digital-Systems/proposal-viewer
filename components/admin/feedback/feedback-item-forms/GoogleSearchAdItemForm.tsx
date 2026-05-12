@@ -48,8 +48,8 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
   const [path1, setPath1] = useState('');
   const [path2, setPath2] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [headlines, setHeadlines] = useState<string[]>(['', '', '']);
-  const [descriptions, setDescriptions] = useState<string[]>(['', '']);
+  const [headlines, setHeadlines] = useState<string[]>(['']);
+  const [descriptions, setDescriptions] = useState<string[]>(['']);
   const [sitelinks, setSitelinks] = useState<GoogleAdSitelink[]>([]);
   const [callPhone, setCallPhone] = useState('');
 
@@ -73,7 +73,7 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
     .map((s) => ({ ...s, text: s.text.trim(), url: s.url.trim(), description1: s.description1?.trim(), description2: s.description2?.trim() }))
     .filter((s) => s.text && s.url);
 
-  const canSubmit = !!title.trim() && !!finalUrl.trim() && trimmedHeadlines.length >= 3 && trimmedDescriptions.length >= 2;
+  const canSubmit = !!title.trim() && !!finalUrl.trim() && trimmedHeadlines.length >= 1 && trimmedDescriptions.length >= 1;
 
   const setHeadline = (i: number, v: string) => {
     setHeadlines((prev) => { const next = [...prev]; next[i] = v.slice(0, HEADLINE_LIMIT); return next; });
@@ -175,13 +175,13 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
                     placeholder={`Headline ${i + 1}`}
                     className="flex-1 px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
                   />
-                  {headlines.length > 3 && (
+                  {headlines.length > 1 && (
                     <button type="button" onClick={() => removeHeadline(i)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
                       <Trash2 size={14} />
                     </button>
                   )}
                 </div>
-                <CharCount value={h} limit={HEADLINE_LIMIT} required={i < 3} />
+                <CharCount value={h} limit={HEADLINE_LIMIT} required={i === 0} />
               </div>
             ))}
             {headlines.length < MAX_HEADLINES && (
@@ -203,13 +203,13 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
                     placeholder={`Description ${i + 1}`}
                     className="flex-1 px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 resize-y min-h-[56px]"
                   />
-                  {descriptions.length > 2 && (
+                  {descriptions.length > 1 && (
                     <button type="button" onClick={() => removeDescription(i)} className="p-2 text-gray-400 hover:text-red-500 transition-colors mt-1">
                       <Trash2 size={14} />
                     </button>
                   )}
                 </div>
-                <CharCount value={d} limit={DESCRIPTION_LIMIT} required={i < 2} />
+                <CharCount value={d} limit={DESCRIPTION_LIMIT} required={i === 0} />
               </div>
             ))}
             {descriptions.length < MAX_DESCRIPTIONS && (
