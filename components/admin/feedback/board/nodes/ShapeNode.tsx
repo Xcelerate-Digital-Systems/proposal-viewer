@@ -7,10 +7,9 @@ import {
   MousePointerClick, FileText, PlayCircle, ChevronsDown,
   ShoppingCart, ShoppingBag, BellRing, Sparkles,
   MessageSquare, Mail, Bell, Sheet,
-  X,
   type LucideIcon,
 } from 'lucide-react';
-import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent, FeedbackSmsNotificationContent, FeedbackEmailNotificationContent, FeedbackGhlNotificationContent } from '@/lib/supabase';
+import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
 import { NODE_FRAME_W, NODE_FRAME_H } from './nodeConfig';
 
 const ARROW_HEAD = 12;
@@ -55,21 +54,6 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     return (
       <WaitDiamond
         shape={shape}
-        selected={!!selected}
-        readOnly={readOnly}
-        onUpdateContent={onUpdateContent}
-      />
-    );
-  }
-
-  // Notification flow shapes — diamond visual but with rich per-type content
-  // (SMS body, Email subject/preheader/body, GHL title/message) edited in a
-  // popover modal instead of the inline single-line label.
-  if (NOTIFICATION_TYPES.has(shape.shape_type)) {
-    return (
-      <NotificationDiamond
-        shape={shape}
-        diamondType={shape.shape_type as NotificationDiamondType}
         selected={!!selected}
         readOnly={readOnly}
         onUpdateContent={onUpdateContent}
@@ -799,7 +783,8 @@ function EventDiamond({
               if (e.key === 'Escape') { setDraft(content.label ?? ''); setEditing(false); }
             }}
             placeholder={config.placeholder}
-            className="w-full px-1.5 py-0.5 rounded border border-edge bg-white text-[11px] text-center text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="px-2.5 py-1.5 rounded-md border border-edge bg-white text-sm text-center text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            style={{ width: 220 }}
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
@@ -914,13 +899,13 @@ function WaitDiamond({
                 if (e.key === 'Enter') { e.preventDefault(); commit(); }
                 if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
               }}
-              className="w-10 text-center px-1 py-0.5 rounded border border-edge bg-white text-[11px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              className="w-14 text-center px-2 py-1.5 rounded-md border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             />
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
               onBlur={commit}
-              className="px-1 py-0.5 rounded border border-edge bg-white text-[10px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              className="px-2 py-1.5 rounded-md border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             >
               {WAIT_UNITS.map((u) => (
                 <option key={u.value} value={u.value}>{u.label}</option>
@@ -933,7 +918,7 @@ function WaitDiamond({
               onBlur={commit}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
               placeholder="Label"
-              className="w-20 px-1.5 py-0.5 rounded border border-edge bg-white text-[10px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              className="w-32 px-2.5 py-1.5 rounded-md border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             />
           </div>
         ) : (
@@ -963,281 +948,6 @@ export function serializeActionContent(content: FeedbackActionContent): string {
   return JSON.stringify(content);
 }
 
-/* ─── Notification diamonds — rich content (SMS / Email / GHL) ──── */
-
-type NotificationDiamondType = 'sms_notification' | 'email_notification' | 'ghl_notification';
-
-const NOTIFICATION_TYPES = new Set<string>(['sms_notification', 'email_notification', 'ghl_notification']);
-
-const EMPTY_SMS: FeedbackSmsNotificationContent = { body: null };
-const EMPTY_EMAIL: FeedbackEmailNotificationContent = { subject: null, preheader: null, body: null };
-const EMPTY_GHL: FeedbackGhlNotificationContent = { title: null, message: null };
-
-function parseSmsNotificationContent(raw: string | null | undefined): FeedbackSmsNotificationContent {
-  if (!raw) return { ...EMPTY_SMS };
-  try {
-    const p = JSON.parse(raw) as Partial<FeedbackSmsNotificationContent>;
-    return { body: typeof p?.body === 'string' ? p.body : null };
-  } catch {
-    return { body: typeof raw === 'string' ? raw : null };
-  }
-}
-function parseEmailNotificationContent(raw: string | null | undefined): FeedbackEmailNotificationContent {
-  if (!raw) return { ...EMPTY_EMAIL };
-  try {
-    const p = JSON.parse(raw) as Partial<FeedbackEmailNotificationContent>;
-    return {
-      subject:   typeof p?.subject === 'string' ? p.subject : null,
-      preheader: typeof p?.preheader === 'string' ? p.preheader : null,
-      body:      typeof p?.body === 'string' ? p.body : null,
-    };
-  } catch {
-    return { ...EMPTY_EMAIL };
-  }
-}
-function parseGhlNotificationContent(raw: string | null | undefined): FeedbackGhlNotificationContent {
-  if (!raw) return { ...EMPTY_GHL };
-  try {
-    const p = JSON.parse(raw) as Partial<FeedbackGhlNotificationContent>;
-    return {
-      title:   typeof p?.title === 'string' ? p.title : null,
-      message: typeof p?.message === 'string' ? p.message : null,
-    };
-  } catch {
-    return { ...EMPTY_GHL };
-  }
-}
-
-function previewLabelFor(type: NotificationDiamondType, raw: string | null | undefined): string | null {
-  if (type === 'sms_notification') {
-    const c = parseSmsNotificationContent(raw);
-    return c.body?.trim() || null;
-  }
-  if (type === 'email_notification') {
-    const c = parseEmailNotificationContent(raw);
-    return c.subject?.trim() || c.body?.trim() || null;
-  }
-  const c = parseGhlNotificationContent(raw);
-  return c.title?.trim() || c.message?.trim() || null;
-}
-
-function NotificationDiamond({
-  shape, diamondType, selected, readOnly, onUpdateContent,
-}: {
-  shape: FeedbackBoardShape;
-  diamondType: NotificationDiamondType;
-  selected: boolean;
-  readOnly?: boolean;
-  onUpdateContent?: (id: string, content: string) => void;
-}) {
-  const config = DIAMOND_CONFIG[diamondType];
-  const [editing, setEditing] = useState(false);
-  const preview = previewLabelFor(diamondType, shape.content);
-  const labelText = preview || config.placeholder;
-
-  return (
-    <div
-      className="relative flex flex-col items-center"
-      style={{ width: DIAMOND_NODE_W, height: DIAMOND_NODE_H }}
-      onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
-    >
-      <DiamondHandles readOnly={readOnly} />
-
-      <div className="flex items-start pt-2 px-1" style={{ height: DIAMOND_LABEL_AREA }}>
-        <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-nowrap">
-          {labelText}
-        </span>
-      </div>
-
-      <DiamondVisual color={config.color} Icon={config.Icon} selected={selected} />
-
-      {editing && !readOnly && (
-        <NotificationEditor
-          type={diamondType}
-          rawContent={shape.content}
-          onSave={(serialized) => { onUpdateContent?.(shape.id, serialized); setEditing(false); }}
-          onClose={() => setEditing(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-function NotificationEditor({
-  type, rawContent, onSave, onClose,
-}: {
-  type: NotificationDiamondType;
-  rawContent: string | null;
-  onSave: (serialized: string) => void;
-  onClose: () => void;
-}) {
-  // Initial state per type
-  const initialSms = useMemo(() => parseSmsNotificationContent(rawContent), [rawContent]);
-  const initialEmail = useMemo(() => parseEmailNotificationContent(rawContent), [rawContent]);
-  const initialGhl = useMemo(() => parseGhlNotificationContent(rawContent), [rawContent]);
-
-  const [smsBody, setSmsBody] = useState(initialSms.body ?? '');
-  const [emailSubject, setEmailSubject] = useState(initialEmail.subject ?? '');
-  const [emailPreheader, setEmailPreheader] = useState(initialEmail.preheader ?? '');
-  const [emailBody, setEmailBody] = useState(initialEmail.body ?? '');
-  const [ghlTitle, setGhlTitle] = useState(initialGhl.title ?? '');
-  const [ghlMessage, setGhlMessage] = useState(initialGhl.message ?? '');
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const handleSave = () => {
-    if (type === 'sms_notification') {
-      onSave(JSON.stringify({ body: smsBody.trim() || null } as FeedbackSmsNotificationContent));
-    } else if (type === 'email_notification') {
-      onSave(JSON.stringify({
-        subject: emailSubject.trim() || null,
-        preheader: emailPreheader.trim() || null,
-        body: emailBody.trim() || null,
-      } as FeedbackEmailNotificationContent));
-    } else {
-      onSave(JSON.stringify({
-        title: ghlTitle.trim() || null,
-        message: ghlMessage.trim() || null,
-      } as FeedbackGhlNotificationContent));
-    }
-  };
-
-  const title =
-    type === 'sms_notification' ? 'SMS Notification'
-    : type === 'email_notification' ? 'Email Notification'
-    : 'GHL App Notification';
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      onClick={onClose}
-      onDoubleClick={(e) => e.stopPropagation()}
-    >
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" />
-
-      <div
-        className="relative w-full max-w-md bg-white rounded-2xl border border-edge shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-label={title}
-      >
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-edge">
-          <h3 className="text-sm font-semibold text-ink">{title}</h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors"
-            type="button"
-            title="Close"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="px-5 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
-          {type === 'sms_notification' && (
-            <FieldTextarea
-              label="Message"
-              value={smsBody}
-              onChange={setSmsBody}
-              placeholder="The SMS body sent to the contact"
-              rows={5}
-              maxLength={1000}
-              showCount
-            />
-          )}
-
-          {type === 'email_notification' && (
-            <>
-              <FieldInput label="Subject" value={emailSubject} onChange={setEmailSubject} placeholder="Subject line" />
-              <FieldInput label="Preheader" value={emailPreheader} onChange={setEmailPreheader} placeholder="Short preview text shown in inbox" />
-              <FieldTextarea label="Body" value={emailBody} onChange={setEmailBody} placeholder="Email body" rows={6} />
-            </>
-          )}
-
-          {type === 'ghl_notification' && (
-            <>
-              <FieldInput label="Title" value={ghlTitle} onChange={setGhlTitle} placeholder="Notification title" />
-              <FieldTextarea label="Message" value={ghlMessage} onChange={setGhlMessage} placeholder="Notification message" rows={4} />
-            </>
-          )}
-        </div>
-
-        <div className="px-5 py-3 border-t border-edge flex items-center justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 rounded-md text-sm text-ink/70 hover:bg-surface transition-colors"
-            type="button"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-1.5 rounded-md text-sm font-medium bg-teal text-white hover:bg-teal-hover transition-colors"
-            type="button"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FieldInput({
-  label, value, onChange, placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-[11px] font-medium uppercase tracking-wider text-ink/50">{label}</span>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="mt-1 w-full px-2.5 py-1.5 rounded-md border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-      />
-    </label>
-  );
-}
-
-function FieldTextarea({
-  label, value, onChange, placeholder, rows = 4, maxLength, showCount,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  rows?: number;
-  maxLength?: number;
-  showCount?: boolean;
-}) {
-  return (
-    <label className="block">
-      <div className="flex items-end justify-between">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-ink/50">{label}</span>
-        {showCount && maxLength && (
-          <span className="text-[10px] text-ink/40 tabular-nums">{value.length}/{maxLength}</span>
-        )}
-      </div>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(maxLength ? e.target.value.slice(0, maxLength) : e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className="mt-1 w-full px-2.5 py-1.5 rounded-md border border-edge bg-white text-sm text-ink resize-y focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-      />
-    </label>
-  );
-}
 
 const ShapeNode = memo(ShapeNodeComponent);
 ShapeNode.displayName = 'ShapeNode';

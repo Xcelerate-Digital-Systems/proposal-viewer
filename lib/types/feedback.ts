@@ -421,22 +421,6 @@ export type FeedbackActionContent = {
   label: string | null;
 };
 
-/** Stored as JSON in `review_board_shapes.content` for outbound-notification
- *  flow shapes. Mirrors the field set of the matching review-item type so the
- *  user can sketch the message inline without creating a feedback item. */
-export type FeedbackSmsNotificationContent = {
-  body: string | null;
-};
-export type FeedbackEmailNotificationContent = {
-  subject: string | null;
-  preheader: string | null;
-  body: string | null;
-};
-export type FeedbackGhlNotificationContent = {
-  title: string | null;
-  message: string | null;
-};
-
 /** Stored as JSON in `review_board_shapes.content` for wait shapes. */
 export type FeedbackWaitUnit = 'minutes' | 'hours' | 'days' | 'weeks';
 export type FeedbackWaitContent = {
