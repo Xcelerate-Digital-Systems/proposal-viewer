@@ -308,6 +308,22 @@ export default function FeedbackDetailView({
     [comments, selectedItemId, versions, activeVersionId]
   );
 
+  // Unresolved comment counts per asset view, for the Google Search ad
+  // sidebar badges. Keyed by view string ("headline-3" → 2). Root threads only.
+  const commentCountsByView = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {};
+    for (const c of comments) {
+      if (c.review_item_id !== selectedItemId) continue;
+      if (c.parent_comment_id) continue;
+      if (c.resolved) continue;
+      if (versions && versions.length > 1 && (c.version_id ?? null) !== (activeVersionId ?? null)) continue;
+      const view = getCommentView(c.annotation_data);
+      if (!view) continue;
+      counts[view] = (counts[view] || 0) + 1;
+    }
+    return counts;
+  }, [comments, selectedItemId, versions, activeVersionId]);
+
   // Auto-open comment form when text is selected — no extra button needed.
   // Note: we deliberately don't wipe the browser's Selection here; we want
   // the highlighted text to stay visible while the reviewer composes the
@@ -330,12 +346,14 @@ export default function FeedbackDetailView({
         ? { text: pendingHighlight.text, start: pendingHighlight.startOffset, end: pendingHighlight.endOffset, elementPath: pendingHighlight.elementPath }
         : undefined;
 
-      // Stamp the comment with the current sub-view so view-scoped mockups
-      // (lead form pages, email clients, ad platforms, etc.) show the pin /
-      // highlight / drawing only on the view it was placed on. Items without
-      // sub-views resolve to null and we omit the field entirely.
+      // Stamp pins / annotations / highlights with the view they were placed on
+      // (lead form pages, email clients, ad platforms, etc.). For Google Search
+      // ads we also stamp plain general comments, so the sidebar selection acts
+      // as a per-asset feedback target.
+      const isGoogleSearchAd = selectedItem?.type === 'google_search_ad';
       const isAnnotation = pinX != null || !!pendingAnnotation || !!highlight;
-      const annotationPayload = isAnnotation && currentMockupView != null
+      const shouldStampView = (isAnnotation || isGoogleSearchAd) && currentMockupView != null;
+      const annotationPayload = shouldStampView
         ? { ...(pendingAnnotation || {}), view: currentMockupView }
         : (pendingAnnotation || undefined);
 
@@ -344,7 +362,7 @@ export default function FeedbackDetailView({
       setPendingScreenshotUrl(null);
       setPendingHighlight(null);
     },
-    [selectedItemId, currentMockupView, onSubmitComment, pendingAnnotation, pendingScreenshotUrl, pendingHighlight]
+    [selectedItemId, selectedItem, currentMockupView, onSubmitComment, pendingAnnotation, pendingScreenshotUrl, pendingHighlight]
   );
 
   const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);
@@ -631,6 +649,7 @@ export default function FeedbackDetailView({
                 brandName={project.client_name || undefined}
                 activeView={activeView}
                 onViewChange={setActiveView}
+                commentCountsByView={commentCountsByView}
               />
             </div>
 
@@ -709,7 +728,7 @@ export default function FeedbackDetailView({
               unresolvedCount={unresolvedComments.length}
               mode={feedbackMode}
               onModeChange={changeFeedbackMode}
-              className="absolute top-4 right-4"
+              className="absolute top-6 right-8"
               accentColor={branding?.accent_color || accent}
             />
           </div>

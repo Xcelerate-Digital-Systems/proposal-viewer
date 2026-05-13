@@ -226,12 +226,30 @@ export type FeedbackItemView = string | null;
  *  visible by default. */
 export function defaultViewForItem(item: { type: FeedbackItemType; ad_platform?: string | null }): FeedbackItemView {
   switch (item.type) {
-    case 'meta_lead_form': return 'intro';
-    case 'email':          return 'inbox_preview';
-    case 'sms':            return 'imessage';
-    case 'ad':             return item.ad_platform || 'facebook_feed';
-    default:               return null;
+    case 'meta_lead_form':   return 'intro';
+    case 'email':            return 'inbox_preview';
+    case 'sms':              return 'imessage';
+    case 'ad':               return item.ad_platform || 'facebook_feed';
+    // Google Search ads: the "view" doubles as the per-asset feedback target.
+    // Default to the first headline so the comments panel + composer are scoped
+    // to a concrete asset on first open.
+    case 'google_search_ad': return 'headline-0';
+    default:                 return null;
   }
+}
+
+/** Parse a Google Search ad view string ("headline-3" / "description-1")
+ *  back into a typed asset reference. Returns null for non-asset views. */
+export function parseGoogleAdAssetView(view: FeedbackItemView): { type: 'headline' | 'description'; index: number } | null {
+  if (!view) return null;
+  const match = /^(headline|description)-(\d+)$/.exec(view);
+  if (!match) return null;
+  return { type: match[1] as 'headline' | 'description', index: parseInt(match[2], 10) };
+}
+
+/** Build a Google Search ad asset view string from a typed reference. */
+export function googleAdAssetView(type: 'headline' | 'description', index: number): string {
+  return `${type}-${index}`;
 }
 
 /** Reads the view a pin/annotation/highlight was created on. Returns null

@@ -61,6 +61,9 @@ interface ItemContentViewProps {
   /** Notify the parent when the user toggles a sub-view. The parent stores
    *  this so pin/highlight/drawing creation can scope to the active view. */
   onViewChange?: (view: FeedbackItemView) => void;
+  /** Comment counts keyed by view string — used by Google Search ad sidebar
+   *  to badge which assets already have feedback. */
+  commentCountsByView?: Record<string, number>;
 }
 
 /* ================================================================== */
@@ -86,6 +89,7 @@ export default function ItemContentView({
   brandName,
   activeView,
   onViewChange,
+  commentCountsByView,
 }: ItemContentViewProps) {
   const displayBrandName = brandName?.trim() || 'Your Brand';
 
@@ -313,7 +317,9 @@ export default function ItemContentView({
     );
   }
 
-  // Google Search / Banner ad items — render the matching mockup with pin overlay.
+  // Google Search / Banner ad items — render the matching mockup. Search ads
+  // use the asset-sidebar flow (per-asset comments, no pins). Banner ads
+  // still use the pin overlay since their content is a single image.
   // Both reads come from the shared google_ad_data jsonb; the discriminator is item.type.
   if (item.type === 'google_search_ad' || item.type === 'google_banner_ad') {
     const data = item.google_ad_data || emptyGoogleAdData();
@@ -321,31 +327,38 @@ export default function ItemContentView({
     return (
       <div
         ref={containerRef}
-        className={`relative w-full mx-auto flex justify-center ${isSearch ? 'max-w-5xl' : 'max-w-2xl'}`}
-        style={{ cursor: cursorStyle }}
-        onClick={onImageClick}
+        className={`relative w-full mx-auto flex justify-center ${isSearch ? 'max-w-7xl' : 'max-w-2xl'}`}
+        style={{ cursor: isSearch ? 'default' : cursorStyle }}
+        onClick={isSearch ? undefined : onImageClick}
       >
         {isSearch ? (
-          <GoogleSearchAdMockupPreview data={data} />
-        ) : (
-          <GoogleBannerAdMockupPreview
-            headline={data.headlines?.[0] || item.ad_headline || ''}
-            displayUrl={data.display_url || ''}
-            creativeUrl={data.banner_image_url || item.ad_creative_url || ''}
+          <GoogleSearchAdMockupPreview
+            data={data}
+            activeView={currentView}
+            onViewChange={onViewChange}
+            commentCountsByView={commentCountsByView}
           />
+        ) : (
+          <>
+            <GoogleBannerAdMockupPreview
+              headline={data.headlines?.[0] || item.ad_headline || ''}
+              displayUrl={data.display_url || ''}
+              creativeUrl={data.banner_image_url || item.ad_creative_url || ''}
+            />
+            <PinOverlay
+              pinComments={visiblePins}
+              pendingPin={pendingPin}
+              onPinClick={onPinClick}
+            />
+            <HighlightOverlay
+              containerRef={containerRef as React.RefObject<HTMLElement>}
+              highlightComments={visibleHighlights}
+              highlightedCommentId={highlightedCommentId}
+              onHighlightClick={onHighlightClick}
+              pendingHighlight={pendingHighlight}
+            />
+          </>
         )}
-        <PinOverlay
-          pinComments={visiblePins}
-          pendingPin={pendingPin}
-          onPinClick={onPinClick}
-        />
-        <HighlightOverlay
-          containerRef={containerRef as React.RefObject<HTMLElement>}
-          highlightComments={visibleHighlights}
-          highlightedCommentId={highlightedCommentId}
-          onHighlightClick={onHighlightClick}
-          pendingHighlight={pendingHighlight}
-        />
       </div>
     );
   }
