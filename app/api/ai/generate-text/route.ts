@@ -1,20 +1,38 @@
 // app/api/ai/generate-text/route.ts
-// QuoteWin-style "Generate with AI" endpoint. Powers the Scope of Works,
-// About Your Business, and Customer Testimonial buttons in the quote builder.
-//
-// Uses the Anthropic Messages API directly via fetch — no SDK needed. Haiku
-// 4.5 is the right tool for these short marketing/scope blurbs (fast + cheap).
+// "Generate with AI" endpoint powering Sparkle buttons across the quote/
+// proposal builder (Scope of Works, About Us, Customer Testimonial, Next
+// Steps, Terms & Conditions, etc.). Uses Sonnet 4.6 and, when the company has
+// a website on file, fetches a snippet of that site so the generated copy is
+// grounded in the user's actual business rather than generic trade prose.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
+import { createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const MODEL = 'claude-haiku-4-5-20251001';
+const MODEL = 'claude-sonnet-4-6';
 const ANTHROPIC_VERSION = '2023-06-01';
 
-type GenerateKind = 'scope' | 'about' | 'testimonial';
+type GenerateKind =
+  | 'scope'
+  | 'about'
+  | 'testimonial'
+  | 'next_steps'
+  | 'terms';
+
+interface GenerateContext {
+  projectTitle?: string;
+  category?: string;
+  clientName?: string;
+  lineItems?: Array<{ label?: string; description?: string; amount?: number }>;
+  /** Free-form text scraped from the company's website (lightly cleaned). */
+  websiteSnippet?: string;
+  /** The company's URL, included verbatim so the model can cite it if asked. */
+  websiteUrl?: string;
+  companyName?: string;
+}
 
 const PROMPTS: Record<GenerateKind, (ctx: GenerateContext) => string> = {
   scope: ({ projectTitle, lineItems }) =>
@@ -25,23 +43,31 @@ Keep it 80-140 words, plain prose, no bullet points, no markdown. Mention that
 the trade handles every stage in-house and the client has a single point of
 contact. End with a sentence about expected duration if it makes sense.`,
   about: ({ projectTitle }) =>
-    `Write a short "About Us" blurb for a small Australian trade business that
-appears on a quote. Project category context: ${projectTitle || 'general renovation work'}.
+    `Write a short "About Us" blurb for a small trade business that appears on a quote.
+Project category context: ${projectTitle || 'general renovation work'}.
 Keep it 60-100 words, plain prose, no bullets or markdown. Mention years of
 experience, in-house team, full insurance/licensing, and that there's no
-sub-contracting. Use first person plural ("we").`,
+sub-contracting. Use first person plural ("we"). Ground specifics in the
+website context above when one is provided.`,
   testimonial: ({ projectTitle }) =>
     `Invent a realistic-sounding customer testimonial (4-6 sentences) for a
 trade business that just completed: ${projectTitle || 'a renovation'}.
 Praise quote accuracy, on-site cleanliness, sticking to the timeline, and
 finished quality. End with a first name and suburb (e.g. "— Sarah T., Mosman NSW").
 Plain prose, in double quotes, no markdown.`,
+  next_steps: () =>
+    `Write 4 concise "Next Steps" lines a customer follows once they accept a
+trade quote. Each line is a single short sentence (max ~12 words). Return as
+4 lines separated by single newlines — no numbering, no bullets, no markdown.
+Cover: accept the quote, pay deposit, schedule start date, walkthrough on
+completion.`,
+  terms: () =>
+    `Write a friendly, plain-prose "Terms & Conditions" summary (120-180 words)
+for a small trade business quote. Cover: validity of the quote (30 days),
+variations to scope, deposit and progress payment policy, materials supply,
+warranty on workmanship, and dispute resolution. No headings, no bullet
+points, no markdown — write as 1-3 short paragraphs.`,
 };
-
-interface GenerateContext {
-  projectTitle?: string;
-  lineItems?: Array<{ label?: string; description?: string; amount?: number }>;
-}
 
 function formatLineItems(items: GenerateContext['lineItems']): string {
   if (!items || items.length === 0) return '(none provided)';
@@ -49,6 +75,58 @@ function formatLineItems(items: GenerateContext['lineItems']): string {
     .slice(0, 12)
     .map((i) => `- ${i.description || i.label || 'Item'}`)
     .join('\n');
+}
+
+function buildSystemPrompt(ctx: GenerateContext): string {
+  const websiteBlock = ctx.websiteUrl
+    ? `\n\nCompany website: ${ctx.websiteUrl}${
+        ctx.websiteSnippet
+          ? `\nThe following is the homepage text from that website. Use it as
+ground truth for the business name, services, and tone. Do NOT invent details
+that contradict it.\n---\n${ctx.websiteSnippet}\n---`
+          : ''
+      }`
+    : '';
+
+  return (
+    'You write concise, plain-prose copy for trade business quotes. ' +
+    'No markdown, no bullet points unless explicitly asked. Return only ' +
+    'the requested copy — no preamble like "Here is the…".' +
+    websiteBlock
+  );
+}
+
+/** Fetch the company's website with a 5-second timeout and strip HTML to a
+ *  ~3 KB plain-text snippet. Silently returns null on any failure — AI calls
+ *  must keep working when the site is offline or rate-limits us. */
+async function fetchWebsiteSnippet(url: string): Promise<string | null> {
+  try {
+    // Trust the value stored in companies.website but reject anything obviously
+    // not http(s) so we don't accidentally hit a file:// or other scheme.
+    const normalised = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(normalised, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'AgencyVizBot/1.0 (+https://agencyviz.com)' },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Strip script/style blocks, then tags, then collapse whitespace.
+    const text = html
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&[#a-z0-9]+;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return text.slice(0, 3000) || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -69,10 +147,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid kind' }, { status: 400 });
   }
 
-  const prompt = PROMPTS[kind]({
+  // Resolve the company so we can ground the prompt in their website. Falls
+  // back to whatever the client passed if the lookup fails for any reason.
+  const ctx: GenerateContext = {
     projectTitle: typeof body.projectTitle === 'string' ? body.projectTitle : undefined,
+    category: typeof body.category === 'string' ? body.category : undefined,
+    clientName: typeof body.clientName === 'string' ? body.clientName : undefined,
     lineItems: Array.isArray(body.lineItems) ? body.lineItems : undefined,
-  });
+  };
+
+  try {
+    const supabase = createServiceClient();
+    const { data: company } = await supabase
+      .from('companies')
+      .select('name, website')
+      .eq('id', auth.companyId)
+      .single();
+    if (company?.name) ctx.companyName = company.name as string;
+    if (company?.website) {
+      ctx.websiteUrl = company.website as string;
+      const snippet = await fetchWebsiteSnippet(company.website as string);
+      if (snippet) ctx.websiteSnippet = snippet;
+    }
+  } catch {
+    // Non-fatal — generation still proceeds without website grounding.
+  }
+
+  const prompt = PROMPTS[kind](ctx);
+  const system = buildSystemPrompt(ctx);
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -84,12 +186,9 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 600,
-        temperature: 0.6,
-        system:
-          'You write concise, plain-prose copy for trade business quotes. ' +
-          'No markdown, no bullet points unless explicitly asked. Return only ' +
-          'the requested copy — no preamble like "Here is the…".',
+        max_tokens: 800,
+        temperature: 0.7,
+        system,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -109,7 +208,11 @@ export async function POST(req: NextRequest) {
       .join('')
       .trim();
 
-    return NextResponse.json({ success: true, text });
+    return NextResponse.json({
+      success: true,
+      text,
+      grounded: Boolean(ctx.websiteSnippet),
+    });
   } catch (err) {
     console.error('AI generate error:', err);
     return NextResponse.json({ error: 'Generation failed' }, { status: 502 });

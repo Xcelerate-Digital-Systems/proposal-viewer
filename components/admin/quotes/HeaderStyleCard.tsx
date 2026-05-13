@@ -13,6 +13,8 @@ import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import ColorPickerField, { setBrandingColors } from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
+import GradientStopsEditor from '@/components/ui/GradientStopsEditor';
+import { buildGradientCss, resolveStops, type GradientStop } from '@/lib/gradient-stops';
 
 // Column-prefix config so the same card can edit either the cover splash
 // (cover_*) or the quote-body header band (quote_header_*). Each path also
@@ -37,6 +39,7 @@ interface VariantCols {
   gradient_angle: keyof Proposal;
   position_x: keyof Proposal;
   position_y: keyof Proposal;
+  gradient_stops: keyof Proposal;
   text_color: keyof Proposal;
   subtitle_color: keyof Proposal;
   /** Overlay opacity only applies to cover (sits behind cover image). */
@@ -51,6 +54,7 @@ const COVER_COLS: VariantCols = {
   gradient_angle: 'cover_gradient_angle',
   position_x: 'cover_gradient_position_x',
   position_y: 'cover_gradient_position_y',
+  gradient_stops: 'cover_gradient_stops',
   text_color: 'cover_text_color',
   subtitle_color: 'cover_subtitle_color',
   overlay_opacity: 'cover_overlay_opacity',
@@ -64,6 +68,7 @@ const QUOTE_HEADER_COLS: VariantCols = {
   gradient_angle: 'quote_header_gradient_angle',
   position_x: 'quote_header_gradient_position_x',
   position_y: 'quote_header_gradient_position_y',
+  gradient_stops: 'quote_header_gradient_stops',
   text_color: 'quote_header_text_color',
   subtitle_color: 'quote_header_subtitle_color',
 };
@@ -74,21 +79,6 @@ const HEADER_FALLBACK_2 = '#1e293b';
 type BgStyle = 'gradient' | 'solid';
 type GradientType = 'linear' | 'radial' | 'conic';
 type StyleMode = 'solid' | GradientType;
-
-function gradientFor(
-  style: BgStyle,
-  type: GradientType,
-  angle: number,
-  cx: number,
-  cy: number,
-  c1: string,
-  c2: string,
-): string {
-  if (style === 'solid') return c1;
-  if (type === 'radial') return `radial-gradient(circle at ${cx}% ${cy}%, ${c1}, ${c2})`;
-  if (type === 'conic')  return `conic-gradient(from ${angle}deg at ${cx}% ${cy}%, ${c1}, ${c2})`;
-  return `linear-gradient(${angle}deg, ${c1}, ${c2})`;
-}
 
 export default function HeaderStyleCard({
   proposal,
@@ -121,6 +111,7 @@ export default function HeaderStyleCard({
   const fbGradAng  = variant === 'quote-header' ? 'cover_gradient_angle'  : undefined;
   const fbPosX     = variant === 'quote-header' ? 'cover_gradient_position_x' : undefined;
   const fbPosY     = variant === 'quote-header' ? 'cover_gradient_position_y' : undefined;
+  const fbStops    = variant === 'quote-header' ? 'cover_gradient_stops'  : undefined;
   const fbText     = variant === 'quote-header' ? 'cover_text_color'      : undefined;
   const fbSubtitle = variant === 'quote-header' ? 'cover_subtitle_color'  : undefined;
 
@@ -147,6 +138,13 @@ export default function HeaderStyleCard({
   const [cy, setCy]                       = useState<number>(read<number>(cols.position_y, fbPosY) ?? 50);
   const [bgColor1, setBgColor1]           = useState(read<string>(cols.bg_color_1, fbColor1) ?? HEADER_FALLBACK_1);
   const [bgColor2, setBgColor2]           = useState(read<string>(cols.bg_color_2, fbColor2) ?? HEADER_FALLBACK_2);
+  const [stops, setStops]                 = useState<GradientStop[]>(
+    resolveStops(
+      read<unknown>(cols.gradient_stops, fbStops),
+      read<string>(cols.bg_color_1, fbColor1) ?? HEADER_FALLBACK_1,
+      read<string>(cols.bg_color_2, fbColor2) ?? HEADER_FALLBACK_2,
+    ),
+  );
   const [coverTextColor, setCoverTextColor]         = useState(read<string>(cols.text_color, fbText) ?? '#ffffff');
   const [coverSubtitleColor, setCoverSubtitleColor] = useState(read<string>(cols.subtitle_color, fbSubtitle) ?? '#ffffffb3');
   const [overlayOpacity, setOverlayOpacity]         = useState<number>(
@@ -234,7 +232,7 @@ export default function HeaderStyleCard({
           className={`relative w-full h-32 rounded-lg border border-gray-200 overflow-hidden ${
             positionable ? 'cursor-crosshair' : ''
           }`}
-          style={{ background: gradientFor(bgStyle, gradientType, gradientAngle, cx, cy, bgColor1, bgColor2) }}
+          style={{ background: buildGradientCss(bgStyle, gradientType, gradientAngle, cx, cy, stops) }}
         >
           {positionable && (
             <div
@@ -260,8 +258,8 @@ export default function HeaderStyleCard({
             ]).map((m) => {
               const active = currentMode === m.id;
               const swatch = m.id === 'solid'
-                ? bgColor1
-                : gradientFor('gradient', m.id, gradientAngle, cx, cy, bgColor1, bgColor2);
+                ? (stops[0]?.color ?? bgColor1)
+                : buildGradientCss('gradient', m.id, gradientAngle, cx, cy, stops);
               return (
                 <button
                   key={m.id}
@@ -342,22 +340,41 @@ export default function HeaderStyleCard({
         )}
 
         {/* Colours */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <ColorPickerField
-            label={currentMode === 'solid' ? 'Background' : 'Start'}
-            value={bgColor1}
-            fallback={HEADER_FALLBACK_1}
-            onChange={(v) => { setBgColor1(v); persist({ [cols.bg_color_1 as string]: v }); }}
+        {currentMode === 'solid' ? (
+          <SolidColorRow
+            value={stops[0]?.color ?? bgColor1}
+            onChange={(v) => {
+              setBgColor1(v);
+              const next: GradientStop[] = stops.length
+                ? stops.map((s, i) => (i === 0 ? { ...s, color: v } : s))
+                : [{ color: v, position: 0 }, { color: bgColor2, position: 100 }];
+              setStops(next);
+              persist({
+                [cols.bg_color_1 as string]: v,
+                [cols.gradient_stops as string]: next,
+              });
+            }}
           />
-          {currentMode !== 'solid' && (
-            <ColorPickerField
-              label="End"
-              value={bgColor2}
-              fallback={HEADER_FALLBACK_2}
-              onChange={(v) => { setBgColor2(v); persist({ [cols.bg_color_2 as string]: v }); }}
-            />
-          )}
-        </div>
+        ) : (
+          <GradientStopsEditor
+            stops={stops}
+            onChange={setStops}
+            onCommit={(next) => {
+              // Keep the legacy bg_color_1/2 columns in sync with the first/last
+              // stop so renderers that haven't been updated still show the
+              // user's gradient endpoints.
+              const first = next[0]?.color ?? bgColor1;
+              const last = next[next.length - 1]?.color ?? bgColor2;
+              setBgColor1(first);
+              setBgColor2(last);
+              persist({
+                [cols.gradient_stops as string]: next,
+                [cols.bg_color_1 as string]: first,
+                [cols.bg_color_2 as string]: last,
+              });
+            }}
+          />
+        )}
 
         {/* Image overlay opacity — only relevant for the cover splash where
             a cover image can sit on top of the fill. */}
@@ -402,5 +419,16 @@ export default function HeaderStyleCard({
         </div>
       </div>
     </SectionCard>
+  );
+}
+
+function SolidColorRow({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <ColorPickerField
+      label="Background"
+      value={value}
+      fallback={HEADER_FALLBACK_1}
+      onChange={onChange}
+    />
   );
 }

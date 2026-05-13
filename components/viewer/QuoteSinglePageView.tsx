@@ -20,6 +20,7 @@ import {
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { parseQuoteExtras } from '@/lib/types/quote-extras';
 import { formatQuoteNumber } from '@/lib/quote-number';
+import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
 
 interface QuoteSinglePageViewProps {
   proposal: Proposal;
@@ -73,20 +74,16 @@ function withAlpha(color: string, alpha: number): string {
 function buildHeaderBackground(p: Proposal): string {
   // Quote body header band uses quote_header_* with fallback to cover_*
   // (so existing quotes keep their look until the user explicitly diverges).
-  const style = p.quote_header_bg_style ?? p.cover_bg_style;
+  const style = (p.quote_header_bg_style ?? p.cover_bg_style) === 'solid' ? 'solid' : 'gradient';
   const c1    = p.quote_header_bg_color_1 ?? p.cover_bg_color_1 ?? '#0f172a';
   const c2    = p.quote_header_bg_color_2 ?? p.cover_bg_color_2 ?? '#1e293b';
   const angle = p.quote_header_gradient_angle ?? p.cover_gradient_angle ?? 135;
   const cx    = p.quote_header_gradient_position_x ?? p.cover_gradient_position_x ?? 50;
   const cy    = p.quote_header_gradient_position_y ?? p.cover_gradient_position_y ?? 50;
-  const type  = p.quote_header_gradient_type ?? p.cover_gradient_type;
-  if (style !== 'gradient') return c1;
-  switch (type) {
-    case 'radial': return `radial-gradient(circle at ${cx}% ${cy}%, ${c1}, ${c2})`;
-    case 'conic':  return `conic-gradient(from ${angle}deg at ${cx}% ${cy}%, ${c1}, ${c2})`;
-    case 'linear':
-    default:       return `linear-gradient(${angle}deg, ${c1}, ${c2})`;
-  }
+  const type  = (p.quote_header_gradient_type ?? p.cover_gradient_type ?? 'linear') as 'linear' | 'radial' | 'conic';
+  const stopsRaw = p.quote_header_gradient_stops ?? p.cover_gradient_stops;
+  const stops = resolveStops(stopsRaw, c1, c2);
+  return buildGradientCss(style, type, angle, cx, cy, stops);
 }
 
 function deriveDeposit(pricing: ProposalPricing | null, total: number) {

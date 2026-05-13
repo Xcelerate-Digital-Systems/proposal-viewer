@@ -2,6 +2,8 @@
 'use client';
 
 import ColorPickerField from '@/components/ui/ColorPickerField';
+import GradientStopsEditor from '@/components/ui/GradientStopsEditor';
+import type { GradientStop } from '@/lib/gradient-stops';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -13,6 +15,8 @@ export interface CoverColorValues {
   coverGradientAngle: number;
   coverBgColor1: string;
   coverBgColor2: string;
+  /** Multi-stop gradient. Defaults to two stops built from coverBgColor1/2. */
+  coverGradientStops: GradientStop[];
   coverOverlayOpacity: number;
   coverTextColor: string;
   coverSubtitleColor: string;
@@ -34,6 +38,7 @@ export default function CoverColorControls({
   coverGradientAngle,
   coverBgColor1,
   coverBgColor2,
+  coverGradientStops,
   coverOverlayOpacity,
   coverTextColor,
   coverSubtitleColor,
@@ -146,22 +151,29 @@ export default function CoverColorControls({
       {/* Background colors */}
       <div>
         <label className="block text-xs text-gray-400 mb-2">Background Colors</label>
-        <div className="space-y-2">
+        {coverBgStyle === 'solid' ? (
           <ColorPickerField
-              label={coverBgStyle === 'gradient' ? 'Gradient start' : 'Background color'}
-              value={coverBgColor1}
-              fallback="#0f0f0f"
-              onChange={(v) => onChange({ coverBgColor1: v })}
-            />
-          {coverBgStyle === 'gradient' && (
-            <ColorPickerField
-              label="Gradient end"
-              value={coverBgColor2}
-              fallback="#141414"
-              onChange={(v) => onChange({ coverBgColor2: v })}
-            />
-          )}
-        </div>
+            label="Background color"
+            value={coverBgColor1}
+            fallback="#0f0f0f"
+            onChange={(v) => {
+              const next: GradientStop[] = coverGradientStops.length
+                ? coverGradientStops.map((s, i) => (i === 0 ? { ...s, color: v } : s))
+                : [{ color: v, position: 0 }, { color: coverBgColor2, position: 100 }];
+              onChange({ coverBgColor1: v, coverGradientStops: next });
+            }}
+          />
+        ) : (
+          <GradientStopsEditor
+            stops={coverGradientStops}
+            onChange={(next) => onChange({ coverGradientStops: next })}
+            onCommit={(next) => onChange({
+              coverGradientStops: next,
+              coverBgColor1: next[0]?.color ?? coverBgColor1,
+              coverBgColor2: next[next.length - 1]?.color ?? coverBgColor2,
+            })}
+          />
+        )}
       </div>
 
       {/* Overlay opacity */}

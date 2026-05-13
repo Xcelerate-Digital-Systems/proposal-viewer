@@ -111,6 +111,8 @@ export type Proposal = {
   cover_gradient_angle: number | null;
   cover_gradient_position_x: number | null;
   cover_gradient_position_y: number | null;
+  /** Optional multi-stop gradient. When set (>= 2 stops), overrides bg_color_1/2. */
+  cover_gradient_stops: unknown;
   cover_overlay_opacity: number | null;
   cover_text_color: string | null;
   cover_subtitle_color: string | null;
@@ -174,6 +176,8 @@ export type Proposal = {
   quote_header_gradient_angle: number | null;
   quote_header_gradient_position_x: number | null;
   quote_header_gradient_position_y: number | null;
+  /** Optional multi-stop gradient for the quote header band. Overrides quote_header_bg_color_1/2 when set. */
+  quote_header_gradient_stops: unknown;
   quote_header_text_color: string | null;
   quote_header_subtitle_color: string | null;
   /** Quote-only: prominent body text describing what's included. */
@@ -242,6 +246,8 @@ export type ProposalTemplate = {
   cover_gradient_angle: number | null;
   cover_gradient_position_x: number | null;
   cover_gradient_position_y: number | null;
+  /** Optional multi-stop gradient. When set (>= 2 stops), overrides bg_color_1/2. */
+  cover_gradient_stops: unknown;
   cover_overlay_opacity: number | null;
   cover_text_color: string | null;
   cover_subtitle_color: string | null;

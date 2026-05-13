@@ -6,6 +6,7 @@ import { Building2 } from 'lucide-react';
 import { Proposal, supabase } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { fontFamily } from '@/lib/google-fonts';
+import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
 
 interface CoverPageProps {
   proposal: Proposal;
@@ -170,8 +171,11 @@ export default function CoverPage({
   const btnBg = proposal.cover_button_bg || branding.cover_button_bg || '#01434A';
   const btnText = proposal.cover_button_text_color || branding.cover_button_text || '#ffffff';
   const overlayOpacity = proposal.cover_overlay_opacity ?? branding.cover_overlay_opacity ?? 0.65;
-  const gradientType = proposal.cover_gradient_type || branding.cover_gradient_type || 'linear';
+  const gradientType = (proposal.cover_gradient_type || branding.cover_gradient_type || 'linear') as 'linear' | 'radial' | 'conic';
   const gradientAngle = proposal.cover_gradient_angle ?? branding.cover_gradient_angle ?? 135;
+  const gradientCx = (proposal.cover_gradient_position_x ?? 50) as number;
+  const gradientCy = (proposal.cover_gradient_position_y ?? 50) as number;
+  const gradientStops = resolveStops(proposal.cover_gradient_stops, bgColor1, bgColor2);
 
   // Visibility flags (default true for prepared_by for backward compat)
   const showPreparedBy = proposal.cover_show_prepared_by ?? true;
@@ -187,28 +191,25 @@ export default function CoverPage({
     ? bgColor1
     : undefined;
 
-  function buildGradient(color1: string, color2: string): string {
-    switch (gradientType) {
-      case 'radial':
-        return `radial-gradient(circle, ${color1}, ${color2})`;
-      case 'conic':
-        return `conic-gradient(from ${gradientAngle}deg, ${color1}, ${color2})`;
-      default:
-        return `linear-gradient(${gradientAngle}deg, ${color1}, ${color2})`;
-    }
-  }
-
   const baseBgImage = bgStyle === 'gradient'
-    ? buildGradient(bgColor1, bgColor2)
+    ? buildGradientCss('gradient', gradientType, gradientAngle, gradientCx, gradientCy, gradientStops)
     : undefined;
 
-  // Build overlay for when a cover image is present
+  // Build overlay for when a cover image is present — re-shade each stop with
+  // the overlay opacity so the image still shows through.
   const overlayEnd = overlayOpacity + 0.1 > 1 ? 1 : overlayOpacity + 0.1;
   const imageOverlay = bgStyle === 'solid'
     ? hexToRgba(bgColor1, overlayOpacity)
-    : buildGradient(
-        hexToRgba(bgColor1, overlayOpacity),
-        hexToRgba(bgColor2, overlayEnd)
+    : buildGradientCss(
+        'gradient',
+        gradientType,
+        gradientAngle,
+        gradientCx,
+        gradientCy,
+        gradientStops.map((s, i, arr) => ({
+          ...s,
+          color: hexToRgba(s.color, i === arr.length - 1 ? overlayEnd : overlayOpacity),
+        })),
       );
 
   // Has prepared-by meta row? Use resolved name as fallback

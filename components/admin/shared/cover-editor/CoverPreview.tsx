@@ -3,7 +3,8 @@
 
 import { EyeOff, Building2 } from 'lucide-react';
 import { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
-import { EntityConfig, ResolvedMember, hexToRgba, buildGradient } from './CoverEditorTypes';
+import { EntityConfig, ResolvedMember, hexToRgba } from './CoverEditorTypes';
+import { buildGradientCss } from '@/lib/gradient-stops';
 import { fontFamily } from '@/lib/google-fonts';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 
@@ -62,18 +63,22 @@ export default function CoverPreview({
   const previewBgImage = imageUrl
     ? undefined
     : colors.coverBgStyle === 'gradient'
-      ? buildGradient(colors.coverGradientType, colors.coverGradientAngle, colors.coverBgColor1, colors.coverBgColor2)
+      ? buildGradientCss('gradient', colors.coverGradientType, colors.coverGradientAngle, 50, 50, colors.coverGradientStops)
       : undefined;
 
   const overlayEnd = Math.min(1, colors.coverOverlayOpacity + 0.1);
   const previewOverlay = imageUrl
     ? colors.coverBgStyle === 'solid'
       ? hexToRgba(colors.coverBgColor1, colors.coverOverlayOpacity)
-      : buildGradient(
+      : buildGradientCss(
+          'gradient',
           colors.coverGradientType,
           colors.coverGradientAngle,
-          hexToRgba(colors.coverBgColor1, colors.coverOverlayOpacity),
-          hexToRgba(colors.coverBgColor2, overlayEnd),
+          50, 50,
+          colors.coverGradientStops.map((s, i, arr) => ({
+            ...s,
+            color: hexToRgba(s.color, i === arr.length - 1 ? overlayEnd : colors.coverOverlayOpacity),
+          })),
         )
     : undefined;
 

@@ -104,6 +104,7 @@ export interface CoverEditorEntity {
   cover_show_avatar?: boolean;
   cover_show_date?: boolean;
   cover_show_prepared_by?: boolean;
+  cover_gradient_stops?: unknown;
 }
 
 /* ------------------------------------------------------------------ */

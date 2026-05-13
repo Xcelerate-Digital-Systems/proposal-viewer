@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Layout } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
+import { resolveStops } from '@/lib/gradient-stops';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import {
   EntityType,
@@ -89,6 +90,11 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     coverGradientAngle: entity.cover_gradient_angle ?? 135,
     coverBgColor1: entity.cover_bg_color_1 || '#0f0f0f',
     coverBgColor2: entity.cover_bg_color_2 || '#141414',
+    coverGradientStops: resolveStops(
+      (entity as { cover_gradient_stops?: unknown }).cover_gradient_stops,
+      entity.cover_bg_color_1 || '#0f0f0f',
+      entity.cover_bg_color_2 || '#141414',
+    ),
     coverOverlayOpacity: entity.cover_overlay_opacity ?? 0.65,
     coverTextColor: entity.cover_text_color || '#ffffff',
     coverSubtitleColor: entity.cover_subtitle_color || '#ffffffb3',
@@ -220,6 +226,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
       cover_bg_style: colors.coverBgStyle,
       cover_bg_color_1: colors.coverBgColor1,
       cover_bg_color_2: colors.coverBgColor2,
+      cover_gradient_stops: colors.coverGradientStops,
       cover_gradient_type: colors.coverGradientType,
       cover_gradient_angle: colors.coverGradientAngle,
       cover_overlay_opacity: colors.coverOverlayOpacity,
