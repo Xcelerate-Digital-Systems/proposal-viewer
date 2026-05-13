@@ -77,7 +77,8 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
       tool === 'decision' || tool === 'wait' ||
       tool === 'call' || tool === 'meeting' || tool === 'automation' || tool === 'goal' ||
       tool === 'button_click' || tool === 'form_submit' || tool === 'video_play' || tool === 'scroll_depth' ||
-      tool === 'purchase' || tool === 'add_to_cart' || tool === 'subscribe' || tool === 'custom_event'
+      tool === 'purchase' || tool === 'add_to_cart' || tool === 'subscribe' || tool === 'custom_event' ||
+      tool === 'sms_notification' || tool === 'email_notification' || tool === 'ghl_notification' || tool === 'google_sheet'
     ) {
       // Drop the shape near the centre of the current viewport so it's
       // immediately visible, not hidden off-screen.

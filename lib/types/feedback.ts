@@ -410,7 +410,8 @@ export type FeedbackShapeType =
   | 'decision' | 'wait'
   | 'call' | 'meeting' | 'automation' | 'goal'
   | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
-  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event';
+  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event'
+  | 'sms_notification' | 'email_notification' | 'ghl_notification' | 'google_sheet';
 
 /** Stored as JSON in `review_board_shapes.content` for the label-only action
  *  shapes (Call, Meeting, Automation, Goal). Kept as an object — not a raw

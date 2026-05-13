@@ -6,6 +6,7 @@ import {
   Clock, Phone, CalendarDays, Zap, Flag,
   MousePointerClick, FileText, PlayCircle, ChevronsDown,
   ShoppingCart, ShoppingBag, BellRing, Sparkles,
+  MessageSquare, Mail, Bell, Sheet,
   type LucideIcon,
 } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
@@ -619,21 +620,30 @@ function DecisionShape({
 
 /* ─── Funnelytics-style flow diamonds ────────────────────────────── */
 
-// Solid colored 45°-rotated square with an upright white icon centered. Label
-// sits above (matches Funnelytics' canvas). Bounding box = side * √2; we use
-// a 76px diamond inside a 108px box so corners hit the bounding edges exactly,
-// which is also where React Flow's Top/Right/Bottom/Left handles render.
-const DIAMOND_SIDE = 76;
-const DIAMOND_BOX_SIZE = Math.ceil(DIAMOND_SIDE * Math.SQRT2); // 108
+// Solid colored 45°-rotated square with an upright white icon centered.
+//
+// Sizes are tuned so every node type shares the same left/right connection
+// Y of 100. That means a diamond, an Email/SMS circle, and a webpage card
+// dropped on the same row connect with straight horizontal arrows.
+//
+//   circle center Y  = ICON_LABEL_AREA (56) + ICON_SIZE/2 (44)           = 100
+//   diamond corner Y = DIAMOND_LABEL_AREA (79) + DIAMOND_BOX_SIZE/2 (21) = 100
+//   card side Y      = CARD_SIDE_HANDLE_Y                                = 100
+//
+// Diamonds are deliberately small — events / logic markers shouldn't
+// dominate the channel (Email/SMS) or page nodes visually.
+const DIAMOND_SIDE = 30;
+const DIAMOND_BOX_SIZE = 42;                       // 2 * 21 — keeps corner Y on integer px
 const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
-const DIAMOND_LABEL_AREA = 44; // breathing room between label and the diamond
+const DIAMOND_LABEL_AREA = 79;                     // chosen so corner Y aligns at 100
 const DIAMOND_NODE_W = DIAMOND_BOX_SIZE;
 const DIAMOND_NODE_H = DIAMOND_BOX_SIZE + DIAMOND_LABEL_AREA;
 
 type DiamondType =
   | 'call' | 'meeting' | 'automation' | 'goal'
   | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
-  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event';
+  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event'
+  | 'sms_notification' | 'email_notification' | 'ghl_notification' | 'google_sheet';
 
 interface DiamondConfig {
   color: string;
@@ -659,6 +669,11 @@ const DIAMOND_CONFIG: Record<DiamondType, DiamondConfig> = {
   meeting:    { color: '#7C3AED', Icon: CalendarDays, typeLabel: 'Meeting',    placeholder: 'Meeting' },
   automation: { color: '#F43F5E', Icon: Zap,          typeLabel: 'Automation', placeholder: 'Automation' },
   goal:       { color: '#EAB308', Icon: Flag,         typeLabel: 'Goal',       placeholder: 'Goal' },
+  // Notifications + integrations
+  sms_notification:   { color: '#15803D', Icon: MessageSquare, typeLabel: 'SMS Notification',   placeholder: 'SMS notification' },
+  email_notification: { color: '#B91C1C', Icon: Mail,          typeLabel: 'Email Notification', placeholder: 'Email notification' },
+  ghl_notification:   { color: '#0EA5E9', Icon: Bell,          typeLabel: 'GHL App Notification', placeholder: 'GHL notification' },
+  google_sheet:       { color: '#0F9D58', Icon: Sheet,         typeLabel: 'Google Sheet',       placeholder: 'Add to Google Sheet' },
 };
 
 const DIAMOND_TYPES = new Set<string>(Object.keys(DIAMOND_CONFIG));
@@ -672,7 +687,7 @@ const HANDLE_CLASS =
 // on its diamond corner instead of the bounding box edge midpoint.
 const DIAMOND_TOP_Y = DIAMOND_LABEL_AREA;                              // top corner
 const DIAMOND_MID_Y = DIAMOND_LABEL_AREA + DIAMOND_BOX_SIZE / 2;       // left / right corners
-const HANDLE_OUTSET = 6;                                                // distance from shape edge to dot
+const HANDLE_OUTSET = 14;                                               // distance from shape edge to connector dot
 
 function DiamondHandles({ readOnly }: { readOnly?: boolean }) {
   // Each handle sits a few px outward from its diamond corner so the dot is
@@ -714,7 +729,7 @@ function DiamondVisual({
         }}
       />
       <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
-        <Icon size={26} strokeWidth={1.9} />
+        <Icon size={14} strokeWidth={2} />
       </div>
     </div>
   );
@@ -755,7 +770,7 @@ function EventDiamond({
       <DiamondHandles readOnly={readOnly} />
 
       {/* Label — sits above the diamond, Funnelytics-style */}
-      <div className="flex items-end pb-2 max-w-full px-1" style={{ height: DIAMOND_LABEL_AREA }}>
+      <div className="flex items-end pb-3 max-w-full px-1" style={{ height: DIAMOND_LABEL_AREA }}>
         {editing && !readOnly ? (
           <input
             type="text"
@@ -772,7 +787,7 @@ function EventDiamond({
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <span className="block text-[11px] text-ink/80 text-center truncate max-w-[120px] leading-tight">
+          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-normal break-words" style={{ width: 160 }}>
             {labelText}
           </span>
         )}
@@ -869,7 +884,7 @@ function WaitDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
-      <div className="flex items-end pb-2 max-w-full px-1" style={{ height: DIAMOND_LABEL_AREA }}>
+      <div className="flex items-end pb-3 max-w-full px-1" style={{ height: DIAMOND_LABEL_AREA }}>
         {editing && !readOnly ? (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input
@@ -906,7 +921,7 @@ function WaitDiamond({
             />
           </div>
         ) : (
-          <span className="block text-[11px] text-ink/80 text-center truncate max-w-[120px] leading-tight">
+          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-normal break-words" style={{ width: 160 }}>
             {labelText}
           </span>
         )}

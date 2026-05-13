@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock, Phone, CalendarDays, Zap, Flag, Workflow, X,
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingCart, ShoppingBag, BellRing, Sparkles,
+  MessageSquare, Mail, Bell, Sheet,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -13,7 +14,8 @@ export type BoardTool =
   | 'decision' | 'wait'
   | 'call' | 'meeting' | 'automation' | 'goal'
   | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
-  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event';
+  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event'
+  | 'sms_notification' | 'email_notification' | 'ghl_notification' | 'google_sheet';
 
 interface ToolDef {
   id: BoardTool;
@@ -58,7 +60,17 @@ const EVENT_TOOLS: ToolDef[] = [
   { id: 'custom_event', icon: <Sparkles          size={22} strokeWidth={1.7} />, label: 'Custom Event', shortcut: '' },
 ];
 
-const ALL_FLOW_TOOLS = [...FLOW_TOOLS, ...EVENT_TOOLS];
+// Outbound notifications + integrations — flow-only actions that don't need
+// a feedback item (no review/comments). Distinct section so they're easy to
+// find next to the channel review nodes.
+const NOTIFICATION_TOOLS: ToolDef[] = [
+  { id: 'sms_notification',   icon: <MessageSquare size={22} strokeWidth={1.7} />, label: 'SMS Notification',   shortcut: '' },
+  { id: 'email_notification', icon: <Mail          size={22} strokeWidth={1.7} />, label: 'Email Notification', shortcut: '' },
+  { id: 'ghl_notification',   icon: <Bell          size={22} strokeWidth={1.7} />, label: 'GHL App Notification', shortcut: '' },
+  { id: 'google_sheet',       icon: <Sheet         size={22} strokeWidth={1.7} />, label: 'Add to Google Sheet',  shortcut: '' },
+];
+
+const ALL_FLOW_TOOLS = [...FLOW_TOOLS, ...EVENT_TOOLS, ...NOTIFICATION_TOOLS];
 
 const FLOW_TOOL_IDS = new Set<BoardTool>(ALL_FLOW_TOOLS.map((t) => t.id));
 
@@ -199,6 +211,7 @@ function FlowNodePicker({
         <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
           <PickerSection title="Logic" tools={FLOW_TOOLS} activeTool={activeTool} onPick={onPick} />
           <PickerSection title="Events" tools={EVENT_TOOLS} activeTool={activeTool} onPick={onPick} />
+          <PickerSection title="Notifications" tools={NOTIFICATION_TOOLS} activeTool={activeTool} onPick={onPick} />
         </div>
       </div>
     </div>

@@ -64,6 +64,47 @@ export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
 }
 
 /**
+ * Handles for CardShell (Web Page / Image / Video / PDF cards) — top/bottom
+ * sit on the actual top/bottom edges of the card, but left/right are pinned
+ * to the shared connection Y of 100 so a card lines up flush with the
+ * Email/SMS circles and the flow diamonds when placed on the same row.
+ */
+export function CardHandles({ readOnly }: { readOnly?: boolean }) {
+  const outset = 14;
+  const leftStyle  = { top: SHARED_SIDE_HANDLE_Y, left: -outset };
+  const rightStyle = { top: SHARED_SIDE_HANDLE_Y, right: -outset };
+  const topStyle    = { top: -outset };
+  const bottomStyle = { top: 'auto' as const, bottom: -outset };
+  return (
+    <>
+      <Handle id="left" type="source" position={Position.Left}
+        className={HANDLE_BASE} style={leftStyle} isConnectable={!readOnly} />
+      <Handle id="left-source" type="source" position={Position.Left}
+        className={HANDLE_BASE} style={leftStyle} isConnectable={!readOnly} />
+
+      <Handle id="right" type="source" position={Position.Right}
+        className={HANDLE_BASE} style={rightStyle} isConnectable={!readOnly} />
+      <Handle id="right-target" type="source" position={Position.Right}
+        className={HANDLE_BASE} style={rightStyle} isConnectable={!readOnly} />
+
+      <Handle id="top" type="source" position={Position.Top}
+        className={HANDLE_BASE} style={topStyle} isConnectable={!readOnly} />
+      <Handle id="top-source" type="source" position={Position.Top}
+        className={HANDLE_BASE} style={topStyle} isConnectable={!readOnly} />
+
+      <Handle id="bottom" type="source" position={Position.Bottom}
+        className={HANDLE_BASE} style={bottomStyle} isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="source" position={Position.Bottom}
+        className={HANDLE_BASE} style={bottomStyle} isConnectable={!readOnly} />
+    </>
+  );
+}
+
+// Shared Y across diamonds, icon-circles, and cards so horizontal arrows
+// between any two node types render as a straight line.
+const SHARED_SIDE_HANDLE_Y = 100;
+
+/**
  * Handles for IconShell (Email/SMS/etc.) — anchored at the 4 edges of the
  * 88-px circle, not the surrounding 240×240 frame. Without this the edges
  * would terminate ~44 px away from the visible shape.
@@ -75,10 +116,12 @@ export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
  */
 export function IconHandles({ readOnly }: { readOnly?: boolean }) {
   const cls = HANDLE_BASE;
-  const labelOffset = 44;        // matches the h-11 label slot in IconShell
+  const labelOffset = 56;        // matches the h-14 label slot in IconShell; aligns
+                                 //   horizontally with the diamond corner Y
+                                 //   (see ShapeNode → DIAMOND_LABEL_AREA)
   const size = 88;
   const frame = 240;
-  const outset = 6;              // distance from circle edge to dot
+  const outset = 14;             // distance from circle edge to connector dot
   const cy = labelOffset + size / 2;
   const leftX = frame / 2 - size / 2 - outset;
   const rightX = frame / 2 + size / 2 + outset;
@@ -297,7 +340,7 @@ export function CardShell({
 
   return (
     <>
-      <NodeHandles readOnly={readOnly} />
+      <CardHandles readOnly={readOnly} />
 
       <div
         className={`relative transition-shadow bg-white rounded-2xl border shadow-sm ${
@@ -376,10 +419,10 @@ export function IconShell({
     onNavigate?.(item.id);
   };
 
-  // Match the diamond flow-node footprint: 44px label slot + 88px circle.
-  // The View button + type label are no longer rendered below the circle —
-  // they're hover-overlaid on the circle so the node stays compact.
-  const ICON_SHELL_H = 44 + ICON_SIZE;
+  // Label area (56) + circle (88) = 144. Diamond flow-nodes share the same
+  // label area + corner Y so a diamond ↔ circle connection renders as a
+  // straight horizontal line.
+  const ICON_SHELL_H = 56 + ICON_SIZE;
 
   return (
     <>
@@ -392,7 +435,7 @@ export function IconShell({
         onClick={readOnly ? handleClick : undefined}
       >
         {/* Title above the circle — matches diamond layout */}
-        <div className="h-11 flex items-end pb-2 max-w-full px-1">
+        <div className="h-14 flex items-end pb-3 max-w-full px-1">
           <span className="block text-[11px] text-ink/80 text-center truncate max-w-[140px] leading-tight">
             {item.title}
           </span>
