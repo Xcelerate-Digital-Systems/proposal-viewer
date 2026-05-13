@@ -45,7 +45,7 @@ export default function ClientDetailsSection({
   onSaved,
 }: ClientDetailsSectionProps) {
   const toast = useToast();
-  const [mode, setMode] = useState<'real' | 'test'>('real');
+  const [mode, setMode] = useState<'real' | 'test'>(proposal.is_test ? 'test' : 'real');
   const [form, setForm] = useState<Record<FieldKey, string>>({
     client_name: proposal.client_name ?? '',
     client_organisation: proposal.client_organisation ?? '',
@@ -99,7 +99,7 @@ export default function ClientDetailsSection({
     }
   };
 
-  const switchMode = (next: 'real' | 'test') => {
+  const switchMode = async (next: 'real' | 'test') => {
     if (next === mode) return;
     if (next === 'test') {
       realSnapshot.current = { ...form };
@@ -114,6 +114,13 @@ export default function ClientDetailsSection({
       setForm({ ...realSnapshot.current });
     }
     setMode(next);
+    // Persist the test/real flag so the header badge and downstream
+    // notification suppression stay in sync with the toggle.
+    await supabase
+      .from('proposals')
+      .update({ is_test: next === 'test' })
+      .eq('id', proposal.id);
+    onSaved();
   };
 
   const pickCustomer = (c: SavedCustomer) => {

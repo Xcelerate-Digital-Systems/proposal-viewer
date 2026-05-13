@@ -17,6 +17,7 @@ interface ProposalListRowProps {
   proposal: Proposal;
   onRefresh: () => void;
   customDomain?: string | null;
+  hrefOverride?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -50,7 +51,7 @@ const getPageCount = (p: Proposal): number => {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function ProposalListRow({ proposal: p, onRefresh, customDomain }: ProposalListRowProps) {
+export default function ProposalListRow({ proposal: p, onRefresh, customDomain, hrefOverride }: ProposalListRowProps) {
   const router = useRouter();
   const confirm = useConfirm();
   const toast = useToast();
@@ -89,7 +90,7 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain }
 
   return (
     <div
-      onClick={() => router.push(p.entity_type === 'quote' ? `/proposals/${p.id}/quote-pricing` : `/proposals/${p.id}/pages`)}
+      onClick={() => router.push(hrefOverride ?? (p.entity_type === 'quote' ? `/proposals/${p.id}/quote-pricing` : `/proposals/${p.id}/pages`))}
       className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group"
     >
       {/* Status badge */}

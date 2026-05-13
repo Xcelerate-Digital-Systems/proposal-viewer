@@ -160,7 +160,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
       const data = await res.json();
       onSuccess();
       onClose();
-      router.push(`/proposals/${data.proposal_id}/quote-pricing`);
+      router.push(`/quotes/${data.proposal_id}`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to create quote. Please try again.');

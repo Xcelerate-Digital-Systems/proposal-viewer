@@ -1,4 +1,4 @@
-// app/proposals/[id]/quote-cover/page.tsx
+// app/quotes/[id]/cover/page.tsx
 'use client';
 
 import CoverEditor from '@/components/admin/proposals/CoverEditor';

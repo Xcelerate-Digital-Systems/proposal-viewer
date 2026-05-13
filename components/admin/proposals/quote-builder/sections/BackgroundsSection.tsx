@@ -123,7 +123,7 @@ export default function BackgroundsSection({ proposal, onSaved }: Props) {
       </div>
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
         <Link
-          href={`/proposals/${proposal.id}/quote-cover`}
+          href={`/quotes/${proposal.id}/cover`}
           className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
         >
           Edit cover header →

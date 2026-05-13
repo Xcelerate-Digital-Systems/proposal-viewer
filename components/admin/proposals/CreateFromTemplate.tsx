@@ -248,7 +248,7 @@ export default function CreateFromTemplate({
       setStatus('Done!');
       // Navigate straight into the new entity so the user can keep working.
       const dest = selectedTemplate.entity_type === 'quote'
-        ? `/proposals/${newProposal.proposal_id}/quote-pricing`
+        ? `/quotes/${newProposal.proposal_id}`
         : `/proposals/${newProposal.proposal_id}/pages`;
       onSuccess();
       setTimeout(() => router.push(dest), 50);

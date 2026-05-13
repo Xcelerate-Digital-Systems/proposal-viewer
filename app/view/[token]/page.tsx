@@ -2,7 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { FileText, Menu, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import Sidebar from '@/components/viewer/Sidebar';
 import CoverPage from '@/components/viewer/CoverPage';
@@ -19,12 +20,18 @@ import { supabase, type ProposalPricing } from '@/lib/supabase';
 
 export default function ProposalViewerPage({ params }: { params: { token: string } }) {
   const v = useViewerPage(params.token);
+  const searchParams = useSearchParams();
+  const autoPrint = searchParams?.get('print') === '1';
 
-  // Fetch company contact info for the quote header (phone/email aren't in branding).
+  // Fetch company contact / ABN / quote-number format for the quote header
+  // and footer. These fields aren't in CompanyBranding.
   const [companyContact, setCompanyContact] = useState<{
     name: string;
     phone: string | null;
     email: string | null;
+    abn: string | null;
+    quoteNumberPrefix: string | null;
+    quoteNumberPadWidth: number | null;
   } | null>(null);
   const companyIdForFetch = v.proposal?.entity_type === 'quote' ? v.proposal.company_id : null;
   useEffect(() => {
@@ -32,7 +39,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
     let cancelled = false;
     supabase
       .from('companies')
-      .select('name, phone, contact_email')
+      .select('name, phone, contact_email, abn, quote_number_prefix, quote_number_pad_width')
       .eq('id', companyIdForFetch)
       .single()
       .then(({ data }) => {
@@ -41,6 +48,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           name: (data.name as string) ?? '',
           phone: (data.phone as string) ?? null,
           email: (data.contact_email as string) ?? null,
+          abn: (data.abn as string) ?? null,
+          quoteNumberPrefix: (data.quote_number_prefix as string) ?? null,
+          quoteNumberPadWidth: (data.quote_number_pad_width as number) ?? null,
         });
       });
     return () => {
@@ -95,16 +105,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           ]}
         />
         {/* Floating download chip — uses native browser PDF print so we
-            don't need a server-side PDF pipeline. Hidden in the printout. */}
-        <div className="max-w-3xl mx-auto px-4 pt-4 flex justify-end print:hidden">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="text-xs tracking-[0.14em] uppercase text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            Download PDF
-          </button>
-        </div>
+            don't need a server-side PDF pipeline. Hidden in the printout.
+            When the URL has ?print=1 (admin-triggered), fire window.print()
+            once on mount so opening it in a new tab goes straight to the
+            save-as-PDF dialog. */}
+        <PrintBar autoPrint={autoPrint} />
         <div className="max-w-3xl mx-auto pb-10 px-4 print:max-w-none print:px-0 print:pb-0">
           <div className="rounded-2xl overflow-hidden shadow-sm print:rounded-none print:shadow-none">
             <QuoteSinglePageView
@@ -117,6 +122,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
               companyName={companyContact?.name || v.branding.name}
               companyPhone={companyContact?.phone ?? null}
               companyEmail={companyContact?.email ?? null}
+              companyAbn={companyContact?.abn ?? null}
+              quoteNumberFormat={{
+                prefix: companyContact?.quoteNumberPrefix ?? null,
+                padWidth: companyContact?.quoteNumberPadWidth ?? null,
+              }}
               onAccept={async (name) => {
                 await v.acceptProposal(name);
               }}
@@ -291,6 +301,29 @@ export default function ProposalViewerPage({ params }: { params: { token: string
           />
         )}
       </div>
+    </div>
+  );
+}
+
+/* Floating "Download PDF" chip rendered above the quote viewer. When the URL
+   carries ?print=1 (admin clicked "PDF" in the quote header), trigger
+   window.print() once after a short delay so the page has time to paint. */
+function PrintBar({ autoPrint }: { autoPrint: boolean }) {
+  useEffect(() => {
+    if (!autoPrint) return;
+    const t = window.setTimeout(() => window.print(), 600);
+    return () => window.clearTimeout(t);
+  }, [autoPrint]);
+  return (
+    <div className="max-w-3xl mx-auto px-4 pt-4 flex justify-end print:hidden">
+      <button
+        type="button"
+        onClick={() => window.print()}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:border-gray-300 hover:text-gray-800 transition-colors shadow-sm"
+      >
+        <Download size={12} />
+        Download PDF
+      </button>
     </div>
   );
 }

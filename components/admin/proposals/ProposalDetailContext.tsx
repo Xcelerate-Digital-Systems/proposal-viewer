@@ -10,6 +10,16 @@ export interface ProposalDetailContextValue {
   companyId: string;
   customDomain: string | null;
   companyBgPrimary: string;
+  /** Subset of company fields used by quote headers/banners. Null until loaded. */
+  companyInfo: {
+    name: string;
+    phone: string | null;
+    contactEmail: string | null;
+    abn: string | null;
+    logoPath: string | null;
+    quoteNumberPrefix: string;
+    quoteNumberPadWidth: number;
+  } | null;
 }
 
 const ProposalDetailContext = createContext<ProposalDetailContextValue | null>(null);

@@ -94,6 +94,11 @@ export type Proposal = {
   accepted_at: string | null;
   declined_at: string | null;
   accepted_by_name: string | null;
+  declined_by_name: string | null;
+  decline_reason: string | null;
+  revision_requested_at: string | null;
+  revision_requested_by_name: string | null;
+  revision_notes: string | null;
   page_names: PageNameEntry[] | string[];
   cover_enabled: boolean;
   cover_image_path: string | null;
@@ -158,6 +163,33 @@ export type Proposal = {
   quote_page_bg_color: string | null;
   /** Quote-only: per-company human-readable number (renders as "Q-014" etc.). */
   quote_number: number | null;
+  /** Quote-only: prominent body text describing what's included. */
+  scope_of_works: string | null;
+  /** Quote-only: internal category for filtering (e.g. Bathroom, Kitchen). */
+  category: string | null;
+  /** Quote-only: date this quote expires. */
+  valid_until: string | null;
+  /** Quote-only: whether to apply GST to totals. NULL = use legacy pricing.payload. */
+  include_gst: boolean | null;
+  /** Quote-only: GST rate (0.10 = 10%). NULL = use legacy pricing.payload. */
+  gst_rate: number | null;
+  /** Quote-only: whether a deposit is required. NULL = use legacy pricing.payload. */
+  require_deposit: boolean | null;
+  /** Quote-only: deposit percentage of total. NULL = use legacy pricing.payload. */
+  deposit_percent: number | null;
+  /** Quote-only: marks a test send (goes to sender, not the client). */
+  is_test: boolean;
+  /** Quote-only: array of attachment metadata. */
+  attachments: QuoteAttachment[];
+};
+
+// ─── Quote Attachment ─────────────────────────────────────────────────────────
+
+export type QuoteAttachment = {
+  name: string;
+  path: string;     // Supabase storage path
+  size: number;     // bytes
+  mime: string;
 };
 
 // ─── Proposal Comment ─────────────────────────────────────────────────────────

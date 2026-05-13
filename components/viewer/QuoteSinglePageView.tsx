@@ -35,6 +35,9 @@ interface QuoteSinglePageViewProps {
   companyName?: string;
   companyPhone?: string | null;
   companyEmail?: string | null;
+  companyAbn?: string | null;
+  /** Per-company quote-number format. Defaults to "Q-" prefix + 3-digit pad. */
+  quoteNumberFormat?: { prefix?: string | null; padWidth?: number | null };
   /** Reserved — currently no compact-specific styling. */
   compact?: boolean;
 }
@@ -137,6 +140,48 @@ function Hairline({ color }: { color: string }) {
   );
 }
 
+/* Resolves a Supabase storage path to a short-lived signed URL so the
+   recipient can download an attachment without needing a Supabase account. */
+function AttachmentLink({
+  path,
+  name,
+  mime,
+  muted,
+}: {
+  path: string;
+  name: string;
+  mime: string;
+  muted: string;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.storage
+      .from('proposals')
+      .createSignedUrl(path, 3600)
+      .then(({ data }) => {
+        if (!cancelled && data?.signedUrl) setUrl(data.signedUrl);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+  return (
+    <a
+      href={url ?? '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 underline decoration-dotted underline-offset-4 hover:no-underline"
+      style={{ color: 'inherit' }}
+    >
+      <span>{name}</span>
+      <span className="text-[11px] uppercase tracking-wider" style={{ color: muted }}>
+        {mime.split('/').pop()?.slice(0, 6) ?? 'file'}
+      </span>
+    </a>
+  );
+}
+
 /* ── Component ──────────────────────────────────────────────────────────── */
 
 export default function QuoteSinglePageView({
@@ -153,6 +198,8 @@ export default function QuoteSinglePageView({
   companyName,
   companyPhone,
   companyEmail,
+  companyAbn,
+  quoteNumberFormat,
 }: QuoteSinglePageViewProps) {
   const photoPaths = parsePhotos(proposal.project_photos);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
@@ -214,15 +261,48 @@ export default function QuoteSinglePageView({
   }, [proposal.cover_image_path, resolvedBgUrl, photoPaths.length]);
 
   /* ── Pricing maths ──────────────────────────────────────────── */
+  // Quote-V2 columns (include_gst / gst_rate / require_deposit / deposit_percent
+  // / valid_until on the proposal row) take precedence when non-null. Legacy
+  // quotes fall back to the pricing-page payload so nothing regresses.
 
   const items: PricingLineItem[] = pricing?.items ?? [];
   const optionalItems: PricingOptionalItem[] = pricing?.optional_items ?? [];
   const subtotal = pricingEffectiveSubtotal(items);
-  const taxRate = pricing?.tax_enabled ? (pricing.tax_rate ?? 10) : 0;
+
+  const gstEnabled =
+    proposal.include_gst !== null && proposal.include_gst !== undefined
+      ? proposal.include_gst
+      : !!pricing?.tax_enabled;
+  const gstRatePct =
+    proposal.gst_rate !== null && proposal.gst_rate !== undefined
+      ? proposal.gst_rate * 100
+      : (pricing?.tax_rate ?? 10);
+  const taxRate = gstEnabled ? gstRatePct : 0;
   const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100;
   const total = subtotal + taxAmount;
-  const deposit = deriveDeposit(pricing, total);
-  const validUntil = formatValidUntil(pricing);
+
+  // Prefer the flat deposit columns; fall back to legacy payment_schedule.
+  const useFlatDeposit =
+    proposal.require_deposit !== null && proposal.require_deposit !== undefined;
+  const deposit = useFlatDeposit
+    ? (proposal.require_deposit
+        ? {
+            amount: Math.round(total * ((proposal.deposit_percent ?? 0) / 100) * 100) / 100,
+            pct: proposal.deposit_percent ?? 0,
+            label: 'Deposit',
+          }
+        : null)
+    : deriveDeposit(pricing, total);
+
+  const validUntil = proposal.valid_until
+    ? new Date(proposal.valid_until).toLocaleDateString('en-AU', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : formatValidUntil(pricing);
+
+  // Prefer the new scope_of_works field; fall back to legacy description.
+  const scopeOfWorks = proposal.scope_of_works || proposal.description || '';
+  const attachments = Array.isArray(proposal.attachments) ? proposal.attachments : [];
 
   /* ── Cover header tokens ───────────────────────────────────── */
 
@@ -344,10 +424,10 @@ export default function QuoteSinglePageView({
           style={{ color: headerSubtle, fontFamily: headingFontFamily }}
         >
           <span>Quote</span>
-          {formatQuoteNumber(proposal.quote_number) && (
+          {formatQuoteNumber(proposal.quote_number, quoteNumberFormat) && (
             <>
               <span className="opacity-50">·</span>
-              <span style={TABULAR}>{formatQuoteNumber(proposal.quote_number)}</span>
+              <span style={TABULAR}>{formatQuoteNumber(proposal.quote_number, quoteNumberFormat)}</span>
             </>
           )}
         </div>
@@ -486,11 +566,11 @@ export default function QuoteSinglePageView({
       )}
 
       {/* ── Scope of Works ────────────────────────────────────── */}
-      {proposal.description && (
+      {scopeOfWorks && (
         <>
           <Section>
             <SectionLabel style={labelStyle}>Scope of Works</SectionLabel>
-            <p className="leading-[1.7] whitespace-pre-wrap max-w-2xl">{proposal.description}</p>
+            <p className="leading-[1.7] whitespace-pre-wrap max-w-2xl">{scopeOfWorks}</p>
           </Section>
           <Hairline color={hairline} />
         </>
@@ -613,9 +693,9 @@ export default function QuoteSinglePageView({
               >
                 {formatAUD(total)}
               </div>
-              {pricing?.tax_enabled && (
+              {gstEnabled && (
                 <div className="text-xs mt-2" style={{ color: muted }}>
-                  Includes {pricing.tax_label || 'GST'} of {formatAUD(taxAmount)}
+                  Includes GST ({Math.round(gstRatePct)}%) of {formatAUD(taxAmount)}
                 </div>
               )}
             </div>
@@ -677,6 +757,23 @@ export default function QuoteSinglePageView({
                 </li>
               ))}
             </ol>
+          </Section>
+          <Hairline color={hairline} />
+        </>
+      )}
+
+      {/* ── Attachments ───────────────────────────────────────── */}
+      {attachments.length > 0 && (
+        <>
+          <Section>
+            <SectionLabel style={labelStyle}>Attachments</SectionLabel>
+            <ul className="space-y-2 text-[14px] max-w-xl">
+              {attachments.map((a, i) => (
+                <li key={`${a.path}-${i}`}>
+                  <AttachmentLink path={a.path} name={a.name} mime={a.mime} muted={muted} />
+                </li>
+              ))}
+            </ul>
           </Section>
           <Hairline color={hairline} />
         </>
@@ -923,7 +1020,14 @@ export default function QuoteSinglePageView({
           borderTop: `1px solid ${hairline}`,
         }}
       >
-        <span>{displayCompanyName}</span>
+        <span>
+          {displayCompanyName}
+          {companyAbn && (
+            <span className="ml-3 opacity-70" style={TABULAR}>
+              ABN {companyAbn}
+            </span>
+          )}
+        </span>
         <span className="flex items-center gap-4">
           {companyPhone && <span>{companyPhone}</span>}
           {companyEmail && <span>{companyEmail}</span>}

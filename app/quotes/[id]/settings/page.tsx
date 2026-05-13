@@ -1,25 +1,21 @@
-// app/proposals/[id]/quote-design/page.tsx
-// Quote-specific Design tab. Reuses the same DesignTab surface as proposals
-// — fonts, colours, background image, title typography — so the controls
-// feel familiar. Quote-only viewer reads these fields:
-//   text_page_bg_color   → article body background
-//   text_page_text_color → body text
-//   text_page_heading_color → section headings & labels
-//   title_font_family/weight/size → cover title + total figures
-//   bg_image_path         → behind the cover header
-// Text-page-specific fields (border, page numbering) are no-ops for quotes
-// since quotes are single-page.
-
+// app/quotes/[id]/settings/page.tsx
+// Settings tab — global styling for the quote. Everything that used to be
+// scattered across "Proposal Style", "Backgrounds", and the legacy quote-design
+// tab lives here, in one tab. The Builder tab keeps content fields only.
 'use client';
 
 import DesignTab from '@/components/admin/shared/DesignTab';
+import ProposalStyleSection from '@/components/admin/proposals/quote-builder/sections/ProposalStyleSection';
+import BackgroundsSection from '@/components/admin/proposals/quote-builder/sections/BackgroundsSection';
 import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
 
-export default function QuoteDesignPage() {
+export default function QuoteSettingsPage() {
   const { proposal, refetch, companyId, companyBgPrimary } = useProposalDetail();
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6 space-y-6">
+    <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6 space-y-5 max-w-3xl">
+      <ProposalStyleSection proposal={proposal} companyId={companyId} onSaved={refetch} />
+      <BackgroundsSection proposal={proposal} onSaved={refetch} />
       <DesignTab
         type="proposal"
         entityId={proposal.id}

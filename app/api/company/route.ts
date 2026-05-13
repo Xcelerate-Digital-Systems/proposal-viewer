@@ -157,6 +157,13 @@ export async function PATCH(req: NextRequest) {
       'cover_image_path',
       'show_job_fields',
       'brand_colors',
+      // Quote-side business details + numbering format
+      'phone',
+      'contact_email',
+      'abn',
+      'address',
+      'quote_number_prefix',
+      'quote_number_pad_width',
     ];
     const updates: Record<string, unknown> = {};
 

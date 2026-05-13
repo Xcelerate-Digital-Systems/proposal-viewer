@@ -10,9 +10,11 @@ export default function ProposalDetailRedirect() {
   const { proposal } = useProposalDetail();
 
   useEffect(() => {
-    const target =
-      proposal.entity_type === 'quote' ? 'quote-builder' : 'pages';
-    router.replace(`/proposals/${proposal.id}/${target}`);
+    if (proposal.entity_type === 'quote') {
+      router.replace(`/quotes/${proposal.id}`);
+    } else {
+      router.replace(`/proposals/${proposal.id}/pages`);
+    }
   }, [proposal.id, proposal.entity_type, router]);
 
   return (

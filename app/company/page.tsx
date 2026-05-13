@@ -8,6 +8,7 @@ import CustomDomainManager from '@/components/admin/CustomDomainManager';
 import { isValidHex6 } from '@/lib/company-utils';
 import { useCompanySettings } from '@/components/admin/company/useCompanySettings';
 import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
+import BusinessDetailsCard from '@/components/admin/company/BusinessDetailsCard';
 import ViewerPreview from '@/components/admin/company/ViewerPreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
@@ -61,6 +62,9 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
       )}
 
       <div className="space-y-5">
+
+        {/* Business Details — phone, email, ABN, address, quote-number format */}
+        <BusinessDetailsCard companyId={companyId} isOwner={s.isOwner} />
 
         {/* Company Profile */}
         <CompanyProfileCard

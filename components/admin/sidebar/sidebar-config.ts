@@ -3,7 +3,7 @@
 
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
-  Palette, Bell, Users, Megaphone, Bookmark, Plug, BarChart3,
+  Palette, Bell, Users, Megaphone, Bookmark, Plug, BarChart3, ReceiptText,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -37,6 +37,16 @@ export const ALL_SECTIONS: SectionDef[] = [
       { href: '/proposals', label: 'Proposals', icon: FileText },
       { href: '/documents', label: 'Documents', icon: Files },
       { href: '/templates', label: 'Templates', icon: LayoutTemplate },
+    ],
+  },
+  {
+    key: 'quotes',
+    label: 'Quotes',
+    icon: ReceiptText,
+    defaultHref: '/quotes',
+    matchPaths: ['/quotes'],
+    items: [
+      { href: '/quotes', label: 'Quotes', icon: ReceiptText },
     ],
   },
   {

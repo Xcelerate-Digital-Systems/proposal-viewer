@@ -1,13 +1,20 @@
-// components/admin/proposals/QuoteDetailHeader.tsx
+// components/admin/quotes/QuoteShellHeader.tsx
+// Three-tab header for the independent /quotes detail area:
+//   Builder  → /quotes/[id]
+//   Cover    → /quotes/[id]/cover
+//   Settings → /quotes/[id]/settings
+//
+// Mirrors QuoteDetailHeader's status/copy/preview/duplicate/delete actions
+// but routes to the new /quotes paths instead of /proposals/[id]/quote-*.
 'use client';
 
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Copy, Check, ExternalLink, Trash2,
+  ArrowLeft, Copy, Check, ExternalLink, Trash2, Download,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  DollarSign, Paintbrush, Wand2, Palette, Files,
+  Paintbrush, Wand2, SlidersHorizontal, Files,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -16,22 +23,15 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
 import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
 
 type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
 
-interface QuoteDetailHeaderProps {
+interface QuoteShellHeaderProps {
   proposal: Proposal;
   customDomain?: string | null;
   onProposalChange?: (next: Proposal) => void;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Constants                                                          */
-/* ------------------------------------------------------------------ */
 
 const statusOptions: StatusOption<ProposalStatus>[] = [
   { value: 'draft',    label: 'Draft',    bg: 'bg-gray-100',    text: 'text-gray-500',   border: 'border-gray-200',   icon: <FileText size={13} /> },
@@ -42,41 +42,37 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
   { value: 'declined', label: 'Declined', bg: 'bg-red-50',      text: 'text-red-500',    border: 'border-red-200',    icon: <X size={13} /> },
 ];
 
-type TabGroup = 'content' | 'setup';
-
-// Quotes are intentionally a slim two-tab experience: everything content-side
-// happens in the single-page Builder; Design covers cover/branding overrides.
-// The legacy quote-pages / quote-text-pages / quote-pricing / quote-packages /
-// quote-contents / quote-details routes still exist (so old bookmarks resolve)
-// but are no longer surfaced in the nav.
-const tabs: { key: string; label: string; icon: typeof DollarSign; path: string; group: TabGroup }[] = [
-  { key: 'quote-builder',     label: 'Builder',   icon: Wand2,      path: 'quote-builder',    group: 'content' },
-  { key: 'quote-cover',       label: 'Cover',     icon: Paintbrush, path: 'quote-cover',      group: 'setup' },
-  { key: 'quote-design',      label: 'Design',    icon: Palette,    path: 'quote-design',     group: 'setup' },
+const tabs = [
+  { key: '',         label: 'Builder',  icon: Wand2,             segment: '' },
+  { key: 'cover',    label: 'Cover',    icon: Paintbrush,        segment: 'cover' },
+  { key: 'settings', label: 'Settings', icon: SlidersHorizontal, segment: 'settings' },
 ];
 
 function activeKeyFromPath(pathname: string | null): string {
   if (!pathname) return '';
-  const segments = pathname.split('/').filter(Boolean);
-  return segments[2] ?? '';
+  // /quotes/[id]            → ''
+  // /quotes/[id]/cover      → 'cover'
+  // /quotes/[id]/settings   → 'settings'
+  const segs = pathname.split('/').filter(Boolean);
+  return segs[2] ?? '';
 }
 
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
-
-export default function QuoteDetailHeader({
+export default function QuoteShellHeader({
   proposal,
   customDomain,
   onProposalChange,
-}: QuoteDetailHeaderProps) {
+}: QuoteShellHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const confirm = useConfirm();
   const toast = useToast();
-
+  const { companyInfo } = useProposalDetail();
   const [copied, setCopied] = useState(false);
   const activeKey = activeKeyFromPath(pathname);
+
+  const quoteNumberFormat = companyInfo
+    ? { prefix: companyInfo.quoteNumberPrefix, padWidth: companyInfo.quoteNumberPadWidth }
+    : undefined;
 
   const copyLink = () => {
     const url = buildProposalUrl(proposal.share_token, customDomain ?? null, window.location.origin);
@@ -88,20 +84,15 @@ export default function QuoteDetailHeader({
 
   const handleStatusChange = async (newStatus: ProposalStatus) => {
     const updates: Record<string, unknown> = { status: newStatus };
-    if (newStatus === 'sent' && proposal.status === 'draft') {
-      updates.sent_at = new Date().toISOString();
-    }
-    // Reset view-tracking when moving back to draft so a later real send
-    // still triggers the first-view notification.
+    if (newStatus === 'sent' && proposal.status === 'draft') updates.sent_at = new Date().toISOString();
     if (newStatus === 'draft') {
       updates.first_viewed_at = null;
       updates.last_viewed_at = null;
       updates.sent_at = null;
     }
     const { error } = await supabase.from('proposals').update(updates).eq('id', proposal.id);
-    if (error) {
-      toast.error('Failed to update status');
-    } else {
+    if (error) toast.error('Failed to update status');
+    else {
       const label = statusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
       toast.success(`Quote marked as ${label}`);
       onProposalChange?.({ ...proposal, status: newStatus } as Proposal);
@@ -111,7 +102,7 @@ export default function QuoteDetailHeader({
   const duplicateQuote = async () => {
     const ok = await confirm({
       title: 'Duplicate quote?',
-      message: `Create a draft copy of "${proposal.title}" with a new quote number. Line items and design carry over; client info too.`,
+      message: `Create a draft copy of "${proposal.title}" with a new quote number.`,
       confirmLabel: 'Duplicate',
     });
     if (!ok) return;
@@ -127,7 +118,7 @@ export default function QuoteDetailHeader({
       const json = await res.json();
       if (!res.ok || !json.id) throw new Error(json.error ?? 'Failed');
       toast.success('Quote duplicated');
-      router.push(`/proposals/${json.id}/quote-builder`);
+      router.push(`/quotes/${json.id}`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to duplicate');
@@ -143,38 +134,40 @@ export default function QuoteDetailHeader({
     });
     if (!ok) return;
     const { error } = await supabase.from('proposals').delete().eq('id', proposal.id);
-    if (error) {
-      toast.error('Failed to delete quote');
-    } else {
+    if (error) toast.error('Failed to delete quote');
+    else {
       toast.success('Quote deleted');
-      router.push('/');
+      router.push('/quotes');
     }
   };
 
+  const tabHref = (segment: string) =>
+    segment === '' ? `/quotes/${proposal.id}` : `/quotes/${proposal.id}/${segment}`;
+
   return (
     <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-100 lg:border-b-0">
-      {/* Back link */}
       <Link
-        href="/"
+        href="/quotes"
         className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors mb-3"
       >
         <ArrowLeft size={14} />
-        All Proposals
+        All Quotes
       </Link>
 
-      {/* Title row */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
               {proposal.title}
             </h1>
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
-              Quote
-            </span>
-            {formatQuoteNumber(proposal.quote_number) && (
+            {formatQuoteNumber(proposal.quote_number, quoteNumberFormat) && (
               <span className="text-[11px] font-medium text-gray-400 tabular-nums shrink-0">
-                {formatQuoteNumber(proposal.quote_number)}
+                {formatQuoteNumber(proposal.quote_number, quoteNumberFormat)}
+              </span>
+            )}
+            {proposal.is_test && (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-50 text-purple-600 border border-purple-200 shrink-0">
+                Test
               </span>
             )}
             <EditorSaveStatusBadge />
@@ -183,18 +176,15 @@ export default function QuoteDetailHeader({
             {proposal.client_name && (
               <span className="text-sm text-gray-400">{proposal.client_name}</span>
             )}
-            {proposal.description && (
+            {proposal.category && (
               <>
-                {proposal.client_name && <span className="text-gray-200">·</span>}
-                <span className="text-sm text-gray-400 truncate max-w-[300px]">
-                  {proposal.description}
-                </span>
+                <span className="text-gray-200">·</span>
+                <span className="text-sm text-gray-400">{proposal.category}</span>
               </>
             )}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           <StatusDropdown
             value={proposal.status as ProposalStatus}
@@ -217,6 +207,15 @@ export default function QuoteDetailHeader({
             <ExternalLink size={14} />
             Preview
           </a>
+          <a
+            href={`/view/${proposal.share_token}?print=1`}
+            target="_blank"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
+            title="Open the public viewer and trigger print/save-PDF"
+          >
+            <Download size={14} />
+            PDF
+          </a>
           <button
             onClick={duplicateQuote}
             className="p-2 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
@@ -234,27 +233,23 @@ export default function QuoteDetailHeader({
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex items-center gap-1 -mb-px">
-        {tabs.map((tab, i) => {
+        {tabs.map((tab) => {
           const isActive = activeKey === tab.key;
           const Icon = tab.icon;
-          const showDivider = i > 0 && tabs[i - 1].group !== tab.group;
           return (
-            <div key={tab.key} className="flex items-center">
-              {showDivider && <div className="w-px h-5 bg-gray-200 mx-2" aria-hidden />}
-              <Link
-                href={`/proposals/${proposal.id}/${tab.path}`}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                  isActive
-                    ? 'border-teal text-teal'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon size={16} />
-                {tab.label}
-              </Link>
-            </div>
+            <Link
+              key={tab.key}
+              href={tabHref(tab.segment)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                isActive
+                  ? 'border-teal text-teal'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Icon size={16} />
+              {tab.label}
+            </Link>
           );
         })}
       </div>

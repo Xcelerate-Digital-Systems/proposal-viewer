@@ -19,6 +19,9 @@ interface ProposalListCardProps {
   proposal: Proposal;
   onRefresh: () => void;
   customDomain?: string | null;
+  /** Override the destination route. Default routes proposals to /proposals/[id]/pages
+   *  and quotes to /proposals/[id]/quote-pricing. The /quotes area passes /quotes/[id]. */
+  hrefOverride?: string;
 }
 
 type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
@@ -36,14 +39,14 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function ProposalListCard({ proposal: p, onRefresh, customDomain }: ProposalListCardProps) {
+export default function ProposalListCard({ proposal: p, onRefresh, customDomain, hrefOverride }: ProposalListCardProps) {
   const confirm = useConfirm();
   const toast = useToast();
   const [copied, setCopied] = useState(false);
 
-  const href = p.entity_type === 'quote'
+  const href = hrefOverride ?? (p.entity_type === 'quote'
     ? `/proposals/${p.id}/quote-pricing`
-    : `/proposals/${p.id}/pages`;
+    : `/proposals/${p.id}/pages`);
 
   const copyLink = (e: React.MouseEvent) => {
     e.preventDefault();
