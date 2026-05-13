@@ -434,8 +434,9 @@ export function IconShell({
         style={{ width: NODE_FRAME_W, height: ICON_SHELL_H }}
         onClick={readOnly ? handleClick : undefined}
       >
-        {/* Title above the circle — matches diamond layout */}
-        <div className="h-14 flex items-end pb-3 max-w-full px-1">
+        {/* Title above the circle — anchored at the top of the slot so it
+           sits level with the flow-node diamond labels above. */}
+        <div className="h-14 flex items-start pt-2 max-w-full px-1">
           <span className="block text-[11px] text-ink/80 text-center truncate max-w-[140px] leading-tight">
             {item.title}
           </span>
