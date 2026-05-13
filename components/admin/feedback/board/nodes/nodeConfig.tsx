@@ -31,7 +31,7 @@ export interface NodeItemProps {
  */
 export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
   const handleClass =
-    '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+    '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
   return (
     <>
       <Handle id="left" type="source" position={Position.Left}
@@ -126,7 +126,7 @@ export function StatusPicker({ status, onChange, variant = 'pill' }: StatusPicke
             e.stopPropagation();
             if (!readOnly) setOpen((o) => !o);
           }}
-          className={`w-[22px] h-[22px] rounded-full border-2 border-paper flex items-center justify-center shadow-sketch transition-transform ${current.dot} ${
+          className={`w-[22px] h-[22px] rounded-full border-2 border-white flex items-center justify-center shadow-sm transition-transform ${current.dot} ${
             readOnly ? 'cursor-default' : 'hover:scale-110 cursor-pointer'
           }`}
           title={current.label}
@@ -189,20 +189,20 @@ function StatusDropdown({
 }) {
   return (
     <div
-      className={`absolute top-full mt-1 ${align === 'right' ? 'right-0' : 'left-0'} z-50 w-48 bg-paper rounded-lg border-2 border-sketch-ink/60 shadow-sketch-lg py-1`}
+      className={`absolute top-full mt-1 ${align === 'right' ? 'right-0' : 'left-0'} z-50 w-48 bg-white rounded-lg border border-edge shadow-lg py-1`}
       onClick={(e) => e.stopPropagation()}
     >
       {REVIEW_STATUS_OPTIONS.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onPick(opt.value)}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left hover:bg-paper-dark transition-colors ${
-            opt.value === currentValue ? 'bg-paper-dark' : ''
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left hover:bg-surface transition-colors ${
+            opt.value === currentValue ? 'bg-surface' : ''
           }`}
           type="button"
         >
           <span className={`w-2 h-2 rounded-full shrink-0 ${opt.dot}`} />
-          <span className="text-sketch-ink truncate">{opt.label}</span>
+          <span className="text-ink truncate">{opt.label}</span>
         </button>
       ))}
     </div>
@@ -213,7 +213,7 @@ export function ViewButton({ id, onNavigate }: { id: string; onNavigate?: (id: s
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onNavigate?.(id); }}
-      className="flex items-center gap-1 text-sm font-hand text-teal hover:text-teal-hover transition-colors"
+      className="flex items-center gap-1 text-sm text-teal hover:text-teal-hover transition-colors"
     >
       <Eye size={11} />
       View
@@ -250,8 +250,8 @@ export function CardShell({
       <NodeHandles readOnly={readOnly} />
 
       <div
-        className={`relative transition-shadow bg-paper rounded-2xl border shadow-sm ${
-          selected ? 'border-teal ring-2 ring-teal/30' : 'border-sketch-ink/15 hover:shadow-md'
+        className={`relative transition-shadow bg-white rounded-2xl border shadow-sm ${
+          selected ? 'border-teal ring-2 ring-teal/30' : 'border-edge hover:shadow-md'
         } ${
           !readOnly ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
         }`}
@@ -260,12 +260,12 @@ export function CardShell({
       >
         <div className="relative z-10 px-4 py-4 flex flex-col gap-2.5">
           {/* Thumbnail area (crisp — preserves content legibility) */}
-          <div className="relative h-[110px] overflow-hidden bg-paper-dark rounded-lg border border-sketch-ink/20">
+          <div className="relative h-[110px] overflow-hidden bg-surface rounded-lg border border-edge">
             {children}
 
             {/* Version badge only — type badge moved below */}
             {item.version > 1 && (
-              <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-paper/95 text-[10px] font-medium text-sketch-ink border border-sketch-ink/30 font-hand">
+              <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/95 text-[10px] font-medium text-ink border border-edge">
                 v{item.version}
               </span>
             )}
@@ -273,11 +273,11 @@ export function CardShell({
 
           {/* Type badge + title */}
           <div className="flex items-center gap-1.5">
-            <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-paper-dark text-[10px] font-medium text-sketch-ink/70 border border-sketch-ink/20 font-hand">
+            <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface text-[10px] font-medium text-ink/70 border border-edge">
               {typeIcon}
               {typeLabel}
             </span>
-            <h4 className="font-hand text-base text-sketch-ink truncate leading-tight flex-1 min-w-0">
+            <h4 className="text-base text-ink truncate leading-tight flex-1 min-w-0">
               {item.title}
             </h4>
           </div>
@@ -289,8 +289,8 @@ export function CardShell({
           />
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-2 border-t border-sketch-ink/15">
-            <div className="flex items-center gap-1 text-[11px] text-sketch-ink/60">
+          <div className="flex items-center justify-between pt-2 border-t border-edge">
+            <div className="flex items-center gap-1 text-[11px] text-ink/60">
               <MessageSquareText size={11} />
               <span>
                 {commentCount}
@@ -330,19 +330,26 @@ export function IconShell({
     <>
       <NodeHandles readOnly={readOnly} />
       <div
-        className={`flex flex-col items-center justify-center ${
+        className={`flex flex-col items-center ${
           !readOnly ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
         }`}
         style={{ width: NODE_FRAME_W, height: NODE_FRAME_H }}
         onClick={readOnly ? handleClick : undefined}
       >
+        {/* Title above the circle — matches diamond layout */}
+        <div className="h-7 flex items-end pb-1 max-w-full px-1">
+          <span className="block text-[11px] text-ink/80 text-center truncate max-w-[140px] leading-tight">
+            {item.title}
+          </span>
+        </div>
+
         <div
           className={`relative flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
             selected ? 'ring-2 ring-teal ring-offset-2 ring-offset-paper' : 'hover:shadow-lg'
-          } ${solid ? '' : 'border border-sketch-ink/20'}`}
+          } ${solid ? '' : 'border border-edge'}`}
           style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
         >
-          <div className={`relative z-10 ${solid ? '' : 'text-sketch-ink'}`}>{icon}</div>
+          <div className={`relative z-10 ${solid ? '' : 'text-ink'}`}>{icon}</div>
           <StatusPicker
             status={item.status}
             onChange={onUpdateStatus ? (s) => onUpdateStatus(item.id, s) : undefined}
@@ -351,16 +358,13 @@ export function IconShell({
           <CommentBadge count={commentCount} unresolved={unresolvedCount} />
         </div>
 
-        <div className="mt-2 text-center max-w-full px-1">
-          <h4 className="font-hand text-base text-sketch-ink truncate leading-tight">
-            {item.title}
-          </h4>
-          <span className="text-[11px] font-medium text-sketch-ink/60 mt-0.5 block uppercase tracking-wider">
+        <div className="mt-1.5 text-center max-w-full px-1">
+          <span className="text-[10px] font-medium text-ink/50 block uppercase tracking-wider">
             {label}
           </span>
         </div>
 
-        <div className="mt-1.5">
+        <div className="mt-1">
           <ViewButton id={item.id} onNavigate={onNavigate} />
         </div>
       </div>

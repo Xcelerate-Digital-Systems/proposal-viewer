@@ -9,12 +9,10 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
-import { roughRect, roughLine, roughPath, roughCircle } from '@/components/feedback/sketchy/roughPath';
-import { hashStringToInt } from '@/components/feedback/sketchy/seed';
 import { NODE_FRAME_W, NODE_FRAME_H } from './nodeConfig';
 
-const ARROW_HEAD = 14;
-const ARROW_ANGLE = Math.PI / 6;
+const ARROW_HEAD = 12;
+const ARROW_ANGLE = Math.PI / 7;
 
 export interface ShapeNodeData extends Record<string, unknown> {
   shape: FeedbackBoardShape;
@@ -25,7 +23,6 @@ export interface ShapeNodeData extends Record<string, unknown> {
 
 function ShapeNodeComponent({ data, selected }: NodeProps) {
   const { shape, readOnly, onUpdateContent } = data as ShapeNodeData;
-  const seed = useMemo(() => hashStringToInt(shape.id), [shape.id]);
 
   // Text shape uses a simple editable div instead of rough rendering
   if (shape.shape_type === 'text') {
@@ -79,44 +76,68 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     );
   }
 
-  // Compute SVG dimensions based on shape type
+  // Clean SVG primitives — no rough/sketchy rendering. Funnelytics-style.
   const w = shape.width ?? 0;
   const h = shape.height ?? 0;
   const endX = shape.end_x ?? 0;
   const endY = shape.end_y ?? 0;
-
-  let svgWidth: number;
-  let svgHeight: number;
-  let paths: { d: string; stroke: string; strokeWidth: number; fill?: string }[] = [];
-
   const color = selected ? '#017C87' : shape.color;
   const strokeWidth = shape.stroke_width + (selected ? 0.6 : 0);
-  const baseOpts = {
-    seed,
-    roughness: 1.8,
-    bowing: 1.5,
-    stroke: color,
-    strokeWidth,
-    strokeLineDash: shape.dashed ? [8, 4] : undefined,
-    disableMultiStroke: false,
-  };
+  const dashArray = shape.dashed ? '8 4' : undefined;
 
   if (shape.shape_type === 'rectangle') {
-    svgWidth = Math.max(w, 4) + strokeWidth * 4;
-    svgHeight = Math.max(h, 4) + strokeWidth * 4;
-    const pad = strokeWidth * 2;
-    paths = roughRect(pad, pad, w, h, baseOpts);
-  } else if (shape.shape_type === 'ellipse') {
-    svgWidth = Math.max(w, 4) + strokeWidth * 4;
-    svgHeight = Math.max(h, 4) + strokeWidth * 4;
-    const pad = strokeWidth * 2;
-    // Use ellipse path: rough.js generator has ellipse
-    paths = roughPath(
-      `M ${pad + w / 2} ${pad} a ${w / 2} ${h / 2} 0 1 0 0 ${h} a ${w / 2} ${h / 2} 0 1 0 0 -${h}`,
-      baseOpts
+    const pad = strokeWidth;
+    const svgWidth = Math.max(w, 4) + pad * 2;
+    const svgHeight = Math.max(h, 4) + pad * 2;
+    return (
+      <div
+        style={{ position: 'relative', width: svgWidth, height: svgHeight, marginLeft: -pad, marginTop: -pad }}
+        className={selected ? 'ring-2 ring-teal/30 rounded-sm' : ''}
+      >
+        <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
+          <rect
+            x={pad}
+            y={pad}
+            width={w}
+            height={h}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={dashArray}
+            rx={2}
+            ry={2}
+          />
+        </svg>
+      </div>
     );
-  } else if (shape.shape_type === 'arrow' || shape.shape_type === 'line') {
-    // For arrow/line: dx, dy = end relative to start (shape node is anchored at start = 0,0 locally)
+  }
+
+  if (shape.shape_type === 'ellipse') {
+    const pad = strokeWidth;
+    const svgWidth = Math.max(w, 4) + pad * 2;
+    const svgHeight = Math.max(h, 4) + pad * 2;
+    return (
+      <div
+        style={{ position: 'relative', width: svgWidth, height: svgHeight, marginLeft: -pad, marginTop: -pad }}
+        className={selected ? 'ring-2 ring-teal/30 rounded-sm' : ''}
+      >
+        <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
+          <ellipse
+            cx={pad + w / 2}
+            cy={pad + h / 2}
+            rx={w / 2}
+            ry={h / 2}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={dashArray}
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  if (shape.shape_type === 'arrow' || shape.shape_type === 'line') {
     const dx = endX;
     const dy = endY;
     const minX = Math.min(0, dx);
@@ -124,8 +145,8 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     const maxX = Math.max(0, dx);
     const maxY = Math.max(0, dy);
     const pad = Math.max(strokeWidth * 2, ARROW_HEAD + 4);
-    svgWidth = (maxX - minX) + pad * 2;
-    svgHeight = (maxY - minY) + pad * 2;
+    const svgWidth = (maxX - minX) + pad * 2;
+    const svgHeight = (maxY - minY) + pad * 2;
     const offsetX = pad - minX;
     const offsetY = pad - minY;
     const x1 = offsetX;
@@ -133,57 +154,56 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     const x2 = offsetX + dx;
     const y2 = offsetY + dy;
 
-    paths = roughLine(x1, y1, x2, y2, { ...baseOpts, disableMultiStroke: true });
-
+    let arrowHeadD = '';
     if (shape.shape_type === 'arrow') {
       const angle = Math.atan2(y2 - y1, x2 - x1);
       const a1 = angle + Math.PI - ARROW_ANGLE;
       const a2 = angle + Math.PI + ARROW_ANGLE;
-      const arrowOpts = { ...baseOpts, seed: seed + 1, roughness: 1.1, bowing: 0.6, strokeLineDash: undefined };
-      const arm1 = roughLine(x2, y2, x2 + Math.cos(a1) * ARROW_HEAD, y2 + Math.sin(a1) * ARROW_HEAD, arrowOpts);
-      const arm2 = roughLine(x2, y2, x2 + Math.cos(a2) * ARROW_HEAD, y2 + Math.sin(a2) * ARROW_HEAD, arrowOpts);
-      paths = [...paths, ...arm1, ...arm2];
+      const p1x = x2 + Math.cos(a1) * ARROW_HEAD;
+      const p1y = y2 + Math.sin(a1) * ARROW_HEAD;
+      const p2x = x2 + Math.cos(a2) * ARROW_HEAD;
+      const p2y = y2 + Math.sin(a2) * ARROW_HEAD;
+      arrowHeadD = `M ${p1x} ${p1y} L ${x2} ${y2} L ${p2x} ${p2y}`;
     }
-  } else {
-    return null;
+
+    return (
+      <div
+        style={{
+          position: 'relative',
+          width: svgWidth,
+          height: svgHeight,
+          marginLeft: -(pad + Math.min(0, endX)),
+          marginTop: -(pad + Math.min(0, endY)),
+        }}
+        className={selected ? 'ring-2 ring-teal/30 rounded-sm' : ''}
+      >
+        <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
+          <line
+            x1={x1}
+            y1={y1}
+            x2={x2}
+            y2={y2}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={dashArray}
+            strokeLinecap="round"
+          />
+          {arrowHeadD && (
+            <path
+              d={arrowHeadD}
+              fill="none"
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+        </svg>
+      </div>
+    );
   }
 
-  // Shape node visually anchors at shape's stored (x, y). We offset svg inside so the visual start is flush.
-  const style: React.CSSProperties =
-    shape.shape_type === 'arrow' || shape.shape_type === 'line'
-      ? {
-          position: 'relative',
-          width: svgWidth,
-          height: svgHeight,
-          // negative margin so the svg padding doesn't push the anchor off
-          marginLeft: -(Math.max(shape.stroke_width * 2, ARROW_HEAD + 4) + Math.min(0, endX)),
-          marginTop: -(Math.max(shape.stroke_width * 2, ARROW_HEAD + 4) + Math.min(0, endY)),
-        }
-      : {
-          position: 'relative',
-          width: svgWidth,
-          height: svgHeight,
-          marginLeft: -strokeWidth * 2,
-          marginTop: -strokeWidth * 2,
-        };
-
-  return (
-    <div style={style} className={selected ? 'ring-2 ring-teal/30 rounded-sm' : ''}>
-      <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
-        {paths.map((p, i) => (
-          <path
-            key={i}
-            d={p.d}
-            stroke={p.stroke}
-            strokeWidth={p.strokeWidth}
-            fill={p.fill ?? 'none'}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ))}
-      </svg>
-    </div>
-  );
+  return null;
 }
 
 function TextShape({
@@ -235,7 +255,7 @@ function TextShape({
           }
         }}
         placeholder="Type something…"
-        className="bg-transparent border-none outline-none resize-none min-w-[80px] min-h-[28px] font-hand text-sketch-ink"
+        className="bg-transparent border-none outline-none resize-none min-w-[80px] min-h-[28px] text-ink"
         style={{ fontSize, lineHeight: 1.3, color: shape.color }}
       />
     );
@@ -244,7 +264,7 @@ function TextShape({
   return (
     <div
       onDoubleClick={() => !readOnly && setEditing(true)}
-      className={`font-hand whitespace-pre-wrap cursor-text px-1 ${selected ? 'ring-2 ring-teal/30' : ''}`}
+      className={`whitespace-pre-wrap cursor-text px-1 ${selected ? 'ring-2 ring-teal/30' : ''}`}
       style={{ fontSize, lineHeight: 1.3, color: shape.color }}
     >
       {shape.content || (!readOnly && <span className="opacity-40">Double-click to edit</span>)}
@@ -365,30 +385,16 @@ function DecisionShape({
     [shape.id, onUpdateContent]
   );
 
-  const seed = useMemo(() => hashStringToInt(shape.id), [shape.id]);
   const strokeColor = selected ? '#017C87' : '#2B2B2B';
   const strokeWidth = selected ? 2.6 : 2;
-
-  const diamondPaths = useMemo(() => {
+  const diamondPoints = (() => {
     const cx = DIAMOND_PAD + DIAMOND / 2;
     const top = DIAMOND_PAD;
     const right = DIAMOND_PAD + DIAMOND;
     const bottom = DIAMOND_PAD + DIAMOND;
     const left = DIAMOND_PAD;
-    return roughPath(
-      `M ${cx} ${top} L ${right} ${cx} L ${cx} ${bottom} L ${left} ${cx} Z`,
-      {
-        seed,
-        roughness: 1.5,
-        bowing: 1.6,
-        stroke: strokeColor,
-        strokeWidth,
-        fill: '#FDE68A',
-        fillStyle: 'solid',
-        disableMultiStroke: false,
-      }
-    );
-  }, [seed, strokeColor, strokeWidth]);
+    return `${cx},${top} ${right},${cx} ${cx},${bottom} ${left},${cx}`;
+  })();
 
   const updateBranchBySide = (side: FeedbackDecisionBranchSide, patch: Partial<FeedbackDecisionBranch>) => {
     commit({
@@ -423,7 +429,7 @@ function DecisionShape({
     left: content.branches.find((b) => b.side === 'left') ?? emptyBranchForSide('left'),
   };
 
-  const handleDotClass = '!w-3 !h-3 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+  const handleDotClass = '!w-3 !h-3 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
   const positionFor: Record<FeedbackDecisionBranchSide, Position> = {
     top: Position.Top, right: Position.Right, bottom: Position.Bottom, left: Position.Left,
@@ -453,7 +459,7 @@ function DecisionShape({
     return (
       <div className="relative group" style={{ isolation: 'isolate' }}>
         <div
-          className="nodrag px-2 py-0.5 rounded-full border-2 font-hand font-semibold text-[11px] leading-tight whitespace-nowrap shadow-sketch select-none min-w-[40px] text-center cursor-text"
+          className="nodrag px-2 py-0.5 rounded-full border-2 font-semibold text-[11px] leading-tight whitespace-nowrap shadow-sm select-none min-w-[40px] text-center cursor-text"
           style={{ background: pal.fill, borderColor: pal.border, color: pal.text }}
           onDoubleClick={(e) => { e.stopPropagation(); startEditBranch(side, b.label); }}
         >
@@ -468,7 +474,7 @@ function DecisionShape({
                 if (e.key === 'Enter') { e.preventDefault(); commitBranch(); }
               }}
               size={Math.max(3, branchDraft.length || 4)}
-              className="bg-transparent outline-none font-hand font-semibold text-[11px] text-center"
+              className="bg-transparent outline-none font-semibold text-[11px] text-center"
               style={{ color: pal.text, minWidth: 32 }}
             />
           ) : (
@@ -481,7 +487,7 @@ function DecisionShape({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); startEditBranch(side, b.label); }}
-              className="w-4 h-4 rounded-full bg-white border border-sketch-ink/40 flex items-center justify-center text-sketch-ink/70 hover:text-sketch-ink shadow-sketch text-[9px] font-bold"
+              className="w-4 h-4 rounded-full bg-white border border-edge flex items-center justify-center text-ink/70 hover:text-ink shadow-sm text-[9px] font-bold"
               title="Rename"
             >
               ✎
@@ -489,7 +495,7 @@ function DecisionShape({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setColorPickerSide(showColors ? null : side); }}
-              className="w-4 h-4 rounded-full border-2 border-white shadow-sketch"
+              className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
               style={{ background: pal.border }}
               title="Change color"
             />
@@ -499,7 +505,7 @@ function DecisionShape({
         {!readOnly && showColors && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setColorPickerSide(null)} />
-            <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 bg-paper rounded-lg border-2 border-sketch-ink/60 shadow-sketch-lg p-1.5 flex gap-1">
+            <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 bg-white rounded-lg border border-edge shadow-lg p-1.5 flex gap-1">
               {BRANCH_PALETTE.map((p) => (
                 <button
                   key={p.fill}
@@ -510,7 +516,7 @@ function DecisionShape({
                     setColorPickerSide(null);
                   }}
                   className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
-                    b.color === p.fill ? 'border-sketch-ink' : 'border-paper'
+                    b.color === p.fill ? 'border-ink' : 'border-white'
                   }`}
                   style={{ background: p.fill }}
                   title={p.label}
@@ -557,17 +563,13 @@ function DecisionShape({
           className="absolute inset-0 pointer-events-none"
           aria-hidden="true"
         >
-          {diamondPaths.map((p, i) => (
-            <path
-              key={i}
-              d={p.d}
-              stroke={p.stroke}
-              strokeWidth={p.strokeWidth}
-              fill={p.fill ?? 'none'}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ))}
+          <polygon
+            points={diamondPoints}
+            fill="#FDE68A"
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            strokeLinejoin="round"
+          />
         </svg>
         <div
           className="absolute inset-0 flex items-center justify-center px-4 py-4 text-center"
@@ -586,12 +588,12 @@ function DecisionShape({
                 if (e.key === 'Escape') { setQuestionDraft(content.question); setEditingQuestion(false); }
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitQuestion(); }
               }}
-              className="w-full bg-transparent border-none outline-none resize-none font-hand text-sketch-ink text-center leading-tight"
+              className="w-full bg-transparent border-none outline-none resize-none text-ink text-center leading-tight"
               style={{ fontSize: 13 }}
               rows={3}
             />
           ) : (
-            <span className="font-hand text-sketch-ink leading-tight" style={{ fontSize: 13 }}>
+            <span className="text-ink leading-tight" style={{ fontSize: 13 }}>
               {content.question || (!readOnly && <span className="opacity-40">Double-click</span>)}
             </span>
           )}
@@ -661,19 +663,29 @@ const DIAMOND_CONFIG: Record<DiamondType, DiamondConfig> = {
 const DIAMOND_TYPES = new Set<string>(Object.keys(DIAMOND_CONFIG));
 
 const HANDLE_CLASS =
-  '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+  '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
+
+// React Flow places handles at the node's bounding box edges by default, but
+// the diamond's corners sit at the midpoints of the box and the label sits
+// above the diamond. We override `top` per-handle so each dot lands exactly
+// on its diamond corner instead of the bounding box edge midpoint.
+const DIAMOND_LABEL_OFFSET = DIAMOND_NODE_H - DIAMOND_BOX_SIZE; // label area above
+const DIAMOND_TOP_Y    = DIAMOND_LABEL_OFFSET;                          // top corner
+const DIAMOND_MID_Y    = DIAMOND_LABEL_OFFSET + DIAMOND_BOX_SIZE / 2;   // left / right corners
 
 function DiamondHandles({ readOnly }: { readOnly?: boolean }) {
+  const topStyle    = { top: DIAMOND_TOP_Y };
+  const sideStyle   = { top: DIAMOND_MID_Y };
   return (
     <>
-      <Handle id="top"           type="source" position={Position.Top}    className={HANDLE_CLASS} isConnectable={!readOnly} />
-      <Handle id="top-source"    type="source" position={Position.Top}    className={HANDLE_CLASS} isConnectable={!readOnly} />
-      <Handle id="left"          type="source" position={Position.Left}   className={HANDLE_CLASS} isConnectable={!readOnly} />
-      <Handle id="left-source"   type="source" position={Position.Left}   className={HANDLE_CLASS} isConnectable={!readOnly} />
-      <Handle id="right"         type="source" position={Position.Right}  className={HANDLE_CLASS} isConnectable={!readOnly} />
-      <Handle id="right-target"  type="source" position={Position.Right}  className={HANDLE_CLASS} isConnectable={!readOnly} />
-      <Handle id="bottom"        type="source" position={Position.Bottom} className={HANDLE_CLASS} isConnectable={!readOnly} />
-      <Handle id="bottom-target" type="source" position={Position.Bottom} className={HANDLE_CLASS} isConnectable={!readOnly} />
+      <Handle id="top"           type="source" position={Position.Top}    className={HANDLE_CLASS} style={topStyle}  isConnectable={!readOnly} />
+      <Handle id="top-source"    type="source" position={Position.Top}    className={HANDLE_CLASS} style={topStyle}  isConnectable={!readOnly} />
+      <Handle id="left"          type="source" position={Position.Left}   className={HANDLE_CLASS} style={sideStyle} isConnectable={!readOnly} />
+      <Handle id="left-source"   type="source" position={Position.Left}   className={HANDLE_CLASS} style={sideStyle} isConnectable={!readOnly} />
+      <Handle id="right"         type="source" position={Position.Right}  className={HANDLE_CLASS} style={sideStyle} isConnectable={!readOnly} />
+      <Handle id="right-target"  type="source" position={Position.Right}  className={HANDLE_CLASS} style={sideStyle} isConnectable={!readOnly} />
+      <Handle id="bottom"        type="source" position={Position.Bottom} className={HANDLE_CLASS}                  isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="source" position={Position.Bottom} className={HANDLE_CLASS}                  isConnectable={!readOnly} />
     </>
   );
 }
@@ -751,11 +763,11 @@ function EventDiamond({
               if (e.key === 'Escape') { setDraft(content.label ?? ''); setEditing(false); }
             }}
             placeholder={config.placeholder}
-            className="w-full px-1.5 py-0.5 rounded border border-sketch-ink/30 bg-paper/90 font-hand text-[11px] text-center focus:outline-none focus:border-teal"
+            className="w-full px-1.5 py-0.5 rounded border border-edge bg-white text-[11px] text-center text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <span className="block text-[11px] font-hand text-sketch-ink/80 text-center truncate max-w-[120px] leading-tight">
+          <span className="block text-[11px] text-ink/80 text-center truncate max-w-[120px] leading-tight">
             {labelText}
           </span>
         )}
@@ -866,13 +878,13 @@ function WaitDiamond({
                 if (e.key === 'Enter') { e.preventDefault(); commit(); }
                 if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
               }}
-              className="w-10 text-center px-1 py-0.5 rounded border border-sketch-ink/30 bg-paper/90 font-hand text-[11px] focus:outline-none focus:border-teal"
+              className="w-10 text-center px-1 py-0.5 rounded border border-edge bg-white text-[11px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             />
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
               onBlur={commit}
-              className="px-1 py-0.5 rounded border border-sketch-ink/30 bg-paper/90 font-hand text-[10px] focus:outline-none focus:border-teal"
+              className="px-1 py-0.5 rounded border border-edge bg-white text-[10px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             >
               {WAIT_UNITS.map((u) => (
                 <option key={u.value} value={u.value}>{u.label}</option>
@@ -885,11 +897,11 @@ function WaitDiamond({
               onBlur={commit}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
               placeholder="Label"
-              className="w-20 px-1.5 py-0.5 rounded border border-sketch-ink/30 bg-paper/90 font-hand text-[10px] focus:outline-none focus:border-teal"
+              className="w-20 px-1.5 py-0.5 rounded border border-edge bg-white text-[10px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             />
           </div>
         ) : (
-          <span className="block text-[11px] font-hand text-sketch-ink/80 text-center truncate max-w-[120px] leading-tight">
+          <span className="block text-[11px] text-ink/80 text-center truncate max-w-[120px] leading-tight">
             {labelText}
           </span>
         )}

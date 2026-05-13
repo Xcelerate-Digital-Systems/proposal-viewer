@@ -4,8 +4,6 @@ import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
 import type { FeedbackBoardNote } from '@/lib/supabase';
-import { SketchyFrame } from '@/components/feedback/sketchy/SketchyFrame';
-import { hashStringToInt } from '@/components/feedback/sketchy/seed';
 
 /* ─── Color presets ────────────────────────────────────────────── */
 
@@ -69,16 +67,13 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
   const fontSize = note.font_size || 16;
   const width = note.width || 200;
   const height = note.height || 150;
-  const seed = hashStringToInt(note.id);
-  // Stable per-note tilt: -2deg to +2deg
-  const tilt = ((seed % 40) - 20) / 10;
 
   return (
     <>
       {/* Allow connections on all 4 sides, stacked source+target so users can
           drag from any side and drop on any side. */}
       {(() => {
-        const cls = '!w-2 !h-2 !bg-transparent !border-0 hover:!bg-sketch-ink transition-colors';
+        const cls = '!w-2 !h-2 !bg-transparent !border-0 hover:!bg-ink transition-colors';
         return (
           <>
             <Handle id="left" type="target" position={Position.Left} className={`${cls} !-left-1`} isConnectable={!readOnly} />
@@ -92,26 +87,15 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
       })()}
 
       <div
-        className={`relative group transition-transform ${
+        className={`relative group ${
           !readOnly ? 'cursor-grab active:cursor-grabbing' : ''
-        }`}
+        } rounded-md shadow-md ${selected ? 'ring-2 ring-teal' : ''}`}
         style={{
           width,
           minHeight: height,
-          transform: `rotate(${tilt}deg)`,
+          backgroundColor: note.color || '#FFF4B8',
         }}
       >
-        <SketchyFrame
-          w={width}
-          h={height}
-          variant="sticky"
-          seed={seed}
-          fill={note.color || '#FFF4B8'}
-          stroke="#2B2B2B"
-          strokeWidth={selected ? 2.2 : 1.5}
-          roughness={2}
-          bowing={2}
-        />
         {/* Admin controls — hidden in readOnly */}
         {!readOnly && (
           <div className="absolute -top-8 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
@@ -155,7 +139,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
         )}
 
         {/* Content */}
-        <div className="relative z-10 p-4 h-full font-hand">
+        <div className="relative z-10 p-4 h-full">
           {editing && !readOnly ? (
             <textarea
               ref={textareaRef}
@@ -165,20 +149,20 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
               onKeyDown={(e) => {
                 if (e.key === 'Escape') handleBlur();
               }}
-              className="w-full h-full bg-transparent border-none outline-none resize-none text-sketch-ink font-hand"
-              style={{ fontSize: fontSize + 2, lineHeight: 1.4, minHeight: height - 32 }}
+              className="w-full h-full bg-transparent border-none outline-none resize-none text-ink"
+              style={{ fontSize, lineHeight: 1.4, minHeight: height - 32 }}
               placeholder="Type a note..."
             />
           ) : (
             <div
-              className={`w-full h-full text-sketch-ink whitespace-pre-wrap break-words ${
+              className={`w-full h-full text-ink whitespace-pre-wrap break-words ${
                 !readOnly ? 'cursor-text' : ''
               }`}
-              style={{ fontSize: fontSize + 2, lineHeight: 1.4, minHeight: height - 32 }}
+              style={{ fontSize, lineHeight: 1.4, minHeight: height - 32 }}
               onDoubleClick={() => !readOnly && setEditing(true)}
             >
               {note.content || (
-                <span className="text-sketch-ink/40 italic" style={{ fontSize: fontSize }}>
+                <span className="text-ink/40 italic" style={{ fontSize }}>
                   Double-click to edit...
                 </span>
               )}

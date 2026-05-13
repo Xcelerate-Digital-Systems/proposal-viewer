@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock, Phone, CalendarDays, Zap, Flag, Workflow,
+  MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock, Phone, CalendarDays, Zap, Flag, Workflow, X,
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingCart, ShoppingBag, BellRing, Sparkles,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -69,23 +69,8 @@ interface Props {
 
 export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
   const [flowOpen, setFlowOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  // Close the flyout on outside click / Escape so it behaves like the other
-  // Miro/Funnelytics-style popovers on this board.
-  useEffect(() => {
-    if (!flowOpen) return;
-    const onDocMouseDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setFlowOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFlowOpen(false); };
-    document.addEventListener('mousedown', onDocMouseDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDocMouseDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [flowOpen]);
+  // FlowNodePicker manages its own close (backdrop click + Escape) since it
+  // renders in a centered overlay rather than anchored to the toolbar rail.
 
   const flowGroupActive = FLOW_TOOL_IDS.has(activeTool);
 
@@ -103,18 +88,18 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
         disabled={soon}
         className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
           active
-            ? 'bg-teal text-white shadow-sketch'
+            ? 'bg-teal text-white shadow-sm'
             : soon
-            ? 'text-sketch-ink/30 cursor-not-allowed'
-            : 'text-sketch-ink/80 hover:bg-paper-dark hover:text-sketch-ink'
+            ? 'text-ink/30 cursor-not-allowed'
+            : 'text-ink/80 hover:bg-surface hover:text-ink'
         }`}
         title={`${tool.label}${soon ? ' — coming soon' : ` (${tool.shortcut})`}`}
       >
         {tool.icon}
         {!soon && (
           <span
-            className={`absolute bottom-1 right-1.5 text-[11px] font-hand leading-none ${
-              active ? 'text-white/70' : 'text-sketch-ink/40'
+            className={`absolute bottom-1 right-1.5 text-[10px] leading-none ${
+              active ? 'text-white/70' : 'text-ink/40'
             }`}
           >
             {tool.shortcut}
@@ -130,30 +115,27 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
   };
 
   return (
-    <div
-      ref={rootRef}
-      className="relative flex flex-col items-center gap-1.5 bg-paper rounded-2xl border-2 border-sketch-ink/70 shadow-sketch-lg px-2 py-3 font-hand"
-    >
+    <div className="relative flex flex-col items-center gap-1.5 bg-white rounded-2xl border border-edge shadow-lg px-2 py-3">
       {PRIMARY_TOOLS.map((t) => renderButton(t))}
 
       {/* Divider between drawing tools and the funnel-node flyout */}
-      <div className="w-8 h-px bg-sketch-ink/15 my-0.5" />
+      <div className="w-8 h-px bg-edge my-0.5" />
 
       {/* Funnel nodes flyout trigger */}
       <button
         onClick={() => setFlowOpen((v) => !v)}
         className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
           flowGroupActive || flowOpen
-            ? 'bg-teal text-white shadow-sketch'
-            : 'text-sketch-ink/80 hover:bg-paper-dark hover:text-sketch-ink'
+            ? 'bg-teal text-white shadow-sm'
+            : 'text-ink/80 hover:bg-surface hover:text-ink'
         }`}
         title="Flow nodes"
         aria-expanded={flowOpen}
       >
         <Workflow size={22} strokeWidth={1.7} />
         <span
-          className={`absolute bottom-1 right-1.5 text-[11px] font-hand leading-none ${
-            flowGroupActive || flowOpen ? 'text-white/70' : 'text-sketch-ink/40'
+          className={`absolute bottom-1 right-1.5 text-[10px] leading-none ${
+            flowGroupActive || flowOpen ? 'text-white/70' : 'text-ink/40'
           }`}
         >
           F
@@ -161,53 +143,100 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
       </button>
 
       {flowOpen && (
-        <div
-          className="absolute right-full top-1/2 -translate-y-1/2 mr-2 flex flex-col items-stretch gap-1 bg-paper rounded-2xl border-2 border-sketch-ink/70 shadow-sketch-lg p-2 font-hand min-w-[180px] max-h-[80vh] overflow-y-auto"
-          role="menu"
-        >
-          <div className="px-2 pt-0.5 pb-1 text-[10px] font-semibold tracking-wider uppercase text-sketch-ink/50">
-            Logic
-          </div>
-          {FLOW_TOOLS.map((tool) => renderFlowMenuItem(tool, activeTool, onToolSelect, setFlowOpen))}
-
-          <div className="mx-2 my-1 h-px bg-sketch-ink/15" />
-
-          <div className="px-2 pt-0.5 pb-1 text-[10px] font-semibold tracking-wider uppercase text-sketch-ink/50">
-            Events
-          </div>
-          {EVENT_TOOLS.map((tool) => renderFlowMenuItem(tool, activeTool, onToolSelect, setFlowOpen))}
-        </div>
+        <FlowNodePicker
+          activeTool={activeTool}
+          onPick={(id) => { onToolSelect(id); setFlowOpen(false); }}
+          onClose={() => setFlowOpen(false)}
+        />
       )}
     </div>
   );
 }
 
-function renderFlowMenuItem(
-  tool: ToolDef,
-  activeTool: BoardTool,
-  onToolSelect: (t: BoardTool) => void,
-  setFlowOpen: (v: boolean) => void,
-) {
-  const active = activeTool === tool.id;
+/* ─── Flow node picker — AgencyViz-branded centered popup ────────── */
+
+function FlowNodePicker({
+  activeTool, onPick, onClose,
+}: {
+  activeTool: BoardTool;
+  onPick: (tool: BoardTool) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
-    <button
-      key={tool.id}
-      role="menuitem"
-      onClick={() => { onToolSelect(tool.id); setFlowOpen(false); }}
-      className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors text-left ${
-        active
-          ? 'bg-teal text-white'
-          : 'text-sketch-ink/80 hover:bg-paper-dark hover:text-sketch-ink'
-      }`}
-      title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      onClick={onClose}
     >
-      <span className="shrink-0">{tool.icon}</span>
-      <span className="flex-1 text-sm leading-none">{tool.label}</span>
-      {tool.shortcut && (
-        <span className={`text-[11px] leading-none ${active ? 'text-white/70' : 'text-sketch-ink/40'}`}>
-          {tool.shortcut}
-        </span>
-      )}
-    </button>
+      <div className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]" />
+
+      <div
+        className="relative w-full max-w-xl bg-white rounded-2xl border border-edge shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label="Flow nodes"
+      >
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-edge">
+          <div>
+            <h3 className="text-sm font-semibold text-ink">Flow nodes</h3>
+            <p className="text-xs text-muted mt-0.5">Click any tile to add it to the board.</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors"
+            type="button"
+            title="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+          <PickerSection title="Logic" tools={FLOW_TOOLS} activeTool={activeTool} onPick={onPick} />
+          <PickerSection title="Events" tools={EVENT_TOOLS} activeTool={activeTool} onPick={onPick} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PickerSection({
+  title, tools, activeTool, onPick,
+}: {
+  title: string;
+  tools: ToolDef[];
+  activeTool: BoardTool;
+  onPick: (tool: BoardTool) => void;
+}) {
+  return (
+    <div>
+      <div className="text-[10px] font-semibold tracking-wider uppercase text-muted mb-2">{title}</div>
+      <div className="grid grid-cols-4 gap-2">
+        {tools.map((tool) => {
+          const active = activeTool === tool.id;
+          return (
+            <button
+              key={tool.id}
+              type="button"
+              onClick={() => onPick(tool.id)}
+              className={`group flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border transition-all text-center ${
+                active
+                  ? 'bg-teal text-white border-teal shadow-sm'
+                  : 'bg-white text-ink border-edge hover:border-teal/50 hover:bg-teal-tint/40'
+              }`}
+              title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
+            >
+              <span className={`${active ? 'text-white' : 'text-teal'}`}>{tool.icon}</span>
+              <span className="text-[11px] leading-tight">{tool.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

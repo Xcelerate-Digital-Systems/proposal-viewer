@@ -262,7 +262,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     ctx.shapes.length === 0;
 
   return (
-    <div className="flex h-full min-h-[400px] bg-paper rounded-xl border-2 border-sketch-ink/70 overflow-hidden shadow-sketch">
+    <div className="flex h-full min-h-[400px] bg-white rounded-xl border border-edge overflow-hidden shadow-sm">
       <div
         className={`flex-1 relative bg-notebook ${cursorClass}`}
         ref={reactFlowRef}
@@ -311,15 +311,15 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
         >
           <Controls
             showInteractive={false}
-            className="!bg-paper !border-2 !border-sketch-ink/60 !shadow-sketch !rounded-lg"
+            className="!bg-white !border !border-edge !shadow-sm !rounded-lg"
           />
           <MiniMap
             nodeClassName={(node) => {
               if (node.type === 'stickyNote') return 'fill-sticky-yellow';
-              if (node.type === 'shape') return 'fill-sketch-ink/40';
-              return 'fill-paper stroke-sketch-ink/40';
+              if (node.type === 'shape') return 'fill-ink/40';
+              return 'fill-white stroke-ink/40';
             }}
-            className="!bg-paper-dark !border-2 !border-sketch-ink/50 !rounded-lg"
+            className="!bg-surface !border !border-edge !rounded-lg"
             style={{ width: 140, height: 90 }}
             zoomable
             pannable
@@ -342,12 +342,12 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
 
           {boardEmpty && !board.selectedEdge && (
             <Panel position="top-center" className="!top-24">
-              <div className="bg-paper rounded-xl border-2 border-sketch-ink/70 shadow-sketch px-6 py-5 max-w-sm text-center">
+              <div className="bg-white rounded-xl border border-edge shadow-lg px-6 py-5 max-w-sm text-center">
                 <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center mx-auto mb-3">
                   <MousePointer size={18} className="text-teal" />
                 </div>
-                <p className="font-hand text-lg text-sketch-ink mb-1">Build your funnel board</p>
-                <p className="text-xs text-sketch-ink/60">
+                <p className="text-base font-semibold text-ink mb-1">Build your funnel board</p>
+                <p className="text-xs text-muted">
                   Click &ldquo;Place on Board&rdquo; in the sidebar to add items, then drag to arrange and connect them to show the funnel flow.
                 </p>
               </div>

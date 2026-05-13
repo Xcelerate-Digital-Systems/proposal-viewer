@@ -1,6 +1,7 @@
 'use client';
 
-import { Phone, MoreVertical, Search } from 'lucide-react';
+import { useState } from 'react';
+import { Phone, MoreVertical, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { GoogleAdData } from '@/lib/types/feedback';
 
 interface Props {
@@ -13,13 +14,36 @@ interface Props {
 /**
  * Desktop Google SERP mockup. Renders the ad card in the same chrome a viewer
  * would see on google.com so reviewers can leave pins on the realistic layout.
+ *
+ * Google's responsive search ads rotate combinations of up to 15 headlines /
+ * 4 descriptions, so we offer a per-variant cycler that walks through
+ * 3-headline + 2-description chunks of the supplied copy.
  */
 export default function GoogleSearchAdMockupPreview({ data }: Props) {
-  const headline = (data.headlines || []).filter(Boolean).slice(0, 3).join(' | ') || 'Your headline here';
-  const description = (data.descriptions || []).filter(Boolean).slice(0, 2).join(' ') || 'Your description appears here.';
+  const headlines = (data.headlines || []).filter(Boolean);
+  const descriptions = (data.descriptions || []).filter(Boolean);
+
+  const variantCount = Math.max(
+    Math.ceil(headlines.length / 3),
+    Math.ceil(descriptions.length / 2),
+    1,
+  );
+
+  const [variant, setVariant] = useState(0);
+  const safeVariant = Math.min(variant, variantCount - 1);
+
+  const variantHeadlines = headlines.slice(safeVariant * 3, safeVariant * 3 + 3);
+  const variantDescriptions = descriptions.slice(safeVariant * 2, safeVariant * 2 + 2);
+
+  const headline = variantHeadlines.join(' | ') || 'Your headline here';
+  const description = variantDescriptions.join(' ') || 'Your description appears here.';
   const displayPath = [data.display_url || 'example.com', data.path1, data.path2].filter(Boolean).join(' › ');
 
   const sitelinks = (data.sitelinks || []).filter((s) => s.text && s.url).slice(0, 6);
+
+  const showCycler = variantCount > 1;
+  const goPrev = () => setVariant((v) => (v - 1 + variantCount) % variantCount);
+  const goNext = () => setVariant((v) => (v + 1) % variantCount);
 
   return (
     <div className="w-full rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
@@ -58,6 +82,31 @@ export default function GoogleSearchAdMockupPreview({ data }: Props) {
       {/* Results body */}
       <div className="px-6 py-4 max-w-[680px]">
         <p className="text-[12px] text-gray-500 mb-4">About 1,540,000,000 results (0.42 seconds)</p>
+
+        {/* Variant cycler — only shown when more than one combo is possible */}
+        {showCycler && (
+          <div className="mb-2 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={goPrev}
+              className="w-7 h-7 rounded-md border border-gray-200 bg-white text-gray-500 hover:text-ink hover:border-gray-300 flex items-center justify-center transition-colors"
+              title="Previous variant"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="text-[11px] text-gray-500 tabular-nums">
+              Variant {safeVariant + 1} / {variantCount}
+            </span>
+            <button
+              type="button"
+              onClick={goNext}
+              className="w-7 h-7 rounded-md border border-gray-200 bg-white text-gray-500 hover:text-ink hover:border-gray-300 flex items-center justify-center transition-colors"
+              title="Next variant"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Ad card */}
         <div className="mb-6">
