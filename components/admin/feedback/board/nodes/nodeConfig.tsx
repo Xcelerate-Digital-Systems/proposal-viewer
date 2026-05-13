@@ -311,11 +311,15 @@ const ICON_SIZE = 88;
 
 export function IconShell({
   item, selected, readOnly, commentCount, unresolvedCount, onNavigate, onUpdateStatus,
-  icon, label, tint,
+  icon, label, tint, solid,
 }: NodeItemProps & {
   icon: React.ReactNode;
   label: string;
   tint: string;
+  /** Funnelytics-style solid circle: full-bleed color, white icon (the icon
+   * must already be colored white via className). Default false renders the
+   * older tinted-pastel style. */
+  solid?: boolean;
 }) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -333,12 +337,12 @@ export function IconShell({
         onClick={readOnly ? handleClick : undefined}
       >
         <div
-          className={`relative flex items-center justify-center rounded-full border shadow-sm transition-shadow ${
-            selected ? 'border-teal ring-2 ring-teal/30' : 'border-sketch-ink/20 hover:shadow-md'
-          }`}
+          className={`relative flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
+            selected ? 'ring-2 ring-teal ring-offset-2 ring-offset-paper' : 'hover:shadow-lg'
+          } ${solid ? '' : 'border border-sketch-ink/20'}`}
           style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
         >
-          <div className="relative z-10 text-sketch-ink">{icon}</div>
+          <div className={`relative z-10 ${solid ? '' : 'text-sketch-ink'}`}>{icon}</div>
           <StatusPicker
             status={item.status}
             onChange={onUpdateStatus ? (s) => onUpdateStatus(item.id, s) : undefined}

@@ -408,7 +408,9 @@ export type FeedbackBoardNote = {
 export type FeedbackShapeType =
   | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text'
   | 'decision' | 'wait'
-  | 'call' | 'meeting' | 'automation' | 'goal';
+  | 'call' | 'meeting' | 'automation' | 'goal'
+  | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
+  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event';
 
 /** Stored as JSON in `review_board_shapes.content` for the label-only action
  *  shapes (Call, Meeting, Automation, Goal). Kept as an object — not a raw

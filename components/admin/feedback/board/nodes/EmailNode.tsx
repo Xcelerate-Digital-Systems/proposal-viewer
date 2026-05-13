@@ -7,9 +7,10 @@ export default function EmailNode(props: NodeItemProps) {
   return (
     <IconShell
       {...props}
-      icon={<Mail size={30} strokeWidth={1.5} />}
+      icon={<Mail size={32} strokeWidth={1.8} className="text-white" />}
       label="Email"
-      tint="#EDE9FE"
+      tint="#EF4444"
+      solid
     />
   );
 }

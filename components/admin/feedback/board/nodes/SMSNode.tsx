@@ -1,15 +1,16 @@
 'use client';
 
-import { Smartphone } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { type NodeItemProps, IconShell } from './nodeConfig';
 
 export default function SMSNode(props: NodeItemProps) {
   return (
     <IconShell
       {...props}
-      icon={<Smartphone size={30} strokeWidth={1.5} />}
+      icon={<MessageSquare size={32} strokeWidth={1.8} className="text-white" />}
       label="SMS"
-      tint="#D1F0C8"
+      tint="#10B981"
+      solid
     />
   );
 }

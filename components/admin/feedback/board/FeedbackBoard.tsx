@@ -75,7 +75,9 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     }
     if (
       tool === 'decision' || tool === 'wait' ||
-      tool === 'call' || tool === 'meeting' || tool === 'automation' || tool === 'goal'
+      tool === 'call' || tool === 'meeting' || tool === 'automation' || tool === 'goal' ||
+      tool === 'button_click' || tool === 'form_submit' || tool === 'video_play' || tool === 'scroll_depth' ||
+      tool === 'purchase' || tool === 'add_to_cart' || tool === 'subscribe' || tool === 'custom_event'
     ) {
       // Drop the shape near the centre of the current viewport so it's
       // immediately visible, not hidden off-screen.
@@ -86,8 +88,8 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
         : { x: 200, y: 200 };
       // Rough half-size to centre the spawn; visual sizes live in the node
       // components, we just ballpark it so the drop point feels right.
-      const offsetX = tool === 'decision' ? 120 : 66;
-      const offsetY = tool === 'decision' ? 120 : 44;
+      const offsetX = tool === 'decision' ? 120 : 54;
+      const offsetY = tool === 'decision' ? 120 : 70;
       void ctx.createShape({
         shape_type: tool,
         x: Math.round(centre.x - offsetX),

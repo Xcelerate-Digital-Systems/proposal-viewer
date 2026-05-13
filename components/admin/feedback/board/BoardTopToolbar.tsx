@@ -1,14 +1,19 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock, Phone, CalendarDays, Zap, Flag, Workflow } from 'lucide-react';
+import {
+  MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock, Phone, CalendarDays, Zap, Flag, Workflow,
+  MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingCart, ShoppingBag, BellRing, Sparkles,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export type BoardTool =
   | 'select' | 'sticky'
   | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text'
   | 'decision' | 'wait'
-  | 'call' | 'meeting' | 'automation' | 'goal';
+  | 'call' | 'meeting' | 'automation' | 'goal'
+  | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
+  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event';
 
 interface ToolDef {
   id: BoardTool;
@@ -32,15 +37,30 @@ const PRIMARY_TOOLS: ToolDef[] = [
 // Funnel / flow-chart markers tucked behind a flyout so the rail stays short.
 // Same keyboard shortcuts as before so muscle memory is preserved.
 const FLOW_TOOLS: ToolDef[] = [
+  // Logic / misc
   { id: 'decision', icon: <Diamond size={22} strokeWidth={1.7} />, label: 'Decision', shortcut: 'D' },
-  { id: 'wait', icon: <Clock size={22} strokeWidth={1.7} />, label: 'Wait Step', shortcut: 'W' },
+  { id: 'wait', icon: <Clock size={22} strokeWidth={1.7} />, label: 'Wait', shortcut: 'W' },
+  { id: 'goal', icon: <Flag size={22} strokeWidth={1.7} />, label: 'Goal', shortcut: 'G' },
   { id: 'call', icon: <Phone size={22} strokeWidth={1.7} />, label: 'Call', shortcut: 'C' },
   { id: 'meeting', icon: <CalendarDays size={22} strokeWidth={1.7} />, label: 'Meeting', shortcut: 'M' },
   { id: 'automation', icon: <Zap size={22} strokeWidth={1.7} />, label: 'Automation', shortcut: 'Z' },
-  { id: 'goal', icon: <Flag size={22} strokeWidth={1.7} />, label: 'Goal', shortcut: 'G' },
 ];
 
-const FLOW_TOOL_IDS = new Set<BoardTool>(FLOW_TOOLS.map((t) => t.id));
+// Funnelytics-style event nodes. Same flyout, separate visual group.
+const EVENT_TOOLS: ToolDef[] = [
+  { id: 'button_click', icon: <MousePointerClick size={22} strokeWidth={1.7} />, label: 'Button Click', shortcut: '' },
+  { id: 'form_submit',  icon: <FileText          size={22} strokeWidth={1.7} />, label: 'Form Submit',  shortcut: '' },
+  { id: 'video_play',   icon: <PlayCircle        size={22} strokeWidth={1.7} />, label: 'Video Play',   shortcut: '' },
+  { id: 'scroll_depth', icon: <ChevronsDown      size={22} strokeWidth={1.7} />, label: 'Scroll Depth', shortcut: '' },
+  { id: 'purchase',     icon: <ShoppingBag       size={22} strokeWidth={1.7} />, label: 'Purchase',     shortcut: '' },
+  { id: 'add_to_cart',  icon: <ShoppingCart      size={22} strokeWidth={1.7} />, label: 'Add to Cart',  shortcut: '' },
+  { id: 'subscribe',    icon: <BellRing          size={22} strokeWidth={1.7} />, label: 'Subscribe',    shortcut: '' },
+  { id: 'custom_event', icon: <Sparkles          size={22} strokeWidth={1.7} />, label: 'Custom Event', shortcut: '' },
+];
+
+const ALL_FLOW_TOOLS = [...FLOW_TOOLS, ...EVENT_TOOLS];
+
+const FLOW_TOOL_IDS = new Set<BoardTool>(ALL_FLOW_TOOLS.map((t) => t.id));
 
 interface Props {
   activeTool: BoardTool;
@@ -142,39 +162,52 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
 
       {flowOpen && (
         <div
-          className="absolute right-full top-1/2 -translate-y-1/2 mr-2 flex flex-col items-stretch gap-1 bg-paper rounded-2xl border-2 border-sketch-ink/70 shadow-sketch-lg p-2 font-hand min-w-[168px]"
+          className="absolute right-full top-1/2 -translate-y-1/2 mr-2 flex flex-col items-stretch gap-1 bg-paper rounded-2xl border-2 border-sketch-ink/70 shadow-sketch-lg p-2 font-hand min-w-[180px] max-h-[80vh] overflow-y-auto"
           role="menu"
         >
-          <div className="px-2 pb-1 text-[10px] font-semibold tracking-wider uppercase text-sketch-ink/50">
-            Flow nodes
+          <div className="px-2 pt-0.5 pb-1 text-[10px] font-semibold tracking-wider uppercase text-sketch-ink/50">
+            Logic
           </div>
-          {FLOW_TOOLS.map((tool) => {
-            const active = activeTool === tool.id;
-            return (
-              <button
-                key={tool.id}
-                role="menuitem"
-                onClick={() => {
-                  onToolSelect(tool.id);
-                  setFlowOpen(false);
-                }}
-                className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors text-left ${
-                  active
-                    ? 'bg-teal text-white'
-                    : 'text-sketch-ink/80 hover:bg-paper-dark hover:text-sketch-ink'
-                }`}
-                title={`${tool.label} (${tool.shortcut})`}
-              >
-                <span className="shrink-0">{tool.icon}</span>
-                <span className="flex-1 text-sm leading-none">{tool.label}</span>
-                <span className={`text-[11px] leading-none ${active ? 'text-white/70' : 'text-sketch-ink/40'}`}>
-                  {tool.shortcut}
-                </span>
-              </button>
-            );
-          })}
+          {FLOW_TOOLS.map((tool) => renderFlowMenuItem(tool, activeTool, onToolSelect, setFlowOpen))}
+
+          <div className="mx-2 my-1 h-px bg-sketch-ink/15" />
+
+          <div className="px-2 pt-0.5 pb-1 text-[10px] font-semibold tracking-wider uppercase text-sketch-ink/50">
+            Events
+          </div>
+          {EVENT_TOOLS.map((tool) => renderFlowMenuItem(tool, activeTool, onToolSelect, setFlowOpen))}
         </div>
       )}
     </div>
+  );
+}
+
+function renderFlowMenuItem(
+  tool: ToolDef,
+  activeTool: BoardTool,
+  onToolSelect: (t: BoardTool) => void,
+  setFlowOpen: (v: boolean) => void,
+) {
+  const active = activeTool === tool.id;
+  return (
+    <button
+      key={tool.id}
+      role="menuitem"
+      onClick={() => { onToolSelect(tool.id); setFlowOpen(false); }}
+      className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors text-left ${
+        active
+          ? 'bg-teal text-white'
+          : 'text-sketch-ink/80 hover:bg-paper-dark hover:text-sketch-ink'
+      }`}
+      title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
+    >
+      <span className="shrink-0">{tool.icon}</span>
+      <span className="flex-1 text-sm leading-none">{tool.label}</span>
+      {tool.shortcut && (
+        <span className={`text-[11px] leading-none ${active ? 'text-white/70' : 'text-sketch-ink/40'}`}>
+          {tool.shortcut}
+        </span>
+      )}
+    </button>
   );
 }

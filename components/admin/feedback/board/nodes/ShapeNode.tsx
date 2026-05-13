@@ -2,7 +2,12 @@
 
 import { memo, useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Clock, Phone, CalendarDays, Zap, Flag, type LucideIcon } from 'lucide-react';
+import {
+  Clock, Phone, CalendarDays, Zap, Flag,
+  MousePointerClick, FileText, PlayCircle, ChevronsDown,
+  ShoppingCart, ShoppingBag, BellRing, Sparkles,
+  type LucideIcon,
+} from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
 import { roughRect, roughLine, roughPath, roughCircle } from '@/components/feedback/sketchy/roughPath';
 import { hashStringToInt } from '@/components/feedback/sketchy/seed';
@@ -46,10 +51,10 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     );
   }
 
-  // Wait shape — Funnelytics-style delay step
+  // Wait shape — Funnelytics-style delay diamond with duration popover
   if (shape.shape_type === 'wait') {
     return (
-      <WaitShape
+      <WaitDiamond
         shape={shape}
         selected={!!selected}
         readOnly={readOnly}
@@ -58,20 +63,15 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     );
   }
 
-  // Action shapes — Call / Meeting / Automation / Goal. Same recipe as Wait,
-  // just a different tint + icon + placeholder per type. Label-only config
-  // for now; each type's schema can be extended via FeedbackActionContent
-  // without changing the shape_type.
-  if (
-    shape.shape_type === 'call' ||
-    shape.shape_type === 'meeting' ||
-    shape.shape_type === 'automation' ||
-    shape.shape_type === 'goal'
-  ) {
+  // Event + action diamonds — single Funnelytics-style diamond shell shared
+  // between the older action types (Call / Meeting / Automation / Goal) and
+  // the newer event nodes (Button click, Form submit, Video play, …). Content
+  // is just a label string; each type contributes its own color + icon.
+  if (DIAMOND_TYPES.has(shape.shape_type)) {
     return (
-      <ActionShape
+      <EventDiamond
         shape={shape}
-        actionType={shape.shape_type}
+        diamondType={shape.shape_type as DiamondType}
         selected={!!selected}
         readOnly={readOnly}
         onUpdateContent={onUpdateContent}
@@ -615,7 +615,156 @@ function DecisionShape({
 }
 
 
-/* ─── Wait shape — flowchart delay step (Funnelytics-style) ──────── */
+/* ─── Funnelytics-style flow diamonds ────────────────────────────── */
+
+// Solid colored 45°-rotated square with an upright white icon centered. Label
+// sits above (matches Funnelytics' canvas). Bounding box = side * √2; we use
+// a 76px diamond inside a 108px box so corners hit the bounding edges exactly,
+// which is also where React Flow's Top/Right/Bottom/Left handles render.
+const DIAMOND_SIDE = 76;
+const DIAMOND_BOX_SIZE = Math.ceil(DIAMOND_SIDE * Math.SQRT2); // 108
+const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
+const DIAMOND_NODE_W = DIAMOND_BOX_SIZE;
+const DIAMOND_NODE_H = DIAMOND_BOX_SIZE + 32; // room for label above
+
+type DiamondType =
+  | 'call' | 'meeting' | 'automation' | 'goal'
+  | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
+  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event';
+
+interface DiamondConfig {
+  color: string;
+  Icon: LucideIcon;
+  typeLabel: string;
+  placeholder: string;
+}
+
+// Palette chosen so each node reads as a branded icon (Funnelytics-style),
+// not a category-wide hue. Keep these in sync with the Funnel toolbar.
+const DIAMOND_CONFIG: Record<DiamondType, DiamondConfig> = {
+  // Events
+  button_click: { color: '#3B82F6', Icon: MousePointerClick, typeLabel: 'Button Click', placeholder: 'Button click' },
+  form_submit:  { color: '#06B6D4', Icon: FileText,          typeLabel: 'Form Submit',  placeholder: 'Form submit' },
+  video_play:   { color: '#EF4444', Icon: PlayCircle,        typeLabel: 'Video Play',   placeholder: 'Video play' },
+  scroll_depth: { color: '#6366F1', Icon: ChevronsDown,      typeLabel: 'Scroll',       placeholder: 'Scroll depth' },
+  purchase:     { color: '#10B981', Icon: ShoppingBag,       typeLabel: 'Purchase',     placeholder: 'Purchase' },
+  add_to_cart:  { color: '#F97316', Icon: ShoppingCart,      typeLabel: 'Add to Cart',  placeholder: 'Add to cart' },
+  subscribe:    { color: '#EC4899', Icon: BellRing,          typeLabel: 'Subscribe',    placeholder: 'Subscribe' },
+  custom_event: { color: '#64748B', Icon: Sparkles,          typeLabel: 'Event',        placeholder: 'Custom event' },
+  // Existing action types — re-skinned as diamonds
+  call:       { color: '#059669', Icon: Phone,        typeLabel: 'Call',       placeholder: 'Phone call' },
+  meeting:    { color: '#7C3AED', Icon: CalendarDays, typeLabel: 'Meeting',    placeholder: 'Meeting' },
+  automation: { color: '#F43F5E', Icon: Zap,          typeLabel: 'Automation', placeholder: 'Automation' },
+  goal:       { color: '#EAB308', Icon: Flag,         typeLabel: 'Goal',       placeholder: 'Goal' },
+};
+
+const DIAMOND_TYPES = new Set<string>(Object.keys(DIAMOND_CONFIG));
+
+const HANDLE_CLASS =
+  '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+
+function DiamondHandles({ readOnly }: { readOnly?: boolean }) {
+  return (
+    <>
+      <Handle id="top"           type="source" position={Position.Top}    className={HANDLE_CLASS} isConnectable={!readOnly} />
+      <Handle id="top-source"    type="source" position={Position.Top}    className={HANDLE_CLASS} isConnectable={!readOnly} />
+      <Handle id="left"          type="source" position={Position.Left}   className={HANDLE_CLASS} isConnectable={!readOnly} />
+      <Handle id="left-source"   type="source" position={Position.Left}   className={HANDLE_CLASS} isConnectable={!readOnly} />
+      <Handle id="right"         type="source" position={Position.Right}  className={HANDLE_CLASS} isConnectable={!readOnly} />
+      <Handle id="right-target"  type="source" position={Position.Right}  className={HANDLE_CLASS} isConnectable={!readOnly} />
+      <Handle id="bottom"        type="source" position={Position.Bottom} className={HANDLE_CLASS} isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="source" position={Position.Bottom} className={HANDLE_CLASS} isConnectable={!readOnly} />
+    </>
+  );
+}
+
+function DiamondVisual({
+  color, Icon, selected,
+}: { color: string; Icon: LucideIcon; selected: boolean }) {
+  return (
+    <div className="relative" style={{ width: DIAMOND_BOX_SIZE, height: DIAMOND_BOX_SIZE }}>
+      <div
+        className="absolute rounded-md shadow-[0_3px_8px_rgba(20,20,40,0.12)]"
+        style={{
+          top: DIAMOND_INSET,
+          left: DIAMOND_INSET,
+          width: DIAMOND_SIDE,
+          height: DIAMOND_SIDE,
+          transform: 'rotate(45deg)',
+          background: color,
+          outline: selected ? '2px solid #017C87' : 'none',
+          outlineOffset: selected ? 2 : 0,
+        }}
+      />
+      <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
+        <Icon size={26} strokeWidth={1.9} />
+      </div>
+    </div>
+  );
+}
+
+function EventDiamond({
+  shape, diamondType, selected, readOnly, onUpdateContent,
+}: {
+  shape: FeedbackBoardShape;
+  diamondType: DiamondType;
+  selected: boolean;
+  readOnly?: boolean;
+  onUpdateContent?: (id: string, content: string) => void;
+}) {
+  const config = DIAMOND_CONFIG[diamondType];
+  const content = useMemo(() => parseActionContent(shape.content), [shape.content]);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(content.label ?? '');
+
+  useEffect(() => { setDraft(content.label ?? ''); }, [content.label]);
+
+  const commit = () => {
+    setEditing(false);
+    const next = draft.trim();
+    if (next !== (content.label ?? '')) {
+      onUpdateContent?.(shape.id, serializeActionContent({ label: next || null }));
+    }
+  };
+
+  const labelText = content.label || config.placeholder;
+
+  return (
+    <div
+      className="relative flex flex-col items-center"
+      style={{ width: DIAMOND_NODE_W, height: DIAMOND_NODE_H }}
+      onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
+    >
+      <DiamondHandles readOnly={readOnly} />
+
+      {/* Label — sits above the diamond, Funnelytics-style */}
+      <div className="h-7 flex items-end pb-1 max-w-full px-1">
+        {editing && !readOnly ? (
+          <input
+            type="text"
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); commit(); }
+              if (e.key === 'Escape') { setDraft(content.label ?? ''); setEditing(false); }
+            }}
+            placeholder={config.placeholder}
+            className="w-full px-1.5 py-0.5 rounded border border-sketch-ink/30 bg-paper/90 font-hand text-[11px] text-center focus:outline-none focus:border-teal"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span className="block text-[11px] font-hand text-sketch-ink/80 text-center truncate max-w-[120px] leading-tight">
+            {labelText}
+          </span>
+        )}
+      </div>
+
+      <DiamondVisual color={config.color} Icon={config.Icon} selected={selected} />
+    </div>
+  );
+}
 
 const WAIT_UNITS: { value: FeedbackWaitUnit; label: string; short: string }[] = [
   { value: 'minutes', label: 'Minutes', short: 'min' },
@@ -648,20 +797,15 @@ export function serializeWaitContent(content: FeedbackWaitContent): string {
   return JSON.stringify(content);
 }
 
-// Wait is deliberately compact — the whole blue rectangle is the node, with
-// Clock icon + label stacked inside and handles sitting right on its edges.
-// Smaller than the uniform NODE_FRAME so the handles end up close to the
-// icon (user preference: "edges closer, label inside the blue frame").
-const WAIT_W = 132;
-const WAIT_H = 88;
-
 function formatWaitLabel(content: FeedbackWaitContent): string {
   const unitDef = WAIT_UNITS.find((u) => u.value === content.unit);
   const short = content.duration === 1 ? unitDef?.short : `${unitDef?.short}s`;
-  return `Wait ${content.duration} ${short || content.unit}`;
+  return `${content.duration} ${short || content.unit}`;
 }
 
-function WaitShape({
+const WAIT_COLOR = '#8B5CF6';
+
+function WaitDiamond({
   shape, selected, readOnly, onUpdateContent,
 }: {
   shape: FeedbackBoardShape;
@@ -698,30 +842,19 @@ function WaitShape({
     }
   };
 
-  const handleClass = '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
+  const labelText = content.label?.trim() || `Wait ${formatWaitLabel(content)}`;
 
   return (
     <div
-      className={`relative rounded-lg ${selected ? 'ring-2 ring-teal/60' : ''}`}
-      style={{ width: WAIT_W, height: WAIT_H, background: '#BFDBFE' }}
+      className="relative flex flex-col items-center"
+      style={{ width: DIAMOND_NODE_W, height: DIAMOND_NODE_H }}
       onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
     >
-      {/* Every handle is `type="source"` so React Flow's connection resolver
-          always treats the drag-start as the edge source under connectionMode
-          "loose" (Miro-style). `-source`/`-target` ids preserved so previously
-          saved edges keep their attachment point. */}
-      <Handle id="top"           type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
-      <Handle id="top-source"    type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
-      <Handle id="left"          type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
-      <Handle id="left-source"   type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
-      <Handle id="right"         type="source" position={Position.Right}  className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
-      <Handle id="right-target"  type="source" position={Position.Right}  className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
-      <Handle id="bottom"        type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
-      <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
+      <DiamondHandles readOnly={readOnly} />
 
-      {editing && !readOnly ? (
-        <div className="relative w-full h-full flex flex-col items-center justify-center gap-1 px-2 text-sketch-ink" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-1 w-full">
+      <div className="h-7 flex items-end pb-1 max-w-full px-1">
+        {editing && !readOnly ? (
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input
               type="number"
               min={1}
@@ -733,69 +866,39 @@ function WaitShape({
                 if (e.key === 'Enter') { e.preventDefault(); commit(); }
                 if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
               }}
-              className="w-9 text-center px-1 py-0 rounded border border-sketch-ink/40 bg-paper/80 font-hand text-xs focus:outline-none focus:border-teal"
+              className="w-10 text-center px-1 py-0.5 rounded border border-sketch-ink/30 bg-paper/90 font-hand text-[11px] focus:outline-none focus:border-teal"
             />
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
-              className="flex-1 min-w-0 px-1 py-0 rounded border border-sketch-ink/40 bg-paper/80 font-hand text-[10px] focus:outline-none focus:border-teal"
+              onBlur={commit}
+              className="px-1 py-0.5 rounded border border-sketch-ink/30 bg-paper/90 font-hand text-[10px] focus:outline-none focus:border-teal"
             >
               {WAIT_UNITS.map((u) => (
                 <option key={u.value} value={u.value}>{u.label}</option>
               ))}
             </select>
+            <input
+              type="text"
+              value={labelDraft}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
+              placeholder="Label"
+              className="w-20 px-1.5 py-0.5 rounded border border-sketch-ink/30 bg-paper/90 font-hand text-[10px] focus:outline-none focus:border-teal"
+            />
           </div>
-          <input
-            type="text"
-            value={labelDraft}
-            onChange={(e) => setLabelDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); commit(); }
-            }}
-            placeholder="Label (optional)"
-            className="w-full px-1 py-0 rounded border border-sketch-ink/30 bg-paper/80 font-hand text-[10px] focus:outline-none focus:border-teal"
-          />
-        </div>
-      ) : (
-        <div className="relative w-full h-full flex flex-col items-center justify-center gap-0.5 px-2 text-sketch-ink">
-          <Clock size={18} strokeWidth={1.6} />
-          <h4 className="font-hand text-xs font-semibold truncate max-w-full leading-tight">
-            {formatWaitLabel(content)}
-          </h4>
-          <span className="text-[9px] font-semibold text-sketch-ink/60 uppercase tracking-wider leading-none truncate max-w-full">
-            {content.label || 'Wait'}
+        ) : (
+          <span className="block text-[11px] font-hand text-sketch-ink/80 text-center truncate max-w-[120px] leading-tight">
+            {labelText}
           </span>
-        </div>
-      )}
+        )}
+      </div>
+
+      <DiamondVisual color={WAIT_COLOR} Icon={Clock} selected={selected} />
     </div>
   );
 }
-
-/* ─── Action shapes — Call / Meeting / Automation / Goal ─────────── */
-
-type FeedbackActionType = 'call' | 'meeting' | 'automation' | 'goal';
-
-interface ActionTypeConfig {
-  /** Uppercase type label shown below the user-entered label. */
-  typeLabel: string;
-  /** Placeholder shown when the user hasn't set a label yet. */
-  placeholder: string;
-  /** Flat background fill for the rectangle. */
-  tint: string;
-  /** Lucide icon component. */
-  Icon: LucideIcon;
-}
-
-// Colour map chosen so each action is scannable at a glance without
-// collision with Wait (blue) or Decision (yellow diamond). Label-only config
-// for now — expansion lives in FeedbackActionContent.
-const ACTION_CONFIG: Record<FeedbackActionType, ActionTypeConfig> = {
-  call:       { typeLabel: 'Call',       placeholder: 'Phone call', tint: '#BBF7D0', Icon: Phone },
-  meeting:    { typeLabel: 'Meeting',    placeholder: 'Meeting',    tint: '#E9D5FF', Icon: CalendarDays },
-  automation: { typeLabel: 'Automation', placeholder: 'Automation', tint: '#FED7AA', Icon: Zap },
-  goal:       { typeLabel: 'Goal',       placeholder: 'Goal',       tint: '#FEF3C7', Icon: Flag },
-};
 
 export function parseActionContent(raw: string | null | undefined): FeedbackActionContent {
   if (!raw) return { label: null };
@@ -810,83 +913,6 @@ export function parseActionContent(raw: string | null | undefined): FeedbackActi
 
 export function serializeActionContent(content: FeedbackActionContent): string {
   return JSON.stringify(content);
-}
-
-function ActionShape({
-  shape, actionType, selected, readOnly, onUpdateContent,
-}: {
-  shape: FeedbackBoardShape;
-  actionType: FeedbackActionType;
-  selected: boolean;
-  readOnly?: boolean;
-  onUpdateContent?: (id: string, content: string) => void;
-}) {
-  const config = ACTION_CONFIG[actionType];
-  const content = useMemo(() => parseActionContent(shape.content), [shape.content]);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(content.label ?? '');
-
-  useEffect(() => { setDraft(content.label ?? ''); }, [content.label]);
-
-  const commit = () => {
-    setEditing(false);
-    const next = draft.trim();
-    if (next !== (content.label ?? '')) {
-      onUpdateContent?.(shape.id, serializeActionContent({ label: next || null }));
-    }
-  };
-
-  const Icon = config.Icon;
-  const handleClass = '!w-2.5 !h-2.5 !bg-sketch-ink/70 !border-2 !border-paper hover:!bg-teal transition-colors';
-
-  return (
-    <div
-      className={`relative rounded-lg ${selected ? 'ring-2 ring-teal/60' : ''}`}
-      style={{ width: WAIT_W, height: WAIT_H, background: config.tint }}
-      onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
-    >
-      {/* Every handle is `type="source"` so drag direction always equals edge
-          direction under connectionMode="loose". Same aliases as the Wait
-          node so existing saved edges keep their attachment point. */}
-      <Handle id="top"           type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
-      <Handle id="top-source"    type="source" position={Position.Top}    className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
-      <Handle id="left"          type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
-      <Handle id="left-source"   type="source" position={Position.Left}   className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
-      <Handle id="right"         type="source" position={Position.Right}  className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
-      <Handle id="right-target"  type="source" position={Position.Right}  className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
-      <Handle id="bottom"        type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
-      <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
-
-      {editing && !readOnly ? (
-        <div className="relative w-full h-full flex flex-col items-center justify-center gap-1 px-2 text-sketch-ink" onClick={(e) => e.stopPropagation()}>
-          <Icon size={18} strokeWidth={1.6} />
-          <input
-            type="text"
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); commit(); }
-              if (e.key === 'Escape') { setDraft(content.label ?? ''); setEditing(false); }
-            }}
-            placeholder={config.placeholder}
-            className="w-full px-1 py-0 rounded border border-sketch-ink/30 bg-paper/80 font-hand text-[11px] font-semibold text-center focus:outline-none focus:border-teal"
-          />
-        </div>
-      ) : (
-        <div className="relative w-full h-full flex flex-col items-center justify-center gap-0.5 px-2 text-sketch-ink">
-          <Icon size={18} strokeWidth={1.6} />
-          <h4 className="font-hand text-xs font-semibold truncate max-w-full leading-tight">
-            {content.label || config.placeholder}
-          </h4>
-          <span className="text-[9px] font-semibold text-sketch-ink/60 uppercase tracking-wider leading-none truncate max-w-full">
-            {config.typeLabel}
-          </span>
-        </div>
-      )}
-    </div>
-  );
 }
 
 const ShapeNode = memo(ShapeNodeComponent);
