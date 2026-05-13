@@ -626,8 +626,9 @@ function DecisionShape({
 const DIAMOND_SIDE = 76;
 const DIAMOND_BOX_SIZE = Math.ceil(DIAMOND_SIDE * Math.SQRT2); // 108
 const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
+const DIAMOND_LABEL_AREA = 44; // breathing room between label and the diamond
 const DIAMOND_NODE_W = DIAMOND_BOX_SIZE;
-const DIAMOND_NODE_H = DIAMOND_BOX_SIZE + 32; // room for label above
+const DIAMOND_NODE_H = DIAMOND_BOX_SIZE + DIAMOND_LABEL_AREA;
 
 type DiamondType =
   | 'call' | 'meeting' | 'automation' | 'goal'
@@ -669,23 +670,27 @@ const HANDLE_CLASS =
 // the diamond's corners sit at the midpoints of the box and the label sits
 // above the diamond. We override `top` per-handle so each dot lands exactly
 // on its diamond corner instead of the bounding box edge midpoint.
-const DIAMOND_LABEL_OFFSET = DIAMOND_NODE_H - DIAMOND_BOX_SIZE; // label area above
-const DIAMOND_TOP_Y    = DIAMOND_LABEL_OFFSET;                          // top corner
-const DIAMOND_MID_Y    = DIAMOND_LABEL_OFFSET + DIAMOND_BOX_SIZE / 2;   // left / right corners
+const DIAMOND_TOP_Y = DIAMOND_LABEL_AREA;                              // top corner
+const DIAMOND_MID_Y = DIAMOND_LABEL_AREA + DIAMOND_BOX_SIZE / 2;       // left / right corners
+const HANDLE_OUTSET = 6;                                                // distance from shape edge to dot
 
 function DiamondHandles({ readOnly }: { readOnly?: boolean }) {
-  const topStyle    = { top: DIAMOND_TOP_Y };
-  const sideStyle   = { top: DIAMOND_MID_Y };
+  // Each handle sits a few px outward from its diamond corner so the dot is
+  // visibly off the shape rather than overlapping it.
+  const topStyle    = { top: DIAMOND_TOP_Y - HANDLE_OUTSET };
+  const leftStyle   = { top: DIAMOND_MID_Y, left: -HANDLE_OUTSET };
+  const rightStyle  = { top: DIAMOND_MID_Y, right: -HANDLE_OUTSET };
+  const bottomStyle = { top: DIAMOND_NODE_H + HANDLE_OUTSET, bottom: 'auto' as const };
   return (
     <>
-      <Handle id="top"           type="source" position={Position.Top}    className={HANDLE_CLASS} style={topStyle}  isConnectable={!readOnly} />
-      <Handle id="top-source"    type="source" position={Position.Top}    className={HANDLE_CLASS} style={topStyle}  isConnectable={!readOnly} />
-      <Handle id="left"          type="source" position={Position.Left}   className={HANDLE_CLASS} style={sideStyle} isConnectable={!readOnly} />
-      <Handle id="left-source"   type="source" position={Position.Left}   className={HANDLE_CLASS} style={sideStyle} isConnectable={!readOnly} />
-      <Handle id="right"         type="source" position={Position.Right}  className={HANDLE_CLASS} style={sideStyle} isConnectable={!readOnly} />
-      <Handle id="right-target"  type="source" position={Position.Right}  className={HANDLE_CLASS} style={sideStyle} isConnectable={!readOnly} />
-      <Handle id="bottom"        type="source" position={Position.Bottom} className={HANDLE_CLASS}                  isConnectable={!readOnly} />
-      <Handle id="bottom-target" type="source" position={Position.Bottom} className={HANDLE_CLASS}                  isConnectable={!readOnly} />
+      <Handle id="top"           type="source" position={Position.Top}    className={HANDLE_CLASS} style={topStyle}    isConnectable={!readOnly} />
+      <Handle id="top-source"    type="source" position={Position.Top}    className={HANDLE_CLASS} style={topStyle}    isConnectable={!readOnly} />
+      <Handle id="left"          type="source" position={Position.Left}   className={HANDLE_CLASS} style={leftStyle}   isConnectable={!readOnly} />
+      <Handle id="left-source"   type="source" position={Position.Left}   className={HANDLE_CLASS} style={leftStyle}   isConnectable={!readOnly} />
+      <Handle id="right"         type="source" position={Position.Right}  className={HANDLE_CLASS} style={rightStyle}  isConnectable={!readOnly} />
+      <Handle id="right-target"  type="source" position={Position.Right}  className={HANDLE_CLASS} style={rightStyle}  isConnectable={!readOnly} />
+      <Handle id="bottom"        type="source" position={Position.Bottom} className={HANDLE_CLASS} style={bottomStyle} isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="source" position={Position.Bottom} className={HANDLE_CLASS} style={bottomStyle} isConnectable={!readOnly} />
     </>
   );
 }
@@ -750,7 +755,7 @@ function EventDiamond({
       <DiamondHandles readOnly={readOnly} />
 
       {/* Label — sits above the diamond, Funnelytics-style */}
-      <div className="h-7 flex items-end pb-1 max-w-full px-1">
+      <div className="flex items-end pb-2 max-w-full px-1" style={{ height: DIAMOND_LABEL_AREA }}>
         {editing && !readOnly ? (
           <input
             type="text"
@@ -864,7 +869,7 @@ function WaitDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
-      <div className="h-7 flex items-end pb-1 max-w-full px-1">
+      <div className="flex items-end pb-2 max-w-full px-1" style={{ height: DIAMOND_LABEL_AREA }}>
         {editing && !readOnly ? (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input

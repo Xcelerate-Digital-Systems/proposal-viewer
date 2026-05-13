@@ -29,30 +29,80 @@ export interface NodeItemProps {
  * (`*-source`, `*-target`) are preserved as aliases so previously-saved
  * edges don't lose their attachment point.
  */
+/**
+ * Default handles — invisible until the node is hovered, then a small teal
+ * dot fades in at each side. Hit target stays clickable regardless via the
+ * !w-3 !h-3 footprint.
+ */
+const HANDLE_BASE =
+  '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
+
 export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
-  const handleClass =
-    '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
   return (
     <>
       <Handle id="left" type="source" position={Position.Left}
-        className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-left-1.5`} isConnectable={!readOnly} />
       <Handle id="left-source" type="source" position={Position.Left}
-        className={`${handleClass} !-left-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-left-1.5`} isConnectable={!readOnly} />
 
       <Handle id="right" type="source" position={Position.Right}
-        className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-right-1.5`} isConnectable={!readOnly} />
       <Handle id="right-target" type="source" position={Position.Right}
-        className={`${handleClass} !-right-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-right-1.5`} isConnectable={!readOnly} />
 
       <Handle id="top" type="source" position={Position.Top}
-        className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-top-1.5`} isConnectable={!readOnly} />
       <Handle id="top-source" type="source" position={Position.Top}
-        className={`${handleClass} !-top-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-top-1.5`} isConnectable={!readOnly} />
 
       <Handle id="bottom" type="source" position={Position.Bottom}
-        className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-bottom-1.5`} isConnectable={!readOnly} />
       <Handle id="bottom-target" type="source" position={Position.Bottom}
-        className={`${handleClass} !-bottom-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-bottom-1.5`} isConnectable={!readOnly} />
+    </>
+  );
+}
+
+/**
+ * Handles for IconShell (Email/SMS/etc.) — anchored at the 4 edges of the
+ * 88-px circle, not the surrounding 240×240 frame. Without this the edges
+ * would terminate ~44 px away from the visible shape.
+ *
+ * Geometry mirrors IconShell below:
+ *   - 240×240 outer frame
+ *   - 28 px label area on top
+ *   - 88 px circle, horizontally centered, sits directly under the label
+ */
+export function IconHandles({ readOnly }: { readOnly?: boolean }) {
+  const cls = HANDLE_BASE;
+  const labelOffset = 44;        // matches the h-11 label slot in IconShell
+  const size = 88;
+  const frame = 240;
+  const outset = 6;              // distance from circle edge to dot
+  const cy = labelOffset + size / 2;
+  const leftX = frame / 2 - size / 2 - outset;
+  const rightX = frame / 2 + size / 2 + outset;
+  const topY = labelOffset - outset;
+  const bottomY = labelOffset + size + outset;
+
+  return (
+    <>
+      <Handle id="top"           type="source" position={Position.Top}    className={cls}
+        style={{ top: topY }} isConnectable={!readOnly} />
+      <Handle id="top-source"    type="source" position={Position.Top}    className={cls}
+        style={{ top: topY }} isConnectable={!readOnly} />
+      <Handle id="right"         type="source" position={Position.Right}  className={cls}
+        style={{ top: cy, right: frame - rightX }} isConnectable={!readOnly} />
+      <Handle id="right-target"  type="source" position={Position.Right}  className={cls}
+        style={{ top: cy, right: frame - rightX }} isConnectable={!readOnly} />
+      <Handle id="bottom"        type="source" position={Position.Bottom} className={cls}
+        style={{ top: bottomY, bottom: 'auto' }} isConnectable={!readOnly} />
+      <Handle id="bottom-target" type="source" position={Position.Bottom} className={cls}
+        style={{ top: bottomY, bottom: 'auto' }} isConnectable={!readOnly} />
+      <Handle id="left"          type="source" position={Position.Left}   className={cls}
+        style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
+      <Handle id="left-source"   type="source" position={Position.Left}   className={cls}
+        style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
     </>
   );
 }
@@ -326,26 +376,31 @@ export function IconShell({
     onNavigate?.(item.id);
   };
 
+  // Match the diamond flow-node footprint: 44px label slot + 88px circle.
+  // The View button + type label are no longer rendered below the circle —
+  // they're hover-overlaid on the circle so the node stays compact.
+  const ICON_SHELL_H = 44 + ICON_SIZE;
+
   return (
     <>
-      <NodeHandles readOnly={readOnly} />
+      <IconHandles readOnly={readOnly} />
       <div
         className={`flex flex-col items-center ${
           !readOnly ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
         }`}
-        style={{ width: NODE_FRAME_W, height: NODE_FRAME_H }}
+        style={{ width: NODE_FRAME_W, height: ICON_SHELL_H }}
         onClick={readOnly ? handleClick : undefined}
       >
         {/* Title above the circle — matches diamond layout */}
-        <div className="h-7 flex items-end pb-1 max-w-full px-1">
+        <div className="h-11 flex items-end pb-2 max-w-full px-1">
           <span className="block text-[11px] text-ink/80 text-center truncate max-w-[140px] leading-tight">
             {item.title}
           </span>
         </div>
 
         <div
-          className={`relative flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
-            selected ? 'ring-2 ring-teal ring-offset-2 ring-offset-paper' : 'hover:shadow-lg'
+          className={`group relative flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
+            selected ? 'ring-2 ring-teal ring-offset-2 ring-offset-white' : 'hover:shadow-lg'
           } ${solid ? '' : 'border border-edge'}`}
           style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
         >
@@ -356,17 +411,23 @@ export function IconShell({
             variant="dot"
           />
           <CommentBadge count={commentCount} unresolved={unresolvedCount} />
+
+          {/* Hover overlay: View button + type label. Mirrors the StatusPicker
+             pattern of revealing actions only when the node is hovered. */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onNavigate?.(item.id); }}
+            className="absolute inset-0 rounded-full bg-ink/55 text-white flex flex-col items-center justify-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+            title={`View ${label}`}
+          >
+            <span className="flex items-center gap-1 text-xs font-medium">
+              <Eye size={13} />
+              View
+            </span>
+            <span className="text-[9px] uppercase tracking-wider text-white/80">{label}</span>
+          </button>
         </div>
 
-        <div className="mt-1.5 text-center max-w-full px-1">
-          <span className="text-[10px] font-medium text-ink/50 block uppercase tracking-wider">
-            {label}
-          </span>
-        </div>
-
-        <div className="mt-1">
-          <ViewButton id={item.id} onNavigate={onNavigate} />
-        </div>
       </div>
     </>
   );
