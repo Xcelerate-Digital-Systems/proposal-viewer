@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Minus, ChevronDown } from 'lucide-react';
+import { Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Minus, ChevronDown, X } from 'lucide-react';
 import type { Edge } from '@xyflow/react';
 
 export type ArrowDirection = 'none' | 'source' | 'target' | 'both';
@@ -332,6 +332,16 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
         type="button"
       >
         <Trash2 size={14} />
+      </button>
+
+      {/* Close */}
+      <button
+        onClick={onClose}
+        className="h-7 w-7 rounded-md flex items-center justify-center text-ink/50 hover:text-ink hover:bg-surface transition-colors"
+        title="Close"
+        type="button"
+      >
+        <X size={14} />
       </button>
     </div>
   );

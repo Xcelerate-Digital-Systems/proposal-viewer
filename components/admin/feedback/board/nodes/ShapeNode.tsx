@@ -770,7 +770,7 @@ function EventDiamond({
       <DiamondHandles readOnly={readOnly} />
 
       {/* Label — sits above the diamond, Funnelytics-style */}
-      <div className="flex items-end pb-3 max-w-full px-1" style={{ height: DIAMOND_LABEL_AREA }}>
+      <div className="flex items-start pt-2 px-1" style={{ height: DIAMOND_LABEL_AREA }}>
         {editing && !readOnly ? (
           <input
             type="text"
@@ -787,7 +787,7 @@ function EventDiamond({
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-normal break-words" style={{ width: 160 }}>
+          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-nowrap">
             {labelText}
           </span>
         )}
@@ -884,7 +884,7 @@ function WaitDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
-      <div className="flex items-end pb-3 max-w-full px-1" style={{ height: DIAMOND_LABEL_AREA }}>
+      <div className="flex items-start pt-2 px-1" style={{ height: DIAMOND_LABEL_AREA }}>
         {editing && !readOnly ? (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input
@@ -921,7 +921,7 @@ function WaitDiamond({
             />
           </div>
         ) : (
-          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-normal break-words" style={{ width: 160 }}>
+          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-nowrap">
             {labelText}
           </span>
         )}

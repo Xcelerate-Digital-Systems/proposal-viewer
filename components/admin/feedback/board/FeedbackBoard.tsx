@@ -294,7 +294,10 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           nodesDraggable={!isDrawingTool}
           nodesConnectable={!isDrawingTool}
           elementsSelectable={!isDrawingTool}
-          onPaneClick={isTextTool ? onPaneClickForText : undefined}
+          onPaneClick={(e) => {
+            if (isTextTool) onPaneClickForText(e);
+            else if (board.selectedEdge) board.closeEdgeEditor();
+          }}
           onEdgesDelete={(deletedEdges) => {
             deletedEdges.forEach((e) => board.handleDeleteEdge(e.id));
           }}
