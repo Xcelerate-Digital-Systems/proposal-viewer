@@ -1,10 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, Loader2 } from 'lucide-react';
+import { X, Upload, Loader2, Plus, Trash2 } from 'lucide-react';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
 import { useToast } from '@/components/ui/Toast';
+
+const MAX_GAD_HEADLINES = 15;
+const MAX_GAD_DESCRIPTIONS = 4;
+const GAD_HEADLINE_CHARS = 30;
+const GAD_DESCRIPTION_CHARS = 90;
 
 interface AddVersionModalProps {
   item: FeedbackItem;
@@ -87,15 +92,33 @@ export default function AddVersionModal({
   const [lfDescription, setLfDescription] = useState(lf?.intro_description ?? '');
   const [lfCta, setLfCta] = useState(lf?.cta ?? 'Continue');
 
-  // Google ad — versioning lets the user swap a small set of headline/description
-  // variants while keeping the base item's sitelinks, paths, and call extension.
+  // Google ad — versioning lets the user iterate on the full set of headlines
+  // and descriptions while keeping the base item's sitelinks, paths, and call
+  // extension. For banner ads we only need a single headline (gadHeadlines[0]).
   const gad = seed.google_ad_data ?? item.google_ad_data ?? null;
-  const [gadHeadline1, setGadHeadline1] = useState(gad?.headlines?.[0] ?? '');
-  const [gadHeadline2, setGadHeadline2] = useState(gad?.headlines?.[1] ?? '');
-  const [gadHeadline3, setGadHeadline3] = useState(gad?.headlines?.[2] ?? '');
-  const [gadDesc1, setGadDesc1] = useState(gad?.descriptions?.[0] ?? '');
-  const [gadDesc2, setGadDesc2] = useState(gad?.descriptions?.[1] ?? '');
+  const [gadHeadlines, setGadHeadlines] = useState<string[]>(() => {
+    const seeded = (gad?.headlines || []).filter((h) => typeof h === 'string');
+    return seeded.length ? seeded.slice(0, MAX_GAD_HEADLINES) : [''];
+  });
+  const [gadDescriptions, setGadDescriptions] = useState<string[]>(() => {
+    const seeded = (gad?.descriptions || []).filter((d) => typeof d === 'string');
+    return seeded.length ? seeded.slice(0, MAX_GAD_DESCRIPTIONS) : [''];
+  });
   const [gadFinalUrl, setGadFinalUrl] = useState(gad?.final_url ?? '');
+
+  const updateHeadline = (idx: number, value: string) =>
+    setGadHeadlines((prev) => prev.map((h, i) => (i === idx ? value.slice(0, GAD_HEADLINE_CHARS) : h)));
+  const addHeadline = () =>
+    gadHeadlines.length < MAX_GAD_HEADLINES && setGadHeadlines((prev) => [...prev, '']);
+  const removeHeadline = (idx: number) =>
+    setGadHeadlines((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
+
+  const updateDescription = (idx: number, value: string) =>
+    setGadDescriptions((prev) => prev.map((d, i) => (i === idx ? value.slice(0, GAD_DESCRIPTION_CHARS) : d)));
+  const addDescription = () =>
+    gadDescriptions.length < MAX_GAD_DESCRIPTIONS && setGadDescriptions((prev) => [...prev, '']);
+  const removeDescription = (idx: number) =>
+    setGadDescriptions((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
 
   const [uploading, setUploading] = useState(false);
   const busy = uploading || creating;
@@ -162,10 +185,13 @@ export default function AddVersionModal({
       if (kind === 'google_search_ad') {
         const base = item.google_ad_data;
         if (!base) { toast.error('Base ad not configured'); setUploading(false); return; }
-        const headlines = [gadHeadline1, gadHeadline2, gadHeadline3, ...(base.headlines.slice(3))]
-          .map((h) => (h || '').trim()).filter(Boolean);
-        const descriptions = [gadDesc1, gadDesc2, ...(base.descriptions.slice(2))]
-          .map((d) => (d || '').trim()).filter(Boolean);
+        const headlines = gadHeadlines.map((h) => h.trim()).filter(Boolean);
+        const descriptions = gadDescriptions.map((d) => d.trim()).filter(Boolean);
+        if (headlines.length === 0) {
+          toast.error('At least one headline is required');
+          setUploading(false);
+          return;
+        }
         assets.google_ad_data = {
           ...base,
           final_url: gadFinalUrl.trim() || base.final_url,
@@ -187,7 +213,7 @@ export default function AddVersionModal({
         assets.google_ad_data = {
           ...base,
           final_url: gadFinalUrl.trim() || base.final_url,
-          headlines: [(gadHeadline1.trim() || base.headlines[0] || '')],
+          headlines: [(gadHeadlines[0]?.trim() || base.headlines[0] || '')],
           banner_image_url: bannerImageUrl,
         };
       }
@@ -283,13 +309,29 @@ export default function AddVersionModal({
           {kind === 'google_search_ad' && (
             <>
               <p className="text-[11px] text-gray-500 -mt-1">
-                Versions swap the first three headlines and two descriptions. Sitelinks, paths, and call extension stay from the base item.
+                Versions iterate on headlines and descriptions. Sitelinks, paths, and call extension stay from the base item.
               </p>
-              <Field label="Headline 1"><input className={inputCls} value={gadHeadline1} onChange={(e) => setGadHeadline1(e.target.value.slice(0, 30))} /></Field>
-              <Field label="Headline 2"><input className={inputCls} value={gadHeadline2} onChange={(e) => setGadHeadline2(e.target.value.slice(0, 30))} /></Field>
-              <Field label="Headline 3"><input className={inputCls} value={gadHeadline3} onChange={(e) => setGadHeadline3(e.target.value.slice(0, 30))} /></Field>
-              <Field label="Description 1"><input className={inputCls} value={gadDesc1} onChange={(e) => setGadDesc1(e.target.value.slice(0, 90))} /></Field>
-              <Field label="Description 2"><input className={inputCls} value={gadDesc2} onChange={(e) => setGadDesc2(e.target.value.slice(0, 90))} /></Field>
+              <AssetListField
+                label="Headlines"
+                items={gadHeadlines}
+                max={MAX_GAD_HEADLINES}
+                charLimit={GAD_HEADLINE_CHARS}
+                onUpdate={updateHeadline}
+                onAdd={addHeadline}
+                onRemove={removeHeadline}
+                addLabel="Add headline"
+              />
+              <AssetListField
+                label="Descriptions"
+                items={gadDescriptions}
+                max={MAX_GAD_DESCRIPTIONS}
+                charLimit={GAD_DESCRIPTION_CHARS}
+                onUpdate={updateDescription}
+                onAdd={addDescription}
+                onRemove={removeDescription}
+                addLabel="Add description"
+                multiline
+              />
               <Field label="Final URL"><input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} /></Field>
             </>
           )}
@@ -297,7 +339,7 @@ export default function AddVersionModal({
           {kind === 'google_banner_ad' && (
             <>
               <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
-              <Field label="Headline"><input className={inputCls} value={gadHeadline1} onChange={(e) => setGadHeadline1(e.target.value)} /></Field>
+              <Field label="Headline"><input className={inputCls} value={gadHeadlines[0] ?? ''} onChange={(e) => updateHeadline(0, e.target.value)} /></Field>
               <Field label="Final URL"><input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} /></Field>
             </>
           )}
@@ -344,6 +386,73 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-[11px] font-medium uppercase tracking-wider text-gray-500 mb-1 block">{label}</span>
       {children}
     </label>
+  );
+}
+
+function AssetListField({
+  label, items, max, charLimit, onUpdate, onAdd, onRemove, addLabel, multiline,
+}: {
+  label: string;
+  items: string[];
+  max: number;
+  charLimit: number;
+  onUpdate: (idx: number, value: string) => void;
+  onAdd: () => void;
+  onRemove: (idx: number) => void;
+  addLabel: string;
+  multiline?: boolean;
+}) {
+  const filled = items.filter((v) => v.trim()).length;
+  return (
+    <div className="block">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-gray-500">
+          {label}
+        </span>
+        <span className="text-[10px] tabular-nums text-gray-400">{filled}/{max}</span>
+      </div>
+      <div className="space-y-1.5">
+        {items.map((value, i) => (
+          <div key={i} className="flex items-start gap-1.5">
+            <span className="mt-2 text-[10px] tabular-nums text-gray-400 w-4 text-right">{i + 1}.</span>
+            {multiline ? (
+              <textarea
+                className={`${inputCls} min-h-[52px]`}
+                value={value}
+                onChange={(e) => onUpdate(i, e.target.value)}
+                maxLength={charLimit}
+              />
+            ) : (
+              <input
+                className={inputCls}
+                value={value}
+                onChange={(e) => onUpdate(i, e.target.value)}
+                maxLength={charLimit}
+              />
+            )}
+            {items.length > 1 && (
+              <button
+                type="button"
+                onClick={() => onRemove(i)}
+                className="mt-2 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                title="Remove"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {items.length < max && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="mt-2 inline-flex items-center gap-1 text-[12px] text-teal hover:text-teal-hover font-medium"
+        >
+          <Plus size={13} /> {addLabel}
+        </button>
+      )}
+    </div>
   );
 }
 

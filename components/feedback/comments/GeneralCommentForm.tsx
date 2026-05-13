@@ -18,6 +18,15 @@ interface GeneralCommentFormProps {
   guestName?: string;
   /** Guest: callback when name changes */
   onNameChange?: (name: string) => void;
+
+  /** Placeholder shown on the collapsed pill and the expanded textarea.
+   *  Defaults to "Leave feedback…" so the affordance reads as an invitation
+   *  rather than a generic comment box. */
+  placeholder?: string;
+  /** Render the form expanded by default and skip the cancel/collapse step —
+   *  used for content types (e.g. Google Search ads) where the comment box is
+   *  the primary feedback surface. */
+  alwaysExpanded?: boolean;
 }
 
 async function uploadAttachments(
@@ -48,10 +57,12 @@ export default function GeneralCommentForm({
   authorName,
   guestName,
   onNameChange,
+  placeholder = 'Leave feedback…',
+  alwaysExpanded = false,
 }: GeneralCommentFormProps) {
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(alwaysExpanded);
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
 
   const isGuest = !authorName;
@@ -73,7 +84,7 @@ export default function GeneralCommentForm({
     setText('');
     setPendingFiles([]);
     setSubmitting(false);
-    setExpanded(false);
+    if (!alwaysExpanded) setExpanded(false);
   };
 
   return (
@@ -83,7 +94,7 @@ export default function GeneralCommentForm({
           onClick={() => setExpanded(true)}
           className="w-full text-left px-4 py-3 rounded-2xl text-[13px] text-gray-400 bg-white shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)] hover:text-gray-600 transition-colors"
         >
-          Leave a general comment…
+          {placeholder}
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)] px-4 py-3 space-y-2">
@@ -104,8 +115,8 @@ export default function GeneralCommentForm({
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={2}
-              autoFocus
-              placeholder="Your comment…"
+              autoFocus={!alwaysExpanded}
+              placeholder={placeholder}
               className="w-full px-0 py-1 pr-8 text-[13px] text-ink placeholder:text-gray-400 bg-transparent resize-none focus:outline-none leading-relaxed"
             />
             <div className="absolute bottom-1 right-0">
@@ -116,13 +127,15 @@ export default function GeneralCommentForm({
           <AttachmentPicker attachments={pendingFiles} onChange={setPendingFiles} />
 
           <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => { setExpanded(false); setPendingFiles([]); }}
-              className="text-[12px] px-2 py-1 text-gray-400 hover:text-ink"
-            >
-              Cancel
-            </button>
+            {!alwaysExpanded && (
+              <button
+                type="button"
+                onClick={() => { setExpanded(false); setPendingFiles([]); }}
+                className="text-[12px] px-2 py-1 text-gray-400 hover:text-ink"
+              >
+                Cancel
+              </button>
+            )}
             <button
               type="submit"
               disabled={isDisabled}

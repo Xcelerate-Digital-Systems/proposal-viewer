@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check, Loader2 } from 'lucide-react';
+import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check, Loader2, Type, AlignLeft } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
+import { getCommentView, parseGoogleAdAssetView } from '@/lib/types/feedback';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import EmojiPicker from './EmojiPicker';
 import AttachmentList from './AttachmentList';
@@ -163,6 +164,24 @@ export default function CommentThread({
                 Team
               </span>
             )}
+            {(() => {
+              // Google Search ad comments are scoped to a specific headline /
+              // description. Show that asset as a chip so reviewers can read a
+              // mixed comment list without losing context.
+              const asset = parseGoogleAdAssetView(getCommentView(comment.annotation_data));
+              if (!asset) return null;
+              const Icon = asset.type === 'headline' ? Type : AlignLeft;
+              const label = `${asset.type === 'headline' ? 'Headline' : 'Description'} ${asset.index + 1}`;
+              return (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#1a0dab]"
+                  title={label}
+                >
+                  <Icon size={10} />
+                  {label}
+                </span>
+              );
+            })()}
             {comment.priority && comment.priority !== 'none' && (() => {
               const def = getPriorityDef(comment.priority);
               const Icon = def.icon;

@@ -50,6 +50,12 @@ interface CommentsPanelProps {
   className?: string;
   /** Whether the panel shows a close button. Defaults to true. */
   closable?: boolean;
+
+  /** Override the placeholder shown on the general comment form. */
+  commentPlaceholder?: string;
+  /** Render the comment form expanded by default — used when the comment box
+   *  is the primary feedback surface (e.g. Google Search ad assets). */
+  commentFormAlwaysExpanded?: boolean;
 }
 
 export default function CommentsPanel({
@@ -70,6 +76,8 @@ export default function CommentsPanel({
   shareToken,
   className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col bg-[#FBF8F5]',
   closable = true,
+  commentPlaceholder,
+  commentFormAlwaysExpanded,
 }: CommentsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -153,6 +161,11 @@ export default function CommentsPanel({
         guestName={guestName}
         onNameChange={onNameChange}
         shareToken={shareToken}
+        placeholder={commentPlaceholder}
+        alwaysExpanded={commentFormAlwaysExpanded}
+        // Reset internal state when the placeholder changes so switching
+        // assets (Headline 1 → Headline 2) re-renders the form fresh.
+        key={commentPlaceholder ?? 'default'}
         onSubmit={async (content) => {
           await onSubmitComment(content);
         }}

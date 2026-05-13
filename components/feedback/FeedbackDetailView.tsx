@@ -10,6 +10,7 @@ import {
   type FeedbackItemView,
   defaultViewForItem,
   getCommentView,
+  parseGoogleAdAssetView,
 } from '@/lib/types/feedback';
 import { applyVersion, type VersionView } from '@/lib/feedback/versions';
 import type { CompanyBranding } from '@/hooks/useProposal';
@@ -607,6 +608,14 @@ export default function FeedbackDetailView({
               onDelete={isAdmin ? onDeleteComment : undefined}
               shareToken={shareToken}
               className="w-[360px] shrink-0 bg-[#FBF8F5] flex flex-col"
+              commentPlaceholder={(() => {
+                if (selectedItem?.type !== 'google_search_ad') return undefined;
+                const asset = parseGoogleAdAssetView(currentMockupView);
+                if (!asset) return 'Leave feedback…';
+                const label = asset.type === 'headline' ? 'Headline' : 'Description';
+                return `Leave feedback on ${label} ${asset.index + 1}…`;
+              })()}
+              commentFormAlwaysExpanded={selectedItem?.type === 'google_search_ad'}
             />
           )}
 

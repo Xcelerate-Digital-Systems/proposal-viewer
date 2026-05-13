@@ -121,12 +121,29 @@ export default function ReviewTopBar({
                 · {clientName}
               </span>
             )}
-            {statusDef && (
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${statusDef.bg} ${statusDef.text}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${statusDef.dot}`} />
-                {statusDef.label}
-              </span>
-            )}
+            {statusDef && (() => {
+              // Non-client-facing statuses (draft, in_progress, internal_review,
+              // archived) use a neutral pill so they stay legible against a
+              // dark/branded header instead of the light coloured palette.
+              const clientFacing = statusDef.value === 'client_review'
+                || statusDef.value === 'revision_needed'
+                || statusDef.value === 'approved'
+                || statusDef.value === 'rejected';
+              const neutralStyle = !clientFacing && branded
+                ? { border: `1px solid ${sidebarText}40`, color: sidebarText, backgroundColor: `${sidebarText}10` }
+                : undefined;
+              const colouredClass = clientFacing ? `${statusDef.bg} ${statusDef.text}` : '';
+              const neutralClass = !clientFacing && !branded ? 'border border-gray-200 bg-gray-50 text-gray-700' : '';
+              return (
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${colouredClass} ${neutralClass}`}
+                  style={neutralStyle}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusDef.dot}`} />
+                  {statusDef.label}
+                </span>
+              );
+            })()}
           </div>
         </div>
 

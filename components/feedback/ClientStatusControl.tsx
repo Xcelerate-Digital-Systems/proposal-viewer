@@ -14,13 +14,22 @@ const CLIENT_STATUS_OPTIONS: FeedbackStatus[] = [
   'rejected',
 ];
 
+const CLIENT_FACING: Set<FeedbackStatus> = new Set(CLIENT_STATUS_OPTIONS);
+
 interface Props {
   itemId: string;
   status: FeedbackStatus;
   onChange: (itemId: string, next: FeedbackStatus) => Promise<void> | void;
+  /** When the host header uses a dark/branded background, the control mirrors
+   *  the edit/version button style for non-client-facing statuses so they stay
+   *  visible without competing with the client-status colours. */
+  branded?: boolean;
+  /** Foreground colour used by the branded header — drives borders/text on
+   *  the neutral pill variant. */
+  sidebarText?: string;
 }
 
-export default function ClientStatusControl({ itemId, status, onChange }: Props) {
+export default function ClientStatusControl({ itemId, status, onChange, branded, sidebarText }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -47,13 +56,27 @@ export default function ClientStatusControl({ itemId, status, onChange }: Props)
     }
   };
 
+  // Non-client-facing statuses (draft, in_progress, internal_review, archived)
+  // get a neutral pill that matches the surrounding header chrome instead of
+  // the coloured client-facing palette. This keeps the dark/branded header
+  // legible when the project is still internal.
+  const useNeutralPill = !CLIENT_FACING.has(status);
+  const neutralStyle = useNeutralPill && branded && sidebarText
+    ? { border: `1px solid ${sidebarText}40`, color: sidebarText, backgroundColor: `${sidebarText}10` }
+    : undefined;
+  const neutralClass = useNeutralPill && !branded
+    ? 'border border-gray-200 bg-gray-50 text-gray-700'
+    : '';
+  const colouredClass = !useNeutralPill ? `border ${current.bg} ${current.text} ${current.border}` : '';
+
   return (
     <div ref={ref} className="relative inline-block" data-no-pin>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={pending}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${current.bg} ${current.text} ${current.border} hover:brightness-95 disabled:opacity-60`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors hover:brightness-95 disabled:opacity-60 ${colouredClass} ${neutralClass}`}
+        style={neutralStyle}
       >
         <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
         {current.label}

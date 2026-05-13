@@ -278,6 +278,8 @@ export default function FeedbackHeaderBar({
               itemId={selectedItem.id}
               status={selectedItem.status}
               onChange={onUpdateItemStatus}
+              branded={headerBranded}
+              sidebarText={sidebarText}
             />
           </div>
         )}
