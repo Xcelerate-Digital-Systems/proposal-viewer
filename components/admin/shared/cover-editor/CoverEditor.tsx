@@ -26,13 +26,21 @@ interface CoverEditorProps {
   onSave?: () => void;
   /** @deprecated No longer used — autosave handles persistence */
   onCancel?: () => void;
+  /** Hide the Cover Colors section (used on the Quote cover tab where colours
+   *  live on the Settings tab instead). */
+  hideColors?: boolean;
+  /** Hide the Cover Enabled toggle (quote covers always show). */
+  hideEnableToggle?: boolean;
+  /** Render only the settings panel — the caller supplies its own preview
+   *  (e.g. the Quote cover tab shows the full live quote alongside). */
+  panelOnly?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) {
+export default function CoverEditor({ type, entity, onSave, hideColors, hideEnableToggle, panelOnly }: CoverEditorProps) {
   const cfg = configs[type];
   const displayTitle = entity.title || entity.name || 'Untitled';
 
@@ -327,6 +335,50 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
   /*  Render                                                        */
   /* ══════════════════════════════════════════════════════════════ */
 
+  if (panelOnly) {
+    return (
+      <CoverSettingsPanel
+        type={type}
+        cfg={cfg}
+        hideColors={hideColors}
+        hideEnableToggle={hideEnableToggle}
+        companyId={entity.company_id}
+        clientName={entity.client_name}
+        coverEnabled={coverEnabled}
+        setCoverEnabled={setCoverEnabled}
+        subtitle={subtitle}
+        setSubtitle={setSubtitle}
+        subtitlePlaceholder={subtitlePlaceholder}
+        preparedByMemberId={preparedByMemberId}
+        setPreparedByMemberId={setPreparedByMemberId}
+        showPreparedBy={showPreparedBy}
+        setShowPreparedBy={setShowPreparedBy}
+        showAvatar={showAvatar}
+        setShowAvatar={setShowAvatar}
+        coverDate={coverDate}
+        setCoverDate={setCoverDate}
+        showDate={showDate}
+        setShowDate={setShowDate}
+        showClientLogo={showClientLogo}
+        setShowClientLogo={setShowClientLogo}
+        clientLogoUrl={clientLogoUrl}
+        clientLogoPath={clientLogoPath}
+        uploadingClientLogo={uploadingClientLogo}
+        onClientLogoUpload={handleClientLogoUpload}
+        onClientLogoRemove={removeClientLogo}
+        acceptButtonText={acceptButtonText}
+        setAcceptButtonText={setAcceptButtonText}
+        imageUrl={imageUrl}
+        imagePath={imagePath}
+        uploading={uploading}
+        onImageUpload={handleImageUpload}
+        onImageRemove={removeImage}
+        colors={colors}
+        onColorsChange={updateColors}
+      />
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       {/* ── Header ──────────────────────────────────────────── */}
@@ -344,6 +396,8 @@ export default function CoverEditor({ type, entity, onSave }: CoverEditorProps) 
           <CoverSettingsPanel
             type={type}
             cfg={cfg}
+            hideColors={hideColors}
+            hideEnableToggle={hideEnableToggle}
             companyId={entity.company_id}
             clientName={entity.client_name}
             coverEnabled={coverEnabled}

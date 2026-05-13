@@ -12,9 +12,9 @@ import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Copy, Check, ExternalLink, Trash2, Download,
+  ArrowLeft, Copy, Check, ExternalLink, Trash2, Download, BookmarkPlus,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  Paintbrush, Wand2, SlidersHorizontal, Files,
+  Paintbrush, Wand2, SlidersHorizontal, Files, Loader2,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -68,6 +68,7 @@ export default function QuoteShellHeader({
   const toast = useToast();
   const { companyInfo } = useProposalDetail();
   const [copied, setCopied] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const activeKey = activeKeyFromPath(pathname);
 
   const quoteNumberFormat = companyInfo
@@ -96,6 +97,34 @@ export default function QuoteShellHeader({
       const label = statusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
       toast.success(`Quote marked as ${label}`);
       onProposalChange?.({ ...proposal, status: newStatus } as Proposal);
+    }
+  };
+
+  const saveAsTemplate = async () => {
+    const name = window.prompt(
+      'Save this quote as a template. Templates remember design, line items, terms, scope — but not the client.',
+      `${proposal.title} — Template`,
+    );
+    if (!name?.trim()) return;
+    setSavingTemplate(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const res = await fetch(`/api/quotes/${proposal.id}/save-as-template`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.session?.access_token ?? ''}`,
+        },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Save failed');
+      toast.success(`Saved as "${json.name}"`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save as template');
+    } finally {
+      setSavingTemplate(false);
     }
   };
 
@@ -216,6 +245,14 @@ export default function QuoteShellHeader({
             <Download size={14} />
             PDF
           </a>
+          <button
+            onClick={saveAsTemplate}
+            disabled={savingTemplate}
+            className="p-2 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            title="Save as quote template"
+          >
+            {savingTemplate ? <Loader2 size={16} className="animate-spin" /> : <BookmarkPlus size={16} />}
+          </button>
           <button
             onClick={duplicateQuote}
             className="p-2 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"

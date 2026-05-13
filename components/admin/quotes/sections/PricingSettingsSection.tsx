@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { supabase, type Proposal, formatAUD, pricingEffectiveSubtotal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import Toggle from '@/components/ui/Toggle';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 
 interface Props {
@@ -17,7 +18,7 @@ interface Props {
   onSaved: () => void;
 }
 
-function ToggleSwitch({
+function ToggleRow({
   checked,
   onChange,
   label,
@@ -27,24 +28,10 @@ function ToggleSwitch({
   label: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className="flex items-center gap-3 text-sm font-medium text-gray-700"
-    >
-      <span
-        className={`w-9 h-5 rounded-full relative transition-colors ${
-          checked ? 'bg-blue-500' : 'bg-gray-200'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-            checked ? 'translate-x-[18px]' : 'translate-x-0.5'
-          }`}
-        />
-      </span>
-      {label}
-    </button>
+    <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+      <Toggle enabled={checked} onChange={onChange} size="sm" />
+      <span>{label}</span>
+    </div>
   );
 }
 
@@ -114,7 +101,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
       <div className="space-y-4">
         {/* GST */}
         <div>
-          <ToggleSwitch
+          <ToggleRow
             checked={includeGst}
             onChange={(v) => {
               setIncludeGst(v);
@@ -145,7 +132,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
 
         {/* Deposit */}
         <div className="pt-4 border-t border-gray-100">
-          <ToggleSwitch
+          <ToggleRow
             checked={requireDeposit}
             onChange={(v) => {
               setRequireDeposit(v);

@@ -1,18 +1,25 @@
 // components/admin/quotes/QuoteBuilderV2.tsx
-// New Quote builder layout. Content-only — global styling (Proposal Style preset,
-// Backgrounds, fonts, colours) lives on the Settings tab; Cover lives on the
-// Cover tab. The toggle clutter is gone: ProposalStyle/Backgrounds/Cover-link
-// cards moved out, and stale per-section toggles like `show_job_fields`
-// dropped.
+// Builder layout mirrors QuoteWin's section order:
+//   1.  Proposal Style preset
+//   2.  Activity (our addition — collapsed by default)
+//   3.  Client Details
+//   4.  Project Details (Title / Category / Valid Until)
+//   5.  Scope of Works
+//   6.  Project Photos
+//   7.  Line Items
+//   8.  Pricing (GST / Deposit)
+//   9.  About Your Business
+//   10. Customer Testimonial
+//   11. Badges
+//   12. Next Steps
+//   13. Terms & Conditions
+//   14. Attachments
+// Deeper styling (backgrounds, fonts, custom colours) lives on the Settings
+// tab; Cover lives on the Cover tab.
 'use client';
 
-import { Layers } from 'lucide-react';
 import type { Proposal } from '@/lib/supabase';
 
-import PricingTab from '@/components/admin/proposals/PricingTab';
-import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
-import LineItemsLibraryBar from '@/components/admin/proposals/quote-builder/LineItemsLibraryBar';
-import LoadTemplateBar from '@/components/admin/proposals/quote-builder/LoadTemplateBar';
 import PreviewPane from '@/components/admin/proposals/quote-builder/PreviewPane';
 
 // Reused (unchanged) from the legacy quote-builder section folder.
@@ -27,6 +34,7 @@ import TermsSection from '@/components/admin/proposals/quote-builder/sections/Te
 // New quote-specific sections.
 import QuoteProjectDetailsSection from './sections/ProjectDetailsSection';
 import ScopeOfWorksSection from './sections/ScopeOfWorksSection';
+import QuoteLineItemsSection from './sections/QuoteLineItemsSection';
 import PricingSettingsSection from './sections/PricingSettingsSection';
 import AttachmentsSection from './sections/AttachmentsSection';
 import QuoteActivityTimeline from './QuoteActivityTimeline';
@@ -43,17 +51,9 @@ export default function QuoteBuilderV2({ proposal, companyId, onRefetch }: Props
       <div className="flex gap-6">
         {/* Left: stacked sections */}
         <div className="flex-1 min-w-0 space-y-5">
-          <div className="flex items-center justify-end">
-            <LoadTemplateBar proposal={proposal} companyId={companyId} onApplied={onRefetch} />
-          </div>
-
           <QuoteActivityTimeline proposal={proposal} />
 
-          <ClientDetailsSection
-            proposal={proposal}
-            companyId={companyId}
-            onSaved={onRefetch}
-          />
+          <ClientDetailsSection proposal={proposal} companyId={companyId} onSaved={onRefetch} />
 
           <QuoteProjectDetailsSection proposal={proposal} onSaved={onRefetch} />
 
@@ -61,19 +61,7 @@ export default function QuoteBuilderV2({ proposal, companyId, onRefetch }: Props
 
           <ProjectPhotosSection proposal={proposal} onSaved={onRefetch} />
 
-          <SectionCard
-            title="Line Items"
-            icon={<Layers size={14} className="text-gray-400" />}
-            description="Each row appears in the quote breakdown. Save reusable sets to your library."
-          >
-            <PricingTab
-              proposalId={proposal.id}
-              hidePreview
-              lineItemsToolbar={({ items, replaceItems }) => (
-                <LineItemsLibraryBar items={items} replaceItems={replaceItems} />
-              )}
-            />
-          </SectionCard>
+          <QuoteLineItemsSection proposal={proposal} companyId={companyId} onApplied={onRefetch} />
 
           <PricingSettingsSection proposal={proposal} onSaved={onRefetch} />
 
@@ -90,8 +78,10 @@ export default function QuoteBuilderV2({ proposal, companyId, onRefetch }: Props
           <AttachmentsSection proposal={proposal} onSaved={onRefetch} />
         </div>
 
-        {/* Right: sticky preview */}
-        <aside className="hidden xl:block w-[420px] shrink-0">
+        {/* Right: sticky preview — wider so the rendered quote is readable
+            while you edit. Hides under lg to keep the builder usable on
+            smaller laptops. */}
+        <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
           <PreviewPane proposal={proposal} companyId={companyId} />
         </aside>
       </div>

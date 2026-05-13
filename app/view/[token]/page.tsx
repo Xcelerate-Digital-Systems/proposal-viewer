@@ -83,9 +83,27 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   }
 
   // ── Quote viewer (single-page scroll, QuoteWin-style) ───────────────
-  // Bypasses the multi-page paginator entirely. Cover is the top of the
-  // scroll, not a separate click-through.
+  // First-load lands on the full-screen Cover overlay (same as proposals),
+  // then click "Start" to reveal the quote body. The cover repeats at the
+  // top of the scroll once dismissed so the customer can scroll back up.
   if (v.proposal?.entity_type === 'quote') {
+    const showingCover = v.showCover && v.proposal?.cover_enabled;
+    if (showingCover) {
+      return (
+        <div className="fixed inset-0 z-50">
+          <GoogleFontLoader
+            fonts={[
+              v.branding.font_heading,
+              v.branding.font_body,
+              v.branding.title_font_family,
+              v.proposal.title_font_family,
+            ]}
+          />
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <CoverPage proposal={v.proposal as any} branding={v.branding} onStart={() => v.setShowCover(false)} />
+        </div>
+      );
+    }
     // Page-around bg is intentionally separate from the document bg —
     // think of the quote as a printed card floating on a desk. The
     // surrounding bg is fixed light gray so the card always has contrast;
@@ -104,14 +122,11 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             v.proposal.title_font_family,
           ]}
         />
-        {/* Floating download chip — uses native browser PDF print so we
-            don't need a server-side PDF pipeline. Hidden in the printout.
-            When the URL has ?print=1 (admin-triggered), fire window.print()
-            once on mount so opening it in a new tab goes straight to the
-            save-as-PDF dialog. */}
-        <PrintBar autoPrint={autoPrint} />
-        <div className="max-w-3xl mx-auto pb-10 px-4 print:max-w-none print:px-0 print:pb-0">
-          <div className="rounded-2xl overflow-hidden shadow-sm print:rounded-none print:shadow-none">
+        {/* Auto-print trigger for admin ?print=1 deep links. The visible
+            "Download PDF" affordance now floats in the corner (see below). */}
+        <PrintTrigger autoPrint={autoPrint} />
+        <div className="max-w-3xl mx-auto pt-6 pb-10 px-4 print:max-w-none print:px-0 print:pb-0 print:pt-0">
+          <div className="rounded-2xl overflow-hidden shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] print:rounded-none print:shadow-none">
             <QuoteSinglePageView
               proposal={v.proposal}
               pricing={(v.pricing as unknown as ProposalPricing | null) ?? null}
@@ -139,6 +154,18 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             />
           </div>
         </div>
+
+        {/* Floating Download PDF — fixed to the bottom-right of the viewport
+            so it's always reachable while scrolling without competing with
+            the quote content. Hidden in the printed output. */}
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/95 backdrop-blur border border-gray-200 shadow-md text-xs font-medium text-gray-700 hover:text-gray-900 hover:shadow-lg transition-all print:hidden"
+        >
+          <Download size={13} />
+          Download PDF
+        </button>
       </div>
     );
   }
@@ -305,25 +332,14 @@ export default function ProposalViewerPage({ params }: { params: { token: string
   );
 }
 
-/* Floating "Download PDF" chip rendered above the quote viewer. When the URL
-   carries ?print=1 (admin clicked "PDF" in the quote header), trigger
-   window.print() once after a short delay so the page has time to paint. */
-function PrintBar({ autoPrint }: { autoPrint: boolean }) {
+/* Silent helper — fires window.print() once when the URL carries ?print=1
+   (admin clicked "PDF" in the quote header). Renders nothing. The visible
+   Download PDF affordance is the floating button next to the quote. */
+function PrintTrigger({ autoPrint }: { autoPrint: boolean }) {
   useEffect(() => {
     if (!autoPrint) return;
     const t = window.setTimeout(() => window.print(), 600);
     return () => window.clearTimeout(t);
   }, [autoPrint]);
-  return (
-    <div className="max-w-3xl mx-auto px-4 pt-4 flex justify-end print:hidden">
-      <button
-        type="button"
-        onClick={() => window.print()}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:border-gray-300 hover:text-gray-800 transition-colors shadow-sm"
-      >
-        <Download size={12} />
-        Download PDF
-      </button>
-    </div>
-  );
+  return null;
 }

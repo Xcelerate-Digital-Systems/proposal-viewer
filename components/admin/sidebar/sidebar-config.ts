@@ -32,21 +32,12 @@ export const ALL_SECTIONS: SectionDef[] = [
     label: 'Proposals',
     icon: FileText,
     defaultHref: '/proposals',
-    matchPaths: ['/proposals', '/documents', '/templates', '/template-preview'],
+    matchPaths: ['/proposals', '/quotes', '/documents', '/templates', '/template-preview'],
     items: [
       { href: '/proposals', label: 'Proposals', icon: FileText },
+      { href: '/quotes',    label: 'Quotes',    icon: ReceiptText },
       { href: '/documents', label: 'Documents', icon: Files },
       { href: '/templates', label: 'Templates', icon: LayoutTemplate },
-    ],
-  },
-  {
-    key: 'quotes',
-    label: 'Quotes',
-    icon: ReceiptText,
-    defaultHref: '/quotes',
-    matchPaths: ['/quotes'],
-    items: [
-      { href: '/quotes', label: 'Quotes', icon: ReceiptText },
     ],
   },
   {

@@ -53,6 +53,11 @@ function SectionHeader({ icon, label }: { icon: React.ReactNode; label: string }
 interface CoverSettingsPanelProps {
   type: EntityType;
   cfg: EntityConfig;
+  /** Hide the Cover Colors section (used on the Quote cover tab where colours
+   *  live on the Settings tab instead). */
+  hideColors?: boolean;
+  /** Hide the Cover Enabled toggle (quote covers always show). */
+  hideEnableToggle?: boolean;
   companyId: string;
   clientName?: string;
   /* Enable/disable */
@@ -99,6 +104,8 @@ interface CoverSettingsPanelProps {
 export default function CoverSettingsPanel({
   type,
   cfg,
+  hideColors,
+  hideEnableToggle,
   companyId,
   clientName,
   coverEnabled,
@@ -139,20 +146,23 @@ export default function CoverSettingsPanel({
   return (
     <div className="space-y-5">
       {/* ── Enable/disable toggle ────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {coverEnabled ? <Eye size={16} className="text-teal" /> : <EyeOff size={16} className="text-gray-400" />}
-          <span className="text-sm text-gray-900 font-medium">Cover Page</span>
-        </div>
-        <button
-          onClick={() => setCoverEnabled(!coverEnabled)}
-          className={`relative w-10 h-5 rounded-full transition-colors ${coverEnabled ? 'bg-teal' : 'bg-gray-200'}`}
-        >
-          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${coverEnabled ? 'left-5' : 'left-0.5'}`} />
-        </button>
-      </div>
-
-      <div className="border-t border-gray-100" />
+      {!hideEnableToggle && (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {coverEnabled ? <Eye size={16} className="text-teal" /> : <EyeOff size={16} className="text-gray-400" />}
+              <span className="text-sm text-gray-900 font-medium">Cover Page</span>
+            </div>
+            <button
+              onClick={() => setCoverEnabled(!coverEnabled)}
+              className={`relative w-10 h-5 rounded-full transition-colors ${coverEnabled ? 'bg-teal' : 'bg-gray-200'}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${coverEnabled ? 'left-5' : 'left-0.5'}`} />
+            </button>
+          </div>
+          <div className="border-t border-gray-100" />
+        </>
+      )}
 
       {/* ── Subtitle ─────────────────────────────────────── */}
       {cfg.fields.subtitle && (
@@ -336,16 +346,20 @@ export default function CoverSettingsPanel({
         />
       </div>
 
-      <div className="border-t border-gray-100" />
+      {!hideColors && (
+        <>
+          <div className="border-t border-gray-100" />
 
-      {/* ── Cover Colors ─────────────────────────────────── */}
-      <div className="space-y-3">
-        <SectionHeader icon={<Palette size={14} className="text-gray-400" />} label="Cover Colors" />
-        <CoverColorControls
-          {...colors}
-          onChange={onColorsChange}
-        />
-      </div>
+          {/* ── Cover Colors ─────────────────────────────────── */}
+          <div className="space-y-3">
+            <SectionHeader icon={<Palette size={14} className="text-gray-400" />} label="Cover Colors" />
+            <CoverColorControls
+              {...colors}
+              onChange={onColorsChange}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

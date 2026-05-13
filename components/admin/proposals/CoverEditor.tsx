@@ -8,8 +8,28 @@ interface ProposalCoverEditorProps {
   proposal: Proposal;
   onSave?: () => void;
   onCancel?: () => void;
+  hideColors?: boolean;
+  hideEnableToggle?: boolean;
+  panelOnly?: boolean;
 }
 
-export default function ProposalCoverEditor({ proposal, onSave, onCancel }: ProposalCoverEditorProps) {
-  return <CoverEditor type="proposal" entity={proposal} onSave={onSave} onCancel={onCancel} />;
+export default function ProposalCoverEditor({
+  proposal,
+  onSave,
+  onCancel,
+  hideColors,
+  hideEnableToggle,
+  panelOnly,
+}: ProposalCoverEditorProps) {
+  return (
+    <CoverEditor
+      type="proposal"
+      entity={proposal}
+      onSave={onSave}
+      onCancel={onCancel}
+      hideColors={hideColors}
+      hideEnableToggle={hideEnableToggle}
+      panelOnly={panelOnly}
+    />
+  );
 }

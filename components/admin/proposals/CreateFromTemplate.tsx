@@ -160,6 +160,15 @@ export default function CreateFromTemplate({
       // ── 3. Create proposal + split pages ───────────────────────────
       setStatus('Creating proposal...');
 
+      // Quote templates carry quote-only fields (scope, GST, attachments, …)
+      // in an `extra` JSONB blob. Hydrate them on top of the create-proposal
+      // payload so the new quote starts as a complete copy of the snapshot.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const templateExtra: Record<string, unknown> =
+        selectedTemplate.entity_type === 'quote' && (selectedTemplate as any).extra && typeof (selectedTemplate as any).extra === 'object'
+          ? ((selectedTemplate as any).extra as Record<string, unknown>)
+          : {};
+
       const res = await authedFetch('/api/proposals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,6 +181,7 @@ export default function CreateFromTemplate({
           file_path:       freshFilePath,
           file_size_bytes: (selectedTemplate as any).file_size_bytes ?? 0,
           page_names:      pageNames,
+          ...templateExtra,
           company_id:      companyId,
           created_by_name: creatorName,
           entity_type:     selectedTemplate.entity_type,

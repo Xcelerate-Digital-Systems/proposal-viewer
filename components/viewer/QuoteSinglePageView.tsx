@@ -71,11 +71,16 @@ function withAlpha(color: string, alpha: number): string {
 /* ── Domain helpers ─────────────────────────────────────────────────────── */
 
 function buildHeaderBackground(p: Proposal): string {
-  if (p.cover_bg_style === 'gradient') {
-    const angle = p.cover_gradient_angle ?? 135;
-    return `linear-gradient(${angle}deg, ${p.cover_bg_color_1 ?? '#0f172a'}, ${p.cover_bg_color_2 ?? '#1e293b'})`;
+  if (p.cover_bg_style !== 'gradient') return p.cover_bg_color_1 ?? '#0f172a';
+  const c1    = p.cover_bg_color_1 ?? '#0f172a';
+  const c2    = p.cover_bg_color_2 ?? '#1e293b';
+  const angle = p.cover_gradient_angle ?? 135;
+  switch (p.cover_gradient_type) {
+    case 'radial': return `radial-gradient(circle, ${c1}, ${c2})`;
+    case 'conic':  return `conic-gradient(from ${angle}deg, ${c1}, ${c2})`;
+    case 'linear':
+    default:       return `linear-gradient(${angle}deg, ${c1}, ${c2})`;
   }
-  return p.cover_bg_color_1 ?? '#0f172a';
 }
 
 function deriveDeposit(pricing: ProposalPricing | null, total: number) {
@@ -675,67 +680,99 @@ export default function QuoteSinglePageView({
       )}
 
       {/* ── Investment ────────────────────────────────────────── */}
+      {/* Takes the header fill so the total reads as the document's hero
+          figure. Deposit is intentionally a smaller chip in the corner so it
+          doesn't compete with the headline total. Valid-until sits below the
+          row in the same dark card. */}
       <Section>
         <SectionLabel style={labelStyle}>Investment</SectionLabel>
-        <div style={{ border: `1px solid ${hairline}`, borderRadius: 4 }}>
-          <div className="grid grid-cols-1 sm:grid-cols-2">
-            <div className="px-6 py-7">
-              <div style={labelStyle}>Total</div>
+        <div
+          className="rounded-xl px-6 py-7 sm:px-8 sm:py-8"
+          style={{
+            background: headerBg,
+            color: headerText,
+            // Faint inner border so the card edge stays visible against a
+            // matching body background.
+            boxShadow: `inset 0 0 0 1px ${withAlpha(headerText, 0.08)}`,
+          }}
+        >
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div className="min-w-0">
+              <div
+                style={{
+                  ...labelStyle,
+                  color: withAlpha(headerText, 0.55),
+                  marginBottom: '0.5rem',
+                }}
+              >
+                Total Amount
+              </div>
               <div
                 className="tracking-tight"
                 style={{
                   fontSize: 'clamp(2.25rem, 4vw, 3rem)',
-                  color: headingColor,
+                  color: headerText,
                   fontFamily: titleFontFamily,
                   fontWeight: Number(titleFontWeight) || 600,
+                  lineHeight: 1.05,
                   ...TABULAR,
                 }}
               >
                 {formatAUD(total)}
               </div>
               {gstEnabled && (
-                <div className="text-xs mt-2" style={{ color: muted }}>
-                  Includes GST ({Math.round(gstRatePct)}%) of {formatAUD(taxAmount)}
+                <div className="text-xs mt-2" style={{ color: withAlpha(headerText, 0.6) }}>
+                  Incl. GST ({formatAUD(taxAmount)})
                 </div>
               )}
             </div>
-            {deposit ? (
+
+            {deposit && (
               <div
-                className="px-6 py-7 quote-investment-cell-2"
-                style={{ borderColor: hairline }}
+                className="rounded-lg px-4 py-3 shrink-0"
+                style={{
+                  backgroundColor: withAlpha(headerText, 0.08),
+                  boxShadow: `inset 0 0 0 1px ${withAlpha(headerText, 0.12)}`,
+                  minWidth: 160,
+                }}
               >
-                <div style={labelStyle}>{deposit.label}</div>
                 <div
-                  className="tracking-tight"
                   style={{
-                    fontSize: 'clamp(2.25rem, 4vw, 3rem)',
-                    color: headingColor,
-                    fontFamily: titleFontFamily,
-                    fontWeight: Number(titleFontWeight) || 600,
-                    ...TABULAR,
+                    ...labelStyle,
+                    color: withAlpha(headerText, 0.55),
+                    marginBottom: '0.25rem',
                   }}
+                >
+                  Deposit Required
+                </div>
+                <div
+                  className="text-[11px] tabular-nums"
+                  style={{ color: withAlpha(headerText, 0.6) }}
+                >
+                  {deposit.pct}% upfront
+                </div>
+                <div
+                  className="text-right text-xl font-semibold mt-1 tabular-nums"
+                  style={{ color: headerText }}
                 >
                   {formatAUD(deposit.amount)}
                 </div>
-                <div className="text-xs mt-2" style={{ color: muted }}>
-                  {deposit.pct}% upfront
-                </div>
-              </div>
-            ) : (
-              <div
-                className="px-6 py-7 flex items-center text-xs quote-investment-cell-2"
-                style={{ color: muted, borderColor: hairline }}
-              >
-                No deposit required.
               </div>
             )}
           </div>
+
+          {validUntil && (
+            <div
+              className="mt-6 pt-4 text-xs"
+              style={{
+                color: withAlpha(headerText, 0.6),
+                borderTop: `1px solid ${withAlpha(headerText, 0.12)}`,
+              }}
+            >
+              Valid until <span style={{ color: headerText, fontWeight: 500 }}>{validUntil}</span>
+            </div>
+          )}
         </div>
-        {validUntil && (
-          <div className="text-xs mt-4" style={{ color: muted }}>
-            Valid until {validUntil}.
-          </div>
-        )}
       </Section>
       <Hairline color={hairline} />
 
