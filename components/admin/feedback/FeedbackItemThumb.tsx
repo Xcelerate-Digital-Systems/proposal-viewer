@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Eye, Globe, Mail, Smartphone } from 'lucide-react';
+import { Eye, Globe, Mail, Smartphone } from 'lucide-react';
 import type { FeedbackItem } from '@/lib/supabase';
 
 interface Props {
@@ -14,21 +14,12 @@ interface Props {
  * presentation — no callbacks, no menus, no body content.
  */
 export default function FeedbackItemThumb({ item }: Props) {
-  const thumbnailUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
+  const thumbnailUrl = item.image_url || item.ad_creative_url;
 
   return (
     <>
       {item.type === 'webpage' ? (
-        item.prefer_screenshot && item.screenshot_url ? (
-          <div className="w-full h-full relative">
-            <img
-              src={item.screenshot_url}
-              alt={item.title}
-              className="w-full h-full object-cover object-top"
-            />
-            <WidgetStatusPill installedAt={item.widget_installed_at} />
-          </div>
-        ) : item.url ? (
+        item.url ? (
           <div className="w-full h-full relative">
             <iframe
               src={item.url}
@@ -46,30 +37,13 @@ export default function FeedbackItemThumb({ item }: Props) {
             />
             {/* Overlay so clicks pass through to the card button */}
             <div className="absolute inset-0 z-10" />
-            <WidgetStatusPill installedAt={item.widget_installed_at} />
-          </div>
-        ) : item.screenshot_url ? (
-          <div className="w-full h-full relative">
-            <img
-              src={item.screenshot_url}
-              alt={item.title}
-              className="w-full h-full object-cover object-top"
-            />
-            <WidgetStatusPill installedAt={item.widget_installed_at} />
           </div>
         ) : (
           <div className="text-center">
             <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center mx-auto">
               <Globe size={22} className="text-teal" />
             </div>
-            {item.widget_installed_at ? (
-              <div className="flex items-center gap-1 justify-center mt-2.5">
-                <Check size={11} className="text-emerald-500" />
-                <p className="text-xs text-emerald-600 font-medium">Connected</p>
-              </div>
-            ) : (
-              <p className="text-xs text-amber-600 mt-2.5">Awaiting install</p>
-            )}
+            <p className="text-xs text-gray-400 mt-2.5">No URL set</p>
           </div>
         )
       ) : item.type === 'email' ? (
@@ -131,20 +105,3 @@ export default function FeedbackItemThumb({ item }: Props) {
   );
 }
 
-/* ─── Local helper ─────────────────────────────────────────────────── */
-
-function WidgetStatusPill({ installedAt }: { installedAt: string | null | undefined }) {
-  return (
-    <div className="absolute bottom-2 left-2 z-20">
-      {installedAt ? (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
-          <Check size={9} /> Connected
-        </span>
-      ) : (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/90 text-[10px] font-medium text-white backdrop-blur-sm">
-          Awaiting install
-        </span>
-      )}
-    </div>
-  );
-}

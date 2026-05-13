@@ -4,7 +4,7 @@ import { Video, Play } from 'lucide-react';
 import { type NodeItemProps, CardShell } from './nodeConfig';
 
 function VideoThumbnail({ item }: { item: NodeItemProps['item'] }) {
-  const src = item.image_url || item.screenshot_url || item.ad_creative_url;
+  const src = item.image_url || item.ad_creative_url;
 
   if (src) {
     return (

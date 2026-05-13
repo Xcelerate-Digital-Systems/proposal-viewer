@@ -8,7 +8,7 @@ import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 
 /** Shape returned by {@link selectVersion} — the asset fields that matter per type. */
 export type VersionAssets = Pick<
-  FeedbackItem,
+  FeedbackItemVersion,
   | 'url' | 'screenshot_url' | 'html_content'
   | 'ad_headline' | 'ad_copy' | 'ad_cta' | 'ad_creative_url' | 'ad_platform'
   | 'email_subject' | 'email_preheader' | 'email_body'
@@ -61,7 +61,7 @@ export function getActiveVersion(versions: VersionView[], activeVersionId: strin
 export function extractAssets(src: FeedbackItem | FeedbackItemVersion): VersionAssets {
   return {
     url: src.url,
-    screenshot_url: src.screenshot_url,
+    screenshot_url: 'screenshot_url' in src ? src.screenshot_url : null,
     html_content: src.html_content,
     ad_headline: src.ad_headline,
     ad_copy: src.ad_copy,

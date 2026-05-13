@@ -4,7 +4,7 @@ import { FileText } from 'lucide-react';
 import { type NodeItemProps, CardShell } from './nodeConfig';
 
 function PdfThumbnail({ item }: { item: NodeItemProps['item'] }) {
-  const src = item.image_url || item.screenshot_url;
+  const src = item.image_url;
 
   if (src) {
     return (

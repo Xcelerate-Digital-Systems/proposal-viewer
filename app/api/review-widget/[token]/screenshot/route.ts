@@ -23,7 +23,7 @@ export async function POST(
 ) {
   try {
     const body = await req.json();
-    const { item: itemId, image, install } = body as { item?: string; image?: string; install?: boolean };
+    const { item: itemId, image } = body as { item?: string; image?: string };
 
     if (!itemId || !image) {
       return NextResponse.json(
@@ -112,15 +112,6 @@ export async function POST(
     const { data: urlData } = supabaseAdmin.storage
       .from('review-screenshots')
       .getPublicUrl(filename);
-
-    // Install-flagged uploads double as the item's canonical preview image.
-    if (install) {
-      await supabaseAdmin
-        .from('review_items')
-        .update({ screenshot_url: urlData.publicUrl })
-        .eq('id', itemId)
-        .is('screenshot_url', null);
-    }
 
     return NextResponse.json(
       { url: urlData.publicUrl },

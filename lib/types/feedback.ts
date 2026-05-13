@@ -253,7 +253,6 @@ export type FeedbackItem = {
   type: FeedbackItemType;
   sort_order: number;
   url: string | null;
-  screenshot_url: string | null;
   html_content: string | null;
   // Meta ad fields
   ad_headline: string | null;
@@ -281,8 +280,6 @@ export type FeedbackItem = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  widget_installed_at: string | null;
-  prefer_screenshot: boolean;
   board_x: number | null;
   board_y: number | null;
   share_token: string | null;

@@ -7,7 +7,7 @@ import type { FeedbackItem, FeedbackComment } from '@/lib/supabase';
 /* ─── Small thumbnail (~72×44) ───────────────────────────────────── */
 
 function ThumbPreview({ item, textColor }: { item: FeedbackItem; textColor: string }) {
-  const thumbUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
+  const thumbUrl = item.image_url || item.ad_creative_url;
   const iconTint = `${textColor}44`;
   const bg = `${textColor}08`;
 

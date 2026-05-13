@@ -11,8 +11,6 @@ import { emptyGoogleAdData } from '@/lib/types/feedback';
 import MetaLeadFormMockupPreview, { type MetaLeadFormPage } from '@/components/admin/feedback/MetaLeadFormMockupPreview';
 import PinOverlay from './PinOverlay';
 import { HighlightOverlay } from '@/components/feedback/tools';
-import WebpageEmbedView from './item-content/WebpageEmbedView';
-import WebpagePreviewView from './item-content/WebpagePreviewView';
 import type { FeedbackItem, FeedbackComment } from '@/lib/supabase';
 import {
   type FeedbackItemView,
@@ -122,7 +120,7 @@ export default function ItemContentView({
   const isAd = item.type === 'ad' && item.ad_creative_url;
   const isEmail = item.type === 'email';
   const isWebpage = item.type === 'webpage';
-  const imageUrl = item.image_url || item.screenshot_url;
+  const imageUrl = item.image_url;
 
   // Email items — render the email mockup preview with pin overlay
   if (isEmail) {
@@ -352,26 +350,37 @@ export default function ItemContentView({
     );
   }
 
-  // Webpage items — screenshot only. The widget on the live page is the only
-  // feedback surface; we never render a live iframe of the customer's page in-app.
+  // Webpage items — render the live page in an iframe. The widget on the live
+  // page is still the primary feedback surface; this in-app view is read-only
+  // and shows pins captured by the widget.
   if (isWebpage) {
     if (renderWebpage) return <>{renderWebpage(item)}</>;
-    if (item.screenshot_url) {
+    if (!item.url) {
       return (
-        <WebpagePreviewView
-          item={item}
-          shareToken={shareToken || ''}
-          containerRef={containerRef}
-          pinComments={pinComments}
-          onPinClick={onPinClick}
-        />
+        <div className="text-center">
+          <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
+          <p className="text-sm text-gray-400">No page URL set</p>
+        </div>
       );
     }
     return (
-      <WebpageEmbedView
-        item={item}
-        shareToken={shareToken || ''}
-      />
+      <div
+        ref={containerRef}
+        className="relative w-full h-full bg-white rounded-xl border border-gray-200 overflow-hidden"
+      >
+        <iframe
+          src={item.url}
+          title={item.title}
+          className="w-full h-full border-0"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+          loading="lazy"
+        />
+        <PinOverlay
+          pinComments={pinComments}
+          pendingPin={null}
+          onPinClick={onPinClick}
+        />
+      </div>
     );
   }
 

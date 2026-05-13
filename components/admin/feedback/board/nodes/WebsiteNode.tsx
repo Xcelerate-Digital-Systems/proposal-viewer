@@ -1,24 +1,9 @@
 'use client';
 
-import { Globe, Check } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { type NodeItemProps, CardShell } from './nodeConfig';
 
 function WebsiteThumbnail({ item }: { item: NodeItemProps['item'] }) {
-  if (item.screenshot_url) {
-    return (
-      <div className="w-full h-full relative">
-        <img src={item.screenshot_url} alt={item.title} className="w-full h-full object-cover object-top" />
-        {item.widget_installed_at && (
-          <div className="absolute bottom-1.5 left-1.5">
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/90 text-[8px] font-medium text-white backdrop-blur-sm">
-              <Check size={7} /> Live
-            </span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   if (item.url) {
     return (
       <div className="w-full h-full relative overflow-hidden">

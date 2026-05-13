@@ -76,10 +76,8 @@ function postComment(body,cb){
   body.review_item_id=C.item;
   api("",{method:"POST",body:JSON.stringify(body)}).then(function(d){if(d&&d.id)comments.push(d);if(cb)cb(d);}).catch(function(){if(cb)cb(null);});
 }
-function uploadScreenshot(dataUrl,cb,opts){
-  var body={item:C.item,image:dataUrl};
-  if(opts&&opts.install)body.install=true;
-  fetch(C.ssApi,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+function uploadScreenshot(dataUrl,cb){
+  fetch(C.ssApi,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item:C.item,image:dataUrl})})
     .then(function(r){return r.json();}).then(function(d){cb(d.url||null);}).catch(function(){cb(null);});
 }
 
@@ -132,34 +130,5 @@ function captureAutoScreenshot(cb,opts){
   });
 }
 
-/* ── Install screenshot — captures the above-the-fold area at the current
-      scroll position as a JPEG (smaller than PNG for a full webpage). */
-function captureInstallScreenshot(cb){
-  root.style.display="none";
-  var onboard=document.getElementById("aviz-onboard");if(onboard)onboard.style.display="none";
-  loadH2C(function(){
-    var prevScroll={x:window.scrollX,y:window.scrollY};
-    window.scrollTo(0,0);
-    /* Give layout a tick to settle before capturing. */
-    setTimeout(function(){
-      html2canvas(document.body,{
-        useCORS:true,allowTaint:true,
-        windowWidth:document.documentElement.clientWidth,
-        windowHeight:document.documentElement.clientHeight,
-        width:document.documentElement.clientWidth,
-        height:document.documentElement.clientHeight,
-        x:0,y:0,scrollX:0,scrollY:0
-      }).then(function(canvas){
-        root.style.display="";if(onboard)onboard.style.display="";
-        window.scrollTo(prevScroll.x,prevScroll.y);
-        cb(canvas.toDataURL("image/jpeg",0.82));
-      }).catch(function(err){
-        root.style.display="";if(onboard)onboard.style.display="";
-        window.scrollTo(prevScroll.x,prevScroll.y);
-        console.error("Install screenshot failed:",err);cb(null);
-      });
-    },120);
-  });
-}
 `;
 }

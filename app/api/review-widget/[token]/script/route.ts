@@ -30,7 +30,7 @@ function jsResponse(body: string, status = 200) {
     status,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=300',
+      'Cache-Control': 'no-store',
       'Access-Control-Allow-Origin': '*',
     },
   });

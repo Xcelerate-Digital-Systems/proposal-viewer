@@ -270,7 +270,7 @@ export default function ReviewViewerPage({ params }: { params: { token: string }
   // items still open externally so reviewers can see the live page.
   const handleBoardItemClick = useCallback((itemId: string) => {
     const clickedItem = items.find((i) => i.id === itemId);
-    if (clickedItem?.type === 'webpage' && clickedItem.widget_installed_at && clickedItem.url) {
+    if (clickedItem?.type === 'webpage' && clickedItem.url) {
       window.open(clickedItem.url, '_blank');
       return;
     }

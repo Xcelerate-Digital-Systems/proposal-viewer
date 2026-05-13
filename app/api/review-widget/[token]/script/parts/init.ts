@@ -20,27 +20,6 @@ function startPolling(){if(pollTimer)return;pollTimer=setInterval(function(){loa
 function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 document.addEventListener("visibilitychange",function(){if(document.hidden)stopPolling();else{loadComments(refresh);startPolling();}});
 
-/* ── Verify + install-screenshot ─────────────────────────── */
-/* Replaces the old Image() beacon. The server responds with JSON indicating
-   whether a preview screenshot is still missing; if so, we capture one now. */
-try{
-  var verifyUrl=C.api.replace("/comments","/verify")+"?item="+C.item+"&format=json";
-  fetch(verifyUrl,{headers:{"Accept":"application/json"}})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      if(d&&d.needs_screenshot){
-        /* Wait a beat for fonts/images to render. */
-        setTimeout(function(){
-          captureInstallScreenshot(function(dataUrl){
-            if(!dataUrl)return;
-            uploadScreenshot(dataUrl,function(){},{install:true});
-          });
-        },1500);
-      }
-    })
-    .catch(function(){});
-}catch(e){}
-
 /* ── Init ───────────────────────────────────────────────── */
 document.documentElement.classList.add("aviz-active");
 armPinMode();

@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Trash2, MessageSquareText, Pencil, MoreHorizontal, Eye, Check,
-  Share2, Loader2, ExternalLink, Link as LinkIcon, Camera,
-  Image as ImageIcon, Monitor,
+  Share2, Loader2, ExternalLink, Link as LinkIcon,
 } from 'lucide-react';
 import { supabase, type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -106,74 +105,20 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
       return;
     }
 
-    const urlChanged = normalized !== (item.url || '');
     setSaving(true);
-    const patch: Record<string, unknown> = {
-      url: normalized,
-      updated_at: new Date().toISOString(),
-    };
-    // URL change invalidates the old screenshot, install state, and preview preference
-    if (urlChanged) {
-      patch.screenshot_url = null;
-      patch.widget_installed_at = null;
-      patch.prefer_screenshot = false;
-    }
-
     const { error } = await supabase
       .from('review_items')
-      .update(patch)
+      .update({ url: normalized, updated_at: new Date().toISOString() })
       .eq('id', item.id);
 
     if (error) {
       toast.error('Failed to update URL');
     } else {
       setEditingUrl(false);
-      toast.success(urlChanged ? 'URL updated — visit the new page to capture a preview' : 'URL updated');
+      toast.success('URL updated');
       onRefresh();
     }
     setSaving(false);
-  };
-
-  const handleTogglePreviewMode = async () => {
-    setShowMenu(false);
-    const next = !item.prefer_screenshot;
-    const { error } = await supabase
-      .from('review_items')
-      .update({ prefer_screenshot: next, updated_at: new Date().toISOString() })
-      .eq('id', item.id);
-
-    if (error) {
-      toast.error('Failed to update preview mode');
-      return;
-    }
-    if (next && !item.screenshot_url) {
-      toast.info('Visit the page to capture a screenshot preview');
-    } else {
-      toast.success(next ? 'Using screenshot preview' : 'Using live preview');
-    }
-    onRefresh();
-  };
-
-  const handleRetakeScreenshot = async () => {
-    setShowMenu(false);
-    const ok = await confirm({
-      title: 'Retake Screenshot',
-      message: 'Clear the current preview? The next visit to the page with the widget installed will capture a fresh screenshot.',
-      confirmLabel: 'Retake',
-    });
-    if (!ok) return;
-
-    const { error } = await supabase
-      .from('review_items')
-      .update({ screenshot_url: null, updated_at: new Date().toISOString() })
-      .eq('id', item.id);
-
-    if (error) {
-      toast.error('Failed to clear screenshot');
-    } else {
-      toast.success('Visit the page to capture a new preview');
-      onRefresh();
-    }
   };
 
   const handleShare = async () => {
@@ -384,42 +329,17 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                     </a>
                   )}
                   {item.type === 'webpage' && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          setEditUrl(item.url || '');
-                          setEditingUrl(true);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <LinkIcon size={14} />
-                        Edit URL
-                      </button>
-                      <button
-                        onClick={handleTogglePreviewMode}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        {item.prefer_screenshot ? (
-                          <>
-                            <Monitor size={14} />
-                            Use Live Preview
-                          </>
-                        ) : (
-                          <>
-                            <ImageIcon size={14} />
-                            Use Screenshot Instead
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={handleRetakeScreenshot}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <Camera size={14} />
-                        Retake Screenshot
-                      </button>
-                    </>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        setEditUrl(item.url || '');
+                        setEditingUrl(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      <LinkIcon size={14} />
+                      Edit URL
+                    </button>
                   )}
                   <div className="border-t border-gray-100 my-1" />
                   <button

@@ -31,6 +31,8 @@ interface EdgeStyle {
   dashed: boolean;
   animated: boolean;
   arrowDir: ArrowDirection;
+  labelFontSize: number;
+  labelColor: string;
 }
 
 export type EdgeStylePatch = {
@@ -40,6 +42,8 @@ export type EdgeStylePatch = {
   dashed?: boolean;
   animated?: boolean;
   arrowDir?: ArrowDirection;
+  labelFontSize?: number;
+  labelColor?: string;
 };
 
 export interface EdgeStyleEditorProps {
@@ -61,6 +65,8 @@ function readStyle(edge: Edge): EdgeStyle {
     dashed: !!(data.dashed as boolean),
     animated: !!edge.animated,
     arrowDir,
+    labelFontSize: (data.labelFontSize as number) ?? (style.labelFontSize as number) ?? 16,
+    labelColor: (data.labelColor as string) ?? (style.labelColor as string) ?? '#2B2B2B',
   };
 }
 
@@ -226,6 +232,39 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
           }}
           className="flex-1 px-2 py-1 rounded-md border border-sketch-ink/30 bg-paper-dark text-sm text-sketch-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal font-hand"
         />
+      </Row>
+
+      {/* Label font size */}
+      <Row label="Size">
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            min={8}
+            max={96}
+            value={current.labelFontSize}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              if (Number.isFinite(v) && v >= 8 && v <= 96) {
+                onUpdate(edge.id, { labelFontSize: v });
+              }
+            }}
+            className="w-16 px-2 py-1 rounded-md border border-sketch-ink/30 bg-paper-dark text-sm text-sketch-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal font-hand"
+          />
+          <span className="text-[10px] text-sketch-ink/50 font-hand">px</span>
+        </div>
+      </Row>
+
+      {/* Label color */}
+      <Row label="Text">
+        {EDGE_COLORS.map((c) => (
+          <ColorSwatch
+            key={c.value}
+            color={c.value}
+            title={c.label}
+            active={c.value.toLowerCase() === current.labelColor.toLowerCase()}
+            onClick={() => onUpdate(edge.id, { labelColor: c.value })}
+          />
+        ))}
       </Row>
 
       {/* Delete */}

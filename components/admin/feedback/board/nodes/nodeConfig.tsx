@@ -2,12 +2,9 @@
 
 import { Handle, Position } from '@xyflow/react';
 import { Eye, MessageSquareText, ChevronDown } from 'lucide-react';
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { FeedbackItem, FeedbackStatus } from '@/lib/supabase';
 import { getFeedbackStatusDef, REVIEW_STATUS_OPTIONS } from '@/lib/feedback/status';
-import { SketchyFrame } from '@/components/feedback/sketchy/SketchyFrame';
-import { roughCircle } from '@/components/feedback/sketchy/roughPath';
-import { hashStringToInt } from '@/components/feedback/sketchy/seed';
 
 /* ─── Shared props every node receives ─────────────────────────── */
 
@@ -248,31 +245,19 @@ export function CardShell({
     onNavigate?.(item.id);
   };
 
-  const seed = hashStringToInt(item.id);
-
   return (
     <>
       <NodeHandles readOnly={readOnly} />
 
       <div
-        className={`relative transition-transform ${
+        className={`relative transition-shadow bg-paper rounded-2xl border shadow-sm ${
+          selected ? 'border-teal ring-2 ring-teal/30' : 'border-sketch-ink/15 hover:shadow-md'
+        } ${
           !readOnly ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
         }`}
         style={{ width: CARD_W, minHeight: CARD_H }}
         onClick={readOnly ? handleClick : undefined}
       >
-        <SketchyFrame
-          w={CARD_W}
-          h={CARD_H}
-          variant="card"
-          seed={seed}
-          fill="#FAFAFA"
-          selected={selected}
-          strokeWidth={selected ? 2.4 : 1.6}
-          roughness={1.3}
-        />
-
-        {/* Inner content with breathing room from sketch border */}
         <div className="relative z-10 px-4 py-4 flex flex-col gap-2.5">
           {/* Thumbnail area (crisp — preserves content legibility) */}
           <div className="relative h-[110px] overflow-hidden bg-paper-dark rounded-lg border border-sketch-ink/20">
@@ -336,24 +321,6 @@ export function IconShell({
     e.stopPropagation();
     onNavigate?.(item.id);
   };
-  const seed = hashStringToInt(item.id);
-  const stroke = selected ? '#017C87' : '#2B2B2B';
-  const strokeWidth = selected ? 2.6 : 1.9;
-
-  const paths = useMemo(
-    () =>
-      roughCircle(ICON_SIZE / 2, ICON_SIZE / 2, ICON_SIZE - strokeWidth * 2 - 4, {
-        seed,
-        roughness: 1.8,
-        bowing: 1.8,
-        stroke,
-        strokeWidth,
-        fill: tint,
-        fillStyle: 'solid',
-        disableMultiStroke: false,
-      }),
-    [seed, stroke, strokeWidth, tint]
-  );
 
   return (
     <>
@@ -366,28 +333,11 @@ export function IconShell({
         onClick={readOnly ? handleClick : undefined}
       >
         <div
-          className="relative flex items-center justify-center"
-          style={{ width: ICON_SIZE, height: ICON_SIZE }}
+          className={`relative flex items-center justify-center rounded-full border shadow-sm transition-shadow ${
+            selected ? 'border-teal ring-2 ring-teal/30' : 'border-sketch-ink/20 hover:shadow-md'
+          }`}
+          style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
         >
-          <svg
-            width={ICON_SIZE}
-            height={ICON_SIZE}
-            viewBox={`0 0 ${ICON_SIZE} ${ICON_SIZE}`}
-            className="absolute inset-0 pointer-events-none"
-            aria-hidden="true"
-          >
-            {paths.map((p, i) => (
-              <path
-                key={i}
-                d={p.d}
-                stroke={p.stroke}
-                strokeWidth={p.strokeWidth}
-                fill={p.fill ?? 'none'}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
           <div className="relative z-10 text-sketch-ink">{icon}</div>
           <StatusPicker
             status={item.status}

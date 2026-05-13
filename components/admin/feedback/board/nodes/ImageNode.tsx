@@ -4,7 +4,7 @@ import { Image as ImageIcon } from 'lucide-react';
 import { type NodeItemProps, CardShell } from './nodeConfig';
 
 function ImageThumbnail({ item }: { item: NodeItemProps['item'] }) {
-  const src = item.image_url || item.screenshot_url || item.ad_creative_url;
+  const src = item.image_url || item.ad_creative_url;
 
   if (src) {
     return <img src={src} alt={item.title} className="w-full h-full object-cover" />;

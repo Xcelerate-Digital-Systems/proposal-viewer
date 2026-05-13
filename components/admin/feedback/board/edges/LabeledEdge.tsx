@@ -20,6 +20,10 @@ export interface LabeledEdgeData extends Record<string, unknown> {
   animated?: boolean;
   /** Which end(s) of the edge draw an arrowhead. Defaults to 'target'. */
   arrowDir?: LabeledEdgeArrowDir;
+  /** Label font size in px. Defaults to 16. */
+  labelFontSize?: number;
+  /** Label text color (hex). Defaults to sketch-ink. */
+  labelColor?: string;
   onEdgeClick?: (edgeId: string) => void;
 }
 
@@ -185,11 +189,15 @@ function LabeledEdgeComponent({
             onClick={handleClick}
           >
             <div
-              className={`px-2.5 py-1 rounded-md font-hand text-base leading-tight border-2 shadow-sketch cursor-pointer transition-colors ${
+              className={`px-2.5 py-1 rounded-md font-hand leading-tight border-2 shadow-sketch cursor-pointer transition-colors ${
                 selected
-                  ? 'bg-teal/10 border-teal text-teal'
-                  : 'bg-paper border-sketch-ink/70 text-sketch-ink hover:border-sketch-ink'
+                  ? 'bg-teal/10 border-teal'
+                  : 'bg-paper border-sketch-ink/70 hover:border-sketch-ink'
               }`}
+              style={{
+                fontSize: edgeData.labelFontSize ?? 16,
+                color: selected ? '#017C87' : (edgeData.labelColor ?? '#2B2B2B'),
+              }}
             >
               {label}
             </div>

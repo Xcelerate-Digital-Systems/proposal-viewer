@@ -115,6 +115,8 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         const rawArrow = (e.style as Record<string, string> | null | undefined)?.arrowDir;
         const arrowDir: 'none' | 'source' | 'target' | 'both' =
           rawArrow === 'none' || rawArrow === 'source' || rawArrow === 'both' ? rawArrow : 'target';
+        const labelFontSize = Number((e.style as Record<string, number> | null | undefined)?.labelFontSize) || 16;
+        const labelColor = (e.style as Record<string, string> | null | undefined)?.labelColor || '#2B2B2B';
         const source = e.source_shape_id ? `shape-${e.source_shape_id}` : e.source_item_id;
         const target = e.target_shape_id ? `shape-${e.target_shape_id}` : e.target_item_id;
         if (!source || !target) return null;
@@ -140,6 +142,8 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
             dashed,
             animated: e.animated || false,
             arrowDir,
+            labelFontSize,
+            labelColor,
             onEdgeClick: handleEdgeClickFromData,
           },
         } as Edge;
@@ -244,7 +248,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
   const handleUpdateEdgeStyle = useCallback(
     async (
       edgeId: string,
-      patch: { label?: string | null; color?: string; strokeWidth?: number; dashed?: boolean; animated?: boolean; arrowDir?: 'none' | 'source' | 'target' | 'both' }
+      patch: { label?: string | null; color?: string; strokeWidth?: number; dashed?: boolean; animated?: boolean; arrowDir?: 'none' | 'source' | 'target' | 'both'; labelFontSize?: number; labelColor?: string }
     ) => {
       let nextEdge: Edge | undefined;
       setEdges((eds) => {
@@ -261,6 +265,8 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         const nextAnimated = patch.animated !== undefined ? patch.animated : !!edge.animated;
         const currentArrowDir = (currentData.arrowDir as string) ?? 'target';
         const nextArrowDir = patch.arrowDir ?? (currentArrowDir as 'none' | 'source' | 'target' | 'both');
+        const nextLabelFontSize = patch.labelFontSize ?? (currentData.labelFontSize as number) ?? 16;
+        const nextLabelColor = patch.labelColor ?? (currentData.labelColor as string) ?? '#2B2B2B';
         const updated: Edge = {
           ...edge,
           animated: nextAnimated,
@@ -277,6 +283,8 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
             dashed: nextDashed,
             animated: nextAnimated,
             arrowDir: nextArrowDir,
+            labelFontSize: nextLabelFontSize,
+            labelColor: nextLabelColor,
           },
         };
         nextEdge = updated;
@@ -295,6 +303,8 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
           strokeWidth: nextEdge.style?.strokeWidth,
           dashed: (nextEdge.data as Record<string, unknown>)?.dashed as boolean,
           arrowDir: (nextEdge.data as Record<string, unknown>)?.arrowDir,
+          labelFontSize: (nextEdge.data as Record<string, unknown>)?.labelFontSize,
+          labelColor: (nextEdge.data as Record<string, unknown>)?.labelColor,
         } as Record<string, unknown>,
       });
     },

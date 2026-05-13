@@ -96,8 +96,8 @@ export default function PublicWhiteboardPage({ params }: { params: { token: stri
   const handleSelectItem = useCallback((itemId: string) => {
     const item = items.find((i) => i.id === itemId);
 
-    // Connected webpage items → open the live URL directly
-    if (item?.type === 'webpage' && item.widget_installed_at && item.url) {
+    // Webpage items with a URL → open the live URL directly
+    if (item?.type === 'webpage' && item.url) {
       window.open(item.url, '_blank');
       return;
     }

@@ -13,7 +13,7 @@ function ItemThumbnail({
   item: FeedbackItem;
   textColor: string;
 }) {
-  const thumbUrl = item.image_url || item.screenshot_url || item.ad_creative_url;
+  const thumbUrl = item.image_url || item.ad_creative_url;
 
   if (item.type === 'webpage') {
     return (

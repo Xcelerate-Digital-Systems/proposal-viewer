@@ -315,18 +315,12 @@ function PagesList({ items }: { items: FeedbackItem[] }) {
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-900">Pages</h3>
-        <span className="text-xs text-gray-400">
-          {items.filter((i) => i.widget_installed_at).length}/{items.length} visited
-        </span>
+        <span className="text-xs text-gray-400">{items.length} total</span>
       </div>
       <ul className="space-y-1.5">
         {items.map((it) => (
           <li key={it.id} className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
-            {it.widget_installed_at ? (
-              <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-            ) : (
-              <Clock size={12} className="text-amber-500 shrink-0" />
-            )}
+            <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
             <span className="font-medium truncate">{it.title}</span>
             {it.url && (
               <span className="text-gray-400 truncate font-mono">· {it.url}</span>
