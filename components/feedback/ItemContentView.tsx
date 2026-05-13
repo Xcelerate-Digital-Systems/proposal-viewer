@@ -319,14 +319,15 @@ export default function ItemContentView({
   // Both reads come from the shared google_ad_data jsonb; the discriminator is item.type.
   if (item.type === 'google_search_ad' || item.type === 'google_banner_ad') {
     const data = item.google_ad_data || emptyGoogleAdData();
+    const isSearch = item.type === 'google_search_ad';
     return (
       <div
         ref={containerRef}
-        className="relative w-full max-w-2xl mx-auto flex justify-center"
+        className={`relative w-full mx-auto flex justify-center ${isSearch ? 'max-w-5xl' : 'max-w-2xl'}`}
         style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
-        {item.type === 'google_search_ad' ? (
+        {isSearch ? (
           <GoogleSearchAdMockupPreview data={data} />
         ) : (
           <GoogleBannerAdMockupPreview
