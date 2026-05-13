@@ -109,6 +109,8 @@ export type Proposal = {
   cover_bg_color_2: string | null;
   cover_gradient_type: string | null;
   cover_gradient_angle: number | null;
+  cover_gradient_position_x: number | null;
+  cover_gradient_position_y: number | null;
   cover_overlay_opacity: number | null;
   cover_text_color: string | null;
   cover_subtitle_color: string | null;
@@ -227,6 +229,8 @@ export type ProposalTemplate = {
   cover_bg_color_2: string | null;
   cover_gradient_type: string | null;
   cover_gradient_angle: number | null;
+  cover_gradient_position_x: number | null;
+  cover_gradient_position_y: number | null;
   cover_overlay_opacity: number | null;
   cover_text_color: string | null;
   cover_subtitle_color: string | null;

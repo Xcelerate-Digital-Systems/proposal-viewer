@@ -7,7 +7,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, ImageIcon, Trash2, Layers, Type, Palette, Sparkles } from 'lucide-react';
+import { Loader2, ImageIcon, Trash2, Layers, Type } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import ColorPickerField, { setBrandingColors } from '@/components/ui/ColorPickerField';
@@ -21,13 +21,8 @@ interface Props {
   onSaved: () => void;
 }
 
-const HEADER_FALLBACK_1 = '#0f0f0f';
-const HEADER_FALLBACK_2 = '#1e293b';
 const BODY_BG_FALLBACK   = '#ffffff';
 const BODY_TEXT_FALLBACK = '#1E2432';
-
-type BgStyle = 'gradient' | 'solid';
-type GradientType = 'linear' | 'radial' | 'conic';
 
 export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Props) {
   const toast = useToast();
@@ -49,18 +44,6 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
       cancelled = true;
     };
   }, [companyId]);
-
-  /* ─── Header style ──────────────────────────────────────────────── */
-  const [bgStyle, setBgStyle]               = useState<BgStyle>((proposal.cover_bg_style as BgStyle) || 'gradient');
-  const [gradientType, setGradientType]     = useState<GradientType>((proposal.cover_gradient_type as GradientType) || 'linear');
-  const [gradientAngle, setGradientAngle]   = useState<number>(proposal.cover_gradient_angle ?? 135);
-  const [bgColor1, setBgColor1]             = useState(proposal.cover_bg_color_1 ?? HEADER_FALLBACK_1);
-  const [bgColor2, setBgColor2]             = useState(proposal.cover_bg_color_2 ?? HEADER_FALLBACK_2);
-  const [coverTextColor, setCoverTextColor] = useState(proposal.cover_text_color ?? '#ffffff');
-  const [coverSubtitleColor, setCoverSubtitleColor] = useState(proposal.cover_subtitle_color ?? '#ffffffb3');
-  const [coverButtonBg, setCoverButtonBg] = useState(proposal.cover_button_bg ?? '#01434A');
-  const [coverButtonTextColor, setCoverButtonTextColor] = useState(proposal.cover_button_text_color ?? '#ffffff');
-  const [overlayOpacity, setOverlayOpacity] = useState<number>(proposal.cover_overlay_opacity ?? 0.65);
 
   /* ─── Page background ───────────────────────────────────────────── */
   const [pageBg, setPageBg]                 = useState(proposal.quote_page_bg_color ?? '#eeece6');
@@ -138,30 +121,6 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
     }
     setBgImagePath(null);
     await persist({ bg_image_path: null });
-  };
-
-  /* ─── Gradient swatch helper ───────────────────────────────────── */
-  function gradientFor(style: BgStyle, type: GradientType, angle: number, c1: string, c2: string): string {
-    if (style === 'solid') return c1;
-    if (type === 'radial')  return `radial-gradient(circle, ${c1}, ${c2})`;
-    if (type === 'conic')   return `conic-gradient(from ${angle}deg, ${c1}, ${c2})`;
-    return `linear-gradient(${angle}deg, ${c1}, ${c2})`;
-  }
-
-  /* ─── Mode pickers — combined "Header Style" preset cards ──────── */
-  // Treats solid / linear / radial / conic as a single 4-way preset choice
-  // so the gradient editor is one decision, not two nested toggles.
-  type StyleMode = 'solid' | 'linear' | 'radial' | 'conic';
-  const currentMode: StyleMode = bgStyle === 'solid' ? 'solid' : (gradientType as StyleMode);
-  const setMode = (m: StyleMode) => {
-    if (m === 'solid') {
-      setBgStyle('solid');
-      persist({ cover_bg_style: 'solid' });
-    } else {
-      setBgStyle('gradient');
-      setGradientType(m);
-      persist({ cover_bg_style: 'gradient', cover_gradient_type: m });
-    }
   };
 
   /* ─── Render ────────────────────────────────────────────────────── */
@@ -273,152 +232,6 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
                 <p className="text-sm text-gray-500">Upload image (JPG / PNG, ≤ 8 MB)</p>
               </button>
             )}
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* ───────────── Header Style ───────────── */}
-      <SectionCard
-        title="Header Style"
-        description="The band behind the cover. Pick a fill, tweak colours; the Cover tab adds the image on top."
-        icon={<Palette size={14} className="text-gray-400" />}
-      >
-        <div className="space-y-5">
-          {/* Big live preview — sized like the actual cover band */}
-          <div
-            className="w-full h-32 rounded-lg border border-gray-200"
-            style={{ background: gradientFor(bgStyle, gradientType, gradientAngle, bgColor1, bgColor2) }}
-          />
-
-          {/* 4-mode picker — solid / linear / radial / conic in one row */}
-          <div>
-            <label className="block text-xs text-gray-500 mb-2">Fill</label>
-            <div className="grid grid-cols-4 gap-2">
-              {([
-                { id: 'solid'  as const, label: 'Solid'  },
-                { id: 'linear' as const, label: 'Linear' },
-                { id: 'radial' as const, label: 'Radial' },
-                { id: 'conic'  as const, label: 'Conic'  },
-              ]).map((m) => {
-                const active = currentMode === m.id;
-                const swatch = m.id === 'solid'
-                  ? bgColor1
-                  : gradientFor('gradient', m.id, gradientAngle, bgColor1, bgColor2);
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setMode(m.id)}
-                    className={`p-2 rounded-lg border-2 transition-all text-center ${
-                      active ? 'border-teal bg-teal/5' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div
-                      className="w-full h-10 rounded mb-1.5"
-                      style={{ background: swatch }}
-                    />
-                    <span className={`text-xs font-medium ${active ? 'text-teal' : 'text-gray-500'}`}>
-                      {m.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Angle slider — only for linear + conic */}
-          {currentMode !== 'solid' && currentMode !== 'radial' && (
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs text-gray-500">Angle</label>
-                <span className="text-xs text-gray-700 tabular-nums">{gradientAngle}°</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={360}
-                value={gradientAngle}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value);
-                  setGradientAngle(v);
-                  persist({ cover_gradient_angle: v });
-                }}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-              />
-            </div>
-          )}
-
-          {/* Colors */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ColorPickerField
-              label={currentMode === 'solid' ? 'Background' : 'Start'}
-              value={bgColor1}
-              fallback={HEADER_FALLBACK_1}
-              onChange={(v) => { setBgColor1(v); persist({ cover_bg_color_1: v }); }}
-            />
-            {currentMode !== 'solid' && (
-              <ColorPickerField
-                label="End"
-                value={bgColor2}
-                fallback={HEADER_FALLBACK_2}
-                onChange={(v) => { setBgColor2(v); persist({ cover_bg_color_2: v }); }}
-              />
-            )}
-          </div>
-
-          {/* Image overlay opacity — applied when the cover image sits on top */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-gray-500">Image overlay opacity</label>
-              <span className="text-xs text-gray-700 tabular-nums">{Math.round(overlayOpacity * 100)}%</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(overlayOpacity * 100)}
-              onChange={(e) => {
-                const v = parseInt(e.target.value) / 100;
-                setOverlayOpacity(v);
-                persist({ cover_overlay_opacity: v });
-              }}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              How much the fill above shows through the cover image.
-            </p>
-          </div>
-
-          {/* Header text colors */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-            <ColorPickerField
-              label="Header title text"
-              value={coverTextColor}
-              fallback="#ffffff"
-              onChange={(v) => { setCoverTextColor(v); persist({ cover_text_color: v }); }}
-            />
-            <ColorPickerField
-              label="Header subtitle text"
-              value={coverSubtitleColor}
-              fallback="#ffffffb3"
-              onChange={(v) => { setCoverSubtitleColor(v); persist({ cover_subtitle_color: v }); }}
-            />
-          </div>
-
-          {/* Accept button colors — moved here from the old Cover tab */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-            <ColorPickerField
-              label="Accept button"
-              value={coverButtonBg}
-              fallback="#01434A"
-              onChange={(v) => { setCoverButtonBg(v); persist({ cover_button_bg: v }); }}
-            />
-            <ColorPickerField
-              label="Accept button text"
-              value={coverButtonTextColor}
-              fallback="#ffffff"
-              onChange={(v) => { setCoverButtonTextColor(v); persist({ cover_button_text_color: v }); }}
-            />
           </div>
         </div>
       </SectionCard>

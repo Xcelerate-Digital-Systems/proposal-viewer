@@ -75,9 +75,11 @@ function buildHeaderBackground(p: Proposal): string {
   const c1    = p.cover_bg_color_1 ?? '#0f172a';
   const c2    = p.cover_bg_color_2 ?? '#1e293b';
   const angle = p.cover_gradient_angle ?? 135;
+  const cx    = p.cover_gradient_position_x ?? 50;
+  const cy    = p.cover_gradient_position_y ?? 50;
   switch (p.cover_gradient_type) {
-    case 'radial': return `radial-gradient(circle, ${c1}, ${c2})`;
-    case 'conic':  return `conic-gradient(from ${angle}deg, ${c1}, ${c2})`;
+    case 'radial': return `radial-gradient(circle at ${cx}% ${cy}%, ${c1}, ${c2})`;
+    case 'conic':  return `conic-gradient(from ${angle}deg at ${cx}% ${cy}%, ${c1}, ${c2})`;
     case 'linear':
     default:       return `linear-gradient(${angle}deg, ${c1}, ${c2})`;
   }
@@ -599,7 +601,7 @@ export default function QuoteSinglePageView({
                 >
                   <th className="text-left py-3 font-medium">Item</th>
                   <th className="text-right py-3 font-medium w-16">Qty</th>
-                  <th className="text-right py-3 font-medium w-24">Unit</th>
+                  <th className="text-right py-3 font-medium w-24">Unit $</th>
                   <th className="text-right py-3 font-medium w-28">Total</th>
                 </tr>
               </thead>
