@@ -14,6 +14,7 @@ import ColorPickerField, { setBrandingColors } from '@/components/ui/ColorPicker
 import { GOOGLE_FONTS } from '@/lib/google-fonts';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import ProposalStyleSection from '@/components/admin/proposals/quote-builder/sections/ProposalStyleSection';
+import HeaderStyleCard from './HeaderStyleCard';
 
 interface Props {
   proposal: Proposal;
@@ -128,6 +129,16 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
     <div className="space-y-5">
       {/* ───────────── Proposal Style preset (was on Builder) ───────────── */}
       <ProposalStyleSection proposal={proposal} companyId={companyId} onSaved={onSaved} />
+
+      {/* ───────────── Quote Header Background ─────────────
+          Independent from the cover splash — edits quote_header_* columns,
+          falls back to cover_* for legacy quotes that haven't been diverged. */}
+      <HeaderStyleCard
+        proposal={proposal}
+        companyId={companyId}
+        onSaved={onSaved}
+        variant="quote-header"
+      />
 
       {/* ───────────── Page Background ───────────── */}
       <SectionCard

@@ -165,6 +165,17 @@ export type Proposal = {
   quote_page_bg_color: string | null;
   /** Quote-only: per-company human-readable number (renders as "Q-014" etc.). */
   quote_number: number | null;
+  /** Quote body header band fill style — independent of the cover splash.
+   *  NULL = fall back to cover_bg_style for legacy quotes. */
+  quote_header_bg_style: string | null;
+  quote_header_bg_color_1: string | null;
+  quote_header_bg_color_2: string | null;
+  quote_header_gradient_type: string | null;
+  quote_header_gradient_angle: number | null;
+  quote_header_gradient_position_x: number | null;
+  quote_header_gradient_position_y: number | null;
+  quote_header_text_color: string | null;
+  quote_header_subtitle_color: string | null;
   /** Quote-only: prominent body text describing what's included. */
   scope_of_works: string | null;
   /** Quote-only: internal category for filtering (e.g. Bathroom, Kitchen). */

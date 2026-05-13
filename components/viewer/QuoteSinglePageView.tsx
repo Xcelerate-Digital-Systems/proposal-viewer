@@ -71,13 +71,17 @@ function withAlpha(color: string, alpha: number): string {
 /* ── Domain helpers ─────────────────────────────────────────────────────── */
 
 function buildHeaderBackground(p: Proposal): string {
-  if (p.cover_bg_style !== 'gradient') return p.cover_bg_color_1 ?? '#0f172a';
-  const c1    = p.cover_bg_color_1 ?? '#0f172a';
-  const c2    = p.cover_bg_color_2 ?? '#1e293b';
-  const angle = p.cover_gradient_angle ?? 135;
-  const cx    = p.cover_gradient_position_x ?? 50;
-  const cy    = p.cover_gradient_position_y ?? 50;
-  switch (p.cover_gradient_type) {
+  // Quote body header band uses quote_header_* with fallback to cover_*
+  // (so existing quotes keep their look until the user explicitly diverges).
+  const style = p.quote_header_bg_style ?? p.cover_bg_style;
+  const c1    = p.quote_header_bg_color_1 ?? p.cover_bg_color_1 ?? '#0f172a';
+  const c2    = p.quote_header_bg_color_2 ?? p.cover_bg_color_2 ?? '#1e293b';
+  const angle = p.quote_header_gradient_angle ?? p.cover_gradient_angle ?? 135;
+  const cx    = p.quote_header_gradient_position_x ?? p.cover_gradient_position_x ?? 50;
+  const cy    = p.quote_header_gradient_position_y ?? p.cover_gradient_position_y ?? 50;
+  const type  = p.quote_header_gradient_type ?? p.cover_gradient_type;
+  if (style !== 'gradient') return c1;
+  switch (type) {
     case 'radial': return `radial-gradient(circle at ${cx}% ${cy}%, ${c1}, ${c2})`;
     case 'conic':  return `conic-gradient(from ${angle}deg at ${cx}% ${cy}%, ${c1}, ${c2})`;
     case 'linear':
@@ -314,8 +318,10 @@ export default function QuoteSinglePageView({
   /* ── Cover header tokens ───────────────────────────────────── */
 
   const headerBg = buildHeaderBackground(proposal);
-  const headerText = proposal.cover_text_color ?? '#ffffff';
-  const headerSubtle = proposal.cover_subtitle_color ?? withAlpha(headerText, 0.55);
+  // Quote body header text/subtitle — prefer quote_header_* with cover_* as
+  // a fallback so legacy quotes keep their existing look.
+  const headerText = proposal.quote_header_text_color ?? proposal.cover_text_color ?? '#ffffff';
+  const headerSubtle = proposal.quote_header_subtitle_color ?? proposal.cover_subtitle_color ?? withAlpha(headerText, 0.55);
   const displayCompanyName = companyName || branding.name;
 
   /* ── Body design tokens — 3-tier cascade ───────────────────── */
