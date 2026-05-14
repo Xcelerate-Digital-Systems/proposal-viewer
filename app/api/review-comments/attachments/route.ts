@@ -36,6 +36,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
     }
 
+    // The bucket is public — restrict to media types we actually render in the
+    // review UI. Without this an unauthenticated caller with any share token
+    // could upload HTML/SVG/JS and host phishing pages on our Supabase CDN.
+    const ALLOWED_TYPES = new Set([
+      'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+      'application/pdf',
+      'video/mp4', 'video/quicktime', 'video/webm',
+    ]);
+    const ALLOWED_EXT = new Set([
+      'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'mp4', 'mov', 'webm',
+    ]);
+    const incomingExt = (file.name.split('.').pop() || '').toLowerCase();
+    if (!ALLOWED_TYPES.has(file.type) || !ALLOWED_EXT.has(incomingExt)) {
+      return NextResponse.json({ error: 'Unsupported file type' }, { status: 415 });
+    }
+
     // ── Resolve company_id from one of: admin auth or public share token ──
     let companyId: string | null = null;
 
@@ -71,8 +87,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ext = file.name.split('.').pop() || 'bin';
-    const path = `review-attachments/${companyId}/${crypto.randomUUID()}.${ext}`;
+    const path = `review-attachments/${companyId}/${crypto.randomUUID()}.${incomingExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('company-assets')

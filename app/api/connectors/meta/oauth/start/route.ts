@@ -35,7 +35,15 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const redirectTo = typeof body?.redirect_to === 'string' ? body.redirect_to : null;
+  // Only accept same-origin paths. Anything else — protocol-relative ("//x"),
+  // absolute URLs, or strings starting with "@" — would let the callback land
+  // the user on an attacker-controlled host when concatenated as
+  // `${appUrl}${redirect_to}` and parsed by new URL().
+  const rawRedirect = typeof body?.redirect_to === 'string' ? body.redirect_to : null;
+  const redirectTo =
+    rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+      ? rawRedirect
+      : null;
 
   const state = randomBytes(32).toString('base64url');
   const stateHash = createHash('sha256').update(state).digest('hex');
