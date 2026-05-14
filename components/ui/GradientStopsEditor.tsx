@@ -1,8 +1,10 @@
 // components/ui/GradientStopsEditor.tsx
 // Figma-style multi-stop gradient editor. Renders a horizontal track that
 // previews the linear interpolation of the stops, with draggable thumbs you
-// can move to any 0-100 position. Click the track to add a stop, click a
-// thumb to select it and edit its colour (or remove it; minimum two stops).
+// can move to any 0-100 position. Use the "Add stop" button to insert a new
+// stop, click a thumb to select it and edit its colour (or remove it; minimum
+// two stops). The track itself does not add stops on click — that proved too
+// easy to trigger accidentally while dragging.
 'use client';
 
 import { useRef, useState } from 'react';
@@ -37,20 +39,6 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
     const rect = el.getBoundingClientRect();
     const x = (clientX - rect.left) / rect.width;
     return Math.max(0, Math.min(100, Math.round(x * 100)));
-  };
-
-  const onTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only fire when clicking the empty track, not a thumb.
-    if ((e.target as HTMLElement).dataset.stopThumb) return;
-    const pos = xToPosition(e.clientX);
-    // Pick the colour midway between neighbouring stops at this position.
-    const colour = sampleColorAt(stops, pos);
-    const next = [...stops, { color: colour, position: pos }].sort(
-      (a, b) => a.position - b.position,
-    );
-    setStops(next);
-    commit(next);
-    setSelected(next.findIndex((s) => s.position === pos && s.color === colour));
   };
 
   const onThumbPointerDown = (i: number) => (e: React.PointerEvent) => {
@@ -145,11 +133,10 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
       {/* Track */}
       <div
         ref={trackRef}
-        onClick={onTrackClick}
         onPointerMove={onTrackPointerMove}
         onPointerUp={onTrackPointerUp}
         onPointerCancel={onTrackPointerUp}
-        className="relative h-8 rounded-md border border-gray-200 cursor-copy"
+        className="relative h-8 rounded-md border border-gray-200"
         style={{ background: trackCss }}
       >
         {stops.map((s, i) => (
@@ -212,7 +199,7 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
       )}
 
       <p className="text-[11px] text-gray-400">
-        Click the track to add a stop, drag to reposition, click a stop to recolour.
+        Drag a stop to reposition, click to recolour. Use &ldquo;Add stop&rdquo; to insert a new one.
       </p>
     </div>
   );

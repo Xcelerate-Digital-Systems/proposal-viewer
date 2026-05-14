@@ -31,7 +31,7 @@ const TEST_CUSTOMER: SavedCustomer = {
 
 const FIELDS = [
   { key: 'client_name', label: 'Client Name', placeholder: 'e.g. Jane Smith', required: true },
-  { key: 'client_organisation', label: 'Organisation', placeholder: 'e.g. Acme Constructions Pty Ltd' },
+  { key: 'client_organisation', label: 'Company (Optional)', placeholder: 'e.g. Acme Constructions Pty Ltd' },
   { key: 'client_email', label: 'Email', placeholder: 'name@example.com' },
   { key: 'crm_identifier', label: 'Phone / CRM ID', placeholder: '04xx xxx xxx' },
   { key: 'site_address', label: 'Project Address', placeholder: '123 Main St, Suburb' },
