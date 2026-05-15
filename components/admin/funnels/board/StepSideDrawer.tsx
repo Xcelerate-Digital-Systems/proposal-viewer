@@ -67,18 +67,28 @@ export default function StepSideDrawer({
 
   // Field visibility mirrors Funnelytics' approach — each node type shows
   // only the inputs that meaningfully drive its forecast contribution.
-  //   sources  → visitors + cost-per-visitor (CPC)
+  //   sources  → visitors + cost-per-click (CPC)
   //   pages    → conversion %
   //   offers   → conversion % + value per conversion
   //   generic  → all of them (catch-all)
   const isTrafficSource = step.step_type.startsWith('traffic_');
   const isPage = step.step_type.startsWith('page_');
   const isOffer = step.step_type.startsWith('offer_');
+
+  // Icon picker — only show icon groups that make sense for this node type.
+  // Landing pages don't need brand logos in the picker; Facebook Ads
+  // doesn't need a "Pages" set.
+  const relevantIconGroups: string[] =
+    isPage ? ['Pages', 'Actions'] :
+    isTrafficSource ? ['Traffic', 'Brands', 'Actions'] :
+    isOffer ? ['Offers', 'Actions'] :
+    ['Pages', 'Traffic', 'Offers', 'Actions', 'Brands'];
+  const visibleIconGroups = FUNNEL_ICON_LIBRARY.filter((g) => relevantIconGroups.includes(g.group));
   const showVisitors = isTrafficSource;
   const showConversion = isPage || isOffer || !isTrafficSource; // i.e. not pure sources
   const showCost = isTrafficSource || step.step_type === 'generic';
   const showValue = isOffer || step.step_type === 'generic';
-  const costLabel = isTrafficSource ? 'Cost per visitor' : 'Cost per conversion';
+  const costLabel = isTrafficSource ? 'Cost per click' : 'Cost per conversion';
 
   return (
     <aside className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
@@ -194,7 +204,7 @@ export default function StepSideDrawer({
         <div>
           <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Icon</h4>
           <div className="space-y-3">
-            {FUNNEL_ICON_LIBRARY.map((group) => (
+            {visibleIconGroups.map((group) => (
               <div key={group.group}>
                 <div className="text-[10px] text-muted mb-1.5">{group.group}</div>
                 <div className="grid grid-cols-8 gap-1">
