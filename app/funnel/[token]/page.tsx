@@ -60,7 +60,10 @@ export default function PublicFunnelPage({ params }: { params: { token: string }
     return () => { document.title = 'Funnel'; };
   }, [funnel]);
 
-  const forecast = useMemo(() => computeForecast(steps, boardEdges), [steps, boardEdges]);
+  const forecast = useMemo(
+    () => computeForecast(steps, boardEdges, funnel?.forecast_period ?? 'total'),
+    [steps, boardEdges, funnel?.forecast_period]
+  );
 
   const nodes: Node[] = useMemo(() => {
     const stepNodes: Node[] = steps.map((step) => ({
@@ -188,7 +191,12 @@ export default function PublicFunnelPage({ params }: { params: { token: string }
 
         <div className="flex-1 min-h-0 bg-notebook relative">
           <div className="absolute top-3 left-3 z-10">
-            <BoardSummary forecast={forecast} showMetrics />
+            <BoardSummary
+              forecast={forecast}
+              showMetrics
+              currency={funnel?.currency ?? 'USD'}
+              period={funnel?.forecast_period ?? 'total'}
+            />
           </div>
           <ReactFlowProvider>
             <ReactFlow

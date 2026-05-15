@@ -10,6 +10,33 @@
 
 export type FunnelStatus = 'draft' | 'active' | 'archived';
 
+/** Currency for the summary chip + drawer. Stored as ISO 4217 code, rendered
+ *  by formatMoney via Intl.NumberFormat. */
+export type FunnelCurrency = 'USD' | 'AUD' | 'GBP' | 'EUR' | 'CAD' | 'NZD';
+
+/** How manual metrics are interpreted:
+ *   - total   → one-off run (what the metrics literally describe)
+ *   - monthly → multiply visitor counts by 1 (one month) — totals are per-month
+ *   - yearly  → multiply visitor counts by 12 — totals are per-year
+ *  Single-run cost/value-per-conversion don't change; what changes is the
+ *  multiplier applied to visitor flow before computing revenue/cost. */
+export type FunnelForecastPeriod = 'total' | 'monthly' | 'yearly';
+
+export const FUNNEL_CURRENCIES: { code: FunnelCurrency; symbol: string; label: string }[] = [
+  { code: 'USD', symbol: '$',  label: 'USD — US Dollar' },
+  { code: 'AUD', symbol: 'A$', label: 'AUD — Australian Dollar' },
+  { code: 'GBP', symbol: '£',  label: 'GBP — British Pound' },
+  { code: 'EUR', symbol: '€',  label: 'EUR — Euro' },
+  { code: 'CAD', symbol: 'C$', label: 'CAD — Canadian Dollar' },
+  { code: 'NZD', symbol: 'NZ$', label: 'NZD — New Zealand Dollar' },
+];
+
+export const FUNNEL_PERIODS: { code: FunnelForecastPeriod; label: string; multiplier: number }[] = [
+  { code: 'total',   label: 'One-off run',   multiplier: 1 },
+  { code: 'monthly', label: 'Per month',     multiplier: 1 },
+  { code: 'yearly',  label: 'Per year (12 months)', multiplier: 12 },
+];
+
 export type FunnelStepType =
   // Traffic sources — generic buckets
   | 'traffic_paid'
@@ -76,6 +103,10 @@ export type Funnel = {
   description: string | null;
   status: FunnelStatus;
   share_token: string;
+  currency: FunnelCurrency;
+  forecast_period: FunnelForecastPeriod;
+  /** When set, this funnel was created as a "scenario" clone of another. */
+  parent_funnel_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -113,6 +144,10 @@ export type FunnelStepMetrics = {
   cost?: number | null;
   /** Revenue per conversion at this step (offers/upsells/etc). */
   value?: number | null;
+  /** For subscription / membership / SaaS offers: how many months of
+   *  recurring revenue to count per conversion (effective LTV in months).
+   *  Multiplies `value` per conversion. Defaults to 1 if unset. */
+  recurring_months?: number | null;
   /** Freeform note shown in the side drawer only. */
   notes?: string | null;
 };

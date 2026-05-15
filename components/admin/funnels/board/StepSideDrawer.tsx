@@ -67,13 +67,17 @@ export default function StepSideDrawer({
 
   // Field visibility mirrors Funnelytics' approach — each node type shows
   // only the inputs that meaningfully drive its forecast contribution.
-  //   sources  → visitors + cost-per-click (CPC)
-  //   pages    → conversion %
-  //   offers   → conversion % + value per conversion
-  //   generic  → all of them (catch-all)
+  //   sources       → visitors + cost-per-click (CPC)
+  //   pages         → conversion %
+  //   offers        → conversion % + value per conversion (+ recurring months for subs)
+  //   generic       → all of them (catch-all)
   const isTrafficSource = step.step_type.startsWith('traffic_');
   const isPage = step.step_type.startsWith('page_');
   const isOffer = step.step_type.startsWith('offer_');
+  const isRecurring =
+    step.step_type === 'offer_subscription' ||
+    step.step_type === 'offer_saas' ||
+    step.step_type === 'offer_trial';
 
   // Icon picker — only show icon groups that make sense for this node type.
   // Landing pages don't need brand logos in the picker; Facebook Ads
@@ -197,7 +201,22 @@ export default function StepSideDrawer({
                 prefix="$"
               />
             )}
+            {isRecurring && (
+              <MetricInput
+                label="Recurring months"
+                value={metrics.recurring_months}
+                onChange={(v) => setMetric('recurring_months', v)}
+                placeholder="e.g. 12"
+                suffix="mo"
+              />
+            )}
           </div>
+          {isRecurring && (
+            <p className="text-[10px] text-muted mt-2 leading-snug">
+              For subscriptions, the forecast multiplies the per-conversion value
+              by recurring months to model LTV.
+            </p>
+          )}
         </div>
 
         {/* Icon picker */}

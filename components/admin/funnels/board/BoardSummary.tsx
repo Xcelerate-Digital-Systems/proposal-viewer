@@ -3,31 +3,43 @@
 import { Eye, EyeOff } from 'lucide-react';
 import { formatMoney } from '@/lib/funnel/forecast';
 import type { Forecast } from '@/lib/funnel/forecast';
+import type { FunnelCurrency, FunnelForecastPeriod } from '@/lib/supabase';
 
 interface Props {
   forecast: Forecast;
   showMetrics: boolean;
   onToggleMetrics?: () => void;
+  currency?: FunnelCurrency;
+  period?: FunnelForecastPeriod;
 }
 
 /** Sticky summary chip rendered in the top-left of the canvas. Shows the
  *  rolled-up planner forecast for the entire funnel. */
-export default function BoardSummary({ forecast, showMetrics, onToggleMetrics }: Props) {
+export default function BoardSummary({ forecast, showMetrics, onToggleMetrics, currency = 'USD', period }: Props) {
   const roasLabel = !Number.isFinite(forecast.roas)
     ? '∞'
     : forecast.roas > 0
     ? `${forecast.roas.toFixed(2)}x`
     : '—';
+  const revenueLabel = period === 'monthly' ? 'Revenue / mo'
+                     : period === 'yearly'  ? 'Revenue / yr'
+                     : 'Revenue';
+  const costLabel    = period === 'monthly' ? 'Cost / mo'
+                     : period === 'yearly'  ? 'Cost / yr'
+                     : 'Cost';
+  const profitLabel  = period === 'monthly' ? 'Profit / mo'
+                     : period === 'yearly'  ? 'Profit / yr'
+                     : 'Profit';
 
   return (
     <div className="flex items-center gap-3 bg-white rounded-xl border border-edge shadow-lg px-4 py-2">
-      <Stat label="Revenue" value={formatMoney(forecast.totalRevenue)} tone="positive" />
+      <Stat label={revenueLabel} value={formatMoney(forecast.totalRevenue, currency)} tone="positive" />
       <Divider />
-      <Stat label="Cost"    value={formatMoney(forecast.totalCost)}    tone={forecast.totalCost > 0 ? 'negative' : 'neutral'} />
+      <Stat label={costLabel}    value={formatMoney(forecast.totalCost, currency)}    tone={forecast.totalCost > 0 ? 'negative' : 'neutral'} />
       <Divider />
       <Stat
-        label="Profit"
-        value={formatMoney(forecast.totalProfit)}
+        label={profitLabel}
+        value={formatMoney(forecast.totalProfit, currency)}
         tone={forecast.totalProfit > 0 ? 'positive' : forecast.totalProfit < 0 ? 'negative' : 'neutral'}
       />
       <Divider />

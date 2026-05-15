@@ -7,7 +7,8 @@
 // Inputs are manual — there is no live data. The output is what the planner
 // renders on edge labels and the top-bar summary.
 
-import type { FunnelStep, FunnelBoardEdge } from '@/lib/supabase';
+import type { FunnelStep, FunnelBoardEdge, FunnelForecastPeriod, FunnelCurrency } from '@/lib/supabase';
+import { FUNNEL_PERIODS, FUNNEL_CURRENCIES } from '@/lib/types/funnel';
 
 export interface Forecast {
   /** Visitors arriving at each step (post-upstream propagation, pre-CVR). */
@@ -40,8 +41,20 @@ export function emptyForecast(): Forecast {
 
 /** Topological-ish forward pass. Cycles are tolerated (each step is visited at
  *  most once after all its predecessors have been settled — back-edges into
- *  already-settled nodes are dropped to avoid infinite recursion). */
-export function computeForecast(steps: FunnelStep[], edges: FunnelBoardEdge[]): Forecast {
+ *  already-settled nodes are dropped to avoid infinite recursion).
+ *
+ *  When `period` is provided, source visitor counts (and downstream flow) are
+ *  multiplied by the period's multiplier — e.g. yearly multiplies visitors by
+ *  12 so the totals reflect 12 months of running the funnel.
+ *
+ *  Subscription / membership / SaaS / trial offers honour `metrics.recurring_months`
+ *  to model LTV: a conversion at value=$49 with recurring_months=6 contributes
+ *  $294 of revenue, not $49. */
+export function computeForecast(
+  steps: FunnelStep[],
+  edges: FunnelBoardEdge[],
+  period: FunnelForecastPeriod = 'total',
+): Forecast {
   const fc = emptyForecast();
   if (steps.length === 0) return fc;
 
@@ -84,6 +97,9 @@ export function computeForecast(steps: FunnelStep[], edges: FunnelBoardEdge[]): 
   // produce some output for them.
   for (const s of steps) if (!settled.has(s.id)) order.push(s.id);
 
+  const periodMultiplier = FUNNEL_PERIODS.find((p) => p.code === period)?.multiplier ?? 1;
+  const RECURRING_OFFER_TYPES = new Set(['offer_subscription', 'offer_saas', 'offer_trial']);
+
   // Forward pass
   for (const id of order) {
     const step = stepById.get(id);
@@ -92,7 +108,10 @@ export function computeForecast(steps: FunnelStep[], edges: FunnelBoardEdge[]): 
     const upstream = sumIncoming(id, incoming, fc.flowByEdge);
     // If user typed a visitors count, that overrides upstream — useful for
     // sources, and for cases like "assume 1000 land here" mid-funnel.
-    const visitors = manual != null ? manual : upstream;
+    // Apply the period multiplier to source-supplied visitor counts only;
+    // downstream nodes inherit it through the upstream flow.
+    const rawVisitors = manual != null ? manual : upstream;
+    const visitors = manual != null ? rawVisitors * periodMultiplier : rawVisitors;
     fc.visitorsByStep.set(id, visitors);
 
     const cvr = clamp01(step.metrics?.conversion_rate);
@@ -108,11 +127,16 @@ export function computeForecast(steps: FunnelStep[], edges: FunnelBoardEdge[]): 
       }
     }
 
-    // Costs / revenue per step
+    // Costs / revenue per step. Recurring offer types multiply value by the
+    // user-supplied recurring_months (defaults to 1) so subscription LTV is
+    // captured without separate plumbing.
     const value = step.metrics?.value ?? 0;
     const cost = step.metrics?.cost ?? 0;
-    fc.totalRevenue += conversions * value;
-    // Source-style cost: cost-per-visitor (CPC). Offer-style cost is
+    const ltvMultiplier = RECURRING_OFFER_TYPES.has(step.step_type)
+      ? Math.max(1, step.metrics?.recurring_months ?? 1)
+      : 1;
+    fc.totalRevenue += conversions * value * ltvMultiplier;
+    // Source-style cost: cost-per-click (CPC). Offer-style cost is
     // per-conversion. Heuristic: traffic_* uses per-visitor, everything else
     // uses per-conversion. The user can override by leaving the field blank.
     if (step.step_type.startsWith('traffic_')) {
@@ -181,11 +205,12 @@ export function formatCount(n: number): string {
   return Math.round(n).toLocaleString();
 }
 
-export function formatMoney(n: number): string {
+export function formatMoney(n: number, currency: FunnelCurrency = 'USD'): string {
   if (!Number.isFinite(n)) return '—';
+  const symbol = FUNNEL_CURRENCIES.find((c) => c.code === currency)?.symbol ?? '$';
   const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(2)}M`;
-  if (abs >= 10_000) return `${sign}$${(abs / 1_000).toFixed(0)}K`;
-  return `${sign}$${Math.round(abs).toLocaleString()}`;
+  if (abs >= 1_000_000) return `${sign}${symbol}${(abs / 1_000_000).toFixed(2)}M`;
+  if (abs >= 10_000) return `${sign}${symbol}${(abs / 1_000).toFixed(0)}K`;
+  return `${sign}${symbol}${Math.round(abs).toLocaleString()}`;
 }

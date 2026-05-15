@@ -6,8 +6,9 @@ import { ArrowLeft, Copy, ExternalLink } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { FunnelBoard } from '@/components/admin/funnels/board';
 import { useFunnelBoardContext } from '@/components/admin/funnels/board/FunnelBoardContext';
+import FunnelSettingsMenu from '@/components/admin/funnels/board/FunnelSettingsMenu';
 import { useToast } from '@/components/ui/Toast';
-import { supabase } from '@/lib/supabase';
+import { supabase, type Funnel } from '@/lib/supabase';
 
 export default function FunnelBoardPage({ params }: { params: { id: string } }) {
   return (
@@ -91,6 +92,16 @@ function BoardContent({ funnelId }: { funnelId: string }) {
         <div className="ml-auto flex items-center gap-2">
           {funnel && (
             <>
+              <FunnelSettingsMenu
+                funnel={funnel}
+                onUpdate={async (patch: Partial<Funnel>) => {
+                  setFunnel((p) => (p ? { ...p, ...patch } : p));
+                  await supabase
+                    .from('funnels')
+                    .update({ ...patch, updated_at: new Date().toISOString() })
+                    .eq('id', funnel.id);
+                }}
+              />
               <button
                 onClick={copyShareLink}
                 className="flex items-center gap-1.5 text-[12px] text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"

@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText } from 'lucide-react';
+import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch } from 'lucide-react';
 import { supabase, type Funnel } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import { FUNNEL_TEMPLATES, type FunnelTemplate } from '@/lib/funnel/templates';
 import { createFunnelFromTemplate } from '@/lib/funnel/create-from-template';
+import { duplicateFunnelAsScenario } from '@/lib/funnel/duplicate-funnel';
 
 export default function FunnelsPage() {
   return (
@@ -61,6 +62,14 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
   const createFromTemplate = async (template: FunnelTemplate) => {
     const created = await createFunnelFromTemplate({ template, companyId, userId });
     if (!created) { toast.error('Failed to create funnel'); return; }
+    router.push(`/funnels/${created.id}/board`);
+  };
+
+  const duplicateAsScenario = async (source: Funnel) => {
+    const created = await duplicateFunnelAsScenario({ source, companyId, userId });
+    if (!created) { toast.error('Failed to duplicate funnel'); return; }
+    toast.success('Scenario created');
+    await load();
     router.push(`/funnels/${created.id}/board`);
   };
 
@@ -152,8 +161,16 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                   onClick={() => router.push(`/funnels/${f.id}/board`)}
                   className="text-left flex-1"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center mb-3">
-                    <Workflow size={18} className="text-teal" />
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center">
+                      <Workflow size={18} className="text-teal" />
+                    </div>
+                    {f.parent_funnel_id && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-muted bg-surface border border-edge rounded-full px-2 py-0.5">
+                        <GitBranch size={10} />
+                        Scenario
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-sm font-semibold text-ink truncate">{f.name}</h3>
                   {f.description && (
@@ -182,6 +199,14 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                     <ExternalLink size={11} />
                     View
                   </a>
+                  <button
+                    onClick={() => duplicateAsScenario(f)}
+                    className="flex items-center gap-1 text-[11px] text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
+                    title="Duplicate as scenario (compare 'what if' variations)"
+                  >
+                    <GitBranch size={11} />
+                    Scenario
+                  </button>
                   <button
                     onClick={() => remove(f.id)}
                     className="ml-auto flex items-center gap-1 text-[11px] text-rose-500 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition-colors"

@@ -430,7 +430,10 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     []
   );
 
-  const forecast = useMemo(() => computeForecast(steps, boardEdges), [steps, boardEdges]);
+  const forecast = useMemo(
+    () => computeForecast(steps, boardEdges, funnel?.forecast_period ?? 'total'),
+    [steps, boardEdges, funnel?.forecast_period]
+  );
 
   const canUndo = historyRef.current.undo.length > 0;
   const canRedo = historyRef.current.redo.length > 0;

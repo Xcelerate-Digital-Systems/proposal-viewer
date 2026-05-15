@@ -360,6 +360,8 @@ function FunnelBoardInner() {
                 forecast={ctx.forecast}
                 showMetrics={ctx.showMetrics}
                 onToggleMetrics={() => ctx.setShowMetrics(!ctx.showMetrics)}
+                currency={ctx.funnel?.currency ?? 'USD'}
+                period={ctx.funnel?.forecast_period ?? 'total'}
               />
               <div className="flex items-center gap-1 bg-white border border-edge shadow-sm rounded-lg px-1.5 py-1">
                 <button
