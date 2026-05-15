@@ -38,6 +38,7 @@ export default function NodePalette({ onPick }: Props) {
                 <div className="grid grid-cols-2 gap-1.5">
                   {group.types.map((t) => {
                     const def = FUNNEL_STEP_DEFAULTS[t];
+                    const isPage = t.startsWith('page_');
                     return (
                       <button
                         key={t}
@@ -46,10 +47,21 @@ export default function NodePalette({ onPick }: Props) {
                         className="group flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all"
                         title={`Add ${def.label}`}
                       >
-                        <span
-                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: def.tint }}
-                        />
+                        {isPage ? (
+                          // Tiny page mockup preview so the tile hints at the
+                          // actual node visual ("looks like a page").
+                          <span className="w-9 h-7 rounded-sm bg-white border border-edge shrink-0 overflow-hidden flex flex-col">
+                            <span className="h-1.5 bg-surface border-b border-edge/60" />
+                            <span className="flex-1 flex items-center justify-center" style={{ backgroundColor: `${def.tint}15` }}>
+                              <span className="h-0.5 w-4 rounded-full" style={{ backgroundColor: def.tint }} />
+                            </span>
+                          </span>
+                        ) : (
+                          <span
+                            className="w-7 h-7 rounded-full shrink-0"
+                            style={{ backgroundColor: def.tint }}
+                          />
+                        )}
                         <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2">
                           {def.label}
                         </span>

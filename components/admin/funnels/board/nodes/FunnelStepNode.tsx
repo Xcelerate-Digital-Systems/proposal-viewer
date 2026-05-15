@@ -14,6 +14,7 @@ import type { FunnelStep } from '@/lib/supabase';
 import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
 import { formatCount, formatMoney } from '@/lib/funnel/forecast';
 import { useFunnelBoardContext } from '../FunnelBoardContext';
+import PageMockup, { PAGE_MOCKUP_W, PAGE_MOCKUP_H } from './PageMockup';
 
 export interface FunnelStepNodeData extends Record<string, unknown> {
   step: FunnelStep;
@@ -113,6 +114,30 @@ function StepHandles({ readOnly }: { readOnly?: boolean }) {
   );
 }
 
+/** Handles anchored to the 200×120 page mockup rectangle. The left/right Y
+ *  is offset slightly above centre so it lines up with the body content
+ *  rather than the bottom CTA — keeps inter-page edges visually balanced. */
+function PageHandles({ readOnly }: { readOnly?: boolean }) {
+  const outset = 14;
+  const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - outset;
+  const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + outset;
+  const cy = LABEL_OFFSET + PAGE_MOCKUP_H / 2;
+  const topY = LABEL_OFFSET - outset;
+  const bottomY = LABEL_OFFSET + PAGE_MOCKUP_H + outset;
+  return (
+    <>
+      <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
+        style={{ top: topY }} isConnectable={!readOnly} />
+      <Handle id="right" type="source" position={Position.Right} className={HANDLE_BASE}
+        style={{ top: cy, right: FRAME_W - rightX }} isConnectable={!readOnly} />
+      <Handle id="bottom" type="source" position={Position.Bottom} className={HANDLE_BASE}
+        style={{ top: bottomY, bottom: 'auto' }} isConnectable={!readOnly} />
+      <Handle id="left" type="source" position={Position.Left} className={HANDLE_BASE}
+        style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
+    </>
+  );
+}
+
 function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const {
     step, readOnly, onUpdate, onDelete,
@@ -155,18 +180,22 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     if (next !== step.label) onUpdate?.(step.id, { label: next });
   };
 
-  const handleDiscClick = (e: React.MouseEvent) => {
+  const handleBodyClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (readOnly) return;
     ctx?.selectStep(step.id);
   };
 
+  const isPage = step.step_type.startsWith('page_');
+  const bodyH = isPage ? PAGE_MOCKUP_H : ICON_SIZE;
+  const frameH = LABEL_OFFSET + bodyH;
+
   return (
     <>
-      <StepHandles readOnly={readOnly} />
+      {isPage ? <PageHandles readOnly={readOnly} /> : <StepHandles readOnly={readOnly} />}
       <div
         className={`flex flex-col items-center ${!readOnly ? 'cursor-grab active:cursor-grabbing' : ''}`}
-        style={{ width: FRAME_W, height: SHELL_H }}
+        style={{ width: FRAME_W, height: frameH }}
       >
         {/* Label */}
         <div className="h-14 flex items-start pt-2 max-w-full px-1 w-full justify-center">
@@ -186,7 +215,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
           ) : (
             <span
               onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
-              className="block text-[11px] text-ink/80 text-center truncate max-w-[140px] leading-tight"
+              className="block text-[11px] text-ink/80 text-center truncate max-w-[180px] leading-tight"
               title={readOnly ? undefined : 'Double-click to rename'}
             >
               {step.label || defaults.label}
@@ -194,40 +223,66 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
           )}
         </div>
 
-        {/* Icon disc */}
-        <div
-          onClick={handleDiscClick}
-          className={`group relative flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
-            isSelected ? 'ring-2 ring-teal ring-offset-2 ring-offset-white' : 'hover:shadow-lg'
-          }`}
-          style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
-        >
-          <StepIcon slug={iconSlug} />
-
-          {/* Hover overlay — link out + delete */}
-          {!readOnly && (
-            <div className="absolute inset-0 rounded-full bg-ink/55 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              {step.url && (
+        {/* Body — page mockup OR icon disc */}
+        {isPage ? (
+          <div onClick={handleBodyClick} className="group relative">
+            <PageMockup stepType={step.step_type} tint={tint} selected={isSelected} />
+            {!readOnly && (
+              <div className="absolute inset-0 rounded-md bg-ink/45 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                {step.url && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); window.open(step.url!, '_blank'); }}
+                    className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center"
+                    title="Open URL"
+                  >
+                    <ExternalLink size={14} />
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); window.open(step.url!, '_blank'); }}
-                  className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center"
-                  title="Open URL"
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(step.id); }}
+                  className="w-7 h-7 rounded-full bg-white/15 hover:bg-rose-500/80 flex items-center justify-center"
+                  title="Delete step"
                 >
-                  <ExternalLink size={14} />
+                  <Trash2 size={14} />
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onDelete?.(step.id); }}
-                className="w-7 h-7 rounded-full bg-white/15 hover:bg-rose-500/80 flex items-center justify-center"
-                title="Delete step"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            onClick={handleBodyClick}
+            className={`group relative flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
+              isSelected ? 'ring-2 ring-teal ring-offset-2 ring-offset-white' : 'hover:shadow-lg'
+            }`}
+            style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
+          >
+            <StepIcon slug={iconSlug} />
+            {!readOnly && (
+              <div className="absolute inset-0 rounded-full bg-ink/55 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                {step.url && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); window.open(step.url!, '_blank'); }}
+                    className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center"
+                    title="Open URL"
+                  >
+                    <ExternalLink size={14} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(step.id); }}
+                  className="w-7 h-7 rounded-full bg-white/15 hover:bg-rose-500/80 flex items-center justify-center"
+                  title="Delete step"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Metrics strip */}
         {showMetrics && hasMetrics && (
