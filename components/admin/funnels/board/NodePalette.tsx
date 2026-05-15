@@ -112,19 +112,33 @@ function PaletteSection({
   );
 }
 
+/** Mime-type used to ferry a palette item from a tile drag to the canvas
+ *  drop handler. The payload is JSON-stringified PaletteItem. */
+export const PALETTE_DRAG_MIME = 'application/funnel-palette-item';
+
 function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void }) {
+  // Both click-to-add (centre of viewport) and drag-and-drop (dropped at the
+  // cursor position) are supported. HTML5 drag-and-drop integrates cleanly
+  // with React Flow's onDrop on the canvas wrapper.
+  const handleDragStart = (e: React.DragEvent<HTMLButtonElement>) => {
+    e.dataTransfer.setData(PALETTE_DRAG_MIME, JSON.stringify(item));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
   if (item.kind === 'step') {
     const def = FUNNEL_STEP_DEFAULTS[item.stepType];
     const isPage = item.stepType.startsWith('page_');
     return (
       <button
         type="button"
+        draggable
+        onDragStart={handleDragStart}
         onClick={onClick}
-        className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all"
-        title={`Add ${def.label}`}
+        className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+        title={`Drag to canvas or click to add: ${def.label}`}
       >
         {isPage ? (
-          <span className="w-9 h-11 rounded-sm bg-white border border-edge shrink-0 overflow-hidden flex flex-col">
+          <span className="w-9 h-11 rounded-sm bg-white border border-edge shrink-0 overflow-hidden flex flex-col pointer-events-none">
             <span className="h-1.5 bg-surface border-b border-edge/60" />
             <span className="flex-1 flex flex-col items-center justify-center gap-[2px] px-1" style={{ backgroundColor: `${def.tint}10` }}>
               <span className="h-0.5 w-5 rounded-full" style={{ backgroundColor: def.tint }} />
@@ -133,9 +147,9 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
             </span>
           </span>
         ) : (
-          <span className="w-7 h-7 rounded-full shrink-0" style={{ backgroundColor: def.tint }} />
+          <span className="w-7 h-7 rounded-full shrink-0 pointer-events-none" style={{ backgroundColor: def.tint }} />
         )}
-        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2">
+        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none">
           {def.label}
         </span>
       </button>
@@ -147,14 +161,16 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
     return (
       <button
         type="button"
+        draggable
+        onDragStart={handleDragStart}
         onClick={onClick}
-        className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all"
-        title={`Add ${item.label}`}
+        className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+        title={`Drag to canvas or click to add: ${item.label}`}
       >
-        <span className="w-9 h-9 flex items-center justify-center text-ink/70 bg-surface rounded-md">
+        <span className="w-9 h-9 flex items-center justify-center text-ink/70 bg-surface rounded-md pointer-events-none">
           <Icon size={18} strokeWidth={1.7} />
         </span>
-        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2">
+        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none">
           {item.label}
         </span>
       </button>
@@ -165,14 +181,16 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
   return (
     <button
       type="button"
+      draggable
+      onDragStart={handleDragStart}
       onClick={onClick}
-      className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all"
-      title="Add sticky note"
+      className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+      title="Drag to canvas or click to add"
     >
-      <span className="w-9 h-9 flex items-center justify-center rounded-sm bg-sticky-yellow text-ink/70">
+      <span className="w-9 h-9 flex items-center justify-center rounded-sm bg-sticky-yellow text-ink/70 pointer-events-none">
         <StickyNote size={16} strokeWidth={1.7} />
       </span>
-      <span className="text-[10px] text-ink/80 text-center leading-tight">
+      <span className="text-[10px] text-ink/80 text-center leading-tight pointer-events-none">
         Sticky Note
       </span>
     </button>

@@ -63,7 +63,7 @@ interface ContextValue {
 
   // Notes
   boardNotes: FunnelBoardNote[];
-  addNote: () => Promise<FunnelBoardNote | null>;
+  addNote: (position?: { x: number; y: number }) => Promise<FunnelBoardNote | null>;
   updateNote: (id: string, changes: Partial<FunnelBoardNote>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
 
@@ -297,10 +297,10 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
 
   /* ─── Notes ─────────────────────────────────────────────────── */
 
-  const addNote = useCallback(async (): Promise<FunnelBoardNote | null> => {
+  const addNote = useCallback(async (position?: { x: number; y: number }): Promise<FunnelBoardNote | null> => {
     const existing = boardNotes.length;
-    const x = 50 + (existing % 3) * 240;
-    const y = 400 + Math.floor(existing / 3) * 200;
+    const x = position ? Math.round(position.x) : 50 + (existing % 3) * 240;
+    const y = position ? Math.round(position.y) : 400 + Math.floor(existing / 3) * 200;
     const { data, error } = await supabase
       .from('funnel_board_notes')
       .insert({
