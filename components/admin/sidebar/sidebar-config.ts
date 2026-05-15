@@ -4,6 +4,7 @@
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
   Palette, Bell, Users, Megaphone, Bookmark, Plug, BarChart3, ReceiptText,
+  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -48,6 +49,16 @@ export const ALL_SECTIONS: SectionDef[] = [
     matchPaths: ['/feedback'],
     items: [
       { href: '/feedback', label: 'Projects', icon: MessageSquareText },
+    ],
+  },
+  {
+    key: 'funnels',
+    label: 'Funnels',
+    icon: Workflow,
+    defaultHref: '/funnels',
+    matchPaths: ['/funnels'],
+    items: [
+      { href: '/funnels', label: 'Funnels', icon: Workflow },
     ],
   },
   {

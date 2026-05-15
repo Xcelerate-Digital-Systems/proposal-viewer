@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SwipeFileProvider } from '@/components/admin/ads/swipe/SwipeFileContext';
 import { AdTrackerProvider } from '@/components/admin/ads/AdTrackerContext';
 import { FeedbackBoardProvider } from '@/components/admin/feedback/board/FeedbackBoardContext';
+import { FunnelBoardProvider } from '@/components/admin/funnels/board/FunnelBoardContext';
 
 interface AdminLayoutProps {
   children: (auth: ReturnType<typeof useAuth>) => React.ReactNode;
@@ -24,6 +25,8 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
     !(pathname?.startsWith('/ads/naming-convention') ?? false);
   const feedbackBoardMatch = pathname?.match(/^\/feedback\/([^/]+)\/board/);
   const feedbackBoardProjectId = feedbackBoardMatch?.[1] ?? null;
+  const funnelBoardMatch = pathname?.match(/^\/funnels\/([^/]+)\/board/);
+  const funnelBoardId = funnelBoardMatch?.[1] ?? null;
 
   return (
     <AuthGuard>
@@ -69,6 +72,18 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
             >
               {content}
             </FeedbackBoardProvider>
+          );
+        }
+
+        if (funnelBoardId && auth.companyId) {
+          return (
+            <FunnelBoardProvider
+              funnelId={funnelBoardId}
+              companyId={auth.companyId}
+              userId={auth.session?.user?.id ?? null}
+            >
+              {content}
+            </FunnelBoardProvider>
           );
         }
 

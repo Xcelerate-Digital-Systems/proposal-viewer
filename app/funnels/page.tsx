@@ -1,0 +1,347 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText } from 'lucide-react';
+import { supabase, type Funnel } from '@/lib/supabase';
+import AdminLayout from '@/components/admin/AdminLayout';
+import { useToast } from '@/components/ui/Toast';
+import { FUNNEL_TEMPLATES, type FunnelTemplate } from '@/lib/funnel/templates';
+import { createFunnelFromTemplate } from '@/lib/funnel/create-from-template';
+
+export default function FunnelsPage() {
+  return (
+    <AdminLayout>
+      {(auth) => (
+        <FunnelsGate
+          isSuperAdmin={auth.isSuperAdmin}
+          companyId={auth.companyId!}
+          userId={auth.session?.user?.id ?? null}
+        />
+      )}
+    </AdminLayout>
+  );
+}
+
+function FunnelsGate({ isSuperAdmin, companyId, userId }: { isSuperAdmin?: boolean; companyId: string; userId: string | null }) {
+  const router = useRouter();
+  useEffect(() => { if (!isSuperAdmin) router.replace('/dashboard'); }, [isSuperAdmin, router]);
+  if (!isSuperAdmin) return null;
+  return <FunnelsContent companyId={companyId} userId={userId} />;
+}
+
+function FunnelsContent({ companyId, userId }: { companyId: string; userId: string | null }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [funnels, setFunnels] = useState<Funnel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from('funnels').select('*')
+      .eq('company_id', companyId)
+      .order('updated_at', { ascending: false });
+    setFunnels(data || []);
+    setLoading(false);
+  }, [companyId]);
+
+  useEffect(() => { setLoading(true); load(); }, [load]);
+
+  const create = async (name: string, description: string) => {
+    const { data, error } = await supabase
+      .from('funnels')
+      .insert({ company_id: companyId, name, description: description || null, created_by: userId })
+      .select().single();
+    if (error || !data) { toast.error('Failed to create funnel'); return; }
+    router.push(`/funnels/${data.id}/board`);
+  };
+
+  const createFromTemplate = async (template: FunnelTemplate) => {
+    const created = await createFunnelFromTemplate({ template, companyId, userId });
+    if (!created) { toast.error('Failed to create funnel'); return; }
+    router.push(`/funnels/${created.id}/board`);
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm('Delete this funnel? All steps and connections will be removed.')) return;
+    await supabase.from('funnels').delete().eq('id', id);
+    setFunnels((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const copyShareLink = async (token: string) => {
+    const url = `${window.location.origin}/funnel/${token}`;
+    await navigator.clipboard.writeText(url);
+    toast.success('Share link copied');
+  };
+
+  const filtered = query
+    ? funnels.filter((f) =>
+        (f.name?.toLowerCase() || '').includes(query.toLowerCase()) ||
+        (f.description?.toLowerCase() || '').includes(query.toLowerCase())
+      )
+    : funnels;
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="bg-ivory px-6 lg:px-10 py-6 shadow-[0_1px_0_rgba(20,20,40,0.05)]">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight text-ink">Funnels</h1>
+            <p className="text-sm text-muted mt-1">
+              {funnels.length} funnel{funnels.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[220px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
+              <Search size={15} className="text-faint shrink-0" />
+              <input
+                type="text"
+                placeholder="Search funnels..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+              />
+            </div>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              New Funnel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+        {showCreate && (
+          <CreateFunnelModal
+            onClose={() => setShowCreate(false)}
+            onCreate={create}
+            onCreateFromTemplate={createFromTemplate}
+          />
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
+          </div>
+        ) : funnels.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Workflow size={28} className="text-faint" />
+            </div>
+            <h3 className="text-lg font-semibold text-muted mb-1">No funnels yet</h3>
+            <p className="text-sm text-faint">Create a funnel to map out a client&apos;s journey visually.</p>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
+            >
+              <Plus size={16} />
+              New Funnel
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filtered.map((f) => (
+              <div key={f.id} className="group bg-white rounded-xl border border-edge p-4 hover:shadow-md transition-shadow flex flex-col">
+                <button
+                  onClick={() => router.push(`/funnels/${f.id}/board`)}
+                  className="text-left flex-1"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center mb-3">
+                    <Workflow size={18} className="text-teal" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-ink truncate">{f.name}</h3>
+                  {f.description && (
+                    <p className="text-xs text-muted mt-1 line-clamp-2">{f.description}</p>
+                  )}
+                  <p className="text-[11px] text-faint mt-3">
+                    Updated {new Date(f.updated_at).toLocaleDateString()}
+                  </p>
+                </button>
+                <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-edge">
+                  <button
+                    onClick={() => copyShareLink(f.share_token)}
+                    className="flex items-center gap-1 text-[11px] text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
+                    title="Copy share link"
+                  >
+                    <Copy size={11} />
+                    Share
+                  </button>
+                  <a
+                    href={`/funnel/${f.share_token}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[11px] text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
+                    title="Open public view"
+                  >
+                    <ExternalLink size={11} />
+                    View
+                  </a>
+                  <button
+                    onClick={() => remove(f.id)}
+                    className="ml-auto flex items-center gap-1 text-[11px] text-rose-500 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition-colors"
+                    title="Delete funnel"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type TemplateCategory = FunnelTemplate['category'] | 'all';
+const TEMPLATE_TABS: { key: TemplateCategory; label: string }[] = [
+  { key: 'all',       label: 'All' },
+  { key: 'leadgen',   label: 'Lead Gen' },
+  { key: 'sales',     label: 'Sales' },
+  { key: 'ecommerce', label: 'E-commerce' },
+  { key: 'service',   label: 'Service' },
+  { key: 'course',    label: 'Course' },
+];
+
+function CreateFunnelModal({
+  onClose, onCreate, onCreateFromTemplate,
+}: {
+  onClose: () => void;
+  onCreate: (name: string, description: string) => Promise<void>;
+  onCreateFromTemplate: (template: FunnelTemplate) => Promise<void>;
+}) {
+  const [step, setStep] = useState<'pick' | 'blank'>('pick');
+  const [tab, setTab] = useState<TemplateCategory>('all');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const templates = tab === 'all' ? FUNNEL_TEMPLATES : FUNNEL_TEMPLATES.filter((t) => t.category === tab);
+
+  const submitBlank = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || submitting) return;
+    setSubmitting(true);
+    await onCreate(name.trim(), description.trim());
+  };
+
+  const pickTemplate = async (t: FunnelTemplate) => {
+    if (submitting) return;
+    setSubmitting(true);
+    await onCreateFromTemplate(t);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-[2px] p-4" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl border border-edge shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+      >
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-edge">
+          <div>
+            <h2 className="text-base font-semibold text-ink">New funnel</h2>
+            <p className="text-xs text-muted mt-0.5">
+              {step === 'pick' ? 'Start from a template or build from scratch.' : 'Build from a blank canvas.'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-md text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors"
+            title="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {step === 'pick' ? (
+          <>
+            <div className="flex items-center gap-1 px-5 py-3 border-b border-edge overflow-x-auto">
+              {TEMPLATE_TABS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors shrink-0 ${
+                    tab === t.key ? 'bg-ink text-white' : 'text-muted hover:text-ink hover:bg-surface'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <button
+                  onClick={() => setStep('blank')}
+                  disabled={submitting}
+                  className="text-left bg-white rounded-xl border-2 border-dashed border-edge p-4 hover:border-teal hover:bg-teal/5 transition-colors disabled:opacity-50"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-surface flex items-center justify-center mb-3">
+                    <Plus size={16} className="text-muted" />
+                  </div>
+                  <div className="text-[13px] font-semibold text-ink">Blank canvas</div>
+                  <div className="text-[11px] text-muted mt-0.5">Start from an empty board.</div>
+                </button>
+
+                {templates.map((t) => (
+                  <button
+                    key={t.slug}
+                    onClick={() => pickTemplate(t)}
+                    disabled={submitting}
+                    className="text-left bg-white rounded-xl border border-edge p-4 hover:border-teal/50 hover:shadow-md transition-all disabled:opacity-50"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center mb-3">
+                      <FileText size={16} className="text-teal" />
+                    </div>
+                    <div className="text-[13px] font-semibold text-ink">{t.name}</div>
+                    <div className="text-[11px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
+                    <div className="text-[10px] text-faint mt-2">
+                      {t.steps.length} steps · {t.edges.length} connections
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <form onSubmit={submitBlank} className="p-5">
+            <label className="block text-[11px] text-muted mb-1">Name</label>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Lead Magnet → Tripwire → Core Offer"
+              className="w-full px-3 py-2 rounded-lg border border-edge text-sm outline-none focus:border-teal mb-3"
+            />
+            <label className="block text-[11px] text-muted mb-1">Description (optional)</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="What this funnel is for…"
+              className="w-full px-3 py-2 rounded-lg border border-edge text-sm outline-none focus:border-teal resize-none"
+            />
+            <div className="flex items-center justify-end gap-2 mt-5">
+              <button type="button" onClick={() => setStep('pick')} className="px-3 py-1.5 rounded-full text-sm text-muted hover:text-ink hover:bg-surface transition-colors">
+                ← Templates
+              </button>
+              <button
+                type="submit"
+                disabled={!name.trim() || submitting}
+                className="px-4 py-1.5 rounded-full bg-teal text-white text-sm font-semibold hover:bg-teal-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {submitting ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}

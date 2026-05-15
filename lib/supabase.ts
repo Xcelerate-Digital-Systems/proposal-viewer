@@ -7,6 +7,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export * from './types/feedback';
+export * from './types/funnel';
 export * from './types/team';
 export * from './types/packages';
 export * from './types/page-names';
