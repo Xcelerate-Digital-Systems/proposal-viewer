@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function FunnelBoardPage({ params }: { params: { id: string } }) {
   return (
-    <AdminLayout>
+    <AdminLayout collapseSidebar>
       {(auth) => (
         <BoardGate isSuperAdmin={auth.isSuperAdmin} funnelId={params.id} />
       )}
