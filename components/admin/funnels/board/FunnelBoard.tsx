@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, useReactFlow,
   ConnectionMode, type NodeTypes, type EdgeTypes, MarkerType, Panel,
@@ -12,7 +12,6 @@ import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNo
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
 import LabeledEdge from '@/components/admin/feedback/board/edges/LabeledEdge';
 import EdgeStyleEditor from '@/components/admin/feedback/board/EdgeStyleEditor';
-import BoardTopToolbar, { type BoardTool } from '@/components/admin/feedback/board/BoardTopToolbar';
 import NodePalette from './NodePalette';
 import StepSideDrawer from './StepSideDrawer';
 import BoardSummary from './BoardSummary';
@@ -36,18 +35,10 @@ const defaultEdgeOptions = {
   markerEnd: { type: MarkerType.ArrowClosed, color: '#2B2B2B', width: 16, height: 16 },
 };
 
-const SHAPE_TOOL_IDS = new Set<BoardTool>([
-  'decision','wait','call','meeting','automation','goal',
-  'button_click','form_submit','video_play','scroll_depth',
-  'purchase','add_to_cart','subscribe','custom_event',
-  'sms_notification','email_notification','ghl_notification','google_sheet',
-]);
-
 function FunnelBoardInner() {
   const containerRef = useRef<HTMLDivElement>(null);
   const ctx = useFunnelBoardContextOrThrow();
   const rf = useReactFlow();
-  const [activeTool, setActiveTool] = useState<BoardTool>('select');
 
   const board = useFunnelBoard();
 
@@ -58,44 +49,29 @@ function FunnelBoardInner() {
       : { x: 200, y: 200 };
   }, [rf]);
 
-  const handleToolSelect = useCallback((tool: BoardTool) => {
-    if (tool === 'sticky') { void ctx.addNote(); setActiveTool('select'); return; }
-
-    if (SHAPE_TOOL_IDS.has(tool)) {
-      const c = viewportCentre();
-      const offsetX = tool === 'decision' ? 120 : 54;
-      const offsetY = tool === 'decision' ? 120 : 70;
-      void ctx.createShape({
-        shape_type: tool as FunnelShapeType,
-        x: Math.round(c.x - offsetX), y: Math.round(c.y - offsetY),
-        width: null, height: null, end_x: null, end_y: null,
-        content: null,
-        color: '#2B2B2B', stroke_width: 2, dashed: false,
-        font_size: null,
-      });
-      setActiveTool('select');
-      return;
-    }
-
-    if (tool === 'text') {
-      const c = viewportCentre();
-      void ctx.createShape({
-        shape_type: 'text',
-        x: c.x, y: c.y, width: null, height: null, end_x: null, end_y: null,
-        content: null, color: '#2B2B2B', stroke_width: 2, dashed: false, font_size: 18,
-      });
-      setActiveTool('select');
-      return;
-    }
-
-    setActiveTool(tool);
-  }, [ctx, viewportCentre]);
-
-  const handlePaletteAdd = useCallback((stepType: FunnelStepType) => {
+  const handlePickStep = useCallback((stepType: FunnelStepType) => {
     const c = viewportCentre();
-    // FRAME_W/2 = 120, ICON shell H ~ 144 → centre the disc on the drop point
-    void ctx.createStep(stepType, { x: c.x - 120, y: c.y - 72 });
+    // FRAME_W=240; centre the visual on the drop point. Pages are taller so
+    // bias their Y a bit higher.
+    const offsetY = stepType.startsWith('page_') ? 128 : 72;
+    void ctx.createStep(stepType, { x: c.x - 120, y: c.y - offsetY });
   }, [ctx, viewportCentre]);
+
+  const handlePickShape = useCallback((shapeType: FunnelShapeType) => {
+    const c = viewportCentre();
+    const offsetX = shapeType === 'decision' ? 120 : 54;
+    const offsetY = shapeType === 'decision' ? 120 : 70;
+    void ctx.createShape({
+      shape_type: shapeType,
+      x: Math.round(c.x - offsetX), y: Math.round(c.y - offsetY),
+      width: null, height: null, end_x: null, end_y: null,
+      content: null,
+      color: '#2B2B2B', stroke_width: 2, dashed: false,
+      font_size: null,
+    });
+  }, [ctx, viewportCentre]);
+
+  const handlePickSticky = useCallback(() => { void ctx.addNote(); }, [ctx]);
 
   // Keyboard shortcuts — Cmd/Ctrl-Z undo, Cmd/Ctrl-Shift-Z (or Cmd-Y) redo.
   // Suppressed when an input/textarea is focused so it doesn't fight the
@@ -154,7 +130,11 @@ function FunnelBoardInner() {
 
   return (
     <div className="flex h-full min-h-[400px] bg-white rounded-xl border border-edge overflow-hidden shadow-sm">
-      <NodePalette onPick={handlePaletteAdd} />
+      <NodePalette
+        onPickStep={handlePickStep}
+        onPickShape={handlePickShape}
+        onPickSticky={handlePickSticky}
+      />
       <div className="flex-1 relative bg-notebook" ref={containerRef}>
         <ReactFlow
           nodes={board.nodes}
@@ -233,10 +213,6 @@ function FunnelBoardInner() {
               </div>
               <ExportMenu containerRef={containerRef} funnelName={ctx.funnel?.name || 'funnel'} />
             </div>
-          </Panel>
-
-          <Panel position="top-right">
-            <BoardTopToolbar activeTool={activeTool} onToolSelect={handleToolSelect} />
           </Panel>
 
           {board.selectedEdge && (

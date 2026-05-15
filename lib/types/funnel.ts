@@ -226,3 +226,94 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
     types: ['generic'],
   },
 ];
+
+/** Unified palette config — drives the left rail. Mixes step nodes, flow
+ *  shapes (decision / wait / events / notifications), and sticky notes into
+ *  one categorised list so the user has a single place to add anything to
+ *  the canvas. */
+export type FunnelShapePaletteId =
+  | 'decision' | 'wait' | 'goal'
+  | 'call' | 'meeting' | 'automation'
+  | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
+  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event'
+  | 'sms_notification' | 'email_notification' | 'ghl_notification' | 'google_sheet';
+
+export type PaletteItem =
+  | { kind: 'step'; stepType: FunnelStepType }
+  | { kind: 'shape'; shapeType: FunnelShapePaletteId; label: string; iconName: string }
+  | { kind: 'sticky' };
+
+export interface PaletteGroup {
+  key: string;
+  label: string;
+  items: PaletteItem[];
+}
+
+export const FUNNEL_PALETTE: PaletteGroup[] = [
+  {
+    key: 'pages',
+    label: 'Pages',
+    items: ([
+      'page_landing', 'page_sales', 'page_optin', 'page_checkout',
+      'page_thankyou', 'page_upsell', 'page_downsell', 'page_webinar',
+    ] as FunnelStepType[]).map((stepType) => ({ kind: 'step', stepType })),
+  },
+  {
+    key: 'traffic',
+    label: 'Traffic',
+    items: ([
+      'traffic_paid', 'traffic_organic', 'traffic_email', 'traffic_direct',
+    ] as FunnelStepType[]).map((stepType) => ({ kind: 'step', stepType })),
+  },
+  {
+    key: 'offers',
+    label: 'Offers',
+    items: ([
+      'offer_product', 'offer_course', 'offer_service', 'offer_lead_magnet',
+    ] as FunnelStepType[]).map((stepType) => ({ kind: 'step', stepType })),
+  },
+  {
+    key: 'logic',
+    label: 'Logic',
+    items: [
+      { kind: 'shape', shapeType: 'decision',   label: 'Decision',   iconName: 'diamond' },
+      { kind: 'shape', shapeType: 'wait',       label: 'Wait',       iconName: 'clock' },
+      { kind: 'shape', shapeType: 'goal',       label: 'Goal',       iconName: 'flag' },
+      { kind: 'shape', shapeType: 'call',       label: 'Call',       iconName: 'phone' },
+      { kind: 'shape', shapeType: 'meeting',    label: 'Meeting',    iconName: 'calendar-days' },
+      { kind: 'shape', shapeType: 'automation', label: 'Automation', iconName: 'zap' },
+    ],
+  },
+  {
+    key: 'events',
+    label: 'Events',
+    items: [
+      { kind: 'shape', shapeType: 'button_click', label: 'Button Click', iconName: 'mouse-pointer-click' },
+      { kind: 'shape', shapeType: 'form_submit',  label: 'Form Submit',  iconName: 'file-text' },
+      { kind: 'shape', shapeType: 'video_play',   label: 'Video Play',   iconName: 'play-circle' },
+      { kind: 'shape', shapeType: 'scroll_depth', label: 'Scroll Depth', iconName: 'chevrons-down' },
+      { kind: 'shape', shapeType: 'purchase',     label: 'Purchase',     iconName: 'shopping-bag' },
+      { kind: 'shape', shapeType: 'add_to_cart',  label: 'Add to Cart',  iconName: 'shopping-cart' },
+      { kind: 'shape', shapeType: 'subscribe',    label: 'Subscribe',    iconName: 'bell-ring' },
+      { kind: 'shape', shapeType: 'custom_event', label: 'Custom Event', iconName: 'sparkles' },
+    ],
+  },
+  {
+    key: 'notifications',
+    label: 'Notifications',
+    items: [
+      { kind: 'shape', shapeType: 'sms_notification',   label: 'SMS',          iconName: 'message-square' },
+      { kind: 'shape', shapeType: 'email_notification', label: 'Email',        iconName: 'mail' },
+      { kind: 'shape', shapeType: 'ghl_notification',   label: 'GHL App',      iconName: 'bell' },
+      { kind: 'shape', shapeType: 'google_sheet',       label: 'Google Sheet', iconName: 'sheet' },
+    ],
+  },
+  {
+    key: 'other',
+    label: 'Other',
+    items: [
+      { kind: 'step', stepType: 'generic' },
+      { kind: 'sticky' },
+    ],
+  },
+];

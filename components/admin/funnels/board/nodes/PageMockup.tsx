@@ -8,12 +8,12 @@ import type { FunnelStepType } from '@/lib/supabase';
  * page_* step types so a funnel built of Landing → Sales → Checkout → Thank
  * You actually looks like a sequence of pages.
  *
- * Layout per type is fixed but uses the step's tint so opt-in/sales/checkout
- * etc. read at a glance. Width/height kept consistent at 200×120 so step
- * positioning stays predictable regardless of type.
+ * Portrait orientation — real web pages are taller than wide. 140×200 keeps
+ * each tile comfortably scannable at default board zoom while giving each
+ * layout room for hero + body + CTA.
  */
-export const PAGE_MOCKUP_W = 200;
-export const PAGE_MOCKUP_H = 120;
+export const PAGE_MOCKUP_W = 140;
+export const PAGE_MOCKUP_H = 200;
 
 interface Props {
   stepType: FunnelStepType;
@@ -32,7 +32,9 @@ export default function PageMockup({ stepType, tint, selected }: Props) {
       style={{ width: PAGE_MOCKUP_W, height: PAGE_MOCKUP_H }}
     >
       <BrowserChrome />
-      <div className="px-3 pt-2 pb-2">{renderForType(stepType, tint)}</div>
+      <div className="px-2.5 pt-2 pb-2.5 flex flex-col h-[calc(100%-16px)]">
+        {renderForType(stepType, tint)}
+      </div>
     </div>
   );
 }
@@ -67,11 +69,13 @@ function renderForType(t: FunnelStepType, tint: string) {
 function LandingLayout({ tint }: { tint: string }) {
   return (
     <>
-      <div className="h-3 rounded-sm w-[70%]" style={{ backgroundColor: tint }} />
+      <Hero tint={tint} h={24} />
+      <Heading w="80%" />
       <Line w="100%" />
-      <Line w="85%" />
+      <Line w="95%" />
+      <Line w="78%" />
       <Line w="60%" />
-      <CTA tint={tint} label="Get Started" mt={6} />
+      <CTA tint={tint} label="Get Started" />
     </>
   );
 }
@@ -79,12 +83,14 @@ function LandingLayout({ tint }: { tint: string }) {
 function SalesLayout({ tint }: { tint: string }) {
   return (
     <>
-      <div className="h-3 rounded-sm w-[60%]" style={{ backgroundColor: tint }} />
+      <Hero tint={tint} h={28} />
+      <Heading w="85%" />
       <Line w="100%" />
-      <Line w="78%" />
-      <div className="flex items-center justify-between mt-1.5">
-        <span className="text-[8px] font-bold" style={{ color: tint }}>$49</span>
-        <CTA tint={tint} label="Buy Now" inline />
+      <Line w="90%" />
+      <Line w="70%" />
+      <div className="flex items-center justify-between mt-auto">
+        <span className="text-[10px] font-bold" style={{ color: tint }}>$49</span>
+        <CTA tint={tint} label="Buy" inline />
       </div>
     </>
   );
@@ -93,11 +99,14 @@ function SalesLayout({ tint }: { tint: string }) {
 function OptInLayout({ tint }: { tint: string }) {
   return (
     <>
-      <div className="h-3 rounded-sm w-[55%]" style={{ backgroundColor: tint }} />
-      <Line w="90%" />
-      <FieldPlaceholder />
-      <FieldPlaceholder />
-      <CTA tint={tint} label="Sign Up" mt={2} />
+      <Heading w="80%" />
+      <Line w="100%" />
+      <Line w="65%" />
+      <div className="mt-2 space-y-1.5">
+        <FieldPlaceholder label="Name" />
+        <FieldPlaceholder label="Email" />
+      </div>
+      <CTA tint={tint} label="Sign Up" />
     </>
   );
 }
@@ -105,28 +114,30 @@ function OptInLayout({ tint }: { tint: string }) {
 function CheckoutLayout({ tint }: { tint: string }) {
   return (
     <>
-      <div className="flex items-center gap-1">
-        <Lock size={8} className="text-muted" />
+      <div className="flex items-center gap-1 mb-1">
+        <Lock size={9} className="text-muted" />
         <span className="text-[7px] uppercase tracking-wider text-muted font-semibold">Secure Checkout</span>
       </div>
-      <FieldPlaceholder />
-      <FieldPlaceholder />
-      <div className="flex items-center justify-between mt-0.5">
+      <FieldPlaceholder label="Email" />
+      <FieldPlaceholder label="Card" />
+      <FieldPlaceholder label="Address" />
+      <div className="flex items-center justify-between mt-1">
         <span className="text-[8px] text-muted">Total</span>
-        <span className="text-[9px] font-bold" style={{ color: tint }}>$97.00</span>
+        <span className="text-[10px] font-bold" style={{ color: tint }}>$97.00</span>
       </div>
-      <CTA tint={tint} label="Place Order" mt={2} />
+      <CTA tint={tint} label="Place Order" />
     </>
   );
 }
 
 function ThankYouLayout({ tint }: { tint: string }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full -mt-1">
-      <CheckCircle2 size={20} style={{ color: tint }} strokeWidth={2.2} />
-      <div className="text-[8px] font-semibold text-ink mt-1.5">Thank You!</div>
+    <div className="flex flex-col items-center justify-center text-center h-full">
+      <CheckCircle2 size={36} style={{ color: tint }} strokeWidth={2.2} />
+      <div className="text-[10px] font-bold text-ink mt-2">Thank You!</div>
+      <Line w="80%" />
+      <Line w="60%" />
       <Line w="70%" />
-      <Line w="50%" />
     </div>
   );
 }
@@ -140,12 +151,12 @@ function UpsellLayout({ tint, badge }: { tint: string; badge: string }) {
       >
         {badge}
       </div>
+      <Hero tint={tint} h={22} mt={4} />
+      <Heading w="80%" />
       <Line w="100%" />
-      <Line w="80%" />
-      <div className="flex items-center gap-1.5 mt-1">
-        <CTA tint={tint} label="Yes, Add" inline />
-        <span className="text-[7px] text-muted underline">No thanks</span>
-      </div>
+      <Line w="85%" />
+      <CTA tint={tint} label="Yes, Add to Order" />
+      <div className="text-[7px] text-center text-muted underline mt-1">No thanks</div>
     </>
   );
 }
@@ -153,30 +164,44 @@ function UpsellLayout({ tint, badge }: { tint: string; badge: string }) {
 function WebinarLayout({ tint }: { tint: string }) {
   return (
     <>
-      <div className="h-9 rounded-sm bg-ink/85 flex items-center justify-center">
-        <PlayCircle size={16} className="text-white/95" />
+      <div className="h-16 rounded-sm bg-ink/85 flex items-center justify-center mb-1">
+        <PlayCircle size={28} className="text-white/95" />
       </div>
-      <Line w="80%" />
-      <CTA tint={tint} label="Register" mt={2} />
+      <Heading w="85%" />
+      <Line w="100%" />
+      <Line w="75%" />
+      <CTA tint={tint} label="Register" />
     </>
   );
 }
 
 /* ─── Primitives ───────────────────────────────────────────────── */
 
+function Hero({ tint, h, mt = 0 }: { tint: string; h: number; mt?: number }) {
+  return <div className="rounded-sm w-full" style={{ height: h, backgroundColor: tint, marginTop: mt }} />;
+}
+
+function Heading({ w }: { w: string }) {
+  return <div className="h-1.5 rounded-full bg-ink/55 mt-1.5" style={{ width: w }} />;
+}
+
 function Line({ w }: { w: string }) {
   return <div className="h-1 rounded-full bg-ink/15 mt-1" style={{ width: w }} />;
 }
 
-function FieldPlaceholder() {
-  return <div className="h-2.5 rounded-sm bg-surface border border-edge/60 mt-1" />;
+function FieldPlaceholder({ label }: { label?: string }) {
+  return (
+    <div className="h-3.5 rounded-sm bg-surface border border-edge/60 flex items-center px-1">
+      {label && <span className="text-[6.5px] text-muted/80">{label}</span>}
+    </div>
+  );
 }
 
-function CTA({ tint, label, mt = 4, inline = false }: { tint: string; label: string; mt?: number; inline?: boolean }) {
+function CTA({ tint, label, inline = false }: { tint: string; label: string; inline?: boolean }) {
   return (
     <div
-      className={`${inline ? 'inline-flex' : 'flex'} items-center justify-center rounded-sm px-2 py-0.5 text-[8px] font-semibold text-white`}
-      style={{ backgroundColor: tint, marginTop: mt }}
+      className={`${inline ? 'inline-flex' : 'flex'} items-center justify-center rounded-sm px-2 py-1 text-[8px] font-semibold text-white mt-auto`}
+      style={{ backgroundColor: tint }}
     >
       {label}
     </div>
