@@ -314,7 +314,14 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     </div>
   );
 
-  const metricsEl = showMetrics && hasMetrics && (
+  // Funnelytics convention: traffic sources don't carry a metrics chip
+  // because their visitor count is already labelled on the outgoing edge.
+  // The chip below the disc duplicated that flow count and visually
+  // squashed the source node, so we suppress it here. Pages / offers /
+  // generic still render the chip since their CVR/value aren't shown
+  // anywhere else on the canvas.
+  const isTrafficSource = step.step_type.startsWith('traffic_');
+  const metricsEl = !isTrafficSource && showMetrics && hasMetrics && (
     <div className="mt-2 px-2 py-1 rounded-md bg-white/95 border border-edge shadow-sm text-[10px] text-ink/80 leading-tight whitespace-nowrap">
       <span className="font-semibold text-ink">{formatCount(visitors)}</span>
       <span className="text-muted"> in</span>
