@@ -7,7 +7,8 @@ import {
   CreditCard, Heart, TrendingUp, TrendingDown, Video, Package, GraduationCap,
   Briefcase, Gift, Square, Trash2, ExternalLink, Sparkles, Target, Globe,
   Smartphone, Phone, MessageSquare, Calendar, Zap, Flag, FileText, Image as ImageIcon,
-  Music,
+  Music, Share2, Users, Mic, Star, Newspaper, BookOpen, Cloud, Repeat,
+  Timer, Layers, UserCog, Ticket,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStep } from '@/lib/supabase';
@@ -60,15 +61,41 @@ export const LUCIDE: Record<string, LucideIcon> = {
   'file-text': FileText,
   image: ImageIcon,
   music: Music,
+  'share-2': Share2,
+  users: Users,
+  mic: Mic,
+  star: Star,
+  newspaper: Newspaper,
+  'book-open': BookOpen,
+  cloud: Cloud,
+  repeat: Repeat,
+  timer: Timer,
+  layers: Layers,
+  'user-cog': UserCog,
+  ticket: Ticket,
+  'external-link': ExternalLink,
 };
 
-export const BRAND_SLUGS_SET = new Set(['facebook','google','youtube','tiktok','instagram','stripe','mailchimp','linkedin','twitter']);
+export const BRAND_SLUGS_SET = new Set([
+  'facebook','instagram','google','youtube','tiktok','linkedin','pinterest',
+  'twitter','snapchat','bing','stripe','mailchimp',
+]);
+
+/** Lucide icon to render while a brand SVG is missing — keeps the canvas
+ *  legible before /public/icons/brands/<slug>.svg files are dropped in.
+ *  Each entry approximates the brand's mark visually. */
+const BRAND_FALLBACK_LUCIDE: Record<string, LucideIcon> = {
+  facebook: Megaphone, instagram: ImageIcon, google: Search, youtube: Video,
+  tiktok: Music, linkedin: Briefcase, pinterest: ImageIcon, twitter: MessageSquare,
+  snapchat: Smartphone, bing: Search, stripe: CreditCard, mailchimp: Mail,
+};
 
 export function StepIcon({ slug, size = 32 }: { slug: string; size?: number }) {
-  if (BRAND_SLUGS_SET.has(slug)) {
-    // Brand SVGs are flat color marks — render at the requested size with white
-    // applied via filter inversion isn't reliable, so we serve them as-is and
-    // rely on the colored circle behind for contrast.
+  const [brandFailed, setBrandFailed] = useState(false);
+
+  if (BRAND_SLUGS_SET.has(slug) && !brandFailed) {
+    // Brand SVG path. If the file isn't present yet, onError swaps to a
+    // Lucide fallback so the canvas never shows a broken-image icon.
     return (
       <img
         src={`/icons/brands/${slug}.svg`}
@@ -76,10 +103,13 @@ export function StepIcon({ slug, size = 32 }: { slug: string; size?: number }) {
         width={size}
         height={size}
         style={{ filter: 'brightness(0) invert(1)' }}
+        onError={() => setBrandFailed(true)}
       />
     );
   }
-  const Lc = LUCIDE[slug] || Square;
+  const Lc = brandFailed
+    ? (BRAND_FALLBACK_LUCIDE[slug] || Square)
+    : (LUCIDE[slug] || Square);
   return <Lc size={size} strokeWidth={1.8} className="text-white" />;
 }
 
@@ -114,14 +144,17 @@ function StepHandles({ readOnly }: { readOnly?: boolean }) {
   );
 }
 
-/** Handles anchored to the 200×120 page mockup rectangle. The left/right Y
- *  is offset slightly above centre so it lines up with the body content
- *  rather than the bottom CTA — keeps inter-page edges visually balanced. */
+/** Handles anchored to the 140×200 page mockup. Left/right Y is pinned to
+ *  the canonical 100px baseline used by every other node type (icon discs,
+ *  diamonds, sticky notes, feedback cards) so a step → page → step row
+ *  produces straight horizontal arrows regardless of the type mix. Top and
+ *  bottom hug the page edge. */
+const SHARED_SIDE_HANDLE_Y = 100;
+
 function PageHandles({ readOnly }: { readOnly?: boolean }) {
   const outset = 14;
   const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - outset;
   const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + outset;
-  const cy = LABEL_OFFSET + PAGE_MOCKUP_H / 2;
   const topY = LABEL_OFFSET - outset;
   const bottomY = LABEL_OFFSET + PAGE_MOCKUP_H + outset;
   return (
@@ -129,11 +162,11 @@ function PageHandles({ readOnly }: { readOnly?: boolean }) {
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
         style={{ top: topY }} isConnectable={!readOnly} />
       <Handle id="right" type="source" position={Position.Right} className={HANDLE_BASE}
-        style={{ top: cy, right: FRAME_W - rightX }} isConnectable={!readOnly} />
+        style={{ top: SHARED_SIDE_HANDLE_Y, right: FRAME_W - rightX }} isConnectable={!readOnly} />
       <Handle id="bottom" type="source" position={Position.Bottom} className={HANDLE_BASE}
         style={{ top: bottomY, bottom: 'auto' }} isConnectable={!readOnly} />
       <Handle id="left" type="source" position={Position.Left} className={HANDLE_BASE}
-        style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
+        style={{ top: SHARED_SIDE_HANDLE_Y, left: leftX }} isConnectable={!readOnly} />
     </>
   );
 }

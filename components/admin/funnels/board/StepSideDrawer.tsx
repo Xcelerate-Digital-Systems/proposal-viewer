@@ -65,7 +65,19 @@ export default function StepSideDrawer({
   const setColor = (hex: string) => onUpdate({ color: hex });
   const resetColor = () => onUpdate({ color: null });
 
+  // Field visibility mirrors Funnelytics' approach — each node type shows
+  // only the inputs that meaningfully drive its forecast contribution.
+  //   sources  → visitors + cost-per-visitor (CPC)
+  //   pages    → conversion %
+  //   offers   → conversion % + value per conversion
+  //   generic  → all of them (catch-all)
   const isTrafficSource = step.step_type.startsWith('traffic_');
+  const isPage = step.step_type.startsWith('page_');
+  const isOffer = step.step_type.startsWith('offer_');
+  const showVisitors = isTrafficSource;
+  const showConversion = isPage || isOffer || !isTrafficSource; // i.e. not pure sources
+  const showCost = isTrafficSource || step.step_type === 'generic';
+  const showValue = isOffer || step.step_type === 'generic';
   const costLabel = isTrafficSource ? 'Cost per visitor' : 'Cost per conversion';
 
   return (
@@ -135,11 +147,11 @@ export default function StepSideDrawer({
           </div>
         </Field>
 
-        {/* Metrics */}
+        {/* Metrics — fields scoped to the step type */}
         <div>
           <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Metrics</h4>
           <div className="space-y-2">
-            {isTrafficSource && (
+            {showVisitors && (
               <MetricInput
                 label="Visitors"
                 value={metrics.visitors}
@@ -147,28 +159,34 @@ export default function StepSideDrawer({
                 placeholder="e.g. 5000"
               />
             )}
-            <MetricInput
-              label="Conversion %"
-              value={metrics.conversion_rate}
-              onChange={(v) => setMetric('conversion_rate', v)}
-              placeholder="e.g. 8"
-              suffix="%"
-              max={100}
-            />
-            <MetricInput
-              label={costLabel}
-              value={metrics.cost}
-              onChange={(v) => setMetric('cost', v)}
-              placeholder="e.g. 0.50"
-              prefix="$"
-            />
-            <MetricInput
-              label="Value per conversion"
-              value={metrics.value}
-              onChange={(v) => setMetric('value', v)}
-              placeholder="e.g. 49"
-              prefix="$"
-            />
+            {showConversion && (
+              <MetricInput
+                label="Conversion %"
+                value={metrics.conversion_rate}
+                onChange={(v) => setMetric('conversion_rate', v)}
+                placeholder="e.g. 8"
+                suffix="%"
+                max={100}
+              />
+            )}
+            {showCost && (
+              <MetricInput
+                label={costLabel}
+                value={metrics.cost}
+                onChange={(v) => setMetric('cost', v)}
+                placeholder="e.g. 0.50"
+                prefix="$"
+              />
+            )}
+            {showValue && (
+              <MetricInput
+                label="Value per conversion"
+                value={metrics.value}
+                onChange={(v) => setMetric('value', v)}
+                placeholder="e.g. 49"
+                prefix="$"
+              />
+            )}
           </div>
         </div>
 

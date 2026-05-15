@@ -7,6 +7,7 @@ import {
   MousePointerClick, FileText, PlayCircle, ChevronsDown,
   ShoppingCart, ShoppingBag, BellRing, Sparkles,
   MessageSquare, Mail, Bell, Sheet,
+  Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
   type LucideIcon,
 } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
@@ -643,7 +644,10 @@ type DiamondType =
   | 'call' | 'meeting' | 'automation' | 'goal'
   | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
   | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event'
-  | 'sms_notification' | 'email_notification' | 'ghl_notification' | 'google_sheet';
+  | 'page_view' | 'time_on_page' | 'exit_intent' | 'refund'
+  | 'download' | 'share' | 'login'
+  | 'sms_notification' | 'email_notification' | 'ghl_notification'
+  | 'google_sheet' | 'webhook';
 
 interface DiamondConfig {
   color: string;
@@ -670,10 +674,19 @@ const DIAMOND_CONFIG: Record<DiamondType, DiamondConfig> = {
   automation: { color: '#F43F5E', Icon: Zap,          typeLabel: 'Automation', placeholder: 'Automation' },
   goal:       { color: '#EAB308', Icon: Flag,         typeLabel: 'Goal',       placeholder: 'Goal' },
   // Notifications + integrations
-  sms_notification:   { color: '#15803D', Icon: MessageSquare, typeLabel: 'SMS Notification',   placeholder: 'SMS notification' },
-  email_notification: { color: '#B91C1C', Icon: Mail,          typeLabel: 'Email Notification', placeholder: 'Email notification' },
-  ghl_notification:   { color: '#0EA5E9', Icon: Bell,          typeLabel: 'GHL App Notification', placeholder: 'GHL notification' },
-  google_sheet:       { color: '#0F9D58', Icon: Sheet,         typeLabel: 'Google Sheet',       placeholder: 'Add to Google Sheet' },
+  sms_notification:   { color: '#15803D', Icon: MessageSquare, typeLabel: 'SMS Notification',     placeholder: 'SMS notification' },
+  email_notification: { color: '#B91C1C', Icon: Mail,          typeLabel: 'Email Notification',   placeholder: 'Email notification' },
+  ghl_notification:   { color: '#0EA5E9', Icon: Bell,          typeLabel: 'HighLevel',            placeholder: 'HighLevel notification' },
+  google_sheet:       { color: '#0F9D58', Icon: Sheet,         typeLabel: 'Google Sheet',         placeholder: 'Add to Google Sheet' },
+  webhook:            { color: '#7C3AED', Icon: Webhook,       typeLabel: 'Webhook',              placeholder: 'Webhook' },
+  // Additional events (Funnelytics parity)
+  page_view:          { color: '#0EA5E9', Icon: Eye,           typeLabel: 'Page View',            placeholder: 'Page view' },
+  time_on_page:       { color: '#6366F1', Icon: Timer,         typeLabel: 'Time on Page',         placeholder: 'Time on page' },
+  exit_intent:        { color: '#F43F5E', Icon: LogOut,        typeLabel: 'Exit Intent',          placeholder: 'Exit intent' },
+  refund:             { color: '#DC2626', Icon: Undo2,         typeLabel: 'Refund',               placeholder: 'Refund' },
+  download:           { color: '#10B981', Icon: Download,      typeLabel: 'Download',             placeholder: 'Download' },
+  share:              { color: '#A855F7', Icon: Share2,        typeLabel: 'Share',                placeholder: 'Share' },
+  login:              { color: '#0F766E', Icon: LogIn,         typeLabel: 'Login',                placeholder: 'Login' },
 };
 
 const DIAMOND_TYPES = new Set<string>(Object.keys(DIAMOND_CONFIG));

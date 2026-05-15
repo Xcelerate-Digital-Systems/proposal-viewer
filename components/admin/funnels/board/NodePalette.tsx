@@ -5,6 +5,7 @@ import {
   ChevronDown, ChevronRight, Diamond, Clock, Flag, Phone, CalendarDays, Zap,
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingBag, ShoppingCart,
   BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote,
+  Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStepType, FunnelShapeType } from '@/lib/supabase';
@@ -38,6 +39,14 @@ const SHAPE_ICONS: Record<string, LucideIcon> = {
   mail: Mail,
   bell: Bell,
   sheet: Sheet,
+  eye: Eye,
+  timer: Timer,
+  'log-out': LogOut,
+  'log-in': LogIn,
+  'undo-2': Undo2,
+  download: Download,
+  'share-2': Share2,
+  webhook: Webhook,
 };
 
 export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: Props) {

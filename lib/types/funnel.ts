@@ -11,11 +11,31 @@
 export type FunnelStatus = 'draft' | 'active' | 'archived';
 
 export type FunnelStepType =
-  // Traffic sources
+  // Traffic sources — generic buckets
   | 'traffic_paid'
   | 'traffic_organic'
   | 'traffic_email'
   | 'traffic_direct'
+  // Traffic sources — specific ad platforms (Funnelytics parity)
+  | 'traffic_facebook_ads'
+  | 'traffic_instagram_ads'
+  | 'traffic_google_ads'
+  | 'traffic_youtube_ads'
+  | 'traffic_tiktok_ads'
+  | 'traffic_linkedin_ads'
+  | 'traffic_pinterest_ads'
+  | 'traffic_twitter_ads'
+  | 'traffic_snapchat_ads'
+  | 'traffic_bing_ads'
+  | 'traffic_native_ads'
+  // Traffic sources — channels
+  | 'traffic_sms'
+  | 'traffic_organic_social'
+  | 'traffic_referral'
+  | 'traffic_affiliate'
+  | 'traffic_podcast'
+  | 'traffic_influencer'
+  | 'traffic_offline'
   // Pages
   | 'page_landing'
   | 'page_sales'
@@ -30,6 +50,13 @@ export type FunnelStepType =
   | 'offer_course'
   | 'offer_service'
   | 'offer_lead_magnet'
+  | 'offer_book'
+  | 'offer_subscription'
+  | 'offer_saas'
+  | 'offer_trial'
+  | 'offer_bundle'
+  | 'offer_coaching'
+  | 'offer_event'
   // Catch-all
   | 'generic';
 
@@ -136,7 +163,10 @@ export type FunnelShapeType =
   | 'call' | 'meeting' | 'automation' | 'goal'
   | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
   | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event'
-  | 'sms_notification' | 'email_notification' | 'ghl_notification' | 'google_sheet';
+  | 'page_view' | 'time_on_page' | 'exit_intent' | 'refund'
+  | 'download' | 'share' | 'login'
+  | 'sms_notification' | 'email_notification' | 'ghl_notification'
+  | 'google_sheet' | 'webhook';
 
 export type FunnelBoardShape = {
   id: string;
@@ -158,28 +188,65 @@ export type FunnelBoardShape = {
   updated_at: string;
 };
 
-/** Default visual treatment per step type, used when the row's icon/color are null. */
+/** Default visual treatment per step type, used when the row's icon/color are null.
+ *
+ *  Brand-platform sources (Facebook Ads, Google Ads, etc.) default to a brand
+ *  slug (e.g. 'facebook') for the icon. StepIcon attempts to render
+ *  /icons/brands/<slug>.svg; if that asset isn't present yet, it falls back
+ *  to a Lucide icon. This lets us ship brand defaults today and just drop in
+ *  SVGs later without re-editing any step rows. */
 export const FUNNEL_STEP_DEFAULTS: Record<
   FunnelStepType,
   { label: string; icon: string; color: string; tint: string }
 > = {
-  traffic_paid:        { label: 'Paid Traffic',     icon: 'megaphone',     color: '#2B2B2B', tint: '#1877F2' },
-  traffic_organic:     { label: 'Organic Traffic',  icon: 'search',        color: '#2B2B2B', tint: '#10B981' },
-  traffic_email:       { label: 'Email Traffic',    icon: 'mail',          color: '#2B2B2B', tint: '#F59E0B' },
-  traffic_direct:      { label: 'Direct',           icon: 'link',          color: '#2B2B2B', tint: '#6366F1' },
-  page_landing:        { label: 'Landing Page',     icon: 'monitor',       color: '#2B2B2B', tint: '#0EA5E9' },
-  page_sales:          { label: 'Sales Page',       icon: 'badge-dollar',  color: '#2B2B2B', tint: '#06B6D4' },
-  page_optin:          { label: 'Opt-In Page',      icon: 'user-plus',     color: '#2B2B2B', tint: '#0EA5E9' },
-  page_checkout:       { label: 'Checkout',         icon: 'credit-card',   color: '#2B2B2B', tint: '#22C55E' },
-  page_thankyou:       { label: 'Thank You Page',   icon: 'heart',         color: '#2B2B2B', tint: '#EC4899' },
-  page_upsell:         { label: 'Upsell Page',      icon: 'trending-up',   color: '#2B2B2B', tint: '#A855F7' },
-  page_downsell:       { label: 'Downsell Page',    icon: 'trending-down', color: '#2B2B2B', tint: '#F43F5E' },
-  page_webinar:        { label: 'Webinar',          icon: 'video',         color: '#2B2B2B', tint: '#8B5CF6' },
-  offer_product:       { label: 'Product',          icon: 'package',       color: '#2B2B2B', tint: '#F97316' },
-  offer_course:        { label: 'Course',           icon: 'graduation-cap',color: '#2B2B2B', tint: '#EAB308' },
-  offer_service:       { label: 'Service',          icon: 'briefcase',     color: '#2B2B2B', tint: '#0891B2' },
-  offer_lead_magnet:   { label: 'Lead Magnet',      icon: 'gift',          color: '#2B2B2B', tint: '#DB2777' },
-  generic:             { label: 'Step',             icon: 'square',        color: '#2B2B2B', tint: '#64748B' },
+  // Generic traffic buckets
+  traffic_paid:           { label: 'Paid Traffic',       icon: 'megaphone',        color: '#2B2B2B', tint: '#1877F2' },
+  traffic_organic:        { label: 'Organic Search',     icon: 'search',           color: '#2B2B2B', tint: '#10B981' },
+  traffic_email:          { label: 'Email',              icon: 'mail',             color: '#2B2B2B', tint: '#F59E0B' },
+  traffic_direct:         { label: 'Direct',             icon: 'link',             color: '#2B2B2B', tint: '#6366F1' },
+  // Specific ad platforms (brand slugs → brand SVG with Lucide fallback)
+  traffic_facebook_ads:   { label: 'Facebook Ads',       icon: 'facebook',         color: '#2B2B2B', tint: '#1877F2' },
+  traffic_instagram_ads:  { label: 'Instagram Ads',      icon: 'instagram',        color: '#2B2B2B', tint: '#E4405F' },
+  traffic_google_ads:     { label: 'Google Ads',         icon: 'google',           color: '#2B2B2B', tint: '#4285F4' },
+  traffic_youtube_ads:    { label: 'YouTube Ads',        icon: 'youtube',          color: '#2B2B2B', tint: '#FF0033' },
+  traffic_tiktok_ads:     { label: 'TikTok Ads',         icon: 'tiktok',           color: '#2B2B2B', tint: '#111111' },
+  traffic_linkedin_ads:   { label: 'LinkedIn Ads',       icon: 'linkedin',         color: '#2B2B2B', tint: '#0A66C2' },
+  traffic_pinterest_ads:  { label: 'Pinterest Ads',      icon: 'pinterest',        color: '#2B2B2B', tint: '#E60023' },
+  traffic_twitter_ads:    { label: 'X (Twitter) Ads',    icon: 'twitter',          color: '#2B2B2B', tint: '#111111' },
+  traffic_snapchat_ads:   { label: 'Snapchat Ads',       icon: 'snapchat',         color: '#2B2B2B', tint: '#F7C701' },
+  traffic_bing_ads:       { label: 'Bing Ads',           icon: 'bing',             color: '#2B2B2B', tint: '#0078D4' },
+  traffic_native_ads:     { label: 'Native Ads',         icon: 'megaphone',        color: '#2B2B2B', tint: '#F59E0B' },
+  // Channels
+  traffic_sms:            { label: 'SMS',                icon: 'message-square',   color: '#2B2B2B', tint: '#10B981' },
+  traffic_organic_social: { label: 'Organic Social',     icon: 'share-2',          color: '#2B2B2B', tint: '#A855F7' },
+  traffic_referral:       { label: 'Referral',           icon: 'external-link',    color: '#2B2B2B', tint: '#0EA5E9' },
+  traffic_affiliate:      { label: 'Affiliate',          icon: 'users',            color: '#2B2B2B', tint: '#EC4899' },
+  traffic_podcast:        { label: 'Podcast',            icon: 'mic',              color: '#2B2B2B', tint: '#8B5CF6' },
+  traffic_influencer:     { label: 'Influencer',         icon: 'star',             color: '#2B2B2B', tint: '#F97316' },
+  traffic_offline:        { label: 'Offline / Print',    icon: 'newspaper',        color: '#2B2B2B', tint: '#64748B' },
+  // Pages
+  page_landing:           { label: 'Landing Page',       icon: 'monitor',          color: '#2B2B2B', tint: '#0EA5E9' },
+  page_sales:             { label: 'Sales Page',         icon: 'badge-dollar',     color: '#2B2B2B', tint: '#06B6D4' },
+  page_optin:             { label: 'Opt-In Page',        icon: 'user-plus',        color: '#2B2B2B', tint: '#0EA5E9' },
+  page_checkout:          { label: 'Checkout',           icon: 'credit-card',      color: '#2B2B2B', tint: '#22C55E' },
+  page_thankyou:          { label: 'Thank You Page',     icon: 'heart',            color: '#2B2B2B', tint: '#EC4899' },
+  page_upsell:            { label: 'Upsell Page',        icon: 'trending-up',      color: '#2B2B2B', tint: '#A855F7' },
+  page_downsell:          { label: 'Downsell Page',      icon: 'trending-down',    color: '#2B2B2B', tint: '#F43F5E' },
+  page_webinar:           { label: 'Webinar',            icon: 'video',            color: '#2B2B2B', tint: '#8B5CF6' },
+  // Offers
+  offer_product:          { label: 'Product',            icon: 'package',          color: '#2B2B2B', tint: '#F97316' },
+  offer_course:           { label: 'Course',             icon: 'graduation-cap',   color: '#2B2B2B', tint: '#EAB308' },
+  offer_service:          { label: 'Service',            icon: 'briefcase',        color: '#2B2B2B', tint: '#0891B2' },
+  offer_lead_magnet:      { label: 'Lead Magnet',        icon: 'gift',             color: '#2B2B2B', tint: '#DB2777' },
+  offer_book:             { label: 'Book / eBook',       icon: 'book-open',        color: '#2B2B2B', tint: '#7C3AED' },
+  offer_subscription:     { label: 'Subscription',       icon: 'repeat',           color: '#2B2B2B', tint: '#0891B2' },
+  offer_saas:             { label: 'SaaS / Software',    icon: 'cloud',            color: '#2B2B2B', tint: '#0EA5E9' },
+  offer_trial:            { label: 'Free Trial',         icon: 'timer',            color: '#2B2B2B', tint: '#10B981' },
+  offer_bundle:           { label: 'Bundle',             icon: 'layers',           color: '#2B2B2B', tint: '#F97316' },
+  offer_coaching:         { label: 'Coaching',           icon: 'user-cog',         color: '#2B2B2B', tint: '#EC4899' },
+  offer_event:            { label: 'Live Event',         icon: 'ticket',           color: '#2B2B2B', tint: '#A855F7' },
+  // Catch-all
+  generic:                { label: 'Step',               icon: 'square',           color: '#2B2B2B', tint: '#64748B' },
 };
 
 /** Curated icon library shown in the side drawer's icon picker. Lucide slugs
@@ -188,10 +255,10 @@ export const FUNNEL_STEP_DEFAULTS: Record<
  *  catalogue, just the funnel-relevant subset. */
 export const FUNNEL_ICON_LIBRARY: { group: string; icons: string[] }[] = [
   { group: 'Pages',      icons: ['monitor','badge-dollar','user-plus','credit-card','heart','trending-up','trending-down','video'] },
-  { group: 'Traffic',    icons: ['megaphone','search','mail','link','globe','smartphone'] },
-  { group: 'Offers',     icons: ['package','graduation-cap','briefcase','gift','sparkles','target'] },
+  { group: 'Traffic',    icons: ['megaphone','search','mail','link','globe','smartphone','share-2','external-link','users','mic','star','newspaper'] },
+  { group: 'Offers',     icons: ['package','graduation-cap','briefcase','gift','sparkles','target','book-open','cloud','repeat','timer','layers','user-cog','ticket'] },
   { group: 'Actions',    icons: ['phone','message-square','calendar','zap','flag','file-text','image','music'] },
-  { group: 'Brands',     icons: ['facebook','google','youtube','tiktok','instagram','stripe','mailchimp','linkedin'] },
+  { group: 'Brands',     icons: ['facebook','instagram','google','youtube','tiktok','linkedin','pinterest','twitter','snapchat','bing','stripe','mailchimp'] },
 ];
 
 /** Color presets for the node tint swatch (12 swatches in the drawer). */
@@ -201,12 +268,25 @@ export const FUNNEL_COLOR_PRESETS: string[] = [
   '#A855F7', '#F43F5E', '#F97316', '#64748B',
 ];
 
+const ALL_TRAFFIC_TYPES: FunnelStepType[] = [
+  'traffic_facebook_ads', 'traffic_instagram_ads', 'traffic_google_ads',
+  'traffic_youtube_ads', 'traffic_tiktok_ads', 'traffic_linkedin_ads',
+  'traffic_pinterest_ads', 'traffic_twitter_ads', 'traffic_snapchat_ads',
+  'traffic_bing_ads', 'traffic_native_ads',
+  'traffic_paid', 'traffic_organic', 'traffic_organic_social',
+  'traffic_email', 'traffic_sms',
+  'traffic_referral', 'traffic_affiliate', 'traffic_influencer',
+  'traffic_podcast', 'traffic_offline', 'traffic_direct',
+];
+
+const ALL_OFFER_TYPES: FunnelStepType[] = [
+  'offer_product', 'offer_course', 'offer_service', 'offer_lead_magnet',
+  'offer_book', 'offer_subscription', 'offer_saas', 'offer_trial',
+  'offer_bundle', 'offer_coaching', 'offer_event',
+];
+
 export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: string; types: FunnelStepType[] }[] = [
-  {
-    category: 'traffic',
-    label: 'Traffic',
-    types: ['traffic_paid', 'traffic_organic', 'traffic_email', 'traffic_direct'],
-  },
+  { category: 'traffic', label: 'Traffic', types: ALL_TRAFFIC_TYPES },
   {
     category: 'page',
     label: 'Pages',
@@ -215,16 +295,8 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
       'page_thankyou', 'page_upsell', 'page_downsell', 'page_webinar',
     ],
   },
-  {
-    category: 'offer',
-    label: 'Offers',
-    types: ['offer_product', 'offer_course', 'offer_service', 'offer_lead_magnet'],
-  },
-  {
-    category: 'generic',
-    label: 'Other',
-    types: ['generic'],
-  },
+  { category: 'offer', label: 'Offers', types: ALL_OFFER_TYPES },
+  { category: 'generic', label: 'Other', types: ['generic'] },
 ];
 
 /** Unified palette config — drives the left rail. Mixes step nodes, flow
@@ -236,7 +308,10 @@ export type FunnelShapePaletteId =
   | 'call' | 'meeting' | 'automation'
   | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
   | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event'
-  | 'sms_notification' | 'email_notification' | 'ghl_notification' | 'google_sheet';
+  | 'page_view' | 'time_on_page' | 'exit_intent' | 'refund'
+  | 'download' | 'share' | 'login'
+  | 'sms_notification' | 'email_notification' | 'ghl_notification'
+  | 'google_sheet' | 'webhook';
 
 export type PaletteItem =
   | { kind: 'step'; stepType: FunnelStepType }
@@ -259,10 +334,22 @@ export const FUNNEL_PALETTE: PaletteGroup[] = [
     ] as FunnelStepType[]).map((stepType) => ({ kind: 'step', stepType })),
   },
   {
-    key: 'traffic',
-    label: 'Traffic',
+    key: 'ads',
+    label: 'Ad Platforms',
     items: ([
-      'traffic_paid', 'traffic_organic', 'traffic_email', 'traffic_direct',
+      'traffic_facebook_ads', 'traffic_instagram_ads', 'traffic_google_ads',
+      'traffic_youtube_ads', 'traffic_tiktok_ads', 'traffic_linkedin_ads',
+      'traffic_pinterest_ads', 'traffic_twitter_ads', 'traffic_snapchat_ads',
+      'traffic_bing_ads', 'traffic_native_ads', 'traffic_paid',
+    ] as FunnelStepType[]).map((stepType) => ({ kind: 'step', stepType })),
+  },
+  {
+    key: 'channels',
+    label: 'Channels',
+    items: ([
+      'traffic_organic', 'traffic_organic_social', 'traffic_email', 'traffic_sms',
+      'traffic_referral', 'traffic_affiliate', 'traffic_influencer',
+      'traffic_podcast', 'traffic_offline', 'traffic_direct',
     ] as FunnelStepType[]).map((stepType) => ({ kind: 'step', stepType })),
   },
   {
@@ -270,6 +357,8 @@ export const FUNNEL_PALETTE: PaletteGroup[] = [
     label: 'Offers',
     items: ([
       'offer_product', 'offer_course', 'offer_service', 'offer_lead_magnet',
+      'offer_book', 'offer_subscription', 'offer_saas', 'offer_trial',
+      'offer_bundle', 'offer_coaching', 'offer_event',
     ] as FunnelStepType[]).map((stepType) => ({ kind: 'step', stepType })),
   },
   {
@@ -288,23 +377,31 @@ export const FUNNEL_PALETTE: PaletteGroup[] = [
     key: 'events',
     label: 'Events',
     items: [
-      { kind: 'shape', shapeType: 'button_click', label: 'Button Click', iconName: 'mouse-pointer-click' },
-      { kind: 'shape', shapeType: 'form_submit',  label: 'Form Submit',  iconName: 'file-text' },
-      { kind: 'shape', shapeType: 'video_play',   label: 'Video Play',   iconName: 'play-circle' },
-      { kind: 'shape', shapeType: 'scroll_depth', label: 'Scroll Depth', iconName: 'chevrons-down' },
-      { kind: 'shape', shapeType: 'purchase',     label: 'Purchase',     iconName: 'shopping-bag' },
-      { kind: 'shape', shapeType: 'add_to_cart',  label: 'Add to Cart',  iconName: 'shopping-cart' },
-      { kind: 'shape', shapeType: 'subscribe',    label: 'Subscribe',    iconName: 'bell-ring' },
-      { kind: 'shape', shapeType: 'custom_event', label: 'Custom Event', iconName: 'sparkles' },
+      { kind: 'shape', shapeType: 'page_view',     label: 'Page View',     iconName: 'eye' },
+      { kind: 'shape', shapeType: 'button_click',  label: 'Button Click',  iconName: 'mouse-pointer-click' },
+      { kind: 'shape', shapeType: 'form_submit',   label: 'Form Submit',   iconName: 'file-text' },
+      { kind: 'shape', shapeType: 'video_play',    label: 'Video Play',    iconName: 'play-circle' },
+      { kind: 'shape', shapeType: 'scroll_depth',  label: 'Scroll Depth',  iconName: 'chevrons-down' },
+      { kind: 'shape', shapeType: 'time_on_page',  label: 'Time on Page',  iconName: 'timer' },
+      { kind: 'shape', shapeType: 'exit_intent',   label: 'Exit Intent',   iconName: 'log-out' },
+      { kind: 'shape', shapeType: 'purchase',      label: 'Purchase',      iconName: 'shopping-bag' },
+      { kind: 'shape', shapeType: 'add_to_cart',   label: 'Add to Cart',   iconName: 'shopping-cart' },
+      { kind: 'shape', shapeType: 'subscribe',     label: 'Subscribe',     iconName: 'bell-ring' },
+      { kind: 'shape', shapeType: 'refund',        label: 'Refund',        iconName: 'undo-2' },
+      { kind: 'shape', shapeType: 'download',      label: 'Download',      iconName: 'download' },
+      { kind: 'shape', shapeType: 'share',         label: 'Share',         iconName: 'share-2' },
+      { kind: 'shape', shapeType: 'login',         label: 'Login',         iconName: 'log-in' },
+      { kind: 'shape', shapeType: 'custom_event',  label: 'Custom Event',  iconName: 'sparkles' },
     ],
   },
   {
-    key: 'notifications',
-    label: 'Notifications',
+    key: 'integrations',
+    label: 'Integrations',
     items: [
       { kind: 'shape', shapeType: 'sms_notification',   label: 'SMS',          iconName: 'message-square' },
       { kind: 'shape', shapeType: 'email_notification', label: 'Email',        iconName: 'mail' },
-      { kind: 'shape', shapeType: 'ghl_notification',   label: 'GHL App',      iconName: 'bell' },
+      { kind: 'shape', shapeType: 'ghl_notification',   label: 'HighLevel',    iconName: 'bell' },
+      { kind: 'shape', shapeType: 'webhook',            label: 'Webhook',      iconName: 'webhook' },
       { kind: 'shape', shapeType: 'google_sheet',       label: 'Google Sheet', iconName: 'sheet' },
     ],
   },
