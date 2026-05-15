@@ -152,14 +152,15 @@ const SHARED_SIDE_HANDLE_Y = 100;
 
 /** Handles anchored to a page mockup that sits AT THE TOP of its frame
  *  (label below). Page is 200 tall, so its centre at frame-Y = 100 — exactly
- *  the canonical baseline. Top handle hangs above the page top edge, bottom
- *  hangs just below the page edge (and above the label). */
+ *  the canonical baseline. Top handle hangs above the page top edge; bottom
+ *  handle clears the label entirely so the connection dot (and edge tip)
+ *  doesn't overlap the label text. */
 function PageHandles({ readOnly }: { readOnly?: boolean }) {
   const outset = 14;
   const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - outset;
   const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + outset;
-  const topY = -outset;                               // hangs above page top (page starts at Y=0)
-  const bottomY = PAGE_MOCKUP_H + outset;             // hangs below page edge (before label)
+  const topY = -outset;                                          // 14px above page top
+  const bottomY = PAGE_MOCKUP_H + LABEL_OFFSET + outset;          // past the label, 14px gap
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
