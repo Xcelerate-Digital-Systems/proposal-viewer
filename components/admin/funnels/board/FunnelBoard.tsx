@@ -51,10 +51,10 @@ function FunnelBoardInner() {
 
   const handlePickStep = useCallback((stepType: FunnelStepType) => {
     const c = viewportCentre();
-    // FRAME_W=240; centre the visual on the drop point. Pages are taller so
-    // bias their Y a bit higher.
-    const offsetY = stepType.startsWith('page_') ? 128 : 72;
-    void ctx.createStep(stepType, { x: c.x - 120, y: c.y - offsetY });
+    // Every step type has its visual CENTRE at frame-Y = 100 (the canonical
+    // baseline shared with diamonds/notes), regardless of layout. Drop the
+    // top-left so the centre lands exactly on the cursor.
+    void ctx.createStep(stepType, { x: c.x - 120, y: c.y - 100 });
   }, [ctx, viewportCentre]);
 
   const handlePickShape = useCallback((shapeType: FunnelShapeType) => {

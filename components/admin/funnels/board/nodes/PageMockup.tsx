@@ -12,7 +12,7 @@ import type { FunnelStepType } from '@/lib/supabase';
  * each tile comfortably scannable at default board zoom while giving each
  * layout room for hero + body + CTA.
  */
-export const PAGE_MOCKUP_W = 140;
+export const PAGE_MOCKUP_W = 160;
 export const PAGE_MOCKUP_H = 200;
 
 interface Props {
