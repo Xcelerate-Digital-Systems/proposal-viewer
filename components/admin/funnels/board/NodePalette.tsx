@@ -38,27 +38,25 @@ const SHAPE_ICONS: Record<string, LucideIcon> = {
   trophy: Trophy, target: Target, crown: Crown,
 };
 
-/** Tint per shape type so action tiles in the palette match the step-tile
- *  visual language (coloured disc + white icon). Pulled from the canvas
- *  treatment of each shape in ShapeNode so the palette ↔ canvas read is 1:1. */
+/** Tint per shape type — kept in lockstep with `DIAMOND_CONFIG` in
+ *  feedback/board/nodes/ShapeNode.tsx so the palette tile colour matches
+ *  the colour the node actually paints on the canvas. */
 const SHAPE_TINTS: Record<string, string> = {
   // Conversion
-  purchase: '#22C55E', add_to_cart: '#F97316', subscribe: '#A855F7', goal: '#EAB308',
-  // Engagement
-  page_view: '#64748B', button_click: '#A855F7', form_submit: '#10B981',
-  video_play: '#EF4444', scroll_depth: '#6366F1', time_on_page: '#0EA5E9', exit_intent: '#F43F5E',
-  // Integration
-  sms_notification: '#EC4899', email_notification: '#3B82F6', ghl_notification: '#F97316',
-  webhook: '#64748B', google_sheet: '#22C55E',
-  call: '#0EA5E9', meeting: '#A855F7', automation: '#EAB308',
-  // Custom Actions
-  decision: '#64748B', wait: '#F59E0B', refund: '#F43F5E',
-  download: '#0EA5E9', share: '#A855F7', login: '#10B981', custom_event: '#EC4899',
-  // New conversion actions
+  purchase: '#10B981', add_to_cart: '#F97316', subscribe: '#EC4899', goal: '#EAB308',
   form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308',
-  // New GHL integration actions
+  // Engagement
+  page_view: '#0EA5E9', button_click: '#3B82F6', form_submit: '#06B6D4',
+  video_play: '#EF4444', scroll_depth: '#6366F1', time_on_page: '#6366F1', exit_intent: '#F43F5E',
+  // Integration
+  sms_notification: '#15803D', email_notification: '#B91C1C', ghl_notification: '#0EA5E9',
+  webhook: '#7C3AED', google_sheet: '#0F9D58',
+  call: '#059669', meeting: '#7C3AED', automation: '#F43F5E',
   ghl_appointment: '#F97316', ghl_order: '#F97316',
   ghl_opportunity: '#F97316', ghl_opportunity_won: '#15803D',
+  // Custom Actions
+  decision: '#B45309', wait: '#8B5CF6', refund: '#DC2626',
+  download: '#10B981', share: '#A855F7', login: '#0F766E', custom_event: '#64748B',
 };
 
 const TAB_ICONS: Record<FunnelPaletteTabId, LucideIcon> = {
