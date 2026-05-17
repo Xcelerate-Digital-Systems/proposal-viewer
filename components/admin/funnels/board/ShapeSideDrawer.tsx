@@ -29,6 +29,10 @@ const SHAPE_TYPE_LABELS: Partial<Record<FunnelShapeType, string>> = {
   download: 'Download', share: 'Share', login: 'Login',
   sms_notification: 'SMS Notification', email_notification: 'Email Notification',
   ghl_notification: 'HighLevel Notification', google_sheet: 'Google Sheet', webhook: 'Webhook',
+  form_completed: 'Form Completed', schedule_meeting: 'Schedule Meeting', deal_won: 'Deal Won',
+  ghl_appointment: 'GHL Appointment', ghl_order: 'GHL Order',
+  ghl_opportunity: 'GHL Opportunity', ghl_opportunity_won: 'GHL Opportunity Won',
+  on_site_visit: 'On-Site Visit', send_quote: 'Send Quote',
 };
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 6];

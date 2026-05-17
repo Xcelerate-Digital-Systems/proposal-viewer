@@ -257,7 +257,8 @@ export type FunnelShapeType =
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
   | 'google_sheet' | 'webhook'
   | 'form_completed' | 'schedule_meeting' | 'deal_won'
-  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won';
+  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
+  | 'on_site_visit' | 'send_quote';
 
 export type FunnelBoardShape = {
   id: string;
@@ -455,7 +456,8 @@ export type FunnelShapePaletteId =
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
   | 'google_sheet' | 'webhook'
   | 'form_completed' | 'schedule_meeting' | 'deal_won'
-  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won';
+  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
+  | 'on_site_visit' | 'send_quote';
 
 export type PaletteItem =
   | { kind: 'step'; stepType: FunnelStepType }
@@ -575,6 +577,8 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
           { kind: 'shape', shapeType: 'purchase',         label: 'Purchase',         iconName: 'shopping-bag' },
           { kind: 'shape', shapeType: 'form_completed',   label: 'Form Completed',   iconName: 'clipboard-check' },
           { kind: 'shape', shapeType: 'schedule_meeting', label: 'Schedule Meeting', iconName: 'calendar-check' },
+          { kind: 'shape', shapeType: 'on_site_visit',    label: 'On-Site Visit',    iconName: 'map-pin' },
+          { kind: 'shape', shapeType: 'send_quote',       label: 'Send Quote',       iconName: 'send' },
           { kind: 'shape', shapeType: 'deal_won',         label: 'Deal Won',         iconName: 'trophy' },
           { kind: 'shape', shapeType: 'add_to_cart',      label: 'Add to Cart',      iconName: 'shopping-cart' },
           { kind: 'shape', shapeType: 'subscribe',        label: 'Subscribe',        iconName: 'bell-ring' },
@@ -596,22 +600,27 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
       {
         key: 'integration', label: 'Integration Actions',
         items: [
-          { kind: 'shape', shapeType: 'sms_notification',   label: 'SMS Notification',   iconName: 'message-square' },
-          { kind: 'shape', shapeType: 'email_notification', label: 'Email Notification', iconName: 'mail' },
-          { kind: 'shape', shapeType: 'ghl_notification',   label: 'HighLevel',          iconName: 'bell' },
-          { kind: 'shape', shapeType: 'webhook',            label: 'Webhook',            iconName: 'webhook' },
-          { kind: 'shape', shapeType: 'google_sheet',       label: 'Google Sheet',       iconName: 'sheet' },
-          { kind: 'shape', shapeType: 'call',               label: 'Call',               iconName: 'phone' },
-          { kind: 'shape', shapeType: 'meeting',            label: 'Meeting',            iconName: 'calendar-days' },
-          { kind: 'shape', shapeType: 'automation',         label: 'Automation',         iconName: 'zap' },
-          { kind: 'shape', shapeType: 'ghl_appointment',    label: 'GHL Appointment',    iconName: 'calendar-days' },
-          { kind: 'shape', shapeType: 'ghl_order',          label: 'GHL Order',          iconName: 'shopping-bag' },
-          { kind: 'shape', shapeType: 'ghl_opportunity',    label: 'GHL Opportunity',    iconName: 'target' },
-          { kind: 'shape', shapeType: 'ghl_opportunity_won',label: 'GHL Opportunity Won',iconName: 'crown' },
+          { kind: 'shape', shapeType: 'webhook',     label: 'Webhook',      iconName: 'webhook' },
+          { kind: 'shape', shapeType: 'google_sheet',label: 'Google Sheet', iconName: 'sheet' },
+          { kind: 'shape', shapeType: 'call',        label: 'Call',         iconName: 'phone' },
+          { kind: 'shape', shapeType: 'meeting',     label: 'Meeting',      iconName: 'calendar-days' },
+          { kind: 'shape', shapeType: 'automation',  label: 'Automation',   iconName: 'zap' },
         ],
       },
       {
-        key: 'crm', label: 'CRM / Messaging',
+        key: 'gohighlevel', label: 'GoHighLevel Actions',
+        items: [
+          { kind: 'shape', shapeType: 'sms_notification',    label: 'SMS Notification',     iconName: 'message-square' },
+          { kind: 'shape', shapeType: 'email_notification',  label: 'Email Notification',   iconName: 'mail' },
+          { kind: 'shape', shapeType: 'ghl_notification',    label: 'HighLevel',            iconName: 'bell' },
+          { kind: 'shape', shapeType: 'ghl_appointment',     label: 'GHL Appointment',      iconName: 'calendar-days' },
+          { kind: 'shape', shapeType: 'ghl_order',           label: 'GHL Order',            iconName: 'shopping-bag' },
+          { kind: 'shape', shapeType: 'ghl_opportunity',     label: 'GHL Opportunity',      iconName: 'target' },
+          { kind: 'shape', shapeType: 'ghl_opportunity_won', label: 'GHL Opportunity Won',  iconName: 'crown' },
+        ],
+      },
+      {
+        key: 'messaging', label: 'Messaging',
         items: stepItems(['traffic_email', 'traffic_sms']),
       },
       {

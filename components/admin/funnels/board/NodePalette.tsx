@@ -7,7 +7,7 @@ import {
   BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote, PanelLeftOpen,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook, Plus, Upload,
   Workflow, FileBox, MousePointer2,
-  ClipboardCheck, CalendarCheck, Trophy, Target, Crown,
+  ClipboardCheck, CalendarCheck, Trophy, Target, Crown, MapPin, Send,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStepType, FunnelShapeType } from '@/lib/supabase';
@@ -36,6 +36,7 @@ const SHAPE_ICONS: Record<string, LucideIcon> = {
   download: Download, 'share-2': Share2, webhook: Webhook,
   'clipboard-check': ClipboardCheck, 'calendar-check': CalendarCheck,
   trophy: Trophy, target: Target, crown: Crown,
+  'map-pin': MapPin, send: Send,
 };
 
 /** Tint per shape type — kept in lockstep with `DIAMOND_CONFIG` in
@@ -45,6 +46,7 @@ const SHAPE_TINTS: Record<string, string> = {
   // Conversion
   purchase: '#10B981', add_to_cart: '#F97316', subscribe: '#EC4899', goal: '#EAB308',
   form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308',
+  on_site_visit: '#6366F1', send_quote: '#06B6D4',
   // Engagement
   page_view: '#0EA5E9', button_click: '#3B82F6', form_submit: '#06B6D4',
   video_play: '#EF4444', scroll_depth: '#6366F1', time_on_page: '#6366F1', exit_intent: '#F43F5E',
@@ -73,7 +75,8 @@ const DEFAULT_OPEN: Record<string, boolean> = {
   offline: false, othersites: false, custom_src: false,
   pages: true, offers: false, custom_pages: false,
   conversion: true, engagement: true, integration: false,
-  crm: true, custom_actions: false, custom_act: false,
+  gohighlevel: true, messaging: true,
+  custom_actions: false, custom_act: false,
 };
 
 export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: Props) {

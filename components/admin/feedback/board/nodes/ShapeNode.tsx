@@ -8,7 +8,7 @@ import {
   ShoppingCart, ShoppingBag, BellRing, Sparkles,
   MessageSquare, Mail, Bell, Sheet,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
-  ClipboardCheck, CalendarCheck, Trophy, Target, Crown,
+  ClipboardCheck, CalendarCheck, Trophy, Target, Crown, MapPin, Send,
   type LucideIcon,
 } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
@@ -656,7 +656,9 @@ type DiamondType =
   // New conversion actions
   | 'form_completed' | 'schedule_meeting' | 'deal_won'
   // New GHL integration actions
-  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won';
+  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
+  // Field-service conversion actions
+  | 'on_site_visit' | 'send_quote';
 
 interface DiamondConfig {
   color: string;
@@ -705,6 +707,9 @@ const DIAMOND_CONFIG: Record<DiamondType, DiamondConfig> = {
   ghl_order:          { color: '#F97316', Icon: ShoppingBag,    typeLabel: 'GHL Order',           placeholder: 'GHL order' },
   ghl_opportunity:    { color: '#F97316', Icon: Target,         typeLabel: 'GHL Opportunity',     placeholder: 'GHL opportunity' },
   ghl_opportunity_won:{ color: '#15803D', Icon: Crown,          typeLabel: 'GHL Opportunity Won', placeholder: 'GHL opportunity won' },
+  // Field-service conversion actions
+  on_site_visit:      { color: '#6366F1', Icon: MapPin,          typeLabel: 'On-Site Visit',       placeholder: 'On-site visit' },
+  send_quote:         { color: '#06B6D4', Icon: Send,            typeLabel: 'Send Quote',          placeholder: 'Send quote' },
 };
 
 const DIAMOND_TYPES = new Set<string>(Object.keys(DIAMOND_CONFIG));
