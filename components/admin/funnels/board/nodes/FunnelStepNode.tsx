@@ -143,16 +143,16 @@ const HANDLE_BASE =
   '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
 function StepHandles({ readOnly }: { readOnly?: boolean }) {
-  const outset = 14;
+  const outset = 8;
   // Disc sits at the TOP of the frame (no empty padding above) so incoming
   // edges land right on the disc edge instead of floating in empty space.
   const cy = ICON_SIZE / 2;                                  // disc centre Y
   const leftX = FRAME_W / 2 - ICON_SIZE / 2 - outset;
   const rightX = FRAME_W / 2 + ICON_SIZE / 2 + outset;
-  const topY = -outset;                                      // 14px above frame top
-  // Bottom handle sits past the label so the label is centred between disc
-  // bottom and bottom handle (LABEL_GAP padding on each side of the label).
-  const bottomY = ICON_SIZE + LABEL_GAP + LABEL_OFFSET + LABEL_GAP + outset;
+  const topY = -outset;                                      // 8px above frame top
+  // Bottom handle sits just past the label — no extra gap below the label so
+  // the next node's connection sits close to this one.
+  const bottomY = ICON_SIZE + LABEL_GAP + LABEL_OFFSET + outset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -179,13 +179,12 @@ const SHARED_SIDE_HANDLE_Y = 100;
  *  handle clears the label entirely so the connection dot (and edge tip)
  *  doesn't overlap the label text. */
 function PageHandles({ readOnly }: { readOnly?: boolean }) {
-  const outset = 14;
+  const outset = 8;
   const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - outset;
   const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + outset;
-  const topY = -outset;                                          // 14px above page top
-  // Bottom handle sits past the label with LABEL_GAP padding both sides so
-  // the label is centred between page bottom and the bottom-edge dot.
-  const bottomY = PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + LABEL_GAP + outset;
+  const topY = -outset;                                          // 8px above page top
+  // Bottom handle sits just past the label — no extra gap below the label.
+  const bottomY = PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + outset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -245,13 +244,13 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const isPage = step.step_type.startsWith('page_');
   // Bodies sit at the TOP of the frame so vertical edges land directly on
   // the body edge with no whitespace gap above. Labels sit below the body
-  // with equal LABEL_GAP padding above and below so the label is centred
-  // between body bottom and the bottom-edge handle.
-  //   - Disc: disc (88) + gap (8) + label (56) + gap (8) = 160
-  //   - Page: page (200) + gap (8) + label (56) + gap (8) = 272
+  // with LABEL_GAP padding above only — bottom handle sits just past the
+  // label so the next node's connection feels close.
+  //   - Disc: disc (88) + gap (8) + label (56) = 152
+  //   - Page: page (200) + gap (8) + label (56) = 264
   const frameH = isPage
-    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + LABEL_GAP
-    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET + LABEL_GAP;
+    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET
+    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET;
 
   const labelEl = (
     <div className="h-14 flex items-start pt-2 max-w-full px-1 w-full justify-center">
@@ -373,7 +372,6 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             {pageBody}
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
-            <div style={{ height: LABEL_GAP }} aria-hidden />
             {metricsEl}
           </>
         ) : (
@@ -381,7 +379,6 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             {discBody}
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
-            <div style={{ height: LABEL_GAP }} aria-hidden />
             {metricsEl}
           </>
         )}
