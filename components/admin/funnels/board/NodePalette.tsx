@@ -5,14 +5,17 @@ import {
   ChevronDown, ChevronRight, ChevronLeft, Diamond, Clock, Flag, Phone, CalendarDays, Zap,
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingBag, ShoppingCart,
   BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote, PanelLeftOpen,
-  Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
+  Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook, Plus, Upload,
+  Workflow, FileBox, MousePointer2,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStepType, FunnelShapeType } from '@/lib/supabase';
 import {
-  FUNNEL_STEP_DEFAULTS, FUNNEL_PALETTE,
-  type PaletteItem, type PaletteGroup,
+  FUNNEL_STEP_DEFAULTS, FUNNEL_PALETTE_TABS,
+  type PaletteItem, type PaletteGroup, type FunnelPaletteTabId,
 } from '@/lib/types/funnel';
+import { StepIcon } from './nodes/FunnelStepNode';
+import { useToast } from '@/components/ui/Toast';
 
 interface Props {
   onPickStep: (stepType: FunnelStepType) => void;
@@ -21,45 +24,45 @@ interface Props {
 }
 
 const SHAPE_ICONS: Record<string, LucideIcon> = {
-  diamond: Diamond,
-  clock: Clock,
-  flag: Flag,
-  phone: Phone,
-  'calendar-days': CalendarDays,
-  zap: Zap,
-  'mouse-pointer-click': MousePointerClick,
-  'file-text': FileText,
-  'play-circle': PlayCircle,
-  'chevrons-down': ChevronsDown,
-  'shopping-bag': ShoppingBag,
-  'shopping-cart': ShoppingCart,
-  'bell-ring': BellRing,
-  sparkles: Sparkles,
-  'message-square': MessageSquare,
-  mail: Mail,
-  bell: Bell,
-  sheet: Sheet,
-  eye: Eye,
-  timer: Timer,
-  'log-out': LogOut,
-  'log-in': LogIn,
-  'undo-2': Undo2,
-  download: Download,
-  'share-2': Share2,
-  webhook: Webhook,
+  diamond: Diamond, clock: Clock, flag: Flag, phone: Phone,
+  'calendar-days': CalendarDays, zap: Zap,
+  'mouse-pointer-click': MousePointerClick, 'file-text': FileText,
+  'play-circle': PlayCircle, 'chevrons-down': ChevronsDown,
+  'shopping-bag': ShoppingBag, 'shopping-cart': ShoppingCart,
+  'bell-ring': BellRing, sparkles: Sparkles, 'message-square': MessageSquare,
+  mail: Mail, bell: Bell, sheet: Sheet, eye: Eye, timer: Timer,
+  'log-out': LogOut, 'log-in': LogIn, 'undo-2': Undo2,
+  download: Download, 'share-2': Share2, webhook: Webhook,
+};
+
+const TAB_ICONS: Record<FunnelPaletteTabId, LucideIcon> = {
+  sources: MousePointer2,
+  pages: FileBox,
+  actions: Workflow,
+};
+
+/** Open-by-default subgroups per tab — keeps the palette compact on first
+ *  visit while making the most useful tiles immediately reachable. */
+const DEFAULT_OPEN: Record<string, boolean> = {
+  paid: true, search: false, social: false, messaging: true, other: false,
+  offline: false, crm: false, othersites: false, custom_src: false,
+  pages: true, offers: false, custom_pages: false,
+  conversion: true, engagement: true, integration: false, custom_actions: false, custom_act: false,
 };
 
 export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: Props) {
   const [collapsed, setCollapsed] = useState(false);
-  const [open, setOpen] = useState<Record<string, boolean>>({
-    pages: true, traffic: true, offers: true,
-    logic: true, events: false, notifications: false, other: false,
-  });
+  const [activeTab, setActiveTab] = useState<FunnelPaletteTabId>('sources');
+  const [open, setOpen] = useState<Record<string, boolean>>(DEFAULT_OPEN);
+  const toast = useToast();
 
   const handlePick = (item: PaletteItem) => {
     if (item.kind === 'step') onPickStep(item.stepType);
     else if (item.kind === 'shape') onPickShape(item.shapeType as FunnelShapeType);
-    else onPickSticky();
+    else if (item.kind === 'sticky') onPickSticky();
+    else if (item.kind === 'upload') {
+      toast.info('Custom icon upload is coming soon — file picker will be wired in the next pass.');
+    }
   };
 
   if (collapsed) {
@@ -77,12 +80,14 @@ export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: P
     );
   }
 
+  const active = FUNNEL_PALETTE_TABS.find((t) => t.id === activeTab) ?? FUNNEL_PALETTE_TABS[0];
+
   return (
-    <aside className="w-[240px] shrink-0 border-r border-edge bg-white overflow-y-auto">
-      <div className="px-4 py-3 border-b border-edge sticky top-0 bg-white z-10 flex items-start justify-between gap-2">
+    <aside className="w-[320px] shrink-0 border-r border-edge bg-white flex flex-col">
+      <div className="px-4 py-3 border-b border-edge flex items-start justify-between gap-2 shrink-0">
         <div className="min-w-0">
-          <h3 className="text-[13px] font-semibold text-ink">Add to canvas</h3>
-          <p className="text-[11px] text-muted mt-0.5">Click any tile to drop it</p>
+          <h3 className="text-[14px] font-semibold text-ink">Add to canvas</h3>
+          <p className="text-[11px] text-muted mt-0.5">Click or drag any tile to the canvas</p>
         </div>
         <button
           type="button"
@@ -94,8 +99,30 @@ export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: P
         </button>
       </div>
 
-      <div className="p-3 space-y-3">
-        {FUNNEL_PALETTE.map((group) => (
+      <div className="flex border-b border-edge shrink-0">
+        {FUNNEL_PALETTE_TABS.map((t) => {
+          const Icon = TAB_ICONS[t.id];
+          const isActive = t.id === activeTab;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setActiveTab(t.id)}
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10.5px] font-medium transition-colors border-b-2 ${
+                isActive
+                  ? 'border-teal text-teal bg-teal/[0.04]'
+                  : 'border-transparent text-muted hover:text-ink hover:bg-surface'
+              }`}
+            >
+              <Icon size={14} strokeWidth={1.8} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {active.groups.map((group) => (
           <PaletteSection
             key={group.key}
             group={group}
@@ -117,6 +144,7 @@ function PaletteSection({
   onToggle: () => void;
   onPick: (item: PaletteItem) => void;
 }) {
+  const isEmpty = group.items.length === 0;
   return (
     <div>
       <button
@@ -124,11 +152,14 @@ function PaletteSection({
         onClick={onToggle}
         className="w-full flex items-center justify-between text-[10px] uppercase tracking-wider font-semibold text-muted hover:text-ink transition-colors mb-1.5"
       >
-        <span>{group.label}</span>
+        <span className="flex items-center gap-1.5">
+          {group.label}
+          {isEmpty && <span className="text-[9px] text-muted/60 normal-case font-normal tracking-normal">Coming soon</span>}
+        </span>
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
       </button>
-      {open && (
-        <div className="grid grid-cols-2 gap-1.5">
+      {open && !isEmpty && (
+        <div className="grid grid-cols-3 gap-2">
           {group.items.map((item, i) => (
             <PaletteTile key={i} item={item} onClick={() => onPick(item)} />
           ))}
@@ -151,6 +182,24 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
     e.dataTransfer.effectAllowed = 'copy';
   };
 
+  if (item.kind === 'upload') {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="group flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border border-dashed border-edge bg-white hover:border-teal/60 hover:bg-teal/[0.03] transition-all"
+        title="Upload your own icon"
+      >
+        <span className="w-11 h-11 flex items-center justify-center rounded-full bg-surface text-muted group-hover:text-teal group-hover:bg-teal/10 transition-colors">
+          <Plus size={20} strokeWidth={2} />
+        </span>
+        <span className="text-[10px] text-ink/80 text-center leading-tight px-0.5 flex items-center gap-0.5">
+          <Upload size={9} /> Upload
+        </span>
+      </button>
+    );
+  }
+
   if (item.kind === 'step') {
     const def = FUNNEL_STEP_DEFAULTS[item.stepType];
     const isPage = item.stepType.startsWith('page_');
@@ -160,22 +209,27 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
         draggable
         onDragStart={handleDragStart}
         onClick={onClick}
-        className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+        className="group flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
         title={`Drag to canvas or click to add: ${def.label}`}
       >
         {isPage ? (
-          <span className="w-9 h-11 rounded-sm bg-white border border-edge shrink-0 overflow-hidden flex flex-col pointer-events-none">
+          <span className="w-10 h-12 rounded-sm bg-white border border-edge shrink-0 overflow-hidden flex flex-col pointer-events-none">
             <span className="h-1.5 bg-surface border-b border-edge/60" />
             <span className="flex-1 flex flex-col items-center justify-center gap-[2px] px-1" style={{ backgroundColor: `${def.tint}10` }}>
-              <span className="h-0.5 w-5 rounded-full" style={{ backgroundColor: def.tint }} />
-              <span className="h-0.5 w-4 rounded-full bg-ink/20" />
-              <span className="h-1 w-5 rounded-sm mt-0.5" style={{ backgroundColor: def.tint }} />
+              <span className="h-0.5 w-6 rounded-full" style={{ backgroundColor: def.tint }} />
+              <span className="h-0.5 w-5 rounded-full bg-ink/20" />
+              <span className="h-1 w-6 rounded-sm mt-0.5" style={{ backgroundColor: def.tint }} />
             </span>
           </span>
         ) : (
-          <span className="w-7 h-7 rounded-full shrink-0 pointer-events-none" style={{ backgroundColor: def.tint }} />
+          <span
+            className="w-11 h-11 rounded-full shrink-0 pointer-events-none flex items-center justify-center"
+            style={{ backgroundColor: def.tint }}
+          >
+            <StepIcon slug={def.icon} size={22} />
+          </span>
         )}
-        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none">
+        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none px-0.5">
           {def.label}
         </span>
       </button>
@@ -190,13 +244,13 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
         draggable
         onDragStart={handleDragStart}
         onClick={onClick}
-        className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+        className="group flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
         title={`Drag to canvas or click to add: ${item.label}`}
       >
-        <span className="w-9 h-9 flex items-center justify-center text-ink/70 bg-surface rounded-md pointer-events-none">
-          <Icon size={18} strokeWidth={1.7} />
+        <span className="w-11 h-11 flex items-center justify-center text-ink/70 bg-surface rounded-md pointer-events-none">
+          <Icon size={22} strokeWidth={1.7} />
         </span>
-        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none">
+        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none px-0.5">
           {item.label}
         </span>
       </button>
@@ -210,11 +264,11 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
       draggable
       onDragStart={handleDragStart}
       onClick={onClick}
-      className="group flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+      className="group flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
       title="Drag to canvas or click to add"
     >
-      <span className="w-9 h-9 flex items-center justify-center rounded-sm bg-sticky-yellow text-ink/70 pointer-events-none">
-        <StickyNote size={16} strokeWidth={1.7} />
+      <span className="w-11 h-11 flex items-center justify-center rounded-sm bg-sticky-yellow text-ink/70 pointer-events-none">
+        <StickyNote size={20} strokeWidth={1.7} />
       </span>
       <span className="text-[10px] text-ink/80 text-center leading-tight pointer-events-none">
         Sticky Note

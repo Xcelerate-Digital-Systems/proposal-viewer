@@ -15,6 +15,8 @@ import LabeledEdge from '@/components/admin/feedback/board/edges/LabeledEdge';
 import EdgeStyleEditor from '@/components/admin/feedback/board/EdgeStyleEditor';
 import NodePalette, { PALETTE_DRAG_MIME } from './NodePalette';
 import StepSideDrawer from './StepSideDrawer';
+import ShapeSideDrawer from './ShapeSideDrawer';
+import NoteSideDrawer from './NoteSideDrawer';
 import BoardSummary from './BoardSummary';
 import EdgeSplitEditor from './EdgeSplitEditor';
 import ExportMenu from './ExportMenu';
@@ -227,6 +229,14 @@ function FunnelBoardInner() {
     setGuides({ horizontals: [], verticals: [] });
   }, []);
 
+  /* ─── Click → open the matching side drawer ─── */
+
+  const onNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
+    if (node.id.startsWith('step-'))       ctx.selectStep(node.id.slice(5));
+    else if (node.id.startsWith('shape-')) ctx.selectShape(node.id.slice(6));
+    else if (node.id.startsWith('note-'))  ctx.selectNote(node.id.slice(5));
+  }, [ctx]);
+
   /* ─── Keyboard: Cmd-Z/Y undo+redo, Cmd-D duplicate ─── */
 
   useEffect(() => {
@@ -263,6 +273,10 @@ function FunnelBoardInner() {
 
   const selectedStep =
     ctx.steps.find((s) => s.id === ctx.selectedStepId) || null;
+  const selectedShape =
+    ctx.shapes.find((s) => s.id === ctx.selectedShapeId) || null;
+  const selectedNote =
+    ctx.boardNotes.find((n) => n.id === ctx.selectedNoteId) || null;
 
   const selectedDbEdge = board.selectedEdge
     ? ctx.boardEdges.find((e) => e.id === board.selectedEdge!.id) || null
@@ -302,6 +316,7 @@ function FunnelBoardInner() {
           onEdgeClick={board.onEdgeClick}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
+          onNodeClick={onNodeClick}
           onNodeContextMenu={onNodeContextMenu}
           onPaneContextMenu={onPaneContextMenu}
           nodeTypes={nodeTypes}
@@ -326,7 +341,7 @@ function FunnelBoardInner() {
           selectionKeyCode="Shift"
           onPaneClick={() => {
             if (board.selectedEdge) board.closeEdgeEditor();
-            if (ctx.selectedStepId) ctx.selectStep(null);
+            ctx.clearSelection();
           }}
           onEdgesDelete={(deleted) => deleted.forEach((e) => board.handleDeleteEdge(e.id))}
           onNodesDelete={(deleted) => {
@@ -452,6 +467,24 @@ function FunnelBoardInner() {
                 ctx.selectStep(contextMenu.nodeId.slice(5));
               }
             } : undefined}
+          />
+        )}
+
+        {selectedShape && (
+          <ShapeSideDrawer
+            shape={selectedShape}
+            onUpdate={(patch) => ctx.updateShape(selectedShape.id, patch)}
+            onDelete={() => { ctx.deleteShape(selectedShape.id); ctx.selectShape(null); }}
+            onClose={() => ctx.selectShape(null)}
+          />
+        )}
+
+        {selectedNote && (
+          <NoteSideDrawer
+            note={selectedNote}
+            onUpdate={(patch) => ctx.updateNote(selectedNote.id, patch)}
+            onDelete={() => { ctx.deleteNote(selectedNote.id); ctx.selectNote(null); }}
+            onClose={() => ctx.selectNote(null)}
           />
         )}
 

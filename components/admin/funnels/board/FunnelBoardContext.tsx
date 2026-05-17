@@ -38,9 +38,15 @@ interface ContextValue {
   setFunnel: (updater: (prev: Funnel | null) => Funnel | null) => void;
   loading: boolean;
 
-  // Selection (drives the side drawer)
+  // Selection (drives the side drawer). Mutually exclusive — selecting one
+  // clears the others so only a single right-hand editor is ever visible.
   selectedStepId: string | null;
   selectStep: (id: string | null) => void;
+  selectedShapeId: string | null;
+  selectShape: (id: string | null) => void;
+  selectedNoteId: string | null;
+  selectNote: (id: string | null) => void;
+  clearSelection: () => void;
 
   // Display toggles
   showMetrics: boolean;
@@ -110,9 +116,25 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const [shapes, setShapes] = useState<FunnelBoardShape[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [showMetrics, setShowMetricsState] = useState(true);
 
-  const selectStep = useCallback((id: string | null) => setSelectedStepId(id), []);
+  const selectStep = useCallback((id: string | null) => {
+    setSelectedStepId(id);
+    if (id) { setSelectedShapeId(null); setSelectedNoteId(null); }
+  }, []);
+  const selectShape = useCallback((id: string | null) => {
+    setSelectedShapeId(id);
+    if (id) { setSelectedStepId(null); setSelectedNoteId(null); }
+  }, []);
+  const selectNote = useCallback((id: string | null) => {
+    setSelectedNoteId(id);
+    if (id) { setSelectedStepId(null); setSelectedShapeId(null); }
+  }, []);
+  const clearSelection = useCallback(() => {
+    setSelectedStepId(null); setSelectedShapeId(null); setSelectedNoteId(null);
+  }, []);
   const setShowMetrics = useCallback((v: boolean) => setShowMetricsState(v), []);
 
   // ─── Undo/redo facility ─────────────────────────────────────────
@@ -443,6 +465,9 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       funnelId, companyId, userId,
       funnel, setFunnel, loading,
       selectedStepId, selectStep,
+      selectedShapeId, selectShape,
+      selectedNoteId, selectNote,
+      clearSelection,
       showMetrics, setShowMetrics,
       steps, createStep, updateStep, deleteStep,
       forecast,
@@ -454,6 +479,9 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     [
       funnelId, companyId, userId, funnel, setFunnel, loading,
       selectedStepId, selectStep,
+      selectedShapeId, selectShape,
+      selectedNoteId, selectNote,
+      clearSelection,
       showMetrics, setShowMetrics,
       steps, createStep, updateStep, deleteStep, forecast,
       undo, redo, canUndo, canRedo,

@@ -309,17 +309,17 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   );
 
   // Funnelytics-style "People" card. Shows whenever the Numbers Layer is on
-  // — even with zero data, where it renders as "n/a" to surface that the
-  // node isn't receiving traffic yet (tutorial cue + visual anchor).
+  // — renders "n/a" with no data so the card stays as a visual anchor.
+  // Sentence-case "People" + tight padding matches their subtle pill treatment.
   const peopleLabel = visitors > 0 ? formatCount(visitors) : 'n/a';
   const metricsEl = showMetrics && (
-    <div className="mt-2 px-3 py-1.5 rounded-md bg-white border border-edge shadow-sm text-center leading-tight whitespace-nowrap min-w-[64px]">
-      <div className="text-[9px] uppercase tracking-wider text-muted">People</div>
-      <div className={`text-[13px] font-semibold ${visitors > 0 ? 'text-ink' : 'text-muted'}`}>
+    <div className="mt-2 px-2.5 py-1 rounded-[5px] bg-white border border-edge/70 shadow-[0_1px_2px_rgba(20,20,40,0.06)] text-center leading-tight whitespace-nowrap min-w-[58px]">
+      <div className="text-[8.5px] text-muted/80 font-normal">People</div>
+      <div className={`text-[12px] font-semibold ${visitors > 0 ? 'text-ink' : 'text-muted'}`}>
         {peopleLabel}
       </div>
       {(conversions > 0 || revenue > 0) && (
-        <div className="mt-0.5 flex items-center justify-center gap-1.5 text-[10px]">
+        <div className="mt-0.5 flex items-center justify-center gap-1.5 text-[9.5px]">
           {conversions > 0 && (
             <span className="text-ink/70">{formatCount(conversions)} conv</span>
           )}
