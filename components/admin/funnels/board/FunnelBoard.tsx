@@ -43,12 +43,18 @@ const defaultEdgeOptions = {
 
 const ALIGNMENT_TOLERANCE = 6; // flow-units; soft snap range while dragging
 
-/** Visual centre of a node — used for alignment. Step nodes have their
- *  visual centre at frame-offset (120, 100); diamonds/notes/cards use the
- *  geometric centre of their measured frame. */
+/** Visual centre of a node — used for alignment. Pages have their body
+ *  centred at frame-Y=100 (200px page mockup, top of frame); disc step
+ *  nodes are 88px and sit at the top of the frame so their centre is Y=44.
+ *  Everything else uses the geometric centre of the measured frame. */
 function visualCentre(n: Node): { cx: number; cy: number } {
   if (n.type === 'funnelStep') {
-    return { cx: n.position.x + 120, cy: n.position.y + 100 };
+    const step = (n.data as { step?: { step_type?: string } } | undefined)?.step;
+    const isPage = !!step?.step_type?.startsWith('page_');
+    return {
+      cx: n.position.x + 120,
+      cy: n.position.y + (isPage ? 100 : 44),
+    };
   }
   // RF v12 exposes measured size at n.measured; fall back to width/height
   // if unset (immediately after mount).
