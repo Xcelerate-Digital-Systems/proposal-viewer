@@ -258,7 +258,8 @@ export type FunnelShapeType =
   | 'google_sheet' | 'webhook'
   | 'form_completed' | 'schedule_meeting' | 'deal_won'
   | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
-  | 'on_site_visit' | 'send_quote';
+  | 'on_site_visit' | 'send_quote'
+  | 'send_google_review' | 'add_to_referral_program';
 
 export type FunnelBoardShape = {
   id: string;
@@ -457,7 +458,8 @@ export type FunnelShapePaletteId =
   | 'google_sheet' | 'webhook'
   | 'form_completed' | 'schedule_meeting' | 'deal_won'
   | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
-  | 'on_site_visit' | 'send_quote';
+  | 'on_site_visit' | 'send_quote'
+  | 'send_google_review' | 'add_to_referral_program';
 
 export type PaletteItem =
   | { kind: 'step'; stepType: FunnelStepType }
@@ -617,6 +619,8 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
           { kind: 'shape', shapeType: 'ghl_order',           label: 'GHL Order',            iconName: 'shopping-bag' },
           { kind: 'shape', shapeType: 'ghl_opportunity',     label: 'GHL Opportunity',      iconName: 'target' },
           { kind: 'shape', shapeType: 'ghl_opportunity_won', label: 'GHL Opportunity Won',  iconName: 'crown' },
+          { kind: 'shape', shapeType: 'send_google_review',  label: 'Send Google Review',   iconName: 'star' },
+          { kind: 'shape', shapeType: 'add_to_referral_program', label: 'Add to Referral Program', iconName: 'gift' },
         ],
       },
       {

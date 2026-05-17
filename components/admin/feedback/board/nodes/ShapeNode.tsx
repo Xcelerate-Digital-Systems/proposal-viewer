@@ -9,6 +9,7 @@ import {
   MessageSquare, Mail, Bell, Sheet,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
   ClipboardCheck, CalendarCheck, Trophy, Target, Crown, MapPin, Send,
+  Star, Gift, GitBranch,
   type LucideIcon,
 } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
@@ -347,13 +348,22 @@ export function serializeDecisionContent(content: FeedbackDecisionContent): stri
   return JSON.stringify(content);
 }
 
-// Sized so the full decision node (diamond + side pill columns + handle dots)
-// fits inside the shared 240×240 NODE_FRAME. 112px diamond + 64px columns on
-// each side = 240px total; rows match so the whole thing stays square.
+// Compact decision node — tiny diamond + GitBranch icon, question text as a
+// label below, 4 branch pills on each side. Matches the EventDiamond visual
+// language so decision reads as just another flow shape.
+const DECISION_DIAMOND_BOX = 42;
+const DECISION_PILL_SLOT = 80;
+const DECISION_LABEL_GAP = 8;
+const DECISION_LABEL_BELOW = 22;
+const DECISION_NODE_W = DECISION_PILL_SLOT * 2 + DECISION_DIAMOND_BOX;
+const DECISION_NODE_H = DECISION_PILL_SLOT * 2 + DECISION_DIAMOND_BOX + DECISION_LABEL_GAP + DECISION_LABEL_BELOW;
+// Legacy constants retained so any other place in the file that still
+// references them keeps compiling — only the JSX render path was rewritten.
 const DIAMOND = 112;
 const DIAMOND_PAD = 6;
 const DIAMOND_BOX = DIAMOND + DIAMOND_PAD * 2;
 const DECISION_SIDE_SLOT = (NODE_FRAME_W - DIAMOND_BOX) / 2;
+void DIAMOND; void DIAMOND_PAD; void DIAMOND_BOX; void DECISION_SIDE_SLOT;
 
 /** Map our per-branch side to the React Flow Position enum for edge routing. */
 function rfPosition(side: FeedbackDecisionBranchSide): Position {
@@ -388,8 +398,9 @@ function DecisionShape({
     [shape.id, onUpdateContent]
   );
 
-  const strokeColor = selected ? '#017C87' : '#2B2B2B';
-  const strokeWidth = selected ? 2.6 : 2;
+  // Retained for downstream compatibility — the compact decision node now
+  // renders an SVG polygon instead of using these stroke/point constants.
+  void selected;
   const diamondPoints = (() => {
     const cx = DIAMOND_PAD + DIAMOND / 2;
     const top = DIAMOND_PAD;
@@ -532,89 +543,95 @@ function DecisionShape({
     );
   };
 
-  // Every side follows the same order outward from the diamond:
-  //   diamond corner → pill → handle dot
+  // Compact layout: tiny diamond + GitBranch icon, 4 branch pills around
+  // the diamond, question text rendered as a label below — matches the
+  // EventDiamond visual language.
+  const diamondSize = DECISION_DIAMOND_BOX;
   return (
     <div
-      className={`relative grid ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`}
-      style={{
-        width: NODE_FRAME_W,
-        height: NODE_FRAME_H,
-        gridTemplateColumns: `${DECISION_SIDE_SLOT}px ${DIAMOND_BOX}px ${DECISION_SIDE_SLOT}px`,
-        gridTemplateRows: `${DECISION_SIDE_SLOT}px ${DIAMOND_BOX}px ${DECISION_SIDE_SLOT}px`,
-      }}
+      className={`relative ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`}
+      style={{ width: DECISION_NODE_W, height: DECISION_NODE_H }}
     >
-      {/* Row 1: top — handle sits above pill (which sits above the diamond) */}
-      <div />
-      <div className="flex flex-col items-center justify-end gap-1 pb-1">
-        {renderHandle('top')}
-        {renderPill('top')}
-      </div>
-      <div />
-
-      {/* Row 2: left — handle | pill | diamond | pill | handle — right */}
-      <div className="flex items-center justify-end gap-1 pr-1">
-        {renderHandle('left')}
-        {renderPill('left')}
-      </div>
-
-      <div className="relative" style={{ width: DIAMOND_BOX, height: DIAMOND_BOX }}>
-        <svg
-          width={DIAMOND_BOX}
-          height={DIAMOND_BOX}
-          viewBox={`0 0 ${DIAMOND_BOX} ${DIAMOND_BOX}`}
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-        >
-          <polygon
-            points={diamondPoints}
-            fill="#FDE68A"
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            strokeLinejoin="round"
-          />
-        </svg>
-        <div
-          className="absolute inset-0 flex items-center justify-center px-4 py-4 text-center"
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            if (!readOnly) setEditingQuestion(true);
-          }}
-        >
-          {editingQuestion && !readOnly ? (
-            <textarea
-              autoFocus
-              value={questionDraft}
-              onChange={(e) => setQuestionDraft(e.target.value)}
-              onBlur={commitQuestion}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') { setQuestionDraft(content.question); setEditingQuestion(false); }
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitQuestion(); }
-              }}
-              className="w-full bg-transparent border-none outline-none resize-none text-ink text-center leading-tight"
-              style={{ fontSize: 13 }}
-              rows={3}
-            />
-          ) : (
-            <span className="text-ink leading-tight" style={{ fontSize: 13 }}>
-              {content.question || (!readOnly && <span className="opacity-40">Double-click</span>)}
-            </span>
-          )}
+      <div
+        className="grid"
+        style={{
+          width: DECISION_NODE_W,
+          height: DECISION_PILL_SLOT * 2 + diamondSize,
+          gridTemplateColumns: `${DECISION_PILL_SLOT}px ${diamondSize}px ${DECISION_PILL_SLOT}px`,
+          gridTemplateRows: `${DECISION_PILL_SLOT}px ${diamondSize}px ${DECISION_PILL_SLOT}px`,
+        }}
+      >
+        <div />
+        <div className="flex flex-col items-center justify-end gap-1 pb-1">
+          {renderHandle('top')}
+          {renderPill('top')}
         </div>
+        <div />
+
+        <div className="flex items-center justify-end gap-1 pr-1">
+          {renderHandle('left')}
+          {renderPill('left')}
+        </div>
+
+        <div
+          className="relative"
+          style={{ width: diamondSize, height: diamondSize }}
+          onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditingQuestion(true); }}
+        >
+          <svg width={diamondSize} height={diamondSize} className="absolute inset-0 overflow-visible" aria-hidden="true">
+            <polygon
+              points={`${diamondSize / 2},0 ${diamondSize},${diamondSize / 2} ${diamondSize / 2},${diamondSize} 0,${diamondSize / 2}`}
+              fill="#EAB308"
+              stroke={selected ? '#017C87' : 'none'}
+              strokeWidth={selected ? 2 : 0}
+              style={{ filter: 'drop-shadow(0 3px 8px rgba(20,20,40,0.18))' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
+            <GitBranch size={16} strokeWidth={2} />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 pl-1">
+          {renderPill('right')}
+          {renderHandle('right')}
+        </div>
+
+        <div />
+        <div className="flex flex-col items-center justify-start gap-1 pt-1">
+          {renderPill('bottom')}
+          {renderHandle('bottom')}
+        </div>
+        <div />
       </div>
 
-      <div className="flex items-center gap-1 pl-1">
-        {renderPill('right')}
-        {renderHandle('right')}
+      <div style={{ height: DECISION_LABEL_GAP }} aria-hidden />
+      <div
+        className="flex items-start justify-center px-1"
+        style={{ height: DECISION_LABEL_BELOW }}
+        onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditingQuestion(true); }}
+      >
+        {editingQuestion && !readOnly ? (
+          <input
+            type="text"
+            autoFocus
+            value={questionDraft}
+            onChange={(e) => setQuestionDraft(e.target.value)}
+            onBlur={commitQuestion}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') { setQuestionDraft(content.question); setEditingQuestion(false); }
+              if (e.key === 'Enter') { e.preventDefault(); commitQuestion(); }
+            }}
+            className="px-2 py-0.5 rounded border border-edge bg-white text-[11px] text-ink text-center outline-none focus:border-teal"
+            style={{ width: 180 }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-nowrap truncate" style={{ maxWidth: 200 }}>
+            {content.question || (!readOnly && <span className="opacity-40">Decision?</span>)}
+          </span>
+        )}
       </div>
-
-      {/* Row 3: bottom — pill below diamond, handle below pill */}
-      <div />
-      <div className="flex flex-col items-center justify-start gap-1 pt-1">
-        {renderPill('bottom')}
-        {renderHandle('bottom')}
-      </div>
-      <div />
     </div>
   );
 }
@@ -658,7 +675,9 @@ type DiamondType =
   // New GHL integration actions
   | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
   // Field-service conversion actions
-  | 'on_site_visit' | 'send_quote';
+  | 'on_site_visit' | 'send_quote'
+  // GHL post-sale actions
+  | 'send_google_review' | 'add_to_referral_program';
 
 interface DiamondConfig {
   color: string;
@@ -710,6 +729,9 @@ const DIAMOND_CONFIG: Record<DiamondType, DiamondConfig> = {
   // Field-service conversion actions
   on_site_visit:      { color: '#6366F1', Icon: MapPin,          typeLabel: 'On-Site Visit',       placeholder: 'On-site visit' },
   send_quote:         { color: '#06B6D4', Icon: Send,            typeLabel: 'Send Quote',          placeholder: 'Send quote' },
+  // GHL post-sale actions
+  send_google_review:      { color: '#F59E0B', Icon: Star, typeLabel: 'Send Google Review',      placeholder: 'Send Google review' },
+  add_to_referral_program: { color: '#EC4899', Icon: Gift, typeLabel: 'Add to Referral Program', placeholder: 'Add to referral program' },
 };
 
 const DIAMOND_TYPES = new Set<string>(Object.keys(DIAMOND_CONFIG));

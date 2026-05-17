@@ -33,6 +33,7 @@ const SHAPE_TYPE_LABELS: Partial<Record<FunnelShapeType, string>> = {
   ghl_appointment: 'GHL Appointment', ghl_order: 'GHL Order',
   ghl_opportunity: 'GHL Opportunity', ghl_opportunity_won: 'GHL Opportunity Won',
   on_site_visit: 'On-Site Visit', send_quote: 'Send Quote',
+  send_google_review: 'Send Google Review', add_to_referral_program: 'Add to Referral Program',
 };
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 6];

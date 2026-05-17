@@ -8,6 +8,7 @@ import {
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook, Plus, Upload,
   Workflow, FileBox, MousePointer2,
   ClipboardCheck, CalendarCheck, Trophy, Target, Crown, MapPin, Send,
+  Star, Gift,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStepType, FunnelShapeType } from '@/lib/supabase';
@@ -37,6 +38,7 @@ const SHAPE_ICONS: Record<string, LucideIcon> = {
   'clipboard-check': ClipboardCheck, 'calendar-check': CalendarCheck,
   trophy: Trophy, target: Target, crown: Crown,
   'map-pin': MapPin, send: Send,
+  star: Star, gift: Gift,
 };
 
 /** Tint per shape type — kept in lockstep with `DIAMOND_CONFIG` in
@@ -47,6 +49,7 @@ const SHAPE_TINTS: Record<string, string> = {
   purchase: '#10B981', add_to_cart: '#F97316', subscribe: '#EC4899', goal: '#EAB308',
   form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308',
   on_site_visit: '#6366F1', send_quote: '#06B6D4',
+  send_google_review: '#F59E0B', add_to_referral_program: '#EC4899',
   // Engagement
   page_view: '#0EA5E9', button_click: '#3B82F6', form_submit: '#06B6D4',
   video_play: '#EF4444', scroll_depth: '#6366F1', time_on_page: '#6366F1', exit_intent: '#F43F5E',
