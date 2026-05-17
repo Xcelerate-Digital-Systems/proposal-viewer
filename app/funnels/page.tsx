@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch } from 'lucide-react';
+import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch, Bookmark } from 'lucide-react';
 import { supabase, type Funnel } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -65,6 +65,17 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
     router.push(`/funnels/${created.id}/board`);
   };
 
+  const createFromCustomTemplate = async (template: Funnel) => {
+    const created = await duplicateFunnelAsScenario({
+      source: template,
+      companyId, userId,
+      scenarioName: template.name.replace(/\s*\(Template\)\s*$/, ''),
+      parentFunnelIdOverride: null,
+    });
+    if (!created) { toast.error('Failed to create funnel'); return; }
+    router.push(`/funnels/${created.id}/board`);
+  };
+
   const duplicateAsScenario = async (source: Funnel) => {
     const created = await duplicateFunnelAsScenario({ source, companyId, userId });
     if (!created) { toast.error('Failed to duplicate funnel'); return; }
@@ -85,12 +96,15 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
     toast.success('Share link copied');
   };
 
+  // Hide custom templates from the main list — they live in the gallery.
+  const liveFunnels = funnels.filter((f) => !f.is_template);
+  const customTemplates = funnels.filter((f) => f.is_template);
   const filtered = query
-    ? funnels.filter((f) =>
+    ? liveFunnels.filter((f) =>
         (f.name?.toLowerCase() || '').includes(query.toLowerCase()) ||
         (f.description?.toLowerCase() || '').includes(query.toLowerCase())
       )
-    : funnels;
+    : liveFunnels;
 
   return (
     <div className="flex flex-col h-full">
@@ -99,7 +113,8 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight text-ink">Funnels</h1>
             <p className="text-sm text-muted mt-1">
-              {funnels.length} funnel{funnels.length !== 1 ? 's' : ''}
+              {liveFunnels.length} funnel{liveFunnels.length !== 1 ? 's' : ''}
+              {customTemplates.length > 0 && ` · ${customTemplates.length} template${customTemplates.length !== 1 ? 's' : ''}`}
             </p>
           </div>
 
@@ -131,6 +146,8 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
             onClose={() => setShowCreate(false)}
             onCreate={create}
             onCreateFromTemplate={createFromTemplate}
+            customTemplates={customTemplates}
+            onCreateFromCustomTemplate={createFromCustomTemplate}
           />
         )}
 
@@ -235,11 +252,13 @@ const TEMPLATE_TABS: { key: TemplateCategory; label: string }[] = [
 ];
 
 function CreateFunnelModal({
-  onClose, onCreate, onCreateFromTemplate,
+  onClose, onCreate, onCreateFromTemplate, customTemplates, onCreateFromCustomTemplate,
 }: {
   onClose: () => void;
   onCreate: (name: string, description: string) => Promise<void>;
   onCreateFromTemplate: (template: FunnelTemplate) => Promise<void>;
+  customTemplates: Funnel[];
+  onCreateFromCustomTemplate: (template: Funnel) => Promise<void>;
 }) {
   const [step, setStep] = useState<'pick' | 'blank'>('pick');
   const [tab, setTab] = useState<TemplateCategory>('all');
@@ -248,6 +267,10 @@ function CreateFunnelModal({
   const [submitting, setSubmitting] = useState(false);
 
   const templates = tab === 'all' ? FUNNEL_TEMPLATES : FUNNEL_TEMPLATES.filter((t) => t.category === tab);
+  // Custom templates ignore the category tabs — they're always shown when the
+  // user is on "All". Easiest model and lines up with how the user thinks of
+  // their own templates (uncategorised personal library).
+  const showCustomTemplates = tab === 'all' && customTemplates.length > 0;
 
   const submitBlank = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,6 +283,12 @@ function CreateFunnelModal({
     if (submitting) return;
     setSubmitting(true);
     await onCreateFromTemplate(t);
+  };
+
+  const pickCustomTemplate = async (t: Funnel) => {
+    if (submitting) return;
+    setSubmitting(true);
+    await onCreateFromCustomTemplate(t);
   };
 
   return (
@@ -300,37 +329,75 @@ function CreateFunnelModal({
               ))}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <button
-                  onClick={() => setStep('blank')}
-                  disabled={submitting}
-                  className="text-left bg-white rounded-xl border-2 border-dashed border-edge p-4 hover:border-teal hover:bg-teal/5 transition-colors disabled:opacity-50"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-surface flex items-center justify-center mb-3">
-                    <Plus size={16} className="text-muted" />
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {showCustomTemplates && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2 flex items-center gap-1.5">
+                    <Bookmark size={11} className="text-teal" />
+                    My templates
                   </div>
-                  <div className="text-[13px] font-semibold text-ink">Blank canvas</div>
-                  <div className="text-[11px] text-muted mt-0.5">Start from an empty board.</div>
-                </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {customTemplates.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => pickCustomTemplate(t)}
+                        disabled={submitting}
+                        className="text-left bg-white rounded-xl border border-edge p-4 hover:border-teal/50 hover:shadow-md transition-all disabled:opacity-50"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center mb-3">
+                          <Bookmark size={16} className="text-teal" />
+                        </div>
+                        <div className="text-[13px] font-semibold text-ink truncate">{t.name}</div>
+                        {t.description && (
+                          <div className="text-[11px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
+                        )}
+                        <div className="text-[10px] text-faint mt-2">
+                          Saved {new Date(t.created_at).toLocaleDateString()}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                {templates.map((t) => (
+              <div>
+                {showCustomTemplates && (
+                  <div className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2 flex items-center gap-1.5">
+                    <FileText size={11} />
+                    Built-in templates
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <button
-                    key={t.slug}
-                    onClick={() => pickTemplate(t)}
+                    onClick={() => setStep('blank')}
                     disabled={submitting}
-                    className="text-left bg-white rounded-xl border border-edge p-4 hover:border-teal/50 hover:shadow-md transition-all disabled:opacity-50"
+                    className="text-left bg-white rounded-xl border-2 border-dashed border-edge p-4 hover:border-teal hover:bg-teal/5 transition-colors disabled:opacity-50"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center mb-3">
-                      <FileText size={16} className="text-teal" />
+                    <div className="w-9 h-9 rounded-lg bg-surface flex items-center justify-center mb-3">
+                      <Plus size={16} className="text-muted" />
                     </div>
-                    <div className="text-[13px] font-semibold text-ink">{t.name}</div>
-                    <div className="text-[11px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
-                    <div className="text-[10px] text-faint mt-2">
-                      {t.steps.length} steps · {t.edges.length} connections
-                    </div>
+                    <div className="text-[13px] font-semibold text-ink">Blank canvas</div>
+                    <div className="text-[11px] text-muted mt-0.5">Start from an empty board.</div>
                   </button>
-                ))}
+
+                  {templates.map((t) => (
+                    <button
+                      key={t.slug}
+                      onClick={() => pickTemplate(t)}
+                      disabled={submitting}
+                      className="text-left bg-white rounded-xl border border-edge p-4 hover:border-teal/50 hover:shadow-md transition-all disabled:opacity-50"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center mb-3">
+                        <FileText size={16} className="text-teal" />
+                      </div>
+                      <div className="text-[13px] font-semibold text-ink">{t.name}</div>
+                      <div className="text-[11px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
+                      <div className="text-[10px] text-faint mt-2">
+                        {t.steps.length} steps · {t.edges.length} connections
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </>

@@ -327,8 +327,10 @@ function FunnelBoardInner() {
           fitViewOptions={{ padding: 0.2 }}
           minZoom={0.1}
           maxZoom={2}
-          snapToGrid
-          snapGrid={[20, 20]}
+          // Free-form positioning: dragging nodes moves them per-pixel rather
+          // than snapping to a 20px grid. The alignment-guides overlay still
+          // gives soft snap hints when a node's centre aligns with another's,
+          // so users can still line nodes up precisely without jumpy movement.
           style={{ background: 'transparent' }}
           deleteKeyCode={['Backspace', 'Delete']}
           // Selection model (Funnelytics/Figma style): left-click drag on empty

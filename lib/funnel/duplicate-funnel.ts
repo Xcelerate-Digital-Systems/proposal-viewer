@@ -15,8 +15,16 @@ export async function duplicateFunnelAsScenario(opts: {
   companyId: string;
   userId: string | null;
   scenarioName?: string;
+  /** Mark the clone as a reusable template (hidden from the main funnels list,
+   *  surfaced in the "Use template" gallery). When true, parent_funnel_id is
+   *  forced to null so templates aren't grouped with scenario families. */
+  asTemplate?: boolean;
+  /** Override the parent link entirely — pass `null` to detach (useful when
+   *  cloning a template into a fresh funnel). When omitted, default scenario
+   *  behaviour applies (parent_funnel_id = source.parent_funnel_id ?? source.id). */
+  parentFunnelIdOverride?: string | null;
 }): Promise<{ id: string; share_token: string } | null> {
-  const { source, companyId, userId, scenarioName } = opts;
+  const { source, companyId, userId, scenarioName, asTemplate, parentFunnelIdOverride } = opts;
 
   // 1. Load all of the source's child rows in parallel.
   const [stepsRes, edgesRes, notesRes, shapesRes] = await Promise.all([
@@ -35,11 +43,16 @@ export async function duplicateFunnelAsScenario(opts: {
     .from('funnels')
     .insert({
       company_id: companyId,
-      name: scenarioName || `${source.name} — Scenario`,
+      name: scenarioName || (asTemplate ? source.name : `${source.name} — Scenario`),
       description: source.description,
       currency: source.currency,
       forecast_period: source.forecast_period,
-      parent_funnel_id: source.parent_funnel_id ?? source.id,
+      parent_funnel_id: asTemplate
+        ? null
+        : parentFunnelIdOverride !== undefined
+          ? parentFunnelIdOverride
+          : source.parent_funnel_id ?? source.id,
+      is_template: !!asTemplate,
       created_by: userId,
     })
     .select().single();

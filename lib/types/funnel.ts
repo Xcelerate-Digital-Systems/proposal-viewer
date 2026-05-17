@@ -158,6 +158,9 @@ export type Funnel = {
   forecast_period: FunnelForecastPeriod;
   /** When set, this funnel was created as a "scenario" clone of another. */
   parent_funnel_id: string | null;
+  /** Marks this funnel as a reusable template — hidden from the main funnels
+   *  list and shown in the "Use template" gallery on the new-funnel flow. */
+  is_template: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;

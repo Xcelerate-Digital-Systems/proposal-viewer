@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Copy, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, BookmarkPlus, Bookmark } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { FunnelBoard } from '@/components/admin/funnels/board';
 import { useFunnelBoardContext } from '@/components/admin/funnels/board/FunnelBoardContext';
@@ -10,6 +10,7 @@ import FunnelSettingsMenu from '@/components/admin/funnels/board/FunnelSettingsM
 import ScenarioSwitcher from '@/components/admin/funnels/board/ScenarioSwitcher';
 import { useToast } from '@/components/ui/Toast';
 import { supabase, type Funnel } from '@/lib/supabase';
+import { duplicateFunnelAsScenario } from '@/lib/funnel/duplicate-funnel';
 
 export default function FunnelBoardPage({ params }: { params: { id: string } }) {
   return (
@@ -51,6 +52,19 @@ function BoardContent({ funnelId }: { funnelId: string }) {
     const url = `${window.location.origin}/funnel/${funnel.share_token}`;
     await navigator.clipboard.writeText(url);
     toast.success('Share link copied');
+  };
+
+  const saveAsTemplate = async () => {
+    if (!funnel) return;
+    const created = await duplicateFunnelAsScenario({
+      source: funnel,
+      companyId,
+      userId,
+      scenarioName: `${funnel.name} (Template)`,
+      asTemplate: true,
+    });
+    if (!created) { toast.error('Failed to save as template'); return; }
+    toast.success('Saved as template — find it in the template gallery');
   };
 
   if (!funnel && !loading) return null;
@@ -109,6 +123,14 @@ function BoardContent({ funnelId }: { funnelId: string }) {
                     .eq('id', funnel.id);
                 }}
               />
+              <button
+                onClick={saveAsTemplate}
+                className="flex items-center gap-1.5 text-[12px] text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"
+                title="Save this funnel as a reusable template"
+              >
+                {funnel.is_template ? <Bookmark size={12} className="text-teal" /> : <BookmarkPlus size={12} />}
+                {funnel.is_template ? 'Template' : 'Save as template'}
+              </button>
               <button
                 onClick={copyShareLink}
                 className="flex items-center gap-1.5 text-[12px] text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"
