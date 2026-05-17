@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import {
-  ChevronDown, ChevronRight, Diamond, Clock, Flag, Phone, CalendarDays, Zap,
+  ChevronDown, ChevronRight, ChevronLeft, Diamond, Clock, Flag, Phone, CalendarDays, Zap,
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingBag, ShoppingCart,
-  BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote,
+  BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote, PanelLeftOpen,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
   type LucideIcon,
 } from 'lucide-react';
@@ -50,6 +50,7 @@ const SHAPE_ICONS: Record<string, LucideIcon> = {
 };
 
 export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: Props) {
+  const [collapsed, setCollapsed] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({
     pages: true, traffic: true, offers: true,
     logic: true, events: false, notifications: false, other: false,
@@ -61,11 +62,36 @@ export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: P
     else onPickSticky();
   };
 
+  if (collapsed) {
+    return (
+      <aside className="w-9 shrink-0 border-r border-edge bg-white flex flex-col items-center pt-3">
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          className="w-7 h-7 rounded-md flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface transition-colors"
+          title="Open palette"
+        >
+          <PanelLeftOpen size={16} />
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="w-[240px] shrink-0 border-r border-edge bg-white overflow-y-auto">
-      <div className="px-4 py-3 border-b border-edge sticky top-0 bg-white z-10">
-        <h3 className="text-[13px] font-semibold text-ink">Add to canvas</h3>
-        <p className="text-[11px] text-muted mt-0.5">Click any tile to drop it</p>
+      <div className="px-4 py-3 border-b border-edge sticky top-0 bg-white z-10 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="text-[13px] font-semibold text-ink">Add to canvas</h3>
+          <p className="text-[11px] text-muted mt-0.5">Click any tile to drop it</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCollapsed(true)}
+          className="w-6 h-6 rounded-md flex items-center justify-center text-ink/60 hover:text-ink hover:bg-surface transition-colors shrink-0"
+          title="Collapse palette"
+        >
+          <ChevronLeft size={14} />
+        </button>
       </div>
 
       <div className="p-3 space-y-3">

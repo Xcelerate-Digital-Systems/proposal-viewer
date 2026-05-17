@@ -12,6 +12,12 @@ import type {
   Funnel, FunnelStep, FunnelBoardEdge, FunnelBoardNote, FunnelBoardShape,
   FeedbackBoardShape, FeedbackBoardNote,
 } from '@/lib/supabase';
+import { type CompanyBranding } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING } from '@/lib/review-defaults';
+import { useBrandingColors } from '@/hooks/useBrandingColors';
+import ViewerLoader from '@/components/viewer/ViewerLoader';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
+import { fontFamily } from '@/lib/google-fonts';
 import FunnelStepNode from '@/components/admin/funnels/board/nodes/FunnelStepNode';
 import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
@@ -32,24 +38,38 @@ export default function PublicFunnelPage({ params }: { params: { token: string }
   const [boardEdges, setBoardEdges] = useState<FunnelBoardEdge[]>([]);
   const [boardNotes, setBoardNotes] = useState<FunnelBoardNote[]>([]);
   const [boardShapes, setBoardShapes] = useState<FunnelBoardShape[]>([]);
+  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  const { bgSecondary, sidebarText } = useBrandingColors(branding);
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch(`/api/funnel/${params.token}`, { cache: 'no-store' });
-        if (!res.ok) { setNotFound(true); setLoading(false); return; }
+        if (!res.ok) { setNotFound(true); setLoading(false); setBrandingLoaded(true); return; }
         const data = await res.json();
         setFunnel(data.funnel);
         setSteps(data.steps || []);
         setBoardEdges(data.boardEdges || []);
         setBoardNotes(data.boardNotes || []);
         setBoardShapes(data.boardShapes || []);
+
+        if (data.funnel?.company_id) {
+          const brandRes = await fetch(
+            `/api/company/branding?company_id=${data.funnel.company_id}`,
+            { cache: 'no-store' }
+          );
+          if (brandRes.ok) setBranding(await brandRes.json());
+        }
+        setBrandingLoaded(true);
         setLoading(false);
       } catch {
         setNotFound(true);
         setLoading(false);
+        setBrandingLoaded(true);
       }
     }
     load();
@@ -136,13 +156,8 @@ export default function PublicFunnelPage({ params }: { params: { token: string }
     } as Edge;
   }), [boardEdges, forecast]);
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-50">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
+  if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading funnel…" />;
 
   if (notFound || !funnel) {
     return (
@@ -160,6 +175,8 @@ export default function PublicFunnelPage({ params }: { params: { token: string }
 
   return (
     <>
+      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
+
       {/* Mobile — desktop required */}
       <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
         <div className="text-center max-w-sm">
@@ -175,15 +192,43 @@ export default function PublicFunnelPage({ params }: { params: { token: string }
 
       {/* Desktop — read-only canvas */}
       <div className="hidden lg:flex h-dvh flex-col bg-gray-50 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-edge shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center">
-              <Workflow size={16} className="text-teal" />
-            </div>
-            <div>
-              <h1 className="text-sm font-semibold text-ink">{funnel.name}</h1>
+        <div
+          className="flex items-center justify-between px-5 py-3 shrink-0"
+          style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` }}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
+            ) : branding.name ? (
+              <span
+                className="text-sm font-semibold"
+                style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
+              >
+                {branding.name}
+              </span>
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center">
+                <Workflow size={16} className="text-teal" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1
+                className="text-sm font-semibold truncate"
+                style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
+              >
+                {funnel.name}
+              </h1>
               {funnel.description && (
-                <p className="text-[11px] text-muted mt-0.5 line-clamp-1">{funnel.description}</p>
+                <p
+                  className="text-[11px] mt-0.5 line-clamp-1"
+                  style={{
+                    color: `${sidebarText}99`,
+                    fontFamily: fontFamily(branding.font_sidebar),
+                    fontWeight: branding.font_sidebar_weight || undefined,
+                  }}
+                >
+                  {funnel.description}
+                </p>
               )}
             </div>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, PlayCircle, Lock } from 'lucide-react';
+import { CheckCircle2, PlayCircle, Lock, PartyPopper } from 'lucide-react';
 import type { FunnelStepType } from '@/lib/supabase';
 
 /**
@@ -60,6 +60,8 @@ function renderForType(t: FunnelStepType, tint: string) {
     case 'page_upsell':    return <UpsellLayout tint={tint} badge="Limited Offer" />;
     case 'page_downsell':  return <UpsellLayout tint={tint} badge="One-Time Deal" />;
     case 'page_webinar':   return <WebinarLayout tint={tint} />;
+    case 'page_form':      return <FormLayout tint={tint} />;
+    case 'page_calendar':  return <CalendarLayout tint={tint} />;
     default:               return <LandingLayout tint={tint} />;
   }
 }
@@ -133,12 +135,70 @@ function CheckoutLayout({ tint }: { tint: string }) {
 function ThankYouLayout({ tint }: { tint: string }) {
   return (
     <div className="flex flex-col items-center justify-center text-center h-full">
-      <CheckCircle2 size={36} style={{ color: tint }} strokeWidth={2.2} />
-      <div className="text-[10px] font-bold text-ink mt-2">Thank You!</div>
+      <PartyPopper size={32} style={{ color: tint }} strokeWidth={2.2} />
+      <div className="text-[10px] font-bold text-ink mt-1.5">Congratulations!</div>
+      <div className="text-[7px] text-muted">Thank You</div>
       <Line w="80%" />
       <Line w="60%" />
-      <Line w="70%" />
+      <CheckCircle2 size={12} style={{ color: tint }} className="mt-1" />
     </div>
+  );
+}
+
+function FormLayout({ tint }: { tint: string }) {
+  return (
+    <>
+      <Heading w="70%" />
+      <Line w="95%" />
+      <Line w="60%" />
+      <div className="mt-1.5 space-y-1">
+        <FieldPlaceholder label="Name" />
+        <FieldPlaceholder label="Email" />
+        <FieldPlaceholder label="Phone" />
+        <div className="h-6 rounded-sm bg-surface border border-edge/60 flex items-start px-1 pt-0.5">
+          <span className="text-[6.5px] text-muted/80">Message</span>
+        </div>
+      </div>
+      <CTA tint={tint} label="Submit" />
+    </>
+  );
+}
+
+function CalendarLayout({ tint }: { tint: string }) {
+  // Mini month grid: 4 rows × 7 cols, current day tinted, one cell "booked".
+  const cells = Array.from({ length: 28 }, (_, i) => i + 1);
+  return (
+    <>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[8px] font-bold text-ink">Book a Time</span>
+        <span className="text-[6.5px] text-muted">Mar 2026</span>
+      </div>
+      <div className="grid grid-cols-7 gap-[1.5px] mb-1">
+        {['M','T','W','T','F','S','S'].map((d, i) => (
+          <div key={i} className="text-center text-[5.5px] font-semibold text-muted">{d}</div>
+        ))}
+        {cells.map((n) => {
+          const isToday = n === 12;
+          const isBooked = n === 18;
+          return (
+            <div
+              key={n}
+              className={`text-center text-[5.5px] py-[1px] rounded-[1.5px] ${
+                isToday ? 'text-white font-bold' : isBooked ? 'text-white' : 'text-ink/60 bg-surface/60'
+              }`}
+              style={
+                isToday ? { backgroundColor: tint }
+                : isBooked ? { backgroundColor: `${tint}99` }
+                : undefined
+              }
+            >
+              {n}
+            </div>
+          );
+        })}
+      </div>
+      <CTA tint={tint} label="Confirm Time" />
+    </>
   );
 }
 

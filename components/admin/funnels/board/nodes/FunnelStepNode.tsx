@@ -191,12 +191,6 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const conversions = forecastConversions ?? ctx?.forecast.conversionsByStep.get(step.id) ?? 0;
   const value = step.metrics?.value ?? 0;
   const revenue = conversions * value;
-  const hasMetrics =
-    (step.metrics?.visitors != null) ||
-    (step.metrics?.conversion_rate != null) ||
-    (step.metrics?.value != null) ||
-    (step.metrics?.cost != null) ||
-    visitors > 0 || conversions > 0;
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(step.label || defaults.label);
@@ -314,28 +308,25 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     </div>
   );
 
-  // Funnelytics convention: traffic sources don't carry a metrics chip
-  // because their visitor count is already labelled on the outgoing edge.
-  // The chip below the disc duplicated that flow count and visually
-  // squashed the source node, so we suppress it here. Pages / offers /
-  // generic still render the chip since their CVR/value aren't shown
-  // anywhere else on the canvas.
-  const isTrafficSource = step.step_type.startsWith('traffic_');
-  const metricsEl = !isTrafficSource && showMetrics && hasMetrics && (
-    <div className="mt-2 px-2 py-1 rounded-md bg-white/95 border border-edge shadow-sm text-[10px] text-ink/80 leading-tight whitespace-nowrap">
-      <span className="font-semibold text-ink">{formatCount(visitors)}</span>
-      <span className="text-muted"> in</span>
-      {(step.metrics?.conversion_rate ?? 0) > 0 && (
-        <>
-          <span className="text-muted"> · </span>
-          <span>{(step.metrics?.conversion_rate ?? 0).toFixed(0)}%</span>
-        </>
-      )}
-      {revenue > 0 && (
-        <>
-          <span className="text-muted"> · </span>
-          <span className="text-emerald-600 font-semibold">{formatMoney(revenue)}</span>
-        </>
+  // Funnelytics-style "People" card. Shows whenever the Numbers Layer is on
+  // — even with zero data, where it renders as "n/a" to surface that the
+  // node isn't receiving traffic yet (tutorial cue + visual anchor).
+  const peopleLabel = visitors > 0 ? formatCount(visitors) : 'n/a';
+  const metricsEl = showMetrics && (
+    <div className="mt-2 px-3 py-1.5 rounded-md bg-white border border-edge shadow-sm text-center leading-tight whitespace-nowrap min-w-[64px]">
+      <div className="text-[9px] uppercase tracking-wider text-muted">People</div>
+      <div className={`text-[13px] font-semibold ${visitors > 0 ? 'text-ink' : 'text-muted'}`}>
+        {peopleLabel}
+      </div>
+      {(conversions > 0 || revenue > 0) && (
+        <div className="mt-0.5 flex items-center justify-center gap-1.5 text-[10px]">
+          {conversions > 0 && (
+            <span className="text-ink/70">{formatCount(conversions)} conv</span>
+          )}
+          {revenue > 0 && (
+            <span className="text-emerald-600 font-semibold">{formatMoney(revenue)}</span>
+          )}
+        </div>
       )}
     </div>
   );

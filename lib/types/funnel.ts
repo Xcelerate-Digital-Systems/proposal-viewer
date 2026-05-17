@@ -72,6 +72,8 @@ export type FunnelStepType =
   | 'page_upsell'
   | 'page_downsell'
   | 'page_webinar'
+  | 'page_form'
+  | 'page_calendar'
   // Offers
   | 'offer_product'
   | 'offer_course'
@@ -268,6 +270,8 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   page_upsell:            { label: 'Upsell Page',        icon: 'trending-up',      color: '#2B2B2B', tint: '#A855F7' },
   page_downsell:          { label: 'Downsell Page',      icon: 'trending-down',    color: '#2B2B2B', tint: '#F43F5E' },
   page_webinar:           { label: 'Webinar',            icon: 'video',            color: '#2B2B2B', tint: '#8B5CF6' },
+  page_form:              { label: 'Form Page',          icon: 'file-text',        color: '#2B2B2B', tint: '#14B8A6' },
+  page_calendar:          { label: 'Calendar Page',      icon: 'calendar',         color: '#2B2B2B', tint: '#6366F1' },
   // Offers
   offer_product:          { label: 'Product',            icon: 'package',          color: '#2B2B2B', tint: '#F97316' },
   offer_course:           { label: 'Course',             icon: 'graduation-cap',   color: '#2B2B2B', tint: '#EAB308' },
@@ -326,8 +330,8 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
     category: 'page',
     label: 'Pages',
     types: [
-      'page_landing', 'page_sales', 'page_optin', 'page_checkout',
-      'page_thankyou', 'page_upsell', 'page_downsell', 'page_webinar',
+      'page_landing', 'page_sales', 'page_optin', 'page_form', 'page_calendar',
+      'page_checkout', 'page_thankyou', 'page_upsell', 'page_downsell', 'page_webinar',
     ],
   },
   { category: 'offer', label: 'Offers', types: ALL_OFFER_TYPES },
@@ -364,8 +368,8 @@ export const FUNNEL_PALETTE: PaletteGroup[] = [
     key: 'pages',
     label: 'Pages',
     items: ([
-      'page_landing', 'page_sales', 'page_optin', 'page_checkout',
-      'page_thankyou', 'page_upsell', 'page_downsell', 'page_webinar',
+      'page_landing', 'page_sales', 'page_optin', 'page_form', 'page_calendar',
+      'page_checkout', 'page_thankyou', 'page_upsell', 'page_downsell', 'page_webinar',
     ] as FunnelStepType[]).map((stepType) => ({ kind: 'step', stepType })),
   },
   {
