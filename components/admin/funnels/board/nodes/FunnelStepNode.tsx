@@ -233,14 +233,15 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   };
 
   const isPage = step.step_type.startsWith('page_');
-  // Frame heights — chosen so the VISUAL CENTRE of every node sits at
-  // frame-Y = SHARED_SIDE_HANDLE_Y (100). This is the canonical baseline
-  // diamonds, sticky notes, and feedback cards already use, so a step ↔
-  // diamond ↔ page row dropped at the same board_y produces straight
-  // horizontal arrows.
-  //   - Disc nodes (88×88): label above (56) + disc (88) → centre at 56+44=100 ✓
-  //   - Page nodes (160×200): page at top (200, centre at Y=100) + label below (56) ✓
-  const frameH = isPage ? PAGE_MOCKUP_H + LABEL_OFFSET : LABEL_OFFSET + ICON_SIZE;
+  // Frame heights — visual centre always at frame-Y = SHARED_SIDE_HANDLE_Y (100)
+  // so disc/diamond/page nodes dropped at the same board_y align horizontally.
+  //   - Disc nodes: empty (56) + disc (88) + label (56) → disc centre at 56+44=100 ✓
+  //   - Page nodes: page (200, centre at 100) + label (56) ✓
+  // Labels sit BELOW the body for every node type so vertical edges land
+  // directly on the body's top edge without crossing the label.
+  const frameH = isPage
+    ? PAGE_MOCKUP_H + LABEL_OFFSET
+    : LABEL_OFFSET + ICON_SIZE + LABEL_OFFSET;
 
   const labelEl = (
     <div className="h-14 flex items-start pt-2 max-w-full px-1 w-full justify-center">
@@ -354,7 +355,9 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
         style={{ width: FRAME_W, height: frameH }}
       >
         {/* Pages: body at top (centre at Y=100), label + metrics below.
-            Discs: label above, body below (disc centre at Y=100). */}
+            Discs: 56px empty space above keeps disc centred at Y=100,
+            then disc, then label below — so vertical edges land on the
+            disc's top edge without crossing the label text. */}
         {isPage ? (
           <>
             {pageBody}
@@ -363,8 +366,9 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
           </>
         ) : (
           <>
-            {labelEl}
+            <div style={{ height: LABEL_OFFSET }} aria-hidden />
             {discBody}
+            {labelEl}
             {metricsEl}
           </>
         )}
