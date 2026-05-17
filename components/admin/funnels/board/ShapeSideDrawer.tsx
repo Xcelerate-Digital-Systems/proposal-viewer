@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import type { FunnelBoardShape, FunnelShapeType } from '@/lib/supabase';
 import { FUNNEL_COLOR_PRESETS } from '@/lib/types/funnel';
+import {
+  parseDecisionContent, serializeDecisionContent,
+  parseWaitContent, serializeWaitContent,
+  parseActionContent, serializeActionContent,
+} from '@/components/admin/feedback/board/nodes/ShapeNode';
 
 interface Props {
   shape: FunnelBoardShape;
@@ -28,12 +33,42 @@ const SHAPE_TYPE_LABELS: Partial<Record<FunnelShapeType, string>> = {
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 6];
 
+/** Most "diamond" shapes store their editable text inside a JSON content
+ *  blob — decision questions, wait labels, and the per-action label all
+ *  live there. Plain text/primitive shapes use the raw content string. */
+function getEditableLabel(shape: FunnelBoardShape): string {
+  if (shape.shape_type === 'decision') return parseDecisionContent(shape.content).question;
+  if (shape.shape_type === 'wait')     return parseWaitContent(shape.content).label ?? '';
+  if (shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
+    return shape.content || '';
+  }
+  // Every other shape type (action diamonds, events, integrations) uses
+  // FeedbackActionContent { label }.
+  return parseActionContent(shape.content).label ?? '';
+}
+
+function setEditableLabel(shape: FunnelBoardShape, next: string): string | null {
+  const trimmed = next.trim();
+  if (shape.shape_type === 'decision') {
+    const cur = parseDecisionContent(shape.content);
+    return serializeDecisionContent({ ...cur, question: trimmed || 'Decision?' });
+  }
+  if (shape.shape_type === 'wait') {
+    const cur = parseWaitContent(shape.content);
+    return serializeWaitContent({ ...cur, label: trimmed || null });
+  }
+  if (shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
+    return trimmed || null;
+  }
+  return serializeActionContent({ label: trimmed || null });
+}
+
 export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: Props) {
-  const [content, setContent] = useState(shape.content || '');
-  useEffect(() => { setContent(shape.content || ''); }, [shape.id]);
+  const [content, setContent] = useState(() => getEditableLabel(shape));
+  useEffect(() => { setContent(getEditableLabel(shape)); }, [shape.id, shape.content]);
 
   const commitContent = () => {
-    const next = content.trim() || null;
+    const next = setEditableLabel(shape, content);
     if (next !== (shape.content || null)) onUpdate({ content: next });
   };
 
@@ -62,14 +97,14 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
-        <Field label={isLabelLike ? 'Label' : 'Content'}>
+        <Field label={shape.shape_type === 'decision' ? 'Question' : isLabelLike ? 'Label' : 'Content'}>
           {isLabelLike ? (
             <input
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onBlur={commitContent}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              placeholder={typeLabel}
+              placeholder={shape.shape_type === 'decision' ? 'Decision?' : typeLabel}
               className="w-full px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal"
             />
           ) : (
