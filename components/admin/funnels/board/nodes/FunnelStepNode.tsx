@@ -134,7 +134,7 @@ const LABEL_OFFSET = 56;
 /** Padding above + below the label so it sits evenly between the body
  *  bottom and the bottom-edge handle dot. Symmetric so the label is visually
  *  centred in the space between body and bottom edge connection. */
-const LABEL_GAP = 20;
+const LABEL_GAP = 8;
 const SHELL_H = LABEL_OFFSET + ICON_SIZE;
 
 // Handles anchored to the 88px circle (matches IconHandles geometry from

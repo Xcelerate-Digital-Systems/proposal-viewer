@@ -638,7 +638,7 @@ const DIAMOND_SIDE = 30;
 const DIAMOND_BOX_SIZE = 42;                       // 2 * 21 — keeps corner Y on integer px
 const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
 const DIAMOND_LABEL_AREA = 79;                     // empty space ABOVE the diamond so its centre lands at Y=100
-const DIAMOND_LABEL_GAP = 20;                      // padding above + below label so it sits evenly between diamond bottom and bottom handle
+const DIAMOND_LABEL_GAP = 8;                       // padding above + below label so it sits evenly between diamond bottom and bottom handle
 const DIAMOND_LABEL_BELOW = 56;                    // label area BELOW the diamond
 const DIAMOND_NODE_W = DIAMOND_BOX_SIZE;
 const DIAMOND_NODE_H = DIAMOND_LABEL_AREA + DIAMOND_BOX_SIZE + DIAMOND_LABEL_GAP + DIAMOND_LABEL_BELOW + DIAMOND_LABEL_GAP;

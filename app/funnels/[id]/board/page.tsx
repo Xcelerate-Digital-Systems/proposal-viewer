@@ -7,6 +7,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { FunnelBoard } from '@/components/admin/funnels/board';
 import { useFunnelBoardContext } from '@/components/admin/funnels/board/FunnelBoardContext';
 import FunnelSettingsMenu from '@/components/admin/funnels/board/FunnelSettingsMenu';
+import ScenarioSwitcher from '@/components/admin/funnels/board/ScenarioSwitcher';
 import { useToast } from '@/components/ui/Toast';
 import { supabase, type Funnel } from '@/lib/supabase';
 
@@ -35,7 +36,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
   const [nameDraft, setNameDraft] = useState('');
 
   if (!ctx) return null;
-  const { funnel, loading, setFunnel } = ctx;
+  const { funnel, loading, setFunnel, companyId, userId } = ctx;
 
   const saveName = async () => {
     const next = nameDraft.trim();
@@ -87,6 +88,12 @@ function BoardContent({ funnelId }: { funnelId: string }) {
               {funnel.name}
             </button>
           )
+        )}
+
+        {funnel && (
+          <div className="ml-2">
+            <ScenarioSwitcher funnel={funnel} companyId={companyId} userId={userId} />
+          </div>
         )}
 
         <div className="ml-auto flex items-center gap-2">
