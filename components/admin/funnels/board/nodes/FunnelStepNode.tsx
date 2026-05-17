@@ -130,10 +130,11 @@ export function StepIcon({ slug, size = 32 }: { slug: string; size?: number }) {
 
 const FRAME_W = 240;
 const ICON_SIZE = 88;
-const LABEL_OFFSET = 56;
-/** Padding above + below the label so it sits evenly between the body
- *  bottom and the bottom-edge handle dot. Symmetric so the label is visually
- *  centred in the space between body and bottom edge connection. */
+/** Single-line label container height. Labels truncate to one line, so 22px
+ *  fits a 11px text glyph plus a couple of px breathing room. The old 56px
+ *  value reserved empty whitespace below the text which inflated the gap
+ *  between the label and the bottom-edge handle. */
+const LABEL_OFFSET = 22;
 const LABEL_GAP = 8;
 const SHELL_H = LABEL_OFFSET + ICON_SIZE;
 
@@ -143,16 +144,17 @@ const HANDLE_BASE =
   '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
 function StepHandles({ readOnly }: { readOnly?: boolean }) {
-  const outset = 8;
-  // Disc sits at the TOP of the frame (no empty padding above) so incoming
-  // edges land right on the disc edge instead of floating in empty space.
-  const cy = ICON_SIZE / 2;                                  // disc centre Y
-  const leftX = FRAME_W / 2 - ICON_SIZE / 2 - outset;
-  const rightX = FRAME_W / 2 + ICON_SIZE / 2 + outset;
-  const topY = -outset;                                      // 8px above frame top
-  // Bottom handle sits just past the label — no extra gap below the label so
-  // the next node's connection sits close to this one.
-  const bottomY = ICON_SIZE + LABEL_GAP + LABEL_OFFSET + outset;
+  // Generous outset on top / sides so incoming horizontal + top edges have
+  // breathing room around the disc. Bottom stays tight because the label
+  // already sits right below; extra space there would just push the next
+  // node further away.
+  const sideOutset = 20;
+  const bottomOutset = 8;
+  const cy = ICON_SIZE / 2;
+  const leftX = FRAME_W / 2 - ICON_SIZE / 2 - sideOutset;
+  const rightX = FRAME_W / 2 + ICON_SIZE / 2 + sideOutset;
+  const topY = -sideOutset;
+  const bottomY = ICON_SIZE + LABEL_GAP + LABEL_OFFSET + bottomOutset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -179,12 +181,12 @@ const SHARED_SIDE_HANDLE_Y = 100;
  *  handle clears the label entirely so the connection dot (and edge tip)
  *  doesn't overlap the label text. */
 function PageHandles({ readOnly }: { readOnly?: boolean }) {
-  const outset = 8;
-  const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - outset;
-  const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + outset;
-  const topY = -outset;                                          // 8px above page top
-  // Bottom handle sits just past the label — no extra gap below the label.
-  const bottomY = PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + outset;
+  const sideOutset = 20;
+  const bottomOutset = 8;
+  const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - sideOutset;
+  const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + sideOutset;
+  const topY = -sideOutset;
+  const bottomY = PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + bottomOutset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -253,7 +255,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     : ICON_SIZE + LABEL_GAP + LABEL_OFFSET;
 
   const labelEl = (
-    <div className="h-14 flex items-start pt-2 max-w-full px-1 w-full justify-center">
+    <div className="flex items-start max-w-full px-1 w-full justify-center" style={{ height: LABEL_OFFSET }}>
       {editing ? (
         <input
           ref={inputRef}
