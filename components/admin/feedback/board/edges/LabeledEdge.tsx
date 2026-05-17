@@ -85,6 +85,13 @@ function LabeledEdgeComponent({
     targetPosition,
   });
 
+  // Bias the label slightly toward the source so it sits squarely in the
+  // middle of the visible edge run, never under the arrowhead at the target
+  // end. 0.5 = curve midpoint (default); 0.4 puts it 10% closer to source.
+  const LABEL_BIAS = 0.4;
+  const biasedLabelX = sourceX + (labelX - sourceX) * (2 * LABEL_BIAS);
+  const biasedLabelY = sourceY + (labelY - sourceY) * (2 * LABEL_BIAS);
+
   const arrowHeads = useMemo(() => {
     if (arrowDir === 'none') return '';
     const parts: string[] = [];
@@ -142,14 +149,15 @@ function LabeledEdgeComponent({
           <div
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              transform: `translate(-50%, -50%) translate(${biasedLabelX}px,${biasedLabelY}px)`,
               pointerEvents: 'all',
+              zIndex: 5,
             }}
             className="nodrag nopan"
             onClick={handleClick}
           >
             <div
-              className={`px-2.5 py-1 rounded-md leading-tight border shadow-sm cursor-pointer transition-colors ${
+              className={`px-2.5 py-1 rounded-md leading-tight border cursor-pointer transition-colors shadow-[0_2px_6px_rgba(20,20,40,0.12)] ${
                 selected
                   ? 'bg-teal/10 border-teal'
                   : 'bg-white border-edge hover:border-ink/30'
@@ -157,6 +165,7 @@ function LabeledEdgeComponent({
               style={{
                 fontSize: edgeData.labelFontSize ?? 16,
                 color: selected ? '#017C87' : (edgeData.labelColor ?? '#2B2B2B'),
+                backgroundColor: selected ? undefined : '#ffffff',
               }}
             >
               {label}
