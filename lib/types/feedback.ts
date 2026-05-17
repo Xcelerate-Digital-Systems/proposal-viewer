@@ -432,7 +432,9 @@ export type FeedbackShapeType =
   | 'page_view' | 'time_on_page' | 'exit_intent' | 'refund'
   | 'download' | 'share' | 'login'
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
-  | 'google_sheet' | 'webhook';
+  | 'google_sheet' | 'webhook'
+  | 'form_completed' | 'schedule_meeting' | 'deal_won'
+  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won';
 
 /** Stored as JSON in `review_board_shapes.content` for the label-only action
  *  shapes (Call, Meeting, Automation, Goal). Kept as an object — not a raw

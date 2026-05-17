@@ -54,7 +54,20 @@ export type FunnelStepType =
   | 'traffic_twitter_ads'
   | 'traffic_snapchat_ads'
   | 'traffic_bing_ads'
+  | 'traffic_reddit_ads'
   | 'traffic_native_ads'
+  // Traffic sources — organic search (per platform)
+  | 'traffic_google_organic'
+  | 'traffic_bing_organic'
+  | 'traffic_youtube_organic'
+  // Traffic sources — organic social (per platform)
+  | 'traffic_facebook_organic'
+  | 'traffic_instagram_organic'
+  | 'traffic_linkedin_organic'
+  | 'traffic_tiktok_organic'
+  | 'traffic_twitter_organic'
+  | 'traffic_pinterest_organic'
+  | 'traffic_reddit_organic'
   // Traffic sources — channels
   | 'traffic_sms'
   | 'traffic_organic_social'
@@ -63,6 +76,42 @@ export type FunnelStepType =
   | 'traffic_podcast'
   | 'traffic_influencer'
   | 'traffic_offline'
+  // Traffic sources — CRMs (clicks attributed to a CRM-driven send)
+  | 'traffic_hubspot'
+  | 'traffic_ghl'
+  | 'traffic_activecampaign'
+  | 'traffic_salesforce'
+  | 'traffic_simpro'
+  | 'traffic_aroflo'
+  | 'traffic_workflowmax'
+  | 'traffic_servicem8'
+  | 'traffic_fergus'
+  | 'traffic_ascora'
+  | 'traffic_jobber'
+  // Traffic sources — messaging platforms
+  | 'traffic_slack'
+  | 'traffic_messenger'
+  | 'traffic_chatbot'
+  // Traffic sources — other sites
+  | 'traffic_zoho'
+  | 'traffic_yelp'
+  | 'traffic_amazon'
+  | 'traffic_zoom'
+  | 'traffic_gmail'
+  | 'traffic_spotify'
+  | 'traffic_snapchat_organic'
+  | 'traffic_google_maps'
+  // Traffic sources — offline channels
+  | 'traffic_print_ad'
+  | 'traffic_conference'
+  | 'traffic_online_meeting'
+  | 'traffic_direct_mail'
+  | 'traffic_meeting'
+  | 'traffic_billboard'
+  | 'traffic_business_card'
+  | 'traffic_phone'
+  | 'traffic_report'
+  | 'traffic_qr_code'
   // Pages
   | 'page_landing'
   | 'page_sales'
@@ -203,7 +252,9 @@ export type FunnelShapeType =
   | 'page_view' | 'time_on_page' | 'exit_intent' | 'refund'
   | 'download' | 'share' | 'login'
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
-  | 'google_sheet' | 'webhook';
+  | 'google_sheet' | 'webhook'
+  | 'form_completed' | 'schedule_meeting' | 'deal_won'
+  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won';
 
 export type FunnelBoardShape = {
   id: string;
@@ -238,7 +289,7 @@ export const FUNNEL_STEP_DEFAULTS: Record<
 > = {
   // Generic traffic buckets
   traffic_paid:           { label: 'Paid Traffic',       icon: 'megaphone',        color: '#2B2B2B', tint: '#1877F2' },
-  traffic_organic:        { label: 'Organic Search',     icon: 'search',           color: '#2B2B2B', tint: '#10B981' },
+  traffic_organic:        { label: 'All Search',         icon: 'search',           color: '#2B2B2B', tint: '#EF4444' },
   traffic_email:          { label: 'Email',              icon: 'mail',             color: '#2B2B2B', tint: '#3B82F6' },
   traffic_direct:         { label: 'Direct',             icon: 'link',             color: '#2B2B2B', tint: '#6366F1' },
   // Specific ad platforms (brand slugs → brand SVG with Lucide fallback)
@@ -251,8 +302,21 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   traffic_pinterest_ads:  { label: 'Pinterest Ads',      icon: 'pinterest',        color: '#2B2B2B', tint: '#E60023' },
   traffic_twitter_ads:    { label: 'X (Twitter) Ads',    icon: 'twitter',          color: '#2B2B2B', tint: '#111111' },
   traffic_snapchat_ads:   { label: 'Snapchat Ads',       icon: 'snapchat',         color: '#2B2B2B', tint: '#F7C701' },
-  traffic_bing_ads:       { label: 'Bing Ads',           icon: 'bing',             color: '#2B2B2B', tint: '#0078D4' },
+  traffic_bing_ads:       { label: 'Bing Ads',           icon: 'bing',             color: '#2B2B2B', tint: '#F59E0B' },
+  traffic_reddit_ads:     { label: 'Reddit Ads',         icon: 'reddit',           color: '#2B2B2B', tint: '#FF4500' },
   traffic_native_ads:     { label: 'Native Ads',         icon: 'megaphone',        color: '#2B2B2B', tint: '#F59E0B' },
+  // Organic search
+  traffic_google_organic:    { label: 'Google',          icon: 'google',           color: '#2B2B2B', tint: '#4285F4' },
+  traffic_bing_organic:      { label: 'Bing',            icon: 'bing',             color: '#2B2B2B', tint: '#F59E0B' },
+  traffic_youtube_organic:   { label: 'YouTube',         icon: 'youtube',          color: '#2B2B2B', tint: '#FF0033' },
+  // Organic social
+  traffic_facebook_organic:  { label: 'Facebook',        icon: 'facebook',         color: '#2B2B2B', tint: '#1877F2' },
+  traffic_instagram_organic: { label: 'Instagram',       icon: 'instagram',        color: '#2B2B2B', tint: '#E4405F' },
+  traffic_linkedin_organic:  { label: 'LinkedIn',        icon: 'linkedin',         color: '#2B2B2B', tint: '#0A66C2' },
+  traffic_tiktok_organic:    { label: 'TikTok',          icon: 'tiktok',           color: '#2B2B2B', tint: '#111111' },
+  traffic_twitter_organic:   { label: 'X',               icon: 'twitter',          color: '#2B2B2B', tint: '#111111' },
+  traffic_pinterest_organic: { label: 'Pinterest',       icon: 'pinterest',        color: '#2B2B2B', tint: '#E60023' },
+  traffic_reddit_organic:    { label: 'Reddit',          icon: 'reddit',           color: '#2B2B2B', tint: '#FF4500' },
   // Channels
   traffic_sms:            { label: 'SMS',                icon: 'message-square',   color: '#2B2B2B', tint: '#EC4899' },
   traffic_organic_social: { label: 'Organic Social',     icon: 'share-2',          color: '#2B2B2B', tint: '#A855F7' },
@@ -261,6 +325,42 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   traffic_podcast:        { label: 'Podcast',            icon: 'mic',              color: '#2B2B2B', tint: '#8B5CF6' },
   traffic_influencer:     { label: 'Influencer',         icon: 'star',             color: '#2B2B2B', tint: '#F97316' },
   traffic_offline:        { label: 'Offline / Print',    icon: 'newspaper',        color: '#2B2B2B', tint: '#64748B' },
+  // CRMs
+  traffic_hubspot:        { label: 'HubSpot',            icon: 'hubspot',          color: '#2B2B2B', tint: '#FF7A59' },
+  traffic_ghl:            { label: 'GoHighLevel',        icon: 'ghl',              color: '#2B2B2B', tint: '#161616' },
+  traffic_activecampaign: { label: 'ActiveCampaign',     icon: 'activecampaign',   color: '#2B2B2B', tint: '#356AE6' },
+  traffic_salesforce:     { label: 'Salesforce',         icon: 'salesforce',       color: '#2B2B2B', tint: '#00A1E0' },
+  traffic_simpro:         { label: 'Simpro',             icon: 'simpro',           color: '#2B2B2B', tint: '#1C8DC9' },
+  traffic_aroflo:         { label: 'AroFlo',             icon: 'aroflo',           color: '#2B2B2B', tint: '#1D8C2C' },
+  traffic_workflowmax:    { label: 'WorkflowMax',        icon: 'workflowmax',      color: '#2B2B2B', tint: '#00A0DC' },
+  traffic_servicem8:      { label: 'ServiceM8',          icon: 'servicem8',        color: '#2B2B2B', tint: '#0094E5' },
+  traffic_fergus:         { label: 'Fergus',             icon: 'fergus',           color: '#2B2B2B', tint: '#2E83B7' },
+  traffic_ascora:         { label: 'Ascora',             icon: 'ascora',           color: '#2B2B2B', tint: '#FF5A1F' },
+  traffic_jobber:         { label: 'Jobber',             icon: 'jobber',           color: '#2B2B2B', tint: '#00BD9C' },
+  // Messaging platforms
+  traffic_slack:          { label: 'Slack',              icon: 'slack',            color: '#2B2B2B', tint: '#4A154B' },
+  traffic_messenger:      { label: 'Messenger',          icon: 'messenger',        color: '#2B2B2B', tint: '#00B2FF' },
+  traffic_chatbot:        { label: 'Chatbot',            icon: 'chatbot',          color: '#2B2B2B', tint: '#6366F1' },
+  // Other sites
+  traffic_zoho:               { label: 'Zoho',              icon: 'zoho',         color: '#2B2B2B', tint: '#C8202F' },
+  traffic_yelp:               { label: 'Yelp',              icon: 'yelp',         color: '#2B2B2B', tint: '#D32323' },
+  traffic_amazon:             { label: 'Amazon',            icon: 'amazon',       color: '#2B2B2B', tint: '#FF9900' },
+  traffic_zoom:               { label: 'Zoom',              icon: 'zoom',         color: '#2B2B2B', tint: '#2D8CFF' },
+  traffic_gmail:              { label: 'Gmail',             icon: 'gmail',        color: '#2B2B2B', tint: '#EA4335' },
+  traffic_spotify:            { label: 'Spotify',           icon: 'spotify',      color: '#2B2B2B', tint: '#1DB954' },
+  traffic_snapchat_organic:   { label: 'Snapchat',          icon: 'snapchat',     color: '#2B2B2B', tint: '#F7C701' },
+  traffic_google_maps:        { label: 'Google Maps',       icon: 'google-maps',  color: '#2B2B2B', tint: '#34A853' },
+  // Offline
+  traffic_print_ad:           { label: 'Print Ad',          icon: 'newspaper',      color: '#2B2B2B', tint: '#64748B' },
+  traffic_conference:         { label: 'Conference',        icon: 'users',          color: '#2B2B2B', tint: '#7C3AED' },
+  traffic_online_meeting:     { label: 'Online Meeting',    icon: 'video',          color: '#2B2B2B', tint: '#2D8CFF' },
+  traffic_direct_mail:        { label: 'Direct Mail',       icon: 'mail',           color: '#2B2B2B', tint: '#F59E0B' },
+  traffic_meeting:            { label: 'Meeting',           icon: 'calendar',       color: '#2B2B2B', tint: '#A855F7' },
+  traffic_billboard:          { label: 'Billboard',         icon: 'monitor',        color: '#2B2B2B', tint: '#EF4444' },
+  traffic_business_card:      { label: 'Business Card',     icon: 'square-user',    color: '#2B2B2B', tint: '#0EA5E9' },
+  traffic_phone:              { label: 'Phone',             icon: 'phone',          color: '#2B2B2B', tint: '#10B981' },
+  traffic_report:             { label: 'Report',            icon: 'file-text',      color: '#2B2B2B', tint: '#6B7280' },
+  traffic_qr_code:            { label: 'QR Code',           icon: 'qr-code',        color: '#2B2B2B', tint: '#111111' },
   // Pages
   page_landing:           { label: 'Landing Page',       icon: 'monitor',          color: '#2B2B2B', tint: '#0EA5E9' },
   page_sales:             { label: 'Sales Page',         icon: 'badge-dollar',     color: '#2B2B2B', tint: '#06B6D4' },
@@ -350,7 +450,9 @@ export type FunnelShapePaletteId =
   | 'page_view' | 'time_on_page' | 'exit_intent' | 'refund'
   | 'download' | 'share' | 'login'
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
-  | 'google_sheet' | 'webhook';
+  | 'google_sheet' | 'webhook'
+  | 'form_completed' | 'schedule_meeting' | 'deal_won'
+  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won';
 
 export type PaletteItem =
   | { kind: 'step'; stepType: FunnelStepType }
@@ -389,17 +491,53 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
           'traffic_facebook_ads', 'traffic_instagram_ads', 'traffic_google_ads',
           'traffic_youtube_ads', 'traffic_tiktok_ads', 'traffic_linkedin_ads',
           'traffic_pinterest_ads', 'traffic_twitter_ads', 'traffic_snapchat_ads',
-          'traffic_bing_ads', 'traffic_native_ads', 'traffic_paid',
+          'traffic_bing_ads', 'traffic_reddit_ads', 'traffic_native_ads', 'traffic_paid',
         ]),
       },
-      { key: 'search',    label: 'Search',    items: stepItems(['traffic_organic']) },
-      { key: 'social',    label: 'Social',    items: stepItems(['traffic_organic_social']) },
-      { key: 'messaging', label: 'Messaging', items: stepItems(['traffic_email', 'traffic_sms']) },
+      {
+        key: 'search', label: 'Search',
+        items: stepItems([
+          'traffic_organic', 'traffic_google_organic', 'traffic_bing_organic', 'traffic_youtube_organic',
+        ]),
+      },
+      {
+        key: 'social', label: 'Social',
+        items: stepItems([
+          'traffic_facebook_organic', 'traffic_instagram_organic', 'traffic_linkedin_organic',
+          'traffic_tiktok_organic', 'traffic_twitter_organic', 'traffic_pinterest_organic',
+          'traffic_reddit_organic', 'traffic_organic_social',
+        ]),
+      },
       { key: 'other',     label: 'Other',     items: stepItems(['traffic_direct', 'traffic_referral', 'traffic_affiliate']) },
-      { key: 'offline',   label: 'Offline',   items: stepItems(['traffic_offline', 'traffic_podcast', 'traffic_influencer']) },
-      { key: 'crm',         label: 'CRM',         items: [] },
-      { key: 'othersites',  label: 'Other Sites', items: [] },
-      { key: 'custom_src',  label: 'Custom',      items: [{ kind: 'upload', scope: 'source' }] },
+      {
+        key: 'crm_src', label: 'CRM',
+        items: stepItems([
+          'traffic_hubspot', 'traffic_ghl', 'traffic_activecampaign', 'traffic_salesforce',
+          'traffic_simpro', 'traffic_aroflo', 'traffic_workflowmax', 'traffic_servicem8',
+          'traffic_fergus', 'traffic_ascora', 'traffic_jobber',
+        ]),
+      },
+      {
+        key: 'messaging_src', label: 'Messaging',
+        items: stepItems(['traffic_slack', 'traffic_messenger', 'traffic_chatbot']),
+      },
+      {
+        key: 'othersites', label: 'Other Sites',
+        items: stepItems([
+          'traffic_zoho', 'traffic_yelp', 'traffic_amazon', 'traffic_zoom',
+          'traffic_gmail', 'traffic_spotify', 'traffic_snapchat_organic', 'traffic_google_maps',
+        ]),
+      },
+      {
+        key: 'offline', label: 'Offline',
+        items: stepItems([
+          'traffic_print_ad', 'traffic_conference', 'traffic_online_meeting', 'traffic_direct_mail',
+          'traffic_meeting', 'traffic_billboard', 'traffic_business_card', 'traffic_phone',
+          'traffic_report', 'traffic_qr_code',
+          'traffic_offline', 'traffic_podcast', 'traffic_influencer',
+        ]),
+      },
+      { key: 'custom_src', label: 'Custom', items: [{ kind: 'upload', scope: 'source' }] },
     ],
   },
   {
@@ -431,10 +569,13 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
       {
         key: 'conversion', label: 'Conversion Actions',
         items: [
-          { kind: 'shape', shapeType: 'purchase',    label: 'Purchase',    iconName: 'shopping-bag' },
-          { kind: 'shape', shapeType: 'add_to_cart', label: 'Add to Cart', iconName: 'shopping-cart' },
-          { kind: 'shape', shapeType: 'subscribe',   label: 'Subscribe',   iconName: 'bell-ring' },
-          { kind: 'shape', shapeType: 'goal',        label: 'Goal',        iconName: 'flag' },
+          { kind: 'shape', shapeType: 'purchase',         label: 'Purchase',         iconName: 'shopping-bag' },
+          { kind: 'shape', shapeType: 'form_completed',   label: 'Form Completed',   iconName: 'clipboard-check' },
+          { kind: 'shape', shapeType: 'schedule_meeting', label: 'Schedule Meeting', iconName: 'calendar-check' },
+          { kind: 'shape', shapeType: 'deal_won',         label: 'Deal Won',         iconName: 'trophy' },
+          { kind: 'shape', shapeType: 'add_to_cart',      label: 'Add to Cart',      iconName: 'shopping-cart' },
+          { kind: 'shape', shapeType: 'subscribe',        label: 'Subscribe',        iconName: 'bell-ring' },
+          { kind: 'shape', shapeType: 'goal',             label: 'Goal',             iconName: 'flag' },
         ],
       },
       {
@@ -452,15 +593,23 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
       {
         key: 'integration', label: 'Integration Actions',
         items: [
-          { kind: 'shape', shapeType: 'sms_notification',   label: 'SMS',          iconName: 'message-square' },
-          { kind: 'shape', shapeType: 'email_notification', label: 'Email',        iconName: 'mail' },
-          { kind: 'shape', shapeType: 'ghl_notification',   label: 'HighLevel',    iconName: 'bell' },
-          { kind: 'shape', shapeType: 'webhook',            label: 'Webhook',      iconName: 'webhook' },
-          { kind: 'shape', shapeType: 'google_sheet',       label: 'Google Sheet', iconName: 'sheet' },
-          { kind: 'shape', shapeType: 'call',               label: 'Call',         iconName: 'phone' },
-          { kind: 'shape', shapeType: 'meeting',            label: 'Meeting',      iconName: 'calendar-days' },
-          { kind: 'shape', shapeType: 'automation',         label: 'Automation',   iconName: 'zap' },
+          { kind: 'shape', shapeType: 'sms_notification',   label: 'SMS Notification',   iconName: 'message-square' },
+          { kind: 'shape', shapeType: 'email_notification', label: 'Email Notification', iconName: 'mail' },
+          { kind: 'shape', shapeType: 'ghl_notification',   label: 'HighLevel',          iconName: 'bell' },
+          { kind: 'shape', shapeType: 'webhook',            label: 'Webhook',            iconName: 'webhook' },
+          { kind: 'shape', shapeType: 'google_sheet',       label: 'Google Sheet',       iconName: 'sheet' },
+          { kind: 'shape', shapeType: 'call',               label: 'Call',               iconName: 'phone' },
+          { kind: 'shape', shapeType: 'meeting',            label: 'Meeting',            iconName: 'calendar-days' },
+          { kind: 'shape', shapeType: 'automation',         label: 'Automation',         iconName: 'zap' },
+          { kind: 'shape', shapeType: 'ghl_appointment',    label: 'GHL Appointment',    iconName: 'calendar-days' },
+          { kind: 'shape', shapeType: 'ghl_order',          label: 'GHL Order',          iconName: 'shopping-bag' },
+          { kind: 'shape', shapeType: 'ghl_opportunity',    label: 'GHL Opportunity',    iconName: 'target' },
+          { kind: 'shape', shapeType: 'ghl_opportunity_won',label: 'GHL Opportunity Won',iconName: 'crown' },
         ],
+      },
+      {
+        key: 'crm', label: 'CRM / Messaging',
+        items: stepItems(['traffic_email', 'traffic_sms']),
       },
       {
         key: 'custom_actions', label: 'Custom Actions',

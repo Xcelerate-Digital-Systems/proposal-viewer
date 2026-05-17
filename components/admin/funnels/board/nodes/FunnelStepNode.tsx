@@ -8,7 +8,8 @@ import {
   Briefcase, Gift, Square, Trash2, ExternalLink, Sparkles, Target, Globe,
   Smartphone, Phone, MessageSquare, Calendar, Zap, Flag, FileText, Image as ImageIcon,
   Music, Share2, Users, Mic, Star, Newspaper, BookOpen, Cloud, Repeat,
-  Timer, Layers, UserCog, Ticket,
+  Timer, Layers, UserCog, Ticket, Wrench, Building2, Hash,
+  Bot, MapPin, QrCode, SquareUser, ShoppingBag,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStep } from '@/lib/supabase';
@@ -74,11 +75,17 @@ export const LUCIDE: Record<string, LucideIcon> = {
   'user-cog': UserCog,
   ticket: Ticket,
   'external-link': ExternalLink,
+  'square-user': SquareUser,
+  'qr-code': QrCode,
 };
 
 export const BRAND_SLUGS_SET = new Set([
   'facebook','instagram','google','youtube','tiktok','linkedin','pinterest',
-  'twitter','snapchat','bing','stripe','mailchimp',
+  'twitter','snapchat','bing','reddit','stripe','mailchimp',
+  'hubspot','ghl','activecampaign','salesforce','slack',
+  'simpro','aroflo','workflowmax','servicem8','fergus','ascora','jobber',
+  'messenger','chatbot',
+  'zoho','yelp','amazon','zoom','gmail','spotify','google-maps',
 ]);
 
 /** Lucide icon to render while a brand SVG is missing — keeps the canvas
@@ -87,7 +94,15 @@ export const BRAND_SLUGS_SET = new Set([
 const BRAND_FALLBACK_LUCIDE: Record<string, LucideIcon> = {
   facebook: Megaphone, instagram: ImageIcon, google: Search, youtube: Video,
   tiktok: Music, linkedin: Briefcase, pinterest: ImageIcon, twitter: MessageSquare,
-  snapchat: Smartphone, bing: Search, stripe: CreditCard, mailchimp: Mail,
+  snapchat: Smartphone, bing: Search, reddit: MessageSquare,
+  stripe: CreditCard, mailchimp: Mail,
+  hubspot: Target, ghl: Zap, activecampaign: Mail, salesforce: Cloud,
+  slack: Hash,
+  simpro: Wrench, aroflo: Wrench, workflowmax: Repeat, servicem8: Wrench,
+  fergus: Wrench, ascora: Building2, jobber: Wrench,
+  messenger: MessageSquare, chatbot: Bot,
+  zoho: Briefcase, yelp: Star, amazon: ShoppingBag, zoom: Video,
+  gmail: Mail, spotify: Music, 'google-maps': MapPin,
 };
 
 export function StepIcon({ slug, size = 32 }: { slug: string; size?: number }) {

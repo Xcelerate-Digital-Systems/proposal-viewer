@@ -7,6 +7,7 @@ import {
   BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote, PanelLeftOpen,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook, Plus, Upload,
   Workflow, FileBox, MousePointer2,
+  ClipboardCheck, CalendarCheck, Trophy, Target, Crown,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStepType, FunnelShapeType } from '@/lib/supabase';
@@ -33,6 +34,31 @@ const SHAPE_ICONS: Record<string, LucideIcon> = {
   mail: Mail, bell: Bell, sheet: Sheet, eye: Eye, timer: Timer,
   'log-out': LogOut, 'log-in': LogIn, 'undo-2': Undo2,
   download: Download, 'share-2': Share2, webhook: Webhook,
+  'clipboard-check': ClipboardCheck, 'calendar-check': CalendarCheck,
+  trophy: Trophy, target: Target, crown: Crown,
+};
+
+/** Tint per shape type so action tiles in the palette match the step-tile
+ *  visual language (coloured disc + white icon). Pulled from the canvas
+ *  treatment of each shape in ShapeNode so the palette ↔ canvas read is 1:1. */
+const SHAPE_TINTS: Record<string, string> = {
+  // Conversion
+  purchase: '#22C55E', add_to_cart: '#F97316', subscribe: '#A855F7', goal: '#EAB308',
+  // Engagement
+  page_view: '#64748B', button_click: '#A855F7', form_submit: '#10B981',
+  video_play: '#EF4444', scroll_depth: '#6366F1', time_on_page: '#0EA5E9', exit_intent: '#F43F5E',
+  // Integration
+  sms_notification: '#EC4899', email_notification: '#3B82F6', ghl_notification: '#F97316',
+  webhook: '#64748B', google_sheet: '#22C55E',
+  call: '#0EA5E9', meeting: '#A855F7', automation: '#EAB308',
+  // Custom Actions
+  decision: '#64748B', wait: '#F59E0B', refund: '#F43F5E',
+  download: '#0EA5E9', share: '#A855F7', login: '#10B981', custom_event: '#EC4899',
+  // New conversion actions
+  form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308',
+  // New GHL integration actions
+  ghl_appointment: '#F97316', ghl_order: '#F97316',
+  ghl_opportunity: '#F97316', ghl_opportunity_won: '#15803D',
 };
 
 const TAB_ICONS: Record<FunnelPaletteTabId, LucideIcon> = {
@@ -44,10 +70,12 @@ const TAB_ICONS: Record<FunnelPaletteTabId, LucideIcon> = {
 /** Open-by-default subgroups per tab — keeps the palette compact on first
  *  visit while making the most useful tiles immediately reachable. */
 const DEFAULT_OPEN: Record<string, boolean> = {
-  paid: true, search: false, social: false, messaging: true, other: false,
-  offline: false, crm: false, othersites: false, custom_src: false,
+  paid: true, search: true, social: true, other: false,
+  crm_src: true, messaging_src: true,
+  offline: false, othersites: false, custom_src: false,
   pages: true, offers: false, custom_pages: false,
-  conversion: true, engagement: true, integration: false, custom_actions: false, custom_act: false,
+  conversion: true, engagement: true, integration: false,
+  crm: true, custom_actions: false, custom_act: false,
 };
 
 export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: Props) {
@@ -238,6 +266,7 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
 
   if (item.kind === 'shape') {
     const Icon = SHAPE_ICONS[item.iconName] || Diamond;
+    const tint = SHAPE_TINTS[item.shapeType] || '#64748B';
     return (
       <button
         type="button"
@@ -247,8 +276,11 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
         className="group flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
         title={`Drag to canvas or click to add: ${item.label}`}
       >
-        <span className="w-11 h-11 flex items-center justify-center text-ink/70 bg-surface rounded-md pointer-events-none">
-          <Icon size={22} strokeWidth={1.7} />
+        <span
+          className="w-11 h-11 flex items-center justify-center rounded-full pointer-events-none"
+          style={{ backgroundColor: tint }}
+        >
+          <Icon size={22} strokeWidth={1.8} className="text-white" />
         </span>
         <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none px-0.5">
           {item.label}

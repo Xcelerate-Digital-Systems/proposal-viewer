@@ -8,6 +8,7 @@ import {
   ShoppingCart, ShoppingBag, BellRing, Sparkles,
   MessageSquare, Mail, Bell, Sheet,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
+  ClipboardCheck, CalendarCheck, Trophy, Target, Crown,
   type LucideIcon,
 } from 'lucide-react';
 import type { FeedbackBoardShape, FeedbackDecisionBranch, FeedbackDecisionBranchSide, FeedbackDecisionContent, FeedbackWaitContent, FeedbackWaitUnit, FeedbackActionContent } from '@/lib/supabase';
@@ -647,7 +648,11 @@ type DiamondType =
   | 'page_view' | 'time_on_page' | 'exit_intent' | 'refund'
   | 'download' | 'share' | 'login'
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
-  | 'google_sheet' | 'webhook';
+  | 'google_sheet' | 'webhook'
+  // New conversion actions
+  | 'form_completed' | 'schedule_meeting' | 'deal_won'
+  // New GHL integration actions
+  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won';
 
 interface DiamondConfig {
   color: string;
@@ -687,6 +692,15 @@ const DIAMOND_CONFIG: Record<DiamondType, DiamondConfig> = {
   download:           { color: '#10B981', Icon: Download,      typeLabel: 'Download',             placeholder: 'Download' },
   share:              { color: '#A855F7', Icon: Share2,        typeLabel: 'Share',                placeholder: 'Share' },
   login:              { color: '#0F766E', Icon: LogIn,         typeLabel: 'Login',                placeholder: 'Login' },
+  // Conversion actions
+  form_completed:     { color: '#10B981', Icon: ClipboardCheck, typeLabel: 'Form Completed',      placeholder: 'Form completed' },
+  schedule_meeting:   { color: '#3B82F6', Icon: CalendarCheck,  typeLabel: 'Schedule Meeting',    placeholder: 'Schedule meeting' },
+  deal_won:           { color: '#EAB308', Icon: Trophy,         typeLabel: 'Deal Won',            placeholder: 'Deal won' },
+  // GHL integration actions
+  ghl_appointment:    { color: '#F97316', Icon: CalendarDays,   typeLabel: 'GHL Appointment',     placeholder: 'GHL appointment' },
+  ghl_order:          { color: '#F97316', Icon: ShoppingBag,    typeLabel: 'GHL Order',           placeholder: 'GHL order' },
+  ghl_opportunity:    { color: '#F97316', Icon: Target,         typeLabel: 'GHL Opportunity',     placeholder: 'GHL opportunity' },
+  ghl_opportunity_won:{ color: '#15803D', Icon: Crown,          typeLabel: 'GHL Opportunity Won', placeholder: 'GHL opportunity won' },
 };
 
 const DIAMOND_TYPES = new Set<string>(Object.keys(DIAMOND_CONFIG));
