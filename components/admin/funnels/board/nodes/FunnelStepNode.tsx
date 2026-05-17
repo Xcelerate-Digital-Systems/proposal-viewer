@@ -131,6 +131,10 @@ export function StepIcon({ slug, size = 32 }: { slug: string; size?: number }) {
 const FRAME_W = 240;
 const ICON_SIZE = 88;
 const LABEL_OFFSET = 56;
+/** Padding above + below the label so it sits evenly between the body
+ *  bottom and the bottom-edge handle dot. Symmetric so the label is visually
+ *  centred in the space between body and bottom edge connection. */
+const LABEL_GAP = 20;
 const SHELL_H = LABEL_OFFSET + ICON_SIZE;
 
 // Handles anchored to the 88px circle (matches IconHandles geometry from
@@ -144,7 +148,9 @@ function StepHandles({ readOnly }: { readOnly?: boolean }) {
   const leftX = FRAME_W / 2 - ICON_SIZE / 2 - outset;
   const rightX = FRAME_W / 2 + ICON_SIZE / 2 + outset;
   const topY = LABEL_OFFSET - outset;
-  const bottomY = LABEL_OFFSET + ICON_SIZE + outset;
+  // Bottom handle sits PAST the label, with LABEL_GAP padding above + below
+  // the label so the label is centred between disc bottom and bottom handle.
+  const bottomY = LABEL_OFFSET + ICON_SIZE + LABEL_GAP + LABEL_OFFSET + LABEL_GAP + outset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -175,7 +181,9 @@ function PageHandles({ readOnly }: { readOnly?: boolean }) {
   const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - outset;
   const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + outset;
   const topY = -outset;                                          // 14px above page top
-  const bottomY = PAGE_MOCKUP_H + LABEL_OFFSET + outset;          // past the label, 14px gap
+  // Bottom handle sits past the label with LABEL_GAP padding both sides so
+  // the label is centred between page bottom and the bottom-edge dot.
+  const bottomY = PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + LABEL_GAP + outset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -235,13 +243,14 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const isPage = step.step_type.startsWith('page_');
   // Frame heights — visual centre always at frame-Y = SHARED_SIDE_HANDLE_Y (100)
   // so disc/diamond/page nodes dropped at the same board_y align horizontally.
-  //   - Disc nodes: empty (56) + disc (88) + label (56) → disc centre at 56+44=100 ✓
-  //   - Page nodes: page (200, centre at 100) + label (56) ✓
-  // Labels sit BELOW the body for every node type so vertical edges land
-  // directly on the body's top edge without crossing the label.
+  // Labels sit BELOW the body with equal LABEL_GAP padding above and below,
+  // so the label is visually centred between the body bottom and the bottom
+  // handle dot (which sits LABEL_GAP past the label).
+  //   - Disc: empty (56) + disc (88) + gap (20) + label (56) + gap (20) = 240
+  //   - Page: page (200) + gap (20) + label (56) + gap (20) = 296
   const frameH = isPage
-    ? PAGE_MOCKUP_H + LABEL_OFFSET
-    : LABEL_OFFSET + ICON_SIZE + LABEL_OFFSET;
+    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + LABEL_GAP
+    : LABEL_OFFSET + ICON_SIZE + LABEL_GAP + LABEL_OFFSET + LABEL_GAP;
 
   const labelEl = (
     <div className="h-14 flex items-start pt-2 max-w-full px-1 w-full justify-center">
@@ -361,14 +370,18 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
         {isPage ? (
           <>
             {pageBody}
+            <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
+            <div style={{ height: LABEL_GAP }} aria-hidden />
             {metricsEl}
           </>
         ) : (
           <>
             <div style={{ height: LABEL_OFFSET }} aria-hidden />
             {discBody}
+            <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
+            <div style={{ height: LABEL_GAP }} aria-hidden />
             {metricsEl}
           </>
         )}

@@ -95,7 +95,7 @@ export default function PublicFunnelPage({ params }: { params: { token: string }
         readOnly: true,
         forecastVisitors: forecast.visitorsByStep.get(step.id) ?? 0,
         forecastConversions: forecast.conversionsByStep.get(step.id) ?? 0,
-        showMetricsOverride: true,
+        showMetricsOverride: false,
       },
       draggable: false, selectable: false, connectable: false,
     }));

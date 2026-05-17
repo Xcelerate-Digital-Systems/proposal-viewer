@@ -118,7 +118,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [showMetrics, setShowMetricsState] = useState(true);
+  const [showMetrics, setShowMetricsState] = useState(false);
 
   const selectStep = useCallback((id: string | null) => {
     setSelectedStepId(id);

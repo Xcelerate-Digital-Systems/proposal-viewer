@@ -638,10 +638,10 @@ const DIAMOND_SIDE = 30;
 const DIAMOND_BOX_SIZE = 42;                       // 2 * 21 — keeps corner Y on integer px
 const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
 const DIAMOND_LABEL_AREA = 79;                     // empty space ABOVE the diamond so its centre lands at Y=100
-const DIAMOND_HANDLE_GAP = 28;                     // gap between diamond bottom and label so the bottom handle dot lives in clear space
-const DIAMOND_LABEL_BELOW = 56;                    // label area BELOW the diamond — keeps vertical edges off the label
+const DIAMOND_LABEL_GAP = 20;                      // padding above + below label so it sits evenly between diamond bottom and bottom handle
+const DIAMOND_LABEL_BELOW = 56;                    // label area BELOW the diamond
 const DIAMOND_NODE_W = DIAMOND_BOX_SIZE;
-const DIAMOND_NODE_H = DIAMOND_LABEL_AREA + DIAMOND_BOX_SIZE + DIAMOND_HANDLE_GAP + DIAMOND_LABEL_BELOW;
+const DIAMOND_NODE_H = DIAMOND_LABEL_AREA + DIAMOND_BOX_SIZE + DIAMOND_LABEL_GAP + DIAMOND_LABEL_BELOW + DIAMOND_LABEL_GAP;
 
 type DiamondType =
   | 'call' | 'meeting' | 'automation' | 'goal'
@@ -724,10 +724,10 @@ function DiamondHandles({ readOnly }: { readOnly?: boolean }) {
   const topStyle    = { top: DIAMOND_TOP_Y - HANDLE_OUTSET };
   const leftStyle   = { top: DIAMOND_MID_Y, left: -HANDLE_OUTSET };
   const rightStyle  = { top: DIAMOND_MID_Y, right: -HANDLE_OUTSET };
-  // Bottom handle sits just below the diamond's bottom corner — inside the
-  // DIAMOND_HANDLE_GAP gap between the diamond and the label below it. This
-  // keeps the connector dot in clear space and the label out of the edge run.
-  const bottomStyle = { top: DIAMOND_LABEL_AREA + DIAMOND_BOX_SIZE + HANDLE_OUTSET, bottom: 'auto' as const };
+  // Bottom handle sits PAST the label, so the label is centred between the
+  // diamond bottom and the bottom-edge dot with equal DIAMOND_LABEL_GAP
+  // padding on both sides.
+  const bottomStyle = { top: DIAMOND_NODE_H + HANDLE_OUTSET, bottom: 'auto' as const };
   return (
     <>
       <Handle id="top"           type="source" position={Position.Top}    className={HANDLE_CLASS} style={topStyle}    isConnectable={!readOnly} />
@@ -807,12 +807,10 @@ function EventDiamond({
 
       <DiamondVisual color={config.color} Icon={config.Icon} selected={selected} />
 
-      {/* Gap between diamond bottom and label — the bottom handle dot sits
-          here, in clear space, so the label below doesn't intersect it. */}
-      <div style={{ height: DIAMOND_HANDLE_GAP }} aria-hidden />
+      {/* Gap above label — keeps label centred between diamond bottom and
+          the bottom-edge handle dot (which lives below the matching gap). */}
+      <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
 
-      {/* Label — sits BELOW the diamond so vertical edges land on the diamond
-          edge without crossing the label text. */}
       <div className="flex items-start justify-center pt-1 px-1" style={{ height: DIAMOND_LABEL_BELOW, width: 220, marginLeft: -89 }}>
         {editing && !readOnly ? (
           <input
@@ -836,6 +834,8 @@ function EventDiamond({
           </span>
         )}
       </div>
+
+      <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
     </div>
   );
 }
@@ -930,7 +930,7 @@ function WaitDiamond({
 
       <DiamondVisual color={WAIT_COLOR} Icon={Clock} selected={selected} />
 
-      <div style={{ height: DIAMOND_HANDLE_GAP }} aria-hidden />
+      <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
 
       <div className="flex items-start justify-center pt-1 px-1" style={{ height: DIAMOND_LABEL_BELOW, width: 320, marginLeft: -139 }}>
         {editing && !readOnly ? (
@@ -974,6 +974,8 @@ function WaitDiamond({
           </span>
         )}
       </div>
+
+      <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
     </div>
   );
 }
