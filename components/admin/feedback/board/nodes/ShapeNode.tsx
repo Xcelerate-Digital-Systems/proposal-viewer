@@ -637,11 +637,12 @@ function DecisionShape({
 const DIAMOND_SIDE = 30;
 const DIAMOND_BOX_SIZE = 42;                       // 2 * 21 — keeps corner Y on integer px
 const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
-const DIAMOND_LABEL_AREA = 79;                     // empty space ABOVE the diamond so its centre lands at Y=100
 const DIAMOND_LABEL_GAP = 8;                       // padding above + below label so it sits evenly between diamond bottom and bottom handle
 const DIAMOND_LABEL_BELOW = 56;                    // label area BELOW the diamond
 const DIAMOND_NODE_W = DIAMOND_BOX_SIZE;
-const DIAMOND_NODE_H = DIAMOND_LABEL_AREA + DIAMOND_BOX_SIZE + DIAMOND_LABEL_GAP + DIAMOND_LABEL_BELOW + DIAMOND_LABEL_GAP;
+// Diamond sits at the TOP of the frame (no empty padding above) so vertical
+// edges land right on the diamond corner instead of floating in empty space.
+const DIAMOND_NODE_H = DIAMOND_BOX_SIZE + DIAMOND_LABEL_GAP + DIAMOND_LABEL_BELOW + DIAMOND_LABEL_GAP;
 
 type DiamondType =
   | 'call' | 'meeting' | 'automation' | 'goal'
@@ -712,10 +713,10 @@ const HANDLE_CLASS =
 
 // React Flow places handles at the node's bounding box edges by default, but
 // the diamond's corners sit at the midpoints of the box and the label sits
-// above the diamond. We override `top` per-handle so each dot lands exactly
+// below the diamond. We override `top` per-handle so each dot lands exactly
 // on its diamond corner instead of the bounding box edge midpoint.
-const DIAMOND_TOP_Y = DIAMOND_LABEL_AREA;                              // top corner
-const DIAMOND_MID_Y = DIAMOND_LABEL_AREA + DIAMOND_BOX_SIZE / 2;       // left / right corners
+const DIAMOND_TOP_Y = 0;                                                // diamond top corner sits at frame top
+const DIAMOND_MID_Y = DIAMOND_BOX_SIZE / 2;                             // left / right corners
 const HANDLE_OUTSET = 14;                                               // distance from shape edge to connector dot
 
 function DiamondHandles({ readOnly }: { readOnly?: boolean }) {
@@ -727,7 +728,7 @@ function DiamondHandles({ readOnly }: { readOnly?: boolean }) {
   // Bottom handle sits PAST the label, so the label is centred between the
   // diamond bottom and the bottom-edge dot with equal DIAMOND_LABEL_GAP
   // padding on both sides.
-  const bottomStyle = { top: DIAMOND_NODE_H + HANDLE_OUTSET, bottom: 'auto' as const };
+  const bottomStyle = { top: DIAMOND_BOX_SIZE + DIAMOND_LABEL_GAP + DIAMOND_LABEL_BELOW + DIAMOND_LABEL_GAP + HANDLE_OUTSET, bottom: 'auto' as const };
   return (
     <>
       <Handle id="top"           type="source" position={Position.Top}    className={HANDLE_CLASS} style={topStyle}    isConnectable={!readOnly} />
@@ -800,10 +801,6 @@ function EventDiamond({
       onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
     >
       <DiamondHandles readOnly={readOnly} />
-
-      {/* Empty space ABOVE diamond — keeps diamond centre at canonical Y=100
-          so this node aligns horizontally with disc / page nodes. */}
-      <div style={{ height: DIAMOND_LABEL_AREA }} aria-hidden />
 
       <DiamondVisual color={config.color} Icon={config.Icon} selected={selected} />
 
@@ -925,8 +922,6 @@ function WaitDiamond({
       onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
     >
       <DiamondHandles readOnly={readOnly} />
-
-      <div style={{ height: DIAMOND_LABEL_AREA }} aria-hidden />
 
       <DiamondVisual color={WAIT_COLOR} Icon={Clock} selected={selected} />
 
