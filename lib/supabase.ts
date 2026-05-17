@@ -13,5 +13,4 @@ export * from './types/packages';
 export * from './types/page-names';
 export * from './types/proposals';
 export * from './types/documents';
-export * from './types/ads';
 export * from './types/swipe-files';

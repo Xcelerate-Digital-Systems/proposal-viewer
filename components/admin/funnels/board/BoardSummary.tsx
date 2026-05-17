@@ -1,21 +1,18 @@
 'use client';
 
-import { Eye, EyeOff } from 'lucide-react';
 import { formatMoney } from '@/lib/funnel/forecast';
 import type { Forecast } from '@/lib/funnel/forecast';
 import type { FunnelCurrency, FunnelForecastPeriod } from '@/lib/supabase';
 
 interface Props {
   forecast: Forecast;
-  showMetrics: boolean;
-  onToggleMetrics?: () => void;
   currency?: FunnelCurrency;
   period?: FunnelForecastPeriod;
 }
 
 /** Sticky summary chip rendered in the top-left of the canvas. Shows the
  *  rolled-up planner forecast for the entire funnel. */
-export default function BoardSummary({ forecast, showMetrics, onToggleMetrics, currency = 'USD', period }: Props) {
+export default function BoardSummary({ forecast, currency = 'USD', period }: Props) {
   const roasLabel = !Number.isFinite(forecast.roas)
     ? '∞'
     : forecast.roas > 0
@@ -45,17 +42,6 @@ export default function BoardSummary({ forecast, showMetrics, onToggleMetrics, c
       <Divider />
       <Stat label="ROAS" value={roasLabel} tone={forecast.roas >= 1 ? 'positive' : 'neutral'} />
 
-      {onToggleMetrics && (
-        <button
-          type="button"
-          onClick={onToggleMetrics}
-          className="ml-2 flex items-center gap-1 text-[11px] text-muted hover:text-ink hover:bg-surface px-2 py-1 rounded transition-colors"
-          title={showMetrics ? 'Hide metrics on canvas' : 'Show metrics on canvas'}
-        >
-          {showMetrics ? <Eye size={12} /> : <EyeOff size={12} />}
-          {showMetrics ? 'Hide' : 'Show'}
-        </button>
-      )}
     </div>
   );
 }

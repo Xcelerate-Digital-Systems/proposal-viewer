@@ -7,7 +7,7 @@ import {
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
+import { Loader2, MousePointer, Undo2, Redo2, BarChart3 } from 'lucide-react';
 import FunnelStepNode from './nodes/FunnelStepNode';
 import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
@@ -316,15 +316,14 @@ function FunnelBoardInner() {
           snapGrid={[20, 20]}
           style={{ background: 'transparent' }}
           deleteKeyCode={['Backspace', 'Delete']}
-          // Selection model: left-click empty space → drag selection box.
-          // Pan with middle-mouse or hold space + left-click. Right-click
-          // is reserved for the context menu.
-          panOnDrag={[1]}
-          selectionOnDrag
+          // Selection model (Funnelytics/Figma style): left-click drag on empty
+          // pane pans the canvas. Hold Shift + drag for a selection box.
+          // Middle-mouse also pans. Right-click is reserved for context menu.
+          panOnDrag={[0, 1]}
           selectionMode={SelectionMode.Partial}
           panActivationKeyCode="Space"
           multiSelectionKeyCode={['Meta', 'Control']}
-          selectionKeyCode={null}
+          selectionKeyCode="Shift"
           onPaneClick={() => {
             if (board.selectedEdge) board.closeEdgeEditor();
             if (ctx.selectedStepId) ctx.selectStep(null);
@@ -358,8 +357,6 @@ function FunnelBoardInner() {
             <div className="flex items-start gap-2">
               <BoardSummary
                 forecast={ctx.forecast}
-                showMetrics={ctx.showMetrics}
-                onToggleMetrics={() => ctx.setShowMetrics(!ctx.showMetrics)}
                 currency={ctx.funnel?.currency ?? 'USD'}
                 period={ctx.funnel?.forecast_period ?? 'total'}
               />
@@ -381,6 +378,20 @@ function FunnelBoardInner() {
                   title="Redo (⌘⇧Z)"
                 >
                   <Redo2 size={14} />
+                </button>
+                <div className="w-px h-5 bg-edge mx-0.5" />
+                <button
+                  type="button"
+                  onClick={() => ctx.setShowMetrics(!ctx.showMetrics)}
+                  className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+                    ctx.showMetrics
+                      ? 'bg-teal/10 text-teal'
+                      : 'text-ink/70 hover:text-ink hover:bg-surface'
+                  }`}
+                  title={ctx.showMetrics ? 'Turn off Numbers Layer' : 'Turn on Numbers Layer'}
+                  aria-pressed={ctx.showMetrics}
+                >
+                  <BarChart3 size={14} />
                 </button>
               </div>
               <ExportMenu containerRef={containerRef} funnelName={ctx.funnel?.name || 'funnel'} />

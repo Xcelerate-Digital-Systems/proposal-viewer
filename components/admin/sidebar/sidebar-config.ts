@@ -72,16 +72,6 @@ export const ALL_SECTIONS: SectionDef[] = [
     ],
   },
   {
-    key: 'ads',
-    label: 'Ad Tracker',
-    icon: Megaphone,
-    defaultHref: '/ads',
-    matchPaths: ['/ads'],
-    items: [
-      { href: '/ads', label: 'Campaigns', icon: Megaphone },
-    ],
-  },
-  {
     key: 'integrations',
     label: 'Integrations',
     icon: Plug,

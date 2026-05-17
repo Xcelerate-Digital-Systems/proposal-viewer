@@ -10,7 +10,6 @@ import {
 
 import AccountSwitcher from './sidebar/AccountSwitcher';
 import SwipeTypesSidebarNav from './sidebar/SwipeTypesSidebarNav';
-import AdTrackersSidebarNav from './sidebar/AdTrackersSidebarNav';
 import FeedbackItemsSidebarNav from './sidebar/FeedbackItemsSidebarNav';
 import {
   ALL_SECTIONS, STANDALONE_ITEMS, getActiveSection, LayoutDashboard,
@@ -55,11 +54,10 @@ export default function AdminSidebar({
 
   const activeSection = getActiveSection(pathname, visibleSections);
   const inSwipeSection = pathname.startsWith('/ads/swipe');
-  const inAdsSection = pathname.startsWith('/ads') && !inSwipeSection;
   const inFeedbackBoard = /^\/feedback\/[^/]+\/board/.test(pathname);
 
   const isTopLevel =
-    !inSwipeSection && !inAdsSection && !inFeedbackBoard && (
+    !inSwipeSection && !inFeedbackBoard && (
       !activeSection ||
       pathname === '/dashboard' ||
       pathname === '/clients' ||
@@ -219,13 +217,11 @@ export default function AdminSidebar({
       <nav className="flex-1 px-2 py-3 overflow-y-auto flex flex-col">
         {inSwipeSection
           ? <SwipeTypesSidebarNav onNavigate={() => setMobileOpen(false)} />
-          : inAdsSection
-            ? <AdTrackersSidebarNav onNavigate={() => setMobileOpen(false)} />
-            : inFeedbackBoard
-              ? <FeedbackItemsSidebarNav onNavigate={() => setMobileOpen(false)} />
-              : isTopLevel
-                ? renderTopLevelNav()
-                : activeSection && renderSectionNav(activeSection)
+          : inFeedbackBoard
+            ? <FeedbackItemsSidebarNav onNavigate={() => setMobileOpen(false)} />
+            : isTopLevel
+              ? renderTopLevelNav()
+              : activeSection && renderSectionNav(activeSection)
         }
       </nav>
 

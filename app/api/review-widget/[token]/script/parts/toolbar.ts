@@ -11,7 +11,6 @@ var tools=[
   {id:"pin",icon:ICON.pin,label:"Pin Comment"},
   {id:"box",icon:ICON.box,label:"Draw Box"},
   {id:"text",icon:ICON.text,label:"Add Text"},
-  {id:"highlight",icon:ICON.highlight,label:"Highlight Text"},
   {id:"sep1",sep:true},
   {id:"video",icon:ICON.video,label:"Record Video"},
   {id:"comments",icon:ICON.chat,label:"Comments"},
@@ -75,10 +74,6 @@ toolBtns.box.addEventListener("click",function(){
 toolBtns.text.addEventListener("click",function(){
   if(mode==="text"){armPinMode();return;}
   closePanel();setActiveTool("text");setMode("text","");
-});
-toolBtns.highlight.addEventListener("click",function(){
-  if(mode==="highlight"){armPinMode();return;}
-  closePanel();setActiveTool("highlight");setMode("highlight","");
 });
 toolBtns.video.addEventListener("click",function(){
   closePanel();

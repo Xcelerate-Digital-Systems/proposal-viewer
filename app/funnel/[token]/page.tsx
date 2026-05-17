@@ -193,7 +193,6 @@ export default function PublicFunnelPage({ params }: { params: { token: string }
           <div className="absolute top-3 left-3 z-10">
             <BoardSummary
               forecast={forecast}
-              showMetrics
               currency={funnel?.currency ?? 'USD'}
               period={funnel?.forecast_period ?? 'total'}
             />

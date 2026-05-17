@@ -6,7 +6,6 @@ import AuthGuard from '@/components/auth/AuthGuard';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { SwipeFileProvider } from '@/components/admin/ads/swipe/SwipeFileContext';
-import { AdTrackerProvider } from '@/components/admin/ads/AdTrackerContext';
 import { FeedbackBoardProvider } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import { FunnelBoardProvider } from '@/components/admin/funnels/board/FunnelBoardContext';
 
@@ -19,10 +18,6 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children, collapseSidebar }: AdminLayoutProps) {
   const pathname = usePathname();
   const inSwipeSection = pathname?.startsWith('/ads/swipe') ?? false;
-  const inAdsSection =
-    (pathname?.startsWith('/ads') ?? false) &&
-    !inSwipeSection &&
-    !(pathname?.startsWith('/ads/naming-convention') ?? false);
   const feedbackBoardMatch = pathname?.match(/^\/feedback\/([^/]+)\/board/);
   const feedbackBoardProjectId = feedbackBoardMatch?.[1] ?? null;
   const funnelBoardMatch = pathname?.match(/^\/funnels\/([^/]+)\/board/);
@@ -57,10 +52,6 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
         // Only wrap in SwipeFileProvider when we're in the swipe section + have a companyId
         if (inSwipeSection && auth.companyId) {
           return <SwipeFileProvider companyId={auth.companyId}>{content}</SwipeFileProvider>;
-        }
-
-        if (inAdsSection && auth.companyId) {
-          return <AdTrackerProvider companyId={auth.companyId}>{content}</AdTrackerProvider>;
         }
 
         if (feedbackBoardProjectId && auth.companyId) {

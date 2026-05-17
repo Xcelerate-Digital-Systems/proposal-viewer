@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { Phone, MoreVertical, Search, Type, AlignLeft, MessageSquare, type LucideIcon } from 'lucide-react';
 import type { GoogleAdData } from '@/lib/types/feedback';
 import { googleAdAssetView, parseGoogleAdAssetView, type FeedbackItemView } from '@/lib/types/feedback';
@@ -29,13 +30,22 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
   const headlines = (data.headlines || []).filter(Boolean);
   const descriptions = (data.descriptions || []).filter(Boolean);
 
+  // activeView is single-dimensional (headline-N OR description-N) because it
+  // doubles as the feedback target. The SERP card needs BOTH dimensions
+  // selected at once though — switching from Headline 9 to Description 3
+  // shouldn't snap the headline back to #1. We track the last-selected index
+  // for each axis locally and sync from activeView whenever it matches.
   const parsed = parseGoogleAdAssetView(activeView ?? null);
-  const safeHeadlineIdx = parsed?.type === 'headline'
-    ? Math.min(parsed.index, Math.max(headlines.length - 1, 0))
-    : 0;
-  const safeDescIdx = parsed?.type === 'description'
-    ? Math.min(parsed.index, Math.max(descriptions.length - 1, 0))
-    : 0;
+  const [headlineIdx, setHeadlineIdx] = useState(parsed?.type === 'headline' ? parsed.index : 0);
+  const [descIdx, setDescIdx] = useState(parsed?.type === 'description' ? parsed.index : 0);
+
+  useEffect(() => {
+    if (parsed?.type === 'headline') setHeadlineIdx(parsed.index);
+    else if (parsed?.type === 'description') setDescIdx(parsed.index);
+  }, [parsed?.type, parsed?.index]);
+
+  const safeHeadlineIdx = Math.min(headlineIdx, Math.max(headlines.length - 1, 0));
+  const safeDescIdx = Math.min(descIdx, Math.max(descriptions.length - 1, 0));
 
   const selectHeadline = (i: number) => onViewChange?.(googleAdAssetView('headline', i));
   const selectDescription = (i: number) => onViewChange?.(googleAdAssetView('description', i));
@@ -56,7 +66,8 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
           count={headlines.length}
           max={15}
           items={headlines}
-          selectedIdx={parsed?.type === 'headline' ? safeHeadlineIdx : -1}
+          activeIdx={parsed?.type === 'headline' ? safeHeadlineIdx : -1}
+          previewIdx={parsed?.type === 'headline' ? -1 : safeHeadlineIdx}
           onSelect={selectHeadline}
           charLimit={30}
           emptyHint="No headlines added"
@@ -69,7 +80,8 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
           count={descriptions.length}
           max={4}
           items={descriptions}
-          selectedIdx={parsed?.type === 'description' ? safeDescIdx : -1}
+          activeIdx={parsed?.type === 'description' ? safeDescIdx : -1}
+          previewIdx={parsed?.type === 'description' ? -1 : safeDescIdx}
           onSelect={selectDescription}
           charLimit={90}
           emptyHint="No descriptions added"
@@ -195,7 +207,11 @@ interface AssetSectionProps {
   count: number;
   max: number;
   items: string[];
-  selectedIdx: number;
+  /** Row that is the current comment target — strong blue highlight. */
+  activeIdx: number;
+  /** Row that is currently rendering in the SERP card but isn't the comment
+   *  target (i.e. user picked the other axis last). Soft grey background. */
+  previewIdx: number;
   onSelect: (idx: number) => void;
   charLimit: number;
   emptyHint: string;
@@ -204,7 +220,7 @@ interface AssetSectionProps {
 }
 
 function AssetSection({
-  icon: Icon, label, count, max, items, selectedIdx, onSelect, charLimit, emptyHint, assetType, commentCounts,
+  icon: Icon, label, count, max, items, activeIdx, previewIdx, onSelect, charLimit, emptyHint, assetType, commentCounts,
 }: AssetSectionProps) {
   return (
     <div className="border-b border-gray-100 last:border-b-0">
@@ -220,7 +236,8 @@ function AssetSection({
       ) : (
         <ul className="py-1.5">
           {items.map((text, i) => {
-            const selected = i === selectedIdx;
+            const active = i === activeIdx;
+            const previewing = i === previewIdx;
             const over = text.length > charLimit;
             const commentCount = commentCounts?.[`${assetType}-${i}`] ?? 0;
             return (
@@ -229,12 +246,20 @@ function AssetSection({
                   type="button"
                   onClick={() => onSelect(i)}
                   className={`w-full text-left px-3.5 py-2 flex items-start gap-2.5 text-[13px] leading-snug transition-colors ${
-                    selected ? 'bg-blue-50 text-[#1a0dab]' : 'text-gray-700 hover:bg-gray-50'
+                    active
+                      ? 'bg-blue-50 text-[#1a0dab]'
+                      : previewing
+                        ? 'bg-gray-50 text-gray-800'
+                        : 'text-gray-700 hover:bg-gray-50'
                   }`}
                   title={text}
                 >
                   <span className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-medium shrink-0 ${
-                    selected ? 'bg-[#1a0dab] text-white' : 'bg-gray-100 text-gray-500'
+                    active
+                      ? 'bg-[#1a0dab] text-white'
+                      : previewing
+                        ? 'bg-gray-200 text-gray-700'
+                        : 'bg-gray-100 text-gray-500'
                   }`}>
                     {i + 1}
                   </span>
