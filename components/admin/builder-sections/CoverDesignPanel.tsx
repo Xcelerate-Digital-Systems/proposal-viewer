@@ -1,18 +1,19 @@
 // components/admin/builder-sections/CoverDesignPanel.tsx
-// Cover-design half of the split CoverEditor. Owns colours + cover background
-// image only; the Cover tab keeps the content-only editor. Both panels save
-// disjoint slices of the same row so there's no race in practice (different
-// tabs are never mounted at the same time).
+// Cover-design half of the split CoverEditor. Owns cover-specific visuals
+// only — the Cover tab keeps the content-only editor (logo, subtitle,
+// prepared-by, etc.). The fill / gradient picker comes from the shared
+// HeaderStyleCard so cover styling looks identical on /proposals,
+// /templates and /quotes.
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image as ImageIcon, Loader2, Palette, Trash2, Upload } from 'lucide-react';
+import { Image as ImageIcon, Loader2, MousePointer2, Palette, Trash2, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
-import CoverColorControls, { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
+import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
-import { resolveStops } from '@/lib/gradient-stops';
+import HeaderStyleCard from '@/components/admin/quotes/HeaderStyleCard';
 import type { CoverEditorEntity, EntityType } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import { configs } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 
@@ -25,35 +26,23 @@ interface Props {
 export default function CoverDesignPanel({ type, entity, onSave }: Props) {
   const cfg = configs[type];
   const toast = useToast();
+  // HeaderStyleCard writes to either `proposals` or `proposal_templates` and
+  // already understands the cover_* column family. Documents don't have
+  // a cover design surface — they only get the image upload below.
+  const headerTable = type === 'template' ? 'proposal_templates' : 'proposals';
 
-  /* ── State ──────────────────────────────────────────────────── */
+  /* ── Image state ────────────────────────────────────────────── */
   const [imagePath, setImagePath] = useState(entity.cover_image_path || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const [colors, setColors] = useState<CoverColorValues>({
-    coverBgStyle: (entity.cover_bg_style as 'gradient' | 'solid') || 'gradient',
-    coverGradientType: (entity.cover_gradient_type as 'linear' | 'radial' | 'conic') || 'linear',
-    coverGradientAngle: entity.cover_gradient_angle ?? 135,
-    coverBgColor1: entity.cover_bg_color_1 || '#0f0f0f',
-    coverBgColor2: entity.cover_bg_color_2 || '#141414',
-    coverGradientStops: resolveStops(
-      (entity as { cover_gradient_stops?: unknown }).cover_gradient_stops,
-      entity.cover_bg_color_1 || '#0f0f0f',
-      entity.cover_bg_color_2 || '#141414',
-    ),
-    coverOverlayOpacity: entity.cover_overlay_opacity ?? 0.65,
-    coverTextColor: entity.cover_text_color || '#ffffff',
-    coverSubtitleColor: entity.cover_subtitle_color || '#ffffffb3',
-    coverButtonBg: entity.cover_button_bg || '#01434A',
-    coverButtonTextColor: entity.cover_button_text_color || '#ffffff',
-  });
+  /* ── Button-only colours (HeaderStyleCard owns the rest) ────── */
+  const [buttonBg, setButtonBg] = useState(entity.cover_button_bg || '#01434A');
+  const [buttonTextColor, setButtonTextColor] = useState(entity.cover_button_text_color || '#ffffff');
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   useReportSaveStatus(saveStatus);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initializedRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* ── Resolve image URL ──────────────────────────────────────── */
@@ -72,48 +61,15 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
     return () => { cancelled = true; };
   }, [imagePath]);
 
-  /* ── Save (design fields only) ──────────────────────────────── */
-  const save = useCallback(async () => {
+  /* ── Persist a partial patch on this entity row ─────────────── */
+  const persist = useCallback(async (patch: Record<string, unknown>) => {
     setSaveStatus('saving');
-    const payload: Record<string, unknown> = {
-      cover_image_path: imagePath || null,
-      cover_bg_style: colors.coverBgStyle,
-      cover_bg_color_1: colors.coverBgColor1,
-      cover_bg_color_2: colors.coverBgColor2,
-      cover_gradient_stops: colors.coverGradientStops,
-      cover_gradient_type: colors.coverGradientType,
-      cover_gradient_angle: colors.coverGradientAngle,
-      cover_overlay_opacity: colors.coverOverlayOpacity,
-      cover_text_color: colors.coverTextColor,
-      cover_subtitle_color: colors.coverSubtitleColor,
-      cover_button_bg: colors.coverButtonBg,
-      cover_button_text_color: colors.coverButtonTextColor,
-    };
-    const { error } = await supabase.from(cfg.table).update(payload).eq('id', entity.id);
+    const { error } = await supabase.from(cfg.table).update(patch).eq('id', entity.id);
     setSaveStatus('saved');
     setTimeout(() => setSaveStatus('idle'), 2000);
     if (error) toast.error('Failed to save cover design');
     else onSave?.();
-  }, [cfg.table, entity.id, imagePath, colors, onSave, toast]);
-
-  const scheduleSave = useCallback((delay = 800) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      save();
-      debounceRef.current = null;
-    }, delay);
-  }, [save]);
-
-  useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      return;
-    }
-    scheduleSave(800);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imagePath, colors]);
-
-  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+  }, [cfg.table, entity.id, onSave, toast]);
 
   /* ── Image upload ───────────────────────────────────────────── */
   const handleUpload = async (file: File) => {
@@ -131,6 +87,7 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
         .upload(path, file, { upsert: true });
       if (error) throw error;
       setImagePath(path);
+      await persist({ cover_image_path: path });
     } catch {
       toast.error('Upload failed');
     } finally {
@@ -144,18 +101,30 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
       await supabase.storage.from('proposals').remove([imagePath]).catch(() => {});
     }
     setImagePath('');
-  };
-
-  const updateColors = (partial: Partial<CoverColorValues>) => {
-    setColors((prev) => ({ ...prev, ...partial }));
+    await persist({ cover_image_path: null });
   };
 
   /* ── Render ─────────────────────────────────────────────────── */
+  // HeaderStyleCard requires a typed entity. Since proposals + templates share
+  // the same cover_* columns, the cast is safe in practice.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const headerEntity = entity as any;
+
   return (
     <div className="space-y-5">
+      <HeaderStyleCard
+        proposal={headerEntity}
+        companyId={entity.company_id}
+        onSaved={() => onSave?.()}
+        variant="cover"
+        title="Cover Fill"
+        description="Solid colour or gradient that sits behind the cover splash. Drag the preview to position radial / conic gradients."
+        table={headerTable}
+      />
+
       <SectionCard
-        title="Cover Background Image"
-        description="Optional photo behind the cover. Leave empty to use the gradient / solid colour below."
+        title="Cover Image Overlay"
+        description="Optional photo layered on top of the fill above. The fill's overlay-opacity slider controls how much fill shows through."
         icon={<ImageIcon size={14} className="text-gray-400" />}
       >
         <input
@@ -200,17 +169,30 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
             className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
           >
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
-            <span className="text-xs font-medium">Upload background image</span>
+            <span className="text-xs font-medium">Upload cover image</span>
           </button>
         )}
       </SectionCard>
 
       <SectionCard
-        title="Cover Colours"
-        description="Gradient or solid background, title / subtitle / button colours."
-        icon={<Palette size={14} className="text-gray-400" />}
+        title="Cover Button"
+        description="Colours for the cover's call-to-action button."
+        icon={<MousePointer2 size={14} className="text-gray-400" />}
       >
-        <CoverColorControls {...colors} onChange={updateColors} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ColorPickerField
+            label="Button background"
+            value={buttonBg}
+            fallback="#01434A"
+            onChange={(v) => { setButtonBg(v); persist({ cover_button_bg: v }); }}
+          />
+          <ColorPickerField
+            label="Button text"
+            value={buttonTextColor}
+            fallback="#ffffff"
+            onChange={(v) => { setButtonTextColor(v); persist({ cover_button_text_color: v }); }}
+          />
+        </div>
       </SectionCard>
     </div>
   );

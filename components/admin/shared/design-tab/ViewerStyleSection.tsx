@@ -22,6 +22,7 @@ import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
 import PackagesDesignPanel from '@/components/admin/builder-sections/PackagesDesignPanel';
+import { PricingDesignPreview, TextPageDesignPreview } from '@/components/admin/builder-sections/DesignPreviews';
 import type { CoverEditorEntity } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import {
   EntityType, PageOrientation, TextPageDefaults,
@@ -143,10 +144,114 @@ export default function ViewerStyleSection({
   const fileRef = useRef<HTMLInputElement>(null);
   const basePath = type === 'template' ? `/templates/${entityId}` : `/proposals/${entityId}`;
 
+  /* ── Reusable Background Image block (used inside Text Page card) ── */
+  const backgroundImageBlock = (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        {(['company', 'custom'] as const).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setBgMode(mode)}
+            className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+              bgMode === mode
+                ? 'bg-teal/10 border-teal/40 text-teal font-medium'
+                : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            {mode === 'company' ? 'Use company default' : 'Custom'}
+          </button>
+        ))}
+      </div>
+
+      {bgMode === 'custom' && (
+        <>
+          {bgImageUrl ? (
+            <div className="flex items-start gap-3">
+              <div
+                className="w-20 h-14 rounded-lg border border-gray-200 bg-cover bg-center shrink-0"
+                style={{ backgroundImage: `url(${bgImageUrl})` }}
+              />
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                >
+                  {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                  Replace
+                </button>
+                <button
+                  onClick={onRemove}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={12} />
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
+            >
+              {uploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
+              <span className="text-xs font-medium">Upload background image</span>
+            </button>
+          )}
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onUpload(file);
+              e.target.value = '';
+            }}
+          />
+
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">
+              Color Overlay — {Math.round(overlayOpacity * 100)}%
+            </label>
+            <input
+              type="range" min="0" max="100"
+              value={Math.round(overlayOpacity * 100)}
+              onChange={(e) => setOverlayOpacity(parseInt(e.target.value) / 100)}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">
+              Blur — {bgImageBlur > 0 ? `${bgImageBlur}px` : 'Off'}
+            </label>
+            <input
+              type="range" min="0" max="20"
+              value={bgImageBlur}
+              onChange={(e) => setBgImageBlur(parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
+            />
+          </div>
+
+          <button
+            onClick={onBgResetToCompany}
+            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+          >
+            <RotateCcw size={12} />
+            Reset to company default
+          </button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-5">
       {/* ============================================================
-          1. GLOBALS
+          1. GLOBALS — truly cross-cutting controls
           ============================================================ */}
       <GroupHeading title="Globals" hint="Apply across every page" />
 
@@ -176,132 +281,37 @@ export default function ViewerStyleSection({
       </SectionCard>
 
       <SectionCard
-        title="Background Image"
-        description="Sits behind text pages, pricing, and packages."
-        icon={<ImageIcon size={14} className="text-gray-400" />}
+        title="Page Title Font"
+        description="Headline typography used by cover headlines and text / pricing / packages page titles."
+        icon={<Type size={14} className="text-gray-400" />}
       >
         <div className="space-y-3">
-          <div className="flex gap-2">
-            {(['company', 'custom'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setBgMode(mode)}
-                className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
-                  bgMode === mode
-                    ? 'bg-teal/10 border-teal/40 text-teal font-medium'
-                    : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                {mode === 'company' ? 'Use company default' : 'Custom'}
-              </button>
-            ))}
+          <FontSelect
+            label="Title Font"
+            description="Leave blank to use your company heading font"
+            value={titleFontFamily}
+            onChange={setTitleFontFamily}
+            previewText="Your Page Title"
+            weight={titleFontWeight}
+            onWeightChange={setTitleFontWeight}
+          />
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Title Size</label>
+            <select
+              value={titleFontSize}
+              onChange={(e) => setTitleFontSize(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30"
+            >
+              <option value="">Default</option>
+              <option value="20">20px — Small</option>
+              <option value="24">24px — Medium</option>
+              <option value="28">28px</option>
+              <option value="32">32px — Large</option>
+              <option value="36">36px</option>
+              <option value="40">40px — Extra Large</option>
+              <option value="48">48px</option>
+            </select>
           </div>
-
-          {bgMode === 'custom' && (
-            <>
-              {bgImageUrl ? (
-                <div className="flex items-start gap-3">
-                  <div
-                    className="w-20 h-14 rounded-lg border border-gray-200 bg-cover bg-center shrink-0"
-                    style={{ backgroundImage: `url(${bgImageUrl})` }}
-                  />
-                  <div className="space-y-1.5">
-                    <button
-                      onClick={() => fileRef.current?.click()}
-                      disabled={uploading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
-                    >
-                      {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
-                      Replace
-                    </button>
-                    <button
-                      onClick={onRemove}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={12} />
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
-                >
-                  {uploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
-                  <span className="text-xs font-medium">Upload background image</span>
-                </button>
-              )}
-
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) onUpload(file);
-                  e.target.value = '';
-                }}
-              />
-
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">
-                  Color Overlay — {Math.round(overlayOpacity * 100)}%
-                </label>
-                <input
-                  type="range" min="0" max="100"
-                  value={Math.round(overlayOpacity * 100)}
-                  onChange={(e) => setOverlayOpacity(parseInt(e.target.value) / 100)}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">
-                  Blur — {bgImageBlur > 0 ? `${bgImageBlur}px` : 'Off'}
-                </label>
-                <input
-                  type="range" min="0" max="20"
-                  value={bgImageBlur}
-                  onChange={(e) => setBgImageBlur(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-                />
-              </div>
-
-              <button
-                onClick={onBgResetToCompany}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
-              >
-                <RotateCcw size={12} />
-                Reset to company default
-              </button>
-            </>
-          )}
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        title="Page Number Badge"
-        description="Leave blank to use your accent colour (circle) and white (text)."
-        icon={<Hash size={14} className="text-gray-400" />}
-      >
-        <div className="space-y-4">
-          <ColorPickerField
-            label="Circle Colour"
-            value={pageNumCircleColor}
-            fallback={companyDefaults.accent_color}
-            onChange={setPageNumCircleColor}
-            onReset={() => setPageNumCircleColor(null)}
-          />
-          <ColorPickerField
-            label="Text Colour"
-            value={pageNumTextColor}
-            fallback="#ffffff"
-            onChange={setPageNumTextColor}
-            onReset={() => setPageNumTextColor(null)}
-          />
         </div>
       </SectionCard>
 
@@ -337,70 +347,39 @@ export default function ViewerStyleSection({
       )}
 
       {/* ============================================================
-          3. TEXT PAGE
+          3. PRICING PAGE — quote pages
           ============================================================ */}
-      <GroupHeading title="Text Page" />
+      <GroupHeading title="Pricing Page" hint="Line item table, totals, payment schedule" />
 
-      <SectionCard
-        title="Page Title Font"
-        description="Headline typography for text pages, pricing, and packages."
-        icon={<Type size={14} className="text-gray-400" />}
-      >
-        <div className="space-y-3">
-          <FontSelect
-            label="Title Font"
-            description="Leave blank to use your company heading font"
-            value={titleFontFamily}
-            onChange={setTitleFontFamily}
-            previewText="Your Page Title"
-            weight={titleFontWeight}
-            onWeightChange={setTitleFontWeight}
-          />
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Title Size</label>
-            <select
-              value={titleFontSize}
-              onChange={(e) => setTitleFontSize(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30"
-            >
-              <option value="">Default</option>
-              <option value="20">20px — Small</option>
-              <option value="24">24px — Medium</option>
-              <option value="28">28px</option>
-              <option value="32">32px — Large</option>
-              <option value="36">36px</option>
-              <option value="40">40px — Extra Large</option>
-              <option value="48">48px</option>
-            </select>
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        title="Text Page Colours"
-        description="Body background, body text, and heading colours for text pages."
-        icon={<Palette size={14} className="text-gray-400" />}
-        action={
-          <button
-            onClick={onTpResetToCompany}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0">
+          <SectionCard
+            title="Pricing Design"
+            description="Pricing pages inherit body styling from Text Page below."
+            icon={<DollarSign size={14} className="text-gray-400" />}
           >
-            <RotateCcw size={12} />
-            Reset to company defaults
-          </button>
-        }
-      >
-        <div className="space-y-4">
-          <ColorPickerField label="Background Color" value={tpBgColor} fallback={companyDefaults.bg_color} onChange={setTpBgColor} />
-          <ColorPickerField label="Text Color" value={tpTextColor} fallback={companyDefaults.text_color} onChange={setTpTextColor} />
-          <ColorPickerField label="Heading Color" value={tpHeadingColor} fallback={companyDefaults.heading_color || companyDefaults.text_color} onChange={setTpHeadingColor} />
+            <p className="text-xs text-gray-400">
+              Pricing pages share their background, body text and heading colour with text pages — set
+              them in the Text Page section below. Line item column labels live on the Quote tab.
+            </p>
+          </SectionCard>
         </div>
-      </SectionCard>
+        {type !== 'document' && (
+          <aside className="hidden xl:block w-[420px] 2xl:w-[480px] shrink-0">
+            <div className="sticky top-6">
+              <PricingDesignPreview
+                entityId={entityId}
+                entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
 
       {/* ============================================================
-          4. PACKAGES PAGE
+          4. PACKAGE PAGE
           ============================================================ */}
-      <GroupHeading title="Packages Page" hint="Gradient picker, feature icons, tier colours" />
+      <GroupHeading title="Package Page" hint="Gradient picker, feature icons, tier colours" />
 
       {type === 'document' ? (
         <SectionCard
@@ -418,21 +397,76 @@ export default function ViewerStyleSection({
       )}
 
       {/* ============================================================
-          5. QUOTE PAGES
+          5. TEXT PAGE — body of every non-cover page
           ============================================================ */}
-      <GroupHeading title="Quote Pages" hint="Line item table, totals, payment schedule" />
+      <GroupHeading title="Text Page" hint="Also applies to pricing and packages bodies" />
 
-      <SectionCard
-        title="Quote Design"
-        description="Quote pages inherit from Text Page styling above."
-        icon={<DollarSign size={14} className="text-gray-400" />}
-      >
-        <p className="text-xs text-gray-400">
-          Quote pages share their colours and fonts with text pages — the page background, body
-          text and heading colour are controlled by the Text Page section above. Line item column
-          labels are still managed on the Quote tab.
-        </p>
-      </SectionCard>
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0 space-y-5">
+          <SectionCard
+            title="Text Page Colours"
+            description="Body background, body text, and heading colours for text pages."
+            icon={<Palette size={14} className="text-gray-400" />}
+            action={
+              <button
+                onClick={onTpResetToCompany}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+              >
+                <RotateCcw size={12} />
+                Reset to company defaults
+              </button>
+            }
+          >
+            <div className="space-y-4">
+              <ColorPickerField label="Background Color" value={tpBgColor} fallback={companyDefaults.bg_color} onChange={setTpBgColor} />
+              <ColorPickerField label="Text Color" value={tpTextColor} fallback={companyDefaults.text_color} onChange={setTpTextColor} />
+              <ColorPickerField label="Heading Color" value={tpHeadingColor} fallback={companyDefaults.heading_color || companyDefaults.text_color} onChange={setTpHeadingColor} />
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Page Number Badge"
+            description="Leave blank to use your accent colour (circle) and white (text)."
+            icon={<Hash size={14} className="text-gray-400" />}
+          >
+            <div className="space-y-4">
+              <ColorPickerField
+                label="Circle Colour"
+                value={pageNumCircleColor}
+                fallback={companyDefaults.accent_color}
+                onChange={setPageNumCircleColor}
+                onReset={() => setPageNumCircleColor(null)}
+              />
+              <ColorPickerField
+                label="Text Colour"
+                value={pageNumTextColor}
+                fallback="#ffffff"
+                onChange={setPageNumTextColor}
+                onReset={() => setPageNumTextColor(null)}
+              />
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Background Image"
+            description="Sits behind text, pricing, and packages pages."
+            icon={<ImageIcon size={14} className="text-gray-400" />}
+          >
+            {backgroundImageBlock}
+          </SectionCard>
+        </div>
+
+        {type !== 'document' && (
+          <aside className="hidden xl:block w-[420px] 2xl:w-[480px] shrink-0">
+            <div className="sticky top-6">
+              <TextPageDesignPreview
+                entityId={entityId}
+                entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

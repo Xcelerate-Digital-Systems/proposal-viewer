@@ -14,7 +14,10 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
+import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
+import type { CompanyBranding } from '@/hooks/useProposal';
+import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 
 interface Props {
   entityId: string;
@@ -34,6 +37,8 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
   // the Packages tab; only the styling overrides are written by this panel.
   const [tiers, setTiers] = useState<PackageTier[]>([]);
   const [packagesPageId, setPackagesPageId] = useState<string | null>(null);
+  const [packagesPageTitle, setPackagesPageTitle] = useState('Your Investment');
+  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   useReportSaveStatus(saveStatus);
@@ -64,8 +69,27 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
         .sort((a, b) => a.position - b.position)[0];
       if (firstPackages) {
         setPackagesPageId(firstPackages.id);
-        setTiers((firstPackages.payload?.packages as PackageTier[]) || []);
+        setTiers(((firstPackages.payload as Record<string, unknown>)?.packages as PackageTier[]) || []);
+        const t = (firstPackages as { title?: string }).title;
+        if (t) setPackagesPageTitle(t);
       }
+
+      // Branding for the preview
+      const entityIdForBranding = entityId;
+      const tableForCompany = entityKey === 'template_id' ? 'proposal_templates' : 'proposals';
+      const { data: ent } = await supabase
+        .from(tableForCompany)
+        .select('company_id')
+        .eq('id', entityIdForBranding)
+        .single();
+      const cid = (ent?.company_id as string | undefined) ?? null;
+      if (cid) {
+        const r = await fetch(`/api/company/branding?company_id=${cid}`);
+        if (r.ok && !cancelled) {
+          setBranding({ ...DEFAULT_BRANDING, ...(await r.json()) });
+        }
+      }
+
       setLoaded(true);
     })();
     return () => { cancelled = true; };
@@ -124,18 +148,48 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
     );
   }
 
+  // Synthesised ProposalPackages object so we can hand it to PackagesPreview.
+  // Live-reflects the styling + tier overrides the user is currently editing.
+  const previewPackages = {
+    id: packagesPageId ?? 'preview',
+    proposal_id: entityId,
+    company_id: '',
+    enabled: true,
+    position: 0,
+    sort_order: 0,
+    indent: 0,
+    title: packagesPageTitle,
+    intro_text: null,
+    packages: tiers,
+    footer_text: null,
+    styling,
+    created_at: '',
+    updated_at: '',
+  };
+
   return (
-    <SectionCard
-      title="Packages Design"
-      description="Colours, gradients, feature icons, and per-tier overrides — applies to every packages page."
-      icon={<Palette size={14} className="text-gray-400" />}
-    >
-      <PackagesAppearanceSection
-        styling={styling}
-        tiers={tiers}
-        onStylingChange={onStylingChange}
-        onTierChange={onTierChange}
-      />
-    </SectionCard>
+    <div className="flex gap-6 items-start">
+      <div className="flex-1 min-w-0">
+        <SectionCard
+          title="Packages Design"
+          description="Colours, gradients, feature icons, and per-tier overrides — applies to every packages page."
+          icon={<Palette size={14} className="text-gray-400" />}
+        >
+          <PackagesAppearanceSection
+            styling={styling}
+            tiers={tiers}
+            onStylingChange={onStylingChange}
+            onTierChange={onTierChange}
+          />
+        </SectionCard>
+      </div>
+
+      <aside className="hidden xl:block w-[420px] 2xl:w-[480px] shrink-0">
+        <div className="sticky top-6">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <PackagesPreview packages={previewPackages as any} branding={branding} />
+        </div>
+      </aside>
+    </div>
   );
 }

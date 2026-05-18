@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Palette } from 'lucide-react';
-import { supabase, type Proposal } from '@/lib/supabase';
+import { supabase, type Proposal, type ProposalTemplate } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import ColorPickerField, { setBrandingColors } from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
@@ -22,13 +22,21 @@ import { buildGradientCss, resolveStops, type GradientStop } from '@/lib/gradien
 // existing quotes don't suddenly lose their styling.
 export type HeaderStyleVariant = 'cover' | 'quote-header';
 
+// Generalized so this card can edit either a `proposals` row or a
+// `proposal_templates` row. Both tables expose the same cover_* / quote_header_*
+// columns, so we just swap the table name on save.
+type StylableEntity = Proposal | ProposalTemplate;
+type StylableTable = 'proposals' | 'proposal_templates';
+
 interface Props {
-  proposal: Proposal;
+  proposal: StylableEntity;
   companyId: string;
   onSaved: () => void;
   variant?: HeaderStyleVariant;
   title?: string;
   description?: string;
+  /** Defaults to 'proposals'. Pass 'proposal_templates' when editing a template. */
+  table?: StylableTable;
 }
 
 interface VariantCols {
@@ -87,6 +95,7 @@ export default function HeaderStyleCard({
   variant = 'cover',
   title,
   description,
+  table = 'proposals',
 }: Props) {
   const toast = useToast();
   const cols = variant === 'cover' ? COVER_COLS : QUOTE_HEADER_COLS;
@@ -152,7 +161,7 @@ export default function HeaderStyleCard({
   );
 
   const persist = async (patch: Record<string, unknown>) => {
-    const { error } = await supabase.from('proposals').update(patch).eq('id', proposal.id);
+    const { error } = await supabase.from(table).update(patch).eq('id', proposal.id);
     if (error) { toast.error('Failed to save'); return; }
     onSaved();
   };
