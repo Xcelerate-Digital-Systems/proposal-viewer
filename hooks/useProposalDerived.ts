@@ -88,8 +88,16 @@ export function useProposalDerived(
     () =>
       pageUrls
         .filter((x) => x.type === 'packages')
-        .map((p) => ({ id: p.id, enabled: true, title: p.title, indent: p.indent, ...p.payload })),
-    [pageUrls],
+        .map((p) => {
+          const merged = { id: p.id, enabled: true, title: p.title, indent: p.indent, ...p.payload };
+          // Entity-level styling (post-2026-05 migration) overrides any stale
+          // per-page styling that lingers in payload.
+          if (proposal?.package_styling) {
+            (merged as Record<string, unknown>).styling = proposal.package_styling;
+          }
+          return merged;
+        }),
+    [pageUrls, proposal],
   );
 
   const textPages: ProposalTextPage[] = useMemo(

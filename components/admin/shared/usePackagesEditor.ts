@@ -5,6 +5,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   PackageTier, ProposalPackages,
   PackageStyling, normalizePackageStyling, DEFAULT_PACKAGE_STYLING,
+  supabase,
 } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { useToast } from '@/components/ui/Toast';
@@ -129,6 +130,32 @@ export function usePackagesEditor({
 
   const selectedPage = allPages.find((p) => p.id === selectedId) ?? null;
 
+  /* ── Fetch entity-level package_styling once ────────────────── */
+  // package_styling moved from per-page payload to the entity row in the
+  // 2026-05 design-tab consolidation. The hook now reads it from the entity
+  // and stops writing it into page payloads. Per-page styling that lingers in
+  // payload is ignored on the editor side; the viewer falls back to it only
+  // for rows that haven't been migrated.
+  const [entityStyling, setEntityStyling] = useState<PackageStyling>(DEFAULT_PACKAGE_STYLING);
+
+  useEffect(() => {
+    if (!entityId) return;
+    const table = entityKey === 'template_id' ? 'proposal_templates' : 'proposals';
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from(table)
+        .select('package_styling')
+        .eq('id', entityId)
+        .single();
+      if (cancelled) return;
+      if (data?.package_styling) {
+        setEntityStyling(normalizePackageStyling(data.package_styling));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [entityId, entityKey]);
+
   /* ── Fetch packages pages ───────────────────────────────────── */
 
   useEffect(() => {
@@ -145,7 +172,7 @@ export function usePackagesEditor({
           if (pages.length > 0) {
             const first = pages[0];
             setSelectedId(first.id);
-            setForm(formFromRecord(first));
+            setForm({ ...formFromRecord(first), styling: entityStyling });
             setPosition(first.position);
             setExpandedTiers(new Set((first.packages || []).map((p: PackageTier) => p.id)));
             if (!companyId && first.company_id) {
@@ -159,7 +186,7 @@ export function usePackagesEditor({
       setLoaded(true);
     };
     fetchPackages();
-  }, [apiBase, entityKey, entityId, companyId]);
+  }, [apiBase, entityKey, entityId, companyId, entityStyling]);
 
   /* ── Fetch branding ─────────────────────────────────────────── */
 
@@ -207,7 +234,7 @@ export function usePackagesEditor({
               intro_text: data.intro_text,
               packages: data.packages,
               footer_text: data.footer_text,
-              styling: data.styling,
+              // styling intentionally omitted — it lives on the entity now.
             },
           }),
         });

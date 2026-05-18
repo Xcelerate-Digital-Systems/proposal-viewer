@@ -21,6 +21,7 @@ import FontSelect from '@/components/admin/shared/FontSelect';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
+import PackagesDesignPanel from '@/components/admin/builder-sections/PackagesDesignPanel';
 import type { CoverEditorEntity } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import {
   EntityType, PageOrientation, TextPageDefaults,
@@ -401,24 +402,20 @@ export default function ViewerStyleSection({
           ============================================================ */}
       <GroupHeading title="Packages Page" hint="Gradient picker, feature icons, tier colours" />
 
-      <SectionCard
-        title="Packages Design"
-        description="Tier gradients, feature icons, and pricing card styling."
-        icon={<Package size={14} className="text-gray-400" />}
-        action={
-          <Link
-            href={`${basePath}/packages`}
-            className="flex items-center gap-1 text-xs font-medium text-teal hover:underline"
-          >
-            Open Packages tab <ArrowUpRight size={12} />
-          </Link>
-        }
-      >
-        <p className="text-xs text-gray-400">
-          Each packages page currently owns its own styling. Phase 1.5 will lift the appearance
-          controls here so packages styling is set once at the {type} level.
-        </p>
-      </SectionCard>
+      {type === 'document' ? (
+        <SectionCard
+          title="Packages Design"
+          description="Documents don't have packages pages."
+          icon={<Package size={14} className="text-gray-400" />}
+        >
+          <p className="text-xs text-gray-400">Not applicable to documents.</p>
+        </SectionCard>
+      ) : (
+        <PackagesDesignPanel
+          entityId={entityId}
+          entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
+        />
+      )}
 
       {/* ============================================================
           5. QUOTE PAGES

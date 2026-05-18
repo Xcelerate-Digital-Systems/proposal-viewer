@@ -198,6 +198,9 @@ export type Proposal = {
   is_test: boolean;
   /** Quote-only: array of attachment metadata. */
   attachments: QuoteAttachment[];
+  /** Entity-level packages styling. Falls back to first packages page's
+   *  payload.styling for rows that pre-date the 2026-05 migration. */
+  package_styling: unknown | null;
 };
 
 // ─── Quote Attachment ─────────────────────────────────────────────────────────
@@ -289,6 +292,9 @@ export type ProposalTemplate = {
   post_accept_action: 'redirect' | 'message' | null;
   post_accept_redirect_url: string | null;
   post_accept_message: string | null;
+  /** Entity-level packages styling. Falls back to first packages page's
+   *  payload.styling for rows that pre-date the 2026-05 migration. */
+  package_styling: unknown | null;
 };
 
 // ─── Template Page ────────────────────────────────────────────────────────────

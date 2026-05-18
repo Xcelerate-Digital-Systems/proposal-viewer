@@ -229,8 +229,15 @@ export function useTemplatePreview(templateId: string) {
     () =>
       pageUrls
         .filter((x) => x.type === 'packages')
-        .map((p) => ({ id: p.id, enabled: true, title: p.title, indent: p.indent, ...p.payload })),
-    [pageUrls],
+        .map((p) => {
+          const merged = { id: p.id, enabled: true, title: p.title, indent: p.indent, ...p.payload };
+          const tplStyling = (template as Record<string, unknown> | null)?.package_styling;
+          if (tplStyling) {
+            (merged as Record<string, unknown>).styling = tplStyling;
+          }
+          return merged;
+        }),
+    [pageUrls, template],
   );
 
   const textPages: ProposalTextPage[] = useMemo(

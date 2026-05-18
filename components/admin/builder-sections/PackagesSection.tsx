@@ -5,11 +5,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Package, Plus, Trash2, Eye, FileText, Palette, LayoutGrid } from 'lucide-react';
+import { Loader2, Package, Plus, Trash2, Eye, FileText, LayoutGrid } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
-import { PackageTier, PackageStyling } from '@/lib/supabase';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
-import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
 import TierEditor from '@/components/admin/shared/TierEditor';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import { usePackagesEditor, type UsePackagesEditorOptions } from '@/components/admin/shared/usePackagesEditor';
@@ -264,21 +262,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
                 )}
               </SectionCard>
 
-              {/* Appearance — gradient pickers, colours, feature icons */}
-              <SectionCard
-                title="Appearance"
-                description="Colours, gradients, feature icons, and layout"
-                icon={<Palette size={14} className="text-gray-400" />}
-              >
-                <PackagesAppearanceSection
-                  styling={editor.form.styling}
-                  tiers={editor.form.packages}
-                  onStylingChange={(newStyling: PackageStyling) => editor.updateForm({ styling: newStyling })}
-                  onTierChange={(tierId: string, changes: Partial<PackageTier>) =>
-                    editor.updateTier(tierId, changes)
-                  }
-                />
-              </SectionCard>
+              {/* Appearance moved to the Design tab — Packages Page section. */}
             </>
           )}
         </div>
