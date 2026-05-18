@@ -365,7 +365,7 @@ export default function ViewerStyleSection({
           </SectionCard>
         </div>
         {type !== 'document' && (
-          <aside className="hidden xl:block w-[420px] 2xl:w-[480px] shrink-0">
+          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
             <div className="sticky top-6">
               <PricingDesignPreview
                 entityId={entityId}
@@ -457,7 +457,7 @@ export default function ViewerStyleSection({
         </div>
 
         {type !== 'document' && (
-          <aside className="hidden xl:block w-[420px] 2xl:w-[480px] shrink-0">
+          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
             <div className="sticky top-6">
               <TextPageDesignPreview
                 entityId={entityId}
