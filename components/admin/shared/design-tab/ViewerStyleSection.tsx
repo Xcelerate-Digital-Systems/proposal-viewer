@@ -1,15 +1,22 @@
 // components/admin/shared/design-tab/ViewerStyleSection.tsx
-// Quote-style design panel: five focused SectionCards stacked vertically
-// (Page Orientation · Background Image · Page Title Font · Text Page
-// Colours · Page Number Badge). DesignTab.tsx still owns all state — this
-// component is pure presentation.
+// Design tab restructured into named groups matching the new spec:
+//   1. Globals     — orientation, page-number badge, background image
+//   2. Cover Page  — placeholder; cover design still lives on the Cover tab
+//                    until Phase 1.5 of the design-tab consolidation lands
+//   3. Text Page   — title font, text-page colours
+//   4. Packages    — placeholder; per-package styling still on the Packages tab
+//   5. Quote Pages — note; quote pages inherit from text-page styling
+//
+// DesignTab.tsx still owns all state — this component is pure presentation.
 'use client';
 
 import { useRef } from 'react';
 import {
   Loader2, Upload, Trash2,
   Image as ImageIcon, RotateCcw, Type, Palette, Hash, LayoutPanelTop,
+  Paintbrush, Package, DollarSign, ArrowUpRight,
 } from 'lucide-react';
+import Link from 'next/link';
 import FontSelect from '@/components/admin/shared/FontSelect';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
@@ -17,6 +24,22 @@ import {
   EntityType, PageOrientation, TextPageDefaults,
   orientationOptions, SaveStatus,
 } from './DesignTabTypes';
+
+/* ------------------------------------------------------------------ */
+/*  Group heading                                                      */
+/* ------------------------------------------------------------------ */
+
+function GroupHeading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="pt-2">
+      <div className="flex items-baseline justify-between">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{title}</h3>
+        {hint && <span className="text-[11px] text-gray-400">{hint}</span>}
+      </div>
+      <div className="mt-1.5 h-px bg-gray-100" />
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -65,6 +88,8 @@ interface ViewerStyleSectionProps {
   /* ── Defaults & actions ─────────────────────────────────── */
   companyDefaults: TextPageDefaults;
   onTpResetToCompany: () => void;
+  /* ── Routing context for cross-tab links ───────────────── */
+  entityId: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -104,12 +129,18 @@ export default function ViewerStyleSection({
   setPageNumTextColor,
   companyDefaults,
   onTpResetToCompany,
+  entityId,
 }: ViewerStyleSectionProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const basePath = type === 'template' ? `/templates/${entityId}` : `/proposals/${entityId}`;
 
   return (
     <div className="space-y-5">
-      {/* ───────────── Page Orientation ───────────── */}
+      {/* ============================================================
+          1. GLOBALS
+          ============================================================ */}
+      <GroupHeading title="Globals" hint="Apply across every page" />
+
       <SectionCard
         title="Page Orientation"
         description={`Controls the orientation of text pages, pricing, and packages when this ${type} exports as PDF.`}
@@ -135,10 +166,9 @@ export default function ViewerStyleSection({
         </div>
       </SectionCard>
 
-      {/* ───────────── Background Image ───────────── */}
       <SectionCard
         title="Background Image"
-        description="What sits behind text pages, pricing, and packages."
+        description="Sits behind text pages, pricing, and packages."
         icon={<ImageIcon size={14} className="text-gray-400" />}
       >
         <div className="space-y-3">
@@ -243,7 +273,59 @@ export default function ViewerStyleSection({
         </div>
       </SectionCard>
 
-      {/* ───────────── Page Title Font ───────────── */}
+      <SectionCard
+        title="Page Number Badge"
+        description="Leave blank to use your accent colour (circle) and white (text)."
+        icon={<Hash size={14} className="text-gray-400" />}
+      >
+        <div className="space-y-4">
+          <ColorPickerField
+            label="Circle Colour"
+            value={pageNumCircleColor}
+            fallback={companyDefaults.accent_color}
+            onChange={setPageNumCircleColor}
+            onReset={() => setPageNumCircleColor(null)}
+          />
+          <ColorPickerField
+            label="Text Colour"
+            value={pageNumTextColor}
+            fallback="#ffffff"
+            onChange={setPageNumTextColor}
+            onReset={() => setPageNumTextColor(null)}
+          />
+        </div>
+      </SectionCard>
+
+      {/* ============================================================
+          2. COVER PAGE
+          ============================================================ */}
+      <GroupHeading title="Cover Page" hint="Logo, avatar and titles live in the Cover tab" />
+
+      <SectionCard
+        title="Cover Design"
+        description="Cover-specific colours, background image, and gradient."
+        icon={<Paintbrush size={14} className="text-gray-400" />}
+        action={
+          <Link
+            href={`${basePath}/cover`}
+            className="flex items-center gap-1 text-xs font-medium text-teal hover:underline"
+          >
+            Open Cover tab <ArrowUpRight size={12} />
+          </Link>
+        }
+      >
+        <p className="text-xs text-gray-400">
+          Cover background, colours and headline font are managed on the Cover tab for now.
+          Phase 1.5 will move the visual controls here while the Cover tab keeps logo, avatar,
+          title and subtitle inputs.
+        </p>
+      </SectionCard>
+
+      {/* ============================================================
+          3. TEXT PAGE
+          ============================================================ */}
+      <GroupHeading title="Text Page" />
+
       <SectionCard
         title="Page Title Font"
         description="Headline typography for text pages, pricing, and packages."
@@ -279,7 +361,6 @@ export default function ViewerStyleSection({
         </div>
       </SectionCard>
 
-      {/* ───────────── Text Page Colours ───────────── */}
       <SectionCard
         title="Text Page Colours"
         description="Body background, body text, and heading colours for text pages."
@@ -301,28 +382,45 @@ export default function ViewerStyleSection({
         </div>
       </SectionCard>
 
-      {/* ───────────── Page Number Badge ───────────── */}
+      {/* ============================================================
+          4. PACKAGES PAGE
+          ============================================================ */}
+      <GroupHeading title="Packages Page" hint="Gradient picker, feature icons, tier colours" />
+
       <SectionCard
-        title="Page Number Badge"
-        description="Leave blank to use your accent colour (circle) and white (text)."
-        icon={<Hash size={14} className="text-gray-400" />}
+        title="Packages Design"
+        description="Tier gradients, feature icons, and pricing card styling."
+        icon={<Package size={14} className="text-gray-400" />}
+        action={
+          <Link
+            href={`${basePath}/packages`}
+            className="flex items-center gap-1 text-xs font-medium text-teal hover:underline"
+          >
+            Open Packages tab <ArrowUpRight size={12} />
+          </Link>
+        }
       >
-        <div className="space-y-4">
-          <ColorPickerField
-            label="Circle Colour"
-            value={pageNumCircleColor}
-            fallback={companyDefaults.accent_color}
-            onChange={setPageNumCircleColor}
-            onReset={() => setPageNumCircleColor(null)}
-          />
-          <ColorPickerField
-            label="Text Colour"
-            value={pageNumTextColor}
-            fallback="#ffffff"
-            onChange={setPageNumTextColor}
-            onReset={() => setPageNumTextColor(null)}
-          />
-        </div>
+        <p className="text-xs text-gray-400">
+          Each packages page currently owns its own styling. Phase 1.5 will lift the appearance
+          controls here so packages styling is set once at the {type} level.
+        </p>
+      </SectionCard>
+
+      {/* ============================================================
+          5. QUOTE PAGES
+          ============================================================ */}
+      <GroupHeading title="Quote Pages" hint="Line item table, totals, payment schedule" />
+
+      <SectionCard
+        title="Quote Design"
+        description="Quote pages inherit from Text Page styling above."
+        icon={<DollarSign size={14} className="text-gray-400" />}
+      >
+        <p className="text-xs text-gray-400">
+          Quote pages share their colours and fonts with text pages — the page background, body
+          text and heading colour are controlled by the Text Page section above. Line item column
+          labels are still managed on the Quote tab.
+        </p>
       </SectionCard>
     </div>
   );

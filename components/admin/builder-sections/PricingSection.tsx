@@ -296,17 +296,27 @@ export default function PricingSection({
               </SectionCard>
 
               <SectionCard
-                title="Payment Schedule"
-                description="Deposit and milestone breakdown"
+                title="Payment & Tax"
+                description="GST and the deposit / milestone breakdown"
                 icon={<Calendar size={14} className="text-gray-400" />}
               >
-                <PricingPaymentSchedule
-                  schedule={editor.form.paymentSchedule}
-                  items={editor.form.items}
-                  taxEnabled={editor.form.taxEnabled}
-                  taxRate={editor.form.taxRate}
-                  onChange={(paymentSchedule) => editor.updateForm({ paymentSchedule })}
-                />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Include GST</p>
+                      <p className="text-xs text-gray-400">10% Goods and Services Tax applied to the total</p>
+                    </div>
+                    <Toggle enabled={editor.form.taxEnabled} onChange={(v) => editor.updateForm({ taxEnabled: v })} size="sm" />
+                  </div>
+
+                  <PricingPaymentSchedule
+                    schedule={editor.form.paymentSchedule}
+                    items={editor.form.items}
+                    taxEnabled={editor.form.taxEnabled}
+                    taxRate={editor.form.taxRate}
+                    onChange={(paymentSchedule) => editor.updateForm({ paymentSchedule })}
+                  />
+                </div>
               </SectionCard>
 
               {proposalId && (

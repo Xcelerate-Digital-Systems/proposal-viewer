@@ -1,10 +1,11 @@
 // components/admin/pricing/PricingSettings.tsx
 'use client';
 
+import { Check, X } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 
 const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40';
-const LABEL_INPUT_CLS = 'mt-1.5 w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30';
+const LABEL_INPUT_CLS = 'w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30';
 
 interface PricingSettingsProps {
   title: string;
@@ -45,6 +46,65 @@ interface PricingSettingsProps {
   onShowTotalChange?: (v: boolean) => void;
 }
 
+/* ─── Chip ──────────────────────────────────────────────────────── */
+
+function Chip({
+  enabled, onClick, children, disabled,
+}: {
+  enabled: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors disabled:opacity-50 ${
+        enabled
+          ? 'bg-teal/10 border-teal/30 text-teal hover:bg-teal/15'
+          : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300'
+      }`}
+    >
+      {enabled ? <Check size={11} className="shrink-0" /> : <X size={11} className="shrink-0" />}
+      <span className="truncate">{children}</span>
+    </button>
+  );
+}
+
+/* ─── Column row (chip + label input in a 2-col grid) ───────────── */
+
+function ColumnRow({
+  enabled, onToggle, name, label, onLabelChange, labelPlaceholder,
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+  name: string;
+  label?: string;
+  onLabelChange?: (v: string) => void;
+  labelPlaceholder?: string;
+}) {
+  return (
+    <div className="grid grid-cols-[150px_1fr] gap-3 items-center">
+      <Chip enabled={enabled} onClick={onToggle}>{name}</Chip>
+      {enabled && onLabelChange ? (
+        <input
+          type="text"
+          value={label ?? ''}
+          onChange={(e) => onLabelChange(e.target.value)}
+          placeholder={labelPlaceholder ?? name}
+          className={LABEL_INPUT_CLS}
+        />
+      ) : (
+        <span className="text-xs text-gray-300 italic">Hidden</span>
+      )}
+    </div>
+  );
+}
+
+/* ─── Component ─────────────────────────────────────────────────── */
+
 export default function PricingSettings({
   title, introText, taxEnabled, validityDays, proposalDate, qtyEnabled, qtyLabel,
   showStage, stageLabel, showDescription, descriptionLabel, showRate, rateLabel,
@@ -57,7 +117,7 @@ export default function PricingSettings({
   onShowSubtotalChange, onShowDiscountChange, onShowTotalChange,
 }: PricingSettingsProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Title */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Page Title</label>
@@ -82,117 +142,95 @@ export default function PricingSettings({
         </div>
       </div>
 
-      {/* ── Column Toggles ────────────────────────────────────────── */}
-      <div className="border-t border-gray-100 pt-3 space-y-0">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Columns</p>
+      {/* ── Columns ───────────────────────────────────────────────── */}
+      <div className="border-t border-gray-100 pt-4">
+        <div className="flex items-baseline justify-between mb-3">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Columns</p>
+          <p className="text-[11px] text-gray-400">Tap a chip to show / hide</p>
+        </div>
 
-        {/* Stage toggle + label */}
-        {onShowStageChange && (
-          <div className="py-2 border-b border-gray-50">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Stage</span>
-              <Toggle enabled={showStage ?? true} onChange={onShowStageChange} size="sm" />
-            </div>
-            {(showStage ?? true) && onStageLabelChange && (
-              <input type="text" value={stageLabel ?? 'Stage'} onChange={(e) => onStageLabelChange(e.target.value)} placeholder="Stage" className={LABEL_INPUT_CLS} />
-            )}
-          </div>
-        )}
+        <div className="space-y-2">
+          {onShowStageChange && (
+            <ColumnRow
+              name="Item"
+              enabled={showStage ?? true}
+              onToggle={() => onShowStageChange(!(showStage ?? true))}
+              label={stageLabel}
+              onLabelChange={onStageLabelChange}
+              labelPlaceholder="Item"
+            />
+          )}
 
-        {/* Description toggle + label */}
-        {onShowDescriptionChange && (
-          <div className="py-2 border-b border-gray-50">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Description</span>
-              <Toggle enabled={showDescription ?? true} onChange={onShowDescriptionChange} size="sm" />
-            </div>
-            {(showDescription ?? true) && onDescriptionLabelChange && (
-              <input type="text" value={descriptionLabel ?? ''} onChange={(e) => onDescriptionLabelChange(e.target.value)} placeholder="Description" className={LABEL_INPUT_CLS} />
-            )}
-          </div>
-        )}
+          {onShowDescriptionChange && (
+            <ColumnRow
+              name="Description"
+              enabled={showDescription ?? true}
+              onToggle={() => onShowDescriptionChange(!(showDescription ?? true))}
+              label={descriptionLabel}
+              onLabelChange={onDescriptionLabelChange}
+              labelPlaceholder="Description"
+            />
+          )}
 
-        {/* Qty toggle + label */}
-        <div className="py-2 border-b border-gray-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-medium text-gray-700">Quantities</span>
-              <p className="text-xs text-gray-400">Qty × Rate columns</p>
-            </div>
-            <Toggle enabled={qtyEnabled} onChange={onQtyEnabledChange} size="sm" />
-          </div>
-          {qtyEnabled && (
-            <input type="text" value={qtyLabel} onChange={(e) => onQtyLabelChange(e.target.value)} placeholder="Qty" className={LABEL_INPUT_CLS} />
+          <ColumnRow
+            name="Quantity"
+            enabled={qtyEnabled}
+            onToggle={() => onQtyEnabledChange(!qtyEnabled)}
+            label={qtyLabel}
+            onLabelChange={onQtyLabelChange}
+            labelPlaceholder="Quantity"
+          />
+
+          {onShowRateChange && (
+            <ColumnRow
+              name="Unit $"
+              enabled={showRate ?? true}
+              onToggle={() => onShowRateChange(!(showRate ?? true))}
+              label={rateLabel}
+              onLabelChange={onRateLabelChange}
+              labelPlaceholder="Unit $"
+            />
+          )}
+
+          {onShowLineTotalChange && (
+            <ColumnRow
+              name="Total"
+              enabled={showLineTotal ?? true}
+              onToggle={() => onShowLineTotalChange(!(showLineTotal ?? true))}
+              label={totalLabel}
+              onLabelChange={onTotalLabelChange}
+              labelPlaceholder="Total"
+            />
           )}
         </div>
+      </div>
 
-        {/* Rate/Amount toggle + label */}
-        {onShowRateChange && (
-          <div className="py-2 border-b border-gray-50">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">{qtyEnabled ? 'Rate' : 'Amount'}</span>
-              <Toggle enabled={showRate ?? true} onChange={onShowRateChange} size="sm" />
-            </div>
-            {(showRate ?? true) && onRateLabelChange && (
-              <input type="text" value={rateLabel ?? ''} onChange={(e) => onRateLabelChange(e.target.value)} placeholder={qtyEnabled ? 'Rate' : 'Amount'} className={LABEL_INPUT_CLS} />
-            )}
-          </div>
-        )}
-
-        {/* Tax toggle */}
-        <div className="flex items-center justify-between py-2 border-b border-gray-50">
-          <div>
-            <span className="text-sm font-medium text-gray-700">Include GST</span>
-            <p className="text-xs text-gray-400">10% Goods and Services Tax</p>
-          </div>
-          <Toggle enabled={taxEnabled} onChange={onTaxEnabledChange} size="sm" />
+      {/* ── Summary Rows ──────────────────────────────────────────── */}
+      <div className="border-t border-gray-100 pt-4">
+        <div className="flex items-baseline justify-between mb-3">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Summary Rows</p>
+          <p className="text-[11px] text-gray-400">Shown below the line items</p>
         </div>
 
-        {/* Line total column toggle + label */}
-        {onShowLineTotalChange && (
-          <div className="py-2 border-b border-gray-50">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Line Total</span>
-              <Toggle enabled={showLineTotal ?? true} onChange={onShowLineTotalChange} size="sm" />
-            </div>
-            {(showLineTotal ?? true) && onTotalLabelChange && (
-              <input type="text" value={totalLabel ?? ''} onChange={(e) => onTotalLabelChange(e.target.value)} placeholder="Total" className={LABEL_INPUT_CLS} />
-            )}
-          </div>
-        )}
+        <div className="grid grid-cols-3 gap-2">
+          {onShowSubtotalChange && (
+            <Chip enabled={showSubtotal ?? true} onClick={() => onShowSubtotalChange(!(showSubtotal ?? true))}>
+              Subtotal
+            </Chip>
+          )}
+          {onShowDiscountChange && (
+            <Chip enabled={showDiscount ?? true} onClick={() => onShowDiscountChange(!(showDiscount ?? true))}>
+              Discount
+            </Chip>
+          )}
+          {onShowTotalChange && (
+            <Chip enabled={showTotal ?? true} onClick={() => onShowTotalChange(!(showTotal ?? true))}>
+              Grand Total
+            </Chip>
+          )}
+        </div>
       </div>
 
-      {/* ── Summary Row Toggles ───────────────────────────────────── */}
-      <div className="border-t border-gray-100 pt-3 space-y-0">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Summary</p>
-
-        {/* Subtotal */}
-        {onShowSubtotalChange && (
-          <div className="flex items-center justify-between py-2 border-b border-gray-50">
-            <span className="text-sm font-medium text-gray-700">Subtotal</span>
-            <Toggle enabled={showSubtotal ?? true} onChange={onShowSubtotalChange} size="sm" />
-          </div>
-        )}
-
-        {/* Discount */}
-        {onShowDiscountChange && (
-          <div className="flex items-center justify-between py-2 border-b border-gray-50">
-            <div>
-              <span className="text-sm font-medium text-gray-700">Discount</span>
-              <p className="text-xs text-gray-400">Savings and after-discount rows</p>
-            </div>
-            <Toggle enabled={showDiscount ?? true} onChange={onShowDiscountChange} size="sm" />
-          </div>
-        )}
-
-        {/* Grand Total */}
-        {onShowTotalChange && (
-          <div className="flex items-center justify-between py-2 border-b border-gray-50">
-            <span className="text-sm font-medium text-gray-700">Grand Total</span>
-            <Toggle enabled={showTotal ?? true} onChange={onShowTotalChange} size="sm" />
-          </div>
-        )}
-      </div>
     </div>
   );
 }

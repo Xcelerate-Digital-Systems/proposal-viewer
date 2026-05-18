@@ -2,7 +2,6 @@
 'use client';
 
 import DesignTab from '@/components/admin/shared/DesignTab';
-import CoverEditor from '@/components/admin/proposals/CoverEditor';
 import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
 
 export default function ProposalDesignPage() {
@@ -33,7 +32,6 @@ export default function ProposalDesignPage() {
         initialPageNumCircleColor={proposal.page_num_circle_color ?? null}
         initialPageNumTextColor={proposal.page_num_text_color ?? null}
       />
-      <CoverEditor proposal={proposal} onSave={refetch} />
     </div>
   );
 }

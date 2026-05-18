@@ -371,6 +371,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setPageNumCircleColor={setPageNumCircleColor}
       pageNumTextColor={pageNumTextColor}
       setPageNumTextColor={setPageNumTextColor}
+      entityId={entityId}
     />
   );
 }

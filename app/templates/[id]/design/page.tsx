@@ -2,7 +2,6 @@
 'use client';
 
 import DesignTab from '@/components/admin/shared/DesignTab';
-import TemplateCoverEditor from '@/components/admin/templates/TemplateCoverEditor';
 import { useTemplateDetail } from '@/components/admin/templates/TemplateDetailContext';
 
 export default function TemplateDesignPage() {
@@ -33,7 +32,6 @@ export default function TemplateDesignPage() {
         initialPageNumCircleColor={template.page_num_circle_color ?? null}
         initialPageNumTextColor={template.page_num_text_color ?? null}
       />
-      <TemplateCoverEditor template={template} onSave={refetch} />
     </div>
   );
 }
