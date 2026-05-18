@@ -2,7 +2,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import PricingTabEditor from '@/components/admin/shared/PricingTabEditor';
+import PricingSection from '@/components/admin/builder-sections/PricingSection';
 import type { PricingLineItem } from '@/lib/types/packages';
 
 interface PricingTabProps {
@@ -16,7 +16,7 @@ interface PricingTabProps {
 
 export default function PricingTab({ proposalId, lineItemsToolbar, hidePreview }: PricingTabProps) {
   return (
-    <PricingTabEditor
+    <PricingSection
       apiBase="/api/proposals/pages"
       entityKey="proposal_id"
       entityId={proposalId}

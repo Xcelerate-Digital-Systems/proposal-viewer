@@ -1,7 +1,7 @@
 // components/admin/templates/TemplatePackagesTab.tsx
 'use client';
 
-import PackagesTabEditor from '@/components/admin/shared/PackagesTabEditor';
+import PackagesSection from '@/components/admin/builder-sections/PackagesSection';
 
 interface TemplatePackagesTabProps {
   templateId: string;
@@ -10,7 +10,7 @@ interface TemplatePackagesTabProps {
 
 export default function TemplatePackagesTab({ templateId, companyId }: TemplatePackagesTabProps) {
   return (
-    <PackagesTabEditor
+    <PackagesSection
       apiBase="/api/templates/pages"
       entityKey="template_id"
       entityId={templateId}

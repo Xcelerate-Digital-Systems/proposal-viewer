@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { inputClassName } from '@/components/ui/FormField';
 import { isValidHttpUrl } from '@/lib/sanitize';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
+import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 
 type PostAcceptAction = 'redirect' | 'message' | null;
 
@@ -124,27 +125,14 @@ export default function PostAcceptSection({
   }, []);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-teal/10">
-            <ArrowRight size={16} className="text-teal" />
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900">After Acceptance</h4>
-            <p className="text-xs text-gray-400">
-              {isTemplate
-                ? 'Default action copied to proposals created from this template'
-                : 'What happens when a client clicks Approve & Continue'}
-            </p>
-          </div>
-        </div>
-        <div className="h-5 flex items-center">
-          {/* save status surfaced in the detail header */}
-        </div>
-      </div>
-
+    <SectionCard
+      title="After Acceptance"
+      description={isTemplate
+        ? 'Default action copied to proposals created from this template'
+        : 'What happens when a client clicks Approve & Continue'}
+      icon={<ArrowRight size={14} className="text-gray-400" />}
+    >
+      <div className="space-y-4">
       {/* Action selector */}
       <div className="grid grid-cols-3 gap-2">
         {ACTION_OPTIONS.map((opt) => {
@@ -212,6 +200,7 @@ export default function PostAcceptSection({
           </p>
         </div>
       )}
-    </div>
+      </div>
+    </SectionCard>
   );
 }

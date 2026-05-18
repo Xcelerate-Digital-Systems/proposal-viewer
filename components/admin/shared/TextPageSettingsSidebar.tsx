@@ -19,9 +19,9 @@ export default function TextPageSettingsSidebar({
   onUpdate,
 }: TextPageSettingsSidebarProps) {
   return (
-    <div className="w-72 shrink-0 border-l border-gray-200 bg-white flex flex-col overflow-y-auto">
+    <div className="w-full flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="px-4 py-3.5 border-b border-gray-200 shrink-0">
+      <div className="px-4 py-3.5 border-b border-gray-100 shrink-0">
         <span className="text-sm font-semibold text-gray-800">Page Settings</span>
       </div>
 

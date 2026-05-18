@@ -1,7 +1,7 @@
 // components/admin/proposals/TextPagesTab.tsx
 'use client';
 
-import TextPagesTabEditor from '@/components/admin/shared/TextPagesTabEditor';
+import TextPagesSection from '@/components/admin/builder-sections/TextPagesSection';
 
 interface TextPagesTabProps {
   proposalId: string;
@@ -10,7 +10,7 @@ interface TextPagesTabProps {
 
 export default function TextPagesTab({ proposalId, companyId }: TextPagesTabProps) {
   return (
-    <TextPagesTabEditor
+    <TextPagesSection
       apiBase="/api/proposals/pages"
       entityKey="proposal_id"
       entityId={proposalId}

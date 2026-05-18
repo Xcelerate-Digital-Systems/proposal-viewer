@@ -11,7 +11,8 @@ import {
   SortableContext, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Layers } from 'lucide-react';
+import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 
 import type { PageEditorProps } from './pageEditorTypes';
 import { usePageEditor } from './usePageEditor';
@@ -115,14 +116,11 @@ export default function PageEditor({
   // pricingExists kept for backward compat but no longer gates the add button
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-
-      {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">Page Editor</h3>
-          <span className="text-xs text-gray-400">{summaryParts.join(' + ')}</span>
-        </div>
+    <SectionCard
+      title="Page Editor"
+      description={`${summaryParts.join(' + ')} — drag to reorder, leave names blank for default numbering. Changes save automatically.`}
+      icon={<Layers size={14} className="text-gray-400" />}
+      action={
         <div className="flex items-center gap-2">
           {onCancel && (
             <button
@@ -140,25 +138,23 @@ export default function PageEditor({
             Done
           </button>
         </div>
-      </div>
-
+      }
+    >
       {/* ── Add-page buttons ──────────────────────────────────────────── */}
       {pagesLoaded && (
-        <AddPageButtons
-          isDocuments={isDocuments}
-          canAddPricing={!isDocuments}
-          canAddToc={!isDocuments && !tocExists}
-          onAddPricing={handleInsertPricing}
-          onAddPackages={handleAddPackages}
-          onAddText={() => handleInsertText(null)}
-          onAddSection={handleAddSection}
-          onAddToc={handleAddToc}
-        />
+        <div className="mb-4">
+          <AddPageButtons
+            isDocuments={isDocuments}
+            canAddPricing={!isDocuments}
+            canAddToc={!isDocuments && !tocExists}
+            onAddPricing={handleInsertPricing}
+            onAddPackages={handleAddPackages}
+            onAddText={() => handleInsertText(null)}
+            onAddSection={handleAddSection}
+            onAddToc={handleAddToc}
+          />
+        </div>
       )}
-
-      <p className="text-xs text-gray-400 mb-4">
-        Drag to reorder pages. Type a name for each page or leave blank for default numbering. Changes save automatically.
-      </p>
 
       {/* ── 65/35 split ───────────────────────────────────────────────── */}
       <SplitPanelLayout
@@ -349,6 +345,6 @@ export default function PageEditor({
           />
         }
       />
-    </div>
+    </SectionCard>
   );
 }

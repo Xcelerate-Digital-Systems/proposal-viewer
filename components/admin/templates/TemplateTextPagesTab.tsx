@@ -1,7 +1,7 @@
 // components/admin/templates/TemplateTextPagesTab.tsx
 'use client';
 
-import TextPagesTabEditor from '@/components/admin/shared/TextPagesTabEditor';
+import TextPagesSection from '@/components/admin/builder-sections/TextPagesSection';
 
 interface TemplateTextPagesTabProps {
   templateId: string;
@@ -10,7 +10,7 @@ interface TemplateTextPagesTabProps {
 
 export default function TemplateTextPagesTab({ templateId, companyId }: TemplateTextPagesTabProps) {
   return (
-    <TextPagesTabEditor
+    <TextPagesSection
       apiBase="/api/templates/pages"
       entityKey="template_id"
       entityId={templateId}

@@ -1,7 +1,7 @@
 // components/admin/templates/TemplatePricingTab.tsx
 'use client';
 
-import PricingTabEditor from '@/components/admin/shared/PricingTabEditor';
+import PricingSection from '@/components/admin/builder-sections/PricingSection';
 
 interface TemplatePricingTabProps {
   templateId: string;
@@ -10,7 +10,7 @@ interface TemplatePricingTabProps {
 
 export default function TemplatePricingTab({ templateId, companyId }: TemplatePricingTabProps) {
   return (
-    <PricingTabEditor
+    <PricingSection
       apiBase="/api/templates/pages"
       entityKey="template_id"
       entityId={templateId}

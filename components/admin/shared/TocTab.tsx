@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import TocPreview from '@/components/admin/shared/TocPreview';
+import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
@@ -321,123 +322,114 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1 min-h-0 flex flex-col">
+    <div className="flex gap-6 items-start">
+      <div className="flex-1 min-w-0">
+        <SectionCard
+          title="Table of Contents"
+          description={`Auto-generated contents page for this ${entityType === 'template' ? 'template' : entityType}`}
+          icon={<List size={14} className="text-gray-400" />}
+          action={
+            <button
+              onClick={() => updateSettings({ enabled: !settings.enabled })}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                settings.enabled ? 'bg-teal' : 'bg-gray-200'
+              }`}
+            >
+              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                settings.enabled ? 'translate-x-4' : 'translate-x-0'
+              }`} />
+            </button>
+          }
+        >
+          {settings.enabled ? (
+            <div className="space-y-5">
+              {/* Page title */}
+              <div>
+                <label htmlFor="toc-title" className="block text-sm font-medium text-gray-700 mb-1">
+                  Page Title
+                </label>
+                <input
+                  id="toc-title"
+                  type="text"
+                  value={settings.title}
+                  onChange={(e) => updateSettings({ title: e.target.value })}
+                  placeholder="Table of Contents"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+                />
+              </div>
 
-      {/* Header */}
-      <div className="shrink-0 flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            <List size={15} className="text-teal" />
-            Table of Contents
-          </h3>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Auto-generated contents page for this{' '}
-            {entityType === 'template' ? 'template' : entityType}
-          </p>
-        </div>
+              {/* Pages to include */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Pages to Include</label>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {includedCount} of {tocItems.length} items selected
+                    </p>
+                    {includedCount > 16 && (
+                      <div className="flex items-start gap-1.5 mt-1.5">
+                        <AlertTriangle size={11} className="text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-amber-600 leading-tight">
+                          Over 16 items may crowd the PDF. Consider reducing selections.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={toggleAll}
+                    className="text-xs font-medium text-teal hover:text-teal/80 transition-colors shrink-0 ml-4"
+                  >
+                    {allIncluded ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
 
-        <div className="flex items-center gap-3">
-          {/* save status surfaced in the detail header */}
-          <button
-            onClick={() => updateSettings({ enabled: !settings.enabled })}
-            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-              settings.enabled ? 'bg-teal' : 'bg-gray-200'
-            }`}
-          >
-            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-              settings.enabled ? 'translate-x-4' : 'translate-x-0'
-            }`} />
-          </button>
-        </div>
-      </div>
-
-      {settings.enabled ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr] gap-6 items-start flex-1 min-h-0">
-
-          {/* ── Left: controls ── */}
-          <div className="space-y-5 h-full overflow-y-auto pr-2 min-h-0">
-
-            {/* Page title */}
-            <div>
-              <label htmlFor="toc-title" className="block text-sm font-medium text-gray-700 mb-1">
-                Page Title
-              </label>
-              <input
-                id="toc-title"
-                type="text"
-                value={settings.title}
-                onChange={(e) => updateSettings({ title: e.target.value })}
-                placeholder="Table of Contents"
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-              />
-            </div>
-
-            {/* Pages to include */}
-            <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Pages to Include</label>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {includedCount} of {tocItems.length} items selected
-                  </p>
-                  {includedCount > 16 && (
-                    <div className="flex items-start gap-1.5 mt-1.5">
-                      <AlertTriangle size={11} className="text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-amber-600 leading-tight">
-                        Over 16 items may crowd the PDF. Consider reducing selections.
-                      </p>
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  {tocItems.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                      <p className="text-sm text-gray-400">No pages found</p>
+                      <p className="text-xs text-gray-300 mt-1">Add PDF pages, text pages, or pricing to see them here</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {itemGroups.map((group, gi) => (
+                        <div key={`group-${gi}`}>
+                          {renderRow(group.parent)}
+                          {group.children.length > 0 && (
+                            <div
+                              className="mx-3 mb-1"
+                              style={{ borderLeft: '2px solid #017C8730' }}
+                            >
+                              {group.children.map((child) => renderRow(child, true))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={toggleAll}
-                  className="text-xs font-medium text-teal hover:text-teal/80 transition-colors shrink-0 ml-4"
-                >
-                  {allIncluded ? 'Deselect All' : 'Select All'}
-                </button>
-              </div>
-
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                {tocItems.length === 0 ? (
-                  <div className="px-4 py-8 text-center">
-                    <p className="text-sm text-gray-400">No pages found</p>
-                    <p className="text-xs text-gray-300 mt-1">Add PDF pages, text pages, or pricing to see them here</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-100">
-                    {itemGroups.map((group, gi) => (
-                      <div key={`group-${gi}`}>
-                        {renderRow(group.parent)}
-                        {group.children.length > 0 && (
-                          <div
-                            className="mx-3 mb-1"
-                            style={{ borderLeft: '2px solid #017C8730' }}
-                          >
-                            {group.children.map((child) => renderRow(child, true))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+              <List size={24} className="mx-auto text-gray-300 mb-2" />
+              <p className="text-sm text-gray-400 mb-1">Table of Contents is currently disabled</p>
+              <p className="text-xs text-gray-300">Toggle the switch above to add a contents page</p>
+            </div>
+          )}
+        </SectionCard>
+      </div>
 
-          {/* ── Right: live preview ── */}
-          <TocPreview
-            tocSettings={settings}
-            branding={branding}
-            tocItems={tocItems}
-            companyName={companyName}
-          />
-        </div>
-      ) : (
-        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
-          <List size={24} className="mx-auto text-gray-300 mb-2" />
-          <p className="text-sm text-gray-400 mb-1">Table of Contents is currently disabled</p>
-          <p className="text-xs text-gray-300">Toggle the switch above to add a contents page</p>
-        </div>
+      {settings.enabled && (
+        <aside className="hidden lg:block w-[420px] xl:w-[480px] shrink-0">
+          <div className="sticky top-6">
+            <TocPreview
+              tocSettings={settings}
+              branding={branding}
+              tocItems={tocItems}
+              companyName={companyName}
+            />
+          </div>
+        </aside>
       )}
     </div>
   );

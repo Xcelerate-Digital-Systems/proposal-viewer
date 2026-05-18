@@ -1,7 +1,7 @@
 // components/admin/proposals/PackagesTab.tsx
 'use client';
 
-import PackagesTabEditor from '@/components/admin/shared/PackagesTabEditor';
+import PackagesSection from '@/components/admin/builder-sections/PackagesSection';
 
 interface PackagesTabProps {
   proposalId: string;
@@ -9,11 +9,11 @@ interface PackagesTabProps {
 
 export default function PackagesTab({ proposalId }: PackagesTabProps) {
   return (
-    <PackagesTabEditor
+    <PackagesSection
       apiBase="/api/proposals/pages"
       entityKey="proposal_id"
       entityId={proposalId}
-      companyId={null} // resolved from fetched page data
+      companyId={null}
     />
   );
 }
