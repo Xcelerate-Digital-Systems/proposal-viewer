@@ -1,16 +1,16 @@
 // components/admin/builder-sections/TextPagesSection.tsx
-// Quote-style chrome for the multi-page text editor. The canvas + settings
-// sidebar are kept as-is — text pages are fundamentally a 2-pane editor, so
-// stacking sections doesn't apply. We drop the redundant outer card wrapper
-// and tighten the page strip to match the Pricing / Packages tabs.
+// Text pages editor: left = neutral RichTextEditor (no branded background fighting
+// TipTap's selection/caret), right = live read-only preview that reuses the public
+// viewer's TextPage component, settings strip underneath.
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Loader2, Plus, Trash2, FileText } from 'lucide-react';
 import { useTextPagesEditor } from '@/components/admin/shared/useTextPagesEditor';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
-import InlineTextPageCanvas from '@/components/admin/shared/InlineTextPageCanvas';
-import TextPageSettingsSidebar from '@/components/admin/shared/TextPageSettingsSidebar';
+import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
+import TextPagePreview from '@/components/admin/shared/TextPagePreview';
+import TextPageSettingsBar from '@/components/admin/shared/TextPageSettingsBar';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import { supabase } from '@/lib/supabase';
@@ -140,23 +140,29 @@ export default function TextPagesSection({
     <div className="flex flex-col gap-5 h-full">
       {pageStrip}
 
-      <div className="flex gap-5 flex-1 min-h-0">
-        <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <InlineTextPageCanvas
-            form={form}
-            branding={branding}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 flex-1 min-h-0">
+        <div className="min-w-0 min-h-0 flex flex-col">
+          <RichTextEditor
+            content={form.content}
             onUpdate={(content) => updateForm({ content })}
+            placeholder="Start writing… Use the Fields button in the toolbar to insert dynamic fields."
           />
         </div>
-
-        <div className="w-72 shrink-0 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-          <TextPageSettingsSidebar
+        <div className="min-w-0 min-h-0 flex flex-col">
+          <TextPagePreview
             form={form}
+            branding={branding}
+            entityId={entityId}
             companyId={companyId}
-            onUpdate={updateForm}
           />
         </div>
       </div>
+
+      <TextPageSettingsBar
+        form={form}
+        companyId={companyId}
+        onUpdate={updateForm}
+      />
     </div>
   );
 }
