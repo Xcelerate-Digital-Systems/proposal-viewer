@@ -20,6 +20,8 @@ import Link from 'next/link';
 import FontSelect from '@/components/admin/shared/FontSelect';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
+import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
+import type { CoverEditorEntity } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import {
   EntityType, PageOrientation, TextPageDefaults,
   orientationOptions, SaveStatus,
@@ -90,6 +92,10 @@ interface ViewerStyleSectionProps {
   onTpResetToCompany: () => void;
   /* ── Routing context for cross-tab links ───────────────── */
   entityId: string;
+  /* ── Cover design panel — rendered when caller passes the
+        cover entity. Documents/quotes don't pass it. ──── */
+  coverEntity?: CoverEditorEntity;
+  onCoverSave?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -130,6 +136,8 @@ export default function ViewerStyleSection({
   companyDefaults,
   onTpResetToCompany,
   entityId,
+  coverEntity,
+  onCoverSave,
 }: ViewerStyleSectionProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const basePath = type === 'template' ? `/templates/${entityId}` : `/proposals/${entityId}`;
@@ -301,25 +309,31 @@ export default function ViewerStyleSection({
           ============================================================ */}
       <GroupHeading title="Cover Page" hint="Logo, avatar and titles live in the Cover tab" />
 
-      <SectionCard
-        title="Cover Design"
-        description="Cover-specific colours, background image, and gradient."
-        icon={<Paintbrush size={14} className="text-gray-400" />}
-        action={
-          <Link
-            href={`${basePath}/cover`}
-            className="flex items-center gap-1 text-xs font-medium text-teal hover:underline"
-          >
-            Open Cover tab <ArrowUpRight size={12} />
-          </Link>
-        }
-      >
-        <p className="text-xs text-gray-400">
-          Cover background, colours and headline font are managed on the Cover tab for now.
-          Phase 1.5 will move the visual controls here while the Cover tab keeps logo, avatar,
-          title and subtitle inputs.
-        </p>
-      </SectionCard>
+      {coverEntity ? (
+        <CoverDesignPanel
+          type={type === 'document' ? 'document' : type}
+          entity={coverEntity}
+          onSave={onCoverSave}
+        />
+      ) : (
+        <SectionCard
+          title="Cover Design"
+          description="Cover-specific colours, background image, and gradient."
+          icon={<Paintbrush size={14} className="text-gray-400" />}
+          action={
+            <Link
+              href={`${basePath}/cover`}
+              className="flex items-center gap-1 text-xs font-medium text-teal hover:underline"
+            >
+              Open Cover tab <ArrowUpRight size={12} />
+            </Link>
+          }
+        >
+          <p className="text-xs text-gray-400">
+            Cover design controls appear here when the page passes a cover entity.
+          </p>
+        </SectionCard>
+      )}
 
       {/* ============================================================
           3. TEXT PAGE

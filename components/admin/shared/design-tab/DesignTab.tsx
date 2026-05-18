@@ -42,6 +42,9 @@ interface DesignTabProps {
   initialTitleFontSize?: string | null;
   initialPageNumCircleColor?: string | null;
   initialPageNumTextColor?: string | null;
+  /** Cover entity for the Cover Page design section. Pass the proposal /
+   *  template row directly so CoverDesignPanel can read/write design fields. */
+  coverEntity?: import('@/components/admin/shared/cover-editor/CoverEditorTypes').CoverEditorEntity;
 }
 
 /* ------------------------------------------------------------------ */
@@ -69,6 +72,7 @@ export default function DesignTab({
   initialTitleFontSize,
   initialPageNumCircleColor,
   initialPageNumTextColor,
+  coverEntity,
 }: DesignTabProps) {
   const table = tableByType[type];
   const storagePrefix = storagePrefixByType[type];
@@ -372,6 +376,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       pageNumTextColor={pageNumTextColor}
       setPageNumTextColor={setPageNumTextColor}
       entityId={entityId}
+      coverEntity={coverEntity}
+      onCoverSave={onSave}
     />
   );
 }

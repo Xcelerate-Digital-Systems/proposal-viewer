@@ -54,10 +54,14 @@ interface CoverSettingsPanelProps {
   type: EntityType;
   cfg: EntityConfig;
   /** Hide the Cover Colors section (used on the Quote cover tab where colours
-   *  live on the Settings tab instead). */
+   *  live on the Settings tab instead, and on the new content-only Cover tab
+   *  where colours live on the Design tab). */
   hideColors?: boolean;
   /** Hide the Cover Enabled toggle (quote covers always show). */
   hideEnableToggle?: boolean;
+  /** Hide the Background Image section. Used on the content-only Cover tab
+   *  where the background image moves to the Design tab. */
+  hideImage?: boolean;
   companyId: string;
   clientName?: string;
   /* Enable/disable */
@@ -106,6 +110,7 @@ export default function CoverSettingsPanel({
   cfg,
   hideColors,
   hideEnableToggle,
+  hideImage,
   companyId,
   clientName,
   coverEnabled,
@@ -313,6 +318,7 @@ export default function CoverSettingsPanel({
       )}
 
       {/* ── Background Image ─────────────────────────────── */}
+      {!hideImage && (
       <div className="space-y-3">
         <SectionHeader icon={<Image size={14} className="text-gray-400" />} label="Background Image" />
         {imageUrl ? (
@@ -345,6 +351,7 @@ export default function CoverSettingsPanel({
           }}
         />
       </div>
+      )}
 
       {!hideColors && (
         <>

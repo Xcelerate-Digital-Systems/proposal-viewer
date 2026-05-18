@@ -11,6 +11,7 @@ interface ProposalCoverEditorProps {
   hideColors?: boolean;
   hideEnableToggle?: boolean;
   panelOnly?: boolean;
+  contentOnly?: boolean;
 }
 
 export default function ProposalCoverEditor({
@@ -20,6 +21,7 @@ export default function ProposalCoverEditor({
   hideColors,
   hideEnableToggle,
   panelOnly,
+  contentOnly,
 }: ProposalCoverEditorProps) {
   return (
     <CoverEditor
@@ -30,6 +32,7 @@ export default function ProposalCoverEditor({
       hideColors={hideColors}
       hideEnableToggle={hideEnableToggle}
       panelOnly={panelOnly}
+      contentOnly={contentOnly}
     />
   );
 }

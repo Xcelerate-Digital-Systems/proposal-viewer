@@ -8,8 +8,17 @@ interface TemplateCoverEditorProps {
   template: ProposalTemplate;
   onSave?: () => void;
   onCancel?: () => void;
+  contentOnly?: boolean;
 }
 
-export default function TemplateCoverEditor({ template, onSave, onCancel }: TemplateCoverEditorProps) {
-  return <CoverEditor type="template" entity={template} onSave={onSave} onCancel={onCancel} />;
+export default function TemplateCoverEditor({ template, onSave, onCancel, contentOnly }: TemplateCoverEditorProps) {
+  return (
+    <CoverEditor
+      type="template"
+      entity={template}
+      onSave={onSave}
+      onCancel={onCancel}
+      contentOnly={contentOnly}
+    />
+  );
 }

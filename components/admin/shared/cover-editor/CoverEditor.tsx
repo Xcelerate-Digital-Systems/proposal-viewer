@@ -35,13 +35,21 @@ interface CoverEditorProps {
   /** Render only the settings panel — the caller supplies its own preview
    *  (e.g. the Quote cover tab shows the full live quote alongside). */
   panelOnly?: boolean;
+  /** Content-only mode for the Cover tab once design fields have moved to the
+   *  Design tab. Hides the Background Image + Cover Colors sections AND
+   *  excludes design fields from the autosave payload so the Design tab
+   *  remains the single writer for cover_bg_*, cover_text_color,
+   *  cover_subtitle_color, cover_button_*, cover_image_path. */
+  contentOnly?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function CoverEditor({ type, entity, onSave, hideColors, hideEnableToggle, panelOnly }: CoverEditorProps) {
+export default function CoverEditor({ type, entity, onSave, hideColors, hideEnableToggle, panelOnly, contentOnly }: CoverEditorProps) {
+  const effectiveHideColors = hideColors || contentOnly;
+  const effectiveHideImage = !!contentOnly;
   const cfg = configs[type];
   const displayTitle = entity.title || entity.name || 'Untitled';
 
@@ -220,23 +228,27 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: Record<string, any> = {
       cover_enabled: coverEnabled,
-      cover_image_path: imagePath || null,
       cover_subtitle: subtitle || null,
       cover_button_text: buttonText || cfg.defaultButtonText,
-      cover_bg_style: colors.coverBgStyle,
-      cover_bg_color_1: colors.coverBgColor1,
-      cover_bg_color_2: colors.coverBgColor2,
-      cover_gradient_stops: colors.coverGradientStops,
-      cover_gradient_type: colors.coverGradientType,
-      cover_gradient_angle: colors.coverGradientAngle,
-      cover_overlay_opacity: colors.coverOverlayOpacity,
-      cover_text_color: colors.coverTextColor,
-      cover_subtitle_color: colors.coverSubtitleColor,
-      cover_button_bg: colors.coverButtonBg,
-      cover_button_text_color: colors.coverButtonTextColor,
       cover_date: coverDate.trim() || null,
       cover_show_date: showDate,
     };
+
+    // Design fields only when this editor owns design (i.e. not content-only)
+    if (!contentOnly) {
+      payload.cover_image_path = imagePath || null;
+      payload.cover_bg_style = colors.coverBgStyle;
+      payload.cover_bg_color_1 = colors.coverBgColor1;
+      payload.cover_bg_color_2 = colors.coverBgColor2;
+      payload.cover_gradient_stops = colors.coverGradientStops;
+      payload.cover_gradient_type = colors.coverGradientType;
+      payload.cover_gradient_angle = colors.coverGradientAngle;
+      payload.cover_overlay_opacity = colors.coverOverlayOpacity;
+      payload.cover_text_color = colors.coverTextColor;
+      payload.cover_subtitle_color = colors.coverSubtitleColor;
+      payload.cover_button_bg = colors.coverButtonBg;
+      payload.cover_button_text_color = colors.coverButtonTextColor;
+    }
 
     if (cfg.fields.preparedBy) {
       payload.prepared_by_member_id = preparedByMemberId || null;
@@ -347,8 +359,9 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
       <CoverSettingsPanel
         type={type}
         cfg={cfg}
-        hideColors={hideColors}
+        hideColors={effectiveHideColors}
         hideEnableToggle={hideEnableToggle}
+        hideImage={effectiveHideImage}
         companyId={entity.company_id}
         clientName={entity.client_name}
         coverEnabled={coverEnabled}
@@ -403,8 +416,9 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
           <CoverSettingsPanel
             type={type}
             cfg={cfg}
-            hideColors={hideColors}
+            hideColors={effectiveHideColors}
             hideEnableToggle={hideEnableToggle}
+            hideImage={effectiveHideImage}
             companyId={entity.company_id}
             clientName={entity.client_name}
             coverEnabled={coverEnabled}

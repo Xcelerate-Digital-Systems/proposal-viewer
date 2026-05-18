@@ -31,6 +31,7 @@ export default function ProposalDesignPage() {
         initialTitleFontSize={proposal.title_font_size ?? null}
         initialPageNumCircleColor={proposal.page_num_circle_color ?? null}
         initialPageNumTextColor={proposal.page_num_text_color ?? null}
+        coverEntity={proposal}
       />
     </div>
   );

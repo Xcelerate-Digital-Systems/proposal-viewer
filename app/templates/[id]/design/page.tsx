@@ -31,6 +31,7 @@ export default function TemplateDesignPage() {
         initialTitleFontSize={template.title_font_size ?? null}
         initialPageNumCircleColor={template.page_num_circle_color ?? null}
         initialPageNumTextColor={template.page_num_text_color ?? null}
+        coverEntity={template}
       />
     </div>
   );
