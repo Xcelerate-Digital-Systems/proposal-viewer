@@ -49,12 +49,18 @@ export default function TextPagesSection({
       if (!r.ok) return;
       const merged: CompanyBranding = { ...DEFAULT_BRANDING, ...(await r.json()) };
 
-      const entityTable = entityKey === 'proposal_id' ? 'proposals' : 'templates';
-      const { data: entity } = await supabase
-        .from(entityTable)
-        .select('text_page_bg_color, text_page_text_color, text_page_heading_color, title_font_family, title_font_weight, title_font_size, bg_image_path, bg_image_overlay_opacity, bg_image_blur')
-        .eq('id', entityId)
-        .single();
+      // Entity-level design overrides — only proposals/templates carry these columns
+      const entityTable =
+        entityKey === 'proposal_id' ? 'proposals' :
+        entityKey === 'template_id' ? 'templates' :
+        null;
+      const { data: entity } = entityTable
+        ? await supabase
+            .from(entityTable)
+            .select('text_page_bg_color, text_page_text_color, text_page_heading_color, title_font_family, title_font_weight, title_font_size, bg_image_path, bg_image_overlay_opacity, bg_image_blur')
+            .eq('id', entityId)
+            .single()
+        : { data: null };
 
       if (entity) {
         if (entity.text_page_bg_color != null) merged.text_page_bg_color = entity.text_page_bg_color;

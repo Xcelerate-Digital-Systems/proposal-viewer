@@ -1,7 +1,7 @@
 // components/admin/documents/DocumentTextPagesTab.tsx
 'use client';
 
-import TextPagesTabEditor from '@/components/admin/shared/TextPagesTabEditor';
+import TextPagesSection from '@/components/admin/builder-sections/TextPagesSection';
 
 interface DocumentTextPagesTabProps {
   documentId: string;
@@ -10,7 +10,7 @@ interface DocumentTextPagesTabProps {
 
 export default function DocumentTextPagesTab({ documentId, companyId }: DocumentTextPagesTabProps) {
   return (
-    <TextPagesTabEditor
+    <TextPagesSection
       apiBase="/api/documents/pages"
       entityKey="document_id"
       entityId={documentId}
