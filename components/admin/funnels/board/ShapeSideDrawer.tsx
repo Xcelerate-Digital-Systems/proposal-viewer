@@ -80,6 +80,10 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
   const typeLabel = SHAPE_TYPE_LABELS[shape.shape_type] || 'Shape';
   // Shapes whose primary editable text is a "label" rather than a body of content.
   const isLabelLike = shape.shape_type !== 'text' && shape.shape_type !== 'rectangle' && shape.shape_type !== 'ellipse';
+  // Stroke width + dashed only affect outlined primitives — diamonds and text
+  // are filled / unstroked, so the controls would be no-ops there.
+  const hasStroke = shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse'
+    || shape.shape_type === 'arrow' || shape.shape_type === 'line';
 
   return (
     <aside className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
@@ -150,6 +154,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
           </div>
         </div>
 
+        {hasStroke && (
         <div>
           <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Stroke</h4>
           <div className="flex items-center gap-1.5">
@@ -180,6 +185,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
             </button>
           </div>
         </div>
+        )}
 
         {(shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') && (
           <Field label="Font size">
