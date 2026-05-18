@@ -165,8 +165,23 @@ function FunnelBoardInner() {
   /* ─── Duplicate selected nodes (Cmd+D + context-menu action) ─── */
 
   const duplicateSelected = useCallback(async () => {
-    const selected = rf.getNodes().filter((n) => n.selected);
-    if (selected.length === 0) return;
+    let selected = rf.getNodes().filter((n) => n.selected);
+    // Fallback: if React Flow has no selection (e.g. user clicked a node which
+    // only opened the side drawer), use the context-selected step/shape/note
+    // so Cmd+D still duplicates the node the user is "working on".
+    if (selected.length === 0) {
+      const fallbackId = ctx.selectedStepId
+        ? `step-${ctx.selectedStepId}`
+        : ctx.selectedShapeId
+        ? `shape-${ctx.selectedShapeId}`
+        : ctx.selectedNoteId
+        ? `note-${ctx.selectedNoteId}`
+        : null;
+      if (!fallbackId) return;
+      const node = rf.getNodes().find((n) => n.id === fallbackId);
+      if (!node) return;
+      selected = [node];
+    }
     for (const node of selected) {
       if (node.id.startsWith('step-')) {
         const origId = node.id.slice(5);
@@ -333,10 +348,8 @@ function FunnelBoardInner() {
           fitViewOptions={{ padding: 0.2 }}
           minZoom={0.1}
           maxZoom={2}
-          // Free-form positioning: dragging nodes moves them per-pixel rather
-          // than snapping to a 20px grid. The alignment-guides overlay still
-          // gives soft snap hints when a node's centre aligns with another's,
-          // so users can still line nodes up precisely without jumpy movement.
+          snapToGrid
+          snapGrid={[4, 4]}
           style={{ background: 'transparent' }}
           deleteKeyCode={['Backspace', 'Delete']}
           // Selection model (Funnelytics/Figma style): left-click drag on empty

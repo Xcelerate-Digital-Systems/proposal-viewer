@@ -581,7 +581,7 @@ function DecisionShape({
           <svg width={diamondSize} height={diamondSize} className="absolute inset-0 overflow-visible" aria-hidden="true">
             <polygon
               points={`${diamondSize / 2},0 ${diamondSize},${diamondSize / 2} ${diamondSize / 2},${diamondSize} 0,${diamondSize / 2}`}
-              fill="#EAB308"
+              fill={shape.color || '#EAB308'}
               stroke={selected ? '#017C87' : 'none'}
               strokeWidth={selected ? 2 : 0}
               style={{ filter: 'drop-shadow(0 3px 8px rgba(20,20,40,0.18))' }}
@@ -832,7 +832,7 @@ function EventDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
-      <DiamondVisual color={config.color} Icon={config.Icon} selected={selected} />
+      <DiamondVisual color={shape.color || config.color} Icon={config.Icon} selected={selected} />
 
       {/* Gap above label — keeps label centred between diamond bottom and
           the bottom-edge handle dot (which lives below the matching gap). */}
@@ -951,7 +951,7 @@ function WaitDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
-      <DiamondVisual color={WAIT_COLOR} Icon={Clock} selected={selected} />
+      <DiamondVisual color={shape.color || WAIT_COLOR} Icon={Clock} selected={selected} />
 
       <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
 
