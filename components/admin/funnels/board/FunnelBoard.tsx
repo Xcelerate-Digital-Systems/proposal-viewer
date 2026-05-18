@@ -97,6 +97,10 @@ function FunnelBoardInner() {
       x: Math.round(flowX - offsetX), y: Math.round(flowY - offsetY),
       width: null, height: null, end_x: null, end_y: null,
       content: null,
+      // Primitive shapes (rectangle/ellipse/arrow/line/text) use `color` as
+      // their stroke — default to ink. Diamond-style shapes inherit their
+      // colour from DIAMOND_CONFIG via the renderer, so we use the legacy
+      // sentinel '#2B2B2B' here and the renderer treats it as "no override".
       color: '#2B2B2B', stroke_width: 2, dashed: false,
       font_size: null,
     });

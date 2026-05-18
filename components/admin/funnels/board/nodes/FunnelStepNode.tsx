@@ -340,20 +340,16 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   // Sentence-case "People" + tight padding matches their subtle pill treatment.
   const peopleLabel = visitors > 0 ? formatCount(visitors) : 'n/a';
   const metricsEl = showMetrics && (
-    <div className="mt-2 px-2.5 py-1 rounded-[5px] bg-white border border-edge/70 shadow-[0_1px_2px_rgba(20,20,40,0.06)] text-center leading-tight whitespace-nowrap min-w-[58px]">
-      <div className="text-[8.5px] text-muted/80 font-normal">People</div>
-      <div className={`text-[12px] font-semibold ${visitors > 0 ? 'text-ink' : 'text-muted'}`}>
-        {peopleLabel}
-      </div>
-      {(conversions > 0 || revenue > 0) && (
-        <div className="mt-0.5 flex items-center justify-center gap-1.5 text-[9.5px]">
-          {conversions > 0 && (
-            <span className="text-ink/70">{formatCount(conversions)} conv</span>
-          )}
-          {revenue > 0 && (
-            <span className="text-emerald-600 font-semibold">{formatMoney(revenue)}</span>
-          )}
-        </div>
+    <div className="mt-2 px-2.5 py-1 rounded-[5px] bg-white border border-edge/70 shadow-[0_1px_2px_rgba(20,20,40,0.06)] leading-tight whitespace-nowrap flex items-center justify-center gap-2 text-[10.5px]">
+      <span className="flex items-center gap-1">
+        <span className="text-muted/80">People</span>
+        <span className={`font-semibold ${visitors > 0 ? 'text-ink' : 'text-muted'}`}>{peopleLabel}</span>
+      </span>
+      {conversions > 0 && (
+        <span className="text-ink/70">{formatCount(conversions)} conv</span>
+      )}
+      {revenue > 0 && (
+        <span className="text-emerald-600 font-semibold">{formatMoney(revenue)}</span>
       )}
     </div>
   );

@@ -25,6 +25,17 @@ export interface ShapeNodeData extends Record<string, unknown> {
   onDelete?: (id: string) => void;
 }
 
+/** Legacy default colour written when a shape is first created — primitive
+ *  shapes (rect/ellipse/arrow/line/text) use it as their stroke, but the
+ *  diamond-style shapes (decision/wait/event/action) get their colour from
+ *  DIAMOND_CONFIG and treat this sentinel as "no override". */
+const LEGACY_DEFAULT_COLOR = '#2B2B2B';
+
+function diamondColorOverride(shape: FeedbackBoardShape): string | null {
+  if (!shape.color || shape.color === LEGACY_DEFAULT_COLOR) return null;
+  return shape.color;
+}
+
 function ShapeNodeComponent({ data, selected }: NodeProps) {
   const { shape, readOnly, onUpdateContent } = data as ShapeNodeData;
 
@@ -581,7 +592,7 @@ function DecisionShape({
           <svg width={diamondSize} height={diamondSize} className="absolute inset-0 overflow-visible" aria-hidden="true">
             <polygon
               points={`${diamondSize / 2},0 ${diamondSize},${diamondSize / 2} ${diamondSize / 2},${diamondSize} 0,${diamondSize / 2}`}
-              fill={shape.color || '#EAB308'}
+              fill={diamondColorOverride(shape) || '#EAB308'}
               stroke={selected ? '#017C87' : 'none'}
               strokeWidth={selected ? 2 : 0}
               style={{ filter: 'drop-shadow(0 3px 8px rgba(20,20,40,0.18))' }}
@@ -832,7 +843,7 @@ function EventDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
-      <DiamondVisual color={shape.color || config.color} Icon={config.Icon} selected={selected} />
+      <DiamondVisual color={diamondColorOverride(shape) || config.color} Icon={config.Icon} selected={selected} />
 
       {/* Gap above label — keeps label centred between diamond bottom and
           the bottom-edge handle dot (which lives below the matching gap). */}
@@ -951,7 +962,7 @@ function WaitDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
-      <DiamondVisual color={shape.color || WAIT_COLOR} Icon={Clock} selected={selected} />
+      <DiamondVisual color={diamondColorOverride(shape) || WAIT_COLOR} Icon={Clock} selected={selected} />
 
       <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
 
