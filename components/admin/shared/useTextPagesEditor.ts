@@ -104,21 +104,29 @@ export function useTextPagesEditor({
   /* ── Load pages ──────────────────────────────────────────────── */
 
   const loadPages = useCallback(async () => {
-    const res = await fetch(`${apiBase}?${entityKey}=${entityId}`);
-    if (!res.ok) return;
-    const data: RawPage[] = await res.json();
-    const textPages = data
-      .filter((p) => p.type === 'text')
-      .map(rawToRecord)
-      .sort((a, b) => a.position - b.position);
+    try {
+      const res = await fetch(`${apiBase}?${entityKey}=${entityId}`);
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        console.error('useTextPagesEditor: load failed', res.status, body);
+        return;
+      }
+      const data: RawPage[] = await res.json();
+      const textPages = data
+        .filter((p) => p.type === 'text')
+        .map(rawToRecord)
+        .sort((a, b) => a.position - b.position);
 
-    setPages(textPages);
-    setLoaded(true);
-
-    setSelectedId((prev) => {
-      if (prev && textPages.find((p) => p.id === prev)) return prev;
-      return textPages[0]?.id ?? null;
-    });
+      setPages(textPages);
+      setSelectedId((prev) => {
+        if (prev && textPages.find((p) => p.id === prev)) return prev;
+        return textPages[0]?.id ?? null;
+      });
+    } catch (err) {
+      console.error('useTextPagesEditor: load error', err);
+    } finally {
+      setLoaded(true);
+    }
   }, [apiBase, entityKey, entityId]);
 
   useEffect(() => {
