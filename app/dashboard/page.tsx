@@ -4,8 +4,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  FileText, MessageCircle, CheckCircle2, Layers, TrendingUp, Timer,
-  Search, Bell, Plus, type LucideIcon,
+  FileText, CheckCircle2, Layers, Timer,
+  Search, Bell, Plus, ReceiptText, Files, Workflow, Plug, ArrowUpRight,
+  Eye, Send, Reply, Sparkles, AlertCircle, type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -26,7 +27,42 @@ export default function DashboardPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Stat card — large number with icon badge                           */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function formatRelative(dateStr: string) {
+  const date = new Date(dateStr);
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const diffHr = Math.floor(diffMs / 3_600_000);
+  const diffDays = Math.floor(diffMs / 86_400_000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function startOfWeek() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay()); // Sunday
+  return d.toISOString();
+}
+
+function daysAgo(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString();
+}
+
+function truncate(s: string, n: number) {
+  return s.length > n ? `${s.slice(0, n - 1).trim()}…` : s;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Stat card (client view only)                                       */
 /* ------------------------------------------------------------------ */
 
 interface StatCardProps {
@@ -42,10 +78,7 @@ function StatCard({ label, value, icon: Icon, iconBg, iconColor, footer }: StatC
   return (
     <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-6 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: iconBg }}
-        >
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: iconBg }}>
           <Icon size={14} style={{ color: iconColor }} />
         </div>
         <span className="text-[13px] font-medium text-muted">{label}</span>
@@ -57,102 +90,187 @@ function StatCard({ label, value, icon: Icon, iconBg, iconColor, footer }: StatC
 }
 
 /* ------------------------------------------------------------------ */
-/*  Recent proposal row                                                */
+/*  Summary pill — top-of-dashboard counts                             */
 /* ------------------------------------------------------------------ */
 
-interface ProposalRowProps {
-  name: string;
+interface SummaryPillProps {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  tone: 'urgent' | 'warm' | 'neutral' | 'positive';
+}
+
+const TONE_COLORS: Record<SummaryPillProps['tone'], { bg: string; color: string; iconBg: string }> = {
+  urgent:   { bg: '#FFF8E1', color: '#92500F', iconBg: '#FFE6B0' },
+  warm:     { bg: '#E6F5F3', color: '#017C87', iconBg: '#C7ECE7' },
+  neutral:  { bg: '#F5F4F2', color: '#6B6B6B', iconBg: '#E6E5E2' },
+  positive: { bg: '#E8F5E9', color: '#2E7D32', iconBg: '#CFE9D1' },
+};
+
+function SummaryPill({ label, value, icon: Icon, tone }: SummaryPillProps) {
+  const c = TONE_COLORS[tone];
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-5 flex items-center gap-4">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.iconBg }}>
+        <Icon size={18} style={{ color: c.color }} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[24px] font-bold leading-none" style={{ color: c.color }}>{value}</p>
+        <p className="text-[12px] text-muted mt-1.5">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Inbox card + row                                                   */
+/* ------------------------------------------------------------------ */
+
+interface InboxCardProps {
+  title: string;
+  count: number;
+  icon: LucideIcon;
+  iconColor: string;
+  emptyLabel: string;
+  viewAllHref?: string;
+  children?: React.ReactNode;
+}
+
+function InboxCard({ title, count, icon: Icon, iconColor, emptyLabel, viewAllHref, children }: InboxCardProps) {
+  const hasItems = count > 0;
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2.5">
+          <Icon size={16} style={{ color: iconColor }} />
+          <h2 className="text-[14px] font-semibold text-ink">{title}</h2>
+          {hasItems && (
+            <span className="text-[11px] font-semibold text-muted bg-surface rounded-full px-2 py-0.5">
+              {count}
+            </span>
+          )}
+        </div>
+        {viewAllHref && hasItems && (
+          <Link href={viewAllHref} className="text-[12px] font-medium text-teal hover:underline">
+            View all
+          </Link>
+        )}
+      </div>
+      {hasItems ? (
+        <div className="flex-1">{children}</div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
+          <CheckCircle2 size={20} className="text-[#2E7D32]/60 mb-2" />
+          <p className="text-[13px] text-muted">{emptyLabel}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface InboxRowProps {
+  href: string;
+  title: string;
+  subtitle: string;
   meta: string;
-  status: 'accepted' | 'viewed' | 'draft' | 'pending' | 'needs_review';
+  badge?: { label: string; bg: string; color: string };
   isLast?: boolean;
 }
 
-const STATUS_CONFIG = {
-  accepted:     { label: 'Accepted',     bg: '#E8F5E9', color: '#2E7D32', dot: '#2E7D32' },
-  viewed:       { label: 'Viewed',       bg: '#E6F5F3', color: '#017C87', dot: '#017C87' },
-  draft:        { label: 'Draft',        bg: '#F5F4F2', color: '#8A8A8A', dot: '#ABABAB' },
-  pending:      { label: 'Pending',      bg: '#FFF8E1', color: '#E6A817', dot: '#E6A817' },
-  needs_review: { label: 'Needs Review', bg: '#FFF8E1', color: '#E6A817', dot: '#E6A817' },
-} as const;
-
-function ProposalRow({ name, meta, status, isLast }: ProposalRowProps) {
-  const cfg = STATUS_CONFIG[status];
+function InboxRow({ href, title, subtitle, meta, badge, isLast }: InboxRowProps) {
   return (
-    <div className={`flex items-center gap-3.5 px-6 py-3.5 ${!isLast ? 'border-b border-gray-100' : ''}`}>
-      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cfg.dot }} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-ink truncate">{name}</p>
-        <p className="text-xs text-muted">{meta}</p>
+    <Link
+      href={href}
+      className={`block px-5 py-3 hover:bg-surface/60 transition-colors ${!isLast ? 'border-b border-gray-100' : ''}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-[13px] font-semibold text-ink truncate">{title}</p>
+            {badge && (
+              <span
+                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                style={{ backgroundColor: badge.bg, color: badge.color }}
+              >
+                {badge.label}
+              </span>
+            )}
+          </div>
+          <p className="text-[12px] text-muted mt-0.5 truncate">{subtitle}</p>
+        </div>
+        <span className="text-[11px] text-faint shrink-0">{meta}</span>
       </div>
-      <span
-        className="text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0"
-        style={{ backgroundColor: cfg.bg, color: cfg.color }}
-      >
-        {cfg.label}
-      </span>
-    </div>
+    </Link>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Activity item                                                      */
+/*  Tool tile (compact nav strip at bottom)                            */
 /* ------------------------------------------------------------------ */
 
-interface ActivityItemProps {
-  initials: string;
-  avatarBg: string;
-  avatarColor: string;
-  text: string;
-  time: string;
-  isLast?: boolean;
+interface ToolTileProps {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  iconBg: string;
+  iconColor: string;
+  count: number;
 }
 
-function ActivityItem({ initials, avatarBg, avatarColor, text, time, isLast }: ActivityItemProps) {
+function ToolTile({ href, label, icon: Icon, iconBg, iconColor, count }: ToolTileProps) {
   return (
-    <div className={`flex items-start gap-3 px-6 py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}>
-      <div
-        className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
-        style={{ backgroundColor: avatarBg }}
-      >
-        <span className="text-[10px] font-semibold" style={{ color: avatarColor }}>{initials}</span>
+    <Link
+      href={href}
+      className="group bg-white rounded-xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.08)] transition-shadow px-4 py-3 flex items-center gap-3"
+    >
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: iconBg }}>
+        <Icon size={16} style={{ color: iconColor }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-ink leading-relaxed">{text}</p>
-        <p className="text-[11px] text-faint mt-1">{time}</p>
+        <p className="text-[13px] font-semibold text-ink truncate">{label}</p>
+        <p className="text-[11px] text-muted">{count.toLocaleString()}</p>
       </div>
-    </div>
+      <ArrowUpRight size={13} className="text-faint group-hover:text-teal transition-colors" />
+    </Link>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Quick action item (client view)                                    */
+/*  Types for fetched inbox data                                       */
 /* ------------------------------------------------------------------ */
 
-interface QuickActionProps {
-  number: string;
-  numBg: string;
-  numColor: string;
-  text: string;
-  time: string;
-  isLast?: boolean;
-}
+type DashProposal = {
+  id: string;
+  title: string;
+  client_name: string | null;
+  recipient_name: string | null;
+  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined';
+  sent_at: string | null;
+  last_viewed_at: string | null;
+  accepted_at: string | null;
+  created_at: string;
+};
 
-function QuickAction({ number, numBg, numColor, text, time, isLast }: QuickActionProps) {
-  return (
-    <div className={`flex items-start gap-3 px-6 py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}>
-      <div
-        className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
-        style={{ backgroundColor: numBg }}
-      >
-        <span className="text-[10px] font-semibold" style={{ color: numColor }}>{number}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-ink leading-relaxed">{text}</p>
-        <p className="text-[11px] text-faint mt-1">{time}</p>
-      </div>
-    </div>
-  );
-}
+type ReplyItem =
+  | {
+      kind: 'proposal';
+      id: string;
+      proposalId: string;
+      proposalTitle: string;
+      clientName: string;
+      content: string;
+      createdAt: string;
+    }
+  | {
+      kind: 'review';
+      id: string;
+      projectId: string;
+      itemId: string;
+      itemTitle: string;
+      clientName: string;
+      content: string;
+      createdAt: string;
+    };
 
 /* ------------------------------------------------------------------ */
 /*  Dashboard content                                                  */
@@ -165,90 +283,115 @@ interface DashboardContentProps {
   accountType?: 'agency' | 'client';
 }
 
-function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: DashboardContentProps) {
+function DashboardContent({ companyId, memberName, accountType }: DashboardContentProps) {
   const [loading, setLoading] = useState(true);
-  const [proposalStats, setProposalStats] = useState({
-    total: 0, accepted: 0, comments: 0, unresolvedComments: 0,
+  const [proposals, setProposals] = useState<DashProposal[]>([]);
+  const [replies, setReplies] = useState<ReplyItem[]>([]);
+  const [toolCounts, setToolCounts] = useState({
+    proposals: 0, quotes: 0, documents: 0, funnels: 0, metaConnections: 0, reviewProjects: 0,
   });
-  const [reviewStats, setReviewStats] = useState({
-    projects: 0, items: 0, comments: 0, unresolvedComments: 0,
-  });
-  const [recentProposals, setRecentProposals] = useState<
-    { id: string; title: string; recipient_name?: string; accepted_at?: string; viewed_at?: string; created_at: string }[]
-  >([]);
 
   const firstName = memberName?.split(' ')[0] || 'there';
   const isClient = accountType === 'client';
 
-  const fetchStats = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!companyId) return;
-
     try {
-      // Proposal stats
-      const { data: proposals } = await supabase
-        .from('proposals')
-        .select('id, title, recipient_name, accepted_at, viewed_at, created_at')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
-      const allProposals = proposals || [];
-      setProposalStats({
-        total: allProposals.length,
-        accepted: allProposals.filter((p) => p.accepted_at).length,
-        comments: 0,
-        unresolvedComments: 0,
-      });
-      setRecentProposals(allProposals.slice(0, 4));
-
-      // Comments
-      const { data: propComments } = await supabase
-        .from('proposal_comments')
-        .select('id, resolved_at')
-        .eq('company_id', companyId)
-        .is('parent_id', null);
-
-      setProposalStats((prev) => ({
-        ...prev,
-        comments: propComments?.length || 0,
-        unresolvedComments: propComments?.filter((c) => !c.resolved_at).length || 0,
-      }));
-
-      // Review stats (super admin only)
-      if (isSuperAdmin) {
-        const { data: reviewProjects } = await supabase
-          .from('review_projects')
-          .select('id')
+      const [
+        propsRes,
+        propCommentsRes,
+        reviewCommentsRes,
+        quotesCount,
+        documentsCount,
+        funnelsCount,
+        metaCount,
+        reviewProjectsCount,
+      ] = await Promise.all([
+        supabase
+          .from('proposals')
+          .select('id, title, client_name, recipient_name, status, sent_at, last_viewed_at, accepted_at, created_at')
           .eq('company_id', companyId)
-          .eq('status', 'active');
-
-        const { data: reviewItems } = await supabase
-          .from('review_items')
-          .select('id')
-          .eq('company_id', companyId);
-
-        const { data: reviewComments } = await supabase
+          .eq('entity_type', 'proposal')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('proposal_comments')
+          .select('id, content, created_at, author_name, proposal_id, proposals!inner(id, title, client_name)')
+          .eq('company_id', companyId)
+          .eq('author_type', 'client')
+          .is('parent_id', null)
+          .is('resolved_at', null)
+          .order('created_at', { ascending: false })
+          .limit(12),
+        supabase
           .from('review_comments')
-          .select('id, resolved')
+          .select('id, content, created_at, author_name, review_item_id, review_items!inner(id, title, review_project_id)')
           .eq('company_id', companyId)
-          .is('parent_comment_id', null);
+          .eq('author_type', 'client')
+          .is('parent_comment_id', null)
+          .eq('resolved', false)
+          .order('created_at', { ascending: false })
+          .limit(12),
+        supabase.from('proposals').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('entity_type', 'quote'),
+        supabase.from('documents').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('funnels').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('meta_connections').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active'),
+        supabase.from('review_projects').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active'),
+      ]);
 
-        setReviewStats({
-          projects: reviewProjects?.length || 0,
-          items: reviewItems?.length || 0,
-          comments: reviewComments?.length || 0,
-          unresolvedComments: reviewComments?.filter((c) => !c.resolved).length || 0,
-        });
-      }
+      const props = (propsRes.data || []) as DashProposal[];
+      setProposals(props);
+
+      const proposalReplies: ReplyItem[] = (propCommentsRes.data || []).map((c) => {
+        // supabase JS embeds related rows; in the typed select they show up under the relation alias
+        const rel = (c as unknown as { proposals: { id: string; title: string; client_name: string | null } }).proposals;
+        return {
+          kind: 'proposal' as const,
+          id: c.id,
+          proposalId: rel?.id ?? c.proposal_id,
+          proposalTitle: rel?.title ?? 'Untitled proposal',
+          clientName: c.author_name || rel?.client_name || 'Client',
+          content: c.content,
+          createdAt: c.created_at,
+        };
+      });
+
+      const reviewReplies: ReplyItem[] = (reviewCommentsRes.data || []).map((c) => {
+        const rel = (c as unknown as { review_items: { id: string; title: string; review_project_id: string } }).review_items;
+        return {
+          kind: 'review' as const,
+          id: c.id,
+          projectId: rel?.review_project_id,
+          itemId: rel?.id ?? c.review_item_id,
+          itemTitle: rel?.title ?? 'Review item',
+          clientName: c.author_name || 'Client',
+          content: c.content,
+          createdAt: c.created_at,
+        };
+      });
+
+      const merged = [...proposalReplies, ...reviewReplies].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      setReplies(merged);
+
+      setToolCounts({
+        proposals: props.length,
+        quotes: quotesCount.count || 0,
+        documents: documentsCount.count || 0,
+        funnels: funnelsCount.count || 0,
+        metaConnections: metaCount.count || 0,
+        reviewProjects: reviewProjectsCount.count || 0,
+      });
     } catch (err) {
-      console.error('Failed to fetch dashboard stats:', err);
+      console.error('Failed to fetch dashboard data:', err);
     } finally {
       setLoading(false);
     }
-  }, [companyId, isSuperAdmin]);
+  }, [companyId]);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    fetchData();
+  }, [fetchData]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -257,40 +400,74 @@ function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: 
     return 'Good evening';
   };
 
-  const getProposalStatus = (p: typeof recentProposals[0]): ProposalRowProps['status'] => {
-    if (p.accepted_at) return 'accepted';
-    if (p.viewed_at) return 'viewed';
-    return 'draft';
-  };
+  /* ── Derived buckets ───────────────────────────────────────── */
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+  const weekStart = startOfWeek();
+  const twoDaysAgo = daysAgo(2);
+  const fourteenDaysAgo = daysAgo(14);
 
-  const totalThreads = proposalStats.unresolvedComments + (isSuperAdmin ? reviewStats.unresolvedComments : 0);
+  const warmLeads = proposals
+    .filter((p) => p.status === 'viewed' && !p.accepted_at && p.last_viewed_at)
+    .sort((a, b) => new Date(b.last_viewed_at!).getTime() - new Date(a.last_viewed_at!).getTime());
+
+  const awaitingClient = proposals
+    .filter((p) => p.status === 'sent' && p.sent_at && p.sent_at <= twoDaysAgo && !p.last_viewed_at)
+    .sort((a, b) => new Date(a.sent_at!).getTime() - new Date(b.sent_at!).getTime());
+
+  const recentlyAccepted = proposals
+    .filter((p) => p.accepted_at && p.accepted_at >= fourteenDaysAgo)
+    .sort((a, b) => new Date(b.accepted_at!).getTime() - new Date(a.accepted_at!).getTime());
+
+  const acceptedThisWeek = proposals.filter((p) => p.accepted_at && p.accepted_at >= weekStart).length;
+
+  /* ── Client view (unchanged behavior) ─────────────────────── */
+
+  if (isClient) {
+    const totalCount = proposals.length;
+    const acceptedCount = proposals.filter((p) => p.accepted_at).length;
+    return (
+      <div className="flex flex-col h-full">
+        <div className="bg-ivory shadow-[0_1px_0_rgba(20,20,40,0.05)] px-6 lg:px-10 py-6 flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-semibold text-ink">{getGreeting()}, {firstName}</h1>
+            <p className="text-sm text-muted mt-1">
+              You have {totalCount - acceptedCount} proposals waiting for your review.
+            </p>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+            <StatCard label="Active Proposals" value={totalCount} icon={FileText} iconBg="#E6F5F3" iconColor="#017C87"
+              footer={
+                <div className="flex items-center gap-1">
+                  <Timer size={14} className="text-teal" />
+                  <span className="text-xs font-medium text-teal">{totalCount - acceptedCount} awaiting your review</span>
+                </div>
+              }
+            />
+            <StatCard label="Reviewed" value={acceptedCount} icon={CheckCircle2} iconBg="#E8F5E9" iconColor="#2E7D32"
+              footer={
+                <span className="text-xs font-medium text-faint">
+                  {totalCount > 0 ? `${Math.round((acceptedCount / totalCount) * 100)}% acceptance rate` : 'No proposals yet'}
+                </span>
+              }
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Agency inbox view ────────────────────────────────────── */
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-ivory shadow-[0_1px_0_rgba(20,20,40,0.05)] px-6 lg:px-10 py-6 flex items-center gap-4">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-semibold text-ink">
-            {getGreeting()}, {firstName}
-          </h1>
-          <p className="text-sm text-muted mt-1">
-            {isClient
-              ? `You have ${proposalStats.total - proposalStats.accepted} proposals waiting for your review.`
-              : `Here\u2019s what\u2019s happening with your proposals today.`}
-          </p>
+          <h1 className="text-2xl font-semibold text-ink">{getGreeting()}, {firstName}</h1>
+          <p className="text-sm text-muted mt-1">Here’s what needs your attention.</p>
         </div>
-
         <div className="hidden md:flex items-center gap-3">
           <div className="flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[220px]">
             <Search size={16} className="text-faint" />
@@ -299,242 +476,147 @@ function DashboardContent({ companyId, isSuperAdmin, memberName, accountType }: 
           <button className="w-[38px] h-[38px] rounded-full border border-gray-100 bg-white flex items-center justify-center hover:bg-surface transition-colors">
             <Bell size={18} className="text-muted" />
           </button>
-          {!isClient && (
-            <Link
-              href="/proposals"
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
-            >
-              <Plus size={16} />
-              New Proposal
-            </Link>
-          )}
+          <Link
+            href="/proposals"
+            className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
+          >
+            <Plus size={16} />
+            New Proposal
+          </Link>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
-        <div className="flex flex-col gap-8">
-          {/* Stats row */}
+        <div className="flex flex-col gap-6">
+          {/* Summary strip */}
           {loading ? (
-            <div className={`grid grid-cols-2 ${isSuperAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
-              {Array.from({ length: isSuperAdmin ? 4 : 3 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-6 h-[120px] animate-pulse">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-surface" />
-                    <div className="h-4 w-24 bg-surface rounded" />
-                  </div>
-                  <div className="h-8 w-12 bg-surface rounded" />
-                </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-5 h-[88px] animate-pulse" />
               ))}
             </div>
           ) : (
-            <div className={`grid grid-cols-2 ${isSuperAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
-              <StatCard
-                label={isClient ? 'Active Proposals' : 'Total Proposals'}
-                value={proposalStats.total}
-                icon={FileText}
-                iconBg="#E6F5F3"
-                iconColor="#017C87"
-                footer={
-                  isClient ? (
-                    <div className="flex items-center gap-1">
-                      <Timer size={14} className="text-teal" />
-                      <span className="text-xs font-medium text-teal">
-                        {proposalStats.total - proposalStats.accepted} awaiting your review
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <TrendingUp size={14} className="text-[#2E7D32]" />
-                      <span className="text-xs font-medium text-[#2E7D32]">Active</span>
-                    </div>
-                  )
-                }
-              />
-              <StatCard
-                label={isClient ? 'Reviewed' : 'Accepted'}
-                value={proposalStats.accepted}
-                icon={CheckCircle2}
-                iconBg="#E8F5E9"
-                iconColor="#2E7D32"
-                footer={
-                  <span className="text-xs font-medium text-faint">
-                    {proposalStats.total > 0
-                      ? `${Math.round((proposalStats.accepted / proposalStats.total) * 100)}% acceptance rate`
-                      : 'No proposals yet'}
-                  </span>
-                }
-              />
-              <StatCard
-                label={isClient ? 'Pending Feedback' : 'Open Comments'}
-                value={totalThreads}
-                icon={MessageCircle}
-                iconBg="#FFF8E1"
-                iconColor="#E6A817"
-                footer={
-                  totalThreads > 0 ? (
-                    <span className="text-xs font-medium text-[#E6A817]">
-                      {isClient ? 'Action needed' : `${proposalStats.unresolvedComments} need response`}
-                    </span>
-                  ) : (
-                    <span className="text-xs font-medium text-faint">All clear</span>
-                  )
-                }
-              />
-              {isSuperAdmin && (
-                <StatCard
-                  label="Feedback Items"
-                  value={reviewStats.items}
-                  icon={Layers}
-                  iconBg="#E6F5F3"
-                  iconColor="#017C87"
-                  footer={
-                    <span className="text-xs font-medium text-faint">
-                      Across {reviewStats.projects} project{reviewStats.projects !== 1 ? 's' : ''}
-                    </span>
-                  }
-                />
-              )}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <SummaryPill label="Awaiting your reply" value={replies.length} icon={Reply} tone="urgent" />
+              <SummaryPill label="Warm leads (viewed)" value={warmLeads.length} icon={Eye} tone="warm" />
+              <SummaryPill label="Awaiting client (>2d)" value={awaitingClient.length} icon={Send} tone="neutral" />
+              <SummaryPill label="Accepted this week" value={acceptedThisWeek} icon={Sparkles} tone="positive" />
             </div>
           )}
 
-          {/* Bottom row: Recent Proposals + Activity/Quick Actions */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 min-h-0">
-            {/* Recent Proposals */}
-            <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                <h2 className="text-[15px] font-semibold text-ink">
-                  {isClient ? 'Your Proposals' : 'Recent Proposals'}
-                </h2>
-                <Link href="/proposals" className="text-[13px] font-medium text-teal hover:underline">
-                  View all
-                </Link>
-              </div>
-              {loading ? (
-                <div className="p-6 space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center gap-3 animate-pulse">
-                      <div className="w-2 h-2 rounded-full bg-edge" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-4 w-48 bg-surface rounded" />
-                        <div className="h-3 w-32 bg-surface rounded" />
-                      </div>
-                      <div className="h-5 w-16 bg-surface rounded-full" />
-                    </div>
-                  ))}
-                </div>
-              ) : recentProposals.length > 0 ? (
-                <div className="flex-1">
-                  {recentProposals.map((p, i) => (
-                    <ProposalRow
-                      key={p.id}
-                      name={p.title || 'Untitled Proposal'}
-                      meta={
-                        isClient
-                          ? `From your agency \u00b7 ${formatDate(p.created_at)}`
-                          : p.recipient_name
-                            ? `Sent to ${p.recipient_name} \u00b7 ${formatDate(p.created_at)}`
-                            : `Created ${formatDate(p.created_at)}`
-                      }
-                      status={isClient
-                        ? (p.accepted_at ? 'accepted' : 'needs_review')
-                        : getProposalStatus(p)
-                      }
-                      isLast={i === recentProposals.length - 1}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
-                  <FileText size={24} className="text-faint mb-2" />
-                  <p className="text-sm text-muted">No proposals yet</p>
-                </div>
-              )}
-            </div>
+          {/* Needs your reply (full width) */}
+          <InboxCard
+            title="Needs your reply"
+            count={replies.length}
+            icon={Reply}
+            iconColor="#92500F"
+            emptyLabel="No open client comments — nice."
+            viewAllHref={replies.length > 5 ? '/proposals' : undefined}
+          >
+            {replies.slice(0, 5).map((r, i, arr) => {
+              const isLast = i === arr.length - 1;
+              if (r.kind === 'proposal') {
+                return (
+                  <InboxRow
+                    key={`p-${r.id}`}
+                    href={`/proposals/${r.proposalId}`}
+                    title={`${r.clientName} commented on ${r.proposalTitle}`}
+                    subtitle={truncate(r.content, 120)}
+                    meta={formatRelative(r.createdAt)}
+                    badge={{ label: 'Proposal', bg: '#E6F5F3', color: '#017C87' }}
+                    isLast={isLast}
+                  />
+                );
+              }
+              return (
+                <InboxRow
+                  key={`r-${r.id}`}
+                  href={`/feedback/${r.projectId}/items/${r.itemId}`}
+                  title={`${r.clientName} commented on ${r.itemTitle}`}
+                  subtitle={truncate(r.content, 120)}
+                  meta={formatRelative(r.createdAt)}
+                  badge={{ label: 'Review', bg: '#F3E8FF', color: '#7C3AED' }}
+                  isLast={isLast}
+                />
+              );
+            })}
+          </InboxCard>
 
-            {/* Activity (agency) / Quick Actions (client) */}
-            <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h2 className="text-[15px] font-semibold text-ink">
-                  {isClient ? 'Quick Actions' : 'Activity'}
-                </h2>
-              </div>
-              {loading ? (
-                <div className="p-6 space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-start gap-3 animate-pulse">
-                      <div className="w-[30px] h-[30px] rounded-full bg-surface shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-4 w-full bg-surface rounded" />
-                        <div className="h-3 w-20 bg-surface rounded" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : isClient ? (
-                <div className="flex-1">
-                  {recentProposals.filter((p) => !p.accepted_at).length > 0 ? (
-                    recentProposals
-                      .filter((p) => !p.accepted_at)
-                      .slice(0, 3)
-                      .map((p, i, arr) => (
-                        <QuickAction
-                          key={p.id}
-                          number={String(i + 1)}
-                          numBg={i === 0 ? '#E6F5F3' : i === 1 ? '#FFF8E1' : '#E8F5E9'}
-                          numColor={i === 0 ? '#017C87' : i === 1 ? '#E6A817' : '#2E7D32'}
-                          text={`Review & respond to ${p.title || 'Untitled Proposal'}`}
-                          time={`Sent ${formatDate(p.created_at)}`}
-                          isLast={i === arr.length - 1}
-                        />
-                      ))
-                  ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
-                      <CheckCircle2 size={24} className="text-[#2E7D32] mb-2" />
-                      <p className="text-sm text-muted">All caught up!</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex-1">
-                  {recentProposals.length > 0 ? (
-                    <>
-                      {recentProposals.slice(0, 3).map((p, i, arr) => {
-                        const colors = [
-                          { bg: '#E8D5F5', color: '#7C3AED' },
-                          { bg: '#D5E8F5', color: '#2563EB' },
-                          { bg: '#F5E8D5', color: '#D97706' },
-                        ];
-                        const c = colors[i % colors.length];
-                        const initials = p.recipient_name
-                          ? p.recipient_name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
-                          : '??';
-                        const action = p.accepted_at
-                          ? `${p.recipient_name || 'Client'} accepted ${p.title}`
-                          : p.viewed_at
-                            ? `${p.recipient_name || 'Client'} viewed ${p.title}`
-                            : `${p.title} was created`;
-                        return (
-                          <ActivityItem
-                            key={p.id}
-                            initials={initials}
-                            avatarBg={c.bg}
-                            avatarColor={c.color}
-                            text={action}
-                            time={formatDate(p.created_at)}
-                            isLast={i === Math.min(arr.length, 3) - 1}
-                          />
-                        );
-                      })}
-                    </>
-                  ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
-                      <MessageCircle size={24} className="text-faint mb-2" />
-                      <p className="text-sm text-muted">Activity will appear here</p>
-                    </div>
-                  )}
-                </div>
-              )}
+          {/* Two-column: Warm leads + Awaiting client */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <InboxCard
+              title="Warm leads"
+              count={warmLeads.length}
+              icon={Eye}
+              iconColor="#017C87"
+              emptyLabel="Nothing viewed lately."
+              viewAllHref={warmLeads.length > 5 ? '/proposals' : undefined}
+            >
+              {warmLeads.slice(0, 5).map((p, i, arr) => (
+                <InboxRow
+                  key={p.id}
+                  href={`/proposals/${p.id}`}
+                  title={p.title || 'Untitled Proposal'}
+                  subtitle={`Viewed by ${p.client_name || p.recipient_name || 'client'}`}
+                  meta={p.last_viewed_at ? formatRelative(p.last_viewed_at) : ''}
+                  isLast={i === arr.length - 1}
+                />
+              ))}
+            </InboxCard>
+
+            <InboxCard
+              title="Awaiting client (>2 days)"
+              count={awaitingClient.length}
+              icon={AlertCircle}
+              iconColor="#6B6B6B"
+              emptyLabel="Every sent proposal has been opened."
+              viewAllHref={awaitingClient.length > 5 ? '/proposals' : undefined}
+            >
+              {awaitingClient.slice(0, 5).map((p, i, arr) => (
+                <InboxRow
+                  key={p.id}
+                  href={`/proposals/${p.id}`}
+                  title={p.title || 'Untitled Proposal'}
+                  subtitle={`Sent to ${p.client_name || p.recipient_name || 'client'} · not opened yet`}
+                  meta={p.sent_at ? formatRelative(p.sent_at) : ''}
+                  isLast={i === arr.length - 1}
+                />
+              ))}
+            </InboxCard>
+          </div>
+
+          {/* Recently accepted */}
+          <InboxCard
+            title="Recently accepted"
+            count={recentlyAccepted.length}
+            icon={CheckCircle2}
+            iconColor="#2E7D32"
+            emptyLabel="No proposals accepted in the last 14 days."
+            viewAllHref={recentlyAccepted.length > 4 ? '/proposals' : undefined}
+          >
+            {recentlyAccepted.slice(0, 4).map((p, i, arr) => (
+              <InboxRow
+                key={p.id}
+                href={`/proposals/${p.id}`}
+                title={p.title || 'Untitled Proposal'}
+                subtitle={`Accepted by ${p.client_name || p.recipient_name || 'client'}`}
+                meta={p.accepted_at ? formatRelative(p.accepted_at) : ''}
+                isLast={i === arr.length - 1}
+              />
+            ))}
+          </InboxCard>
+
+          {/* Tools strip */}
+          <div>
+            <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted mb-3">Jump back in</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <ToolTile href="/proposals" label="Proposals" icon={FileText} iconBg="#E6F5F3" iconColor="#017C87" count={toolCounts.proposals} />
+              <ToolTile href="/quotes" label="Quotes" icon={ReceiptText} iconBg="#FFF1E0" iconColor="#D97706" count={toolCounts.quotes} />
+              <ToolTile href="/documents" label="Documents" icon={Files} iconBg="#EEF2FF" iconColor="#4F46E5" count={toolCounts.documents} />
+              <ToolTile href="/feedback" label="Creative Reviews" icon={Layers} iconBg="#F3E8FF" iconColor="#7C3AED" count={toolCounts.reviewProjects} />
+              <ToolTile href="/funnels" label="Funnels" icon={Workflow} iconBg="#FEE2E2" iconColor="#DC2626" count={toolCounts.funnels} />
+              <ToolTile href="/integrations/looker-studio" label="Integrations" icon={Plug} iconBg="#E0F2FE" iconColor="#0284C7" count={toolCounts.metaConnections} />
             </div>
           </div>
         </div>
