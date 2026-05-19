@@ -9,7 +9,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image as ImageIcon, Loader2, Trash2, Upload } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Trash2, Upload, Paintbrush } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
@@ -201,24 +201,24 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
   return (
     <div className="flex gap-6 items-start">
       <div className="flex-1 min-w-0 space-y-5">
-        <HeaderStyleCard
-          proposal={headerEntity}
-          companyId={entity.company_id}
-          onSaved={() => onSave?.()}
-          variant="cover"
-          title="Cover Fill"
-          description="Solid colour or gradient that sits behind the cover splash. Drag the preview to position radial / conic gradients."
-          table={headerTable}
-        />
-
         <SectionCard
-          title="Cover Image & Button"
-          description="Optional photo layered on top of the fill, plus colours for the cover's call-to-action button."
-          icon={<ImageIcon size={14} className="text-gray-400" />}
+          title="Cover Design"
+          description="Fill, image overlay, and call-to-action colours for the cover splash."
+          icon={<Paintbrush size={14} className="text-gray-400" />}
         >
-          <div className="space-y-5">
+          <div className="space-y-6">
+            {/* Fill (gradient/solid picker + cover text colours) */}
+            <HeaderStyleCard
+              proposal={headerEntity}
+              companyId={entity.company_id}
+              onSaved={() => onSave?.()}
+              variant="cover"
+              table={headerTable}
+              bare
+            />
+
             {/* Image upload */}
-            <div>
+            <div className="pt-6 border-t border-gray-100">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Cover Image</p>
               <input
                 ref={fileRef}
@@ -292,7 +292,7 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
         </SectionCard>
       </div>
 
-      <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+      <aside className="hidden lg:block w-[640px] xl:w-[780px] 2xl:w-[900px] shrink-0">
         <div className="sticky top-6">
           <CoverPreview
             cfg={cfg}

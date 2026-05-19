@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, FileText, DollarSign } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import PricingPreview from '@/components/admin/shared/PricingPreview';
@@ -63,7 +64,7 @@ export function PricingDesignPreview({ entityId, entityKey }: PreviewProps) {
     let cancelled = false;
     (async () => {
       const apiBase = entityKey === 'template_id' ? '/api/templates/pages' : '/api/proposals/pages';
-      const res = await fetch(`${apiBase}?${entityKey}=${entityId}`);
+      const res = await authFetch(`${apiBase}?${entityKey}=${entityId}`);
       if (res.ok) {
         const pages = await res.json() as Array<{ id: string; type: string; title: string; position: number; payload: Record<string, unknown> }>;
         const first = pages.filter((p) => p.type === 'pricing').sort((a, b) => a.position - b.position)[0];
@@ -118,7 +119,7 @@ export function TextPageDesignPreview({ entityId, entityKey }: PreviewProps) {
     let cancelled = false;
     (async () => {
       const apiBase = entityKey === 'template_id' ? '/api/templates/pages' : '/api/proposals/pages';
-      const res = await fetch(`${apiBase}?${entityKey}=${entityId}`);
+      const res = await authFetch(`${apiBase}?${entityKey}=${entityId}`);
       if (res.ok) {
         const pages = await res.json() as Array<{ type: string; title: string; position: number }>;
         const first = pages.filter((p) => p.type === 'text').sort((a, b) => a.position - b.position)[0];

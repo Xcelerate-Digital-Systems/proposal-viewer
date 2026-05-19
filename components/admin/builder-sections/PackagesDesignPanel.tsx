@@ -11,6 +11,7 @@ import {
   supabase, normalizePackageStyling, DEFAULT_PACKAGE_STYLING,
   type PackageStyling, type PackageTier,
 } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
@@ -59,7 +60,7 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
       }
 
       const apiBase = entityKey === 'template_id' ? '/api/templates/pages' : '/api/proposals/pages';
-      const res = await fetch(`${apiBase}?${entityKey}=${entityId}`);
+      const res = await authFetch(`${apiBase}?${entityKey}=${entityId}`);
       if (!res.ok) { setLoaded(true); return; }
       const pages = await res.json() as Array<{
         id: string; type: string; position: number; payload: Record<string, unknown>;
@@ -119,7 +120,7 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
     if (!packagesPageId) return;
     setSaveStatus('saving');
     const apiBase = entityKey === 'template_id' ? '/api/templates/pages' : '/api/proposals/pages';
-    const res = await fetch(`${apiBase}?id=${packagesPageId}`, {
+    const res = await authFetch(`${apiBase}?id=${packagesPageId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ payload_patch: { packages: nextTiers } }),

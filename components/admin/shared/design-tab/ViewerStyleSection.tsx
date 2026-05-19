@@ -35,12 +35,12 @@ import {
 
 function GroupHeading({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="pt-2">
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{title}</h3>
-        {hint && <span className="text-[11px] text-gray-400">{hint}</span>}
+    <div className="pt-4">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+        {hint && <span className="text-xs text-gray-400">{hint}</span>}
       </div>
-      <div className="mt-1.5 h-px bg-gray-100" />
+      <div className="mt-2 h-px bg-gray-200" />
     </div>
   );
 }
@@ -256,61 +256,80 @@ export default function ViewerStyleSection({
       <GroupHeading title="Globals" hint="Apply across every page" />
 
       <SectionCard
-        title="Page Orientation"
-        description={`Controls the orientation of text pages, pricing, and packages when this ${type} exports as PDF.`}
+        title="Global Page Defaults"
+        description="Orientation, title typography, and a shared background image — applied behind text, pricing, and packages pages."
         icon={<LayoutPanelTop size={14} className="text-gray-400" />}
       >
-        <div className="flex gap-2">
-          {orientationOptions.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => setPageOrientation(opt.key)}
-              className={`flex items-center gap-2 px-3 py-2 text-xs rounded-lg border transition-colors ${
-                pageOrientation === opt.key
-                  ? 'bg-teal/10 border-teal/40 text-teal font-medium'
-                  : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              <span className={`rounded-sm border-2 flex-shrink-0 ${
-                pageOrientation === opt.key ? 'border-teal' : 'border-gray-300'
-              } ${opt.key === 'landscape' ? 'w-4 h-3.5' : 'w-3.5 h-4'}`} />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        title="Page Title Font"
-        description="Headline typography used by cover headlines and text / pricing / packages page titles."
-        icon={<Type size={14} className="text-gray-400" />}
-      >
-        <div className="space-y-3">
-          <FontSelect
-            label="Title Font"
-            description="Leave blank to use your company heading font"
-            value={titleFontFamily}
-            onChange={setTitleFontFamily}
-            previewText="Your Page Title"
-            weight={titleFontWeight}
-            onWeightChange={setTitleFontWeight}
-          />
+        <div className="space-y-6">
+          {/* Orientation */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Title Size</label>
-            <select
-              value={titleFontSize}
-              onChange={(e) => setTitleFontSize(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30"
-            >
-              <option value="">Default</option>
-              <option value="20">20px — Small</option>
-              <option value="24">24px — Medium</option>
-              <option value="28">28px</option>
-              <option value="32">32px — Large</option>
-              <option value="36">36px</option>
-              <option value="40">40px — Extra Large</option>
-              <option value="48">48px</option>
-            </select>
+            <div className="flex items-center gap-2 mb-2">
+              <LayoutPanelTop size={13} className="text-gray-400" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Page Orientation</p>
+            </div>
+            <div className="flex gap-2">
+              {orientationOptions.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setPageOrientation(opt.key)}
+                  className={`flex items-center gap-2 px-3 py-2 text-xs rounded-lg border transition-colors ${
+                    pageOrientation === opt.key
+                      ? 'bg-teal/10 border-teal/40 text-teal font-medium'
+                      : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={`rounded-sm border-2 flex-shrink-0 ${
+                    pageOrientation === opt.key ? 'border-teal' : 'border-gray-300'
+                  } ${opt.key === 'landscape' ? 'w-4 h-3.5' : 'w-3.5 h-4'}`} />
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Title font */}
+          <div className="pt-6 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Type size={13} className="text-gray-400" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Page Title Font</p>
+            </div>
+            <div className="space-y-3">
+              <FontSelect
+                label="Title Font"
+                description="Leave blank to use your company heading font"
+                value={titleFontFamily}
+                onChange={setTitleFontFamily}
+                previewText="Your Page Title"
+                weight={titleFontWeight}
+                onWeightChange={setTitleFontWeight}
+              />
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Title Size</label>
+                <select
+                  value={titleFontSize}
+                  onChange={(e) => setTitleFontSize(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30"
+                >
+                  <option value="">Default</option>
+                  <option value="20">20px — Small</option>
+                  <option value="24">24px — Medium</option>
+                  <option value="28">28px</option>
+                  <option value="32">32px — Large</option>
+                  <option value="36">36px</option>
+                  <option value="40">40px — Extra Large</option>
+                  <option value="48">48px</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Background image */}
+          <div className="pt-6 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <ImageIcon size={13} className="text-gray-400" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Background Image</p>
+            </div>
+            {backgroundImageBlock}
           </div>
         </div>
       </SectionCard>
@@ -447,13 +466,6 @@ export default function ViewerStyleSection({
             </div>
           </SectionCard>
 
-          <SectionCard
-            title="Background Image"
-            description="Sits behind text, pricing, and packages pages."
-            icon={<ImageIcon size={14} className="text-gray-400" />}
-          >
-            {backgroundImageBlock}
-          </SectionCard>
         </div>
 
         {type !== 'document' && (

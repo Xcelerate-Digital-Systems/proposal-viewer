@@ -37,6 +37,9 @@ interface Props {
   description?: string;
   /** Defaults to 'proposals'. Pass 'proposal_templates' when editing a template. */
   table?: StylableTable;
+  /** Skip the outer SectionCard chrome — used when this body is nested inside
+   *  another card (e.g. the consolidated Cover Design card). */
+  bare?: boolean;
 }
 
 interface VariantCols {
@@ -96,6 +99,7 @@ export default function HeaderStyleCard({
   title,
   description,
   table = 'proposals',
+  bare = false,
 }: Props) {
   const toast = useToast();
   const cols = variant === 'cover' ? COVER_COLS : QUOTE_HEADER_COLS;
@@ -224,13 +228,8 @@ export default function HeaderStyleCard({
     ? "Behind the cover splash. Doesn't affect the quote body."
     : "Behind the header band at the top of the quote body. Doesn't affect the cover splash.";
 
-  return (
-    <SectionCard
-      title={title ?? defaultTitle}
-      description={description ?? defaultDescription}
-      icon={<Palette size={14} className="text-gray-400" />}
-    >
-      <div className="space-y-5">
+  const body = (
+    <div className="space-y-5">
         {/* Live preview band — interactive for radial/conic */}
         <div
           ref={previewRef}
@@ -427,6 +426,17 @@ export default function HeaderStyleCard({
           />
         </div>
       </div>
+  );
+
+  if (bare) return body;
+
+  return (
+    <SectionCard
+      title={title ?? defaultTitle}
+      description={description ?? defaultDescription}
+      icon={<Palette size={14} className="text-gray-400" />}
+    >
+      {body}
     </SectionCard>
   );
 }
