@@ -29,6 +29,10 @@ export default function ProposalDesignPage() {
         initialTitleFontFamily={proposal.title_font_family ?? null}
         initialTitleFontWeight={proposal.title_font_weight ?? null}
         initialTitleFontSize={proposal.title_font_size ?? null}
+        initialFontHeadingFamily={proposal.font_heading_family ?? null}
+        initialFontHeadingWeight={proposal.font_heading_weight ?? null}
+        initialFontBodyFamily={proposal.font_body_family ?? null}
+        initialFontBodyWeight={proposal.font_body_weight ?? null}
         initialPageNumCircleColor={proposal.page_num_circle_color ?? null}
         initialPageNumTextColor={proposal.page_num_text_color ?? null}
         coverEntity={proposal}

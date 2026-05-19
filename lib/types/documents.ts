@@ -47,6 +47,10 @@ export type Document = {
   title_font_family: string | null;
   title_font_weight: string | null;
   title_font_size: string | null;
+  font_heading_family: string | null;
+  font_heading_weight: string | null;
+  font_body_family: string | null;
+  font_body_weight: string | null;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
 };

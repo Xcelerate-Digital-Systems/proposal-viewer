@@ -77,6 +77,15 @@ interface ViewerStyleSectionProps {
   setTitleFontWeight: (v: string | null) => void;
   titleFontSize: string;
   setTitleFontSize: (v: string) => void;
+  /* ── Heading + body fonts (entity overrides) ───────────── */
+  fontHeadingFamily: string | null;
+  setFontHeadingFamily: (v: string | null) => void;
+  fontHeadingWeight: string | null;
+  setFontHeadingWeight: (v: string | null) => void;
+  fontBodyFamily: string | null;
+  setFontBodyFamily: (v: string | null) => void;
+  fontBodyWeight: string | null;
+  setFontBodyWeight: (v: string | null) => void;
   /* ── Text page colors ───────────────────────────────────── */
   tpBgColor: string;
   setTpBgColor: (v: string) => void;
@@ -125,6 +134,14 @@ export default function ViewerStyleSection({
   setTitleFontWeight,
   titleFontSize,
   setTitleFontSize,
+  fontHeadingFamily,
+  setFontHeadingFamily,
+  fontHeadingWeight,
+  setFontHeadingWeight,
+  fontBodyFamily,
+  setFontBodyFamily,
+  fontBodyWeight,
+  setFontBodyWeight,
   tpBgColor,
   setTpBgColor,
   tpTextColor,
@@ -287,16 +304,20 @@ export default function ViewerStyleSection({
             </div>
           </div>
 
-          {/* Title font */}
+          {/* Page title font — only the big H1 at the top of each page */}
           <div className="pt-6 border-t border-gray-100">
             <div className="flex items-center gap-2 mb-2">
               <Type size={13} className="text-gray-400" />
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Page Title Font</p>
             </div>
+            <p className="text-[11px] text-gray-400 mb-3">
+              Controls only the large title at the top of each text, pricing, and packages page. Body
+              copy and section headings use the Heading and Body fonts below.
+            </p>
             <div className="space-y-3">
               <FontSelect
                 label="Title Font"
-                description="Leave blank to use your company heading font"
+                description="Leave blank to inherit the Heading font below."
                 value={titleFontFamily}
                 onChange={setTitleFontFamily}
                 previewText="Your Page Title"
@@ -321,6 +342,54 @@ export default function ViewerStyleSection({
                 </select>
               </div>
             </div>
+          </div>
+
+          {/* Heading font — used by h2/h3 inside body content */}
+          <div className="pt-6 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Type size={13} className="text-gray-400" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Heading Font</p>
+            </div>
+            <p className="text-[11px] text-gray-400 mb-3">
+              Used by section headings (H2 / H3) inside page body content. Defaults to your workspace heading font.
+            </p>
+            <FontSelect
+              label="Heading Font"
+              description={
+                companyDefaults.font_heading
+                  ? `Leave blank to inherit workspace default: ${companyDefaults.font_heading}`
+                  : 'Leave blank to inherit the workspace default.'
+              }
+              value={fontHeadingFamily}
+              onChange={setFontHeadingFamily}
+              previewText="A Section Heading"
+              weight={fontHeadingWeight}
+              onWeightChange={setFontHeadingWeight}
+            />
+          </div>
+
+          {/* Body font — paragraph text */}
+          <div className="pt-6 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Type size={13} className="text-gray-400" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Body Font</p>
+            </div>
+            <p className="text-[11px] text-gray-400 mb-3">
+              Used for paragraph text, list items, and most body copy. Defaults to your workspace body font.
+            </p>
+            <FontSelect
+              label="Body Font"
+              description={
+                companyDefaults.font_body
+                  ? `Leave blank to inherit workspace default: ${companyDefaults.font_body}`
+                  : 'Leave blank to inherit the workspace default.'
+              }
+              value={fontBodyFamily}
+              onChange={setFontBodyFamily}
+              previewText="Paragraph copy on a body page."
+              weight={fontBodyWeight}
+              onWeightChange={setFontBodyWeight}
+            />
           </div>
 
           {/* Background image */}

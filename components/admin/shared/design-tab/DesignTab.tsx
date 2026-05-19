@@ -40,6 +40,10 @@ interface DesignTabProps {
   initialTitleFontFamily?: string | null;
   initialTitleFontWeight?: string | null;
   initialTitleFontSize?: string | null;
+  initialFontHeadingFamily?: string | null;
+  initialFontHeadingWeight?: string | null;
+  initialFontBodyFamily?: string | null;
+  initialFontBodyWeight?: string | null;
   initialPageNumCircleColor?: string | null;
   initialPageNumTextColor?: string | null;
   /** Cover entity for the Cover Page design section. Pass the proposal /
@@ -70,6 +74,10 @@ export default function DesignTab({
   initialTitleFontFamily,
   initialTitleFontWeight,
   initialTitleFontSize,
+  initialFontHeadingFamily,
+  initialFontHeadingWeight,
+  initialFontBodyFamily,
+  initialFontBodyWeight,
   initialPageNumCircleColor,
   initialPageNumTextColor,
   coverEntity,
@@ -118,6 +126,15 @@ export default function DesignTab({
   const [titleFontSize, setTitleFontSize] = useState<string>(initialTitleFontSize || '');
 
   /* ================================================================ */
+  /*  HEADING + BODY FONT STATE (entity-level overrides)               */
+  /* ================================================================ */
+
+  const [fontHeadingFamily, setFontHeadingFamily] = useState<string | null>(initialFontHeadingFamily ?? null);
+  const [fontHeadingWeight, setFontHeadingWeight] = useState<string | null>(initialFontHeadingWeight ?? null);
+  const [fontBodyFamily, setFontBodyFamily] = useState<string | null>(initialFontBodyFamily ?? null);
+  const [fontBodyWeight, setFontBodyWeight] = useState<string | null>(initialFontBodyWeight ?? null);
+
+  /* ================================================================ */
   /*  PAGE NUMBER BADGE STATE                                          */
   /* ================================================================ */
 
@@ -138,6 +155,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   const initializedRef = useRef(false);
   const tpInitializedRef = useRef(false);
   const titleFontInitializedRef = useRef(false);
+  const bodyHeadingFontInitializedRef = useRef(false);
   const pageNumInitializedRef = useRef(false);
 
   /* ================================================================ */
@@ -235,6 +253,10 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     payload.title_font_family = titleFontFamily;
     payload.title_font_weight = titleFontWeight;
     payload.title_font_size = titleFontSize || null;
+    payload.font_heading_family = fontHeadingFamily;
+    payload.font_heading_weight = fontHeadingWeight;
+    payload.font_body_family = fontBodyFamily;
+    payload.font_body_weight = fontBodyWeight;
     payload.page_num_circle_color = pageNumCircleColor ?? null;
     payload.page_num_text_color = pageNumTextColor ?? null;
 
@@ -246,6 +268,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     bgMode, bgImagePath, overlayOpacity, bgImageBlur, pageOrientation,
     tpBgColor, tpTextColor, tpHeadingColor,
     titleFontFamily, titleFontWeight, titleFontSize,
+    fontHeadingFamily, fontHeadingWeight, fontBodyFamily, fontBodyWeight,
     pageNumCircleColor, pageNumTextColor,
     table, entityId, onSave,
   ]);
@@ -275,6 +298,12 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     if (!titleFontInitializedRef.current) { titleFontInitializedRef.current = true; return; }
     scheduleSave(800);
   }, [titleFontFamily, titleFontWeight, titleFontSize]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autosave: heading + body font state
+  useEffect(() => {
+    if (!bodyHeadingFontInitializedRef.current) { bodyHeadingFontInitializedRef.current = true; return; }
+    scheduleSave(800);
+  }, [fontHeadingFamily, fontHeadingWeight, fontBodyFamily, fontBodyWeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Autosave: page number badge state
   useEffect(() => {
@@ -363,6 +392,14 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setTitleFontWeight={setTitleFontWeight}
       titleFontSize={titleFontSize}
       setTitleFontSize={setTitleFontSize}
+      fontHeadingFamily={fontHeadingFamily}
+      setFontHeadingFamily={setFontHeadingFamily}
+      fontHeadingWeight={fontHeadingWeight}
+      setFontHeadingWeight={setFontHeadingWeight}
+      fontBodyFamily={fontBodyFamily}
+      setFontBodyFamily={setFontBodyFamily}
+      fontBodyWeight={fontBodyWeight}
+      setFontBodyWeight={setFontBodyWeight}
       tpBgColor={tpBgColor}
       setTpBgColor={setTpBgColor}
       tpTextColor={tpTextColor}

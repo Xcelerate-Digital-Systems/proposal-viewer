@@ -29,6 +29,10 @@ export default function TemplateDesignPage() {
         initialTitleFontFamily={template.title_font_family ?? null}
         initialTitleFontWeight={template.title_font_weight ?? null}
         initialTitleFontSize={template.title_font_size ?? null}
+        initialFontHeadingFamily={template.font_heading_family ?? null}
+        initialFontHeadingWeight={template.font_heading_weight ?? null}
+        initialFontBodyFamily={template.font_body_family ?? null}
+        initialFontBodyWeight={template.font_body_weight ?? null}
         initialPageNumCircleColor={template.page_num_circle_color ?? null}
         initialPageNumTextColor={template.page_num_text_color ?? null}
         coverEntity={template}

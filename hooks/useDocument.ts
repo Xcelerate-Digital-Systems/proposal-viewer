@@ -88,6 +88,10 @@ export function useDocument(token: string) {
           if (doc.title_font_family != null) data.title_font_family = doc.title_font_family;
           if (doc.title_font_weight != null) data.title_font_weight = doc.title_font_weight;
           if (doc.title_font_size != null) data.title_font_size = doc.title_font_size;
+          if (doc.font_heading_family != null) data.font_heading = doc.font_heading_family;
+          if (doc.font_heading_weight != null) data.font_heading_weight = doc.font_heading_weight;
+          if (doc.font_body_family != null) data.font_body = doc.font_body_family;
+          if (doc.font_body_weight != null) data.font_body_weight = doc.font_body_weight;
           if (doc.page_num_circle_color != null) data.page_num_circle_color = doc.page_num_circle_color;
           if (doc.page_num_text_color != null) data.page_num_text_color = doc.page_num_text_color;
 

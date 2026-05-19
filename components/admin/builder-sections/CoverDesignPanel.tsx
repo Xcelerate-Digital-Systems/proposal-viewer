@@ -292,8 +292,9 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
         </SectionCard>
       </div>
 
-      <aside className="hidden lg:block w-[640px] xl:w-[780px] 2xl:w-[900px] shrink-0">
+      <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
         <div className="sticky top-6">
+          <div className="w-full" style={{ aspectRatio: '4 / 3' }}>
           <CoverPreview
             cfg={cfg}
             coverEnabled={entity.cover_enabled}
@@ -313,6 +314,7 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
             showAvatar={entity.cover_show_avatar ?? false}
             resolvedMember={resolvedMember}
           />
+          </div>
         </div>
       </aside>
     </div>

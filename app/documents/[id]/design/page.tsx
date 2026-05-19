@@ -30,6 +30,10 @@ export default function DocumentDesignPage() {
         initialTitleFontFamily={document.title_font_family ?? null}
         initialTitleFontWeight={document.title_font_weight ?? null}
         initialTitleFontSize={document.title_font_size ?? null}
+        initialFontHeadingFamily={document.font_heading_family ?? null}
+        initialFontHeadingWeight={document.font_heading_weight ?? null}
+        initialFontBodyFamily={document.font_body_family ?? null}
+        initialFontBodyWeight={document.font_body_weight ?? null}
         initialPageNumCircleColor={document.page_num_circle_color ?? null}
         initialPageNumTextColor={document.page_num_text_color ?? null}
       />

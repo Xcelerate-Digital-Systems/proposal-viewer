@@ -53,6 +53,10 @@ interface TemplateData {
   title_font_family: string | null;
   title_font_weight: string | null;
   title_font_size: string | null;
+  font_heading_family: string | null;
+  font_heading_weight: string | null;
+  font_body_family: string | null;
+  font_body_weight: string | null;
   updated_at: string;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
@@ -113,6 +117,10 @@ export function useTemplatePreview(templateId: string) {
           if (tmpl.title_font_family != null) brandingData.title_font_family = tmpl.title_font_family;
           if (tmpl.title_font_weight != null) brandingData.title_font_weight = tmpl.title_font_weight;
           if (tmpl.title_font_size != null) brandingData.title_font_size = tmpl.title_font_size;
+          if (tmpl.font_heading_family != null) brandingData.font_heading = tmpl.font_heading_family;
+          if (tmpl.font_heading_weight != null) brandingData.font_heading_weight = tmpl.font_heading_weight;
+          if (tmpl.font_body_family != null) brandingData.font_body = tmpl.font_body_family;
+          if (tmpl.font_body_weight != null) brandingData.font_body_weight = tmpl.font_body_weight;
           if (tmpl.page_num_circle_color != null) brandingData.page_num_circle_color = tmpl.page_num_circle_color;
           if (tmpl.page_num_text_color != null) brandingData.page_num_text_color = tmpl.page_num_text_color;
 

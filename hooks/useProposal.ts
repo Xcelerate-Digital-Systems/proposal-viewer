@@ -108,6 +108,11 @@ export function useProposal(token: string) {
         if (data.title_font_family != null) brandingData.title_font_family = data.title_font_family;
         if (data.title_font_weight != null) brandingData.title_font_weight = data.title_font_weight;
         if (data.title_font_size != null) brandingData.title_font_size = data.title_font_size;
+        // Per-entity overrides for the body + heading fonts (null = inherit company).
+        if (data.font_heading_family != null) brandingData.font_heading = data.font_heading_family;
+        if (data.font_heading_weight != null) brandingData.font_heading_weight = data.font_heading_weight;
+        if (data.font_body_family != null) brandingData.font_body = data.font_body_family;
+        if (data.font_body_weight != null) brandingData.font_body_weight = data.font_body_weight;
         if (data.page_num_circle_color != null) brandingData.page_num_circle_color = data.page_num_circle_color;
         if (data.page_num_text_color != null) brandingData.page_num_text_color = data.page_num_text_color;
 
