@@ -3,6 +3,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
+import { authFetch } from '@/lib/auth-fetch';
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -105,7 +106,7 @@ export function useTextPagesEditor({
 
   const loadPages = useCallback(async () => {
     try {
-      const res = await fetch(`${apiBase}?${entityKey}=${entityId}`);
+      const res = await authFetch(`${apiBase}?${entityKey}=${entityId}`);
       if (!res.ok) {
         const body = await res.text().catch(() => '');
         console.error('useTextPagesEditor: load failed', res.status, body);
@@ -158,7 +159,7 @@ export function useTextPagesEditor({
   const flushSave = useCallback(async (pageId: string, data: TextPageForm) => {
     setSaveStatus('saving');
     const { content, ...rest } = data;
-    await fetch(`${apiBase}?id=${pageId}`, {
+    await authFetch(`${apiBase}?id=${pageId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -205,7 +206,7 @@ export function useTextPagesEditor({
 
   const addPage = useCallback(async () => {
     setAdding(true);
-    const res = await fetch(apiBase, {
+    const res = await authFetch(apiBase, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -229,7 +230,7 @@ export function useTextPagesEditor({
   /* ── Delete page ─────────────────────────────────────────────── */
 
   const deletePage = useCallback(async (pageId: string) => {
-    const res = await fetch(apiBase, {
+    const res = await authFetch(apiBase, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [entityKey]: entityId, page_id: pageId }),

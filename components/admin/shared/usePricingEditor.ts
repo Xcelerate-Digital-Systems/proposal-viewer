@@ -9,6 +9,7 @@ import {
 import { CompanyBranding } from '@/hooks/useProposal';
 import { useToast } from '@/components/ui/Toast';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
+import { authFetch } from '@/lib/auth-fetch';
 
 /* ─── Internal types ──────────────────────────────────────────── */
 
@@ -200,7 +201,7 @@ export function usePricingEditor({
   useEffect(() => {
     const fetchPricing = async () => {
       try {
-        const res = await fetch(`${apiBase}?${entityKey}=${entityId}`);
+        const res = await authFetch(`${apiBase}?${entityKey}=${entityId}`);
         if (res.ok) {
           const allPagesData: UnifiedPage[] = await res.json();
           const pages = allPagesData
@@ -232,7 +233,7 @@ export function usePricingEditor({
     if (!resolvedCompanyId) return;
     const fetchBranding = async () => {
       try {
-        const res = await fetch(`/api/company/branding?company_id=${resolvedCompanyId}`);
+        const res = await authFetch(`/api/company/branding?company_id=${resolvedCompanyId}`);
         if (res.ok) {
           const data = await res.json();
           setBranding({ ...DEFAULT_BRANDING, ...data });
@@ -260,7 +261,7 @@ export function usePricingEditor({
     async (id: string, data: PricingFormState, pos: number) => {
       setSaveStatus('saving');
       try {
-        const res = await fetch(`${apiBase}?id=${id}`, {
+        const res = await authFetch(`${apiBase}?id=${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -343,7 +344,7 @@ export function usePricingEditor({
   const addPage = useCallback(async () => {
     setAdding(true);
     try {
-      const res = await fetch(apiBase, {
+      const res = await authFetch(apiBase, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -403,7 +404,7 @@ export function usePricingEditor({
     async (id: string) => {
       if (!confirm('Delete this quote page? This cannot be undone.')) return;
       try {
-        const res = await fetch(apiBase, {
+        const res = await authFetch(apiBase, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ [entityKey]: entityId, page_id: id }),
