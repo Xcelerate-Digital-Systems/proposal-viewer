@@ -3,10 +3,7 @@
 import { useState } from 'react';
 import {
   ChevronDown, ChevronRight, ChevronLeft,
-  Diamond, Clock, Flag, Phone, CalendarDays, Zap,
-  MousePointerClick, FileText, PlayCircle, ChevronsDown,
-  ShoppingBag, ShoppingCart, BellRing, Sparkles,
-  MessageSquare, Mail, Bell, Sheet,
+  Diamond,
   StickyNote, PanelLeftOpen,
   MousePointer2, Square, Circle, MoveRight, Minus, Type,
   Workflow, Pencil,
@@ -14,6 +11,9 @@ import {
 } from 'lucide-react';
 import type { BoardTool } from './BoardTopToolbar';
 import type { FeedbackShapeType } from '@/lib/types/feedback';
+import {
+  BOARD_ACTION_GROUPS, BOARD_ACTION_ICONS, BOARD_ACTION_TINTS,
+} from '@/lib/types/board-actions';
 
 interface Props {
   /** Currently active drawing tool — drives which Drawing-tab tile is highlighted. */
@@ -63,73 +63,23 @@ interface PaletteTab {
   groups: PaletteGroup[];
 }
 
-/** Tint per shape type — mirrors the diamond/shape colour scheme. Keep in
- *  sync with ShapeNode.tsx's DIAMOND_CONFIG so the palette tile colour
- *  matches the colour the node actually paints on canvas. */
-const SHAPE_TINTS: Record<string, string> = {
-  // Logic
-  decision: '#B45309', wait: '#8B5CF6', goal: '#EAB308',
-  // Contact
-  call: '#059669', meeting: '#7C3AED', automation: '#F43F5E',
-  // Events
-  button_click: '#3B82F6', form_submit: '#06B6D4',
-  video_play: '#EF4444', scroll_depth: '#6366F1',
-  purchase: '#10B981', add_to_cart: '#F97316',
-  subscribe: '#EC4899', custom_event: '#64748B',
-  // Notifications
-  sms_notification: '#15803D', email_notification: '#B91C1C',
-  ghl_notification: '#0EA5E9', google_sheet: '#0F9D58',
-};
-
 const TABS: PaletteTab[] = [
   {
     id: 'actions',
     label: 'Actions',
     icon: Workflow,
-    groups: [
-      {
-        key: 'logic',
-        label: 'Logic',
-        items: [
-          { kind: 'shape', shapeType: 'decision', label: 'Decision', icon: Diamond },
-          { kind: 'shape', shapeType: 'wait',     label: 'Wait',     icon: Clock },
-          { kind: 'shape', shapeType: 'goal',     label: 'Goal',     icon: Flag },
-        ],
-      },
-      {
-        key: 'contact',
-        label: 'Contact',
-        items: [
-          { kind: 'shape', shapeType: 'call',       label: 'Call',       icon: Phone },
-          { kind: 'shape', shapeType: 'meeting',    label: 'Meeting',    icon: CalendarDays },
-          { kind: 'shape', shapeType: 'automation', label: 'Automation', icon: Zap },
-        ],
-      },
-      {
-        key: 'events',
-        label: 'Events',
-        items: [
-          { kind: 'shape', shapeType: 'button_click', label: 'Button Click', icon: MousePointerClick },
-          { kind: 'shape', shapeType: 'form_submit',  label: 'Form Submit',  icon: FileText },
-          { kind: 'shape', shapeType: 'video_play',   label: 'Video Play',   icon: PlayCircle },
-          { kind: 'shape', shapeType: 'scroll_depth', label: 'Scroll Depth', icon: ChevronsDown },
-          { kind: 'shape', shapeType: 'purchase',     label: 'Purchase',     icon: ShoppingBag },
-          { kind: 'shape', shapeType: 'add_to_cart',  label: 'Add to Cart',  icon: ShoppingCart },
-          { kind: 'shape', shapeType: 'subscribe',    label: 'Subscribe',    icon: BellRing },
-          { kind: 'shape', shapeType: 'custom_event', label: 'Custom Event', icon: Sparkles },
-        ],
-      },
-      {
-        key: 'notifications',
-        label: 'Notifications',
-        items: [
-          { kind: 'shape', shapeType: 'sms_notification',   label: 'SMS',         icon: MessageSquare },
-          { kind: 'shape', shapeType: 'email_notification', label: 'Email',       icon: Mail },
-          { kind: 'shape', shapeType: 'ghl_notification',   label: 'GHL Notify',  icon: Bell },
-          { kind: 'shape', shapeType: 'google_sheet',       label: 'Google Sheet', icon: Sheet },
-        ],
-      },
-    ],
+    // Actions tiles come from the shared BOARD_ACTION_GROUPS registry so a
+    // new action added for one board (feedback/funnel) appears in the other.
+    groups: BOARD_ACTION_GROUPS.map((g) => ({
+      key: g.key,
+      label: g.label,
+      items: g.items.map<PaletteItem>((i) => ({
+        kind: 'shape',
+        shapeType: i.shapeType as FeedbackShapeType,
+        label: i.label,
+        icon: BOARD_ACTION_ICONS[i.iconName] ?? Diamond,
+      })),
+    })),
   },
   {
     id: 'drawing',
@@ -158,7 +108,8 @@ const TABS: PaletteTab[] = [
 ];
 
 const DEFAULT_OPEN: Record<string, boolean> = {
-  logic: true, contact: true, events: true, notifications: false,
+  conversion: true, engagement: true, integration: false,
+  gohighlevel: true, custom_actions: false,
   tools: true, notes: true,
 };
 
@@ -300,7 +251,7 @@ function PaletteTile({ item, activeTool, onClick }: {
 
   if (item.kind === 'shape') {
     const Icon = item.icon;
-    const tint = SHAPE_TINTS[item.shapeType] || '#64748B';
+    const tint = BOARD_ACTION_TINTS[item.shapeType as keyof typeof BOARD_ACTION_TINTS] || '#64748B';
     return (
       <button
         type="button"

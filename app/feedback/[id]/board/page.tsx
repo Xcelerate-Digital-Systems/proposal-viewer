@@ -9,7 +9,7 @@ import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHe
 
 export default function ReviewBoardPage({ params }: { params: { id: string } }) {
   return (
-    <AdminLayout>
+    <AdminLayout collapseSidebar>
       {(auth) => (
         <BoardGate isSuperAdmin={auth.isSuperAdmin} projectId={params.id} />
       )}

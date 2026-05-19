@@ -8,6 +8,8 @@
 // board without re-implementing them. Only the FK column changes
 // (review_project_id → funnel_id) and the step-node taxonomy is new.
 
+import { BOARD_ACTION_GROUPS, type BoardActionShapeId } from './board-actions';
+
 export type FunnelStatus = 'draft' | 'active' | 'archived';
 
 /** Currency for the summary chip + drawer. Stored as ISO 4217 code, rendered
@@ -447,19 +449,7 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
  *  shapes (decision / wait / events / notifications), and sticky notes into
  *  one categorised list so the user has a single place to add anything to
  *  the canvas. */
-export type FunnelShapePaletteId =
-  | 'decision' | 'wait' | 'goal'
-  | 'call' | 'meeting' | 'automation'
-  | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
-  | 'purchase' | 'add_to_cart' | 'subscribe' | 'custom_event'
-  | 'page_view' | 'time_on_page' | 'exit_intent' | 'refund'
-  | 'download' | 'share' | 'login'
-  | 'sms_notification' | 'email_notification' | 'ghl_notification'
-  | 'google_sheet' | 'webhook'
-  | 'form_completed' | 'schedule_meeting' | 'deal_won'
-  | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
-  | 'on_site_visit' | 'send_quote'
-  | 'send_google_review' | 'add_to_referral_program';
+export type FunnelShapePaletteId = BoardActionShapeId;
 
 export type PaletteItem =
   | { kind: 'step'; stepType: FunnelStepType }
@@ -573,73 +563,26 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
     id: 'actions',
     label: 'Actions',
     groups: [
-      {
-        key: 'conversion', label: 'Conversion Actions',
-        items: [
-          { kind: 'shape', shapeType: 'purchase',         label: 'Purchase',         iconName: 'shopping-bag' },
-          { kind: 'shape', shapeType: 'form_completed',   label: 'Form Completed',   iconName: 'clipboard-check' },
-          { kind: 'shape', shapeType: 'schedule_meeting', label: 'Schedule Meeting', iconName: 'calendar-check' },
-          { kind: 'shape', shapeType: 'on_site_visit',    label: 'On-Site Visit',    iconName: 'map-pin' },
-          { kind: 'shape', shapeType: 'send_quote',       label: 'Send Quote',       iconName: 'send' },
-          { kind: 'shape', shapeType: 'deal_won',         label: 'Deal Won',         iconName: 'trophy' },
-          { kind: 'shape', shapeType: 'add_to_cart',      label: 'Add to Cart',      iconName: 'shopping-cart' },
-          { kind: 'shape', shapeType: 'subscribe',        label: 'Subscribe',        iconName: 'bell-ring' },
-          { kind: 'shape', shapeType: 'goal',             label: 'Goal',             iconName: 'flag' },
-        ],
-      },
-      {
-        key: 'engagement', label: 'Engagement Actions',
-        items: [
-          { kind: 'shape', shapeType: 'page_view',    label: 'Page View',    iconName: 'eye' },
-          { kind: 'shape', shapeType: 'button_click', label: 'Button Click', iconName: 'mouse-pointer-click' },
-          { kind: 'shape', shapeType: 'form_submit',  label: 'Form Submit',  iconName: 'file-text' },
-          { kind: 'shape', shapeType: 'video_play',   label: 'Video Play',   iconName: 'play-circle' },
-          { kind: 'shape', shapeType: 'scroll_depth', label: 'Scroll Depth', iconName: 'chevrons-down' },
-          { kind: 'shape', shapeType: 'time_on_page', label: 'Time on Page', iconName: 'timer' },
-          { kind: 'shape', shapeType: 'exit_intent',  label: 'Exit Intent',  iconName: 'log-out' },
-        ],
-      },
-      {
-        key: 'integration', label: 'Integration Actions',
-        items: [
-          { kind: 'shape', shapeType: 'webhook',     label: 'Webhook',      iconName: 'webhook' },
-          { kind: 'shape', shapeType: 'google_sheet',label: 'Google Sheet', iconName: 'sheet' },
-          { kind: 'shape', shapeType: 'call',        label: 'Call',         iconName: 'phone' },
-          { kind: 'shape', shapeType: 'meeting',     label: 'Meeting',      iconName: 'calendar-days' },
-          { kind: 'shape', shapeType: 'automation',  label: 'Automation',   iconName: 'zap' },
-        ],
-      },
-      {
-        key: 'gohighlevel', label: 'GoHighLevel Actions',
-        items: [
-          { kind: 'shape', shapeType: 'sms_notification',    label: 'SMS Notification',     iconName: 'message-square' },
-          { kind: 'shape', shapeType: 'email_notification',  label: 'Email Notification',   iconName: 'mail' },
-          { kind: 'shape', shapeType: 'ghl_notification',    label: 'HighLevel',            iconName: 'bell' },
-          { kind: 'shape', shapeType: 'ghl_appointment',     label: 'GHL Appointment',      iconName: 'calendar-days' },
-          { kind: 'shape', shapeType: 'ghl_order',           label: 'GHL Order',            iconName: 'shopping-bag' },
-          { kind: 'shape', shapeType: 'ghl_opportunity',     label: 'GHL Opportunity',      iconName: 'target' },
-          { kind: 'shape', shapeType: 'ghl_opportunity_won', label: 'GHL Opportunity Won',  iconName: 'crown' },
-          { kind: 'shape', shapeType: 'send_google_review',  label: 'Send Google Review',   iconName: 'star' },
-          { kind: 'shape', shapeType: 'add_to_referral_program', label: 'Add to Referral Program', iconName: 'gift' },
-        ],
-      },
+      // Shared action groups — single source of truth in lib/types/board-actions.ts
+      // so the same tiles appear in both the feedback and funnel boards.
+      ...BOARD_ACTION_GROUPS.map<PaletteGroup>((g) => ({
+        key: g.key,
+        label: g.label,
+        // Funnel's Custom Actions group additionally exposes a sticky tile and
+        // the generic step node — both are funnel-only canvas primitives.
+        items: g.key === 'custom_actions'
+          ? [
+              ...g.items.map<PaletteItem>((i) => ({ kind: 'shape', shapeType: i.shapeType, label: i.label, iconName: i.iconName })),
+              { kind: 'sticky' },
+              { kind: 'step', stepType: 'generic' },
+            ]
+          : g.items.map<PaletteItem>((i) => ({ kind: 'shape', shapeType: i.shapeType, label: i.label, iconName: i.iconName })),
+      })),
+      // Funnel-only: send traffic via email/sms as step nodes (these aren't
+      // shape actions, they're traffic sources reused as actions).
       {
         key: 'messaging', label: 'Messaging',
         items: stepItems(['traffic_email', 'traffic_sms']),
-      },
-      {
-        key: 'custom_actions', label: 'Custom Actions',
-        items: [
-          { kind: 'shape', shapeType: 'decision',     label: 'Decision',     iconName: 'diamond' },
-          { kind: 'shape', shapeType: 'wait',         label: 'Wait',         iconName: 'clock' },
-          { kind: 'shape', shapeType: 'refund',       label: 'Refund',       iconName: 'undo-2' },
-          { kind: 'shape', shapeType: 'download',     label: 'Download',     iconName: 'download' },
-          { kind: 'shape', shapeType: 'share',        label: 'Share',        iconName: 'share-2' },
-          { kind: 'shape', shapeType: 'login',        label: 'Login',        iconName: 'log-in' },
-          { kind: 'shape', shapeType: 'custom_event', label: 'Custom Event', iconName: 'sparkles' },
-          { kind: 'sticky' },
-          { kind: 'step', stepType: 'generic' },
-        ],
       },
       { key: 'custom_act', label: 'Custom', items: [{ kind: 'upload', scope: 'action' }] },
     ],
