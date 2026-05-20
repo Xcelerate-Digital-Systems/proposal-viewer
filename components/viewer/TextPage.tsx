@@ -192,13 +192,19 @@ function renderNode(
       const Tag = `h${level}` as 'h1' | 'h2' | 'h3';
       const headingWeight = Number(branding.title_font_weight || branding.font_heading_weight || '700');
       const w = level === 1 ? headingWeight : Math.min(headingWeight, 600);
+      // Entity-level heading size override (set on the Design tab Globals card).
+      // Applied to all heading levels — level deltas of 4px stay relative.
+      const baseHeadingSize = branding.font_heading_size ? Number(branding.font_heading_size) : null;
+      const sizePx = baseHeadingSize
+        ? Math.max(10, baseHeadingSize + (level === 1 ? 4 : level === 2 ? 0 : -3))
+        : (sizes[level as number] || 20);
       return (
         <Tag
           key={key}
           style={{
             ...baseStyle,
             color: textColor,
-            fontSize: sizes[level as number] || 20,
+            fontSize: sizePx,
             fontWeight: w,
             margin: margins[level as number] || '0.8em 0 0.4em',
             lineHeight: 1.3,

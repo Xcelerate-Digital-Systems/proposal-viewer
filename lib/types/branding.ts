@@ -25,6 +25,7 @@ export type CompanyBranding = {
   font_body: string | null;
   font_sidebar: string | null;
   font_heading_weight: string | null;
+  font_heading_size: string | null;
   font_body_weight: string | null;
   font_sidebar_weight: string | null;
   title_font_family: string | null;

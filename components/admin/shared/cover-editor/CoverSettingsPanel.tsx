@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import { Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Type } from 'lucide-react';
 import CoverColorControls, { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
+import Chip from '@/components/ui/Chip';
 import { EntityType, EntityConfig } from './CoverEditorTypes';
 
 /* ── Reusable toggle row ─────────────────────────────────────────── */
@@ -26,13 +27,9 @@ function ToggleRow({
         {icon}
         <span className="text-sm text-gray-700">{label}</span>
       </div>
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`relative w-9 h-5 rounded-full transition-colors ${enabled ? 'bg-teal' : 'bg-gray-200'}`}
-      >
-        <span className={`absolute top-[1px] w-4 h-4 rounded-full bg-white shadow transition-transform ${enabled ? 'left-[18px]' : 'left-[1px]'}`} />
-      </button>
+      <Chip enabled={enabled} onClick={onToggle}>
+        {enabled ? 'Visible' : 'Hidden'}
+      </Chip>
     </div>
   );
 }
@@ -163,12 +160,9 @@ export default function CoverSettingsPanel({
               {coverEnabled ? <Eye size={16} className="text-teal" /> : <EyeOff size={16} className="text-gray-400" />}
               <span className="text-sm text-gray-900 font-medium">Cover Page</span>
             </div>
-            <button
-              onClick={() => setCoverEnabled(!coverEnabled)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${coverEnabled ? 'bg-teal' : 'bg-gray-200'}`}
-            >
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${coverEnabled ? 'left-5' : 'left-0.5'}`} />
-            </button>
+            <Chip enabled={coverEnabled} onClick={() => setCoverEnabled(!coverEnabled)}>
+              {coverEnabled ? 'Visible' : 'Hidden'}
+            </Chip>
           </div>
           <div className="border-t border-gray-100" />
         </>

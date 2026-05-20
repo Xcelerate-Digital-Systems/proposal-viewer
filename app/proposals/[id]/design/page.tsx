@@ -32,6 +32,7 @@ export default function ProposalDesignPage() {
         initialTitleFontSize={proposal.title_font_size ?? null}
         initialFontHeadingFamily={proposal.font_heading_family ?? null}
         initialFontHeadingWeight={proposal.font_heading_weight ?? null}
+        initialFontHeadingSize={(proposal as { font_heading_size?: string | null }).font_heading_size ?? null}
         initialFontBodyFamily={proposal.font_body_family ?? null}
         initialFontBodyWeight={proposal.font_body_weight ?? null}
         initialTitleFontTransform={(proposal as { title_font_transform?: string | null }).title_font_transform ?? null}

@@ -32,6 +32,7 @@ export default function TemplateDesignPage() {
         initialTitleFontSize={template.title_font_size ?? null}
         initialFontHeadingFamily={template.font_heading_family ?? null}
         initialFontHeadingWeight={template.font_heading_weight ?? null}
+        initialFontHeadingSize={(template as { font_heading_size?: string | null }).font_heading_size ?? null}
         initialFontBodyFamily={template.font_body_family ?? null}
         initialFontBodyWeight={template.font_body_weight ?? null}
         initialTitleFontTransform={(template as { title_font_transform?: string | null }).title_font_transform ?? null}

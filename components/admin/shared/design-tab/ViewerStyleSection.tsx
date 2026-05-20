@@ -34,6 +34,46 @@ import {
 } from './DesignTabTypes';
 
 /* ------------------------------------------------------------------ */
+/*  FontSizeInput — number input with a px suffix                      */
+/* ------------------------------------------------------------------ */
+
+function FontSizeInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  min = 8,
+  max = 96,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="block text-xs font-medium text-gray-600">{label}</label>
+      <div className="relative">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full pl-3 pr-9 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 pointer-events-none">px</span>
+      </div>
+      <p className="text-[11px] text-gray-400">Leave blank to use the workspace default.</p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  TipTap → plain text                                                */
 /* ------------------------------------------------------------------ */
 
@@ -113,6 +153,10 @@ interface ViewerStyleSectionProps {
   setFontBodyFamily: (v: string | null) => void;
   fontBodyWeight: string | null;
   setFontBodyWeight: (v: string | null) => void;
+  fontHeadingSize: string;
+  setFontHeadingSize: (v: string) => void;
+  fontBodySize: string;
+  setFontBodySize: (v: string) => void;
   /* ── Font case transforms (Normal / Upper / Lower / Title) ── */
   titleFontTransform: string | null;
   setTitleFontTransform: (v: string | null) => void;
@@ -179,6 +223,10 @@ export default function ViewerStyleSection({
   setFontBodyFamily,
   fontBodyWeight,
   setFontBodyWeight,
+  fontHeadingSize,
+  setFontHeadingSize,
+  fontBodySize,
+  setFontBodySize,
   titleFontTransform,
   setTitleFontTransform,
   fontHeadingTransform,
@@ -380,20 +428,12 @@ export default function ViewerStyleSection({
                     onTransformChange={setTitleFontTransform}
                     hideInlinePreview
                   />
-                  <Select
+                  <FontSizeInput
                     label="Title size"
                     value={titleFontSize}
-                    onChange={(e) => setTitleFontSize(e.target.value)}
-                  >
-                    <option value="">Default</option>
-                    <option value="20">20px — Small</option>
-                    <option value="24">24px — Medium</option>
-                    <option value="28">28px</option>
-                    <option value="32">32px — Large</option>
-                    <option value="36">36px</option>
-                    <option value="40">40px — Extra Large</option>
-                    <option value="48">48px</option>
-                  </Select>
+                    onChange={setTitleFontSize}
+                    placeholder="36"
+                  />
                   <FontSelect
                     label="Heading font"
                     description={
@@ -409,6 +449,12 @@ export default function ViewerStyleSection({
                     onTransformChange={setFontHeadingTransform}
                     hideInlinePreview
                   />
+                  <FontSizeInput
+                    label="Heading size"
+                    value={fontHeadingSize}
+                    onChange={setFontHeadingSize}
+                    placeholder="18"
+                  />
                   <FontSelect
                     label="Body font"
                     description={
@@ -423,6 +469,12 @@ export default function ViewerStyleSection({
                     transform={fontBodyTransform}
                     onTransformChange={setFontBodyTransform}
                     hideInlinePreview
+                  />
+                  <FontSizeInput
+                    label="Body size"
+                    value={fontBodySize}
+                    onChange={setFontBodySize}
+                    placeholder={companyDefaults.font_size || '14'}
                   />
                 </div>
               </div>
@@ -460,7 +512,7 @@ export default function ViewerStyleSection({
                   color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
                   fontFamily: fontFamily(fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
                   fontWeight: Number(fontHeadingWeight || '600'),
-                  fontSize: '22px',
+                  fontSize: fontHeadingSize ? `${fontHeadingSize}px` : '22px',
                   textTransform: (fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
                 }}
               >
@@ -472,7 +524,7 @@ export default function ViewerStyleSection({
                   color: tpTextColor || companyDefaults.text_color,
                   fontFamily: fontFamily(fontBodyFamily || companyDefaults.font_body, 'system-ui, sans-serif'),
                   fontWeight: Number(fontBodyWeight || '400'),
-                  fontSize: '15px',
+                  fontSize: fontBodySize ? `${fontBodySize}px` : `${companyDefaults.font_size || '15'}px`,
                   textTransform: (fontBodyTransform || 'none') as React.CSSProperties['textTransform'],
                 }}
               >

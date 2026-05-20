@@ -28,6 +28,7 @@ export const DEFAULT_BRANDING: CompanyBranding = {
   font_body: null,
   font_sidebar: null,
   font_heading_weight: null,
+  font_heading_size: null,
   font_body_weight: null,
   font_sidebar_weight: null,
   title_font_family: null,

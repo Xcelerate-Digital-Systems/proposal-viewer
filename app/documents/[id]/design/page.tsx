@@ -33,6 +33,7 @@ export default function DocumentDesignPage() {
         initialTitleFontSize={document.title_font_size ?? null}
         initialFontHeadingFamily={document.font_heading_family ?? null}
         initialFontHeadingWeight={document.font_heading_weight ?? null}
+        initialFontHeadingSize={(document as { font_heading_size?: string | null }).font_heading_size ?? null}
         initialFontBodyFamily={document.font_body_family ?? null}
         initialFontBodyWeight={document.font_body_weight ?? null}
         initialTitleFontTransform={(document as { title_font_transform?: string | null }).title_font_transform ?? null}
