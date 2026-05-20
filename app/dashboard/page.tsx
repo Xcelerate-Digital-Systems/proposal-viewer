@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   FileText, CheckCircle2, Layers, Timer,
-  Search, Bell, Plus, ReceiptText, Files, Workflow, Plug, ArrowUpRight,
+  Search, Bell, ReceiptText, Files, Workflow, Plug, ArrowUpRight,
   Eye, Send, Reply, Sparkles, AlertCircle, type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -476,13 +476,6 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
           <button className="w-[38px] h-[38px] rounded-full border border-gray-100 bg-white flex items-center justify-center hover:bg-surface transition-colors">
             <Bell size={18} className="text-muted" />
           </button>
-          <Link
-            href="/proposals"
-            className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
-          >
-            <Plus size={16} />
-            New Proposal
-          </Link>
         </div>
       </div>
 
