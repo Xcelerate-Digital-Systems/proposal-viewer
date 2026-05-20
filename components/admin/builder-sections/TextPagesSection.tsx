@@ -12,6 +12,7 @@ import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext'
 import Chip from '@/components/ui/Chip';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
 import TextPagePreview from '@/components/admin/shared/TextPagePreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import TextPageSettingsCard from '@/components/admin/shared/TextPageSettingsCard';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
@@ -174,16 +175,14 @@ export default function TextPagesSection({
         </div>
 
         {showPreview && (
-          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-            <div className="sticky top-6">
-              <TextPagePreview
-                form={form}
-                branding={branding}
-                entityId={entityId}
-                companyId={companyId}
-              />
-            </div>
-          </aside>
+          <StickyPreviewAside>
+            <TextPagePreview
+              form={form}
+              branding={branding}
+              entityId={entityId}
+              companyId={companyId}
+            />
+          </StickyPreviewAside>
         )}
       </div>
     </div>

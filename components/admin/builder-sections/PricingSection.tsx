@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import Toggle from '@/components/ui/Toggle';
 import Chip from '@/components/ui/Chip';
 import PricingPreview from '@/components/admin/shared/PricingPreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import PricingSettings from '@/components/admin/pricing/PricingSettings';
 import PricingLineItems from '@/components/admin/pricing/PricingLineItems';
 import PricingOptionalItems from '@/components/admin/pricing/PricingOptionalItems';
@@ -341,11 +342,9 @@ export default function PricingSection({
         </div>
 
         {showPreviewPane && (
-          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-            <div className="sticky top-6">
-              <PricingPreview pricing={editor.previewPricing!} branding={editor.branding} />
-            </div>
-          </aside>
+          <StickyPreviewAside>
+            <PricingPreview pricing={editor.previewPricing!} branding={editor.branding} />
+          </StickyPreviewAside>
         )}
       </div>
     </div>

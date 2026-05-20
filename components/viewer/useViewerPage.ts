@@ -13,7 +13,7 @@ export function useViewerPage(token: string) {
     loading, notFound, pageEntries, branding, brandingLoaded,
     comments, accepted, declined, revisionRequested,
     pricing, pricingPages, packages, textPages,
-    isPricingPage, isPackagesPage, isTocPage, isTextPage,
+    isPricingPage, isPackagesPage, isTocPage, isTextPage, isDecisionPage,
     getPricingId, getPackagesId, getTextPageId, getTextPage, toPdfPage,
     tocSettings, pageSequence, onDocumentLoadSuccess, pageUrls, getPageName,
     acceptProposal, declineProposal, requestRevision,
@@ -24,9 +24,6 @@ export function useViewerPage(token: string) {
 
   const [showCover, setShowCover]           = useState(true);
   const [clientLogoUrl, setClientLogoUrl]   = useState<string | undefined>(undefined);
-  const [showAcceptModal, setShowAcceptModal]     = useState(false);
-  const [showDeclineModal, setShowDeclineModal]   = useState(false);
-  const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [showComments, setShowComments]     = useState(false);
   const [mobileSidebar, setMobileSidebar]   = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
@@ -37,6 +34,7 @@ export function useViewerPage(token: string) {
   const onTextPage     = isTextPage(currentPage);
   const onPricingPage  = isPricingPage(currentPage);
   const onPackagesPage = isPackagesPage(currentPage);
+  const onDecisionPage = isDecisionPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage   = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
   const currentPricingId  = getPricingId(currentPage);
@@ -182,15 +180,12 @@ export function useViewerPage(token: string) {
     // Local state
     showCover, setShowCover,
     clientLogoUrl,
-    showAcceptModal, setShowAcceptModal,
-    showDeclineModal, setShowDeclineModal,
-    showRevisionModal, setShowRevisionModal,
     showComments, setShowComments,
     mobileSidebar, setMobileSidebar,
     mainRef,
 
     // Derived
-    onTocPage, onTextPage, onPricingPage, onPackagesPage,
+    onTocPage, onTextPage, onPricingPage, onPackagesPage, onDecisionPage,
     currentTextPage, currentPackages, pdfPage,
     currentPageLink,
     bgPrimary, bgSecondary, accent, border, sidebarText,

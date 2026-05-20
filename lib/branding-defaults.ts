@@ -50,4 +50,8 @@ export const DEFAULT_BRANDING: CompanyBranding = {
   bg_image_blur: 0,
   page_num_circle_color: null,
   page_num_text_color: null,
+  decision_action_bg_color: null,
+  decision_action_text_color: null,
+  decision_action_heading_color: null,
+  decision_action_accent_color: null,
 };

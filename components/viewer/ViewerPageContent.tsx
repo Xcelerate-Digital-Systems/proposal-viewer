@@ -11,6 +11,7 @@ import TocPage, { type PageSequenceEntry } from './TocPage';
 import PricingPage from './PricingPage';
 import PackagesPage from './PackagesPage';
 import ViewerBackground from './ViewerBackground';
+import ProposalDecisionPanel, { type DecisionPanelTokens } from './ProposalDecisionPanel';
 
 interface ViewerPageContentProps {
   branding: CompanyBranding;
@@ -22,6 +23,7 @@ interface ViewerPageContentProps {
   onTextPage: boolean;
   onPricingPage: boolean;
   onPackagesPage: boolean;
+  onDecisionPage: boolean;
   // Page data
   tocSettings: TocSettings | null;
   pageSequence: PageSequenceEntry[];
@@ -39,16 +41,130 @@ interface ViewerPageContentProps {
   // Context
   proposal: Record<string, unknown> | null;
   clientLogoUrl: string | undefined;
+  // Decision page actions + initial state
+  accepted?: boolean;
+  declined?: boolean;
+  revisionRequested?: boolean;
+  onAccept?: (name: string) => Promise<void>;
+  onDecline?: (name: string, reason: string) => Promise<void>;
+  onRequestRevision?: (name: string, notes: string) => Promise<void>;
+}
+
+/** Convert a CSS colour to rgba with explicit alpha. */
+function withAlpha(color: string, alpha: number): string {
+  const hex = color.trim();
+  if (hex.startsWith('#')) {
+    const h = hex.slice(1);
+    const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    if (full.length === 6) {
+      const r = parseInt(full.slice(0, 2), 16);
+      const g = parseInt(full.slice(2, 4), 16);
+      const b = parseInt(full.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+  }
+  return color;
+}
+
+function fontStack(name: string | null | undefined, fallback: string): string {
+  if (!name) return fallback;
+  return `'${name}', ${fallback}`;
+}
+
+/** Resolve the Decision panel style tokens via the cascade:
+    proposal.decision_action_* → branding.decision_action_* → text_page_* → defaults. */
+function buildDecisionTokens(
+  proposal: Record<string, unknown> | null,
+  branding: CompanyBranding,
+): DecisionPanelTokens {
+  const p = (proposal ?? {}) as Record<string, string | null | undefined>;
+  const bodyBg =
+    p.decision_action_bg_color ||
+    branding.decision_action_bg_color ||
+    p.text_page_bg_color ||
+    branding.text_page_bg_color ||
+    '#ffffff';
+  const bodyText =
+    p.decision_action_text_color ||
+    branding.decision_action_text_color ||
+    p.text_page_text_color ||
+    branding.text_page_text_color ||
+    '#1E2432';
+  const headingColor =
+    p.decision_action_heading_color ||
+    branding.decision_action_heading_color ||
+    p.text_page_heading_color ||
+    branding.text_page_heading_color ||
+    bodyText;
+  // Accent currently overrides the submit-button bg via headingColor — we keep
+  // the existing behaviour here (caller can swap for a dedicated accent token
+  // later if needed without changing the panel).
+  const muted = withAlpha(bodyText, 0.6);
+  const faint = withAlpha(bodyText, 0.45);
+  const hairline = withAlpha(bodyText, 0.1);
+  const headingFontFamily = fontStack(branding.font_heading, 'inherit');
+  const titleFontFamily = fontStack(
+    p.title_font_family || branding.title_font_family || branding.font_heading,
+    'inherit',
+  );
+  const titleFontWeight = p.title_font_weight || branding.title_font_weight || '600';
+  const titleStyle: React.CSSProperties = {
+    fontFamily: titleFontFamily,
+    fontWeight: Number(titleFontWeight) || 600,
+    color: headingColor,
+  };
+  return {
+    bodyBg,
+    bodyText,
+    headingColor,
+    muted,
+    faint,
+    hairline,
+    headingFontFamily,
+    titleStyle,
+    mutedStyle: { color: muted },
+  };
 }
 
 export default function ViewerPageContent({
   branding, bgPrimary, pageOrientation, scrollRef,
-  onTocPage, onTextPage, onPricingPage, onPackagesPage,
+  onTocPage, onTextPage, onPricingPage, onPackagesPage, onDecisionPage,
   tocSettings, pageSequence, pageEntries, numPages,
   currentTextPage, pricing, currentPackages,
   pdfUrl, pdfPage, onLoadSuccess, accentColor, pageUrls,
   proposal, clientLogoUrl,
+  accepted, declined, revisionRequested,
+  onAccept, onDecline, onRequestRevision,
 }: ViewerPageContentProps) {
+  if (onDecisionPage) {
+    const tokens = buildDecisionTokens(proposal, branding);
+    const acceptButtonText =
+      (proposal as { accept_button_text?: string | null } | null)?.accept_button_text ?? undefined;
+    return (
+      <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
+        <ViewerBackground branding={branding} />
+        <div ref={scrollRef} className="absolute inset-0 overflow-auto">
+          <div className="relative min-h-full flex items-start justify-center px-6 sm:px-14 py-12">
+            <div
+              className="w-full max-w-2xl rounded-2xl shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] px-6 sm:px-12 py-10"
+              style={{ backgroundColor: tokens.bodyBg, color: tokens.bodyText }}
+            >
+              <ProposalDecisionPanel
+                onAccept={onAccept}
+                onDecline={onDecline}
+                onRequestRevision={onRequestRevision}
+                accepted={accepted}
+                declined={declined}
+                revisionRequested={revisionRequested}
+                tokens={tokens}
+                acceptButtonText={acceptButtonText}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (onTocPage && tocSettings) {
     return (
       <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>

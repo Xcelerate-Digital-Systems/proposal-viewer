@@ -27,6 +27,7 @@ import SortableTocRow       from './SortableTocRow';
 import InsertPageMenu       from './InsertPageMenu';
 import AddPageButtons       from './AddPageButtons';
 import PreviewRouter        from './PreviewRouter';
+import StickyPreviewAside   from '@/components/admin/shared/StickyPreviewAside';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -317,25 +318,23 @@ export default function PageEditor({
             </div>
         </div>
 
-        <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-          <div className="sticky top-6">
-            <PreviewRouter
-              proposalId={proposalId}
-              filePath={filePath}
-              selectedPage={selectedPage}
-              selectedPdfIdx={selectedPdfIdx}
-              saveStatuses={saveStatuses}
-              pdfEntries={pdfEntries}
-              pageUrlEntries={pageUrlEntries}
-              pdfPageCount={pdfPages.length}
-              onTextPageUpdate={handleTextPageUpdate}
-              onGoPrev={goPrev}
-              onGoNext={goNext}
-              canGoPrev={canGoPrev}
-              canGoNext={canGoNext}
-            />
-          </div>
-        </aside>
+        <StickyPreviewAside>
+          <PreviewRouter
+            proposalId={proposalId}
+            filePath={filePath}
+            selectedPage={selectedPage}
+            selectedPdfIdx={selectedPdfIdx}
+            saveStatuses={saveStatuses}
+            pdfEntries={pdfEntries}
+            pageUrlEntries={pageUrlEntries}
+            pdfPageCount={pdfPages.length}
+            onTextPageUpdate={handleTextPageUpdate}
+            onGoPrev={goPrev}
+            onGoNext={goNext}
+            canGoPrev={canGoPrev}
+            canGoNext={canGoNext}
+          />
+        </StickyPreviewAside>
       </div>
     </div>
   );

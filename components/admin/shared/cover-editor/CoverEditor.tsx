@@ -14,6 +14,7 @@ import {
 } from './CoverEditorTypes';
 import CoverSettingsPanel from './CoverSettingsPanel';
 import CoverPreview from './CoverPreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -436,32 +437,30 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
         />
       </div>
 
-      <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-        <div className="sticky top-6">
-          <div className="w-full" style={{ aspectRatio: '4 / 3' }}>
-            <CoverPreview
-              cfg={cfg}
-              coverEnabled={coverEnabled}
-              displayTitle={displayTitle}
-              buttonText={buttonText}
-              previewSubtitle={previewSubtitle}
-              colors={colors}
-              imageUrl={imageUrl}
-              companyLogoUrl={companyLogoUrl}
-              companyName={companyName}
-              headingFont={headingFont}
-              showClientLogo={showClientLogo}
-              clientLogoUrl={clientLogoUrl}
-              clientLogoTintColor={clientLogoTintColor}
-              showDate={showDate}
-              coverDate={coverDate}
-              showPreparedBy={showPreparedBy}
-              showAvatar={showAvatar}
-              resolvedMember={resolvedMember}
-            />
-          </div>
+      <StickyPreviewAside>
+        <div className="w-full" style={{ aspectRatio: '4 / 3' }}>
+          <CoverPreview
+            cfg={cfg}
+            coverEnabled={coverEnabled}
+            displayTitle={displayTitle}
+            buttonText={buttonText}
+            previewSubtitle={previewSubtitle}
+            colors={colors}
+            imageUrl={imageUrl}
+            companyLogoUrl={companyLogoUrl}
+            companyName={companyName}
+            headingFont={headingFont}
+            showClientLogo={showClientLogo}
+            clientLogoUrl={clientLogoUrl}
+            clientLogoTintColor={clientLogoTintColor}
+            showDate={showDate}
+            coverDate={coverDate}
+            showPreparedBy={showPreparedBy}
+            showAvatar={showAvatar}
+            resolvedMember={resolvedMember}
+          />
         </div>
-      </aside>
+      </StickyPreviewAside>
     </div>
   );
 }

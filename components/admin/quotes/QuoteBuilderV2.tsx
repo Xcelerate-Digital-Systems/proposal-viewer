@@ -21,6 +21,7 @@
 import type { Proposal } from '@/lib/supabase';
 
 import PreviewPane from '@/components/admin/proposals/quote-builder/PreviewPane';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 
 // Reused (unchanged) from the legacy quote-builder section folder.
 import ClientDetailsSection from '@/components/admin/proposals/quote-builder/sections/ClientDetailsSection';
@@ -78,12 +79,10 @@ export default function QuoteBuilderV2({ proposal, companyId, onRefetch }: Props
           <AttachmentsSection proposal={proposal} onSaved={onRefetch} />
         </div>
 
-        {/* Right: sticky preview — wider so the rendered quote is readable
-            while you edit. Hides under lg to keep the builder usable on
-            smaller laptops. */}
-        <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+        {/* Right: sticky preview — PreviewPane handles its own sticky+max-h. */}
+        <StickyPreviewAside sticky={false}>
           <PreviewPane proposal={proposal} companyId={companyId} />
-        </aside>
+        </StickyPreviewAside>
       </div>
     </div>
   );

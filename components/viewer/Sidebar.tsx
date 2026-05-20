@@ -3,6 +3,10 @@
 
 import { useState, useEffect } from 'react';
 import { CheckCircle2, MessageSquare, XCircle, PenLine } from 'lucide-react';
+// Action buttons (Approve / Decline / Request Changes) used to live in the
+// sidebar bottom panel. They moved to a dedicated Decision page at the end of
+// every proposal — only the terminal-state badges remain here so a client who
+// has already decided still sees their status while navigating.
 import { PageNameEntry } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
 import { fontFamily } from '@/lib/google-fonts';
@@ -16,17 +20,13 @@ interface SidebarProps {
   branding:          CompanyBranding;
   mobileOpen?:       boolean;
   onMobileClose?:    () => void;
-  // Optional proposal-specific props — when omitted, bottom actions are hidden
+  // Optional proposal-specific props — terminal-state badges + comments toggle.
   accepted?:              boolean;
   declined?:              boolean;
   revisionRequested?:     boolean;
-  onAcceptClick?:         () => void;
-  onDeclineClick?:        () => void;
-  onRevisionClick?:       () => void;
   showComments?:          boolean;
   onToggleComments?:      () => void;
   commentCount?:          number;
-  acceptButtonText?:      string;
 }
 
 interface NavItem {
@@ -70,13 +70,9 @@ export default function Sidebar({
   accepted,
   declined,
   revisionRequested,
-  onAcceptClick,
-  onDeclineClick,
-  onRevisionClick,
   showComments,
   onToggleComments,
   commentCount,
-  acceptButtonText,
 }: SidebarProps) {
   const navTree = buildNavTree(pageEntries);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
@@ -85,14 +81,9 @@ export default function Sidebar({
   const bgSecondary = branding.bg_secondary        || '#141414';
   const border      = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color  || '#ffffff';
-  const acceptText  = branding.accept_text_color   || '#ffffff';
-  const label       = acceptButtonText             || 'Approve & Continue';
 
   // Show bottom actions only when the accept handler is wired up (proposals only)
-  const showActions = onAcceptClick !== undefined && onToggleComments !== undefined;
-
-  // Terminal state: prospect has done something — don't show action buttons
-  const terminalState = accepted || declined || revisionRequested;
+  const showActions = onToggleComments !== undefined;
 
   // Auto-expand the group containing the current page
   useEffect(() => {
@@ -239,41 +230,6 @@ export default function Sidebar({
               <PenLine size={15} />
               Changes Requested
             </div>
-          )}
-
-          {/* ── Action buttons (hidden after any terminal action) ── */}
-          {!terminalState && (
-            <>
-              {/* Primary: Approve */}
-              <button
-                onClick={onAcceptClick}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
-                style={{ backgroundColor: accent, color: acceptText }}
-              >
-                <CheckCircle2 size={15} />
-                {label}
-              </button>
-
-              {/* Secondary: Request Changes + Decline */}
-              <div className="space-y-2">
-                <button
-                  onClick={onRevisionClick}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
-                  style={{ color: sidebarText, border: `1px solid ${sidebarText}60`, backgroundColor: 'transparent' }}
-                >
-                  <PenLine size={13} />
-                  Request Changes
-                </button>
-                <button
-                  onClick={onDeclineClick}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
-                  style={{ color: sidebarText, border: `1px solid ${sidebarText}60`, backgroundColor: 'transparent' }}
-                >
-                  <XCircle size={13} />
-                  Decline
-                </button>
-              </div>
-            </>
           )}
 
           {/* Comments — always visible */}

@@ -48,6 +48,12 @@ export type CompanyBranding = {
   bg_image_blur: number;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
+  /** Decision page surface colours. Null = inherit from text_page_* cascade. */
+  decision_action_bg_color: string | null;
+  decision_action_text_color: string | null;
+  decision_action_heading_color: string | null;
+  /** Submit-button background. Null = use heading colour. */
+  decision_action_accent_color: string | null;
 };
 
 // ─── Color helpers ────────────────────────────────────────────────────────────

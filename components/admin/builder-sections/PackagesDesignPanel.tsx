@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
@@ -185,12 +186,10 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
         </SectionCard>
       </div>
 
-      <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-        <div className="sticky top-6">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <PackagesPreview packages={previewPackages as any} branding={branding} />
-        </div>
-      </aside>
+      <StickyPreviewAside>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <PackagesPreview packages={previewPackages as any} branding={branding} />
+      </StickyPreviewAside>
     </div>
   );
 }

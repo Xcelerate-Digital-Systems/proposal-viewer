@@ -12,7 +12,6 @@ import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import PageLinkButton from '@/components/viewer/PageLinkButton';
 import PageNumberBadge from '@/components/viewer/PageNumberBadge';
-import ViewerModals from '@/components/viewer/ViewerModals';
 import ViewerPageContent from '@/components/viewer/ViewerPageContent';
 import QuoteSinglePageView from '@/components/viewer/QuoteSinglePageView';
 import { useViewerPage } from '@/components/viewer/useViewerPage';
@@ -189,26 +188,6 @@ export default function ProposalViewerPage({ params }: { params: { token: string
         </div>
       )}
 
-      {/* Modals */}
-      {v.proposal && (
-        <ViewerModals
-          proposal={v.proposal as Record<string, unknown>}
-          accent={v.accent}
-          bgSecondary={v.bgSecondary}
-          sidebarText={v.sidebarText}
-          acceptTextColor={v.branding.accept_text_color || '#ffffff'}
-          showAcceptModal={v.showAcceptModal}
-          onCloseAccept={() => v.setShowAcceptModal(false)}
-          onAccept={async (name) => { await v.acceptProposal(name); }}
-          showDeclineModal={v.showDeclineModal}
-          onCloseDecline={() => v.setShowDeclineModal(false)}
-          onDecline={async (name, reason) => { await v.declineProposal(name, reason); v.setShowDeclineModal(false); }}
-          showRevisionModal={v.showRevisionModal}
-          onCloseRevision={() => v.setShowRevisionModal(false)}
-          onRevision={async (name, notes) => { await v.requestRevision(name, notes); v.setShowRevisionModal(false); }}
-        />
-      )}
-
       {/* Mobile header */}
       <div
         className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
@@ -245,13 +224,9 @@ export default function ProposalViewerPage({ params }: { params: { token: string
         accepted={v.accepted}
         declined={v.declined}
         revisionRequested={v.revisionRequested}
-        onAcceptClick={() => v.setShowAcceptModal(true)}
-        onDeclineClick={() => v.setShowDeclineModal(true)}
-        onRevisionClick={() => v.setShowRevisionModal(true)}
         showComments={v.showComments}
         onToggleComments={() => v.setShowComments((prev) => !prev)}
         commentCount={v.unresolvedCommentCount}
-        acceptButtonText={v.proposal?.accept_button_text ?? undefined}
       />
 
       {/* Main content area */}
@@ -270,6 +245,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             onTextPage={v.onTextPage}
             onPricingPage={v.onPricingPage}
             onPackagesPage={v.onPackagesPage}
+            onDecisionPage={v.onDecisionPage}
             tocSettings={v.tocSettings}
             pageSequence={v.pageSequence}
             pageEntries={v.pageEntries}
@@ -284,6 +260,12 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             pageUrls={v.pageUrls}
             proposal={v.proposal as Record<string, unknown> | null}
             clientLogoUrl={v.clientLogoUrl}
+            accepted={v.accepted}
+            declined={v.declined}
+            revisionRequested={v.revisionRequested}
+            onAccept={async (name) => { await v.acceptProposal(name); }}
+            onDecline={async (name, reason) => { await v.declineProposal(name, reason); }}
+            onRequestRevision={async (name, notes) => { await v.requestRevision(name, notes); }}
           />
 
           <PageNumberBadge

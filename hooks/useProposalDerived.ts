@@ -4,20 +4,54 @@ import { Proposal, parseTocSettings, PageNameEntry } from '@/lib/supabase';
 import type { PageUrlEntry, ProposalTextPage } from './useProposal';
 
 export function useProposalDerived(
-  pageUrls: PageUrlEntry[],
+  rawPageUrls: PageUrlEntry[],
   proposal: Proposal | null,
 ) {
-  // Sidebar nav entries — section pages become 'group' type
+  // Append a synthetic Decision page at the end for proposals. Lives only in
+  // memory — never written to the page-store table — so existing rows keep
+  // working without a backfill. Quotes already render the decision form inline
+  // at the bottom of the quote, so we skip them. Documents have no
+  // accept/decline flow at all.
+  const pageUrls = useMemo<PageUrlEntry[]>(() => {
+    if (proposal?.entity_type !== 'proposal') return rawPageUrls;
+    if (rawPageUrls.length === 0) return rawPageUrls;
+    const tail = rawPageUrls[rawPageUrls.length - 1];
+    return [
+      ...rawPageUrls,
+      {
+        id: '__decision__',
+        position: tail.position + 1,
+        type: 'decision',
+        url: null,
+        title: 'Decision',
+        indent: 0,
+        show_title: true,
+        show_member_badge: false,
+        show_client_logo: false,
+        prepared_by_member_id: null,
+        payload: {},
+      },
+    ];
+  }, [rawPageUrls, proposal?.entity_type]);
+
+  const hideDecisionFromToc = proposal?.decision_page_in_toc === false;
+
+  // Sidebar nav entries — section pages become 'group' type. The synthetic
+  // Decision entry is filtered out of the visible TOC when the per-proposal
+  // toggle is off; it's still in pageUrls / pageSequence so the page arrows
+  // can reach it.
   const pageEntries: PageNameEntry[] = useMemo(
     () =>
-      pageUrls.map((p) => ({
-        name: p.title,
-        indent: p.indent,
-        ...(p.type === 'section' ? { type: 'group' as const } : {}),
-        ...(p.link_url ? { link_url: p.link_url } : {}),
-        ...(p.link_label ? { link_label: p.link_label } : {}),
-      })),
-    [pageUrls],
+      pageUrls
+        .filter((p) => !(p.type === 'decision' && hideDecisionFromToc))
+        .map((p) => ({
+          name: p.title,
+          indent: p.indent,
+          ...(p.type === 'section' ? { type: 'group' as const } : {}),
+          ...(p.link_url ? { link_url: p.link_url } : {}),
+          ...(p.link_label ? { link_label: p.link_label } : {}),
+        })),
+    [pageUrls, hideDecisionFromToc],
   );
 
   const numPages = useMemo(
@@ -30,6 +64,7 @@ export function useProposalDerived(
   const isPackagesPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'packages', [pageUrls]);
   const isTocPage      = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'toc',      [pageUrls]);
   const isTextPage     = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'text',     [pageUrls]);
+  const isDecisionPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'decision', [pageUrls]);
 
   const getPackagesId = useCallback(
     (vp: number): string | null => pageUrls[vp - 1]?.type === 'packages' ? pageUrls[vp - 1].id : null,
@@ -62,6 +97,7 @@ export function useProposalDerived(
         if (p.type === 'pricing') return { type: 'pricing' as const, pricingId: p.id };
         if (p.type === 'packages') return { type: 'packages' as const, packagesId: p.id };
         if (p.type === 'toc') return { type: 'toc' as const };
+        if (p.type === 'decision') return { type: 'decision' as const };
         return { type: 'pdf' as const, pdfPage: 0 }; // section — shouldn't reach viewer
       }),
     [pageUrls],
@@ -142,10 +178,14 @@ export function useProposalDerived(
   return {
     pageEntries,
     numPages,
+    // Augmented pageUrls (includes synthetic decision entry) — overrides the
+    // raw state value when spread into useProposal's return.
+    pageUrls,
     isPricingPage,
     isPackagesPage,
     isTocPage,
     isTextPage,
+    isDecisionPage,
     getPricingId,
     getPackagesId,
     getTextPageId,

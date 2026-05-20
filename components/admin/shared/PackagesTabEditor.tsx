@@ -9,6 +9,7 @@ import Textarea from '@/components/ui/Textarea';
 import Chip from '@/components/ui/Chip';
 import { PackageTier, PackageStyling } from '@/lib/supabase';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
 import TierEditor from '@/components/admin/shared/TierEditor';
 import { usePackagesEditor, type UsePackagesEditorOptions } from './usePackagesEditor';
@@ -223,11 +224,9 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
         </div>
 
         {previewVisible && (
-          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-            <div className="sticky top-6">
-              <PackagesPreview packages={editor.previewPackages!} branding={editor.branding} />
-            </div>
-          </aside>
+          <StickyPreviewAside>
+            <PackagesPreview packages={editor.previewPackages!} branding={editor.branding} />
+          </StickyPreviewAside>
         )}
       </div>
     </div>

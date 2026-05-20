@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import TocPreview from '@/components/admin/shared/TocPreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import TextInput from '@/components/ui/TextInput';
 import Chip from '@/components/ui/Chip';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
@@ -412,16 +413,14 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         </div>
 
         {settings.enabled && (
-          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-            <div className="sticky top-6">
-              <TocPreview
-                tocSettings={settings}
-                branding={branding}
-                tocItems={tocItems}
-                companyName={companyName}
-              />
-            </div>
-          </aside>
+          <StickyPreviewAside>
+            <TocPreview
+              tocSettings={settings}
+              branding={branding}
+              tocItems={tocItems}
+              companyName={companyName}
+            />
+          </StickyPreviewAside>
         )}
       </div>
     </div>

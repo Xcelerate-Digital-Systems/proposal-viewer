@@ -18,6 +18,7 @@ import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import HeaderStyleCard from '@/components/admin/quotes/HeaderStyleCard';
 import CoverPreview from '@/components/admin/shared/cover-editor/CoverPreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import { resolveStops } from '@/lib/gradient-stops';
 import type { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import type { CoverEditorEntity, EntityType, ResolvedMember } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
@@ -461,9 +462,8 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
         </SectionCard>
       </div>
 
-      <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-        <div className="sticky top-6">
-          <div className="w-full" style={{ aspectRatio: '4 / 3' }}>
+      <StickyPreviewAside>
+        <div className="w-full" style={{ aspectRatio: '4 / 3' }}>
           <CoverPreview
             cfg={cfg}
             coverEnabled={entity.cover_enabled}
@@ -484,9 +484,8 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
             showAvatar={entity.cover_show_avatar ?? false}
             resolvedMember={resolvedMember}
           />
-          </div>
         </div>
-      </aside>
+      </StickyPreviewAside>
     </div>
   );
 }

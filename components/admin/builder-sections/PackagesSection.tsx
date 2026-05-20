@@ -9,6 +9,7 @@ import { Loader2, Package, Plus, Trash2, Eye, FileText, LayoutGrid } from 'lucid
 import Toggle from '@/components/ui/Toggle';
 import Chip from '@/components/ui/Chip';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import TierEditor from '@/components/admin/shared/TierEditor';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import { usePackagesEditor, type UsePackagesEditorOptions } from '@/components/admin/shared/usePackagesEditor';
@@ -274,11 +275,9 @@ export default function PackagesSection(props: PackagesSectionProps) {
         </div>
 
         {showPreviewPane && (
-          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-            <div className="sticky top-6">
-              <PackagesPreview packages={editor.previewPackages!} branding={editor.branding} />
-            </div>
-          </aside>
+          <StickyPreviewAside>
+            <PackagesPreview packages={editor.previewPackages!} branding={editor.branding} />
+          </StickyPreviewAside>
         )}
       </div>
     </div>

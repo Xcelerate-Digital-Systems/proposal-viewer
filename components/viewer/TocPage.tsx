@@ -22,7 +22,8 @@ export type PageSequenceEntry =
   | { type: 'packages'; packagesId?: string }
   | { type: 'text'; textPageId: string }
   | { type: 'toc' }
-  | { type: 'section' };
+  | { type: 'section' }
+  | { type: 'decision' };
 
 interface TocPageProps {
   tocSettings: TocSettings;

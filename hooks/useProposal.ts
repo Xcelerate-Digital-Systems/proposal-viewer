@@ -34,7 +34,7 @@ export interface ProposalTextPage {
 export interface PageUrlEntry {
   id:                    string;
   position:              number;
-  type:                  'pdf' | 'text' | 'pricing' | 'packages' | 'toc' | 'section';
+  type:                  'pdf' | 'text' | 'pricing' | 'packages' | 'toc' | 'section' | 'decision';
   url:                   string | null;
   title:                 string;
   indent:                number;
@@ -197,7 +197,7 @@ export function useProposal(token: string) {
     proposal,
     creatorName: proposal?.created_by_name || null,
     pdfUrl: null,
-    pageUrls,
+    // pageUrls is provided by `derived` (augmented with synthetic Decision page).
     currentPage,
     setCurrentPage,
     loading,
