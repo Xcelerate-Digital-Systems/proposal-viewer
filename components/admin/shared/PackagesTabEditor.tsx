@@ -8,7 +8,6 @@ import { PackageTier, PackageStyling } from '@/lib/supabase';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
 import TierEditor from '@/components/admin/shared/TierEditor';
-import SplitPanelLayout from '@/components/admin/shared/SplitPanelLayout';
 import { usePackagesEditor, type UsePackagesEditorOptions } from './usePackagesEditor';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
@@ -34,10 +33,12 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
     );
   }
 
+  const previewVisible = showPreview && editor.selectedId && editor.form.enabled && !!editor.previewPackages;
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
+    <div className="flex flex-col gap-5">
       {/* Page navigation tabs */}
-      <div className="shrink-0 flex items-end gap-0 border-b border-gray-200 overflow-x-auto mb-5">
+      <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto">
         {editor.allPages.map((page) => (
           <button
             key={page.id}
@@ -87,13 +88,10 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
         </div>
       </div>
 
-      {/* Body: editor + optional preview */}
-      <SplitPanelLayout
-        className="flex-1 min-h-0"
-        gap="gap-5"
-        leftClassName="overflow-y-auto"
-        left={
-          editor.selectedId && editor.selectedPage ? (
+      {/* Body: editor + optional sticky preview (matches Cover/Design/Quote shell) */}
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0">
+          {editor.selectedId && editor.selectedPage ? (
             <>
               {/* Enabled toggle */}
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
@@ -254,21 +252,24 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
               )}
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex items-center justify-center py-16">
               <div className="text-center">
                 <Package size={28} className="mx-auto text-gray-200 mb-3" />
                 <p className="text-sm text-gray-400 mb-1">No packages page selected</p>
                 <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
               </div>
             </div>
-          )
-        }
-        right={
-          showPreview && editor.selectedId && editor.form.enabled && editor.previewPackages ? (
-            <PackagesPreview packages={editor.previewPackages} branding={editor.branding} />
-          ) : undefined
-        }
-      />
+          )}
+        </div>
+
+        {previewVisible && (
+          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+            <div className="sticky top-6">
+              <PackagesPreview packages={editor.previewPackages!} branding={editor.branding} />
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

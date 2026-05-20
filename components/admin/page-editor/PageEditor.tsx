@@ -27,7 +27,6 @@ import SortableTocRow       from './SortableTocRow';
 import InsertPageMenu       from './InsertPageMenu';
 import AddPageButtons       from './AddPageButtons';
 import PreviewRouter        from './PreviewRouter';
-import SplitPanelLayout     from '@/components/admin/shared/SplitPanelLayout';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -69,7 +68,6 @@ export default function PageEditor({
   const {
     selectedId, setSelectedId, selectedPage, selectedPdfIdx,
     isReordering, setIsReordering,
-    panelRef, panelHeight,
     canGoPrev, canGoNext, goPrev, goNext,
     handleInsertPdf, handleInsertText, handleInsertPricing,
     handleAddPackages, handleAddSection, handleAddToc,
@@ -115,23 +113,23 @@ export default function PageEditor({
   // pricingExists kept for backward compat but no longer gates the add button
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
+    <div className="flex flex-col gap-5">
       {/* ── Header toolbar — Add Page actions on the left, Cancel/Done on the right.
-          Mirrors the Packages / Text Pages tabs which have no SectionCard chrome
-          (the proposal sub-nav already labels this view). ──────────────────── */}
+          No outer card; the sub-nav already labels this view and the parent
+          page wrapper supplies padding + scroll. Mirrors the Quote tab shell. */}
       {pagesLoaded && (
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <AddPageButtons
-            isDocuments={isDocuments}
-            canAddPricing={!isDocuments}
-            canAddToc={!isDocuments && !tocExists}
-            onAddPricing={handleInsertPricing}
-            onAddPackages={handleAddPackages}
-            onAddText={() => handleInsertText(null)}
-            onAddSection={handleAddSection}
-            onAddToc={handleAddToc}
-          />
+              isDocuments={isDocuments}
+              canAddPricing={!isDocuments}
+              canAddToc={!isDocuments && !tocExists}
+              onAddPricing={handleInsertPricing}
+              onAddPackages={handleAddPackages}
+              onAddText={() => handleInsertText(null)}
+              onAddSection={handleAddSection}
+              onAddToc={handleAddToc}
+            />
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {onCancel && (
@@ -153,24 +151,19 @@ export default function PageEditor({
         </div>
       )}
 
-      {/* ── 65/35 split ───────────────────────────────────────────────── */}
-      <SplitPanelLayout
-        containerRef={panelRef}
-        panelHeight={panelHeight}
-        leftClassName="overflow-hidden flex flex-col relative"
-        rightClassName="flex flex-col"
-        left={
-          <>
-            {(processing || isReordering) && (
-              <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
-                  <Loader2 size={14} className="animate-spin text-teal" />
-                  <span className="text-xs font-medium text-gray-600">Processing…</span>
-                </div>
+      {/* ── Two-column: flex + sticky aside (matches Cover/Design/Quote) ─── */}
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0 relative">
+          {(processing || isReordering) && (
+            <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
+                <Loader2 size={14} className="animate-spin text-teal" />
+                <span className="text-xs font-medium text-gray-600">Processing…</span>
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="flex-1 overflow-y-auto pr-1 space-y-0.5">
+          <div className="space-y-0.5">
               <InsertPageMenu
                 label="Insert"
                 isStart
@@ -322,26 +315,28 @@ export default function PageEditor({
                 <p className="text-sm text-gray-400 py-4 text-center">Loading pages…</p>
               )}
             </div>
-          </>
-        }
-        right={
-          <PreviewRouter
-            proposalId={proposalId}
-            filePath={filePath}
-            selectedPage={selectedPage}
-            selectedPdfIdx={selectedPdfIdx}
-            saveStatuses={saveStatuses}
-            pdfEntries={pdfEntries}
-            pageUrlEntries={pageUrlEntries}
-            pdfPageCount={pdfPages.length}
-            onTextPageUpdate={handleTextPageUpdate}
-            onGoPrev={goPrev}
-            onGoNext={goNext}
-            canGoPrev={canGoPrev}
-            canGoNext={canGoNext}
-          />
-        }
-      />
+        </div>
+
+        <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+          <div className="sticky top-6">
+            <PreviewRouter
+              proposalId={proposalId}
+              filePath={filePath}
+              selectedPage={selectedPage}
+              selectedPdfIdx={selectedPdfIdx}
+              saveStatuses={saveStatuses}
+              pdfEntries={pdfEntries}
+              pageUrlEntries={pageUrlEntries}
+              pdfPageCount={pdfPages.length}
+              onTextPageUpdate={handleTextPageUpdate}
+              onGoPrev={goPrev}
+              onGoNext={goNext}
+              canGoPrev={canGoPrev}
+              canGoNext={canGoNext}
+            />
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

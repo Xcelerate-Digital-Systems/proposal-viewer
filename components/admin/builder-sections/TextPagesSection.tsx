@@ -12,7 +12,6 @@ import Toggle from '@/components/ui/Toggle';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
 import TextPagePreview from '@/components/admin/shared/TextPagePreview';
 import TextPageSettingsCard from '@/components/admin/shared/TextPageSettingsCard';
-import SplitPanelLayout from '@/components/admin/shared/SplitPanelLayout';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import { supabase } from '@/lib/supabase';
@@ -95,7 +94,7 @@ export default function TextPagesSection({
   /* ── Page strip ───────────────────────────────────────────────── */
 
   const pageStrip = (
-    <div className="shrink-0 flex items-end gap-0 border-b border-gray-200 overflow-x-auto mb-5">
+    <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto">
       {pages.map((page) => (
         <button
           key={page.id}
@@ -150,7 +149,7 @@ export default function TextPagesSection({
 
   if (!selectedId || !form) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
+      <div className="flex flex-col gap-5">
         {pageStrip}
         <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-16 text-center">
           <FileText size={28} className="mx-auto text-gray-200 mb-3" />
@@ -164,66 +163,64 @@ export default function TextPagesSection({
   /* ── Main editor + preview ────────────────────────────────────── */
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
+    <div className="flex flex-col gap-5">
       {pageStrip}
 
-      <SplitPanelLayout
-        className="flex-1 min-h-0"
-        gap="gap-5"
-        leftClassName="overflow-y-auto pr-1"
-        left={
-          <>
-            {/* Enabled toggle */}
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
-              <div>
-                <p className="text-sm font-medium text-gray-700">Show this page</p>
-                <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
-              </div>
-              <Toggle enabled={form.enabled} onChange={() => updateForm({ enabled: !form.enabled })} />
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0">
+          {/* Enabled toggle */}
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Show this page</p>
+              <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
             </div>
+            <Toggle enabled={form.enabled} onChange={() => updateForm({ enabled: !form.enabled })} />
+          </div>
 
-            {form.enabled ? (
-              <div className="space-y-5">
-                <TextPageSettingsCard
-                  form={form}
-                  companyId={companyId}
-                  onUpdate={updateForm}
-                />
+          {form.enabled ? (
+            <div className="space-y-5">
+              <TextPageSettingsCard
+                form={form}
+                companyId={companyId}
+                onUpdate={updateForm}
+              />
 
-                <div className="rounded-xl border border-gray-200 bg-white">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <h3 className="text-sm font-semibold text-gray-800">Content</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">Write the body of this page</p>
-                  </div>
-                  <div className="p-4">
-                    <RichTextEditor
-                      content={form.content}
-                      onUpdate={(content) => updateForm({ content })}
-                      placeholder="Start writing… Use the Fields button in the toolbar to insert dynamic fields."
-                    />
-                  </div>
+              <div className="rounded-xl border border-gray-200 bg-white">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-800">Content</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Write the body of this page</p>
+                </div>
+                <div className="p-4">
+                  <RichTextEditor
+                    content={form.content}
+                    onUpdate={(content) => updateForm({ content })}
+                    placeholder="Start writing… Use the Fields button in the toolbar to insert dynamic fields."
+                  />
                 </div>
               </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
-                <FileText size={24} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-sm text-gray-400 mb-1">Text page is currently disabled</p>
-                <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
-              </div>
-            )}
-          </>
-        }
-        right={
-          showPreview ? (
-            <TextPagePreview
-              form={form}
-              branding={branding}
-              entityId={entityId}
-              companyId={companyId}
-            />
-          ) : undefined
-        }
-      />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+              <FileText size={24} className="mx-auto text-gray-300 mb-2" />
+              <p className="text-sm text-gray-400 mb-1">Text page is currently disabled</p>
+              <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
+            </div>
+          )}
+        </div>
+
+        {showPreview && (
+          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+            <div className="sticky top-6">
+              <TextPagePreview
+                form={form}
+                branding={branding}
+                entityId={entityId}
+                companyId={companyId}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

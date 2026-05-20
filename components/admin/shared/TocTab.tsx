@@ -8,7 +8,6 @@ import { useToast } from '@/components/ui/Toast';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import TocPreview from '@/components/admin/shared/TocPreview';
-import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
@@ -322,25 +321,31 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   }
 
   return (
-    <div className="flex gap-6 items-start">
-      <div className="flex-1 min-w-0">
-        <SectionCard
-          title="Table of Contents"
-          description={`Auto-generated contents page for this ${entityType === 'template' ? 'template' : entityType}`}
-          icon={<List size={14} className="text-gray-400" />}
-          action={
-            <button
-              onClick={() => updateSettings({ enabled: !settings.enabled })}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                settings.enabled ? 'bg-teal' : 'bg-gray-200'
-              }`}
-            >
-              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                settings.enabled ? 'translate-x-4' : 'translate-x-0'
-              }`} />
-            </button>
-          }
+    <div className="flex flex-col gap-5">
+      {/* Header toolbar — no outer card, matches Pages/Quote shell */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <List size={14} className="text-gray-400" />
+          <p className="text-sm font-semibold text-gray-900">Table of Contents</p>
+          <span className="text-xs text-gray-400 hidden sm:inline">
+            Auto-generated contents page for this {entityType === 'template' ? 'template' : entityType}
+          </span>
+        </div>
+        <button
+          onClick={() => updateSettings({ enabled: !settings.enabled })}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+            settings.enabled ? 'bg-teal' : 'bg-gray-200'
+          }`}
         >
+          <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            settings.enabled ? 'translate-x-4' : 'translate-x-0'
+          }`} />
+        </button>
+      </div>
+
+      {/* Two-column body */}
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0">
           {settings.enabled ? (
             <div className="space-y-5">
               {/* Page title */}
@@ -416,21 +421,21 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
               <p className="text-xs text-gray-300">Toggle the switch above to add a contents page</p>
             </div>
           )}
-        </SectionCard>
-      </div>
+        </div>
 
-      {settings.enabled && (
-        <aside className="hidden lg:block w-[420px] xl:w-[480px] shrink-0">
-          <div className="sticky top-6">
-            <TocPreview
-              tocSettings={settings}
-              branding={branding}
-              tocItems={tocItems}
-              companyName={companyName}
-            />
-          </div>
-        </aside>
-      )}
+        {settings.enabled && (
+          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+            <div className="sticky top-6">
+              <TocPreview
+                tocSettings={settings}
+                branding={branding}
+                tocItems={tocItems}
+                companyName={companyName}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

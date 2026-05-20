@@ -11,31 +11,33 @@ export default function ProposalDetailsPage() {
   const toast = useToast();
 
   return (
-    <div className="flex-1 px-6 lg:px-10 py-6 space-y-4">
-      <EditDetailsPanel
-        type="proposal"
-        id={proposal.id}
-        initialValues={{
-          title: proposal.title,
-          client_name: proposal.client_name,
-          client_email: proposal.client_email,
-          crm_identifier: proposal.crm_identifier,
-          description: proposal.description,
-        }}
-        onSave={() => {
-          toast.success('Details saved');
-          refetch();
-        }}
-        onCancel={() => {}}
-        hiddenFields={['site_address', 'estimated_start_date', 'estimated_duration']}
-      />
-      <PostAcceptSection
-        entityId={proposal.id}
-        table="proposals"
-        initialAction={proposal.post_accept_action ?? null}
-        initialRedirectUrl={proposal.post_accept_redirect_url ?? null}
-        initialMessage={proposal.post_accept_message ?? null}
-      />
+    <div className="flex-1 px-6 lg:px-10 py-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <EditDetailsPanel
+          type="proposal"
+          id={proposal.id}
+          initialValues={{
+            title: proposal.title,
+            client_name: proposal.client_name,
+            client_email: proposal.client_email,
+            crm_identifier: proposal.crm_identifier,
+            description: proposal.description,
+          }}
+          onSave={() => {
+            toast.success('Details saved');
+            refetch();
+          }}
+          onCancel={() => {}}
+          hiddenFields={['site_address', 'estimated_start_date', 'estimated_duration']}
+        />
+        <PostAcceptSection
+          entityId={proposal.id}
+          table="proposals"
+          initialAction={proposal.post_accept_action ?? null}
+          initialRedirectUrl={proposal.post_accept_redirect_url ?? null}
+          initialMessage={proposal.post_accept_message ?? null}
+        />
+      </div>
     </div>
   );
 }
