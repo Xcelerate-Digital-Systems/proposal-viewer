@@ -2,10 +2,9 @@
 'use client';
 
 import { useRef } from 'react';
-import { Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Building2, Type } from 'lucide-react';
+import { Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Type } from 'lucide-react';
 import CoverColorControls, { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
-import ColorPickerField from '@/components/ui/ColorPickerField';
 import { EntityType, EntityConfig } from './CoverEditorTypes';
 
 /* ── Reusable toggle row ─────────────────────────────────────────── */
@@ -153,7 +152,6 @@ export default function CoverSettingsPanel({
   onColorsChange,
 }: CoverSettingsPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const clientLogoRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="space-y-5">
@@ -258,83 +256,9 @@ export default function CoverSettingsPanel({
 
       <div className="border-t border-gray-100" />
 
-      {/* ── Client Logo ──────────────────────────────────── */}
-      {cfg.fields.clientLogo && (
-        <>
-          <div className="space-y-3">
-            <SectionHeader icon={<Building2 size={14} className="text-gray-400" />} label="Client Logo" />
-            <ToggleRow
-              icon={<Building2 size={14} className="text-gray-400" />}
-              label="Show client logo"
-              enabled={showClientLogo}
-              onToggle={() => setShowClientLogo(!showClientLogo)}
-            />
-            {showClientLogo && (
-              <div className="space-y-3">
-                {clientLogoUrl ? (
-                  <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                    {clientLogoTintColor ? (
-                      // Tinted preview: render the logo as a CSS mask so any colour shows through.
-                      // Loses internal colour detail (turns into a flat silhouette) — by design.
-                      <div
-                        className="h-8 w-[120px] shrink-0"
-                        style={{
-                          backgroundColor: clientLogoTintColor,
-                          WebkitMaskImage: `url("${clientLogoUrl}")`,
-                          maskImage: `url("${clientLogoUrl}")`,
-                          WebkitMaskRepeat: 'no-repeat',
-                          maskRepeat: 'no-repeat',
-                          WebkitMaskPosition: 'left center',
-                          maskPosition: 'left center',
-                          WebkitMaskSize: 'contain',
-                          maskSize: 'contain',
-                        }}
-                        aria-label="Tinted client logo preview"
-                      />
-                    ) : (
-                      <img src={clientLogoUrl} alt="" className="h-8 max-w-[120px] object-contain" />
-                    )}
-                    <span className="text-xs text-gray-500 flex-1 truncate">{clientLogoPath.split('/').pop()}</span>
-                    <button onClick={onClientLogoRemove} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => clientLogoRef.current?.click()}
-                    disabled={uploadingClientLogo}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-teal/30 hover:text-teal transition-colors disabled:opacity-50"
-                  >
-                    <Image size={16} />
-                    {uploadingClientLogo ? 'Uploading...' : 'Upload client logo'}
-                  </button>
-                )}
-                <input
-                  ref={clientLogoRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) onClientLogoUpload(f);
-                  }}
-                />
-                {clientLogoUrl && (
-                  <ColorPickerField
-                    label="Recolor logo"
-                    hint="Flattens the logo to a single colour. Leave unset to keep the original."
-                    value={clientLogoTintColor}
-                    fallback="#ffffff"
-                    onChange={(v) => setClientLogoTintColor(v)}
-                    onReset={() => setClientLogoTintColor(null)}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-          <div className="border-t border-gray-100" />
-        </>
-      )}
+      {/* Client logo controls moved to the Design tab → Client Logo card.
+          Keep the cover_show_client_logo flag here is no longer toggled from the
+          Cover tab; it's set alongside the upload on the Design tab. */}
 
       {/* ── Accept Button Text (proposals only) ──────────── */}
       {cfg.fields.acceptButtonText && (

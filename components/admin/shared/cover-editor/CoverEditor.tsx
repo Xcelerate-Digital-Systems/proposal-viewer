@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Layout } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import { resolveStops } from '@/lib/gradient-stops';
@@ -15,7 +14,6 @@ import {
 } from './CoverEditorTypes';
 import CoverSettingsPanel from './CoverSettingsPanel';
 import CoverPreview from './CoverPreview';
-import SplitPanelLayout from '@/components/admin/shared/SplitPanelLayout';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -117,23 +115,6 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   const updateColors = (partial: Partial<CoverColorValues>) => {
     setColors((prev) => ({ ...prev, ...partial }));
   };
-
-  /* ── Panel height measurement ───────────────────────────────── */
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [panelHeight, setPanelHeight] = useState(520);
-
-  useEffect(() => {
-    const measure = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setPanelHeight(Math.max(400, window.innerHeight - rect.top - 32));
-      }
-    };
-    measure();
-    const timer = setTimeout(measure, 100);
-    window.addEventListener('resize', measure);
-    return () => { window.removeEventListener('resize', measure); clearTimeout(timer); };
-  }, []);
 
   /* ══════════════════════════════════════════════════════════════ */
   /*  Effects                                                       */
@@ -262,11 +243,9 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     if (cfg.fields.acceptButtonText) {
       payload.accept_button_text = acceptButtonText.trim() || null;
     }
-    if (cfg.fields.clientLogo) {
-      payload.cover_client_logo_path = clientLogoPath || null;
-      payload.cover_show_client_logo = showClientLogo;
-      payload.cover_client_logo_tint_color = clientLogoTintColor;
-    }
+    // Client-logo fields are owned by the Design tab now (cover_client_logo_path,
+    // cover_show_client_logo, cover_client_logo_tint_color). The Cover tab only
+    // reads them to render the preview, so they're intentionally not in this payload.
 
     await supabase.from(cfg.table).update(payload).eq('id', entity.id);
     setSaveStatus('saved');
@@ -275,7 +254,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   }, [
     cfg, entity.id, coverEnabled, imagePath, subtitle, buttonText,
     acceptButtonText, colors, coverDate, showDate, preparedByMemberId,
-    showPreparedBy, showAvatar, clientLogoPath, showClientLogo, clientLogoTintColor, onSave,
+    showPreparedBy, showAvatar, onSave,
   ]);
 
   const scheduleSave = useCallback((delay = 800) => {
@@ -297,7 +276,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   }, [
     coverEnabled, subtitle, buttonText, acceptButtonText, imagePath,
     colors, coverDate, showDate, preparedByMemberId, showPreparedBy,
-    showAvatar, clientLogoPath, showClientLogo, clientLogoTintColor,
+    showAvatar,
   ]);
 
   /* ══════════════════════════════════════════════════════════════ */
@@ -407,106 +386,82 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-gray-900">Cover Page Settings</h4>
+    // Layout mirrors the Design tab's CoverDesignPanel (and the Quote/Pricing tab):
+    // flex-1 left column for inputs, a fixed-width sticky aside on the right for the
+    // preview. The aside widths (520/620/700) keep the preview identical between the
+    // Cover and Design tabs so they read as the same surface.
+    <div className="flex gap-6 items-start">
+      <div className="flex-1 min-w-0">
+        <CoverSettingsPanel
+          type={type}
+          cfg={cfg}
+          hideColors={effectiveHideColors}
+          hideEnableToggle={hideEnableToggle}
+          hideImage={effectiveHideImage}
+          companyId={entity.company_id}
+          clientName={entity.client_name}
+          coverEnabled={coverEnabled}
+          setCoverEnabled={setCoverEnabled}
+          subtitle={subtitle}
+          setSubtitle={setSubtitle}
+          subtitlePlaceholder={subtitlePlaceholder}
+          preparedByMemberId={preparedByMemberId}
+          setPreparedByMemberId={setPreparedByMemberId}
+          showPreparedBy={showPreparedBy}
+          setShowPreparedBy={setShowPreparedBy}
+          showAvatar={showAvatar}
+          setShowAvatar={setShowAvatar}
+          coverDate={coverDate}
+          setCoverDate={setCoverDate}
+          showDate={showDate}
+          setShowDate={setShowDate}
+          showClientLogo={showClientLogo}
+          setShowClientLogo={setShowClientLogo}
+          clientLogoUrl={clientLogoUrl}
+          clientLogoPath={clientLogoPath}
+          clientLogoTintColor={clientLogoTintColor}
+          setClientLogoTintColor={setClientLogoTintColor}
+          uploadingClientLogo={uploadingClientLogo}
+          onClientLogoUpload={handleClientLogoUpload}
+          onClientLogoRemove={removeClientLogo}
+          acceptButtonText={acceptButtonText}
+          setAcceptButtonText={setAcceptButtonText}
+          imageUrl={imageUrl}
+          imagePath={imagePath}
+          uploading={uploading}
+          onImageUpload={handleImageUpload}
+          onImageRemove={removeImage}
+          colors={colors}
+          onColorsChange={updateColors}
+        />
       </div>
 
-      {/* ── Two-column split — fixed height, left scrolls ───── */}
-      <SplitPanelLayout
-        containerRef={containerRef}
-        panelHeight={panelHeight}
-        leftClassName="overflow-y-auto pr-2"
-        rightClassName="flex flex-col min-h-0"
-        left={
-          <CoverSettingsPanel
-            type={type}
-            cfg={cfg}
-            hideColors={effectiveHideColors}
-            hideEnableToggle={hideEnableToggle}
-            hideImage={effectiveHideImage}
-            companyId={entity.company_id}
-            clientName={entity.client_name}
-            coverEnabled={coverEnabled}
-            setCoverEnabled={setCoverEnabled}
-            subtitle={subtitle}
-            setSubtitle={setSubtitle}
-            subtitlePlaceholder={subtitlePlaceholder}
-            preparedByMemberId={preparedByMemberId}
-            setPreparedByMemberId={setPreparedByMemberId}
-            showPreparedBy={showPreparedBy}
-            setShowPreparedBy={setShowPreparedBy}
-            showAvatar={showAvatar}
-            setShowAvatar={setShowAvatar}
-            coverDate={coverDate}
-            setCoverDate={setCoverDate}
-            showDate={showDate}
-            setShowDate={setShowDate}
-            showClientLogo={showClientLogo}
-            setShowClientLogo={setShowClientLogo}
-            clientLogoUrl={clientLogoUrl}
-            clientLogoPath={clientLogoPath}
-            clientLogoTintColor={clientLogoTintColor}
-            setClientLogoTintColor={setClientLogoTintColor}
-            uploadingClientLogo={uploadingClientLogo}
-            onClientLogoUpload={handleClientLogoUpload}
-            onClientLogoRemove={removeClientLogo}
-            acceptButtonText={acceptButtonText}
-            setAcceptButtonText={setAcceptButtonText}
-            imageUrl={imageUrl}
-            imagePath={imagePath}
-            uploading={uploading}
-            onImageUpload={handleImageUpload}
-            onImageRemove={removeImage}
-            colors={colors}
-            onColorsChange={updateColors}
-          />
-        }
-        right={
-          <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-            {/* Header bar */}
-            <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
-              <span className="text-xs text-gray-500 font-medium">Cover Page</span>
-              <span className="text-xs text-teal font-medium flex items-center gap-1">
-                <Layout size={11} />
-                Live Preview
-              </span>
-            </div>
-
-            {/* Preview area — centred, aspect-ratio constrained */}
-            <div className="flex-1 min-h-0 overflow-y-auto flex items-start justify-center p-4">
-              <div className="w-full" style={{ aspectRatio: '4/3' }}>
-                <CoverPreview
-                  cfg={cfg}
-                  coverEnabled={coverEnabled}
-                  displayTitle={displayTitle}
-                  buttonText={buttonText}
-                  previewSubtitle={previewSubtitle}
-                  colors={colors}
-                  imageUrl={imageUrl}
-                  companyLogoUrl={companyLogoUrl}
-                  companyName={companyName}
-                  headingFont={headingFont}
-                  showClientLogo={showClientLogo}
-                  clientLogoUrl={clientLogoUrl}
-                  clientLogoTintColor={clientLogoTintColor}
-                  showDate={showDate}
-                  coverDate={coverDate}
-                  showPreparedBy={showPreparedBy}
-                  showAvatar={showAvatar}
-                  resolvedMember={resolvedMember}
-                />
-              </div>
-            </div>
-
-            {/* Footer hint */}
-            <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
-              <span className="text-[10px] text-gray-400">Updates live as you edit</span>
-            </div>
+      <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+        <div className="sticky top-6">
+          <div className="w-full" style={{ aspectRatio: '4 / 3' }}>
+            <CoverPreview
+              cfg={cfg}
+              coverEnabled={coverEnabled}
+              displayTitle={displayTitle}
+              buttonText={buttonText}
+              previewSubtitle={previewSubtitle}
+              colors={colors}
+              imageUrl={imageUrl}
+              companyLogoUrl={companyLogoUrl}
+              companyName={companyName}
+              headingFont={headingFont}
+              showClientLogo={showClientLogo}
+              clientLogoUrl={clientLogoUrl}
+              clientLogoTintColor={clientLogoTintColor}
+              showDate={showDate}
+              coverDate={coverDate}
+              showPreparedBy={showPreparedBy}
+              showAvatar={showAvatar}
+              resolvedMember={resolvedMember}
+            />
           </div>
-        }
-      />
+        </div>
+      </aside>
     </div>
   );
 }
