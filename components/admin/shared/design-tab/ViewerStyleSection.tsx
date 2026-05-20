@@ -14,19 +14,19 @@ import { useEffect, useRef, useState } from 'react';
 import { authFetch } from '@/lib/auth-fetch';
 import {
   Loader2, Upload, Trash2,
-  Image as ImageIcon, RotateCcw, Type, Palette, Hash, LayoutPanelTop,
+  Image as ImageIcon, RotateCcw, Hash, LayoutPanelTop,
   Paintbrush, Package, DollarSign, ArrowUpRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { fontFamily } from '@/lib/google-fonts';
 import FontSelect from '@/components/admin/shared/FontSelect';
 import Slider from '@/components/ui/Slider';
-import Select from '@/components/ui/Select';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
 import PackagesDesignPanel from '@/components/admin/builder-sections/PackagesDesignPanel';
-import { PricingDesignPreview, TextPageDesignPreview } from '@/components/admin/builder-sections/DesignPreviews';
+import { PricingDesignPreview } from '@/components/admin/builder-sections/DesignPreviews';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import type { CoverEditorEntity } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import {
   EntityType, PageOrientation, TextPageDefaults,
@@ -176,6 +176,17 @@ interface ViewerStyleSectionProps {
   setPageNumCircleColor: (v: string | null) => void;
   pageNumTextColor: string | null;
   setPageNumTextColor: (v: string | null) => void;
+  /* ── Pricing / quote page colours (proposals + templates) ── */
+  quotePageBgColor: string | null;
+  setQuotePageBgColor: (v: string | null) => void;
+  quoteHeaderBgColor1: string | null;
+  setQuoteHeaderBgColor1: (v: string | null) => void;
+  quoteHeaderBgColor2: string | null;
+  setQuoteHeaderBgColor2: (v: string | null) => void;
+  quoteHeaderTextColor: string | null;
+  setQuoteHeaderTextColor: (v: string | null) => void;
+  quoteHeaderSubtitleColor: string | null;
+  setQuoteHeaderSubtitleColor: (v: string | null) => void;
   /* ── Defaults & actions ─────────────────────────────────── */
   companyDefaults: TextPageDefaults;
   onTpResetToCompany: () => void;
@@ -243,6 +254,16 @@ export default function ViewerStyleSection({
   setPageNumCircleColor,
   pageNumTextColor,
   setPageNumTextColor,
+  quotePageBgColor,
+  setQuotePageBgColor,
+  quoteHeaderBgColor1,
+  setQuoteHeaderBgColor1,
+  quoteHeaderBgColor2,
+  setQuoteHeaderBgColor2,
+  quoteHeaderTextColor,
+  setQuoteHeaderTextColor,
+  quoteHeaderSubtitleColor,
+  setQuoteHeaderSubtitleColor,
   companyDefaults,
   onTpResetToCompany,
   entityId,
@@ -479,6 +500,26 @@ export default function ViewerStyleSection({
                 </div>
               </div>
 
+              {/* Colours — body bg / body text / heading. Applies to text,
+                  pricing, and packages pages (anywhere reading text_page_*). */}
+              <div className="pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Colours</p>
+                  <button
+                    onClick={onTpResetToCompany}
+                    className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-teal transition-colors"
+                  >
+                    <RotateCcw size={11} />
+                    Reset to company defaults
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <ColorPickerField label="Background Color" value={tpBgColor} fallback={companyDefaults.bg_color} onChange={setTpBgColor} />
+                  <ColorPickerField label="Text Color" value={tpTextColor} fallback={companyDefaults.text_color} onChange={setTpTextColor} />
+                  <ColorPickerField label="Heading Color" value={tpHeadingColor} fallback={companyDefaults.heading_color || companyDefaults.text_color} onChange={setTpHeadingColor} />
+                </div>
+              </div>
+
               {/* Background image */}
               <div className="pt-4 border-t border-gray-100">
                 <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Background Image</p>
@@ -486,53 +527,76 @@ export default function ViewerStyleSection({
               </div>
             </div>
           </SectionCard>
+
+          {/* Page Number Badge — body pages only; sits alongside Globals so it
+              shares the typography preview aside. */}
+          <SectionCard
+            title="Page Number Badge"
+            description="Leave blank to use your accent colour (circle) and white (text)."
+            icon={<Hash size={14} className="text-gray-400" />}
+          >
+            <div className="space-y-4">
+              <ColorPickerField
+                label="Circle Colour"
+                value={pageNumCircleColor}
+                fallback={companyDefaults.accent_color}
+                onChange={setPageNumCircleColor}
+                onReset={() => setPageNumCircleColor(null)}
+              />
+              <ColorPickerField
+                label="Text Colour"
+                value={pageNumTextColor}
+                fallback="#ffffff"
+                onChange={setPageNumTextColor}
+                onReset={() => setPageNumTextColor(null)}
+              />
+            </div>
+          </SectionCard>
         </div>
 
-        <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-          <div className="sticky top-6">
-            <div
-              className="rounded-lg overflow-hidden border border-gray-200 bg-gray-100 p-8 space-y-4"
-              style={{ backgroundColor: tpBgColor || companyDefaults.bg_color }}
+        <StickyPreviewAside>
+          <div
+            className="rounded-lg overflow-hidden border border-gray-200 bg-gray-100 p-8 space-y-4"
+            style={{ backgroundColor: tpBgColor || companyDefaults.bg_color }}
+          >
+            <p
+              className="leading-tight"
+              style={{
+                color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
+                fontFamily: fontFamily(titleFontFamily || fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
+                fontWeight: Number(titleFontWeight || fontHeadingWeight || '700'),
+                fontSize: titleFontSize ? `${titleFontSize}px` : '36px',
+                textTransform: (titleFontTransform || fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
+              }}
             >
-              <p
-                className="leading-tight"
-                style={{
-                  color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
-                  fontFamily: fontFamily(titleFontFamily || fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
-                  fontWeight: Number(titleFontWeight || fontHeadingWeight || '700'),
-                  fontSize: titleFontSize ? `${titleFontSize}px` : '36px',
-                  textTransform: (titleFontTransform || fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
-                }}
-              >
-                {entityTitle || 'Sample page title'}
-              </p>
-              <p
-                className="leading-snug"
-                style={{
-                  color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
-                  fontFamily: fontFamily(fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
-                  fontWeight: Number(fontHeadingWeight || '600'),
-                  fontSize: fontHeadingSize ? `${fontHeadingSize}px` : '22px',
-                  textTransform: (fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
-                }}
-              >
-                A section heading
-              </p>
-              <p
-                className="leading-relaxed"
-                style={{
-                  color: tpTextColor || companyDefaults.text_color,
-                  fontFamily: fontFamily(fontBodyFamily || companyDefaults.font_body, 'system-ui, sans-serif'),
-                  fontWeight: Number(fontBodyWeight || '400'),
-                  fontSize: fontBodySize ? `${fontBodySize}px` : `${companyDefaults.font_size || '15'}px`,
-                  textTransform: (fontBodyTransform || 'none') as React.CSSProperties['textTransform'],
-                }}
-              >
-                {bodySnippet || 'Body text on a proposal page. This is what your client will read — adjust the body font, weight, and colour to match your brand voice.'}
-              </p>
-            </div>
+              {entityTitle || 'Sample page title'}
+            </p>
+            <p
+              className="leading-snug"
+              style={{
+                color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
+                fontFamily: fontFamily(fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
+                fontWeight: Number(fontHeadingWeight || '600'),
+                fontSize: fontHeadingSize ? `${fontHeadingSize}px` : '22px',
+                textTransform: (fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
+              }}
+            >
+              A section heading
+            </p>
+            <p
+              className="leading-relaxed"
+              style={{
+                color: tpTextColor || companyDefaults.text_color,
+                fontFamily: fontFamily(fontBodyFamily || companyDefaults.font_body, 'system-ui, sans-serif'),
+                fontWeight: Number(fontBodyWeight || '400'),
+                fontSize: fontBodySize ? `${fontBodySize}px` : `${companyDefaults.font_size || '15'}px`,
+                textTransform: (fontBodyTransform || 'none') as React.CSSProperties['textTransform'],
+              }}
+            >
+              {bodySnippet || 'Body text on a proposal page. This is what your client will read — adjust the body font, weight, and colour to match your brand voice.'}
+            </p>
           </div>
-        </aside>
+        </StickyPreviewAside>
       </div>
 
       {/* ============================================================
@@ -569,32 +633,91 @@ export default function ViewerStyleSection({
       {/* ============================================================
           3. PRICING PAGE — quote pages
           ============================================================ */}
-      <GroupHeading title="Pricing Page" hint="Line item table, totals, payment schedule" />
+      {type !== 'document' && (
+        <>
+          <GroupHeading title="Pricing Page" hint="Line item table, totals, payment schedule" />
 
-      <div className="flex gap-6 items-start">
-        <div className="flex-1 min-w-0">
-          <SectionCard
-            title="Pricing Design"
-            description="Pricing pages inherit body styling from Text Page below."
-            icon={<DollarSign size={14} className="text-gray-400" />}
-          >
-            <p className="text-xs text-gray-400">
-              Pricing pages share their background, body text and heading colour with text pages — set
-              them in the Text Page section below. Line item column labels live on the Quote tab.
-            </p>
-          </SectionCard>
-        </div>
-        {type !== 'document' && (
-          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-            <div className="sticky top-6">
+          <div className="flex gap-6 items-start">
+            <div className="flex-1 min-w-0">
+              <SectionCard
+                title="Pricing Design"
+                description="Body bg/text/heading inherit from Globals. These controls override the canvas around the quote card and the quote header band."
+                icon={<DollarSign size={14} className="text-gray-400" />}
+                action={
+                  <button
+                    onClick={() => {
+                      setQuotePageBgColor(null);
+                      setQuoteHeaderBgColor1(null);
+                      setQuoteHeaderBgColor2(null);
+                      setQuoteHeaderTextColor(null);
+                      setQuoteHeaderSubtitleColor(null);
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+                  >
+                    <RotateCcw size={12} />
+                    Reset
+                  </button>
+                }
+              >
+                <div className="space-y-5">
+                  {/* Canvas */}
+                  <div>
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Canvas</p>
+                    <ColorPickerField
+                      label="Page background (around the quote card)"
+                      value={quotePageBgColor}
+                      fallback="#eeece6"
+                      onChange={setQuotePageBgColor}
+                      onReset={() => setQuotePageBgColor(null)}
+                    />
+                  </div>
+
+                  {/* Header band */}
+                  <div className="pt-4 border-t border-gray-100">
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Header band</p>
+                    <div className="space-y-4">
+                      <ColorPickerField
+                        label="Header background"
+                        value={quoteHeaderBgColor1}
+                        fallback={companyDefaults.accent_color}
+                        onChange={setQuoteHeaderBgColor1}
+                        onReset={() => setQuoteHeaderBgColor1(null)}
+                      />
+                      <ColorPickerField
+                        label="Header background (gradient end, optional)"
+                        value={quoteHeaderBgColor2}
+                        fallback={quoteHeaderBgColor1 || companyDefaults.accent_color}
+                        onChange={setQuoteHeaderBgColor2}
+                        onReset={() => setQuoteHeaderBgColor2(null)}
+                      />
+                      <ColorPickerField
+                        label="Header text"
+                        value={quoteHeaderTextColor}
+                        fallback="#ffffff"
+                        onChange={setQuoteHeaderTextColor}
+                        onReset={() => setQuoteHeaderTextColor(null)}
+                      />
+                      <ColorPickerField
+                        label="Header subtitle"
+                        value={quoteHeaderSubtitleColor}
+                        fallback="#ffffff"
+                        onChange={setQuoteHeaderSubtitleColor}
+                        onReset={() => setQuoteHeaderSubtitleColor(null)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
+            <StickyPreviewAside>
               <PricingDesignPreview
                 entityId={entityId}
                 entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
               />
-            </div>
-          </aside>
-        )}
-      </div>
+            </StickyPreviewAside>
+          </div>
+        </>
+      )}
 
       {/* ============================================================
           4. PACKAGE PAGE
@@ -616,70 +739,6 @@ export default function ViewerStyleSection({
         />
       )}
 
-      {/* ============================================================
-          5. TEXT PAGE — body of every non-cover page
-          ============================================================ */}
-      <GroupHeading title="Text Page" hint="Also applies to pricing and packages bodies" />
-
-      <div className="flex gap-6 items-start">
-        <div className="flex-1 min-w-0 space-y-5">
-          <SectionCard
-            title="Text Page Colours"
-            description="Body background, body text, and heading colours for text pages."
-            icon={<Palette size={14} className="text-gray-400" />}
-            action={
-              <button
-                onClick={onTpResetToCompany}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
-              >
-                <RotateCcw size={12} />
-                Reset to company defaults
-              </button>
-            }
-          >
-            <div className="space-y-4">
-              <ColorPickerField label="Background Color" value={tpBgColor} fallback={companyDefaults.bg_color} onChange={setTpBgColor} />
-              <ColorPickerField label="Text Color" value={tpTextColor} fallback={companyDefaults.text_color} onChange={setTpTextColor} />
-              <ColorPickerField label="Heading Color" value={tpHeadingColor} fallback={companyDefaults.heading_color || companyDefaults.text_color} onChange={setTpHeadingColor} />
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title="Page Number Badge"
-            description="Leave blank to use your accent colour (circle) and white (text)."
-            icon={<Hash size={14} className="text-gray-400" />}
-          >
-            <div className="space-y-4">
-              <ColorPickerField
-                label="Circle Colour"
-                value={pageNumCircleColor}
-                fallback={companyDefaults.accent_color}
-                onChange={setPageNumCircleColor}
-                onReset={() => setPageNumCircleColor(null)}
-              />
-              <ColorPickerField
-                label="Text Colour"
-                value={pageNumTextColor}
-                fallback="#ffffff"
-                onChange={setPageNumTextColor}
-                onReset={() => setPageNumTextColor(null)}
-              />
-            </div>
-          </SectionCard>
-
-        </div>
-
-        {type !== 'document' && (
-          <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
-            <div className="sticky top-6">
-              <TextPageDesignPreview
-                entityId={entityId}
-                entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
-              />
-            </div>
-          </aside>
-        )}
-      </div>
     </div>
   );
 }

@@ -206,6 +206,17 @@ export type Proposal = {
   /** Entity-level packages styling. Falls back to first packages page's
    *  payload.styling for rows that pre-date the 2026-05 migration. */
   package_styling: unknown | null;
+  /** Decision page surface overrides. NULL = inherit from
+   *  branding.decision_action_* → text_page_* cascade. */
+  decision_action_bg_color: string | null;
+  decision_action_text_color: string | null;
+  decision_action_heading_color: string | null;
+  /** Submit-button background. NULL = inherit decision_action_heading_color. */
+  decision_action_accent_color: string | null;
+  /** Whether the synthetic Decision page appears in the sidebar TOC.
+   *  NULL = treat as true. The page always exists at the end of the
+   *  sequence; this only controls TOC visibility. */
+  decision_page_in_toc: boolean | null;
 };
 
 // ─── Quote Attachment ─────────────────────────────────────────────────────────
@@ -299,6 +310,12 @@ export type ProposalTemplate = {
   file_path: string | null;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
+  /** Quote-only: background colour for the area surrounding the floating quote card. */
+  quote_page_bg_color: string | null;
+  quote_header_bg_color_1: string | null;
+  quote_header_bg_color_2: string | null;
+  quote_header_text_color: string | null;
+  quote_header_subtitle_color: string | null;
   post_accept_action: 'redirect' | 'message' | null;
   post_accept_redirect_url: string | null;
   post_accept_message: string | null;

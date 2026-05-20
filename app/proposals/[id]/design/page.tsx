@@ -40,6 +40,11 @@ export default function ProposalDesignPage() {
         initialFontBodyTransform={(proposal as { font_body_transform?: string | null }).font_body_transform ?? null}
         initialPageNumCircleColor={proposal.page_num_circle_color ?? null}
         initialPageNumTextColor={proposal.page_num_text_color ?? null}
+        initialQuotePageBgColor={proposal.quote_page_bg_color ?? null}
+        initialQuoteHeaderBgColor1={proposal.quote_header_bg_color_1 ?? null}
+        initialQuoteHeaderBgColor2={proposal.quote_header_bg_color_2 ?? null}
+        initialQuoteHeaderTextColor={proposal.quote_header_text_color ?? null}
+        initialQuoteHeaderSubtitleColor={proposal.quote_header_subtitle_color ?? null}
         coverEntity={proposal}
       />
     </div>

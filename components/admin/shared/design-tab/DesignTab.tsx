@@ -52,6 +52,12 @@ interface DesignTabProps {
   initialFontBodyTransform?: string | null;
   initialPageNumCircleColor?: string | null;
   initialPageNumTextColor?: string | null;
+  /* Pricing / quote page colours — proposals + templates only */
+  initialQuotePageBgColor?: string | null;
+  initialQuoteHeaderBgColor1?: string | null;
+  initialQuoteHeaderBgColor2?: string | null;
+  initialQuoteHeaderTextColor?: string | null;
+  initialQuoteHeaderSubtitleColor?: string | null;
   /** Cover entity for the Cover Page design section. Pass the proposal /
    *  template row directly so CoverDesignPanel can read/write design fields. */
   coverEntity?: import('@/components/admin/shared/cover-editor/CoverEditorTypes').CoverEditorEntity;
@@ -92,6 +98,11 @@ export default function DesignTab({
   initialFontBodyTransform,
   initialPageNumCircleColor,
   initialPageNumTextColor,
+  initialQuotePageBgColor,
+  initialQuoteHeaderBgColor1,
+  initialQuoteHeaderBgColor2,
+  initialQuoteHeaderTextColor,
+  initialQuoteHeaderSubtitleColor,
   coverEntity,
 }: DesignTabProps) {
   const table = tableByType[type];
@@ -165,6 +176,16 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
 );
 
   /* ================================================================ */
+  /*  PRICING / QUOTE PAGE COLOURS                                     */
+  /* ================================================================ */
+
+  const [quotePageBgColor, setQuotePageBgColor] = useState<string | null>(initialQuotePageBgColor ?? null);
+  const [quoteHeaderBgColor1, setQuoteHeaderBgColor1] = useState<string | null>(initialQuoteHeaderBgColor1 ?? null);
+  const [quoteHeaderBgColor2, setQuoteHeaderBgColor2] = useState<string | null>(initialQuoteHeaderBgColor2 ?? null);
+  const [quoteHeaderTextColor, setQuoteHeaderTextColor] = useState<string | null>(initialQuoteHeaderTextColor ?? null);
+  const [quoteHeaderSubtitleColor, setQuoteHeaderSubtitleColor] = useState<string | null>(initialQuoteHeaderSubtitleColor ?? null);
+
+  /* ================================================================ */
   /*  SAVE STATUS + REFS                                               */
   /* ================================================================ */
 
@@ -176,6 +197,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   const titleFontInitializedRef = useRef(false);
   const bodyHeadingFontInitializedRef = useRef(false);
   const pageNumInitializedRef = useRef(false);
+  const pricingInitializedRef = useRef(false);
 
   /* ================================================================ */
   /*  COMPANY DEFAULTS                                                 */
@@ -284,6 +306,16 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     payload.page_num_circle_color = pageNumCircleColor ?? null;
     payload.page_num_text_color = pageNumTextColor ?? null;
 
+    // Pricing / quote page colours — only write for tables that have these
+    // columns. proposals + proposal_templates do; documents doesn't.
+    if (type !== 'document') {
+      payload.quote_page_bg_color = quotePageBgColor;
+      payload.quote_header_bg_color_1 = quoteHeaderBgColor1;
+      payload.quote_header_bg_color_2 = quoteHeaderBgColor2;
+      payload.quote_header_text_color = quoteHeaderTextColor;
+      payload.quote_header_subtitle_color = quoteHeaderSubtitleColor;
+    }
+
     await supabase.from(table).update(payload).eq('id', entityId);
     setSaveStatus('saved');
     setTimeout(() => setSaveStatus('idle'), 2000);
@@ -296,7 +328,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     fontBodyFamily, fontBodyWeight, fontBodySize,
     titleFontTransform, fontHeadingTransform, fontBodyTransform,
     pageNumCircleColor, pageNumTextColor,
-    table, entityId, onSave,
+    quotePageBgColor, quoteHeaderBgColor1, quoteHeaderBgColor2, quoteHeaderTextColor, quoteHeaderSubtitleColor,
+    type, table, entityId, onSave,
   ]);
 
   const scheduleSave = useCallback((delay = 800) => {
@@ -336,6 +369,12 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     if (!pageNumInitializedRef.current) { pageNumInitializedRef.current = true; return; }
     scheduleSave(800);
   }, [pageNumCircleColor, pageNumTextColor]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autosave: pricing / quote page colours
+  useEffect(() => {
+    if (!pricingInitializedRef.current) { pricingInitializedRef.current = true; return; }
+    scheduleSave(800);
+  }, [quotePageBgColor, quoteHeaderBgColor1, quoteHeaderBgColor2, quoteHeaderTextColor, quoteHeaderSubtitleColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ================================================================ */
   /*  BACKGROUND IMAGE HANDLERS                                        */
@@ -448,6 +487,16 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setPageNumCircleColor={setPageNumCircleColor}
       pageNumTextColor={pageNumTextColor}
       setPageNumTextColor={setPageNumTextColor}
+      quotePageBgColor={quotePageBgColor}
+      setQuotePageBgColor={setQuotePageBgColor}
+      quoteHeaderBgColor1={quoteHeaderBgColor1}
+      setQuoteHeaderBgColor1={setQuoteHeaderBgColor1}
+      quoteHeaderBgColor2={quoteHeaderBgColor2}
+      setQuoteHeaderBgColor2={setQuoteHeaderBgColor2}
+      quoteHeaderTextColor={quoteHeaderTextColor}
+      setQuoteHeaderTextColor={setQuoteHeaderTextColor}
+      quoteHeaderSubtitleColor={quoteHeaderSubtitleColor}
+      setQuoteHeaderSubtitleColor={setQuoteHeaderSubtitleColor}
       entityId={entityId}
       entityTitle={entityTitle}
       coverEntity={coverEntity}
