@@ -44,6 +44,9 @@ interface DesignTabProps {
   initialFontHeadingWeight?: string | null;
   initialFontBodyFamily?: string | null;
   initialFontBodyWeight?: string | null;
+  initialTitleFontTransform?: string | null;
+  initialFontHeadingTransform?: string | null;
+  initialFontBodyTransform?: string | null;
   initialPageNumCircleColor?: string | null;
   initialPageNumTextColor?: string | null;
   /** Cover entity for the Cover Page design section. Pass the proposal /
@@ -78,6 +81,9 @@ export default function DesignTab({
   initialFontHeadingWeight,
   initialFontBodyFamily,
   initialFontBodyWeight,
+  initialTitleFontTransform,
+  initialFontHeadingTransform,
+  initialFontBodyTransform,
   initialPageNumCircleColor,
   initialPageNumTextColor,
   coverEntity,
@@ -133,6 +139,9 @@ export default function DesignTab({
   const [fontHeadingWeight, setFontHeadingWeight] = useState<string | null>(initialFontHeadingWeight ?? null);
   const [fontBodyFamily, setFontBodyFamily] = useState<string | null>(initialFontBodyFamily ?? null);
   const [fontBodyWeight, setFontBodyWeight] = useState<string | null>(initialFontBodyWeight ?? null);
+  const [titleFontTransform, setTitleFontTransform] = useState<string | null>(initialTitleFontTransform ?? null);
+  const [fontHeadingTransform, setFontHeadingTransform] = useState<string | null>(initialFontHeadingTransform ?? null);
+  const [fontBodyTransform, setFontBodyTransform] = useState<string | null>(initialFontBodyTransform ?? null);
 
   /* ================================================================ */
   /*  PAGE NUMBER BADGE STATE                                          */
@@ -257,6 +266,9 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     payload.font_heading_weight = fontHeadingWeight;
     payload.font_body_family = fontBodyFamily;
     payload.font_body_weight = fontBodyWeight;
+    payload.title_font_transform = titleFontTransform;
+    payload.font_heading_transform = fontHeadingTransform;
+    payload.font_body_transform = fontBodyTransform;
     payload.page_num_circle_color = pageNumCircleColor ?? null;
     payload.page_num_text_color = pageNumTextColor ?? null;
 
@@ -269,6 +281,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     tpBgColor, tpTextColor, tpHeadingColor,
     titleFontFamily, titleFontWeight, titleFontSize,
     fontHeadingFamily, fontHeadingWeight, fontBodyFamily, fontBodyWeight,
+    titleFontTransform, fontHeadingTransform, fontBodyTransform,
     pageNumCircleColor, pageNumTextColor,
     table, entityId, onSave,
   ]);
@@ -297,13 +310,13 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   useEffect(() => {
     if (!titleFontInitializedRef.current) { titleFontInitializedRef.current = true; return; }
     scheduleSave(800);
-  }, [titleFontFamily, titleFontWeight, titleFontSize]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [titleFontFamily, titleFontWeight, titleFontSize, titleFontTransform]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Autosave: heading + body font state
   useEffect(() => {
     if (!bodyHeadingFontInitializedRef.current) { bodyHeadingFontInitializedRef.current = true; return; }
     scheduleSave(800);
-  }, [fontHeadingFamily, fontHeadingWeight, fontBodyFamily, fontBodyWeight]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fontHeadingFamily, fontHeadingWeight, fontBodyFamily, fontBodyWeight, fontHeadingTransform, fontBodyTransform]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Autosave: page number badge state
   useEffect(() => {
@@ -400,6 +413,12 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setFontBodyFamily={setFontBodyFamily}
       fontBodyWeight={fontBodyWeight}
       setFontBodyWeight={setFontBodyWeight}
+      titleFontTransform={titleFontTransform}
+      setTitleFontTransform={setTitleFontTransform}
+      fontHeadingTransform={fontHeadingTransform}
+      setFontHeadingTransform={setFontHeadingTransform}
+      fontBodyTransform={fontBodyTransform}
+      setFontBodyTransform={setFontBodyTransform}
       tpBgColor={tpBgColor}
       setTpBgColor={setTpBgColor}
       tpTextColor={tpTextColor}

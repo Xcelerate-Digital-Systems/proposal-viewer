@@ -69,6 +69,47 @@ export function WeightPicker({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Transform Picker — Normal / Uppercase / Lowercase / Capitalize     */
+/* ------------------------------------------------------------------ */
+
+const TRANSFORM_OPTIONS = [
+  { value: 'none',       label: 'Aa Normal' },
+  { value: 'uppercase',  label: 'AA Upper' },
+  { value: 'lowercase',  label: 'aa Lower' },
+  { value: 'capitalize', label: 'Aa Title' },
+] as const;
+
+export function TransformPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string | null;
+  onChange: (v: string | null) => void;
+  disabled?: boolean;
+}) {
+  const current = value || 'none';
+  return (
+    <div className="relative">
+      <select
+        value={current}
+        onChange={(e) => onChange(e.target.value === 'none' ? null : e.target.value)}
+        disabled={disabled}
+        className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      >
+        {TRANSFORM_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+      <ChevronDown
+        size={10}
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+      />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Font Select                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -82,6 +123,14 @@ interface FontSelectProps {
   weight: string | null;
   onWeightChange: (v: string | null) => void;
   hideWeight?: boolean;
+  /** Drops the dark inline preview tile under the selector. Set when a
+   *  separate live preview is already rendering the chosen font (e.g. the
+   *  Globals card preview in the Design tab). */
+  hideInlinePreview?: boolean;
+  /** CSS text-transform value: 'none' | 'uppercase' | 'lowercase' | 'capitalize'.
+   *  When set, renders a Normal/Upper/Lower/Title picker beside the weight. */
+  transform?: string | null;
+  onTransformChange?: (v: string | null) => void;
 }
 
 export default function FontSelect({
@@ -94,6 +143,9 @@ export default function FontSelect({
   weight,
   onWeightChange,
   hideWeight,
+  hideInlinePreview,
+  transform,
+  onTransformChange,
 }: FontSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -147,12 +199,21 @@ export default function FontSelect({
           <span className="text-sm font-medium text-gray-700">{label}</span>
           <p className="text-xs text-gray-400">{description}</p>
         </div>
-        <WeightPicker
-          font={hideWeight ? null : value}
-          value={weight}
-          onChange={onWeightChange}
-          disabled={disabled}
-        />
+        <div className="flex items-center gap-1.5">
+          {onTransformChange && (
+            <TransformPicker
+              value={transform ?? null}
+              onChange={onTransformChange}
+              disabled={disabled}
+            />
+          )}
+          <WeightPicker
+            font={hideWeight ? null : value}
+            value={weight}
+            onChange={onWeightChange}
+            disabled={disabled}
+          />
+        </div>
       </div>
 
       {/* Current value display / trigger */}
@@ -190,8 +251,9 @@ export default function FontSelect({
           )}
         </button>
 
-        {/* Preview of selected font */}
-        {value && (
+        {/* Preview of selected font — hidden when the caller already has a
+            separate live preview surface for this font. */}
+        {value && !hideInlinePreview && (
           <div
             className="mt-1.5 px-3 py-2 rounded-lg bg-gray-900 text-white text-lg"
             style={{ fontFamily: fontFamily(value, 'sans-serif'), fontWeight: Number(effectiveWeight) }}

@@ -68,19 +68,19 @@ export default function CoverPreview({
       ? buildGradientCss('gradient', colors.coverGradientType, colors.coverGradientAngle, 50, 50, colors.coverGradientStops)
       : undefined;
 
-  const overlayEnd = Math.min(1, colors.coverOverlayOpacity + 0.1);
-  const previewOverlay = imageUrl
+  // Overlay alpha is the slider value, end-to-end. The previous version added
+  // +0.1 to the last gradient stop for "punch", but that meant 0% on the slider
+  // still leaked ~10% colour over the image — which contradicts the label.
+  const overlayAlpha = colors.coverOverlayOpacity;
+  const previewOverlay = imageUrl && overlayAlpha > 0
     ? colors.coverBgStyle === 'solid'
-      ? hexToRgba(colors.coverBgColor1, colors.coverOverlayOpacity)
+      ? hexToRgba(colors.coverBgColor1, overlayAlpha)
       : buildGradientCss(
           'gradient',
           colors.coverGradientType,
           colors.coverGradientAngle,
           50, 50,
-          colors.coverGradientStops.map((s, i, arr) => ({
-            ...s,
-            color: hexToRgba(s.color, i === arr.length - 1 ? overlayEnd : colors.coverOverlayOpacity),
-          })),
+          colors.coverGradientStops.map((s) => ({ ...s, color: hexToRgba(s.color, overlayAlpha) })),
         )
     : undefined;
 

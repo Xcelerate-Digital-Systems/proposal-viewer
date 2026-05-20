@@ -19,6 +19,7 @@ import {
 import Link from 'next/link';
 import { fontFamily } from '@/lib/google-fonts';
 import FontSelect from '@/components/admin/shared/FontSelect';
+import Slider from '@/components/ui/Slider';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
@@ -87,6 +88,13 @@ interface ViewerStyleSectionProps {
   setFontBodyFamily: (v: string | null) => void;
   fontBodyWeight: string | null;
   setFontBodyWeight: (v: string | null) => void;
+  /* ── Font case transforms (Normal / Upper / Lower / Title) ── */
+  titleFontTransform: string | null;
+  setTitleFontTransform: (v: string | null) => void;
+  fontHeadingTransform: string | null;
+  setFontHeadingTransform: (v: string | null) => void;
+  fontBodyTransform: string | null;
+  setFontBodyTransform: (v: string | null) => void;
   /* ── Text page colors ───────────────────────────────────── */
   tpBgColor: string;
   setTpBgColor: (v: string) => void;
@@ -143,6 +151,12 @@ export default function ViewerStyleSection({
   setFontBodyFamily,
   fontBodyWeight,
   setFontBodyWeight,
+  titleFontTransform,
+  setTitleFontTransform,
+  fontHeadingTransform,
+  setFontHeadingTransform,
+  fontBodyTransform,
+  setFontBodyTransform,
   tpBgColor,
   setTpBgColor,
   tpTextColor,
@@ -230,29 +244,20 @@ export default function ViewerStyleSection({
             }}
           />
 
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">
-              Color Overlay — {Math.round(overlayOpacity * 100)}%
-            </label>
-            <input
-              type="range" min="0" max="100"
-              value={Math.round(overlayOpacity * 100)}
-              onChange={(e) => setOverlayOpacity(parseInt(e.target.value) / 100)}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">
-              Blur — {bgImageBlur > 0 ? `${bgImageBlur}px` : 'Off'}
-            </label>
-            <input
-              type="range" min="0" max="20"
-              value={bgImageBlur}
-              onChange={(e) => setBgImageBlur(parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-            />
-          </div>
+          <Slider
+            label="Colour overlay opacity"
+            value={Math.round(overlayOpacity * 100)}
+            formatValue={(v) => `${v}%`}
+            hint="How much the page background colour tints the image. 0% = no tint."
+            onChange={(pct) => setOverlayOpacity(pct / 100)}
+          />
+          <Slider
+            label="Blur"
+            value={bgImageBlur}
+            max={20}
+            formatValue={(v) => (v > 0 ? `${v}px` : 'Off')}
+            onChange={setBgImageBlur}
+          />
 
           <button
             onClick={onBgResetToCompany}
@@ -273,111 +278,120 @@ export default function ViewerStyleSection({
           ============================================================ */}
       <GroupHeading title="Globals" hint="Apply across every page" />
 
-      <SectionCard
-        title="Global Page Defaults"
-        description="Orientation, typography, and a shared background image — applied behind text, pricing, and packages pages."
-        icon={<LayoutPanelTop size={14} className="text-gray-400" />}
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* ─── Controls column ───────────────────────────────── */}
-          <div className="space-y-5 min-w-0">
-            {/* Orientation — compact chip row */}
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Orientation</p>
-              <div className="flex gap-2">
-                {orientationOptions.map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setPageOrientation(opt.key)}
-                    className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                      pageOrientation === opt.key
-                        ? 'bg-teal/10 border-teal/40 text-teal font-medium'
-                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className={`rounded-sm border-2 flex-shrink-0 ${
-                      pageOrientation === opt.key ? 'border-teal' : 'border-gray-300'
-                    } ${opt.key === 'landscape' ? 'w-4 h-3.5' : 'w-3.5 h-4'}`} />
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Typography — 3 fonts grouped together, no per-font dividers */}
-            <div className="pt-4 border-t border-gray-100">
-              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Typography</p>
-              <div className="space-y-4">
-                <FontSelect
-                  label="Page title font"
-                  description="The big H1 at the top of every page. Leave blank to use the Heading font."
-                  value={titleFontFamily}
-                  onChange={setTitleFontFamily}
-                  previewText="Your Page Title"
-                  weight={titleFontWeight}
-                  onWeightChange={setTitleFontWeight}
-                />
-                <div>
-                  <label className="block text-[11px] text-gray-500 mb-1">Title size</label>
-                  <select
-                    value={titleFontSize}
-                    onChange={(e) => setTitleFontSize(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30"
-                  >
-                    <option value="">Default</option>
-                    <option value="20">20px — Small</option>
-                    <option value="24">24px — Medium</option>
-                    <option value="28">28px</option>
-                    <option value="32">32px — Large</option>
-                    <option value="36">36px</option>
-                    <option value="40">40px — Extra Large</option>
-                    <option value="48">48px</option>
-                  </select>
+      {/* Globals — same flex+aside shape as Text Page Colours / Pricing Design.
+          Controls live inside a single SectionCard on the left; the live
+          typography preview is a sticky sibling aside on the right. */}
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0 space-y-5">
+          <SectionCard
+            title="Global Page Defaults"
+            description="Orientation, typography, and a shared background image — applied behind text, pricing, and packages pages."
+            icon={<LayoutPanelTop size={14} className="text-gray-400" />}
+          >
+            <div className="space-y-5">
+              {/* Orientation — compact chip row */}
+              <div>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Orientation</p>
+                <div className="flex gap-2">
+                  {orientationOptions.map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setPageOrientation(opt.key)}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                        pageOrientation === opt.key
+                          ? 'bg-teal/10 border-teal/40 text-teal font-medium'
+                          : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className={`rounded-sm border-2 flex-shrink-0 ${
+                        pageOrientation === opt.key ? 'border-teal' : 'border-gray-300'
+                      } ${opt.key === 'landscape' ? 'w-4 h-3.5' : 'w-3.5 h-4'}`} />
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
-                <FontSelect
-                  label="Heading font"
-                  description={
-                    companyDefaults.font_heading
-                      ? `Section H2/H3 inside body. Workspace default: ${companyDefaults.font_heading}.`
-                      : 'Section H2/H3 inside body. Leave blank to inherit the workspace default.'
-                  }
-                  value={fontHeadingFamily}
-                  onChange={setFontHeadingFamily}
-                  previewText="A Section Heading"
-                  weight={fontHeadingWeight}
-                  onWeightChange={setFontHeadingWeight}
-                />
-                <FontSelect
-                  label="Body font"
-                  description={
-                    companyDefaults.font_body
-                      ? `Paragraph copy. Workspace default: ${companyDefaults.font_body}.`
-                      : 'Paragraph copy. Leave blank to inherit the workspace default.'
-                  }
-                  value={fontBodyFamily}
-                  onChange={setFontBodyFamily}
-                  previewText="Paragraph copy on a body page."
-                  weight={fontBodyWeight}
-                  onWeightChange={setFontBodyWeight}
-                />
+              </div>
+
+              {/* Typography — 3 fonts grouped together. hidePreview drops the
+                  per-font inline preview tile (the sticky aside shows them now). */}
+              <div className="pt-4 border-t border-gray-100">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Typography</p>
+                <div className="space-y-4">
+                  <FontSelect
+                    label="Page title font"
+                    description="The big H1 at the top of every page. Leave blank to use the Heading font."
+                    value={titleFontFamily}
+                    onChange={setTitleFontFamily}
+                    weight={titleFontWeight}
+                    onWeightChange={setTitleFontWeight}
+                    transform={titleFontTransform}
+                    onTransformChange={setTitleFontTransform}
+                    hideInlinePreview
+                  />
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Title size</label>
+                    <select
+                      value={titleFontSize}
+                      onChange={(e) => setTitleFontSize(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30"
+                    >
+                      <option value="">Default</option>
+                      <option value="20">20px — Small</option>
+                      <option value="24">24px — Medium</option>
+                      <option value="28">28px</option>
+                      <option value="32">32px — Large</option>
+                      <option value="36">36px</option>
+                      <option value="40">40px — Extra Large</option>
+                      <option value="48">48px</option>
+                    </select>
+                  </div>
+                  <FontSelect
+                    label="Heading font"
+                    description={
+                      companyDefaults.font_heading
+                        ? `Section H2/H3 inside body. Workspace default: ${companyDefaults.font_heading}.`
+                        : 'Section H2/H3 inside body. Leave blank to inherit the workspace default.'
+                    }
+                    value={fontHeadingFamily}
+                    onChange={setFontHeadingFamily}
+                    weight={fontHeadingWeight}
+                    onWeightChange={setFontHeadingWeight}
+                    transform={fontHeadingTransform}
+                    onTransformChange={setFontHeadingTransform}
+                    hideInlinePreview
+                  />
+                  <FontSelect
+                    label="Body font"
+                    description={
+                      companyDefaults.font_body
+                        ? `Paragraph copy. Workspace default: ${companyDefaults.font_body}.`
+                        : 'Paragraph copy. Leave blank to inherit the workspace default.'
+                    }
+                    value={fontBodyFamily}
+                    onChange={setFontBodyFamily}
+                    weight={fontBodyWeight}
+                    onWeightChange={setFontBodyWeight}
+                    transform={fontBodyTransform}
+                    onTransformChange={setFontBodyTransform}
+                    hideInlinePreview
+                  />
+                </div>
+              </div>
+
+              {/* Background image */}
+              <div className="pt-4 border-t border-gray-100">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Background Image</p>
+                {backgroundImageBlock}
               </div>
             </div>
+          </SectionCard>
+        </div>
 
-            {/* Background image */}
-            <div className="pt-4 border-t border-gray-100">
-              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Background Image</p>
-              {backgroundImageBlock}
-            </div>
-          </div>
-
-          {/* ─── Live typography preview ───────────────────────── */}
-          <div className="lg:sticky lg:top-4 self-start">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Live Preview</p>
+        <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+          <div className="sticky top-6">
             <div
-              className="rounded-xl border border-gray-200 bg-white p-5 space-y-3"
-              style={{
-                backgroundColor: tpBgColor || companyDefaults.bg_color,
-              }}
+              className="rounded-lg overflow-hidden border border-gray-200 bg-gray-100 p-8 space-y-4"
+              style={{ backgroundColor: tpBgColor || companyDefaults.bg_color }}
             >
               <p
                 className="leading-tight"
@@ -385,7 +399,8 @@ export default function ViewerStyleSection({
                   color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
                   fontFamily: fontFamily(titleFontFamily || fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
                   fontWeight: Number(titleFontWeight || fontHeadingWeight || '700'),
-                  fontSize: titleFontSize ? `${titleFontSize}px` : '28px',
+                  fontSize: titleFontSize ? `${titleFontSize}px` : '36px',
+                  textTransform: (titleFontTransform || fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
                 }}
               >
                 Sample page title
@@ -396,7 +411,8 @@ export default function ViewerStyleSection({
                   color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
                   fontFamily: fontFamily(fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
                   fontWeight: Number(fontHeadingWeight || '600'),
-                  fontSize: '18px',
+                  fontSize: '22px',
+                  textTransform: (fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
                 }}
               >
                 A section heading
@@ -407,16 +423,16 @@ export default function ViewerStyleSection({
                   color: tpTextColor || companyDefaults.text_color,
                   fontFamily: fontFamily(fontBodyFamily || companyDefaults.font_body, 'system-ui, sans-serif'),
                   fontWeight: Number(fontBodyWeight || '400'),
-                  fontSize: '14px',
+                  fontSize: '15px',
+                  textTransform: (fontBodyTransform || 'none') as React.CSSProperties['textTransform'],
                 }}
               >
                 Body text on a proposal page. This is what your client will read — adjust the body font, weight, and colour to match your brand voice.
               </p>
             </div>
-            <p className="text-[10px] text-gray-400 mt-2">Colours reflect the Text Page colours below.</p>
           </div>
-        </div>
-      </SectionCard>
+        </aside>
+      </div>
 
       {/* ============================================================
           2. COVER PAGE

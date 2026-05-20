@@ -12,6 +12,7 @@ import { Palette } from 'lucide-react';
 import { supabase, type Proposal, type ProposalTemplate } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import ColorPickerField, { setBrandingColors } from '@/components/ui/ColorPickerField';
+import Slider from '@/components/ui/Slider';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import GradientStopsEditor from '@/components/ui/GradientStopsEditor';
 import { buildGradientCss, resolveStops, type GradientStop } from '@/lib/gradient-stops';
@@ -289,61 +290,36 @@ export default function HeaderStyleCard({
 
         {/* Angle slider — linear + conic only */}
         {(currentMode === 'linear' || currentMode === 'conic') && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-gray-500">Angle</label>
-              <span className="text-xs text-gray-700 tabular-nums">{gradientAngle}°</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={360}
-              value={gradientAngle}
-              onChange={(e) => {
-                const v = parseInt(e.target.value);
-                setGradientAngle(v);
-                persist({ [cols.gradient_angle as string]: v });
-              }}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-            />
-          </div>
+          <Slider
+            label="Angle"
+            value={gradientAngle}
+            min={0}
+            max={360}
+            formatValue={(v) => `${v}°`}
+            onChange={(v) => {
+              setGradientAngle(v);
+              persist({ [cols.gradient_angle as string]: v });
+            }}
+          />
         )}
 
         {/* Position sliders — radial + conic, mirror the drag handle */}
         {positionable && (
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs text-gray-500">Position X</label>
-                <span className="text-xs text-gray-700 tabular-nums">{cx}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={cx}
-                onChange={(e) => setCx(parseInt(e.target.value))}
-                onMouseUp={commitPosition}
-                onTouchEnd={commitPosition}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs text-gray-500">Position Y</label>
-                <span className="text-xs text-gray-700 tabular-nums">{cy}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={cy}
-                onChange={(e) => setCy(parseInt(e.target.value))}
-                onMouseUp={commitPosition}
-                onTouchEnd={commitPosition}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-              />
-            </div>
+            <Slider
+              label="Position X"
+              value={cx}
+              formatValue={(v) => `${v}%`}
+              onChange={setCx}
+              onCommit={() => commitPosition()}
+            />
+            <Slider
+              label="Position Y"
+              value={cy}
+              formatValue={(v) => `${v}%`}
+              onChange={setCy}
+              onCommit={() => commitPosition()}
+            />
           </div>
         )}
 
@@ -384,30 +360,21 @@ export default function HeaderStyleCard({
           />
         )}
 
-        {/* Image overlay opacity — only relevant for the cover splash where
-            a cover image can sit on top of the fill. */}
+        {/* Colour overlay opacity — only relevant when a cover image is set.
+            Controls how much of the fill (solid/gradient) colour-tints the image.
+            0% = the raw image with no colour wash; 100% = fully obscured. */}
         {cols.overlay_opacity && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-gray-500">Image overlay opacity</label>
-              <span className="text-xs text-gray-700 tabular-nums">{Math.round(overlayOpacity * 100)}%</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(overlayOpacity * 100)}
-              onChange={(e) => {
-                const v = parseInt(e.target.value) / 100;
-                setOverlayOpacity(v);
-                persist({ [cols.overlay_opacity as string]: v });
-              }}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              How much the fill above shows through the cover image.
-            </p>
-          </div>
+          <Slider
+            label="Colour overlay opacity"
+            value={Math.round(overlayOpacity * 100)}
+            formatValue={(v) => `${v}%`}
+            hint="How much the fill colour shows over the cover image. 0% = no tint."
+            onChange={(pct) => {
+              const v = pct / 100;
+              setOverlayOpacity(v);
+              persist({ [cols.overlay_opacity as string]: v });
+            }}
+          />
         )}
 
         {/* Text colours */}

@@ -33,6 +33,9 @@ export default function TemplateDesignPage() {
         initialFontHeadingWeight={template.font_heading_weight ?? null}
         initialFontBodyFamily={template.font_body_family ?? null}
         initialFontBodyWeight={template.font_body_weight ?? null}
+        initialTitleFontTransform={(template as { title_font_transform?: string | null }).title_font_transform ?? null}
+        initialFontHeadingTransform={(template as { font_heading_transform?: string | null }).font_heading_transform ?? null}
+        initialFontBodyTransform={(template as { font_body_transform?: string | null }).font_body_transform ?? null}
         initialPageNumCircleColor={template.page_num_circle_color ?? null}
         initialPageNumTextColor={template.page_num_text_color ?? null}
         coverEntity={template}

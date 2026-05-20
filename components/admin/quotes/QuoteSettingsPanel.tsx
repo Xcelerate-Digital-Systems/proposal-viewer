@@ -11,6 +11,7 @@ import { Loader2, ImageIcon, Trash2, Layers, Type } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import ColorPickerField, { setBrandingColors } from '@/components/ui/ColorPickerField';
+import Slider from '@/components/ui/Slider';
 import { GOOGLE_FONTS } from '@/lib/google-fonts';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import ProposalStyleSection from '@/components/admin/proposals/quote-builder/sections/ProposalStyleSection';
@@ -195,38 +196,26 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
                     <Trash2 size={11} /> Remove
                   </button>
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Overlay opacity — {Math.round(bgOverlay * 100)}%
-                  </label>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={Math.round(bgOverlay * 100)}
-                    onChange={(e) => {
-                      const v = parseInt(e.target.value) / 100;
-                      setBgOverlay(v);
-                      persist({ bg_image_overlay_opacity: v });
-                    }}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Blur — {bgBlur}px</label>
-                  <input
-                    type="range"
-                    min={0}
-                    max={30}
-                    value={bgBlur}
-                    onChange={(e) => {
-                      const v = parseInt(e.target.value);
-                      setBgBlur(v);
-                      persist({ bg_image_blur: v });
-                    }}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-                  />
-                </div>
+                <Slider
+                  label="Colour overlay opacity"
+                  value={Math.round(bgOverlay * 100)}
+                  formatValue={(v) => `${v}%`}
+                  onChange={(pct) => {
+                    const v = pct / 100;
+                    setBgOverlay(v);
+                    persist({ bg_image_overlay_opacity: v });
+                  }}
+                />
+                <Slider
+                  label="Blur"
+                  value={bgBlur}
+                  max={30}
+                  formatValue={(v) => `${v}px`}
+                  onChange={(v) => {
+                    setBgBlur(v);
+                    persist({ bg_image_blur: v });
+                  }}
+                />
               </div>
             ) : (
               <button

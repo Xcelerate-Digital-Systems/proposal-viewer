@@ -34,6 +34,9 @@ export default function DocumentDesignPage() {
         initialFontHeadingWeight={document.font_heading_weight ?? null}
         initialFontBodyFamily={document.font_body_family ?? null}
         initialFontBodyWeight={document.font_body_weight ?? null}
+        initialTitleFontTransform={(document as { title_font_transform?: string | null }).title_font_transform ?? null}
+        initialFontHeadingTransform={(document as { font_heading_transform?: string | null }).font_heading_transform ?? null}
+        initialFontBodyTransform={(document as { font_body_transform?: string | null }).font_body_transform ?? null}
         initialPageNumCircleColor={document.page_num_circle_color ?? null}
         initialPageNumTextColor={document.page_num_text_color ?? null}
       />

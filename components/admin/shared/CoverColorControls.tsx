@@ -2,6 +2,7 @@
 'use client';
 
 import ColorPickerField from '@/components/ui/ColorPickerField';
+import Slider from '@/components/ui/Slider';
 import GradientStopsEditor from '@/components/ui/GradientStopsEditor';
 import type { GradientStop } from '@/lib/gradient-stops';
 
@@ -176,23 +177,14 @@ export default function CoverColorControls({
         )}
       </div>
 
-      {/* Overlay opacity */}
-      <div>
-        <label className="block text-xs text-gray-400 mb-2">
-          Image Overlay Opacity — {Math.round(coverOverlayOpacity * 100)}%
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={Math.round(coverOverlayOpacity * 100)}
-          onChange={(e) => onChange({ coverOverlayOpacity: parseInt(e.target.value) / 100 })}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
-        />
-        <p className="text-xs text-gray-400 mt-1">
-          Controls how much the background color shows over uploaded cover images.
-        </p>
-      </div>
+      {/* Colour overlay opacity */}
+      <Slider
+        label="Colour overlay opacity"
+        value={Math.round(coverOverlayOpacity * 100)}
+        formatValue={(v) => `${v}%`}
+        hint="How much the fill colour shows over the cover image. 0% = no tint."
+        onChange={(pct) => onChange({ coverOverlayOpacity: pct / 100 })}
+      />
 
       {/* Text colors */}
       <div className="pt-4 border-t border-gray-100">

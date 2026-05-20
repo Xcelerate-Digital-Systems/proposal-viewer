@@ -4,6 +4,7 @@
 import { Check, Circle, CheckCircle2, ArrowRight, Star, Minus, RotateCcw } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 import ColorPickerField from '@/components/ui/ColorPickerField';
+import Slider from '@/components/ui/Slider';
 import { PackageStyling, PackageFeatureIcon, PackageTier, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
 
 interface PackagesAppearanceSectionProps {
@@ -170,42 +171,22 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Card Shape ────────────────────────────────────── */}
-      <div className="px-4 py-4 space-y-3 bg-white">
+      <div className="px-4 py-4 space-y-4 bg-white">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Shape</label>
-        <div className="space-y-1">
-          <label className="text-xs text-gray-600">Border radius</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="range"
-              min={0}
-              max={24}
-              step={1}
-              value={styling.border_radius}
-              onChange={(e) => update({ border_radius: Number(e.target.value) })}
-              className="flex-1 h-1 accent-teal"
-            />
-            <span className="text-[10px] text-gray-500 font-mono w-[32px] text-right">
-              {styling.border_radius}px
-            </span>
-          </div>
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs text-gray-600">Border thickness</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="range"
-              min={0}
-              max={4}
-              step={1}
-              value={styling.border_width}
-              onChange={(e) => update({ border_width: Number(e.target.value) })}
-              className="flex-1 h-1 accent-teal"
-            />
-            <span className="text-[10px] text-gray-500 font-mono w-[32px] text-right">
-              {styling.border_width}px
-            </span>
-          </div>
-        </div>
+        <Slider
+          label="Border radius"
+          value={styling.border_radius}
+          max={24}
+          formatValue={(v) => `${v}px`}
+          onChange={(v) => update({ border_radius: v })}
+        />
+        <Slider
+          label="Border thickness"
+          value={styling.border_width}
+          max={4}
+          formatValue={(v) => `${v}px`}
+          onChange={(v) => update({ border_width: v })}
+        />
       </div>
 
     </div>

@@ -4,6 +4,7 @@
 import { ReactNode, useRef } from 'react';
 import { Check, Loader2, Palette, Upload, Trash2, ImageIcon } from 'lucide-react';
 import ColorPickerField from '@/components/ui/ColorPickerField';
+import Slider from '@/components/ui/Slider';
 
 interface ViewerColorsSectionProps {
   isOwner: boolean;
@@ -156,21 +157,14 @@ export default function ViewerColorsSection({
             {/* Overlay opacity — only show when image is set */}
             {bgImageUrl && (
               <div className="mt-3">
-                <label className="block text-xs text-faint mb-1">
-                  Color Overlay Opacity — {Math.round(bgImageOverlayOpacity * 100)}%
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
+                <Slider
+                  label="Colour overlay opacity"
                   value={Math.round(bgImageOverlayOpacity * 100)}
-                  onChange={(e) => setBgImageOverlayOpacity(parseInt(e.target.value) / 100)}
+                  formatValue={(v) => `${v}%`}
+                  hint="How much the main background colour tints the image. 0% = no tint."
                   disabled={!isOwner}
-                  className="w-full h-2 bg-edge rounded-lg appearance-none cursor-pointer accent-teal disabled:cursor-not-allowed"
+                  onChange={(pct) => setBgImageOverlayOpacity(pct / 100)}
                 />
-                <p className="text-[10px] text-faint mt-1">
-                  Controls how much the main background color shows over the image. Higher = more color, less image.
-                </p>
               </div>
             )}
           </div>

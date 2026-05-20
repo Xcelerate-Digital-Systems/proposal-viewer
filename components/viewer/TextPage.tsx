@@ -203,6 +203,7 @@ function renderNode(
             margin: margins[level as number] || '0.8em 0 0.4em',
             lineHeight: 1.3,
             fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
+            textTransform: (branding.font_heading_transform || 'none') as React.CSSProperties['textTransform'],
           }}
         >
           {children}
@@ -475,6 +476,7 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
                     color: headingColor,
                     fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
                     fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
+                    textTransform: (branding.title_font_transform || branding.font_heading_transform || 'none') as React.CSSProperties['textTransform'],
                     ...(branding.title_font_size ? { fontSize: `${branding.title_font_size}px` } : {}),
                   }}
                 >
@@ -484,7 +486,14 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
             )}
 
             {/* Content */}
-            <div className="agv-text-body" style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif') }}>
+            <div
+              className="agv-text-body"
+              style={{
+                fontSize: `${fontSize}px`,
+                fontFamily: fontFamily(branding.font_body, 'system-ui, sans-serif'),
+                textTransform: (branding.font_body_transform || 'none') as React.CSSProperties['textTransform'],
+              }}
+            >
               {doc && renderNode(doc, branding, context, 'root', textColor, muted, accent, border)}
             </div>
 

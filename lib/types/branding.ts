@@ -30,6 +30,10 @@ export type CompanyBranding = {
   title_font_family: string | null;
   title_font_weight: string | null;
   title_font_size: string | null;
+  /** CSS text-transform applied per-font. 'none' | 'uppercase' | 'lowercase' | 'capitalize'. */
+  title_font_transform: string | null;
+  font_heading_transform: string | null;
+  font_body_transform: string | null;
   text_page_bg_color: string;
   text_page_text_color: string;
   text_page_heading_color: string | null;

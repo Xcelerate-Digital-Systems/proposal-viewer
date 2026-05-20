@@ -24,11 +24,12 @@ const MAX_SCALE = 0.55;
 
 interface ViewerPagePreviewProps {
   branding: CompanyBranding;
-  /** Text shown on the right of the header bar (e.g. page title) */
+  /** @deprecated header/footer chrome removed to match the Cover preview look.
+   *  These props are accepted to keep call-sites compiling; values are ignored. */
   label?: string;
-  /** Icon shown beside label in the header bar */
+  /** @deprecated see above */
   icon?: React.ReactNode;
-  /** Text shown in the footer bar */
+  /** @deprecated see above */
   footer?: string;
   /** When provided, replaces the scaled content area entirely.
    *  Use for empty states so we don't render page components with no data. */
@@ -42,9 +43,6 @@ interface ViewerPagePreviewProps {
 
 export default function ViewerPagePreview({
   branding,
-  label,
-  icon,
-  footer,
   emptyState,
   children,
 }: ViewerPagePreviewProps) {
@@ -67,19 +65,9 @@ export default function ViewerPagePreview({
       className="flex flex-col min-h-0 sticky top-0 self-start w-full"
       style={{ maxHeight: 'calc(100vh - 200px)' }}
     >
+      {/* Chromeless frame — matches the Cover preview's clean treatment.
+          Single subtle border + rounded corners; no header / footer bars. */}
       <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-
-        {/* Header */}
-        <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
-          <span className="text-xs text-gray-500 font-medium">Live Preview</span>
-          {(icon || label) && (
-            <span className="text-xs text-teal font-medium flex items-center gap-1">
-              {icon}{label}
-            </span>
-          )}
-        </div>
-
-        {/* Scaled content area */}
         <div className="flex-1 min-h-[400px] overflow-hidden relative">
           {emptyState ?? (
             <div
@@ -105,14 +93,6 @@ export default function ViewerPagePreview({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        {footer && (
-          <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
-            <span className="text-[10px] text-gray-400">{footer}</span>
-          </div>
-        )}
-
       </div>
     </div>
   );

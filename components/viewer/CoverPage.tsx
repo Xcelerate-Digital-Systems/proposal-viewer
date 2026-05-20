@@ -196,21 +196,20 @@ export default function CoverPage({
     : undefined;
 
   // Build overlay for when a cover image is present — re-shade each stop with
-  // the overlay opacity so the image still shows through.
-  const overlayEnd = overlayOpacity + 0.1 > 1 ? 1 : overlayOpacity + 0.1;
-  const imageOverlay = bgStyle === 'solid'
-    ? hexToRgba(bgColor1, overlayOpacity)
-    : buildGradientCss(
-        'gradient',
-        gradientType,
-        gradientAngle,
-        gradientCx,
-        gradientCy,
-        gradientStops.map((s, i, arr) => ({
-          ...s,
-          color: hexToRgba(s.color, i === arr.length - 1 ? overlayEnd : overlayOpacity),
-        })),
-      );
+  // the overlay opacity. Use the slider value end-to-end so 0% really means
+  // "no tint" (the previous +0.1 bump on the last stop leaked colour at 0%).
+  const imageOverlay = overlayOpacity <= 0
+    ? undefined
+    : bgStyle === 'solid'
+      ? hexToRgba(bgColor1, overlayOpacity)
+      : buildGradientCss(
+          'gradient',
+          gradientType,
+          gradientAngle,
+          gradientCx,
+          gradientCy,
+          gradientStops.map((s) => ({ ...s, color: hexToRgba(s.color, overlayOpacity) })),
+        );
 
   // Has prepared-by meta row? Use resolved name as fallback
   const hasPreparedByRow = showPreparedBy && preparedByName;
