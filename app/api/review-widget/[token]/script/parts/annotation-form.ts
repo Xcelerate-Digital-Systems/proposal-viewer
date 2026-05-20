@@ -29,15 +29,20 @@ function showAnnotationForm(type,px,py,extra){
     quoteHtml='<div class="aviz-pf-quote">\\u201C'+esc(preview)+'\\u201D</div>';
   }
 
+  var sendIcon='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
   var f=document.createElement("div");f.className="aviz-pin-form";
   f.style.left=fx+"px";f.style.top=fy+"px";
-  f.innerHTML='<h4>Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></h4>'
-    +quoteHtml
-    +'<textarea class="aviz-ta aviz-pf-text" placeholder="Add a comment\\u2026" style="min-height:80px"></textarea>'
-    +'<div class="aviz-pf-footer" style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;align-items:center">'
-    +'<div class="aviz-pf-priority-slot" style="margin-right:auto"></div>'
-    +'<button class="aviz-btn aviz-btn-g aviz-pf-cancel">Cancel</button>'
-    +'<button class="aviz-btn aviz-btn-p aviz-pf-send">Post</button></div>';
+  f.innerHTML='<div class="aviz-pf-body">'
+      +'<h4>Posting as <strong>'+esc(guestName)+'</strong></h4>'
+      +quoteHtml
+      +'<textarea class="aviz-pf-text" placeholder="Add a comment\\u2026"></textarea>'
+    +'</div>'
+    +'<div class="aviz-pf-footer">'
+      +'<div class="aviz-pf-priority-slot"></div>'
+      +'<div class="aviz-pf-spacer"></div>'
+      +'<button class="aviz-pf-cancel">Cancel</button>'
+      +'<button class="aviz-pf-send">'+sendIcon+' Post</button>'
+    +'</div>';
   document.body.appendChild(f);
   var priorityCtrl=createPriorityControl();
   f.querySelector(".aviz-pf-priority-slot").appendChild(priorityCtrl.element);

@@ -88,23 +88,36 @@ toolBtns.comments.addEventListener("click",function(){
 });
 toolBtns.questions.addEventListener("click",function(){/* soon */});
 
-/* ── Element hover highlight (always on, debounced) ─────── */
+/* ── Element hover highlight ──────────────────────────────
+   A single floating overlay tracks the hovered element via transform —
+   transitions on transform/width/height ease between targets, which
+   reads as a smooth markup.io-style sweep instead of an instant snap. */
+var hoverBox=document.createElement("div");hoverBox.id="aviz-hover-box";document.body.appendChild(hoverBox);
 var hlTags=["P","H1","H2","H3","H4","H5","H6","SPAN","A","BUTTON","IMG","TD","TH","LI","SECTION","DIV","HEADER","FOOTER","NAV","MAIN","ARTICLE"];
+function hideHoverBox(){hoverBox.classList.remove("show");highlightEl=null;}
 document.addEventListener("mousemove",function(e){
   var t=e.target;
-  if(t.closest("#aviz-root")||t.closest("#aviz-onboard")||t.closest("#aviz-tour-backdrop")||t.closest(".aviz-tour-callout")||t.closest(".aviz-pin")||t.closest(".aviz-box")||t.closest(".aviz-text-ann")||t.closest(".aviz-pin-form")||t.closest(".aviz-text-input"))return;
+  if(t.closest("#aviz-root")||t.closest("#aviz-onboard")||t.closest("#aviz-tour-backdrop")||t.closest(".aviz-tour-callout")||t.closest(".aviz-pin")||t.closest(".aviz-box")||t.closest(".aviz-text-ann")||t.closest(".aviz-pin-form")||t.closest(".aviz-text-input")){hideHoverBox();return;}
 
   /* Same element — do nothing */
   if(t===highlightEl)return;
 
-  /* Remove old highlight */
-  if(highlightEl){highlightEl.classList.remove("aviz-el-hl");highlightEl=null;}
-
-  /* Add new highlight if it's a suitable element */
   if(hlTags.indexOf(t.tagName)>-1){
     var r=t.getBoundingClientRect();
-    if(r.width>30&&r.height>15){t.classList.add("aviz-el-hl");highlightEl=t;}
+    if(r.width>30&&r.height>15){
+      highlightEl=t;
+      var sx=window.pageXOffset||document.documentElement.scrollLeft;
+      var sy=window.pageYOffset||document.documentElement.scrollTop;
+      hoverBox.style.transform="translate3d("+(r.left+sx)+"px,"+(r.top+sy)+"px,0)";
+      hoverBox.style.width=r.width+"px";
+      hoverBox.style.height=r.height+"px";
+      hoverBox.classList.add("show");
+      return;
+    }
   }
+  hideHoverBox();
 });
+document.addEventListener("mouseleave",hideHoverBox);
+document.addEventListener("scroll",hideHoverBox,{passive:true});
 `;
 }

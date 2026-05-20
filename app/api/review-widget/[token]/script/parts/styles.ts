@@ -2,8 +2,15 @@ import { POPOVER_STYLE } from '@/lib/feedback/popover-style';
 
 const ACCENT = '#017C87';
 const PIN_COLOR = '#22c55e'; // green-500 — consistent with in-app PinOverlay
-const HOVER_COLOR = '#f97316'; // orange-500 — element hover outline during pin placement
+const HOVER_COLOR = '#2563eb'; // blue-600 — markup.io-style element hover outline
+const HIGHLIGHT_COLOR = '37,99,235'; // blue-600 rgb — text-highlight tint
+const HIGHLIGHT_RING = '30,58,138'; // blue-900 rgb — pending highlight ring
 const FONT = `'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
+
+// Markup.io-style custom cursor: dark-blue circle with white crosshair.
+// Inlined as data URI so it ships with the widget and works cross-origin.
+const PIN_CURSOR_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><circle cx='16' cy='16' r='12' fill='%232563eb' stroke='%23ffffff' stroke-width='2'/><line x1='16' y1='9' x2='16' y2='23' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/><line x1='9' y1='16' x2='23' y2='16' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/></svg>`;
+const PIN_CURSOR = `url("data:image/svg+xml;utf8,${PIN_CURSOR_SVG}") 16 16, crosshair`;
 
 export function stylesJS(_apiBase: string): string {
   return `
@@ -20,12 +27,19 @@ sty.textContent=\`
 
 /* ── Per-mode cursor (matches the active tool) ─────────── */
 html.aviz-mode-pin,html.aviz-mode-pin *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *),
-html.aviz-mode-box,html.aviz-mode-box *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:crosshair !important;}
+html.aviz-mode-box,html.aviz-mode-box *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:${PIN_CURSOR} !important;}
 html.aviz-mode-text,html.aviz-mode-text *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *),
 html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:text !important;}
 
-/* ── Element hover highlight ───────────────────────────── */
-.aviz-el-hl{outline:2px solid ${HOVER_COLOR};outline-offset:2px;transition:outline-color .3s;box-shadow:0 0 0 1px ${HOVER_COLOR}40;}
+/* ── Element hover highlight (single floating overlay — markup.io-style)
+   A single fixed-position box transitions between hovered elements via
+   transform/width/height, which animates smoothly instead of snapping. */
+#aviz-hover-box{position:absolute;top:0;left:0;pointer-events:none;z-index:2147483637;
+  border:3px solid ${HOVER_COLOR};border-radius:6px;background:${HOVER_COLOR}14;
+  opacity:0;
+  transition:transform .22s cubic-bezier(.4,0,.2,1),width .22s cubic-bezier(.4,0,.2,1),height .22s cubic-bezier(.4,0,.2,1),opacity .15s ease-out;
+  will-change:transform,width,height;}
+#aviz-hover-box.show{opacity:1;}
 
 /* ── Pin marker ────────────────────────────────────────── */
 /* !important throughout this section — host pages frequently reset div
@@ -81,11 +95,12 @@ html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-ro
   white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s;z-index:2147483641;}
 .aviz-tool:hover .aviz-tooltip{opacity:1;}
 .aviz-sep{width:100%;height:1px;background:#e5e7eb;flex-shrink:0;margin:0;padding:0;}
-#aviz-toolbar.panel-open{right:360px;}
+/* Toolbar lives on the right; panel lives on the left — no shift needed on desktop. */
 @media(max-width:480px){
   #aviz-toolbar{right:10px;}
   .aviz-tool{width:42px;height:42px;}
-  #aviz-toolbar.panel-open{right:calc(100vw - 6px);}
+  /* Panel covers the viewport on mobile; tuck the toolbar off-screen so it's not on top. */
+  #aviz-toolbar.panel-open{right:-100px;}
 }
 
 /* ── Mode bar (top bar when pin/box/text active) ───────── */
@@ -97,27 +112,38 @@ html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-ro
   padding:5px 14px;font-size:12px;cursor:pointer;font-weight:500;font-family:${FONT};transition:background .3s;margin:0;}
 #aviz-bar button:hover{background:rgba(255,255,255,.3);}
 
-/* ── Annotation form (floating card) ───────────────────── */
+/* ── Annotation form (floating card — matches in-app PendingPinPopover) ── */
 .aviz-pin-form{position:absolute;z-index:2147483643;width:${POPOVER_STYLE.widthPx}px;max-width:calc(100vw - 40px);background:${POPOVER_STYLE.background};border-radius:16px;
-  box-shadow:${POPOVER_STYLE.boxShadow};padding:16px;border:1px solid ${POPOVER_STYLE.borderColor};
-  animation:aviz-fadeIn .15s ease-out;
+  box-shadow:${POPOVER_STYLE.boxShadow};padding:0;border:1px solid ${POPOVER_STYLE.borderColor};
+  animation:aviz-fadeIn .15s ease-out;display:flex;flex-direction:column;
   font-family:${FONT} !important;line-height:1.45 !important;color:#111827;font-style:normal;}
 .aviz-pin-form *{font-family:${FONT} !important;line-height:1.45 !important;box-sizing:border-box;}
 @keyframes aviz-fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.aviz-pin-form h4{font-size:11px;font-weight:500;color:#9ca3af;margin:0 0 8px 0;padding:0;font-style:normal;text-transform:none;letter-spacing:normal;}
-.aviz-pin-form h4 strong{font-weight:600;}
+.aviz-pf-body{padding:16px 16px 8px;display:flex;flex-direction:column;}
+.aviz-pin-form h4{font-size:11px;font-weight:500;color:#9ca3af;margin:0 0 6px 0;padding:0;font-style:normal;text-transform:none;letter-spacing:normal;}
+.aviz-pin-form h4 strong{font-weight:600;color:#4b5563;}
 .aviz-pin-form textarea,.aviz-pin-form input{font-family:${FONT} !important;color:#111827;}
+.aviz-pin-form .aviz-pf-text{width:100%;border:none !important;background:transparent !important;padding:0 !important;font-size:14px;color:#111827;outline:none;resize:none;min-height:72px;box-shadow:none !important;}
+.aviz-pin-form .aviz-pf-text::placeholder{color:#9ca3af;}
 .aviz-pf-quote{margin:0 0 10px 0;padding:6px 10px;border-left:3px solid #fde047;background:#fefce8;border-radius:0 6px 6px 0;font-size:11px;color:#92400e;font-style:italic;}
+.aviz-pf-footer{display:flex;align-items:center;gap:6px;padding:8px 12px;border-top:1px solid #f3f4f6;}
+.aviz-pf-footer .aviz-pf-priority-slot{display:inline-flex;align-items:center;}
+.aviz-pf-footer .aviz-pf-spacer{flex:1;}
+.aviz-pin-form .aviz-pf-cancel{font-size:13px;padding:6px 10px;color:#9ca3af;background:none;border:none;cursor:pointer;border-radius:6px;font-weight:500;transition:color .2s,background .2s;}
+.aviz-pin-form .aviz-pf-cancel:hover{color:#6b7280;background:#f9fafb;}
+.aviz-pin-form .aviz-pf-send{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:9999px;background:${ACCENT};color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:background .2s,opacity .2s;}
+.aviz-pin-form .aviz-pf-send:hover:not(:disabled){background:#015f68;}
+.aviz-pin-form .aviz-pf-send:disabled{opacity:.4;cursor:not-allowed;}
 
 /* ── Text highlight marks ──────────────────────────────────
    !important is required because many host pages style <mark>
    themselves (or reset background/color), which would otherwise
    make the pending highlight invisible. */
 mark.aviz-hl,mark.aviz-hl-pending{display:inline !important;padding:1px 2px !important;border-radius:2px !important;color:inherit !important;font:inherit !important;text-decoration:none !important;}
-mark.aviz-hl{background:rgba(253,224,71,.55) !important;cursor:pointer;transition:background .3s;}
-mark.aviz-hl-pending{background:rgba(253,224,71,.85) !important;box-shadow:0 0 0 1px rgba(202,138,4,.35) !important;}
-mark.aviz-hl:hover{background:rgba(253,224,71,.8) !important;}
-mark.aviz-hl.resolved{background:rgba(253,224,71,.28) !important;}
+mark.aviz-hl{background:rgba(${HIGHLIGHT_COLOR},.28) !important;cursor:pointer;transition:background .3s;}
+mark.aviz-hl-pending{background:rgba(${HIGHLIGHT_COLOR},.45) !important;box-shadow:0 0 0 1px rgba(${HIGHLIGHT_RING},.55) !important;}
+mark.aviz-hl:hover{background:rgba(${HIGHLIGHT_COLOR},.4) !important;}
+mark.aviz-hl.resolved{background:rgba(${HIGHLIGHT_COLOR},.15) !important;}
 .aviz-hl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin:0 3px;border-radius:9999px;background:${PIN_COLOR};color:#fff;font-size:10px;font-weight:700;line-height:1;vertical-align:middle;cursor:pointer;user-select:none;font-style:normal;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2);font-family:${FONT};}
 
 /* ── Priority selector (shared across pin, text, highlight forms) ── */
@@ -238,10 +264,10 @@ html.aviz-tour-on .aviz-tool.aviz-tour-target{background:${ACCENT}18;color:${ACC
 /* ══════════════════════════════════════════════════════════
    COMMENTS PANEL  –  matches in-app CommentsPanel design
    ══════════════════════════════════════════════════════════ */
-#aviz-panel{position:fixed;top:0;right:0;bottom:0;z-index:2147483641;width:340px;
-  background:#FBF8F5;border-left:1px solid #ece6df;
-  box-shadow:-4px 0 24px rgba(0,0,0,.06);display:flex;flex-direction:column;
-  transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);pointer-events:none;}
+#aviz-panel{position:fixed;top:0;left:0;bottom:0;z-index:2147483641;width:340px;
+  background:#FBF8F5;border-right:1px solid #ece6df;
+  box-shadow:4px 0 24px rgba(0,0,0,.06);display:flex;flex-direction:column;
+  transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);pointer-events:none;}
 #aviz-panel.open{transform:translateX(0);pointer-events:all;}
 @media(max-width:480px){#aviz-panel{width:calc(100vw - 16px);}}
 
