@@ -25,6 +25,7 @@ interface CoverPreviewProps {
   /* Client logo */
   showClientLogo: boolean;
   clientLogoUrl: string | null;
+  clientLogoTintColor?: string | null;
   /* Date */
   showDate: boolean;
   coverDate: string;
@@ -47,6 +48,7 @@ export default function CoverPreview({
   headingFont,
   showClientLogo,
   clientLogoUrl,
+  clientLogoTintColor,
   showDate,
   coverDate,
   showPreparedBy,
@@ -132,9 +134,27 @@ export default function CoverPreview({
 
         {/* Bottom: content block */}
         <div>
-          {/* Client logo */}
+          {/* Client logo — tinted via CSS mask when clientLogoTintColor is set */}
           {showClientLogo && clientLogoUrl && (
-            <img src={clientLogoUrl} alt="" className="h-5 max-w-[100px] object-contain mb-2 opacity-90" />
+            clientLogoTintColor ? (
+              <div
+                className="h-5 w-[100px] mb-2 opacity-90"
+                style={{
+                  backgroundColor: clientLogoTintColor,
+                  WebkitMaskImage: `url("${clientLogoUrl}")`,
+                  maskImage: `url("${clientLogoUrl}")`,
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'left center',
+                  maskPosition: 'left center',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                }}
+                aria-label="Client logo"
+              />
+            ) : (
+              <img src={clientLogoUrl} alt="" className="h-5 max-w-[100px] object-contain mb-2 opacity-90" />
+            )
           )}
 
           <h2

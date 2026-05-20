@@ -98,6 +98,7 @@ export interface CoverEditorEntity {
   cover_button_bg: string | null;
   cover_button_text_color: string | null;
   cover_client_logo_path?: string | null;
+  cover_client_logo_tint_color?: string | null;
   cover_avatar_path?: string | null;
   cover_date?: string | null;
   cover_show_client_logo?: boolean;

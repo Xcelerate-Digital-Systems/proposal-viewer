@@ -208,6 +208,7 @@ export default function CreateFromTemplate({
           cover_show_client_logo:         selectedTemplate.cover_show_client_logo ?? false,
           cover_show_avatar:              selectedTemplate.cover_show_avatar ?? false,
           cover_client_logo_path:         selectedTemplate.cover_client_logo_path || null,
+          cover_client_logo_tint_color:   selectedTemplate.cover_client_logo_tint_color ?? null,
           cover_avatar_path:              selectedTemplate.cover_avatar_path || null,
           bg_image_path:                  selectedTemplate.bg_image_path || null,
           bg_image_overlay_opacity:       selectedTemplate.bg_image_overlay_opacity ?? null,

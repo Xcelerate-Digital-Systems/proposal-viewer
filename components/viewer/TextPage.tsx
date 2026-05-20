@@ -17,6 +17,7 @@ interface TextPageProps {
    proposalTitle?: string;
    orientation?: 'portrait' | 'landscape';
    clientLogoUrl?: string;
+   clientLogoTintColor?: string | null;
    memberBadgeData?: MemberBadgeMap;
  }
 
@@ -402,7 +403,7 @@ function MemberBadge({
 
 /* ── Main component ──────────────────────────────────────────────── */
 
-export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle, orientation, clientLogoUrl, memberBadgeData }: TextPageProps) {
+export default function TextPage({ textPage, branding, clientName, companyName, userName, proposalTitle, orientation, clientLogoUrl, clientLogoTintColor, memberBadgeData }: TextPageProps) {
   const isLandscape = orientation === 'landscape';
   const bgColor = branding.text_page_bg_color || branding.bg_secondary || '#141414';
   const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
@@ -434,14 +435,35 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
         <div className={showClientLogoCol ? 'flex items-center gap-16' : ''}>
          {/* ── Main content column ── */}
           <div className={showClientLogoCol ? 'flex-1 min-w-0' : ''}>
-            {/* Client logo — portrait mode (top of content) */}
+            {/* Client logo — portrait mode (top of content). Tinted to a flat
+                silhouette when clientLogoTintColor is set (CSS mask). */}
             {showClientLogo && !isLandscape && (
               <div className="absolute right-8 sm:right-16 lg:right-24" style={{ top: '50%', transform: 'translateY(-50%)' }}>
-                <img
-                  src={clientLogoUrl}
-                  alt="Client"
-                  style={{ maxHeight: 64, maxWidth: 180, objectFit: 'contain', opacity: 0.9 }}
-                />
+                {clientLogoTintColor ? (
+                  <div
+                    style={{
+                      height: 64,
+                      width: 180,
+                      opacity: 0.9,
+                      backgroundColor: clientLogoTintColor,
+                      WebkitMaskImage: `url("${clientLogoUrl}")`,
+                      maskImage: `url("${clientLogoUrl}")`,
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskRepeat: 'no-repeat',
+                      WebkitMaskPosition: 'right center',
+                      maskPosition: 'right center',
+                      WebkitMaskSize: 'contain',
+                      maskSize: 'contain',
+                    }}
+                    aria-label="Client logo"
+                  />
+                ) : (
+                  <img
+                    src={clientLogoUrl}
+                    alt="Client"
+                    style={{ maxHeight: 64, maxWidth: 180, objectFit: 'contain', opacity: 0.9 }}
+                  />
+                )}
               </div>
             )}
             {/* Title */}
@@ -481,11 +503,31 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
           {/* ── Client logo column (landscape + toggle enabled only) ── */}
           {showClientLogoCol && (
             <div className="shrink-0 flex items-start justify-end" style={{ width: 220 }}>
-              <img
-                src={clientLogoUrl}
-                alt="Client"
-                style={{ maxWidth: '100%', maxHeight: 96, objectFit: 'contain', opacity: 0.9 }}
-              />
+              {clientLogoTintColor ? (
+                <div
+                  style={{
+                    width: '100%',
+                    height: 96,
+                    opacity: 0.9,
+                    backgroundColor: clientLogoTintColor,
+                    WebkitMaskImage: `url("${clientLogoUrl}")`,
+                    maskImage: `url("${clientLogoUrl}")`,
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'right top',
+                    maskPosition: 'right top',
+                    WebkitMaskSize: 'contain',
+                    maskSize: 'contain',
+                  }}
+                  aria-label="Client logo"
+                />
+              ) : (
+                <img
+                  src={clientLogoUrl}
+                  alt="Client"
+                  style={{ maxWidth: '100%', maxHeight: 96, objectFit: 'contain', opacity: 0.9 }}
+                />
+              )}
             </div>
           )}
         </div>

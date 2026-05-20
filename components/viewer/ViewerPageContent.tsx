@@ -84,6 +84,7 @@ export default function ViewerPageContent({
               userName={proposal?.created_by_name as string | undefined}
               proposalTitle={proposal?.title as string | undefined}
               clientLogoUrl={clientLogoUrl}
+              clientLogoTintColor={(proposal as { cover_client_logo_tint_color?: string | null } | undefined)?.cover_client_logo_tint_color ?? null}
               orientation={pageOrientation}
             />
           </div>

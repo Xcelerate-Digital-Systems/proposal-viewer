@@ -11,8 +11,7 @@ import {
   SortableContext, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Check, Loader2, Layers } from 'lucide-react';
-import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
+import { Check, Loader2 } from 'lucide-react';
 
 import type { PageEditorProps } from './pageEditorTypes';
 import { usePageEditor } from './usePageEditor';
@@ -76,7 +75,7 @@ export default function PageEditor({
     handleAddPackages, handleAddSection, handleAddToc,
     handleDeletePage, handleTextPageUpdate,
     pageUrlEntries, pdfEntries,
-    pricingExists, tocExists, summaryParts,
+    pricingExists, tocExists,
   } = actions;
 
   const isDocuments = entityType === 'document';
@@ -116,34 +115,14 @@ export default function PageEditor({
   // pricingExists kept for backward compat but no longer gates the add button
 
   return (
-    <SectionCard
-      title="Page Editor"
-      description={`${summaryParts.join(' + ')} — drag to reorder, leave names blank for default numbering. Changes save automatically.`}
-      icon={<Layers size={14} className="text-gray-400" />}
-      action={
-        <div className="flex items-center gap-2">
-          {onCancel && (
-            <button
-              onClick={onCancel}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 transition-colors"
-            >
-              Cancel
-            </button>
-          )}
-          <button
-            onClick={handleDone}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-teal text-white hover:bg-teal/90 transition-colors"
-          >
-            <Check size={12} />
-            Done
-          </button>
-        </div>
-      }
-    >
-      {/* ── Add-page buttons ──────────────────────────────────────────── */}
+    <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
+      {/* ── Header toolbar — Add Page actions on the left, Cancel/Done on the right.
+          Mirrors the Packages / Text Pages tabs which have no SectionCard chrome
+          (the proposal sub-nav already labels this view). ──────────────────── */}
       {pagesLoaded && (
-        <div className="mb-4">
-          <AddPageButtons
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex-1 min-w-0">
+            <AddPageButtons
             isDocuments={isDocuments}
             canAddPricing={!isDocuments}
             canAddToc={!isDocuments && !tocExists}
@@ -153,6 +132,24 @@ export default function PageEditor({
             onAddSection={handleAddSection}
             onAddToc={handleAddToc}
           />
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {onCancel && (
+              <button
+                onClick={onCancel}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              onClick={handleDone}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-teal text-white hover:bg-teal/90 transition-colors"
+            >
+              <Check size={12} />
+              Done
+            </button>
+          </div>
         </div>
       )}
 
@@ -345,6 +342,6 @@ export default function PageEditor({
           />
         }
       />
-    </SectionCard>
+    </div>
   );
 }

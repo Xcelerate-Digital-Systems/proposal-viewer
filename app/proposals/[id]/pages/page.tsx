@@ -8,7 +8,7 @@ export default function ProposalPagesPage() {
   const { proposal, refetch } = useProposalDetail();
 
   return (
-    <div className="flex-1 px-6 lg:px-10 py-6">
+    <div className="flex-1 min-h-0 overflow-y-auto px-6 lg:px-10 py-6">
       <PageEditor
         proposalId={proposal.id}
         filePath={proposal.file_path}

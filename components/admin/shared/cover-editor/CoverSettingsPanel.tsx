@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import { Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Building2, Type } from 'lucide-react';
 import CoverColorControls, { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
+import ColorPickerField from '@/components/ui/ColorPickerField';
 import { EntityType, EntityConfig } from './CoverEditorTypes';
 
 /* ── Reusable toggle row ─────────────────────────────────────────── */
@@ -88,6 +89,10 @@ interface CoverSettingsPanelProps {
   setShowClientLogo: (v: boolean) => void;
   clientLogoUrl: string | null;
   clientLogoPath: string;
+  /** When set, the logo is rendered as a flat silhouette in this colour (CSS mask).
+   *  Null leaves the logo in its original colours. */
+  clientLogoTintColor: string | null;
+  setClientLogoTintColor: (v: string | null) => void;
   uploadingClientLogo: boolean;
   onClientLogoUpload: (file: File) => void;
   onClientLogoRemove: () => void;
@@ -132,6 +137,8 @@ export default function CoverSettingsPanel({
   setShowClientLogo,
   clientLogoUrl,
   clientLogoPath,
+  clientLogoTintColor,
+  setClientLogoTintColor,
   uploadingClientLogo,
   onClientLogoUpload,
   onClientLogoRemove,
@@ -263,10 +270,30 @@ export default function CoverSettingsPanel({
               onToggle={() => setShowClientLogo(!showClientLogo)}
             />
             {showClientLogo && (
-              <div>
+              <div className="space-y-3">
                 {clientLogoUrl ? (
                   <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                    <img src={clientLogoUrl} alt="" className="h-8 max-w-[120px] object-contain" />
+                    {clientLogoTintColor ? (
+                      // Tinted preview: render the logo as a CSS mask so any colour shows through.
+                      // Loses internal colour detail (turns into a flat silhouette) — by design.
+                      <div
+                        className="h-8 w-[120px] shrink-0"
+                        style={{
+                          backgroundColor: clientLogoTintColor,
+                          WebkitMaskImage: `url("${clientLogoUrl}")`,
+                          maskImage: `url("${clientLogoUrl}")`,
+                          WebkitMaskRepeat: 'no-repeat',
+                          maskRepeat: 'no-repeat',
+                          WebkitMaskPosition: 'left center',
+                          maskPosition: 'left center',
+                          WebkitMaskSize: 'contain',
+                          maskSize: 'contain',
+                        }}
+                        aria-label="Tinted client logo preview"
+                      />
+                    ) : (
+                      <img src={clientLogoUrl} alt="" className="h-8 max-w-[120px] object-contain" />
+                    )}
                     <span className="text-xs text-gray-500 flex-1 truncate">{clientLogoPath.split('/').pop()}</span>
                     <button onClick={onClientLogoRemove} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
                       <Trash2 size={14} />
@@ -292,6 +319,16 @@ export default function CoverSettingsPanel({
                     if (f) onClientLogoUpload(f);
                   }}
                 />
+                {clientLogoUrl && (
+                  <ColorPickerField
+                    label="Recolor logo"
+                    hint="Flattens the logo to a single colour. Leave unset to keep the original."
+                    value={clientLogoTintColor}
+                    fallback="#ffffff"
+                    onChange={(v) => setClientLogoTintColor(v)}
+                    onReset={() => setClientLogoTintColor(null)}
+                  />
+                )}
               </div>
             )}
           </div>

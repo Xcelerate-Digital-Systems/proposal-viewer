@@ -126,6 +126,7 @@ export type Proposal = {
   prepared_by: string | null;
   prepared_by_member_id: string | null;
   cover_client_logo_path: string | null;
+  cover_client_logo_tint_color: string | null;
   cover_avatar_path: string | null;
   cover_date: string | null;
   cover_show_client_logo: boolean;
@@ -263,6 +264,7 @@ export type ProposalTemplate = {
   prepared_by: string | null;
   prepared_by_member_id: string | null;
   cover_client_logo_path: string | null;
+  cover_client_logo_tint_color: string | null;
   cover_avatar_path: string | null;
   cover_date: string | null;
   cover_show_client_logo: boolean;

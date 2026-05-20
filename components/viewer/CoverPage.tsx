@@ -295,11 +295,29 @@ export default function CoverPage({
           </div>
           {/* Client logo — mobile: top right. Hidden on md+ (shown above title instead) */}
           {showClientLogo && clientLogoUrl && (
-            <img
-              src={clientLogoUrl}
-              alt="Client"
-              className="md:hidden h-7 max-w-[120px] object-contain opacity-90"
-            />
+            proposal.cover_client_logo_tint_color ? (
+              <div
+                className="md:hidden h-7 w-[120px] opacity-90"
+                style={{
+                  backgroundColor: proposal.cover_client_logo_tint_color,
+                  WebkitMaskImage: `url("${clientLogoUrl}")`,
+                  maskImage: `url("${clientLogoUrl}")`,
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'right center',
+                  maskPosition: 'right center',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                }}
+                aria-label="Client logo"
+              />
+            ) : (
+              <img
+                src={clientLogoUrl}
+                alt="Client"
+                className="md:hidden h-7 max-w-[120px] object-contain opacity-90"
+              />
+            )
           )}
         </div>
 
@@ -308,11 +326,29 @@ export default function CoverPage({
 
         {/* Client logo (above title) — desktop only */}
         {showClientLogo && clientLogoUrl && (
-          <img
-            src={clientLogoUrl}
-            alt="Client"
-            className="hidden md:block h-9 md:h-10 max-w-[180px] object-contain object-left mb-5 opacity-90"
-          />
+          proposal.cover_client_logo_tint_color ? (
+            <div
+              className="hidden md:block h-9 md:h-10 w-[180px] mb-5 opacity-90"
+              style={{
+                backgroundColor: proposal.cover_client_logo_tint_color,
+                WebkitMaskImage: `url("${clientLogoUrl}")`,
+                maskImage: `url("${clientLogoUrl}")`,
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'left center',
+                maskPosition: 'left center',
+                WebkitMaskSize: 'contain',
+                maskSize: 'contain',
+              }}
+              aria-label="Client logo"
+            />
+          ) : (
+            <img
+              src={clientLogoUrl}
+              alt="Client"
+              className="hidden md:block h-9 md:h-10 max-w-[180px] object-contain object-left mb-5 opacity-90"
+            />
+          )
         )}
 
         {/* Title + meta + CTA */}

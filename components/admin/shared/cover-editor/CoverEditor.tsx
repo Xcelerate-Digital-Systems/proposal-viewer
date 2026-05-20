@@ -77,6 +77,10 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   const [clientLogoPath, setClientLogoPath] = useState(entity.cover_client_logo_path || '');
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
   const [uploadingClientLogo, setUploadingClientLogo] = useState(false);
+  // null = render the logo as-is; non-null = recolor it to a flat silhouette in the chosen colour
+  const [clientLogoTintColor, setClientLogoTintColor] = useState<string | null>(
+    entity.cover_client_logo_tint_color ?? null,
+  );
 
   /* ── Prepared By ───────────────────────────────────────────── */
   const [preparedByMemberId, setPreparedByMemberId] = useState<string | null>(
@@ -261,6 +265,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     if (cfg.fields.clientLogo) {
       payload.cover_client_logo_path = clientLogoPath || null;
       payload.cover_show_client_logo = showClientLogo;
+      payload.cover_client_logo_tint_color = clientLogoTintColor;
     }
 
     await supabase.from(cfg.table).update(payload).eq('id', entity.id);
@@ -270,7 +275,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   }, [
     cfg, entity.id, coverEnabled, imagePath, subtitle, buttonText,
     acceptButtonText, colors, coverDate, showDate, preparedByMemberId,
-    showPreparedBy, showAvatar, clientLogoPath, showClientLogo, onSave,
+    showPreparedBy, showAvatar, clientLogoPath, showClientLogo, clientLogoTintColor, onSave,
   ]);
 
   const scheduleSave = useCallback((delay = 800) => {
@@ -292,7 +297,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   }, [
     coverEnabled, subtitle, buttonText, acceptButtonText, imagePath,
     colors, coverDate, showDate, preparedByMemberId, showPreparedBy,
-    showAvatar, clientLogoPath, showClientLogo,
+    showAvatar, clientLogoPath, showClientLogo, clientLogoTintColor,
   ]);
 
   /* ══════════════════════════════════════════════════════════════ */
@@ -383,6 +388,8 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
         setShowClientLogo={setShowClientLogo}
         clientLogoUrl={clientLogoUrl}
         clientLogoPath={clientLogoPath}
+        clientLogoTintColor={clientLogoTintColor}
+        setClientLogoTintColor={setClientLogoTintColor}
         uploadingClientLogo={uploadingClientLogo}
         onClientLogoUpload={handleClientLogoUpload}
         onClientLogoRemove={removeClientLogo}
@@ -400,7 +407,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900">Cover Page Settings</h4>
@@ -440,6 +447,8 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
             setShowClientLogo={setShowClientLogo}
             clientLogoUrl={clientLogoUrl}
             clientLogoPath={clientLogoPath}
+            clientLogoTintColor={clientLogoTintColor}
+            setClientLogoTintColor={setClientLogoTintColor}
             uploadingClientLogo={uploadingClientLogo}
             onClientLogoUpload={handleClientLogoUpload}
             onClientLogoRemove={removeClientLogo}
@@ -481,6 +490,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
                   headingFont={headingFont}
                   showClientLogo={showClientLogo}
                   clientLogoUrl={clientLogoUrl}
+                  clientLogoTintColor={clientLogoTintColor}
                   showDate={showDate}
                   coverDate={coverDate}
                   showPreparedBy={showPreparedBy}
