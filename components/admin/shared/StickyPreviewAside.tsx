@@ -22,8 +22,13 @@ export default function StickyPreviewAside({
   children,
   sticky = true,
 }: StickyPreviewAsideProps) {
+  // `self-stretch` is load-bearing: every caller wraps this in a
+  // `flex ... items-start` row, which would otherwise size the aside to its
+  // content (the preview itself) and leave no scroll travel for the sticky
+  // child. self-stretch overrides items-start so the aside matches the row's
+  // tallest sibling — giving the sticky div somewhere to actually stick.
   return (
-    <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0">
+    <aside className="hidden lg:block w-[520px] xl:w-[620px] 2xl:w-[700px] shrink-0 self-stretch">
       {sticky ? <div className="sticky top-6">{children}</div> : children}
     </aside>
   );

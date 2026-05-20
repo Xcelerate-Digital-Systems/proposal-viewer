@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle2, MessageSquare, XCircle, PenLine } from 'lucide-react';
+import { CheckCircle2, XCircle, PenLine } from 'lucide-react';
 // Action buttons (Approve / Decline / Request Changes) used to live in the
 // sidebar bottom panel. They moved to a dedicated Decision page at the end of
 // every proposal — only the terminal-state badges remain here so a client who
@@ -20,13 +20,10 @@ interface SidebarProps {
   branding:          CompanyBranding;
   mobileOpen?:       boolean;
   onMobileClose?:    () => void;
-  // Optional proposal-specific props — terminal-state badges + comments toggle.
+  // Optional proposal-specific props — terminal-state badges only.
   accepted?:              boolean;
   declined?:              boolean;
   revisionRequested?:     boolean;
-  showComments?:          boolean;
-  onToggleComments?:      () => void;
-  commentCount?:          number;
 }
 
 interface NavItem {
@@ -70,9 +67,6 @@ export default function Sidebar({
   accepted,
   declined,
   revisionRequested,
-  showComments,
-  onToggleComments,
-  commentCount,
 }: SidebarProps) {
   const navTree = buildNavTree(pageEntries);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
@@ -83,7 +77,9 @@ export default function Sidebar({
   const sidebarText = branding.sidebar_text_color  || '#ffffff';
 
   // Show bottom actions only when the accept handler is wired up (proposals only)
-  const showActions = onToggleComments !== undefined;
+  // Only render the bottom panel once a terminal state badge needs to show —
+  // an empty border-t div with no children looks broken otherwise.
+  const showActions = !!(accepted || declined || revisionRequested);
 
   // Auto-expand the group containing the current page
   useEffect(() => {
@@ -231,28 +227,6 @@ export default function Sidebar({
               Changes Requested
             </div>
           )}
-
-          {/* Comments — always visible */}
-          <button
-            onClick={onToggleComments}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
-            style={{
-              color: sidebarText,
-              border: `1px solid ${sidebarText}60`,
-              backgroundColor: showComments ? `${sidebarText}15` : 'transparent',
-            }}
-          >
-            <MessageSquare size={15} />
-            Comment
-            {(commentCount ?? 0) > 0 && (
-              <span
-                className="text-xs w-5 h-5 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: `${sidebarText}25`, color: sidebarText }}
-              >
-                {commentCount}
-              </span>
-            )}
-          </button>
         </div>
       )}
     </>

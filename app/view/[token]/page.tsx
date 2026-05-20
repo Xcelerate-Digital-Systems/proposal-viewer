@@ -224,9 +224,6 @@ export default function ProposalViewerPage({ params }: { params: { token: string
         accepted={v.accepted}
         declined={v.declined}
         revisionRequested={v.revisionRequested}
-        showComments={v.showComments}
-        onToggleComments={() => v.setShowComments((prev) => !prev)}
-        commentCount={v.unresolvedCommentCount}
       />
 
       {/* Main content area */}
