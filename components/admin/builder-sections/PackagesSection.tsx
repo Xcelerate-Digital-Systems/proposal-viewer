@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { Loader2, Package, Plus, Trash2, Eye, FileText, LayoutGrid } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
+import Chip from '@/components/ui/Chip';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import TierEditor from '@/components/admin/shared/TierEditor';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
@@ -113,7 +114,11 @@ export default function PackagesSection(props: PackagesSectionProps) {
             title="Packages Page"
             description="Toggle visibility in the proposal viewer"
             icon={<Package size={14} className="text-gray-400" />}
-            action={<Toggle enabled={editor.form.enabled} onChange={() => editor.toggleEnabled()} />}
+            action={
+              <Chip enabled={editor.form.enabled} onClick={() => editor.toggleEnabled()}>
+                {editor.form.enabled ? 'Visible' : 'Hidden'}
+              </Chip>
+            }
           >
             {!editor.form.enabled && (
               <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-8 text-center">

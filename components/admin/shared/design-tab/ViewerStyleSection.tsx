@@ -10,7 +10,8 @@
 // DesignTab.tsx still owns all state — this component is pure presentation.
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { authFetch } from '@/lib/auth-fetch';
 import {
   Loader2, Upload, Trash2,
   Image as ImageIcon, RotateCcw, Type, Palette, Hash, LayoutPanelTop,
@@ -20,6 +21,7 @@ import Link from 'next/link';
 import { fontFamily } from '@/lib/google-fonts';
 import FontSelect from '@/components/admin/shared/FontSelect';
 import Slider from '@/components/ui/Slider';
+import Select from '@/components/ui/Select';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
@@ -30,6 +32,29 @@ import {
   EntityType, PageOrientation, TextPageDefaults,
   orientationOptions, SaveStatus,
 } from './DesignTabTypes';
+
+/* ------------------------------------------------------------------ */
+/*  TipTap → plain text                                                */
+/* ------------------------------------------------------------------ */
+
+interface TipTapNode {
+  type?: string;
+  text?: string;
+  content?: TipTapNode[];
+}
+
+/** Flatten a TipTap document to plain text. Walks `content` recursively and
+ *  concatenates `text` nodes, inserting a space between block siblings. */
+function tipTapToPlainText(node: unknown): string {
+  const n = node as TipTapNode | null;
+  if (!n) return '';
+  if (typeof n.text === 'string') return n.text;
+  if (!Array.isArray(n.content)) return '';
+  return n.content
+    .map((child) => tipTapToPlainText(child))
+    .filter(Boolean)
+    .join(' ');
+}
 
 /* ------------------------------------------------------------------ */
 /*  Group heading                                                      */
@@ -112,6 +137,9 @@ interface ViewerStyleSectionProps {
   onTpResetToCompany: () => void;
   /* ── Routing context for cross-tab links ───────────────── */
   entityId: string;
+  /** Entity title — surfaced in the Globals live preview so the user sees
+   *  their actual title in the chosen font instead of "Sample page title". */
+  entityTitle?: string;
   /* ── Cover design panel — rendered when caller passes the
         cover entity. Documents/quotes don't pass it. ──── */
   coverEntity?: CoverEditorEntity;
@@ -170,10 +198,34 @@ export default function ViewerStyleSection({
   companyDefaults,
   onTpResetToCompany,
   entityId,
+  entityTitle,
   coverEntity,
   onCoverSave,
 }: ViewerStyleSectionProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Pull a plain-text snippet from the entity's first text page so the
+  // Globals live preview shows the user's actual body copy instead of
+  // canned "Body text on a proposal page" filler. Falls back to a sample.
+  const [bodySnippet, setBodySnippet] = useState<string | null>(null);
+  useEffect(() => {
+    if (!entityId) return;
+    const apiBase = type === 'template' ? '/api/templates/pages' : '/api/proposals/pages';
+    const key = type === 'template' ? 'template_id' : 'proposal_id';
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await authFetch(`${apiBase}?${key}=${entityId}`);
+        if (!res.ok || cancelled) return;
+        const pages = await res.json() as Array<{ type: string; position: number; payload?: { content?: unknown } }>;
+        const first = pages.filter((p) => p.type === 'text').sort((a, b) => a.position - b.position)[0];
+        if (!first?.payload?.content) return;
+        const text = tipTapToPlainText(first.payload.content).trim();
+        if (text && !cancelled) setBodySnippet(text.slice(0, 240));
+      } catch { /* keep fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [entityId, type]);
   const basePath = type === 'template' ? `/templates/${entityId}` : `/proposals/${entityId}`;
 
   /* ── Reusable Background Image block (used inside Text Page card) ── */
@@ -328,23 +380,20 @@ export default function ViewerStyleSection({
                     onTransformChange={setTitleFontTransform}
                     hideInlinePreview
                   />
-                  <div>
-                    <label className="block text-[11px] text-gray-500 mb-1">Title size</label>
-                    <select
-                      value={titleFontSize}
-                      onChange={(e) => setTitleFontSize(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal/30"
-                    >
-                      <option value="">Default</option>
-                      <option value="20">20px — Small</option>
-                      <option value="24">24px — Medium</option>
-                      <option value="28">28px</option>
-                      <option value="32">32px — Large</option>
-                      <option value="36">36px</option>
-                      <option value="40">40px — Extra Large</option>
-                      <option value="48">48px</option>
-                    </select>
-                  </div>
+                  <Select
+                    label="Title size"
+                    value={titleFontSize}
+                    onChange={(e) => setTitleFontSize(e.target.value)}
+                  >
+                    <option value="">Default</option>
+                    <option value="20">20px — Small</option>
+                    <option value="24">24px — Medium</option>
+                    <option value="28">28px</option>
+                    <option value="32">32px — Large</option>
+                    <option value="36">36px</option>
+                    <option value="40">40px — Extra Large</option>
+                    <option value="48">48px</option>
+                  </Select>
                   <FontSelect
                     label="Heading font"
                     description={
@@ -403,7 +452,7 @@ export default function ViewerStyleSection({
                   textTransform: (titleFontTransform || fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
                 }}
               >
-                Sample page title
+                {entityTitle || 'Sample page title'}
               </p>
               <p
                 className="leading-snug"
@@ -427,7 +476,7 @@ export default function ViewerStyleSection({
                   textTransform: (fontBodyTransform || 'none') as React.CSSProperties['textTransform'],
                 }}
               >
-                Body text on a proposal page. This is what your client will read — adjust the body font, weight, and colour to match your brand voice.
+                {bodySnippet || 'Body text on a proposal page. This is what your client will read — adjust the body font, weight, and colour to match your brand voice.'}
               </p>
             </div>
           </div>

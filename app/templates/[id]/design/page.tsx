@@ -12,6 +12,7 @@ export default function TemplateDesignPage() {
       <DesignTab
         type="template"
         entityId={template.id}
+        entityTitle={template.name}
         companyId={companyId}
         initialBgImagePath={template.bg_image_path}
         initialBgImageOverlayOpacity={template.bg_image_overlay_opacity}

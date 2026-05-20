@@ -22,6 +22,8 @@ import ViewerStyleSection from './ViewerStyleSection';
 interface DesignTabProps {
   type: EntityType;
   entityId: string;
+  /** Entity's title — passed straight to the Globals live preview. */
+  entityTitle?: string;
   companyId: string;
   initialBgImagePath: string | null;
   initialBgImageOverlayOpacity: number | null;
@@ -61,6 +63,7 @@ interface DesignTabProps {
 export default function DesignTab({
   type,
   entityId,
+  entityTitle,
   companyId,
   initialBgImagePath,
   initialBgImageOverlayOpacity,
@@ -432,6 +435,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       pageNumTextColor={pageNumTextColor}
       setPageNumTextColor={setPageNumTextColor}
       entityId={entityId}
+      entityTitle={entityTitle}
       coverEntity={coverEntity}
       onCoverSave={onSave}
     />

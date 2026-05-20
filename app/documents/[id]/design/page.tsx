@@ -13,6 +13,7 @@ export default function DocumentDesignPage() {
       <DesignTab
         type="document"
         entityId={document.id}
+        entityTitle={document.title}
         companyId={companyId}
         initialBgImagePath={document.bg_image_path}
         initialBgImageOverlayOpacity={document.bg_image_overlay_opacity}

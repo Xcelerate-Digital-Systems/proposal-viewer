@@ -9,7 +9,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image as ImageIcon, Loader2, Trash2, Upload, Paintbrush, Check, X } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Trash2, Upload, Paintbrush } from 'lucide-react';
+import Chip from '@/components/ui/Chip';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
@@ -26,35 +27,6 @@ interface Props {
   type: EntityType;
   entity: CoverEditorEntity;
   onSave?: () => void;
-}
-
-/* ─── Chip — same shape as the Quote "Columns" chips ─────────────── */
-function Chip({
-  enabled,
-  onClick,
-  children,
-  disabled,
-}: {
-  enabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors disabled:opacity-50 ${
-        enabled
-          ? 'bg-teal/10 border-teal/30 text-teal hover:bg-teal/15'
-          : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300'
-      }`}
-    >
-      {enabled ? <Check size={11} className="shrink-0" /> : <X size={11} className="shrink-0" />}
-      <span className="truncate">{children}</span>
-    </button>
-  );
 }
 
 export default function CoverDesignPanel({ type, entity, onSave }: Props) {

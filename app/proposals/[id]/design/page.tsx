@@ -12,6 +12,7 @@ export default function ProposalDesignPage() {
       <DesignTab
         type="proposal"
         entityId={proposal.id}
+        entityTitle={proposal.title}
         companyId={companyId}
         initialBgImagePath={proposal.bg_image_path}
         initialBgImageOverlayOpacity={proposal.bg_image_overlay_opacity}

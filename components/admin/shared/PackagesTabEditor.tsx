@@ -2,8 +2,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Loader2, Package, Plus, Trash2, Eye } from 'lucide-react';
-import Toggle from '@/components/ui/Toggle';
+import { Check, Loader2, Package, Plus } from 'lucide-react';
+import BuilderPageStrip from '@/components/admin/shared/BuilderPageStrip';
+import TextInput from '@/components/ui/TextInput';
+import Textarea from '@/components/ui/Textarea';
+import Chip from '@/components/ui/Chip';
 import { PackageTier, PackageStyling } from '@/lib/supabase';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
@@ -38,95 +41,52 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
   return (
     <div className="flex flex-col gap-5">
       {/* Page navigation tabs */}
-      <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto">
-        {editor.allPages.map((page) => (
-          <button
-            key={page.id}
-            onClick={() => editor.selectPage(page)}
-            className={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
-              editor.selectedId === page.id
-                ? 'text-teal border-b-2 border-teal -mb-px bg-teal/5'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-b-2 border-transparent -mb-px'
-            }`}
-          >
-            <Package size={13} className="shrink-0 opacity-70" />
-            <span className="truncate max-w-[160px]">{page.title || 'Untitled'}</span>
-            {!page.enabled && <span className="text-[10px] opacity-40 ml-0.5">(off)</span>}
-            <span
-              role="button"
-              onClick={(e) => { e.stopPropagation(); editor.deletePage(page.id); }}
-              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
-            >
-              <Trash2 size={11} />
-            </span>
-          </button>
-        ))}
-        {editor.allPages.length === 0 && (
-          <span className="px-4 py-2.5 text-xs text-gray-400">No pages yet — add one to get started</span>
-        )}
-        <button
-          onClick={editor.addPage}
-          disabled={editor.adding}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-teal hover:bg-teal/5 transition-colors disabled:opacity-50 shrink-0 border-b-2 border-transparent -mb-px"
-        >
-          {editor.adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-          Add Page
-        </button>
-        <div className="ml-auto flex items-center gap-3 pr-1 pb-1.5">
-          {editor.selectedId && (
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                showPreview
-                  ? 'bg-teal/10 text-teal'
-                  : 'bg-gray-100 text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <Eye size={13} /> Preview
-            </button>
-          )}
-        </div>
-      </div>
+      <BuilderPageStrip
+        pages={editor.allPages}
+        selectedId={editor.selectedId}
+        onSelect={(p) => {
+          const full = editor.allPages.find((x) => x.id === p.id);
+          if (full) editor.selectPage(full);
+        }}
+        onDelete={editor.deletePage}
+        onAdd={editor.addPage}
+        adding={editor.adding}
+        icon={Package}
+        previewVisible={showPreview}
+        onTogglePreview={() => setShowPreview(!showPreview)}
+      />
 
       {/* Body: editor + optional sticky preview (matches Cover/Design/Quote shell) */}
       <div className="flex gap-6 items-start">
         <div className="flex-1 min-w-0">
           {editor.selectedId && editor.selectedPage ? (
             <>
-              {/* Enabled toggle */}
+              {/* Show-on-viewer chip (replaces the old slidey Toggle) */}
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                 <div>
                   <p className="text-sm font-medium text-gray-700">Show packages page</p>
                   <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
                 </div>
-                <Toggle enabled={editor.form.enabled} onChange={() => editor.toggleEnabled()} />
+                <Chip enabled={editor.form.enabled} onClick={() => editor.toggleEnabled()}>
+                  {editor.form.enabled ? 'Visible' : 'Hidden'}
+                </Chip>
               </div>
 
               {editor.form.enabled ? (
                 <div className="space-y-5">
-                  {/* Page title */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Page Title</label>
-                    <input
-                      type="text"
-                      value={editor.form.title}
-                      onChange={(e) => editor.updateForm({ title: e.target.value })}
-                      placeholder="Your Investment"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-                    />
-                  </div>
-
-                  {/* Intro text */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Intro Text</label>
-                    <textarea
-                      value={editor.form.intro_text ?? ''}
-                      onChange={(e) => editor.updateForm({ intro_text: e.target.value || null })}
-                      placeholder="Optional introductory text above the packages…"
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
-                    />
-                  </div>
+                  <TextInput
+                    label="Page Title"
+                    value={editor.form.title}
+                    onChange={(e) => editor.updateForm({ title: e.target.value })}
+                    placeholder="Your Investment"
+                  />
+                  <Textarea
+                    label="Intro Text"
+                    value={editor.form.intro_text ?? ''}
+                    onChange={(e) => editor.updateForm({ intro_text: e.target.value || null })}
+                    placeholder="Optional introductory text above the packages…"
+                    rows={2}
+                  />
 
                   {/* Tier editor */}
                   <div>

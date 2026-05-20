@@ -8,6 +8,8 @@ import { useToast } from '@/components/ui/Toast';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import TocPreview from '@/components/admin/shared/TocPreview';
+import TextInput from '@/components/ui/TextInput';
+import Chip from '@/components/ui/Chip';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
@@ -331,16 +333,9 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
             Auto-generated contents page for this {entityType === 'template' ? 'template' : entityType}
           </span>
         </div>
-        <button
-          onClick={() => updateSettings({ enabled: !settings.enabled })}
-          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-            settings.enabled ? 'bg-teal' : 'bg-gray-200'
-          }`}
-        >
-          <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-            settings.enabled ? 'translate-x-4' : 'translate-x-0'
-          }`} />
-        </button>
+        <Chip enabled={settings.enabled} onClick={() => updateSettings({ enabled: !settings.enabled })}>
+          {settings.enabled ? 'Visible' : 'Hidden'}
+        </Chip>
       </div>
 
       {/* Two-column body */}
@@ -348,20 +343,13 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         <div className="flex-1 min-w-0">
           {settings.enabled ? (
             <div className="space-y-5">
-              {/* Page title */}
-              <div>
-                <label htmlFor="toc-title" className="block text-sm font-medium text-gray-700 mb-1">
-                  Page Title
-                </label>
-                <input
-                  id="toc-title"
-                  type="text"
-                  value={settings.title}
-                  onChange={(e) => updateSettings({ title: e.target.value })}
-                  placeholder="Table of Contents"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-                />
-              </div>
+              <TextInput
+                id="toc-title"
+                label="Page Title"
+                value={settings.title}
+                onChange={(e) => updateSettings({ title: e.target.value })}
+                placeholder="Table of Contents"
+              />
 
               {/* Pages to include */}
               <div>

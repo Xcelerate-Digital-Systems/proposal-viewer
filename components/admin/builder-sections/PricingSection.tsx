@@ -7,11 +7,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import {
-  DollarSign, Loader2, Plus, Trash2, Eye, MapPin,
+  DollarSign, Loader2, MapPin,
   Settings as SettingsIcon, ListChecks, PlusSquare, Calculator, Calendar,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Toggle from '@/components/ui/Toggle';
+import Chip from '@/components/ui/Chip';
 import PricingPreview from '@/components/admin/shared/PricingPreview';
 import PricingSettings from '@/components/admin/pricing/PricingSettings';
 import PricingLineItems from '@/components/admin/pricing/PricingLineItems';
@@ -19,6 +20,7 @@ import PricingOptionalItems from '@/components/admin/pricing/PricingOptionalItem
 import PricingTotals from '@/components/admin/pricing/PricingTotals';
 import PricingPaymentSchedule from '@/components/admin/pricing/PricingPaymentSchedule';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
+import BuilderPageStrip from '@/components/admin/shared/BuilderPageStrip';
 import { usePricingEditor, type UsePricingEditorOptions } from '@/components/admin/shared/usePricingEditor';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import type { PricingLineItem } from '@/lib/types/packages';
@@ -106,53 +108,20 @@ export default function PricingSection({
   /* ── Page strip (multi-page support) ───────────────────────── */
 
   const pageStrip = (
-    <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto">
-      {editor.allPages.map((page) => (
-        <button
-          key={page.id}
-          onClick={() => editor.selectPage(page)}
-          className={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
-            editor.selectedId === page.id
-              ? 'text-teal border-b-2 border-teal -mb-px'
-              : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent -mb-px'
-          }`}
-        >
-          <DollarSign size={13} className="shrink-0 opacity-70" />
-          <span className="truncate max-w-[160px]">{page.title || 'Untitled'}</span>
-          {!page.enabled && <span className="text-[10px] opacity-40 ml-0.5">(off)</span>}
-          <span
-            role="button"
-            onClick={(e) => { e.stopPropagation(); editor.deletePage(page.id); }}
-            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
-          >
-            <Trash2 size={11} />
-          </span>
-        </button>
-      ))}
-      {editor.allPages.length === 0 && (
-        <span className="px-4 py-2.5 text-xs text-gray-400">No pages yet — add one to get started</span>
-      )}
-      <button
-        onClick={editor.addPage}
-        disabled={editor.adding}
-        className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-teal hover:bg-teal/5 transition-colors disabled:opacity-50 shrink-0 border-b-2 border-transparent -mb-px"
-      >
-        {editor.adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-        Add Page
-      </button>
-      {editor.selectedId && !hidePreview && (
-        <div className="ml-auto flex items-center pr-1 pb-1.5">
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showPreview ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <Eye size={13} /> Preview
-          </button>
-        </div>
-      )}
-    </div>
+    <BuilderPageStrip
+      pages={editor.allPages}
+      selectedId={editor.selectedId}
+      onSelect={(p) => {
+        const full = editor.allPages.find((x) => x.id === p.id);
+        if (full) editor.selectPage(full);
+      }}
+      onDelete={editor.deletePage}
+      onAdd={editor.addPage}
+      adding={editor.adding}
+      icon={DollarSign}
+      previewVisible={showPreview}
+      onTogglePreview={hidePreview ? undefined : () => setShowPreview(!showPreview)}
+    />
   );
 
   /* ── Empty / disabled states ──────────────────────────────── */
@@ -186,7 +155,9 @@ export default function PricingSection({
             description="Toggle visibility in the proposal viewer"
             icon={<DollarSign size={14} className="text-gray-400" />}
             action={
-              <Toggle enabled={editor.form.enabled} onChange={() => editor.toggleEnabled()} />
+              <Chip enabled={editor.form.enabled} onClick={() => editor.toggleEnabled()}>
+                {editor.form.enabled ? 'Visible' : 'Hidden'}
+              </Chip>
             }
           >
             {!editor.form.enabled && (

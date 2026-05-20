@@ -5,10 +5,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Trash2, FileText, Eye } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
+import BuilderPageStrip from '@/components/admin/shared/BuilderPageStrip';
 import { useTextPagesEditor } from '@/components/admin/shared/useTextPagesEditor';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
-import Toggle from '@/components/ui/Toggle';
+import Chip from '@/components/ui/Chip';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
 import TextPagePreview from '@/components/admin/shared/TextPagePreview';
 import TextPageSettingsCard from '@/components/admin/shared/TextPageSettingsCard';
@@ -94,55 +95,17 @@ export default function TextPagesSection({
   /* ── Page strip ───────────────────────────────────────────────── */
 
   const pageStrip = (
-    <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto">
-      {pages.map((page) => (
-        <button
-          key={page.id}
-          onClick={() => setSelectedId(page.id)}
-          className={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
-            selectedId === page.id
-              ? 'text-teal border-b-2 border-teal -mb-px bg-teal/5'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-b-2 border-transparent -mb-px'
-          }`}
-        >
-          <FileText size={13} className="shrink-0 opacity-70" />
-          <span className="truncate max-w-[160px]">{page.title || 'Untitled'}</span>
-          {!page.enabled && <span className="text-[10px] opacity-40 ml-0.5">(off)</span>}
-          <span
-            role="button"
-            onClick={(e) => { e.stopPropagation(); deletePage(page.id); }}
-            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
-          >
-            <Trash2 size={11} />
-          </span>
-        </button>
-      ))}
-      {pages.length === 0 && (
-        <span className="px-4 py-2.5 text-xs text-gray-400">No pages yet — add one to get started</span>
-      )}
-      <button
-        onClick={addPage}
-        disabled={adding}
-        className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-teal hover:bg-teal/5 transition-colors disabled:opacity-50 shrink-0 border-b-2 border-transparent -mb-px"
-      >
-        {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-        Add Page
-      </button>
-      <div className="ml-auto flex items-center gap-3 pr-1 pb-1.5">
-        {selectedId && (
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showPreview
-                ? 'bg-teal/10 text-teal'
-                : 'bg-gray-100 text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <Eye size={13} /> Preview
-          </button>
-        )}
-      </div>
-    </div>
+    <BuilderPageStrip
+      pages={pages}
+      selectedId={selectedId}
+      onSelect={(p) => setSelectedId(p.id)}
+      onDelete={deletePage}
+      onAdd={addPage}
+      adding={adding}
+      icon={FileText}
+      previewVisible={showPreview}
+      onTogglePreview={() => setShowPreview(!showPreview)}
+    />
   );
 
   /* ── Empty state ──────────────────────────────────────────────── */
@@ -168,13 +131,15 @@ export default function TextPagesSection({
 
       <div className="flex gap-6 items-start">
         <div className="flex-1 min-w-0">
-          {/* Enabled toggle */}
+          {/* Show-on-viewer chip (replaces the old slidey Toggle) */}
           <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
             <div>
               <p className="text-sm font-medium text-gray-700">Show this page</p>
               <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
             </div>
-            <Toggle enabled={form.enabled} onChange={() => updateForm({ enabled: !form.enabled })} />
+            <Chip enabled={form.enabled} onClick={() => updateForm({ enabled: !form.enabled })}>
+              {form.enabled ? 'Visible' : 'Hidden'}
+            </Chip>
           </div>
 
           {form.enabled ? (

@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Check, DollarSign, Loader2, Plus, Trash2, Eye, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Toggle from '@/components/ui/Toggle';
+import Chip from '@/components/ui/Chip';
 import PricingPreview from '@/components/admin/shared/PricingPreview';
 import PricingSettings from '@/components/admin/pricing/PricingSettings';
 import PricingLineItems from '@/components/admin/pricing/PricingLineItems';
@@ -164,13 +165,15 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
         left={
           editor.selectedId && editor.selectedPage ? (
             <>
-              {/* Enabled toggle */}
+              {/* Show-on-viewer chip (replaces the old slidey Toggle) */}
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                 <div>
                   <p className="text-sm font-medium text-gray-700">Show quote page</p>
                   <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
                 </div>
-                <Toggle enabled={editor.form.enabled} onChange={() => editor.toggleEnabled()} />
+                <Chip enabled={editor.form.enabled} onClick={() => editor.toggleEnabled()}>
+                  {editor.form.enabled ? 'Visible' : 'Hidden'}
+                </Chip>
               </div>
 
               {editor.form.enabled ? (
