@@ -389,6 +389,30 @@ export function usePackagesEditor({
     [form.packages, updateForm],
   );
 
+  const duplicateTier = useCallback(
+    (tierId: string) => {
+      const idx = form.packages.findIndex((t) => t.id === tierId);
+      if (idx < 0) return;
+      const source = form.packages[idx];
+      const copy: PackageTier = {
+        ...source,
+        id: generateId(),
+        name: source.name ? `${source.name} (copy)` : 'Untitled (copy)',
+        is_recommended: false, // only one tier should carry the badge after duplicating
+        conditions: [...source.conditions],
+        features: source.features.map((f) => ({
+          ...f,
+          children: [...(f.children ?? [])],
+        })),
+      };
+      const next = [...form.packages];
+      next.splice(idx + 1, 0, copy);
+      updateForm({ packages: next.map((t, i) => ({ ...t, sort_order: i })) });
+      setExpandedTiers((prev) => new Set(Array.from(prev).concat(copy.id)));
+    },
+    [form.packages, updateForm],
+  );
+
   const moveTier = useCallback(
     (tierId: string, dir: 'up' | 'down') => {
       const idx = form.packages.findIndex((t) => t.id === tierId);
@@ -449,6 +473,7 @@ export function usePackagesEditor({
     addTier,
     updateTier,
     deleteTier,
+    duplicateTier,
     moveTier,
     toggleTierExpanded,
 

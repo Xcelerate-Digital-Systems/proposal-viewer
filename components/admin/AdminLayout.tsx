@@ -1,6 +1,7 @@
 // components/admin/AdminLayout.tsx
 'use client';
 
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import AuthGuard from '@/components/auth/AuthGuard';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -8,6 +9,32 @@ import { useAuth } from '@/hooks/useAuth';
 import { SwipeFileProvider } from '@/components/admin/ads/swipe/SwipeFileContext';
 import { FeedbackBoardProvider } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import { FunnelBoardProvider } from '@/components/admin/funnels/board/FunnelBoardContext';
+import { supabase } from '@/lib/supabase';
+import { setBrandingColors } from '@/components/ui/ColorPickerField';
+
+/* ------------------------------------------------------------------ */
+/*  Brand palette loader — pushes companies.brand_colors into the      */
+/*  global ColorPickerField swatch source so every admin page (quotes, */
+/*  proposals, documents, templates, design tabs) shows brand swatches */
+/*  without each editor needing its own loader.                        */
+/* ------------------------------------------------------------------ */
+function BrandPaletteLoader({ companyId }: { companyId: string }) {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('companies')
+        .select('brand_colors')
+        .eq('id', companyId)
+        .single();
+      if (cancelled) return;
+      const palette = Array.isArray(data?.brand_colors) ? (data!.brand_colors as string[]) : [];
+      setBrandingColors(palette);
+    })();
+    return () => { cancelled = true; };
+  }, [companyId]);
+  return null;
+}
 
 interface AdminLayoutProps {
   children: (auth: ReturnType<typeof useAuth>) => React.ReactNode;
@@ -28,6 +55,7 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
       {(auth) => {
         const content = (
           <div className="flex h-dvh bg-ivory overflow-hidden">
+            {auth.companyId && <BrandPaletteLoader companyId={auth.companyId} />}
             {!collapseSidebar && (
               <AdminSidebar
                 memberName={auth.teamMember?.name}

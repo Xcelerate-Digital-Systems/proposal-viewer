@@ -204,6 +204,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
                           editor.updateTier(tier.id, { is_recommended: !tier.is_recommended })
                         }
                         onMove={(dir) => editor.moveTier(tier.id, dir)}
+                        onDuplicate={() => editor.duplicateTier(tier.id)}
                         onRemove={() => editor.deleteTier(tier.id)}
                         onAddFeature={() =>
                           editor.updateTier(tier.id, {

@@ -1,7 +1,7 @@
 // components/admin/shared/TierEditor.tsx
 'use client';
 
-import { GripVertical, ChevronDown, ChevronUp, Star, ArrowUp, ArrowDown, Trash2, Plus } from 'lucide-react';
+import { GripVertical, ChevronDown, ChevronUp, Star, ArrowUp, ArrowDown, Trash2, Plus, Copy } from 'lucide-react';
 import { PackageTier, PackageFeature } from '@/lib/supabase';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import CurrencyInput from '@/components/ui/CurrencyInput';
@@ -15,6 +15,7 @@ export interface TierEditorProps {
   onUpdate: (changes: Partial<PackageTier>) => void;
   onToggleRecommended: () => void;
   onMove: (dir: 'up' | 'down') => void;
+  onDuplicate: () => void;
   onRemove: () => void;
   onAddFeature: () => void;
   onUpdateFeature: (fi: number, changes: Partial<PackageFeature>) => void;
@@ -29,7 +30,7 @@ export interface TierEditorProps {
 
 export default function TierEditor({
   tier, tierIdx, totalTiers, isExpanded, onToggleExpand,
-  onUpdate, onToggleRecommended, onMove, onRemove,
+  onUpdate, onToggleRecommended, onMove, onDuplicate, onRemove,
   onAddFeature, onUpdateFeature, onRemoveFeature,
   onAddCondition, onUpdateCondition, onRemoveCondition,
   onAddChild, onUpdateChild, onRemoveChild,
@@ -67,6 +68,13 @@ export default function TierEditor({
           >
             <Star size={11} className={tier.is_recommended ? 'fill-current' : ''} />
             {tier.is_recommended ? 'Recommended' : 'Recommend'}
+          </button>
+          <button
+            onClick={onDuplicate}
+            title="Duplicate package"
+            className="p-1 rounded hover:bg-teal/10 text-gray-300 hover:text-teal transition-colors"
+          >
+            <Copy size={12} />
           </button>
           <button onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors">
             <Trash2 size={12} />
