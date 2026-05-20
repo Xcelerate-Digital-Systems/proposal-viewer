@@ -44,6 +44,7 @@ interface DesignTabProps {
   initialTitleFontSize?: string | null;
   initialFontHeadingFamily?: string | null;
   initialFontHeadingWeight?: string | null;
+  initialFontHeadingSize?: string | null;
   initialFontBodyFamily?: string | null;
   initialFontBodyWeight?: string | null;
   initialTitleFontTransform?: string | null;
@@ -74,6 +75,7 @@ export default function DesignTab({
   initialTextPageBgColor,
   initialTextPageTextColor,
   initialTextPageHeadingColor,
+  initialTextPageFontSize,
   initialTextPageBorderEnabled,
   initialTextPageBorderColor,
   initialTextPageBorderRadius,
@@ -82,6 +84,7 @@ export default function DesignTab({
   initialTitleFontSize,
   initialFontHeadingFamily,
   initialFontHeadingWeight,
+  initialFontHeadingSize,
   initialFontBodyFamily,
   initialFontBodyWeight,
   initialTitleFontTransform,
@@ -140,8 +143,12 @@ export default function DesignTab({
 
   const [fontHeadingFamily, setFontHeadingFamily] = useState<string | null>(initialFontHeadingFamily ?? null);
   const [fontHeadingWeight, setFontHeadingWeight] = useState<string | null>(initialFontHeadingWeight ?? null);
+  const [fontHeadingSize, setFontHeadingSize] = useState<string>(initialFontHeadingSize ?? '');
   const [fontBodyFamily, setFontBodyFamily] = useState<string | null>(initialFontBodyFamily ?? null);
   const [fontBodyWeight, setFontBodyWeight] = useState<string | null>(initialFontBodyWeight ?? null);
+  // Body size is the entity-level override on text_page_font_size — that's the
+  // column the viewer reads for body copy, including pricing/packages bodies.
+  const [fontBodySize, setFontBodySize] = useState<string>(initialTextPageFontSize ?? '');
   const [titleFontTransform, setTitleFontTransform] = useState<string | null>(initialTitleFontTransform ?? null);
   const [fontHeadingTransform, setFontHeadingTransform] = useState<string | null>(initialFontHeadingTransform ?? null);
   const [fontBodyTransform, setFontBodyTransform] = useState<string | null>(initialFontBodyTransform ?? null);
@@ -260,13 +267,15 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     payload.text_page_bg_color = tpBgColor;
     payload.text_page_text_color = tpTextColor;
     payload.text_page_heading_color = tpHeadingColor || null;
-    payload.text_page_font_size = null;
+    // Body size: the entity-level override on text_page_font_size.
+    payload.text_page_font_size = fontBodySize || null;
     payload.text_page_layout = 'full';
     payload.title_font_family = titleFontFamily;
     payload.title_font_weight = titleFontWeight;
     payload.title_font_size = titleFontSize || null;
     payload.font_heading_family = fontHeadingFamily;
     payload.font_heading_weight = fontHeadingWeight;
+    payload.font_heading_size = fontHeadingSize || null;
     payload.font_body_family = fontBodyFamily;
     payload.font_body_weight = fontBodyWeight;
     payload.title_font_transform = titleFontTransform;
@@ -283,7 +292,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     bgMode, bgImagePath, overlayOpacity, bgImageBlur, pageOrientation,
     tpBgColor, tpTextColor, tpHeadingColor,
     titleFontFamily, titleFontWeight, titleFontSize,
-    fontHeadingFamily, fontHeadingWeight, fontBodyFamily, fontBodyWeight,
+    fontHeadingFamily, fontHeadingWeight, fontHeadingSize,
+    fontBodyFamily, fontBodyWeight, fontBodySize,
     titleFontTransform, fontHeadingTransform, fontBodyTransform,
     pageNumCircleColor, pageNumTextColor,
     table, entityId, onSave,
@@ -319,7 +329,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   useEffect(() => {
     if (!bodyHeadingFontInitializedRef.current) { bodyHeadingFontInitializedRef.current = true; return; }
     scheduleSave(800);
-  }, [fontHeadingFamily, fontHeadingWeight, fontBodyFamily, fontBodyWeight, fontHeadingTransform, fontBodyTransform]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fontHeadingFamily, fontHeadingWeight, fontHeadingSize, fontBodyFamily, fontBodyWeight, fontBodySize, fontHeadingTransform, fontBodyTransform]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Autosave: page number badge state
   useEffect(() => {
@@ -416,6 +426,10 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setFontBodyFamily={setFontBodyFamily}
       fontBodyWeight={fontBodyWeight}
       setFontBodyWeight={setFontBodyWeight}
+      fontHeadingSize={fontHeadingSize}
+      setFontHeadingSize={setFontHeadingSize}
+      fontBodySize={fontBodySize}
+      setFontBodySize={setFontBodySize}
       titleFontTransform={titleFontTransform}
       setTitleFontTransform={setTitleFontTransform}
       fontHeadingTransform={fontHeadingTransform}
