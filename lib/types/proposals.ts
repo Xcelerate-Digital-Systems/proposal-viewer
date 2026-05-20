@@ -213,10 +213,13 @@ export type Proposal = {
   decision_action_heading_color: string | null;
   /** Submit-button background. NULL = inherit decision_action_heading_color. */
   decision_action_accent_color: string | null;
-  /** Whether the synthetic Decision page appears in the sidebar TOC.
-   *  NULL = treat as true. The page always exists at the end of the
-   *  sequence; this only controls TOC visibility. */
-  decision_page_in_toc: boolean | null;
+  /** Master toggle for the synthetic Decision page. NULL = treat as true.
+   *  When false, the page is removed from pageSequence/numPages/TOC entirely
+   *  — clients have no in-viewer accept/decline path. */
+  decision_page_enabled: boolean | null;
+  /** Per-proposal display title for the synthetic Decision page.
+   *  NULL = default "Decision". */
+  decision_page_title: string | null;
 };
 
 // ─── Quote Attachment ─────────────────────────────────────────────────────────

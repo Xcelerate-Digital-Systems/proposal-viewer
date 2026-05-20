@@ -14,6 +14,8 @@ export function useProposalDerived(
   // accept/decline flow at all.
   const pageUrls = useMemo<PageUrlEntry[]>(() => {
     if (proposal?.entity_type !== 'proposal') return rawPageUrls;
+    // decision_page_enabled null = treat as true (default-on for legacy rows).
+    if (proposal.decision_page_enabled === false) return rawPageUrls;
     if (rawPageUrls.length === 0) return rawPageUrls;
     const tail = rawPageUrls[rawPageUrls.length - 1];
     return [
@@ -23,7 +25,7 @@ export function useProposalDerived(
         position: tail.position + 1,
         type: 'decision',
         url: null,
-        title: 'Decision',
+        title: proposal.decision_page_title || 'Decision',
         indent: 0,
         show_title: true,
         show_member_badge: false,
@@ -32,18 +34,12 @@ export function useProposalDerived(
         payload: {},
       },
     ];
-  }, [rawPageUrls, proposal?.entity_type]);
+  }, [rawPageUrls, proposal?.entity_type, proposal?.decision_page_enabled, proposal?.decision_page_title]);
 
-  const hideDecisionFromToc = proposal?.decision_page_in_toc === false;
-
-  // Sidebar nav entries — section pages become 'group' type. The synthetic
-  // Decision entry is filtered out of the visible TOC when the per-proposal
-  // toggle is off; it's still in pageUrls / pageSequence so the page arrows
-  // can reach it.
+  // Sidebar nav entries — section pages become 'group' type.
   const pageEntries: PageNameEntry[] = useMemo(
     () =>
       pageUrls
-        .filter((p) => !(p.type === 'decision' && hideDecisionFromToc))
         .map((p) => ({
           name: p.title,
           indent: p.indent,
@@ -51,7 +47,7 @@ export function useProposalDerived(
           ...(p.link_url ? { link_url: p.link_url } : {}),
           ...(p.link_label ? { link_label: p.link_label } : {}),
         })),
-    [pageUrls, hideDecisionFromToc],
+    [pageUrls],
   );
 
   const numPages = useMemo(
