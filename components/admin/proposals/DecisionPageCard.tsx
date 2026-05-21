@@ -29,6 +29,9 @@ interface DecisionPageCardProps {
    *  the page list already manages presence and the master toggle lives on
    *  the Decision tab. Hides the enable switch + descriptive copy. */
   titleOnly?: boolean;
+  /** Fires on every keystroke so a parent preview can show the live value
+   *  without waiting for the debounced save. Optional. */
+  onTitleLive?: (next: string) => void;
 }
 
 export default function DecisionPageCard({
@@ -38,6 +41,7 @@ export default function DecisionPageCard({
   initialTitle,
   onSaved,
   titleOnly,
+  onTitleLive,
 }: DecisionPageCardProps) {
   const toast = useToast();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,6 +93,7 @@ export default function DecisionPageCard({
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
+    onTitleLive?.(val);
     scheduleSave(enabled, val);
   };
 

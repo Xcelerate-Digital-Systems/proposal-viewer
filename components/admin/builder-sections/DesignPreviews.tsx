@@ -19,6 +19,18 @@ interface PreviewProps {
   entityKey: 'proposal_id' | 'template_id';
 }
 
+/** Live design-tab colour overrides that take precedence over whatever was
+ *  last saved to the entity row. Without this, the preview only refreshes
+ *  after the debounced save lands (or never, if the parent doesn't re-fetch),
+ *  so adjustments don't visibly update the preview. */
+export interface PricingPreviewLive {
+  pricing_header_text_color: string | null;
+  pricing_text_color: string | null;
+  pricing_price_title_color: string | null;
+  pricing_price_color: string | null;
+  pricing_payment_schedule_color: string | null;
+}
+
 /* ── Helper: fetch branding for an entity ───────────────────────── */
 async function loadBranding(entityId: string, entityKey: 'proposal_id' | 'template_id'): Promise<CompanyBranding> {
   const table = entityKey === 'template_id' ? 'proposal_templates' : 'proposals';
@@ -55,7 +67,11 @@ async function loadBranding(entityId: string, entityKey: 'proposal_id' | 'templa
    Pricing Design Preview
    ============================================================ */
 
-export function PricingDesignPreview({ entityId, entityKey }: PreviewProps) {
+export function PricingDesignPreview({
+  entityId,
+  entityKey,
+  live,
+}: PreviewProps & { live?: PricingPreviewLive }) {
   const [loaded, setLoaded] = useState(false);
   const [pricing, setPricing] = useState<Record<string, unknown> | null>(null);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -102,8 +118,30 @@ export function PricingDesignPreview({ entityId, entityKey }: PreviewProps) {
     );
   }
 
+  // Merge live colour edits over the fetched branding so adjusting a picker
+  // updates the preview on the next keystroke instead of waiting for save +
+  // refetch (which never happens — the parent doesn't re-mount us).
+  const mergedBranding: CompanyBranding = {
+    ...branding,
+    ...(live?.pricing_header_text_color !== undefined
+      ? { pricing_header_text_color: live.pricing_header_text_color }
+      : {}),
+    ...(live?.pricing_text_color !== undefined
+      ? { pricing_text_color: live.pricing_text_color }
+      : {}),
+    ...(live?.pricing_price_title_color !== undefined
+      ? { pricing_price_title_color: live.pricing_price_title_color }
+      : {}),
+    ...(live?.pricing_price_color !== undefined
+      ? { pricing_price_color: live.pricing_price_color }
+      : {}),
+    ...(live?.pricing_payment_schedule_color !== undefined
+      ? { pricing_payment_schedule_color: live.pricing_payment_schedule_color }
+      : {}),
+  };
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return <PricingPreview pricing={pricing as any} branding={branding} />;
+  return <PricingPreview pricing={pricing as any} branding={mergedBranding} />;
 }
 
 /* ============================================================

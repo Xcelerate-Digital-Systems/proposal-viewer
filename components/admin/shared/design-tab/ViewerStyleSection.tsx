@@ -702,6 +702,13 @@ export default function ViewerStyleSection({
               <PricingDesignPreview
                 entityId={entityId}
                 entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
+                live={{
+                  pricing_header_text_color: pricingHeaderTextColor,
+                  pricing_text_color: pricingTextColor,
+                  pricing_price_title_color: pricingPriceTitleColor,
+                  pricing_price_color: pricingPriceColor,
+                  pricing_payment_schedule_color: pricingPaymentScheduleColor,
+                }}
               />
             </StickyPreviewAside>
           </div>

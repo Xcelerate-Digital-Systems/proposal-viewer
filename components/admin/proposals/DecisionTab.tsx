@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import DecisionPageCard from '@/components/admin/proposals/DecisionPageCard';
+import DecisionPagePreview from '@/components/admin/builder-sections/DecisionPagePreview';
+import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import {
   parseDecisionExtras,
   DEFAULT_DECISION_NEXT_STEPS,
@@ -30,6 +32,8 @@ interface DecisionTabProps {
   onSaved?: () => void;
 }
 
+const DEFAULT_DISPLAY_TITLE = 'Decision';
+
 export default function DecisionTab({
   entityId,
   table = 'proposals',
@@ -42,6 +46,9 @@ export default function DecisionTab({
   const parsed = parseDecisionExtras(initialExtras);
   const [steps, setSteps] = useState<string[]>(parsed.next_steps);
   const [terms, setTerms] = useState<string>(parsed.terms);
+  // Mirror the DecisionPageCard's title locally so the preview shows the
+  // live value while the user is typing (the card owns the debounced save).
+  const [previewTitle, setPreviewTitle] = useState<string>(initialTitle ?? '');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   useReportSaveStatus(saveStatus);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,7 +98,8 @@ export default function DecisionTab({
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="flex gap-6 items-start">
+      <div className="flex-1 min-w-0 space-y-6 max-w-2xl">
       {/* Enable toggle + title — same card the user already knows from Pages tab. */}
       <DecisionPageCard
         entityId={entityId}
@@ -99,6 +107,7 @@ export default function DecisionTab({
         initialEnabled={initialEnabled}
         initialTitle={initialTitle}
         onSaved={onSaved}
+        onTitleLive={setPreviewTitle}
       />
 
       {/* Next Steps editor */}
@@ -179,6 +188,17 @@ export default function DecisionTab({
           className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
         />
       </SectionCard>
+      </div>
+
+      <StickyPreviewAside>
+        <DecisionPagePreview
+          entityId={entityId}
+          entityKey={table === 'proposal_templates' ? 'template_id' : 'proposal_id'}
+          title={previewTitle || DEFAULT_DISPLAY_TITLE}
+          steps={steps}
+          terms={terms}
+        />
+      </StickyPreviewAside>
     </div>
   );
 }
