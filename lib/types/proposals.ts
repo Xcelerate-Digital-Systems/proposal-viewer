@@ -220,6 +220,9 @@ export type Proposal = {
   /** Per-proposal display title for the synthetic Decision page.
    *  NULL = default "Decision". */
   decision_page_title: string | null;
+  /** JSONB content rendered above the Accept/Decline form on the Decision page.
+   *  Shape: DecisionExtras (next_steps + terms). NULL = use defaults. */
+  decision_extras: unknown;
 };
 
 // ─── Quote Attachment ─────────────────────────────────────────────────────────
@@ -325,6 +328,10 @@ export type ProposalTemplate = {
   /** Entity-level packages styling. Falls back to first packages page's
    *  payload.styling for rows that pre-date the 2026-05 migration. */
   package_styling: unknown | null;
+  /** Decision page defaults copied onto proposals created from this template. */
+  decision_page_enabled: boolean | null;
+  decision_page_title: string | null;
+  decision_extras: unknown;
 };
 
 // ─── Template Page ────────────────────────────────────────────────────────────

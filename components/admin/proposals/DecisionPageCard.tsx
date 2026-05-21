@@ -17,19 +17,27 @@ import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard'
 
 interface DecisionPageCardProps {
   entityId: string;
+  /** Defaults to 'proposals'. Templates write to 'proposal_templates'. */
+  table?: 'proposals' | 'proposal_templates';
   /** NULL = treat as true (default on). */
   initialEnabled: boolean | null;
   /** NULL = default "Decision". */
   initialTitle: string | null;
   /** Notify parent after a successful save so it can refetch if needed. */
   onSaved?: () => void;
+  /** When true, only renders the title input — used on the Pages tab where
+   *  the page list already manages presence and the master toggle lives on
+   *  the Decision tab. Hides the enable switch + descriptive copy. */
+  titleOnly?: boolean;
 }
 
 export default function DecisionPageCard({
   entityId,
+  table = 'proposals',
   initialEnabled,
   initialTitle,
   onSaved,
+  titleOnly,
 }: DecisionPageCardProps) {
   const toast = useToast();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,7 +53,7 @@ export default function DecisionPageCard({
       setSaveStatus('saving');
       try {
         const { error } = await supabase
-          .from('proposals')
+          .from(table)
           .update({
             decision_page_enabled: nextEnabled,
             decision_page_title: nextTitle.trim() ? nextTitle.trim() : null,
@@ -60,7 +68,7 @@ export default function DecisionPageCard({
         toast.error('Failed to save Decision page settings');
       }
     },
-    [entityId, toast, onSaved],
+    [entityId, table, toast, onSaved],
   );
 
   const scheduleSave = useCallback(
@@ -93,34 +101,38 @@ export default function DecisionPageCard({
   return (
     <SectionCard
       title="Decision Page"
-      description="The final page where clients accept, decline, or request changes. Synthetic — lives only in the viewer, not as a real page row."
+      description={titleOnly
+        ? 'Rename the final accept/decline page. Toggle on/off + Next Steps + Terms live on the Decision tab.'
+        : 'The final page where clients accept, decline, or request changes. Synthetic — lives only in the viewer, not as a real page row.'}
       icon={<CheckCircle2 size={14} className="text-gray-400" />}
     >
       <div className="space-y-4">
-        {/* Enabled toggle */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-700">Show on this proposal</p>
-            <p className="text-[11px] text-gray-400 leading-snug">
-              Off removes the page from the sequence — clients won&apos;t have an in-viewer accept/decline path.
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={enabled}
-            onClick={handleToggle}
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-              enabled ? 'bg-teal' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
-                enabled ? 'translate-x-5' : 'translate-x-0.5'
+        {/* Enabled toggle — hidden on the Pages tab variant. */}
+        {!titleOnly && (
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-gray-700">Show on this proposal</p>
+              <p className="text-[11px] text-gray-400 leading-snug">
+                Off removes the page from the sequence — clients won&apos;t have an in-viewer accept/decline path.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enabled}
+              onClick={handleToggle}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                enabled ? 'bg-teal' : 'bg-gray-300'
               }`}
-            />
-          </button>
-        </div>
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                  enabled ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+        )}
 
         {/* Title input */}
         <div className="space-y-1.5">
@@ -130,8 +142,8 @@ export default function DecisionPageCard({
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Decision"
-            disabled={!enabled}
-            className={`${inputClassName} ${!enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!titleOnly && !enabled}
+            className={`${inputClassName} ${(!titleOnly && !enabled) ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
           <p className="text-[10px] text-gray-400">
             Shown in the sidebar TOC + on the page itself. Leave blank to use &ldquo;Decision&rdquo;.

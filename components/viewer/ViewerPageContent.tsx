@@ -12,6 +12,7 @@ import PricingPage from './PricingPage';
 import PackagesPage from './PackagesPage';
 import ViewerBackground from './ViewerBackground';
 import ProposalDecisionPanel, { type DecisionPanelTokens } from './ProposalDecisionPanel';
+import { parseDecisionExtras } from '@/lib/types/decision-extras';
 
 interface ViewerPageContentProps {
   branding: CompanyBranding;
@@ -140,6 +141,11 @@ export default function ViewerPageContent({
     const tokens = buildDecisionTokens(proposal, branding);
     const acceptButtonText =
       (proposal as { accept_button_text?: string | null } | null)?.accept_button_text ?? undefined;
+    const extras = parseDecisionExtras(
+      (proposal as { decision_extras?: unknown } | null)?.decision_extras,
+    );
+    const hasSteps = extras.next_steps.length > 0;
+    const hasTerms = extras.terms.trim().length > 0;
     return (
       <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
         <ViewerBackground branding={branding} />
@@ -149,6 +155,54 @@ export default function ViewerPageContent({
               className="w-full max-w-2xl rounded-2xl shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] px-6 sm:px-12 py-10"
               style={{ backgroundColor: tokens.bodyBg, color: tokens.bodyText }}
             >
+              {hasSteps && (
+                <section className="mb-8">
+                  <p
+                    className="text-[10px] tracking-[0.18em] uppercase mb-4"
+                    style={{ color: tokens.faint, fontFamily: tokens.headingFontFamily }}
+                  >
+                    Next Steps
+                  </p>
+                  <ol className="space-y-3">
+                    {extras.next_steps.map((step, i) => (
+                      <li key={i} className="flex items-start gap-3 text-[14px] leading-[1.55]">
+                        <span
+                          className="shrink-0 tabular-nums text-[12px] font-medium mt-0.5"
+                          style={{ color: tokens.muted }}
+                        >
+                          0{i + 1}
+                        </span>
+                        <span style={{ color: tokens.bodyText }}>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+
+              {hasTerms && (
+                <section className="mb-8">
+                  <p
+                    className="text-[10px] tracking-[0.18em] uppercase mb-3"
+                    style={{ color: tokens.faint, fontFamily: tokens.headingFontFamily }}
+                  >
+                    Terms
+                  </p>
+                  <p
+                    className="text-[12.5px] whitespace-pre-wrap leading-[1.7]"
+                    style={{ color: tokens.muted }}
+                  >
+                    {extras.terms}
+                  </p>
+                </section>
+              )}
+
+              {(hasSteps || hasTerms) && (
+                <div
+                  className="mx-auto mb-8 h-px max-w-md"
+                  style={{ backgroundColor: tokens.hairline }}
+                />
+              )}
+
               <ProposalDecisionPanel
                 onAccept={onAccept}
                 onDecline={onDecline}

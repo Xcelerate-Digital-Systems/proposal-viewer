@@ -26,6 +26,7 @@ export default function ProposalPagesPage() {
             initialEnabled={proposal.decision_page_enabled}
             initialTitle={proposal.decision_page_title}
             onSaved={refetch}
+            titleOnly
           />
         }
       />

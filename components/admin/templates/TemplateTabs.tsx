@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Pencil, DollarSign, Package, Settings, Paintbrush, List, FileText, Image as ImageIcon } from 'lucide-react';
+import { Pencil, DollarSign, Package, Settings, Paintbrush, List, FileText, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 
 interface TemplateTabsProps {
   templateId: string;
@@ -18,6 +18,7 @@ const tabs: { key: string; label: string; icon: typeof Pencil; path: string; gro
   { key: 'text-pages', label: 'Text',     icon: FileText,   path: 'text-pages', group: 'content' },
   { key: 'pricing',    label: 'Quote',    icon: DollarSign, path: 'pricing',    group: 'content' },
   { key: 'packages',   label: 'Packages', icon: Package,    path: 'packages',   group: 'content' },
+  { key: 'decision',   label: 'Decision', icon: CheckCircle2, path: 'decision', group: 'content' },
 
   // Setup
   { key: 'design',     label: 'Design',   icon: Paintbrush, path: 'design',     group: 'setup' },

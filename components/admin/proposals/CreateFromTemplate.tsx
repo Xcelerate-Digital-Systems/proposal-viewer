@@ -230,6 +230,9 @@ export default function CreateFromTemplate({
           post_accept_action:             selectedTemplate.post_accept_action || null,
           post_accept_redirect_url:       selectedTemplate.post_accept_redirect_url || null,
           post_accept_message:            selectedTemplate.post_accept_message || null,
+          decision_page_enabled:          selectedTemplate.decision_page_enabled ?? null,
+          decision_page_title:            selectedTemplate.decision_page_title ?? null,
+          decision_extras:                selectedTemplate.decision_extras ?? null,
         }),
       });
 

@@ -4,7 +4,6 @@
 import EditDetailsPanel from '@/components/admin/shared/EditDetailsPanel';
 import { useToast } from '@/components/ui/Toast';
 import PostAcceptSection from '@/components/admin/proposals/PostAcceptSection';
-import DecisionPageCard from '@/components/admin/proposals/DecisionPageCard';
 import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
 
 export default function ProposalDetailsPage() {
@@ -31,21 +30,13 @@ export default function ProposalDetailsPage() {
           onCancel={() => {}}
           hiddenFields={['site_address', 'estimated_start_date', 'estimated_duration']}
         />
-        <div className="space-y-6">
-          <PostAcceptSection
-            entityId={proposal.id}
-            table="proposals"
-            initialAction={proposal.post_accept_action ?? null}
-            initialRedirectUrl={proposal.post_accept_redirect_url ?? null}
-            initialMessage={proposal.post_accept_message ?? null}
-          />
-          <DecisionPageCard
-            entityId={proposal.id}
-            initialEnabled={proposal.decision_page_enabled}
-            initialTitle={proposal.decision_page_title}
-            onSaved={refetch}
-          />
-        </div>
+        <PostAcceptSection
+          entityId={proposal.id}
+          table="proposals"
+          initialAction={proposal.post_accept_action ?? null}
+          initialRedirectUrl={proposal.post_accept_redirect_url ?? null}
+          initialMessage={proposal.post_accept_message ?? null}
+        />
       </div>
     </div>
   );
