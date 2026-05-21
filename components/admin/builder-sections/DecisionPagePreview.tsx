@@ -27,6 +27,9 @@ interface DecisionPagePreviewProps {
   acceptHeading: string;
   acceptSubtitle: string;
   agreementText: string;
+  acceptButtonLabel: string;
+  declineButtonLabel: string;
+  revisionButtonLabel: string;
 }
 
 /* ── Helper duplicated from DesignPreviews to keep the preview self-contained
@@ -93,6 +96,9 @@ export default function DecisionPagePreview({
   acceptHeading,
   acceptSubtitle,
   agreementText,
+  acceptButtonLabel,
+  declineButtonLabel,
+  revisionButtonLabel,
 }: DecisionPagePreviewProps) {
   const [loaded, setLoaded] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -237,6 +243,11 @@ export default function DecisionPagePreview({
             acceptHeading={acceptHeading}
             acceptSubtitle={acceptSubtitle}
             agreementText={agreementText}
+            acceptButtonLabel={acceptButtonLabel}
+            declineButtonLabel={declineButtonLabel}
+            revisionButtonLabel={revisionButtonLabel}
+            buttonFontFamily={branding.font_button || branding.font_heading}
+            buttonFontWeight={branding.font_button_weight || branding.font_heading_weight}
           />
         </div>
       </div>

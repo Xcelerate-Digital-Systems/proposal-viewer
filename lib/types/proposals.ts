@@ -321,10 +321,15 @@ export type ProposalTemplate = {
   title_font_size: string | null;
   font_heading_family: string | null;
   font_heading_weight: string | null;
+  font_heading_size: string | null;
   font_body_family: string | null;
   font_body_weight: string | null;
   font_button_family: string | null;
   font_button_weight: string | null;
+  /** CSS text-transform applied per-font. */
+  title_font_transform: string | null;
+  font_heading_transform: string | null;
+  font_body_transform: string | null;
   file_path: string | null;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;

@@ -14,6 +14,10 @@ export interface DecisionExtras {
   accept_subtitle: string;
   /** Label next to the agreement checkbox on the Accept tab. */
   agreement_text: string;
+  /** Submit button labels for each tab. */
+  accept_button_label: string;
+  decline_button_label: string;
+  revision_button_label: string;
 }
 
 export const DEFAULT_DECISION_TERMS = `By accepting this proposal you agree to the scope of work outlined and the payment schedule. We'll reach out within one business day of acceptance to confirm next steps.`;
@@ -30,12 +34,19 @@ export const DEFAULT_DECISION_ACCEPT_SUBTITLE =
 export const DEFAULT_DECISION_AGREEMENT_TEXT =
   'I have read and agree to the proposal details and terms above.';
 
+export const DEFAULT_DECISION_ACCEPT_BUTTON_LABEL = 'Accept & Confirm Quote';
+export const DEFAULT_DECISION_DECLINE_BUTTON_LABEL = 'Decline Quote';
+export const DEFAULT_DECISION_REVISION_BUTTON_LABEL = 'Request Changes';
+
 export const DEFAULT_DECISION_EXTRAS: DecisionExtras = {
   next_steps: [...DEFAULT_DECISION_NEXT_STEPS],
   terms: DEFAULT_DECISION_TERMS,
   accept_heading: DEFAULT_DECISION_ACCEPT_HEADING,
   accept_subtitle: DEFAULT_DECISION_ACCEPT_SUBTITLE,
   agreement_text: DEFAULT_DECISION_AGREEMENT_TEXT,
+  accept_button_label: DEFAULT_DECISION_ACCEPT_BUTTON_LABEL,
+  decline_button_label: DEFAULT_DECISION_DECLINE_BUTTON_LABEL,
+  revision_button_label: DEFAULT_DECISION_REVISION_BUTTON_LABEL,
 };
 
 export function parseDecisionExtras(raw: unknown): DecisionExtras {
@@ -59,5 +70,17 @@ export function parseDecisionExtras(raw: unknown): DecisionExtras {
       typeof r.agreement_text === 'string' && r.agreement_text.trim()
         ? r.agreement_text
         : DEFAULT_DECISION_AGREEMENT_TEXT,
+    accept_button_label:
+      typeof r.accept_button_label === 'string' && r.accept_button_label.trim()
+        ? r.accept_button_label
+        : DEFAULT_DECISION_ACCEPT_BUTTON_LABEL,
+    decline_button_label:
+      typeof r.decline_button_label === 'string' && r.decline_button_label.trim()
+        ? r.decline_button_label
+        : DEFAULT_DECISION_DECLINE_BUTTON_LABEL,
+    revision_button_label:
+      typeof r.revision_button_label === 'string' && r.revision_button_label.trim()
+        ? r.revision_button_label
+        : DEFAULT_DECISION_REVISION_BUTTON_LABEL,
   };
 }

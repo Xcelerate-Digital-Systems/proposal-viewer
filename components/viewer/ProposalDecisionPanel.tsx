@@ -41,6 +41,17 @@ interface ProposalDecisionPanelProps {
   acceptHeading?: string;
   acceptSubtitle?: string;
   agreementText?: string;
+  /** Submit button labels — one per tab. acceptButtonText is the legacy
+   *  per-proposal column kept for backwards compatibility; the new
+   *  acceptButtonLabel from DecisionExtras takes precedence when provided. */
+  acceptButtonLabel?: string;
+  declineButtonLabel?: string;
+  revisionButtonLabel?: string;
+  /** CTA button font + weight (mirrors the cover button cascade so the
+   *  Accept/Decline/Request Changes submit button uses the same typeface as
+   *  the cover CTA, with sensible fallbacks). */
+  buttonFontFamily?: string | null;
+  buttonFontWeight?: string | null;
 }
 
 type DecisionState = 'pending' | 'accepted' | 'declined' | 'revision';
@@ -75,6 +86,11 @@ export default function ProposalDecisionPanel({
   acceptHeading,
   acceptSubtitle,
   agreementText,
+  acceptButtonLabel,
+  declineButtonLabel,
+  revisionButtonLabel,
+  buttonFontFamily,
+  buttonFontWeight,
 }: ProposalDecisionPanelProps) {
   const initialState: DecisionState = initialAccepted
     ? 'accepted'
@@ -302,13 +318,19 @@ export default function ProposalDecisionPanel({
               (activeAction === 'accept' && !agree) ||
               (activeAction === 'revision' && !reason.trim())
             }
-            className="w-full px-6 py-3 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+            className="w-full px-6 py-3 rounded-lg text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 tracking-wider uppercase"
             style={{
               backgroundColor:
                 activeAction === 'decline'
                   ? withAlpha('#dc2626', 0.85)
                   : headingColor,
               color: bodyBg,
+              // Mirror the Cover CTA button styling — Globals "Button font"
+              // controls both. Fall back to the heading font if no override.
+              fontFamily: buttonFontFamily
+                ? `'${buttonFontFamily}', inherit`
+                : headingFontFamily,
+              fontWeight: Number(buttonFontWeight) || 500,
             }}
           >
             {activeAction === 'accept' && <Check size={14} />}
@@ -317,10 +339,10 @@ export default function ProposalDecisionPanel({
             {submitting
               ? 'Submitting…'
               : activeAction === 'accept'
-                ? (acceptButtonText || 'Accept & Confirm Quote')
+                ? (acceptButtonLabel || acceptButtonText || 'Accept & Confirm Quote')
                 : activeAction === 'revision'
-                  ? 'Request Changes'
-                  : 'Decline Quote'}
+                  ? (revisionButtonLabel || 'Request Changes')
+                  : (declineButtonLabel || 'Decline Quote')}
           </button>
         </>
       )}

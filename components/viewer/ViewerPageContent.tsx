@@ -215,6 +215,11 @@ export default function ViewerPageContent({
                 acceptHeading={extras.accept_heading}
                 acceptSubtitle={extras.accept_subtitle}
                 agreementText={extras.agreement_text}
+                acceptButtonLabel={extras.accept_button_label}
+                declineButtonLabel={extras.decline_button_label}
+                revisionButtonLabel={extras.revision_button_label}
+                buttonFontFamily={branding.font_button || branding.font_heading}
+                buttonFontWeight={branding.font_button_weight || branding.font_heading_weight}
               />
             </div>
           </div>
