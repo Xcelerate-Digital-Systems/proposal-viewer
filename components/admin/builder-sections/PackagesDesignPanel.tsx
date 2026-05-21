@@ -6,7 +6,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Palette } from 'lucide-react';
+import { Loader2, Palette, RotateCcw } from 'lucide-react';
 import {
   supabase, normalizePackageStyling, DEFAULT_PACKAGE_STYLING,
   type PackageStyling, type PackageTier,
@@ -14,7 +14,9 @@ import {
 import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
-import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
+import PackagesAppearanceSection, {
+  isDefaultPackageStyling,
+} from '@/components/admin/shared/PackagesAppearanceSection';
 import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
@@ -176,6 +178,17 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
           title="Packages Design"
           description="Colours, gradients, feature icons, and per-tier overrides — applies to every packages page."
           icon={<Palette size={14} className="text-gray-400" />}
+          action={
+            !isDefaultPackageStyling(styling) ? (
+              <button
+                onClick={() => onStylingChange({ ...DEFAULT_PACKAGE_STYLING })}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+              >
+                <RotateCcw size={12} />
+                Reset
+              </button>
+            ) : null
+          }
         >
           <PackagesAppearanceSection
             styling={styling}

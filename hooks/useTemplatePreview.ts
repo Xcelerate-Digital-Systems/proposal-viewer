@@ -102,8 +102,10 @@ export function useTemplatePreview(templateId: string) {
               .from('company-assets')
               .getPublicUrl(tmpl.bg_image_path);
             if (bgUrlData?.publicUrl) brandingData.bg_image_url = bgUrlData.publicUrl;
-            brandingData.bg_image_overlay_opacity =
-              tmpl.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
+          }
+          // Overlay opacity overrides independently of the image (see useProposal).
+          if (tmpl.bg_image_overlay_opacity != null) {
+            brandingData.bg_image_overlay_opacity = tmpl.bg_image_overlay_opacity;
           }
 
           if (tmpl.text_page_bg_color != null) brandingData.text_page_bg_color = tmpl.text_page_bg_color;

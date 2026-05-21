@@ -92,9 +92,13 @@ export function useProposal(token: string) {
             .from('company-assets')
             .getPublicUrl(data.bg_image_path);
           if (bgUrlData?.publicUrl) brandingData.bg_image_url = bgUrlData.publicUrl;
-          brandingData.bg_image_overlay_opacity =
-            data.bg_image_overlay_opacity ?? brandingData.bg_image_overlay_opacity ?? 0.85;
           brandingData.bg_image_blur = data.bg_image_blur ?? 0;
+        }
+        // Overlay opacity overrides independently of the image — Design tab
+        // can set a per-entity overlay while keeping the company image, so
+        // gating the merge on bg_image_path silently dropped the override.
+        if (data.bg_image_overlay_opacity != null) {
+          brandingData.bg_image_overlay_opacity = data.bg_image_overlay_opacity;
         }
 
         if (data.text_page_bg_color != null) brandingData.text_page_bg_color = data.text_page_bg_color;

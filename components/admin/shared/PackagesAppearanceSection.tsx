@@ -1,11 +1,11 @@
 // components/admin/shared/PackagesAppearanceSection.tsx
 'use client';
 
-import { Check, Circle, CheckCircle2, ArrowRight, Star, Minus, RotateCcw } from 'lucide-react';
+import { Check, Circle, CheckCircle2, ArrowRight, Star, Minus } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import Slider from '@/components/ui/Slider';
-import { PackageStyling, PackageFeatureIcon, PackageTier, DEFAULT_PACKAGE_STYLING } from '@/lib/supabase';
+import { PackageStyling, PackageFeatureIcon, PackageTier } from '@/lib/supabase';
 
 interface PackagesAppearanceSectionProps {
   styling: PackageStyling;
@@ -33,33 +33,16 @@ export default function PackagesAppearanceSection({
     onStylingChange({ ...styling, ...changes });
   };
 
-  const resetAll = () => {
-    onStylingChange({ ...DEFAULT_PACKAGE_STYLING });
-  };
-
+  // The outer card + grey "Appearance" header were creating a nested-card
+  // visual against the SectionCard the parent already wraps us in. Drop
+  // them and stack each subsection with vertical dividers between groups
+  // to match the Pricing Design layout. Reset action moves up to the
+  // SectionCard's `action` slot (handled in PackagesDesignPanel).
   return (
-    <div className="space-y-0 divide-y divide-gray-100 border border-gray-100 rounded-lg overflow-hidden">
-
-      {/* ── Header ────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Appearance
-        </span>
-        {!isDefault(styling) && (
-          <button
-            onClick={resetAll}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-teal transition-colors"
-          >
-            <RotateCcw size={10} />
-            Reset to defaults
-          </button>
-        )}
-      </div>
-
-
+    <div className="space-y-5 divide-y divide-gray-100 [&>*:not(:first-child)]:pt-5">
 
       {/* ── Title colour ──────────────────────────────────── */}
-      <div className="px-4 py-4 space-y-2 bg-white">
+      <div className="space-y-2">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</label>
         <ColorPickerField
           label="Title text colour"
@@ -71,7 +54,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Card Background ───────────────────────────────── */}
-      <div className="px-4 py-4 space-y-2 bg-white">
+      <div className="space-y-2">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Background</label>
         <ColorPickerField
           label="All cards"
@@ -104,7 +87,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Card Text ─────────────────────────────────────── */}
-      <div className="px-4 py-4 space-y-2 bg-white">
+      <div className="space-y-2">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Text</label>
         <ColorPickerField
           label="All cards"
@@ -137,7 +120,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Recommended Badge ─────────────────────────────── */}
-      <div className="px-4 py-4 space-y-2 bg-white">
+      <div className="space-y-2">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Recommended Badge</label>
         <ColorPickerField
           label="Badge text"
@@ -149,7 +132,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Feature Icon ──────────────────────────────────── */}
-      <div className="px-4 py-4 space-y-2 bg-white">
+      <div className="space-y-2">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Feature Icon</label>
         <div className="flex flex-wrap gap-1.5">
           {ICON_OPTIONS.map((opt) => (
@@ -171,7 +154,7 @@ export default function PackagesAppearanceSection({
       </div>
 
       {/* ── Card Shape ────────────────────────────────────── */}
-      <div className="px-4 py-4 space-y-4 bg-white">
+      <div className="space-y-4">
         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Shape</label>
         <Slider
           label="Border radius"
@@ -193,7 +176,7 @@ export default function PackagesAppearanceSection({
   );
 }
 
-function isDefault(s: PackageStyling): boolean {
+export function isDefaultPackageStyling(s: PackageStyling): boolean {
   return (
     !s.title_color &&
     !s.card_bg_color &&

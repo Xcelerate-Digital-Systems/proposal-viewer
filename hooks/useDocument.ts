@@ -72,9 +72,11 @@ export function useDocument(token: string) {
               .from('company-assets')
               .getPublicUrl(doc.bg_image_path);
             if (bgUrlData?.publicUrl) data.bg_image_url = bgUrlData.publicUrl;
-            data.bg_image_overlay_opacity =
-              doc.bg_image_overlay_opacity ?? data.bg_image_overlay_opacity ?? 0.85;
             data.bg_image_blur = doc.bg_image_blur ?? 0;
+          }
+          // Overlay opacity overrides independently of the image (see useProposal).
+          if (doc.bg_image_overlay_opacity != null) {
+            data.bg_image_overlay_opacity = doc.bg_image_overlay_opacity;
           }
 
           if (doc.text_page_bg_color != null) data.text_page_bg_color = doc.text_page_bg_color;
