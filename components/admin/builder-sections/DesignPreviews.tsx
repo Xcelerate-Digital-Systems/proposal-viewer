@@ -28,7 +28,8 @@ export interface PricingPreviewLive {
   pricing_text_color: string | null;
   pricing_price_title_color: string | null;
   pricing_price_color: string | null;
-  pricing_payment_schedule_color: string | null;
+  pricing_payment_schedule_name_color: string | null;
+  pricing_payment_schedule_price_color: string | null;
 }
 
 /* ── Helper: fetch branding for an entity ───────────────────────── */
@@ -135,8 +136,11 @@ export function PricingDesignPreview({
     ...(live?.pricing_price_color !== undefined
       ? { pricing_price_color: live.pricing_price_color }
       : {}),
-    ...(live?.pricing_payment_schedule_color !== undefined
-      ? { pricing_payment_schedule_color: live.pricing_payment_schedule_color }
+    ...(live?.pricing_payment_schedule_name_color !== undefined
+      ? { pricing_payment_schedule_name_color: live.pricing_payment_schedule_name_color }
+      : {}),
+    ...(live?.pricing_payment_schedule_price_color !== undefined
+      ? { pricing_payment_schedule_price_color: live.pricing_payment_schedule_price_color }
       : {}),
   };
 

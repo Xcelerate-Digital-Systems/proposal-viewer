@@ -132,7 +132,8 @@ export function useTemplatePreview(templateId: string) {
           if (tt.pricing_text_color != null) brandingData.pricing_text_color = tt.pricing_text_color;
           if (tt.pricing_price_title_color != null) brandingData.pricing_price_title_color = tt.pricing_price_title_color;
           if (tt.pricing_price_color != null) brandingData.pricing_price_color = tt.pricing_price_color;
-          if (tt.pricing_payment_schedule_color != null) brandingData.pricing_payment_schedule_color = tt.pricing_payment_schedule_color;
+          if (tt.pricing_payment_schedule_name_color != null) brandingData.pricing_payment_schedule_name_color = tt.pricing_payment_schedule_name_color;
+          if (tt.pricing_payment_schedule_price_color != null) brandingData.pricing_payment_schedule_price_color = tt.pricing_payment_schedule_price_color;
 
           setBranding(brandingData);
         }

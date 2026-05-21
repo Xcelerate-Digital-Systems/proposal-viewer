@@ -185,8 +185,10 @@ interface ViewerStyleSectionProps {
   setPricingPriceTitleColor: (v: string | null) => void;
   pricingPriceColor: string | null;
   setPricingPriceColor: (v: string | null) => void;
-  pricingPaymentScheduleColor: string | null;
-  setPricingPaymentScheduleColor: (v: string | null) => void;
+  pricingPaymentScheduleNameColor: string | null;
+  setPricingPaymentScheduleNameColor: (v: string | null) => void;
+  pricingPaymentSchedulePriceColor: string | null;
+  setPricingPaymentSchedulePriceColor: (v: string | null) => void;
   /* ── Defaults & actions ─────────────────────────────────── */
   companyDefaults: TextPageDefaults;
   onTpResetToCompany: () => void;
@@ -262,8 +264,10 @@ export default function ViewerStyleSection({
   setPricingPriceTitleColor,
   pricingPriceColor,
   setPricingPriceColor,
-  pricingPaymentScheduleColor,
-  setPricingPaymentScheduleColor,
+  pricingPaymentScheduleNameColor,
+  setPricingPaymentScheduleNameColor,
+  pricingPaymentSchedulePriceColor,
+  setPricingPaymentSchedulePriceColor,
   companyDefaults,
   onTpResetToCompany,
   entityId,
@@ -609,6 +613,12 @@ export default function ViewerStyleSection({
           type={type === 'document' ? 'document' : type}
           entity={coverEntity}
           onSave={onCoverSave}
+          liveTitleFontFamily={titleFontFamily}
+          liveTitleFontWeight={titleFontWeight}
+          liveFontHeadingFamily={fontHeadingFamily}
+          liveFontHeadingWeight={fontHeadingWeight}
+          liveFontBodyFamily={fontBodyFamily}
+          liveFontBodyWeight={fontBodyWeight}
         />
       ) : (
         <SectionCard
@@ -650,7 +660,8 @@ export default function ViewerStyleSection({
                       setPricingTextColor(null);
                       setPricingPriceTitleColor(null);
                       setPricingPriceColor(null);
-                      setPricingPaymentScheduleColor(null);
+                      setPricingPaymentScheduleNameColor(null);
+                      setPricingPaymentSchedulePriceColor(null);
                     }}
                     className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
                   >
@@ -689,11 +700,18 @@ export default function ViewerStyleSection({
                     onReset={() => setPricingPriceColor(null)}
                   />
                   <ColorPickerField
-                    label="Payment Schedule Pricing"
-                    value={pricingPaymentScheduleColor}
+                    label="Payment Schedule Name"
+                    value={pricingPaymentScheduleNameColor}
                     fallback={companyDefaults.accent_color}
-                    onChange={setPricingPaymentScheduleColor}
-                    onReset={() => setPricingPaymentScheduleColor(null)}
+                    onChange={setPricingPaymentScheduleNameColor}
+                    onReset={() => setPricingPaymentScheduleNameColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Payment Schedule Price"
+                    value={pricingPaymentSchedulePriceColor}
+                    fallback={companyDefaults.accent_color}
+                    onChange={setPricingPaymentSchedulePriceColor}
+                    onReset={() => setPricingPaymentSchedulePriceColor(null)}
                   />
                 </div>
               </SectionCard>
@@ -707,7 +725,8 @@ export default function ViewerStyleSection({
                   pricing_text_color: pricingTextColor,
                   pricing_price_title_color: pricingPriceTitleColor,
                   pricing_price_color: pricingPriceColor,
-                  pricing_payment_schedule_color: pricingPaymentScheduleColor,
+                  pricing_payment_schedule_name_color: pricingPaymentScheduleNameColor,
+                  pricing_payment_schedule_price_color: pricingPaymentSchedulePriceColor,
                 }}
               />
             </StickyPreviewAside>

@@ -28,9 +28,29 @@ interface Props {
   type: EntityType;
   entity: CoverEditorEntity;
   onSave?: () => void;
+  /** Live values from the Design tab's Globals card. When provided these
+   *  override the entity-row + company fallback so the cover preview
+   *  reflects the user's typing without waiting for the debounced save +
+   *  parent refetch. */
+  liveTitleFontFamily?: string | null;
+  liveTitleFontWeight?: string | null;
+  liveFontHeadingFamily?: string | null;
+  liveFontHeadingWeight?: string | null;
+  liveFontBodyFamily?: string | null;
+  liveFontBodyWeight?: string | null;
 }
 
-export default function CoverDesignPanel({ type, entity, onSave }: Props) {
+export default function CoverDesignPanel({
+  type,
+  entity,
+  onSave,
+  liveTitleFontFamily,
+  liveTitleFontWeight,
+  liveFontHeadingFamily,
+  liveFontHeadingWeight,
+  liveFontBodyFamily,
+  liveFontBodyWeight,
+}: Props) {
   const cfg = configs[type];
   const toast = useToast();
   const headerTable = type === 'template' ? 'proposal_templates' : 'proposals';
@@ -499,10 +519,10 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
             imageUrl={imageUrl}
             companyLogoUrl={companyLogoUrl}
             companyName={companyName}
-            headingFont={headingFont}
-            headingFontWeight={headingFontWeight}
-            bodyFont={bodyFont}
-            bodyFontWeight={bodyFontWeight}
+            headingFont={liveTitleFontFamily || liveFontHeadingFamily || headingFont}
+            headingFontWeight={liveTitleFontWeight || liveFontHeadingWeight || headingFontWeight}
+            bodyFont={liveFontBodyFamily || bodyFont}
+            bodyFontWeight={liveFontBodyWeight || bodyFontWeight}
             showClientLogo={showClientLogo}
             clientLogoUrl={clientLogoUrl}
             clientLogoTintColor={clientLogoTintColor}

@@ -60,7 +60,8 @@ interface DesignTabProps {
   initialPricingTextColor?: string | null;
   initialPricingPriceTitleColor?: string | null;
   initialPricingPriceColor?: string | null;
-  initialPricingPaymentScheduleColor?: string | null;
+  initialPricingPaymentScheduleNameColor?: string | null;
+  initialPricingPaymentSchedulePriceColor?: string | null;
   /** Cover entity for the Cover Page design section. Pass the proposal /
    *  template row directly so CoverDesignPanel can read/write design fields. */
   coverEntity?: import('@/components/admin/shared/cover-editor/CoverEditorTypes').CoverEditorEntity;
@@ -105,7 +106,8 @@ export default function DesignTab({
   initialPricingTextColor,
   initialPricingPriceTitleColor,
   initialPricingPriceColor,
-  initialPricingPaymentScheduleColor,
+  initialPricingPaymentScheduleNameColor,
+  initialPricingPaymentSchedulePriceColor,
   coverEntity,
 }: DesignTabProps) {
   const table = tableByType[type];
@@ -186,7 +188,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   const [pricingTextColor, setPricingTextColor] = useState<string | null>(initialPricingTextColor ?? null);
   const [pricingPriceTitleColor, setPricingPriceTitleColor] = useState<string | null>(initialPricingPriceTitleColor ?? null);
   const [pricingPriceColor, setPricingPriceColor] = useState<string | null>(initialPricingPriceColor ?? null);
-  const [pricingPaymentScheduleColor, setPricingPaymentScheduleColor] = useState<string | null>(initialPricingPaymentScheduleColor ?? null);
+  const [pricingPaymentScheduleNameColor, setPricingPaymentScheduleNameColor] = useState<string | null>(initialPricingPaymentScheduleNameColor ?? null);
+  const [pricingPaymentSchedulePriceColor, setPricingPaymentSchedulePriceColor] = useState<string | null>(initialPricingPaymentSchedulePriceColor ?? null);
 
   /* ================================================================ */
   /*  SAVE STATUS + REFS                                               */
@@ -316,7 +319,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       payload.pricing_text_color = pricingTextColor;
       payload.pricing_price_title_color = pricingPriceTitleColor;
       payload.pricing_price_color = pricingPriceColor;
-      payload.pricing_payment_schedule_color = pricingPaymentScheduleColor;
+      payload.pricing_payment_schedule_name_color = pricingPaymentScheduleNameColor;
+      payload.pricing_payment_schedule_price_color = pricingPaymentSchedulePriceColor;
     }
 
     await supabase.from(table).update(payload).eq('id', entityId);
@@ -331,7 +335,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     fontBodyFamily, fontBodyWeight, fontBodySize,
     titleFontTransform, fontHeadingTransform, fontBodyTransform,
     pageNumCircleColor, pageNumTextColor,
-    pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleColor,
+    pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor,
     type, table, entityId, onSave,
   ]);
 
@@ -377,7 +381,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   useEffect(() => {
     if (!pricingInitializedRef.current) { pricingInitializedRef.current = true; return; }
     scheduleSave(800);
-  }, [pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleColor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ================================================================ */
   /*  BACKGROUND IMAGE HANDLERS                                        */
@@ -498,8 +502,10 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setPricingPriceTitleColor={setPricingPriceTitleColor}
       pricingPriceColor={pricingPriceColor}
       setPricingPriceColor={setPricingPriceColor}
-      pricingPaymentScheduleColor={pricingPaymentScheduleColor}
-      setPricingPaymentScheduleColor={setPricingPaymentScheduleColor}
+      pricingPaymentScheduleNameColor={pricingPaymentScheduleNameColor}
+      setPricingPaymentScheduleNameColor={setPricingPaymentScheduleNameColor}
+      pricingPaymentSchedulePriceColor={pricingPaymentSchedulePriceColor}
+      setPricingPaymentSchedulePriceColor={setPricingPaymentSchedulePriceColor}
       entityId={entityId}
       entityTitle={entityTitle}
       coverEntity={coverEntity}

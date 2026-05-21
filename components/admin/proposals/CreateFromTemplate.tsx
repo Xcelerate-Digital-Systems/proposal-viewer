@@ -237,7 +237,8 @@ export default function CreateFromTemplate({
           pricing_text_color:             selectedTemplate.pricing_text_color ?? null,
           pricing_price_title_color:      selectedTemplate.pricing_price_title_color ?? null,
           pricing_price_color:            selectedTemplate.pricing_price_color ?? null,
-          pricing_payment_schedule_color: selectedTemplate.pricing_payment_schedule_color ?? null,
+          pricing_payment_schedule_name_color: selectedTemplate.pricing_payment_schedule_name_color ?? null,
+          pricing_payment_schedule_price_color: selectedTemplate.pricing_payment_schedule_price_color ?? null,
         }),
       });
 

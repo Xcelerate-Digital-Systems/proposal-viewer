@@ -129,7 +129,8 @@ export function useProposal(token: string) {
         if (data.pricing_text_color != null) brandingData.pricing_text_color = data.pricing_text_color;
         if (data.pricing_price_title_color != null) brandingData.pricing_price_title_color = data.pricing_price_title_color;
         if (data.pricing_price_color != null) brandingData.pricing_price_color = data.pricing_price_color;
-        if (data.pricing_payment_schedule_color != null) brandingData.pricing_payment_schedule_color = data.pricing_payment_schedule_color;
+        if (data.pricing_payment_schedule_name_color != null) brandingData.pricing_payment_schedule_name_color = data.pricing_payment_schedule_name_color;
+        if (data.pricing_payment_schedule_price_color != null) brandingData.pricing_payment_schedule_price_color = data.pricing_payment_schedule_price_color;
 
         setBranding(brandingData);
       }

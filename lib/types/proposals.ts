@@ -229,7 +229,8 @@ export type Proposal = {
   pricing_text_color: string | null;
   pricing_price_title_color: string | null;
   pricing_price_color: string | null;
-  pricing_payment_schedule_color: string | null;
+  pricing_payment_schedule_name_color: string | null;
+  pricing_payment_schedule_price_color: string | null;
 };
 
 // ─── Quote Attachment ─────────────────────────────────────────────────────────
@@ -344,7 +345,8 @@ export type ProposalTemplate = {
   pricing_text_color: string | null;
   pricing_price_title_color: string | null;
   pricing_price_color: string | null;
-  pricing_payment_schedule_color: string | null;
+  pricing_payment_schedule_name_color: string | null;
+  pricing_payment_schedule_price_color: string | null;
 };
 
 // ─── Template Page ────────────────────────────────────────────────────────────

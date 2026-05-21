@@ -61,7 +61,8 @@ export type CompanyBranding = {
   pricing_text_color: string | null;
   pricing_price_title_color: string | null;
   pricing_price_color: string | null;
-  pricing_payment_schedule_color: string | null;
+  pricing_payment_schedule_name_color: string | null;
+  pricing_payment_schedule_price_color: string | null;
 };
 
 // ─── Color helpers ────────────────────────────────────────────────────────────

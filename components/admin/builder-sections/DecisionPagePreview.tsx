@@ -11,10 +11,8 @@ import { supabase } from '@/lib/supabase';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import ViewerPagePreview from '@/components/admin/shared/ViewerPagePreview';
-import {
-  parseDecisionExtras,
-  DEFAULT_DECISION_NEXT_STEPS,
-} from '@/lib/types/decision-extras';
+import ProposalDecisionPanel from '@/components/viewer/ProposalDecisionPanel';
+import { DEFAULT_DECISION_NEXT_STEPS } from '@/lib/types/decision-extras';
 
 interface DecisionPagePreviewProps {
   entityId: string;
@@ -148,47 +146,51 @@ export default function DecisionPagePreview({
     .slice(0, 4);
   const fallbackSteps = cleanedSteps.length > 0 ? cleanedSteps : DEFAULT_DECISION_NEXT_STEPS;
   const hasTerms = terms.trim().length > 0;
-  const displayTitle = (title && title.trim()) || 'Decision';
+  // The live viewer doesn't render a page title on the Decision page — the
+  // title only drives the sidebar TOC entry — so we ignore it here too.
+  void title;
+
+  // No-op handlers — the panel just needs at least one defined to render the
+  // pending-state form. We never submit from the preview.
+  const noopAccept = async (_name: string) => { void _name; };
+  const noopDecline = async (_name: string, _reason: string) => { void _name; void _reason; };
+  const noopRevision = async (_name: string, _notes: string) => { void _name; void _notes; };
 
   return (
     <ViewerPagePreview branding={branding}>
-      <div
-        className="w-full min-h-[100vh] flex items-start justify-center px-6 sm:px-14 py-12"
-        style={{ backgroundColor: branding.bg_image_url ? 'transparent' : bodyBg }}
-      >
+      {/* Match ViewerPageContent's onDecisionPage layout: centred card on the
+          page-around background (ViewerPagePreview already paints bg_primary
+          + bg-image underlay) with Next Steps, Terms, divider, and the real
+          ProposalDecisionPanel rendering the live form. */}
+      <div className="relative w-full min-h-[100vh] flex items-start justify-center px-6 sm:px-14 py-12">
         <div
           className="w-full max-w-2xl rounded-2xl shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] px-6 sm:px-12 py-10"
           style={{ backgroundColor: bodyBg, color: bodyText }}
         >
-          {/* Page title */}
-          <h2 className="text-xl mb-6" style={titleStyle}>
-            {displayTitle}
-          </h2>
+          {fallbackSteps.length > 0 && (
+            <section className="mb-8">
+              <p
+                className="text-[10px] tracking-[0.18em] uppercase mb-4"
+                style={{ color: faint, fontFamily: headingFontFamily }}
+              >
+                Next Steps
+              </p>
+              <ol className="space-y-3">
+                {fallbackSteps.map((step, i) => (
+                  <li key={i} className="flex items-start gap-3 text-[14px] leading-[1.55]">
+                    <span
+                      className="shrink-0 tabular-nums text-[12px] font-medium mt-0.5"
+                      style={{ color: muted }}
+                    >
+                      0{i + 1}
+                    </span>
+                    <span style={{ color: bodyText }}>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
 
-          {/* Next Steps */}
-          <section className="mb-8">
-            <p
-              className="text-[10px] tracking-[0.18em] uppercase mb-4"
-              style={{ color: faint, fontFamily: headingFontFamily }}
-            >
-              Next Steps
-            </p>
-            <ol className="space-y-3">
-              {fallbackSteps.map((step, i) => (
-                <li key={i} className="flex items-start gap-3 text-[14px] leading-[1.55]">
-                  <span
-                    className="shrink-0 tabular-nums text-[12px] font-medium mt-0.5"
-                    style={{ color: muted }}
-                  >
-                    0{i + 1}
-                  </span>
-                  <span style={{ color: bodyText }}>{step}</span>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          {/* Terms */}
           {hasTerms && (
             <section className="mb-8">
               <p
@@ -206,29 +208,26 @@ export default function DecisionPagePreview({
             </section>
           )}
 
-          {/* Divider */}
-          <div className="mx-auto mb-8 h-px max-w-md" style={{ backgroundColor: hairline }} />
+          {(fallbackSteps.length > 0 || hasTerms) && (
+            <div className="mx-auto mb-8 h-px max-w-md" style={{ backgroundColor: hairline }} />
+          )}
 
-          {/* Stub of the accept form — actual interactive form lives in
-              ProposalDecisionPanel. We render the headline + a placeholder
-              button so the user gets a sense of the layout without scrolling. */}
-          <div className="max-w-md mx-auto text-center">
-            <h3
-              className="text-2xl sm:text-3xl tracking-tight mb-2"
-              style={titleStyle}
-            >
-              Ready to lock in your project?
-            </h3>
-            <p className="text-sm mb-6" style={{ color: muted }}>
-              Sign below to confirm your project.
-            </p>
-            <div
-              className="px-6 py-3 rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 mx-auto"
-              style={{ backgroundColor: headingColor, color: bodyBg }}
-            >
-              Accept &amp; Confirm
-            </div>
-          </div>
+          <ProposalDecisionPanel
+            onAccept={noopAccept}
+            onDecline={noopDecline}
+            onRequestRevision={noopRevision}
+            tokens={{
+              bodyBg,
+              bodyText,
+              headingColor,
+              muted,
+              faint,
+              hairline,
+              headingFontFamily,
+              titleStyle,
+              mutedStyle: { color: muted },
+            }}
+          />
         </div>
       </div>
     </ViewerPagePreview>

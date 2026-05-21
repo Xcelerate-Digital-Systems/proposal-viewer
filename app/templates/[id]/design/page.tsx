@@ -44,7 +44,8 @@ export default function TemplateDesignPage() {
         initialPricingTextColor={template.pricing_text_color ?? null}
         initialPricingPriceTitleColor={template.pricing_price_title_color ?? null}
         initialPricingPriceColor={template.pricing_price_color ?? null}
-        initialPricingPaymentScheduleColor={template.pricing_payment_schedule_color ?? null}
+        initialPricingPaymentScheduleNameColor={template.pricing_payment_schedule_name_color ?? null}
+        initialPricingPaymentSchedulePriceColor={template.pricing_payment_schedule_price_color ?? null}
         coverEntity={template}
       />
     </div>
