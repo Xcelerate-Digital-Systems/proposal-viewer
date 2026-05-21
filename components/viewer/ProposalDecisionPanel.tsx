@@ -21,6 +21,12 @@ export interface DecisionPanelTokens {
   /** withAlpha(bodyText, 0.1) — borders / hairlines */
   hairline: string;
   headingFontFamily: string;
+  /** Body font family applied to the panel root so subtitle, toggle buttons,
+   *  agreement copy, terminal-state body, and form inputs all pick up the
+   *  Globals body font. NULL falls back to inherit. */
+  bodyFontFamily?: string;
+  /** Body font weight to match — propagates to inputs / toggle text. */
+  bodyFontWeight?: string | number;
   /** Title style (font family + weight + colour). Used for headings. */
   titleStyle: React.CSSProperties;
   /** Pre-computed muted text style ({ color: muted }). */
@@ -107,7 +113,7 @@ export default function ProposalDecisionPanel({
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const { bodyBg, bodyText, headingColor, muted, faint, hairline, headingFontFamily, titleStyle, mutedStyle } = tokens;
+  const { bodyBg, bodyText, headingColor, muted, faint, hairline, headingFontFamily, titleStyle, mutedStyle, bodyFontFamily, bodyFontWeight } = tokens;
   const showDecisionButtons = state === 'pending' && (onAccept || onDecline || onRequestRevision);
 
   const submit = async () => {
@@ -135,7 +141,17 @@ export default function ProposalDecisionPanel({
   if (!(onAccept || onDecline || onRequestRevision)) return null;
 
   return (
-    <div className="max-w-md mx-auto text-center py-6 print:hidden">
+    <div
+      className="max-w-md mx-auto text-center py-6 print:hidden"
+      style={{
+        // Set body font on the root so subtitle / toggle text / agreement /
+        // terminal copy / textarea / name input all inherit the Globals
+        // "Body font" + weight. Title + heading + button overrides still
+        // win inline.
+        fontFamily: bodyFontFamily,
+        fontWeight: bodyFontWeight,
+      }}
+    >
       {state === 'accepted' && (
         <>
           <div

@@ -430,6 +430,8 @@ function DecisionPageBranch({ template, branding, bgPrimary, scrollRef }: Decisi
   const faint = withAlpha(bodyText, 0.45);
   const hairline = withAlpha(bodyText, 0.1);
   const headingFontFamily = fontStack(branding.font_heading, 'inherit');
+  const bodyFontFamily = fontStack(branding.font_body, 'inherit');
+  const bodyFontWeight = branding.font_body_weight ? Number(branding.font_body_weight) || undefined : undefined;
   const titleFontFamily = fontStack(branding.title_font_family || branding.font_heading, 'inherit');
   const titleFontWeight = branding.title_font_weight || '600';
   const titleStyle: React.CSSProperties = {
@@ -491,6 +493,8 @@ function DecisionPageBranch({ template, branding, bgPrimary, scrollRef }: Decisi
                 faint,
                 hairline,
                 headingFontFamily,
+                bodyFontFamily,
+                bodyFontWeight,
                 titleStyle,
                 mutedStyle: { color: muted },
               }}
