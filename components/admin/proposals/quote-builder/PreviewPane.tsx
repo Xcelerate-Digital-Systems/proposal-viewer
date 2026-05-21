@@ -129,6 +129,7 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
             branding.font_body,
             branding.title_font_family,
             proposal.title_font_family,
+            branding.font_button,
           ]}
         />
         <QuoteSinglePageView

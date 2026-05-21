@@ -198,7 +198,7 @@ useEffect(() => {
       <>
         {/* Loader overlay — stays mounted so it animates 85% → 100% → fade */}
         <ViewerLoader branding={branding} loading={loading} label="Loading template preview…" />
-        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
+        <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family, branding.font_button]} />
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <CoverPage proposal={coverCompat as any} branding={branding} onStart={() => setShowCover(false)} />
       </>
@@ -212,7 +212,7 @@ useEffect(() => {
     >
       {/* Loader overlay — stays mounted so it animates 85% → 100% → fade */}
       <ViewerLoader branding={branding} loading={loading} label="Loading template preview…" />
-      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family]} />
+      <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar, branding.title_font_family, branding.font_button]} />
 
       {!loading && template && (<>
       {/* Mobile header bar */}

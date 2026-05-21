@@ -79,7 +79,7 @@ export default function ViewerPagePreview({
                 height: `${100 / scale}%`,
               }}
             >
-              <GoogleFontLoader fonts={[branding.font_body, branding.font_heading, branding.title_font_family]} />
+              <GoogleFontLoader fonts={[branding.font_body, branding.font_heading, branding.title_font_family, branding.font_button]} />
               <div
                 className="relative w-full"
                 style={{

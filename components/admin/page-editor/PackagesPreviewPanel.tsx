@@ -92,7 +92,7 @@ export default function PackagesPreviewPanel({
               height: `${100 / previewScale}%`,
             }}
           >
-            <GoogleFontLoader fonts={[branding.font_body, branding.font_heading, branding.title_font_family]} />
+            <GoogleFontLoader fonts={[branding.font_body, branding.font_heading, branding.title_font_family, branding.font_button]} />
             <div className="relative w-full min-h-full" style={{ backgroundColor: branding.bg_primary || '#0f0f0f' }}>
               <ViewerBackground branding={branding} />
               <PackagesPage packages={packages} branding={branding} />

@@ -96,6 +96,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
               v.branding.font_body,
               v.branding.title_font_family,
               v.proposal.title_font_family,
+              v.branding.font_button,
             ]}
           />
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -119,6 +120,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
             v.branding.font_body,
             v.branding.title_font_family,
             v.proposal.title_font_family,
+            v.branding.font_button,
           ]}
         />
         {/* Auto-print trigger for admin ?print=1 deep links. The visible
@@ -178,7 +180,7 @@ export default function ProposalViewerPage({ params }: { params: { token: string
       className="flex flex-col lg:flex-row overflow-hidden"
       style={{ backgroundColor: v.bgPrimary, height: '100dvh' }}
     >
-      <GoogleFontLoader fonts={[v.branding.font_heading, v.branding.font_body, v.branding.font_sidebar, v.branding.title_font_family]} />
+      <GoogleFontLoader fonts={[v.branding.font_heading, v.branding.font_body, v.branding.font_sidebar, v.branding.title_font_family, v.branding.font_button]} />
 
       {/* Cover overlay — fades out on Start, revealing the viewer underneath */}
       {showingCover && (
