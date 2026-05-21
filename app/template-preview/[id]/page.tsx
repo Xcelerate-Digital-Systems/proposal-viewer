@@ -493,6 +493,9 @@ function DecisionPageBranch({ template, branding, bgPrimary, scrollRef }: Decisi
                 titleStyle,
                 mutedStyle: { color: muted },
               }}
+              acceptHeading={extras.accept_heading}
+              acceptSubtitle={extras.accept_subtitle}
+              agreementText={extras.agreement_text}
             />
           </div>
         </div>

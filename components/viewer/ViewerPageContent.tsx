@@ -212,6 +212,9 @@ export default function ViewerPageContent({
                 revisionRequested={revisionRequested}
                 tokens={tokens}
                 acceptButtonText={acceptButtonText}
+                acceptHeading={extras.accept_heading}
+                acceptSubtitle={extras.accept_subtitle}
+                agreementText={extras.agreement_text}
               />
             </div>
           </div>

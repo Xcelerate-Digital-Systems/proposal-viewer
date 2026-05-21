@@ -23,6 +23,10 @@ interface DecisionPagePreviewProps {
   steps: string[];
   /** Live Terms copy from the tab. */
   terms: string;
+  /** Live Accept-form copy. */
+  acceptHeading: string;
+  acceptSubtitle: string;
+  agreementText: string;
 }
 
 /* ── Helper duplicated from DesignPreviews to keep the preview self-contained
@@ -86,6 +90,9 @@ export default function DecisionPagePreview({
   title,
   steps,
   terms,
+  acceptHeading,
+  acceptSubtitle,
+  agreementText,
 }: DecisionPagePreviewProps) {
   const [loaded, setLoaded] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -227,6 +234,9 @@ export default function DecisionPagePreview({
               titleStyle,
               mutedStyle: { color: muted },
             }}
+            acceptHeading={acceptHeading}
+            acceptSubtitle={acceptSubtitle}
+            agreementText={agreementText}
           />
         </div>
       </div>

@@ -37,6 +37,10 @@ interface ProposalDecisionPanelProps {
   tokens: DecisionPanelTokens;
   /** Label on the accept submit button. Defaults to "Accept & Confirm Quote". */
   acceptButtonText?: string;
+  /** Customisable Accept-tab copy. Each falls back to a sensible default. */
+  acceptHeading?: string;
+  acceptSubtitle?: string;
+  agreementText?: string;
 }
 
 type DecisionState = 'pending' | 'accepted' | 'declined' | 'revision';
@@ -68,6 +72,9 @@ export default function ProposalDecisionPanel({
   revisionRequested: initialRevisionRequested,
   tokens,
   acceptButtonText,
+  acceptHeading,
+  acceptSubtitle,
+  agreementText,
 }: ProposalDecisionPanelProps) {
   const initialState: DecisionState = initialAccepted
     ? 'accepted'
@@ -156,14 +163,14 @@ export default function ProposalDecisionPanel({
         <>
           <h3 className="text-2xl sm:text-3xl tracking-tight mb-2" style={titleStyle}>
             {activeAction === 'accept'
-              ? 'Ready to lock in your project?'
+              ? (acceptHeading || 'Ready to lock in your project?')
               : activeAction === 'decline'
                 ? 'Decline this quote?'
                 : 'Request changes to this quote?'}
           </h3>
           <p className="text-sm mb-6" style={mutedStyle}>
             {activeAction === 'accept'
-              ? 'Sign below to confirm your project and secure your quoted price.'
+              ? (acceptSubtitle || 'Sign below to confirm your project and secure your quoted price.')
               : activeAction === 'decline'
                 ? "Let us know why if you'd like — it helps us improve."
                 : "Tell us what you'd like changed and we'll send a revised quote."}
@@ -234,7 +241,7 @@ export default function ProposalDecisionPanel({
                 onChange={(e) => setAgree(e.target.checked)}
                 className="mt-0.5"
               />
-              <span>I have read and agree to the proposal details and terms above.</span>
+              <span>{agreementText || 'I have read and agree to the proposal details and terms above.'}</span>
             </label>
           )}
 
