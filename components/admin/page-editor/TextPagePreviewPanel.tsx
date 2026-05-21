@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import TextPage from '@/components/viewer/TextPage';
@@ -107,33 +106,6 @@ export default function TextPagePreviewPanel({
   return (
     <div ref={containerRef} className="flex-1 flex flex-col min-h-0">
       <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-
-        {/* Header bar */}
-        <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onGoPrev}
-              disabled={!canGoPrev}
-              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span className="text-xs text-gray-500 font-medium">Text Page</span>
-            <button
-              onClick={onGoNext}
-              disabled={!canGoNext}
-              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-          <span className="text-xs text-teal font-medium flex items-center gap-1">
-            <FileText size={11} />
-            {page.title || 'Text Page'}
-          </span>
-        </div>
-
-        {/* Scaled preview */}
         <div className="flex-1 min-h-0 overflow-hidden relative">
           <div
             className="absolute inset-0 overflow-y-auto"
@@ -166,16 +138,7 @@ export default function TextPagePreviewPanel({
               proposalTitle={proposal?.title}
               clientLogoUrl={clientLogoUrl ?? undefined}
             />
-
           </div>
-        </div>
-
-        {/* Footer hint */}
-        <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-200 flex items-center justify-center">
-          <span className="text-[10px] text-gray-400 flex items-center gap-1">
-            <ExternalLink size={9} />
-            Edit content in the Text Pages tab
-          </span>
         </div>
       </div>
     </div>

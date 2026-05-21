@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { supabase, PageNameEntry } from '@/lib/supabase';
 import type { PageUrlEntry } from '@/hooks/useProposal';
 
@@ -137,35 +137,6 @@ export default function PdfPreviewPanel({
         )}
         {resolvedPageCount > 0 && (
           <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
-            {/* Toolbar */}
-            <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={onGoPrev}
-                  disabled={selectedPdfIndex <= 0}
-                  className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <span className="text-xs text-gray-500 font-medium">
-                  Page {selectedPdfIndex + 1} of {resolvedPageCount}
-                </span>
-                <button
-                  onClick={onGoNext}
-                  disabled={selectedPdfIndex >= resolvedPageCount - 1}
-                  className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
-                >
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-              <span className="text-xs text-teal font-medium truncate ml-2">
-                {/* In per-page mode prefer the label from pageUrls; fall back to entries */}
-                {isPerPage
-                  ? (pageUrls[selectedPdfIndex]?.title || entries[selectedPdfIndex]?.name || '')
-                  : (entries[selectedPdfIndex]?.name || '')}
-              </span>
-            </div>
-
             {/* Page preview */}
             <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center p-2">
               <Page
