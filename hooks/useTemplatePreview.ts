@@ -61,6 +61,9 @@ interface TemplateData {
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
   page_orientation: string | null;
+  decision_page_enabled: boolean | null;
+  decision_page_title: string | null;
+  decision_extras: unknown;
 }
 
 /* ─── Hook ───────────────────────────────────────────────────────────────── */
@@ -163,82 +166,111 @@ export function useTemplatePreview(templateId: string) {
 
   /* ── Derived state from unified page list ──────────────────────────────── */
 
+  // Append the synthetic Decision page at the end (default-on; only skip when
+  // template.decision_page_enabled === false). Mirrors the proposal-viewer
+  // behaviour so previewing a template shows the same Accept/Decline screen
+  // a proposal built from it would render.
+  const effectivePageUrls = useMemo<PageUrlEntry[]>(() => {
+    if (!template) return pageUrls;
+    if (template.decision_page_enabled === false) return pageUrls;
+    if (pageUrls.length === 0) return pageUrls;
+    const tail = pageUrls[pageUrls.length - 1];
+    return [
+      ...pageUrls,
+      {
+        id: '__decision__',
+        position: tail.position + 1,
+        type: 'decision',
+        url: null,
+        title: template.decision_page_title || 'Decision',
+        indent: 0,
+        show_title: true,
+        show_member_badge: false,
+        show_client_logo: false,
+        prepared_by_member_id: null,
+        payload: {},
+      },
+    ];
+  }, [pageUrls, template]);
+
   // Sidebar nav entries — section pages become 'group' type
   const pageEntries: PageNameEntry[] = useMemo(
     () =>
-      pageUrls.map((p) => ({
+      effectivePageUrls.map((p) => ({
         name: p.title,
         indent: p.indent,
         ...(p.type === 'section' ? { type: 'group' as const } : {}),
         ...(p.link_url ? { link_url: p.link_url } : {}),
         ...(p.link_label ? { link_label: p.link_label } : {}),
       })),
-    [pageUrls],
+    [effectivePageUrls],
   );
 
-  const numPages = pageUrls.length;
-  const pdfPageCount = useMemo(() => pageUrls.filter((p) => p.type === 'pdf').length, [pageUrls]);
+  const numPages = effectivePageUrls.length;
+  const pdfPageCount = useMemo(() => effectivePageUrls.filter((p) => p.type === 'pdf').length, [effectivePageUrls]);
 
   // First signed PDF URL — used for any legacy merged-PDF consumers (cover page, etc.)
   const pdfUrl = useMemo(
-    () => pageUrls.find((p) => p.type === 'pdf')?.url ?? '',
-    [pageUrls],
+    () => effectivePageUrls.find((p) => p.type === 'pdf')?.url ?? '',
+    [effectivePageUrls],
   );
 
   const tocSettings = template ? parseTocSettings(template.toc_settings) : null;
 
   // Virtual page type helpers
-  const isPricingPage  = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'pricing',  [pageUrls]);
-  const isPackagesPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'packages', [pageUrls]);
-  const isTocPage      = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'toc',      [pageUrls]);
-  const isTextPage     = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'text',     [pageUrls]);
+  const isPricingPage  = useCallback((vp: number) => effectivePageUrls[vp - 1]?.type === 'pricing',  [effectivePageUrls]);
+  const isPackagesPage = useCallback((vp: number) => effectivePageUrls[vp - 1]?.type === 'packages', [effectivePageUrls]);
+  const isTocPage      = useCallback((vp: number) => effectivePageUrls[vp - 1]?.type === 'toc',      [effectivePageUrls]);
+  const isTextPage     = useCallback((vp: number) => effectivePageUrls[vp - 1]?.type === 'text',     [effectivePageUrls]);
+  const isDecisionPage = useCallback((vp: number) => effectivePageUrls[vp - 1]?.type === 'decision', [effectivePageUrls]);
 
   const getPackagesId = useCallback(
-    (vp: number): string | null => pageUrls[vp - 1]?.type === 'packages' ? pageUrls[vp - 1].id : null,
-    [pageUrls],
+    (vp: number): string | null => effectivePageUrls[vp - 1]?.type === 'packages' ? effectivePageUrls[vp - 1].id : null,
+    [effectivePageUrls],
   );
   const getTextPageId = useCallback(
-    (vp: number): string | null => pageUrls[vp - 1]?.type === 'text' ? pageUrls[vp - 1].id : null,
-    [pageUrls],
+    (vp: number): string | null => effectivePageUrls[vp - 1]?.type === 'text' ? effectivePageUrls[vp - 1].id : null,
+    [effectivePageUrls],
   );
   const toPdfPage = useCallback(
     (vp: number): number => {
       let pdfCount = 0;
-      for (let i = 0; i < vp - 1 && i < pageUrls.length; i++) {
-        if (pageUrls[i].type === 'pdf') pdfCount++;
+      for (let i = 0; i < vp - 1 && i < effectivePageUrls.length; i++) {
+        if (effectivePageUrls[i].type === 'pdf') pdfCount++;
       }
-      return pageUrls[vp - 1]?.type === 'pdf' ? pdfCount + 1 : -1;
+      return effectivePageUrls[vp - 1]?.type === 'pdf' ? pdfCount + 1 : -1;
     },
-    [pageUrls],
+    [effectivePageUrls],
   );
 
   const pageSequence = useMemo(
     () =>
-      pageUrls.map((p) => {
+      effectivePageUrls.map((p) => {
         if (p.type === 'pdf') {
-          const pdfIndex = pageUrls.slice(0, pageUrls.indexOf(p) + 1).filter((x) => x.type === 'pdf').length;
+          const pdfIndex = effectivePageUrls.slice(0, effectivePageUrls.indexOf(p) + 1).filter((x) => x.type === 'pdf').length;
           return { type: 'pdf' as const, pdfPage: pdfIndex };
         }
         if (p.type === 'text')     return { type: 'text' as const, textPageId: p.id };
         if (p.type === 'pricing')  return { type: 'pricing' as const, pricingId: p.id };
         if (p.type === 'packages') return { type: 'packages' as const, packagesId: p.id };
         if (p.type === 'toc')      return { type: 'toc' as const };
+        if (p.type === 'decision') return { type: 'decision' as const };
         return { type: 'pdf' as const, pdfPage: 0 };
       }),
-    [pageUrls],
+    [effectivePageUrls],
   );
 
   const getPricingId = useCallback(
-    (vp: number): string | null => pageUrls[vp - 1]?.type === 'pricing' ? pageUrls[vp - 1].id : null,
-    [pageUrls],
+    (vp: number): string | null => effectivePageUrls[vp - 1]?.type === 'pricing' ? effectivePageUrls[vp - 1].id : null,
+    [effectivePageUrls],
   );
 
   const pricingPages = useMemo(
     () =>
-      pageUrls
+      effectivePageUrls
         .filter((x) => x.type === 'pricing')
         .map((p) => ({ id: p.id, enabled: true, title: p.title, position: p.position, indent: p.indent, ...p.payload } as Record<string, unknown>)),
-    [pageUrls],
+    [effectivePageUrls],
   );
 
   // Backward-compat: first pricing page
@@ -246,7 +278,7 @@ export function useTemplatePreview(templateId: string) {
 
   const packages = useMemo(
     () =>
-      pageUrls
+      effectivePageUrls
         .filter((x) => x.type === 'packages')
         .map((p) => {
           const merged = { id: p.id, enabled: true, title: p.title, indent: p.indent, ...p.payload };
@@ -256,12 +288,12 @@ export function useTemplatePreview(templateId: string) {
           }
           return merged;
         }),
-    [pageUrls, template],
+    [effectivePageUrls, template],
   );
 
   const textPages: ProposalTextPage[] = useMemo(
     () =>
-      pageUrls
+      effectivePageUrls
         .filter((x) => x.type === 'text')
         .map((p) => ({
           id: p.id,
@@ -280,7 +312,7 @@ export function useTemplatePreview(templateId: string) {
           show_client_logo: p.show_client_logo ?? false,
           prepared_by_member_id: p.prepared_by_member_id ?? null,
         })),
-    [pageUrls, template, templateId],
+    [effectivePageUrls, template, templateId],
   );
 
   const getPageName = (pageNum: number) =>
@@ -295,7 +327,7 @@ export function useTemplatePreview(templateId: string) {
   return {
     template,
     pdfUrl,
-    pageUrls,
+    pageUrls: effectivePageUrls,
     numPages: numPages || pdfPageCount,
     pdfPageCount,
     currentPage,
@@ -315,6 +347,7 @@ export function useTemplatePreview(templateId: string) {
     getPackagesId,
     isTocPage,
     isTextPage,
+    isDecisionPage,
     getTextPageId,
     getTextPage,
     toPdfPage,
