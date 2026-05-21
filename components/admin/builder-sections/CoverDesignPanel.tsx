@@ -56,7 +56,13 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
   /* ── Preview-only state ─────────────────────────────────────── */
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState('');
+  // Resolved font + weight cascade: entity override → company default.
+  // The Design tab's Globals card writes these onto the entity row, so the
+  // cover preview re-renders with the chosen weight once the save lands.
   const [headingFont, setHeadingFont] = useState<string | null>(null);
+  const [headingFontWeight, setHeadingFontWeight] = useState<string | null>(null);
+  const [bodyFont, setBodyFont] = useState<string | null>(null);
+  const [bodyFontWeight, setBodyFontWeight] = useState<string | null>(null);
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
   const [resolvedMember, setResolvedMember] = useState<ResolvedMember | null>(null);
 
@@ -87,13 +93,27 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
     (async () => {
       const { data: company } = await supabase
         .from('companies')
-        .select('name, logo_path, font_heading, title_font_family')
+        .select('name, logo_path, font_heading, font_heading_weight, font_body, font_body_weight, title_font_family')
         .eq('id', entity.company_id)
         .single();
       if (cancelled) return;
       if (company) {
         setCompanyName(company.name || '');
-        setHeadingFont(company.font_heading || company.title_font_family || null);
+        // Entity-level overrides (set via the Design tab's Globals card) win;
+        // fall back to the company defaults when null.
+        const e = entity as {
+          font_heading_family?: string | null;
+          font_heading_weight?: string | null;
+          font_body_family?: string | null;
+          font_body_weight?: string | null;
+          title_font_family?: string | null;
+        };
+        setHeadingFont(
+          e.font_heading_family || company.font_heading || e.title_font_family || company.title_font_family || null,
+        );
+        setHeadingFontWeight(e.font_heading_weight || company.font_heading_weight || null);
+        setBodyFont(e.font_body_family || company.font_body || null);
+        setBodyFontWeight(e.font_body_weight || company.font_body_weight || null);
         if (company.logo_path) {
           const { data: url } = supabase.storage.from('company-assets').getPublicUrl(company.logo_path);
           if (url?.publicUrl) setCompanyLogoUrl(url.publicUrl);
@@ -101,7 +121,7 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
       }
     })();
     return () => { cancelled = true; };
-  }, [entity.company_id]);
+  }, [entity]);
 
   useEffect(() => {
     if (!clientLogoPath) { setClientLogoUrl(null); return; }
@@ -475,6 +495,9 @@ export default function CoverDesignPanel({ type, entity, onSave }: Props) {
             companyLogoUrl={companyLogoUrl}
             companyName={companyName}
             headingFont={headingFont}
+            headingFontWeight={headingFontWeight}
+            bodyFont={bodyFont}
+            bodyFontWeight={bodyFontWeight}
             showClientLogo={showClientLogo}
             clientLogoUrl={clientLogoUrl}
             clientLogoTintColor={clientLogoTintColor}

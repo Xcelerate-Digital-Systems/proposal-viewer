@@ -71,6 +71,9 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string>('');
   const [headingFont, setHeadingFont] = useState<string | null>(null);
+  const [headingFontWeight, setHeadingFontWeight] = useState<string | null>(null);
+  const [bodyFont, setBodyFont] = useState<string | null>(null);
+  const [bodyFontWeight, setBodyFontWeight] = useState<string | null>(null);
 
   /* ── Client logo state ─────────────────────────────────────── */
   const [clientLogoPath, setClientLogoPath] = useState(entity.cover_client_logo_path || '');
@@ -126,13 +129,26 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     const fetchCompanyLogo = async () => {
       const { data } = await supabase
         .from('companies')
-        .select('name, logo_path, font_heading, title_font_family')
+        .select('name, logo_path, font_heading, font_heading_weight, font_body, font_body_weight, title_font_family')
         .eq('id', entity.company_id)
         .single();
 
       if (data) {
         setCompanyName(data.name || '');
-        setHeadingFont(data.font_heading || data.title_font_family || null);
+        // Entity-level overrides win; fall back to company defaults.
+        const e = entity as {
+          font_heading_family?: string | null;
+          font_heading_weight?: string | null;
+          font_body_family?: string | null;
+          font_body_weight?: string | null;
+          title_font_family?: string | null;
+        };
+        setHeadingFont(
+          e.font_heading_family || data.font_heading || e.title_font_family || data.title_font_family || null,
+        );
+        setHeadingFontWeight(e.font_heading_weight || data.font_heading_weight || null);
+        setBodyFont(e.font_body_family || data.font_body || null);
+        setBodyFontWeight(e.font_body_weight || data.font_body_weight || null);
         if (data.logo_path) {
           const { data: urlData } = supabase.storage
             .from('company-assets')
@@ -144,7 +160,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
       }
     };
     fetchCompanyLogo();
-  }, [entity.company_id]);
+  }, [entity]);
 
   /* ── Load existing cover image ─────────────────────────────── */
   useEffect(() => {
@@ -450,6 +466,9 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
             companyLogoUrl={companyLogoUrl}
             companyName={companyName}
             headingFont={headingFont}
+            headingFontWeight={headingFontWeight}
+            bodyFont={bodyFont}
+            bodyFontWeight={bodyFontWeight}
             showClientLogo={showClientLogo}
             clientLogoUrl={clientLogoUrl}
             clientLogoTintColor={clientLogoTintColor}

@@ -22,6 +22,14 @@ interface CoverPreviewProps {
   companyLogoUrl: string | null;
   companyName: string;
   headingFont?: string | null;
+  /** Weight applied to the cover title — must mirror CoverPage so the preview
+   *  reflects what the viewer will render. NULL/undefined falls back to the
+   *  Tailwind `font-semibold` baked into the className. */
+  headingFontWeight?: string | number | null;
+  /** Body font + weight for the subtitle / prepared-by row. NULL falls back
+   *  to inherited / Tailwind defaults. */
+  bodyFont?: string | null;
+  bodyFontWeight?: string | number | null;
   /* Client logo */
   showClientLogo: boolean;
   clientLogoUrl: string | null;
@@ -46,6 +54,9 @@ export default function CoverPreview({
   companyLogoUrl,
   companyName,
   headingFont,
+  headingFontWeight,
+  bodyFont,
+  bodyFontWeight,
   showClientLogo,
   clientLogoUrl,
   clientLogoTintColor,
@@ -85,13 +96,20 @@ export default function CoverPreview({
     : undefined;
 
   const resolvedHeadingFont = fontFamily(headingFont, undefined);
+  const resolvedBodyFont = fontFamily(bodyFont, undefined);
+  const headingWeightStyle = headingFontWeight != null && headingFontWeight !== ''
+    ? Number(headingFontWeight) || undefined
+    : undefined;
+  const bodyWeightStyle = bodyFontWeight != null && bodyFontWeight !== ''
+    ? Number(bodyFontWeight) || undefined
+    : undefined;
 
   return (
     <div
       className="rounded-lg overflow-hidden relative w-full h-full"
       style={{ backgroundColor: colors.coverBgColor1 }}
     >
-      {headingFont && <GoogleFontLoader fonts={[headingFont]} />}
+      <GoogleFontLoader fonts={[headingFont || null, bodyFont || null].filter(Boolean) as string[]} />
       {/* Background layer */}
       {imageUrl ? (
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }} />
@@ -159,21 +177,39 @@ export default function CoverPreview({
 
           <h2
             className="text-lg font-semibold leading-tight mb-0.5"
-            style={{ color: colors.coverTextColor, fontFamily: resolvedHeadingFont || undefined }}
+            style={{
+              color: colors.coverTextColor,
+              fontFamily: resolvedHeadingFont || undefined,
+              fontWeight: headingWeightStyle,
+            }}
           >
             {displayTitle}
           </h2>
 
           {/* Date */}
           {showDate && coverDate && (
-            <p className="text-[10px] opacity-70 mb-1" style={{ color: colors.coverSubtitleColor }}>
+            <p
+              className="text-[10px] opacity-70 mb-1"
+              style={{
+                color: colors.coverSubtitleColor,
+                fontFamily: resolvedBodyFont || undefined,
+                fontWeight: bodyWeightStyle,
+              }}
+            >
               {coverDate}
             </p>
           )}
 
           {/* Subtitle */}
           {previewSubtitle && (
-            <p className="text-xs mb-1" style={{ color: colors.coverSubtitleColor }}>
+            <p
+              className="text-xs mb-1"
+              style={{
+                color: colors.coverSubtitleColor,
+                fontFamily: resolvedBodyFont || undefined,
+                fontWeight: bodyWeightStyle,
+              }}
+            >
               {previewSubtitle}
             </p>
           )}
