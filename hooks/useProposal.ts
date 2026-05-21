@@ -118,6 +118,8 @@ export function useProposal(token: string) {
         if (data.font_heading_size != null) brandingData.font_heading_size = data.font_heading_size;
         if (data.font_body_family != null) brandingData.font_body = data.font_body_family;
         if (data.font_body_weight != null) brandingData.font_body_weight = data.font_body_weight;
+        if (data.font_button_family != null) brandingData.font_button = data.font_button_family;
+        if (data.font_button_weight != null) brandingData.font_button_weight = data.font_button_weight;
         if (data.title_font_transform != null) brandingData.title_font_transform = data.title_font_transform;
         if (data.font_heading_transform != null) brandingData.font_heading_transform = data.font_heading_transform;
         if (data.font_body_transform != null) brandingData.font_body_transform = data.font_body_transform;

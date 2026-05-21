@@ -9,7 +9,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image as ImageIcon, Loader2, Trash2, Upload, Paintbrush } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Trash2, Upload, Paintbrush, Type, MousePointerClick, RotateCcw } from 'lucide-react';
 import Chip from '@/components/ui/Chip';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
@@ -38,6 +38,8 @@ interface Props {
   liveFontHeadingWeight?: string | null;
   liveFontBodyFamily?: string | null;
   liveFontBodyWeight?: string | null;
+  liveFontButtonFamily?: string | null;
+  liveFontButtonWeight?: string | null;
 }
 
 export default function CoverDesignPanel({
@@ -50,6 +52,8 @@ export default function CoverDesignPanel({
   liveFontHeadingWeight,
   liveFontBodyFamily,
   liveFontBodyWeight,
+  liveFontButtonFamily,
+  liveFontButtonWeight,
 }: Props) {
   const cfg = configs[type];
   const toast = useToast();
@@ -83,6 +87,15 @@ export default function CoverDesignPanel({
   const [headingFontWeight, setHeadingFontWeight] = useState<string | null>(null);
   const [bodyFont, setBodyFont] = useState<string | null>(null);
   const [bodyFontWeight, setBodyFontWeight] = useState<string | null>(null);
+  const [buttonFont, setButtonFont] = useState<string | null>(null);
+  const [buttonFontWeight, setButtonFontWeight] = useState<string | null>(null);
+  /* ── Header text colours (now in their own SectionCard) ─────── */
+  const [coverTextColor, setCoverTextColor] = useState<string | null>(
+    entity.cover_text_color ?? null,
+  );
+  const [coverSubtitleColor, setCoverSubtitleColor] = useState<string | null>(
+    entity.cover_subtitle_color ?? null,
+  );
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
   const [resolvedMember, setResolvedMember] = useState<ResolvedMember | null>(null);
 
@@ -113,7 +126,7 @@ export default function CoverDesignPanel({
     (async () => {
       const { data: company } = await supabase
         .from('companies')
-        .select('name, logo_path, font_heading, font_heading_weight, font_body, font_body_weight, title_font_family')
+        .select('name, logo_path, font_heading, font_heading_weight, font_body, font_body_weight, font_button, font_button_weight, title_font_family')
         .eq('id', entity.company_id)
         .single();
       if (cancelled) return;
@@ -126,6 +139,8 @@ export default function CoverDesignPanel({
           font_heading_weight?: string | null;
           font_body_family?: string | null;
           font_body_weight?: string | null;
+          font_button_family?: string | null;
+          font_button_weight?: string | null;
           title_font_family?: string | null;
           title_font_weight?: string | null;
         };
@@ -139,6 +154,8 @@ export default function CoverDesignPanel({
         );
         setBodyFont(e.font_body_family || company.font_body || null);
         setBodyFontWeight(e.font_body_weight || company.font_body_weight || null);
+        setButtonFont(e.font_button_family || company.font_button || null);
+        setButtonFontWeight(e.font_button_weight || company.font_button_weight || null);
         if (company.logo_path) {
           const { data: url } = supabase.storage.from('company-assets').getPublicUrl(company.logo_path);
           if (url?.publicUrl) setCompanyLogoUrl(url.publicUrl);
@@ -325,7 +342,9 @@ export default function CoverDesignPanel({
           icon={<Paintbrush size={14} className="text-gray-400" />}
         >
           <div className="space-y-6">
-            {/* Fill (gradient/solid picker + cover text colours) */}
+            {/* Fill (gradient/solid picker + overlay opacity). Header title
+                + subtitle colours live in their own SectionCard below for
+                the unified layout. */}
             <HeaderStyleCard
               proposal={headerEntity}
               companyId={entity.company_id}
@@ -333,6 +352,7 @@ export default function CoverDesignPanel({
               variant="cover"
               table={headerTable}
               bare
+              hideTextColors
             />
 
             {/* Image upload */}
@@ -485,24 +505,80 @@ export default function CoverDesignPanel({
               </div>
             )}
 
-            {/* Button */}
-            <div className="pt-4 border-t border-gray-100">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Call-to-action Button</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <ColorPickerField
-                  label="Button background"
-                  value={buttonBg}
-                  fallback="#01434A"
-                  onChange={(v) => { setButtonBg(v); persist({ cover_button_bg: v }); }}
-                />
-                <ColorPickerField
-                  label="Button text"
-                  value={buttonTextColor}
-                  fallback="#ffffff"
-                  onChange={(v) => { setButtonTextColor(v); persist({ cover_button_text_color: v }); }}
-                />
-              </div>
-            </div>
+          </div>
+        </SectionCard>
+
+        {/* Cover Header Text — title + subtitle colours, flat ColorPickerField
+            stack to match the Pricing Design / Page Colours layout. */}
+        <SectionCard
+          title="Cover Header Text"
+          description="Title and subtitle colours on the cover splash."
+          icon={<Type size={14} className="text-gray-400" />}
+          action={
+            <button
+              onClick={() => {
+                setCoverTextColor(null);
+                setCoverSubtitleColor(null);
+                persist({ cover_text_color: null, cover_subtitle_color: null });
+              }}
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+            >
+              <RotateCcw size={12} />
+              Reset
+            </button>
+          }
+        >
+          <div className="space-y-4">
+            <ColorPickerField
+              label="Header Title"
+              value={coverTextColor}
+              fallback="#ffffff"
+              onChange={(v) => { setCoverTextColor(v); persist({ cover_text_color: v }); }}
+              onReset={() => { setCoverTextColor(null); persist({ cover_text_color: null }); }}
+            />
+            <ColorPickerField
+              label="Header Subtitle"
+              value={coverSubtitleColor}
+              fallback="#ffffffb3"
+              onChange={(v) => { setCoverSubtitleColor(v); persist({ cover_subtitle_color: v }); }}
+              onReset={() => { setCoverSubtitleColor(null); persist({ cover_subtitle_color: null }); }}
+            />
+          </div>
+        </SectionCard>
+
+        {/* Call-to-action Button — bg + text colours in their own card with
+            the same flat layout. */}
+        <SectionCard
+          title="Call-to-action Button"
+          description="Background and text colours for the cover button."
+          icon={<MousePointerClick size={14} className="text-gray-400" />}
+          action={
+            <button
+              onClick={() => {
+                setButtonBg('#01434A');
+                setButtonTextColor('#ffffff');
+                persist({ cover_button_bg: '#01434A', cover_button_text_color: '#ffffff' });
+              }}
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+            >
+              <RotateCcw size={12} />
+              Reset
+            </button>
+          }
+        >
+          <div className="space-y-4">
+            <ColorPickerField
+              label="Button Background"
+              value={buttonBg}
+              fallback="#01434A"
+              onChange={(v) => { setButtonBg(v); persist({ cover_button_bg: v }); }}
+            />
+            <ColorPickerField
+              label="Button Text"
+              value={buttonTextColor}
+              fallback="#ffffff"
+              onChange={(v) => { setButtonTextColor(v); persist({ cover_button_text_color: v }); }}
+            />
           </div>
         </SectionCard>
       </div>
@@ -523,6 +599,8 @@ export default function CoverDesignPanel({
             headingFontWeight={liveTitleFontWeight || liveFontHeadingWeight || headingFontWeight}
             bodyFont={liveFontBodyFamily || bodyFont}
             bodyFontWeight={liveFontBodyWeight || bodyFontWeight}
+            buttonFont={liveFontButtonFamily || buttonFont}
+            buttonFontWeight={liveFontButtonWeight || buttonFontWeight}
             showClientLogo={showClientLogo}
             clientLogoUrl={clientLogoUrl}
             clientLogoTintColor={clientLogoTintColor}

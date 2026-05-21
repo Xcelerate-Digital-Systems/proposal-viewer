@@ -346,6 +346,7 @@ useEffect(() => {
                   proposalTitle={template?.name}
                   orientation={pageOrientation}
                   clientLogoUrl={clientLogoUrl}
+                  clientLogoTintColor={template?.cover_client_logo_tint_color ?? null}
                 />
               </div>
             </div>

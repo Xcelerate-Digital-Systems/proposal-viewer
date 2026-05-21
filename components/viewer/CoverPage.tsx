@@ -410,11 +410,14 @@ export default function CoverPage({
 
               <button
                 onClick={handleStart}
-                className="px-8 py-3.5 text-sm font-semibold tracking-wider uppercase rounded-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
+                className="px-8 py-3.5 text-sm tracking-wider uppercase rounded-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 style={{
                   backgroundColor: btnBg,
                   color: btnText,
-                  fontFamily: fontFamily(branding.font_heading),
+                  // Cascade: button font override → heading font. Same for weight,
+                  // falling back to 600 (Tailwind font-semibold equivalent).
+                  fontFamily: fontFamily(branding.font_button || branding.font_heading),
+                  fontWeight: Number(branding.font_button_weight || branding.font_heading_weight || '600') || 600,
                 }}
               >
                 {buttonText}

@@ -41,6 +41,10 @@ interface Props {
   /** Skip the outer SectionCard chrome — used when this body is nested inside
    *  another card (e.g. the consolidated Cover Design card). */
   bare?: boolean;
+  /** Hide the "Header title text" + "Header subtitle text" pickers at the
+   *  bottom. CoverDesignPanel uses this so it can render those two colours
+   *  in its own SectionCard following the unified flat layout. */
+  hideTextColors?: boolean;
 }
 
 interface VariantCols {
@@ -101,6 +105,7 @@ export default function HeaderStyleCard({
   description,
   table = 'proposals',
   bare = false,
+  hideTextColors = false,
 }: Props) {
   const toast = useToast();
   const cols = variant === 'cover' ? COVER_COLS : QUOTE_HEADER_COLS;
@@ -377,21 +382,24 @@ export default function HeaderStyleCard({
           />
         )}
 
-        {/* Text colours */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-          <ColorPickerField
-            label="Header title text"
-            value={coverTextColor}
-            fallback="#ffffff"
-            onChange={(v) => { setCoverTextColor(v); persist({ [cols.text_color as string]: v }); }}
-          />
-          <ColorPickerField
-            label="Header subtitle text"
-            value={coverSubtitleColor}
-            fallback="#ffffffb3"
-            onChange={(v) => { setCoverSubtitleColor(v); persist({ [cols.subtitle_color as string]: v }); }}
-          />
-        </div>
+        {/* Text colours — hidden when the consumer renders them in a separate
+            SectionCard (CoverDesignPanel uses this for the unified layout). */}
+        {!hideTextColors && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+            <ColorPickerField
+              label="Header title text"
+              value={coverTextColor}
+              fallback="#ffffff"
+              onChange={(v) => { setCoverTextColor(v); persist({ [cols.text_color as string]: v }); }}
+            />
+            <ColorPickerField
+              label="Header subtitle text"
+              value={coverSubtitleColor}
+              fallback="#ffffffb3"
+              onChange={(v) => { setCoverSubtitleColor(v); persist({ [cols.subtitle_color as string]: v }); }}
+            />
+          </div>
+        )}
       </div>
   );
 

@@ -47,6 +47,8 @@ interface DesignTabProps {
   initialFontHeadingSize?: string | null;
   initialFontBodyFamily?: string | null;
   initialFontBodyWeight?: string | null;
+  initialFontButtonFamily?: string | null;
+  initialFontButtonWeight?: string | null;
   initialTitleFontTransform?: string | null;
   initialFontHeadingTransform?: string | null;
   initialFontBodyTransform?: string | null;
@@ -97,6 +99,8 @@ export default function DesignTab({
   initialFontHeadingSize,
   initialFontBodyFamily,
   initialFontBodyWeight,
+  initialFontButtonFamily,
+  initialFontButtonWeight,
   initialTitleFontTransform,
   initialFontHeadingTransform,
   initialFontBodyTransform,
@@ -162,6 +166,8 @@ export default function DesignTab({
   const [fontHeadingSize, setFontHeadingSize] = useState<string>(initialFontHeadingSize ?? '');
   const [fontBodyFamily, setFontBodyFamily] = useState<string | null>(initialFontBodyFamily ?? null);
   const [fontBodyWeight, setFontBodyWeight] = useState<string | null>(initialFontBodyWeight ?? null);
+  const [fontButtonFamily, setFontButtonFamily] = useState<string | null>(initialFontButtonFamily ?? null);
+  const [fontButtonWeight, setFontButtonWeight] = useState<string | null>(initialFontButtonWeight ?? null);
   // Body size is the entity-level override on text_page_font_size — that's the
   // column the viewer reads for body copy, including pricing/packages bodies.
   const [fontBodySize, setFontBodySize] = useState<string>(initialTextPageFontSize ?? '');
@@ -306,6 +312,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     payload.font_heading_size = fontHeadingSize || null;
     payload.font_body_family = fontBodyFamily;
     payload.font_body_weight = fontBodyWeight;
+    payload.font_button_family = fontButtonFamily;
+    payload.font_button_weight = fontButtonWeight;
     payload.title_font_transform = titleFontTransform;
     payload.font_heading_transform = fontHeadingTransform;
     payload.font_body_transform = fontBodyTransform;
@@ -332,7 +340,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     tpBgColor, tpTextColor, tpHeadingColor,
     titleFontFamily, titleFontWeight, titleFontSize,
     fontHeadingFamily, fontHeadingWeight, fontHeadingSize,
-    fontBodyFamily, fontBodyWeight, fontBodySize,
+    fontBodyFamily, fontBodyWeight, fontBodySize, fontButtonFamily, fontButtonWeight,
     titleFontTransform, fontHeadingTransform, fontBodyTransform,
     pageNumCircleColor, pageNumTextColor,
     pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor,
@@ -369,7 +377,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   useEffect(() => {
     if (!bodyHeadingFontInitializedRef.current) { bodyHeadingFontInitializedRef.current = true; return; }
     scheduleSave(800);
-  }, [fontHeadingFamily, fontHeadingWeight, fontHeadingSize, fontBodyFamily, fontBodyWeight, fontBodySize, fontHeadingTransform, fontBodyTransform]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fontHeadingFamily, fontHeadingWeight, fontHeadingSize, fontBodyFamily, fontBodyWeight, fontBodySize, fontHeadingTransform, fontBodyTransform, fontButtonFamily, fontButtonWeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Autosave: page number badge state
   useEffect(() => {
@@ -472,6 +480,10 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setFontBodyFamily={setFontBodyFamily}
       fontBodyWeight={fontBodyWeight}
       setFontBodyWeight={setFontBodyWeight}
+      fontButtonFamily={fontButtonFamily}
+      setFontButtonFamily={setFontButtonFamily}
+      fontButtonWeight={fontButtonWeight}
+      setFontButtonWeight={setFontButtonWeight}
       fontHeadingSize={fontHeadingSize}
       setFontHeadingSize={setFontHeadingSize}
       fontBodySize={fontBodySize}

@@ -153,6 +153,10 @@ interface ViewerStyleSectionProps {
   setFontBodyFamily: (v: string | null) => void;
   fontBodyWeight: string | null;
   setFontBodyWeight: (v: string | null) => void;
+  fontButtonFamily: string | null;
+  setFontButtonFamily: (v: string | null) => void;
+  fontButtonWeight: string | null;
+  setFontButtonWeight: (v: string | null) => void;
   fontHeadingSize: string;
   setFontHeadingSize: (v: string) => void;
   fontBodySize: string;
@@ -236,6 +240,10 @@ export default function ViewerStyleSection({
   setFontBodyFamily,
   fontBodyWeight,
   setFontBodyWeight,
+  fontButtonFamily,
+  setFontButtonFamily,
+  fontButtonWeight,
+  setFontButtonWeight,
   fontHeadingSize,
   setFontHeadingSize,
   fontBodySize,
@@ -501,6 +509,15 @@ export default function ViewerStyleSection({
                     onChange={setFontBodySize}
                     placeholder={companyDefaults.font_size || '14'}
                   />
+                  <FontSelect
+                    label="Button font"
+                    description="Cover call-to-action button. Leave blank to use the Heading font."
+                    value={fontButtonFamily}
+                    onChange={setFontButtonFamily}
+                    weight={fontButtonWeight}
+                    onWeightChange={setFontButtonWeight}
+                    hideInlinePreview
+                  />
                 </div>
               </div>
 
@@ -651,6 +668,8 @@ export default function ViewerStyleSection({
           liveFontHeadingWeight={fontHeadingWeight}
           liveFontBodyFamily={fontBodyFamily}
           liveFontBodyWeight={fontBodyWeight}
+          liveFontButtonFamily={fontButtonFamily}
+          liveFontButtonWeight={fontButtonWeight}
         />
       ) : (
         <SectionCard

@@ -35,6 +35,7 @@ interface TemplateData {
   cover_show_avatar: boolean;
   cover_avatar_path: string | null;
   cover_client_logo_path: string | null;
+  cover_client_logo_tint_color: string | null;
   prepared_by: string | null;
   prepared_by_member_id: string | null;
   company_id: string;
@@ -126,6 +127,9 @@ export function useTemplatePreview(templateId: string) {
           if (tmpl.font_heading_weight != null) brandingData.font_heading_weight = tmpl.font_heading_weight;
           if (tmpl.font_body_family != null) brandingData.font_body = tmpl.font_body_family;
           if (tmpl.font_body_weight != null) brandingData.font_body_weight = tmpl.font_body_weight;
+          const tplExt = tmpl as Record<string, unknown>;
+          if (tplExt.font_button_family != null) brandingData.font_button = tplExt.font_button_family;
+          if (tplExt.font_button_weight != null) brandingData.font_button_weight = tplExt.font_button_weight;
           if (tmpl.page_num_circle_color != null) brandingData.page_num_circle_color = tmpl.page_num_circle_color;
           if (tmpl.page_num_text_color != null) brandingData.page_num_text_color = tmpl.page_num_text_color;
 

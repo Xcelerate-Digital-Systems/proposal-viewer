@@ -28,6 +28,9 @@ export type CompanyBranding = {
   font_heading_size: string | null;
   font_body_weight: string | null;
   font_sidebar_weight: string | null;
+  /** Cover CTA button font family + weight. NULL = inherit font_heading. */
+  font_button: string | null;
+  font_button_weight: string | null;
   title_font_family: string | null;
   title_font_weight: string | null;
   title_font_size: string | null;

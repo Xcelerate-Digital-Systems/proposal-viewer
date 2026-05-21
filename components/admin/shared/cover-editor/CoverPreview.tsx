@@ -30,6 +30,9 @@ interface CoverPreviewProps {
    *  to inherited / Tailwind defaults. */
   bodyFont?: string | null;
   bodyFontWeight?: string | number | null;
+  /** CTA button font + weight. Cascades to heading font when not set. */
+  buttonFont?: string | null;
+  buttonFontWeight?: string | number | null;
   /* Client logo */
   showClientLogo: boolean;
   clientLogoUrl: string | null;
@@ -57,6 +60,8 @@ export default function CoverPreview({
   headingFontWeight,
   bodyFont,
   bodyFontWeight,
+  buttonFont,
+  buttonFontWeight,
   showClientLogo,
   clientLogoUrl,
   clientLogoTintColor,
@@ -97,19 +102,23 @@ export default function CoverPreview({
 
   const resolvedHeadingFont = fontFamily(headingFont, undefined);
   const resolvedBodyFont = fontFamily(bodyFont, undefined);
+  const resolvedButtonFont = fontFamily(buttonFont || headingFont, undefined);
   const headingWeightStyle = headingFontWeight != null && headingFontWeight !== ''
     ? Number(headingFontWeight) || undefined
     : undefined;
   const bodyWeightStyle = bodyFontWeight != null && bodyFontWeight !== ''
     ? Number(bodyFontWeight) || undefined
     : undefined;
+  const buttonWeightStyle = buttonFontWeight != null && buttonFontWeight !== ''
+    ? Number(buttonFontWeight) || undefined
+    : headingWeightStyle;
 
   return (
     <div
       className="rounded-lg overflow-hidden relative w-full h-full"
       style={{ backgroundColor: colors.coverBgColor1 }}
     >
-      <GoogleFontLoader fonts={[headingFont || null, bodyFont || null].filter(Boolean) as string[]} />
+      <GoogleFontLoader fonts={[headingFont || null, bodyFont || null, buttonFont || null].filter(Boolean) as string[]} />
       {/* Background layer */}
       {imageUrl ? (
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }} />
@@ -229,8 +238,13 @@ export default function CoverPreview({
           {/* CTA button */}
           <div className="mt-3">
             <div
-              className="inline-block px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase rounded-sm"
-              style={{ backgroundColor: colors.coverButtonBg, color: colors.coverButtonTextColor }}
+              className="inline-block px-4 py-1.5 text-[10px] tracking-wider uppercase rounded-sm"
+              style={{
+                backgroundColor: colors.coverButtonBg,
+                color: colors.coverButtonTextColor,
+                fontFamily: resolvedButtonFont || undefined,
+                fontWeight: buttonWeightStyle ?? 600,
+              }}
             >
               {buttonText || cfg.defaultButtonText}
             </div>

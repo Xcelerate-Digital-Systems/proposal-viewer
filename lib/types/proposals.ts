@@ -150,6 +150,8 @@ export type Proposal = {
   font_heading_weight: string | null;
   font_body_family: string | null;
   font_body_weight: string | null;
+  font_button_family: string | null;
+  font_button_weight: string | null;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
   text_page_text_color: string | null;
@@ -321,6 +323,8 @@ export type ProposalTemplate = {
   font_heading_weight: string | null;
   font_body_family: string | null;
   font_body_weight: string | null;
+  font_button_family: string | null;
+  font_button_weight: string | null;
   file_path: string | null;
   page_num_circle_color: string | null;
   page_num_text_color: string | null;
