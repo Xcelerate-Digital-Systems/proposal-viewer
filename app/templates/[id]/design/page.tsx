@@ -40,11 +40,11 @@ export default function TemplateDesignPage() {
         initialFontBodyTransform={(template as { font_body_transform?: string | null }).font_body_transform ?? null}
         initialPageNumCircleColor={template.page_num_circle_color ?? null}
         initialPageNumTextColor={template.page_num_text_color ?? null}
-        initialQuotePageBgColor={(template as { quote_page_bg_color?: string | null }).quote_page_bg_color ?? null}
-        initialQuoteHeaderBgColor1={template.quote_header_bg_color_1 ?? null}
-        initialQuoteHeaderBgColor2={template.quote_header_bg_color_2 ?? null}
-        initialQuoteHeaderTextColor={template.quote_header_text_color ?? null}
-        initialQuoteHeaderSubtitleColor={template.quote_header_subtitle_color ?? null}
+        initialPricingHeaderTextColor={template.pricing_header_text_color ?? null}
+        initialPricingTextColor={template.pricing_text_color ?? null}
+        initialPricingPriceTitleColor={template.pricing_price_title_color ?? null}
+        initialPricingPriceColor={template.pricing_price_color ?? null}
+        initialPricingPaymentScheduleColor={template.pricing_payment_schedule_color ?? null}
         coverEntity={template}
       />
     </div>

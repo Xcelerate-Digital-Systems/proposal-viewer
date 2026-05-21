@@ -124,6 +124,13 @@ export function useProposal(token: string) {
         if (data.page_num_circle_color != null) brandingData.page_num_circle_color = data.page_num_circle_color;
         if (data.page_num_text_color != null) brandingData.page_num_text_color = data.page_num_text_color;
 
+        // Pricing page colour overrides (proposal entity only).
+        if (data.pricing_header_text_color != null) brandingData.pricing_header_text_color = data.pricing_header_text_color;
+        if (data.pricing_text_color != null) brandingData.pricing_text_color = data.pricing_text_color;
+        if (data.pricing_price_title_color != null) brandingData.pricing_price_title_color = data.pricing_price_title_color;
+        if (data.pricing_price_color != null) brandingData.pricing_price_color = data.pricing_price_color;
+        if (data.pricing_payment_schedule_color != null) brandingData.pricing_payment_schedule_color = data.pricing_payment_schedule_color;
+
         setBranding(brandingData);
       }
     } catch { /* Non-critical */ }

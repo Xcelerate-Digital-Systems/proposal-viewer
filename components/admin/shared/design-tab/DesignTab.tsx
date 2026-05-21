@@ -52,12 +52,15 @@ interface DesignTabProps {
   initialFontBodyTransform?: string | null;
   initialPageNumCircleColor?: string | null;
   initialPageNumTextColor?: string | null;
-  /* Pricing / quote page colours — proposals + templates only */
-  initialQuotePageBgColor?: string | null;
-  initialQuoteHeaderBgColor1?: string | null;
-  initialQuoteHeaderBgColor2?: string | null;
-  initialQuoteHeaderTextColor?: string | null;
-  initialQuoteHeaderSubtitleColor?: string | null;
+  /* Proposal pricing-page colours — proposals + templates only.
+     These replaced the legacy quote_header_* / quote_page_bg_color set
+     which only ever applied to entity_type=quote and are edited from the
+     Quote builder / settings panel, not the proposal Design tab. */
+  initialPricingHeaderTextColor?: string | null;
+  initialPricingTextColor?: string | null;
+  initialPricingPriceTitleColor?: string | null;
+  initialPricingPriceColor?: string | null;
+  initialPricingPaymentScheduleColor?: string | null;
   /** Cover entity for the Cover Page design section. Pass the proposal /
    *  template row directly so CoverDesignPanel can read/write design fields. */
   coverEntity?: import('@/components/admin/shared/cover-editor/CoverEditorTypes').CoverEditorEntity;
@@ -98,11 +101,11 @@ export default function DesignTab({
   initialFontBodyTransform,
   initialPageNumCircleColor,
   initialPageNumTextColor,
-  initialQuotePageBgColor,
-  initialQuoteHeaderBgColor1,
-  initialQuoteHeaderBgColor2,
-  initialQuoteHeaderTextColor,
-  initialQuoteHeaderSubtitleColor,
+  initialPricingHeaderTextColor,
+  initialPricingTextColor,
+  initialPricingPriceTitleColor,
+  initialPricingPriceColor,
+  initialPricingPaymentScheduleColor,
   coverEntity,
 }: DesignTabProps) {
   const table = tableByType[type];
@@ -176,14 +179,14 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
 );
 
   /* ================================================================ */
-  /*  PRICING / QUOTE PAGE COLOURS                                     */
+  /*  PROPOSAL PRICING PAGE COLOURS                                    */
   /* ================================================================ */
 
-  const [quotePageBgColor, setQuotePageBgColor] = useState<string | null>(initialQuotePageBgColor ?? null);
-  const [quoteHeaderBgColor1, setQuoteHeaderBgColor1] = useState<string | null>(initialQuoteHeaderBgColor1 ?? null);
-  const [quoteHeaderBgColor2, setQuoteHeaderBgColor2] = useState<string | null>(initialQuoteHeaderBgColor2 ?? null);
-  const [quoteHeaderTextColor, setQuoteHeaderTextColor] = useState<string | null>(initialQuoteHeaderTextColor ?? null);
-  const [quoteHeaderSubtitleColor, setQuoteHeaderSubtitleColor] = useState<string | null>(initialQuoteHeaderSubtitleColor ?? null);
+  const [pricingHeaderTextColor, setPricingHeaderTextColor] = useState<string | null>(initialPricingHeaderTextColor ?? null);
+  const [pricingTextColor, setPricingTextColor] = useState<string | null>(initialPricingTextColor ?? null);
+  const [pricingPriceTitleColor, setPricingPriceTitleColor] = useState<string | null>(initialPricingPriceTitleColor ?? null);
+  const [pricingPriceColor, setPricingPriceColor] = useState<string | null>(initialPricingPriceColor ?? null);
+  const [pricingPaymentScheduleColor, setPricingPaymentScheduleColor] = useState<string | null>(initialPricingPaymentScheduleColor ?? null);
 
   /* ================================================================ */
   /*  SAVE STATUS + REFS                                               */
@@ -306,14 +309,14 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     payload.page_num_circle_color = pageNumCircleColor ?? null;
     payload.page_num_text_color = pageNumTextColor ?? null;
 
-    // Pricing / quote page colours — only write for tables that have these
+    // Proposal pricing-page colours — only write for tables that have these
     // columns. proposals + proposal_templates do; documents doesn't.
     if (type !== 'document') {
-      payload.quote_page_bg_color = quotePageBgColor;
-      payload.quote_header_bg_color_1 = quoteHeaderBgColor1;
-      payload.quote_header_bg_color_2 = quoteHeaderBgColor2;
-      payload.quote_header_text_color = quoteHeaderTextColor;
-      payload.quote_header_subtitle_color = quoteHeaderSubtitleColor;
+      payload.pricing_header_text_color = pricingHeaderTextColor;
+      payload.pricing_text_color = pricingTextColor;
+      payload.pricing_price_title_color = pricingPriceTitleColor;
+      payload.pricing_price_color = pricingPriceColor;
+      payload.pricing_payment_schedule_color = pricingPaymentScheduleColor;
     }
 
     await supabase.from(table).update(payload).eq('id', entityId);
@@ -328,7 +331,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     fontBodyFamily, fontBodyWeight, fontBodySize,
     titleFontTransform, fontHeadingTransform, fontBodyTransform,
     pageNumCircleColor, pageNumTextColor,
-    quotePageBgColor, quoteHeaderBgColor1, quoteHeaderBgColor2, quoteHeaderTextColor, quoteHeaderSubtitleColor,
+    pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleColor,
     type, table, entityId, onSave,
   ]);
 
@@ -370,11 +373,11 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     scheduleSave(800);
   }, [pageNumCircleColor, pageNumTextColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Autosave: pricing / quote page colours
+  // Autosave: proposal pricing-page colours
   useEffect(() => {
     if (!pricingInitializedRef.current) { pricingInitializedRef.current = true; return; }
     scheduleSave(800);
-  }, [quotePageBgColor, quoteHeaderBgColor1, quoteHeaderBgColor2, quoteHeaderTextColor, quoteHeaderSubtitleColor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ================================================================ */
   /*  BACKGROUND IMAGE HANDLERS                                        */
@@ -487,16 +490,16 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setPageNumCircleColor={setPageNumCircleColor}
       pageNumTextColor={pageNumTextColor}
       setPageNumTextColor={setPageNumTextColor}
-      quotePageBgColor={quotePageBgColor}
-      setQuotePageBgColor={setQuotePageBgColor}
-      quoteHeaderBgColor1={quoteHeaderBgColor1}
-      setQuoteHeaderBgColor1={setQuoteHeaderBgColor1}
-      quoteHeaderBgColor2={quoteHeaderBgColor2}
-      setQuoteHeaderBgColor2={setQuoteHeaderBgColor2}
-      quoteHeaderTextColor={quoteHeaderTextColor}
-      setQuoteHeaderTextColor={setQuoteHeaderTextColor}
-      quoteHeaderSubtitleColor={quoteHeaderSubtitleColor}
-      setQuoteHeaderSubtitleColor={setQuoteHeaderSubtitleColor}
+      pricingHeaderTextColor={pricingHeaderTextColor}
+      setPricingHeaderTextColor={setPricingHeaderTextColor}
+      pricingTextColor={pricingTextColor}
+      setPricingTextColor={setPricingTextColor}
+      pricingPriceTitleColor={pricingPriceTitleColor}
+      setPricingPriceTitleColor={setPricingPriceTitleColor}
+      pricingPriceColor={pricingPriceColor}
+      setPricingPriceColor={setPricingPriceColor}
+      pricingPaymentScheduleColor={pricingPaymentScheduleColor}
+      setPricingPaymentScheduleColor={setPricingPaymentScheduleColor}
       entityId={entityId}
       entityTitle={entityTitle}
       coverEntity={coverEntity}

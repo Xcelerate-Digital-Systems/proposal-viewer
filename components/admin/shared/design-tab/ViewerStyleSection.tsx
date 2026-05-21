@@ -176,17 +176,17 @@ interface ViewerStyleSectionProps {
   setPageNumCircleColor: (v: string | null) => void;
   pageNumTextColor: string | null;
   setPageNumTextColor: (v: string | null) => void;
-  /* ── Pricing / quote page colours (proposals + templates) ── */
-  quotePageBgColor: string | null;
-  setQuotePageBgColor: (v: string | null) => void;
-  quoteHeaderBgColor1: string | null;
-  setQuoteHeaderBgColor1: (v: string | null) => void;
-  quoteHeaderBgColor2: string | null;
-  setQuoteHeaderBgColor2: (v: string | null) => void;
-  quoteHeaderTextColor: string | null;
-  setQuoteHeaderTextColor: (v: string | null) => void;
-  quoteHeaderSubtitleColor: string | null;
-  setQuoteHeaderSubtitleColor: (v: string | null) => void;
+  /* ── Proposal pricing-page colours (proposals + templates) ── */
+  pricingHeaderTextColor: string | null;
+  setPricingHeaderTextColor: (v: string | null) => void;
+  pricingTextColor: string | null;
+  setPricingTextColor: (v: string | null) => void;
+  pricingPriceTitleColor: string | null;
+  setPricingPriceTitleColor: (v: string | null) => void;
+  pricingPriceColor: string | null;
+  setPricingPriceColor: (v: string | null) => void;
+  pricingPaymentScheduleColor: string | null;
+  setPricingPaymentScheduleColor: (v: string | null) => void;
   /* ── Defaults & actions ─────────────────────────────────── */
   companyDefaults: TextPageDefaults;
   onTpResetToCompany: () => void;
@@ -254,16 +254,16 @@ export default function ViewerStyleSection({
   setPageNumCircleColor,
   pageNumTextColor,
   setPageNumTextColor,
-  quotePageBgColor,
-  setQuotePageBgColor,
-  quoteHeaderBgColor1,
-  setQuoteHeaderBgColor1,
-  quoteHeaderBgColor2,
-  setQuoteHeaderBgColor2,
-  quoteHeaderTextColor,
-  setQuoteHeaderTextColor,
-  quoteHeaderSubtitleColor,
-  setQuoteHeaderSubtitleColor,
+  pricingHeaderTextColor,
+  setPricingHeaderTextColor,
+  pricingTextColor,
+  setPricingTextColor,
+  pricingPriceTitleColor,
+  setPricingPriceTitleColor,
+  pricingPriceColor,
+  setPricingPriceColor,
+  pricingPaymentScheduleColor,
+  setPricingPaymentScheduleColor,
   companyDefaults,
   onTpResetToCompany,
   entityId,
@@ -641,16 +641,16 @@ export default function ViewerStyleSection({
             <div className="flex-1 min-w-0">
               <SectionCard
                 title="Pricing Design"
-                description="Body bg/text/heading inherit from Globals. These controls override the canvas around the quote card and the quote header band."
+                description="Colour the pricing page that appears inside the proposal. Body background, card chrome and headings still inherit from Globals."
                 icon={<DollarSign size={14} className="text-gray-400" />}
                 action={
                   <button
                     onClick={() => {
-                      setQuotePageBgColor(null);
-                      setQuoteHeaderBgColor1(null);
-                      setQuoteHeaderBgColor2(null);
-                      setQuoteHeaderTextColor(null);
-                      setQuoteHeaderSubtitleColor(null);
+                      setPricingHeaderTextColor(null);
+                      setPricingTextColor(null);
+                      setPricingPriceTitleColor(null);
+                      setPricingPriceColor(null);
+                      setPricingPaymentScheduleColor(null);
                     }}
                     className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
                   >
@@ -659,53 +659,42 @@ export default function ViewerStyleSection({
                   </button>
                 }
               >
-                <div className="space-y-5">
-                  {/* Canvas */}
-                  <div>
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Canvas</p>
-                    <ColorPickerField
-                      label="Page background (around the quote card)"
-                      value={quotePageBgColor}
-                      fallback="#eeece6"
-                      onChange={setQuotePageBgColor}
-                      onReset={() => setQuotePageBgColor(null)}
-                    />
-                  </div>
-
-                  {/* Header band */}
-                  <div className="pt-4 border-t border-gray-100">
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Header band</p>
-                    <div className="space-y-4">
-                      <ColorPickerField
-                        label="Header background"
-                        value={quoteHeaderBgColor1}
-                        fallback={companyDefaults.accent_color}
-                        onChange={setQuoteHeaderBgColor1}
-                        onReset={() => setQuoteHeaderBgColor1(null)}
-                      />
-                      <ColorPickerField
-                        label="Header background (gradient end, optional)"
-                        value={quoteHeaderBgColor2}
-                        fallback={quoteHeaderBgColor1 || companyDefaults.accent_color}
-                        onChange={setQuoteHeaderBgColor2}
-                        onReset={() => setQuoteHeaderBgColor2(null)}
-                      />
-                      <ColorPickerField
-                        label="Header text"
-                        value={quoteHeaderTextColor}
-                        fallback="#ffffff"
-                        onChange={setQuoteHeaderTextColor}
-                        onReset={() => setQuoteHeaderTextColor(null)}
-                      />
-                      <ColorPickerField
-                        label="Header subtitle"
-                        value={quoteHeaderSubtitleColor}
-                        fallback="#ffffff"
-                        onChange={setQuoteHeaderSubtitleColor}
-                        onReset={() => setQuoteHeaderSubtitleColor(null)}
-                      />
-                    </div>
-                  </div>
+                <div className="space-y-4">
+                  <ColorPickerField
+                    label="Header Text"
+                    value={pricingHeaderTextColor}
+                    fallback={companyDefaults.heading_color || companyDefaults.text_color}
+                    onChange={setPricingHeaderTextColor}
+                    onReset={() => setPricingHeaderTextColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Text"
+                    value={pricingTextColor}
+                    fallback={companyDefaults.text_color}
+                    onChange={setPricingTextColor}
+                    onReset={() => setPricingTextColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Price Title"
+                    value={pricingPriceTitleColor}
+                    fallback={companyDefaults.heading_color || companyDefaults.text_color}
+                    onChange={setPricingPriceTitleColor}
+                    onReset={() => setPricingPriceTitleColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Price"
+                    value={pricingPriceColor}
+                    fallback={companyDefaults.heading_color || companyDefaults.text_color}
+                    onChange={setPricingPriceColor}
+                    onReset={() => setPricingPriceColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Payment Schedule Pricing"
+                    value={pricingPaymentScheduleColor}
+                    fallback={companyDefaults.accent_color}
+                    onChange={setPricingPaymentScheduleColor}
+                    onReset={() => setPricingPaymentScheduleColor(null)}
+                  />
                 </div>
               </SectionCard>
             </div>

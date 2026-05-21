@@ -68,6 +68,15 @@ export default function PricingPage({ pricing, branding, clientName, orientation
   const muted = `${textColor}99`;
   const faint = `${textColor}55`;
 
+  // Proposal-level pricing colour overrides (set via the Design tab > Pricing
+  // card). Each falls back to the current derived colour so the page keeps
+  // rendering correctly for older rows / templates that haven't customised.
+  const pricingHeaderTextColor = branding.pricing_header_text_color || textColor;
+  const pricingTextColor = branding.pricing_text_color || muted;
+  const pricingPriceTitleColor = branding.pricing_price_title_color || textColor;
+  const pricingPriceColor = branding.pricing_price_color || textColor;
+  const pricingPaymentScheduleColor = branding.pricing_payment_schedule_color || accent;
+
   const brandFont = fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif');
   const brandWeight = Number(branding.title_font_weight || branding.font_heading_weight || '700');
   const bodyFont = fontFamily(branding.font_body, 'system-ui, sans-serif');
@@ -111,7 +120,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
             <h1
               className="agv-pricing-title text-2xl sm:text-3xl font-bold tracking-tight"
               style={{
-                color: textColor,
+                color: pricingHeaderTextColor,
                 fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
                 fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
                 ...(branding.title_font_size ? { fontSize: `${branding.title_font_size}px` } : {}),
@@ -120,7 +129,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
               {pricing.title}
             </h1>
             {clientName && (
-              <p className="agv-pricing-body text-sm mt-1.5" style={{ color: muted }}>
+              <p className="agv-pricing-body text-sm mt-1.5" style={{ color: pricingTextColor }}>
                 Prepared for {clientName}
               </p>
             )}
@@ -128,7 +137,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
 
           {/* Intro text */}
           {pricing.intro_text && (
-            <p className="agv-pricing-body text-sm leading-relaxed mb-8" style={{ color: muted }}>
+            <p className="agv-pricing-body text-sm leading-relaxed mb-8" style={{ color: pricingTextColor }}>
               {pricing.intro_text}
             </p>
           )}
@@ -186,7 +195,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                       {(pricing.show_stage ?? true) && (
                         <div className="flex-1 min-w-0">
                           {item.description && (
-                            <span className="agv-pricing-body text-sm font-medium" style={{ color: textColor }}>
+                            <span className="agv-pricing-body text-sm font-medium" style={{ color: pricingPriceTitleColor }}>
                               {item.description}
                             </span>
                           )}
@@ -203,7 +212,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                       {(pricing.show_description ?? true) && (
                         <div className="flex-1 min-w-0">
                           {item.label && (
-                            <span className="agv-pricing-body text-sm" style={{ color: muted }}>
+                            <span className="agv-pricing-body text-sm" style={{ color: pricingTextColor }}>
                               {item.label}
                             </span>
                           )}
@@ -211,10 +220,10 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                       )}
                       {pricing.qty_enabled && (pricing.show_rate ?? true) && (
                         <>
-                          <span className="agv-pricing-body w-16 text-right shrink-0 text-sm" style={{ color: muted }}>
+                          <span className="agv-pricing-body w-16 text-right shrink-0 text-sm" style={{ color: pricingPriceColor }}>
                             {item.qty ?? 1}
                           </span>
-                          <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
+                          <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: pricingPriceColor }}>
                             {hasDiscount ? (
                               <span className="line-through opacity-50">{formatAUD(unitPrice)}</span>
                             ) : formatAUD(unitPrice)}
@@ -222,19 +231,19 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                         </>
                       )}
                       {!pricing.qty_enabled && (pricing.show_rate ?? true) && (
-                        <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
+                        <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: pricingPriceColor }}>
                           {hasDiscount ? (
                             <span className="line-through opacity-50">{formatAUD(item.amount)}</span>
                           ) : formatAUD(item.amount)}
                         </span>
                       )}
                       {pricing.tax_enabled && (
-                        <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: muted }}>
+                        <span className="agv-pricing-body w-24 text-right shrink-0 text-sm" style={{ color: pricingPriceColor }}>
                           {formatAUD(gst)}
                         </span>
                       )}
                       {(pricing.show_line_total ?? true) && (
-                        <span className="agv-pricing-body w-28 text-right shrink-0 text-sm font-medium" style={{ color: textColor }}>
+                        <span className="agv-pricing-body w-28 text-right shrink-0 text-sm font-medium" style={{ color: pricingPriceColor }}>
                           {formatAUD(pricing.tax_enabled ? effective + gst : effective)}
                         </span>
                       )}
@@ -248,14 +257,14 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                   {/* Subtotal (with discount strikethrough if applicable) */}
                   {(pricing.show_subtotal ?? true) && totalDiscount > 0 && (pricing.show_discount ?? true) && (
                     <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                      <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
-                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: muted, textDecoration: 'line-through' }}>{formatAUD(baseSubtotal)}</span>
+                      <span className="agv-pricing-body text-sm" style={{ color: pricingTextColor }}>Subtotal</span>
+                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: pricingTextColor, textDecoration: 'line-through' }}>{formatAUD(baseSubtotal)}</span>
                     </div>
                   )}
                   {(pricing.show_subtotal ?? true) && (totalDiscount === 0 || !(pricing.show_discount ?? true)) && (
                     <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                      <span className="agv-pricing-body text-sm" style={{ color: muted }}>Subtotal</span>
-                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
+                      <span className="agv-pricing-body text-sm" style={{ color: pricingTextColor }}>Subtotal</span>
+                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: pricingPriceColor }}>{formatAUD(subtotal)}</span>
                     </div>
                   )}
                   {/* Discount rows */}
@@ -266,25 +275,25 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                         <span className="agv-pricing-body text-sm font-semibold" style={{ color: accent }}>−{formatAUD(totalDiscount)}</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                        <span className="agv-pricing-body text-sm" style={{ color: muted }}>After discount</span>
-                        <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(subtotal)}</span>
+                        <span className="agv-pricing-body text-sm" style={{ color: pricingTextColor }}>After discount</span>
+                        <span className="agv-pricing-body text-sm font-semibold" style={{ color: pricingPriceColor }}>{formatAUD(subtotal)}</span>
                       </div>
                     </>
                   )}
                   {/* Tax row */}
                   {pricing.tax_enabled && (
                     <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${border}` }}>
-                      <span className="agv-pricing-body text-sm" style={{ color: muted }}>{pricing.tax_label}</span>
-                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: textColor }}>{formatAUD(tax)}</span>
+                      <span className="agv-pricing-body text-sm" style={{ color: pricingTextColor }}>{pricing.tax_label}</span>
+                      <span className="agv-pricing-body text-sm font-semibold" style={{ color: pricingPriceColor }}>{formatAUD(tax)}</span>
                     </div>
                   )}
                   {/* Grand total */}
                   {(pricing.show_total ?? true) && (
                     <div className="flex items-center justify-between px-4 py-4">
-                      <span className="agv-pricing-body text-base font-bold" style={{ color: textColor }}>
+                      <span className="agv-pricing-body text-base font-bold" style={{ color: pricingPriceTitleColor }}>
                         {pricing.total_label || (pricing.tax_enabled ? 'Total (inc. tax)' : 'Total')}
                       </span>
-                      <span className="agv-pricing-body text-xl font-bold" style={{ color: accent }}>{formatAUD(total)}</span>
+                      <span className="agv-pricing-body text-xl font-bold" style={{ color: pricingPriceColor }}>{formatAUD(total)}</span>
                     </div>
                   )}
                 </div>
@@ -294,7 +303,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
 
           {/* Footer note */}
           {pricing.footer_note && (
-            <p className="agv-pricing-body text-xs leading-relaxed mb-6 italic" style={{ color: muted }}>
+            <p className="agv-pricing-body text-xs leading-relaxed mb-6 italic" style={{ color: pricingTextColor }}>
               {pricing.footer_note}
             </p>
           )}
@@ -328,17 +337,17 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                         style={{ backgroundColor: accent }}
                       />
                       <div className="min-w-0">
-                        <span className="agv-pricing-body text-sm" style={{ color: textColor, fontFamily: brandFont, fontWeight: brandWeight }}>
+                        <span className="agv-pricing-body text-sm" style={{ color: pricingPaymentScheduleColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                           {ps.one_off.label}
                         </span>
                         {ps.one_off.note && (
-                          <p className="text-xs mt-0.5" style={{ color: muted }}>
+                          <p className="text-xs mt-0.5" style={{ color: pricingTextColor }}>
                             {ps.one_off.note}
                           </p>
                         )}
                       </div>
                     </div>
-                    <span className="agv-pricing-body text-sm shrink-0 ml-4" style={{ color: accent, fontFamily: brandFont, fontWeight: brandWeight }}>
+                    <span className="agv-pricing-body text-sm shrink-0 ml-4" style={{ color: pricingPaymentScheduleColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                       {formatAUD(ps.one_off.amount)}
                     </span>
                   </div>
@@ -366,11 +375,11 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                               style={{ backgroundColor: accent, opacity }}
                             />
                             <div className="min-w-0">
-                              <span className="agv-pricing-body text-sm" style={{ color: textColor, fontFamily: brandFont, fontWeight: brandWeight }}>
+                              <span className="agv-pricing-body text-sm" style={{ color: pricingPaymentScheduleColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                                 {payment.label}
                               </span>
                               {payment.note && (
-                                <p className="text-xs mt-0.5" style={{ color: muted }}>
+                                <p className="text-xs mt-0.5" style={{ color: pricingTextColor }}>
                                   {payment.note}
                                 </p>
                               )}
@@ -378,7 +387,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           </div>
                           <span
                             className="agv-pricing-body text-sm shrink-0 ml-4"
-                            style={{ color: idx === 0 ? accent : textColor, fontFamily: brandFont, fontWeight: brandWeight }}
+                            style={{ color: pricingPaymentScheduleColor, fontFamily: brandFont, fontWeight: brandWeight }}
                           >
                             {formatAUD(amt)}
                           </span>
@@ -434,17 +443,17 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
                       <div className="min-w-0">
-                        <span className="agv-pricing-body text-sm" style={{ color: textColor, fontFamily: brandFont, fontWeight: brandWeight }}>
+                        <span className="agv-pricing-body text-sm" style={{ color: pricingPaymentScheduleColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                           {ps.recurring.label}
                         </span>
                         {ps.recurring.note && (
-                          <p className="text-xs mt-0.5" style={{ color: muted }}>
+                          <p className="text-xs mt-0.5" style={{ color: pricingTextColor }}>
                             {ps.recurring.note}
                           </p>
                         )}
                       </div>
                     </div>
-                    <span className="agv-pricing-body text-sm shrink-0 ml-4" style={{ color: accent, fontFamily: brandFont, fontWeight: brandWeight }}>
+                    <span className="agv-pricing-body text-sm shrink-0 ml-4" style={{ color: pricingPaymentScheduleColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                       {formatAUD(ps.recurring.amount)}/{FREQ_LABELS[ps.recurring.frequency] || ps.recurring.frequency}
                     </span>
                   </div>

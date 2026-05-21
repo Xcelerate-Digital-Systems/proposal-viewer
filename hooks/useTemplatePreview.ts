@@ -126,6 +126,14 @@ export function useTemplatePreview(templateId: string) {
           if (tmpl.page_num_circle_color != null) brandingData.page_num_circle_color = tmpl.page_num_circle_color;
           if (tmpl.page_num_text_color != null) brandingData.page_num_text_color = tmpl.page_num_text_color;
 
+          // Pricing page colour overrides (proposal/template).
+          const tt = tmpl as Record<string, unknown>;
+          if (tt.pricing_header_text_color != null) brandingData.pricing_header_text_color = tt.pricing_header_text_color;
+          if (tt.pricing_text_color != null) brandingData.pricing_text_color = tt.pricing_text_color;
+          if (tt.pricing_price_title_color != null) brandingData.pricing_price_title_color = tt.pricing_price_title_color;
+          if (tt.pricing_price_color != null) brandingData.pricing_price_color = tt.pricing_price_color;
+          if (tt.pricing_payment_schedule_color != null) brandingData.pricing_payment_schedule_color = tt.pricing_payment_schedule_color;
+
           setBranding(brandingData);
         }
       } catch { /* Non-critical */ }

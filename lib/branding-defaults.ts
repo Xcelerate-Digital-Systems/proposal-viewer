@@ -54,4 +54,9 @@ export const DEFAULT_BRANDING: CompanyBranding = {
   decision_action_text_color: null,
   decision_action_heading_color: null,
   decision_action_accent_color: null,
+  pricing_header_text_color: null,
+  pricing_text_color: null,
+  pricing_price_title_color: null,
+  pricing_price_color: null,
+  pricing_payment_schedule_color: null,
 };

@@ -54,6 +54,14 @@ export type CompanyBranding = {
   decision_action_heading_color: string | null;
   /** Submit-button background. Null = use heading colour. */
   decision_action_accent_color: string | null;
+  /** Proposal pricing-page colour overrides — fed from proposals.pricing_*.
+   *  Null falls back to the sidebar_text_color / accent / text_page_* cascade
+   *  the PricingPage uses today. */
+  pricing_header_text_color: string | null;
+  pricing_text_color: string | null;
+  pricing_price_title_color: string | null;
+  pricing_price_color: string | null;
+  pricing_payment_schedule_color: string | null;
 };
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
