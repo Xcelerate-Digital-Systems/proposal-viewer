@@ -354,7 +354,13 @@ export default function CoverPage({
         <div className="max-w-2xl">
           <h1
             className="text-2xl sm:text-4xl md:text-5xl font-semibold leading-tight mb-3"
-            style={{ color: textColor, fontFamily: fontFamily(branding.font_heading), fontWeight: branding.font_heading_weight || undefined }}
+            style={{
+              color: textColor,
+              // Mirror the text/pricing page cascade so "Page Title Font" in
+              // the Design tab > Globals actually drives every page title.
+              fontFamily: fontFamily(branding.title_font_family || branding.font_heading),
+              fontWeight: branding.title_font_weight || branding.font_heading_weight || undefined,
+            }}
           >
             {proposal.title}
           </h1>

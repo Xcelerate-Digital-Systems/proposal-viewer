@@ -142,11 +142,16 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
           font_body_family?: string | null;
           font_body_weight?: string | null;
           title_font_family?: string | null;
+          title_font_weight?: string | null;
         };
+        // Cover title cascade — mirrors CoverPage.tsx: title_font_* first
+        // (the "Page Title Font" control in Globals), then font_heading_*.
         setHeadingFont(
-          e.font_heading_family || data.font_heading || e.title_font_family || data.title_font_family || null,
+          e.title_font_family || e.font_heading_family || data.title_font_family || data.font_heading || null,
         );
-        setHeadingFontWeight(e.font_heading_weight || data.font_heading_weight || null);
+        setHeadingFontWeight(
+          e.title_font_weight || e.font_heading_weight || data.font_heading_weight || null,
+        );
         setBodyFont(e.font_body_family || data.font_body || null);
         setBodyFontWeight(e.font_body_weight || data.font_body_weight || null);
         if (data.logo_path) {
