@@ -45,6 +45,7 @@ export default function PageEditor({
   onSave,
   onCancel,
   tableName = 'proposals',
+  bottomContent,
 }: PageEditorProps) {
 
   const entityType = tableName2EntityType(tableName);
@@ -114,7 +115,7 @@ export default function PageEditor({
   // pricingExists kept for backward compat but no longer gates the add button
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 flex-1 min-h-0">
       {/* ── Header toolbar — Add Page actions on the left, Cancel/Done on the right.
           No outer card; the sub-nav already labels this view and the parent
           page wrapper supplies padding + scroll. Mirrors the Quote tab shell. */}
@@ -152,9 +153,11 @@ export default function PageEditor({
         </div>
       )}
 
-      {/* ── Two-column: flex + sticky aside (matches Cover/Design/Quote) ─── */}
-      <div className="flex gap-6 items-start">
-        <div className="flex-1 min-w-0 relative">
+      {/* ── Two-column: only the left column scrolls; the preview aside is
+          stationary so the page-area header doesn't get scrolled past and
+          we avoid nested scroll containers under <main>. */}
+      <div className="flex-1 min-h-0 flex gap-6">
+        <div className="flex-1 min-w-0 relative overflow-y-auto pr-2 -mr-2 space-y-5">
           {(processing || isReordering) && (
             <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
@@ -316,9 +319,10 @@ export default function PageEditor({
                 <p className="text-sm text-gray-400 py-4 text-center">Loading pages…</p>
               )}
             </div>
+            {bottomContent}
         </div>
 
-        <StickyPreviewAside>
+        <StickyPreviewAside sticky={false}>
           <PreviewRouter
             proposalId={proposalId}
             filePath={filePath}

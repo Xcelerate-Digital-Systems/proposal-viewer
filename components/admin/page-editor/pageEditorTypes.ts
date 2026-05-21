@@ -64,4 +64,8 @@ export interface PageEditorProps {
   onSave:            () => void;
   onCancel?:         () => void;
   tableName?:        'proposals' | 'documents' | 'templates';
+  /** Extra content appended below the page list inside the scrollable left
+   *  column. Use for things like the Decision page control card so the
+   *  user can scroll to it without the whole tab having its own scroll. */
+  bottomContent?:    React.ReactNode;
 }

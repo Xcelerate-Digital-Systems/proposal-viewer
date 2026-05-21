@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { List, Check, AlertTriangle } from 'lucide-react';
 import { supabase, parseTocSettings, TocSettings } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { authFetch } from '@/lib/auth-fetch';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import TocPreview from '@/components/admin/shared/TocPreview';
@@ -123,7 +124,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
 
         // 3. Load all pages from v2 API
         const param = entityIdParam(entityType);
-        const pagesRes = await fetch(`${pagesApiBase(entityType)}?${param}=${entityId}`);
+        const pagesRes = await authFetch(`${pagesApiBase(entityType)}?${param}=${entityId}`);
         const allPages: Array<{
           id: string;
           type: string;
@@ -183,7 +184,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         const currentTocPageId = tocPageIdRef.current;
 
         if (newSettings.enabled && !currentTocPageId) {
-          const res = await fetch(apiBase, {
+          const res = await authFetch(apiBase, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -197,7 +198,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
             setTocPageId(newPage.id ?? null);
           }
         } else if (!newSettings.enabled && currentTocPageId) {
-          await fetch(apiBase, {
+          await authFetch(apiBase, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ [idKey]: entityId, page_id: currentTocPageId }),
