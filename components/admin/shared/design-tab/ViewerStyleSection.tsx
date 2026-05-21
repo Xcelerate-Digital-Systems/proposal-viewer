@@ -504,31 +504,51 @@ export default function ViewerStyleSection({
                 </div>
               </div>
 
-              {/* Colours — body bg / body text / heading. Applies to text,
-                  pricing, and packages pages (anywhere reading text_page_*). */}
-              <div className="pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Colours</p>
-                  <button
-                    onClick={onTpResetToCompany}
-                    className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-teal transition-colors"
-                  >
-                    <RotateCcw size={11} />
-                    Reset to company defaults
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  <ColorPickerField label="Background Color" value={tpBgColor} fallback={companyDefaults.bg_color} onChange={setTpBgColor} />
-                  <ColorPickerField label="Text Color" value={tpTextColor} fallback={companyDefaults.text_color} onChange={setTpTextColor} />
-                  <ColorPickerField label="Heading Color" value={tpHeadingColor} fallback={companyDefaults.heading_color || companyDefaults.text_color} onChange={setTpHeadingColor} />
-                </div>
-              </div>
-
               {/* Background image */}
               <div className="pt-4 border-t border-gray-100">
                 <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Background Image</p>
                 {backgroundImageBlock}
               </div>
+            </div>
+          </SectionCard>
+
+          {/* Page Colours — body bg / body text / heading. Pulled out of the
+              Global Page Defaults card so every colour-selector group on this
+              tab follows the same flat ColorPickerField stack the Pricing
+              Design card uses. */}
+          <SectionCard
+            title="Page Colours"
+            description="Background, body text and headings. Applies to text, pricing and packages pages."
+            icon={<Paintbrush size={14} className="text-gray-400" />}
+            action={
+              <button
+                onClick={onTpResetToCompany}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+              >
+                <RotateCcw size={12} />
+                Reset
+              </button>
+            }
+          >
+            <div className="space-y-4">
+              <ColorPickerField
+                label="Background"
+                value={tpBgColor}
+                fallback={companyDefaults.bg_color}
+                onChange={setTpBgColor}
+              />
+              <ColorPickerField
+                label="Body Text"
+                value={tpTextColor}
+                fallback={companyDefaults.text_color}
+                onChange={setTpTextColor}
+              />
+              <ColorPickerField
+                label="Headings"
+                value={tpHeadingColor}
+                fallback={companyDefaults.heading_color || companyDefaults.text_color}
+                onChange={setTpHeadingColor}
+              />
             </div>
           </SectionCard>
 
@@ -538,6 +558,18 @@ export default function ViewerStyleSection({
             title="Page Number Badge"
             description="Leave blank to use your accent colour (circle) and white (text)."
             icon={<Hash size={14} className="text-gray-400" />}
+            action={
+              <button
+                onClick={() => {
+                  setPageNumCircleColor(null);
+                  setPageNumTextColor(null);
+                }}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+              >
+                <RotateCcw size={12} />
+                Reset
+              </button>
+            }
           >
             <div className="space-y-4">
               <ColorPickerField
