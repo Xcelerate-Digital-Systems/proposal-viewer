@@ -140,13 +140,18 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
           return;
         }
         const updated: UnifiedPage = await res.json();
-        // Reconcile with server response
-        setPages((prev) => prev.map((p) => p.id === pageId ? updated : p));
-        setSaved(pageId);
-        // If PDF file path changed, refresh that page's signed URL
-        if (updated.type === 'pdf') {
-          generateSignedUrls([updated]);
+        // Reconcile only if the user has stopped typing — otherwise the
+        // server's reply for an older keystroke clobbers what they typed
+        // while this PUT was in flight (the rename-deletes-itself bug).
+        // The pending debounce's response will become authoritative.
+        if (!debounces.current[pageId]) {
+          setPages((prev) => prev.map((p) => p.id === pageId ? updated : p));
+          // If PDF file path changed, refresh that page's signed URL
+          if (updated.type === 'pdf') {
+            generateSignedUrls([updated]);
+          }
         }
+        setSaved(pageId);
       } catch {
         toast.error('Failed to save page');
       }
