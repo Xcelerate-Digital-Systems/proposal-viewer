@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, MessageSquareText, LayoutGrid, List, Search } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare } from 'lucide-react';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import type { FeedbackStatus } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
 import CreateFeedbackProjectModal from '@/components/admin/feedback/CreateFeedbackProjectModal';
 import FeedbackProjectCard from '@/components/admin/feedback/FeedbackProjectCard';
 import FeedbackProjectRow from '@/components/admin/feedback/FeedbackProjectRow';
+import KanbanBoard, { type KanbanColumn } from '@/components/kanban/KanbanBoard';
+import { REVIEW_STATUS_ORDER, REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
 
 export default function ReviewsPage() {
   return (
@@ -52,16 +55,29 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterTab>('active');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'board'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('agencyviz-reviews-view') as 'grid' | 'list') || 'grid';
+      const stored = localStorage.getItem('agencyviz-reviews-view');
+      if (stored === 'grid' || stored === 'list' || stored === 'board') return stored;
     }
     return 'grid';
   });
 
-  const toggleView = (mode: 'grid' | 'list') => {
+  const toggleView = (mode: 'grid' | 'list' | 'board') => {
     setViewMode(mode);
     localStorage.setItem('agencyviz-reviews-view', mode);
+  };
+
+  // Optimistic status update — drag-to-column on the board uses this.
+  const updateProjectStatus = async (projectId: string, nextStatus: FeedbackStatus) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? { ...p, status: nextStatus } : p)),
+    );
+    const { error } = await supabase
+      .from('review_projects')
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq('id', projectId);
+    if (error) throw error;
   };
 
   const fetchProjects = useCallback(async () => {
@@ -155,6 +171,17 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
                 title="List view"
               >
                 <List size={16} />
+              </button>
+              <button
+                onClick={() => toggleView('board')}
+                className={`w-[34px] h-[30px] rounded-full flex items-center justify-center transition-all ${
+                  viewMode === 'board'
+                    ? 'bg-white shadow-sm text-ink'
+                    : 'text-faint hover:text-muted'
+                }`}
+                title="Board view"
+              >
+                <KanbanSquare size={16} />
               </button>
             </div>
 
@@ -253,7 +280,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               />
             ))}
           </div>
-        ) : (
+        ) : viewMode === 'list' ? (
           <div className="space-y-2">
             {filtered.map((project) => (
               <FeedbackProjectRow
@@ -264,8 +291,40 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               />
             ))}
           </div>
+        ) : (
+          <KanbanBoard
+            columns={
+              REVIEW_STATUS_ORDER.map<KanbanColumn<FeedbackProject>>((status) => ({
+                id: status,
+                label: REVIEW_STATUS_CONFIG[status].label,
+                accentHex: REVIEW_STATUS_CONFIG[status].hex,
+                items: filtered.filter((p) => p.status === status),
+              }))
+            }
+            renderCard={(project) => <FeedbackBoardCard project={project} />}
+            onMove={(projectId, _from, to) => updateProjectStatus(projectId, to as FeedbackStatus)}
+            emptyMessage="Drag a project here."
+          />
         )}
       </div>
     </div>
+  );
+}
+
+/* ─── Compact card used on the kanban board ──────────────── */
+
+function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
+  return (
+    <Link
+      href={`/feedback/${project.id}/feedback`}
+      className="block bg-white rounded-xl border border-edge p-3 hover:border-teal/40 hover:shadow-sm transition-all"
+    >
+      <div className="text-[13px] font-semibold text-ink line-clamp-2 leading-snug">
+        {project.title}
+      </div>
+      {project.client_name && (
+        <div className="text-[11px] text-faint mt-1 truncate">{project.client_name}</div>
+      )}
+    </Link>
   );
 }

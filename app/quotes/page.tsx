@@ -5,15 +5,23 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, ReceiptText, LayoutGrid, List, Search, ChevronDown, LayoutTemplate } from 'lucide-react';
+import { Plus, ReceiptText, LayoutGrid, List, Search, ChevronDown, LayoutTemplate, KanbanSquare } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
 import ProposalListCard from '@/components/admin/proposals/ProposalListCard';
 import ProposalListRow from '@/components/admin/proposals/ProposalListRow';
+import ProposalBoardCard from '@/components/admin/proposals/ProposalBoardCard';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
+import KanbanBoard, { type KanbanColumn } from '@/components/kanban/KanbanBoard';
+import {
+  PROPOSAL_STATUS_ORDER,
+  PROPOSAL_STATUS_CONFIG,
+  buildStatusPatch,
+  type ProposalStatus,
+} from '@/lib/proposals/status';
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'grid' | 'list' | 'board';
 
 const VIEW_MODE_KEY = 'agencyviz_quote_view';
 
@@ -38,12 +46,21 @@ function QuotesContent({ companyId }: { companyId: string }) {
 
   useEffect(() => {
     const stored = localStorage.getItem(VIEW_MODE_KEY);
-    if (stored === 'grid' || stored === 'list') setViewMode(stored);
+    if (stored === 'grid' || stored === 'list' || stored === 'board') setViewMode(stored);
   }, []);
 
   const toggleViewMode = (mode: ViewMode) => {
     setViewMode(mode);
     localStorage.setItem(VIEW_MODE_KEY, mode);
+  };
+
+  const updateQuoteStatus = async (id: string, next: ProposalStatus) => {
+    const patch = buildStatusPatch(next);
+    setQuotes((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, ...(patch as Partial<Proposal>) } : q)),
+    );
+    const { error } = await supabase.from('proposals').update(patch).eq('id', id);
+    if (error) throw error;
   };
 
   const fetchQuotes = useCallback(async () => {
@@ -128,6 +145,15 @@ function QuotesContent({ companyId }: { companyId: string }) {
             >
               <List size={16} />
             </button>
+            <button
+              onClick={() => toggleViewMode('board')}
+              className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
+                viewMode === 'board' ? 'bg-white shadow-sm text-ink' : 'text-faint hover:text-muted'
+              }`}
+              title="Board view"
+            >
+              <KanbanSquare size={16} />
+            </button>
           </div>
 
           <div className="hidden md:flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[200px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
@@ -191,7 +217,7 @@ function QuotesContent({ companyId }: { companyId: string }) {
         )}
 
         {loading ? (
-          <EntityListSkeleton viewMode={viewMode} />
+          <EntityListSkeleton viewMode={viewMode === 'board' ? 'grid' : viewMode} />
         ) : filtered.length === 0 && searchQuery ? (
           <div className="text-center py-20">
             <Search size={28} className="text-faint mx-auto mb-3" />
@@ -212,6 +238,20 @@ function QuotesContent({ companyId }: { companyId: string }) {
               New Quote
             </button>
           </div>
+        ) : viewMode === 'board' ? (
+          <KanbanBoard
+            columns={
+              PROPOSAL_STATUS_ORDER.map<KanbanColumn<Proposal>>((status) => ({
+                id: status,
+                label: PROPOSAL_STATUS_CONFIG[status].label,
+                accentHex: PROPOSAL_STATUS_CONFIG[status].hex,
+                items: filtered.filter((q) => q.status === status),
+              }))
+            }
+            renderCard={(q) => <ProposalBoardCard proposal={q} kind="quote" />}
+            onMove={(id, _from, to) => updateQuoteStatus(id, to as ProposalStatus)}
+            emptyMessage="Drag a quote here."
+          />
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((q) => (

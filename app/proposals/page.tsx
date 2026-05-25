@@ -2,15 +2,23 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, FileText, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTemplate } from 'lucide-react';
+import { Plus, FileText, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTemplate, KanbanSquare } from 'lucide-react';
 import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
 import ProposalListCard from '@/components/admin/proposals/ProposalListCard';
 import ProposalListRow from '@/components/admin/proposals/ProposalListRow';
+import ProposalBoardCard from '@/components/admin/proposals/ProposalBoardCard';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
+import KanbanBoard, { type KanbanColumn } from '@/components/kanban/KanbanBoard';
+import {
+  PROPOSAL_STATUS_ORDER,
+  PROPOSAL_STATUS_CONFIG,
+  buildStatusPatch,
+  type ProposalStatus,
+} from '@/lib/proposals/status';
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'grid' | 'list' | 'board';
 
 const VIEW_MODE_KEY = 'agencyviz_proposal_view';
 
@@ -38,7 +46,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   // Restore view preference
   useEffect(() => {
     const stored = localStorage.getItem(VIEW_MODE_KEY);
-    if (stored === 'grid' || stored === 'list') {
+    if (stored === 'grid' || stored === 'list' || stored === 'board') {
       setViewMode(stored);
     }
   }, []);
@@ -46,6 +54,17 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const toggleViewMode = (mode: ViewMode) => {
     setViewMode(mode);
     localStorage.setItem(VIEW_MODE_KEY, mode);
+  };
+
+  // Optimistic status update via the kanban board's drop callback. Also
+  // stamps the matching outcome timestamp (sent_at / accepted_at / etc).
+  const updateProposalStatus = async (id: string, next: ProposalStatus) => {
+    const patch = buildStatusPatch(next);
+    setProposals((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...(patch as Partial<Proposal>) } : p)),
+    );
+    const { error } = await supabase.from('proposals').update(patch).eq('id', id);
+    if (error) throw error;
   };
 
   const fetchProposals = useCallback(async () => {
@@ -149,6 +168,17 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             >
               <List size={16} />
             </button>
+            <button
+              onClick={() => toggleViewMode('board')}
+              className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
+                viewMode === 'board'
+                  ? 'bg-white shadow-sm text-ink'
+                  : 'text-faint hover:text-muted'
+              }`}
+              title="Board view"
+            >
+              <KanbanSquare size={16} />
+            </button>
           </div>
 
           {/* Search */}
@@ -214,7 +244,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
         )}
 
         {loading ? (
-          <EntityListSkeleton viewMode={viewMode} />
+          <EntityListSkeleton viewMode={viewMode === 'board' ? 'grid' : viewMode} />
         ) : filtered.length === 0 && searchQuery ? (
           <div className="text-center py-20">
             <Search size={28} className="text-faint mx-auto mb-3" />
@@ -235,6 +265,20 @@ function ProposalsContent({ companyId }: { companyId: string }) {
               New Proposal
             </button>
           </div>
+        ) : viewMode === 'board' ? (
+          <KanbanBoard
+            columns={
+              PROPOSAL_STATUS_ORDER.map<KanbanColumn<Proposal>>((status) => ({
+                id: status,
+                label: PROPOSAL_STATUS_CONFIG[status].label,
+                accentHex: PROPOSAL_STATUS_CONFIG[status].hex,
+                items: filtered.filter((p) => p.status === status),
+              }))
+            }
+            renderCard={(p) => <ProposalBoardCard proposal={p} kind="proposal" />}
+            onMove={(id, _from, to) => updateProposalStatus(id, to as ProposalStatus)}
+            emptyMessage="Drag a proposal here."
+          />
         ) : (
           <>
             {showRecent && (
