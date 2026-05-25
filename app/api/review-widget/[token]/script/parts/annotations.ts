@@ -5,16 +5,29 @@ export function annotationsJS(): string {
 /* ══════════════════════════════════════════════════════════
    RENDER ANNOTATIONS ON PAGE (from loaded comments)
    ══════════════════════════════════════════════════════════ */
+/* Pin coordinate resolution: prefer the stored DOM-element anchor (so the
+   pin stays glued to its target across layout shifts), fall back to the
+   document-percentage pin_x/pin_y for legacy pins or vanished anchors. */
+function pinXY(c){
+  var ad=c.annotation_data;
+  if(ad&&ad.anchor){
+    var p=resolveAnchor(ad.anchor);
+    if(p)return p;
+  }
+  if(c.pin_x==null||c.pin_y==null)return null;
+  return{x:pctToPxX(c.pin_x),y:pctToPxY(c.pin_y)};
+}
 function renderAnnotations(){
   annotations.forEach(function(a){if(a.el)a.el.remove();});annotations=[];
   comments.forEach(function(c){
     if(c.parent_comment_id)return;
     if((c.comment_type==="pin"||(c.comment_type==="text"&&!c.annotation_data))&&c.pin_x!=null&&c.pin_y!=null){
+      var p=pinXY(c);if(!p)return;
       var el=document.createElement("div");el.className="aviz-pin"+(c.resolved?" resolved":"");
-      el.style.left=pctToPxX(c.pin_x)+"px";el.style.top=pctToPxY(c.pin_y)+"px";
+      el.style.left=p.x+"px";el.style.top=p.y+"px";
       el.textContent=c.thread_number||"";
       el.addEventListener("click",function(e){e.stopPropagation();openPanel();scrollToThread(c.id);});
-      document.body.appendChild(el);annotations.push({id:c.id,el:el,type:"pin"});
+      document.body.appendChild(el);annotations.push({id:c.id,el:el,type:"pin",commentId:c.id});
     }
     else if(c.comment_type==="box"&&c.annotation_data&&c.pin_x!=null){
       var d=c.annotation_data;
@@ -148,6 +161,18 @@ function renderTextHighlights(){
 }
 
 var resizeTimer;
-window.addEventListener("resize",function(){clearTimeout(resizeTimer);resizeTimer=setTimeout(renderAnnotations,150);});
+function scheduleRender(){clearTimeout(resizeTimer);resizeTimer=setTimeout(renderAnnotations,150);}
+window.addEventListener("resize",scheduleRender);
+/* Anchored pins depend on their target element's getBoundingClientRect(),
+   which shifts whenever the page reflows (late image loads, web font swap,
+   dynamic content insertion, etc). ResizeObserver on body catches every
+   layout change cheaply; window.load covers initial image loads. */
+window.addEventListener("load",scheduleRender);
+try{
+  if(typeof ResizeObserver==="function"){
+    var __avizRO=new ResizeObserver(scheduleRender);
+    __avizRO.observe(document.body);
+  }
+}catch(e){}
 `;
 }

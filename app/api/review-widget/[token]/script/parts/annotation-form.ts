@@ -7,6 +7,12 @@ export function annotationFormJS(): string {
    ══════════════════════════════════════════════════════════ */
 function showAnnotationForm(type,px,py,extra){
   removePendingAnnotation();
+  /* Drop the active-mode class so the page reverts to its natural cursor
+     and the hover-box stops shadowing every element — full attention on
+     the comment form. removePendingAnnotation() re-arms pin mode. */
+  document.documentElement.classList.remove("aviz-mode-pin","aviz-mode-box","aviz-mode-text","aviz-mode-highlight");
+  document.documentElement.classList.add("aviz-annotating");
+  var hb=document.getElementById("aviz-hover-box");if(hb)hb.classList.remove("show");
   var marker=null;
   if(type==="pin"){
     marker=document.createElement("div");marker.className="aviz-pin pending";
@@ -99,6 +105,13 @@ function showAnnotationForm(type,px,py,extra){
           annotation_data:null,
           priority:priorityCtrl.getValue()
         };
+        /* Anchor pin to its click-target element so it doesn't drift when
+           the page reflows (images load, fonts swap, etc.). pin_x/pin_y
+           stay as the doc-percentage fallback for when the anchor element
+           later disappears or the page is restructured. */
+        if(type==="pin"&&extra&&extra.anchor){
+          payload.annotation_data={anchor:extra.anchor};
+        }
         if(type==="box"&&extra){
           payload.pin_x=extra.x;payload.pin_y=extra.y;
           payload.annotation_data={type:"box",width:extra.w,height:extra.h};
@@ -118,7 +131,7 @@ function showAnnotationForm(type,px,py,extra){
   });
 
   pfText.addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();pfSend.click();}});
-  f.querySelector(".aviz-pf-cancel").addEventListener("click",function(){clearPendingHighlight();removePendingAnnotation();});
+  f.querySelector(".aviz-pf-cancel").addEventListener("click",function(){clearPendingHighlight();removePendingAnnotation();armPinMode();});
 }
 
 /* Unwrap every pending text-highlight mark and clear the pending state.
@@ -139,6 +152,7 @@ function clearPendingHighlight(){
 }
 
 function removePendingAnnotation(){
+  document.documentElement.classList.remove("aviz-annotating");
   if(!pendingAnnotation)return;
   pendingAnnotation.form.remove();
   if(pendingAnnotation.marker)pendingAnnotation.marker.remove();

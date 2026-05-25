@@ -96,6 +96,9 @@ var hoverBox=document.createElement("div");hoverBox.id="aviz-hover-box";document
 var hlTags=["P","H1","H2","H3","H4","H5","H6","SPAN","A","BUTTON","IMG","TD","TH","LI","SECTION","DIV","HEADER","FOOTER","NAV","MAIN","ARTICLE"];
 function hideHoverBox(){hoverBox.classList.remove("show");highlightEl=null;}
 document.addEventListener("mousemove",function(e){
+  /* While a comment form is open we want full attention on the form, so
+     don't shadow the page with the hover overlay. */
+  if(pendingAnnotation){hideHoverBox();return;}
   var t=e.target;
   if(t.closest("#aviz-root")||t.closest("#aviz-onboard")||t.closest("#aviz-tour-backdrop")||t.closest(".aviz-tour-callout")||t.closest(".aviz-pin")||t.closest(".aviz-box")||t.closest(".aviz-text-ann")||t.closest(".aviz-pin-form")||t.closest(".aviz-text-input")){hideHoverBox();return;}
 

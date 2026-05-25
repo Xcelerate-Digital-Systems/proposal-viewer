@@ -518,6 +518,17 @@ function bindThreadEvents(){
     btn.addEventListener("click",function(e){e.stopPropagation();editingId=null;renderThreads();});
   });
 
+  /* Click a card → smooth-scroll the viewport to its pin. Skip clicks that
+     land on interactive controls so resolve/reply/edit/menu/reactions still
+     work without also triggering a scroll. (Issue 3) */
+  bodyEl.querySelectorAll(".aviz-card[data-id]").forEach(function(card){
+    card.addEventListener("click",function(e){
+      if(e.target.closest("button,a,input,textarea,select,.aviz-menu,.aviz-rxn-picker"))return;
+      var cid=card.getAttribute("data-id");
+      if(cid)scrollToPin(cid);
+    });
+  });
+
   /* Delete */
   bodyEl.querySelectorAll(".aviz-delete-btn").forEach(function(btn){
     btn.addEventListener("click",function(e){
@@ -551,6 +562,31 @@ function scrollToThread(id){
       setTimeout(function(){el.classList.remove("highlight");},1800);
     }
   },120);
+}
+
+/* Reverse of scrollToThread: clicking a comment card in the sidepanel
+   smooth-scrolls the page to wherever its pin / highlight lives. */
+function scrollToPin(id){
+  var c=null;
+  for(var i=0;i<comments.length;i++){if(comments[i].id===id){c=comments[i];break;}}
+  if(!c)return;
+  /* Text highlights have no pin coords — scroll to the <mark> element. */
+  if(c.comment_type==="text_highlight"){
+    var mark=document.querySelector('mark.aviz-hl[data-comment-id="'+id+'"]');
+    if(mark&&mark.scrollIntoView)mark.scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
+  if(c.pin_x==null||c.pin_y==null)return;
+  var py=pctToPxY(c.pin_y);
+  var top=Math.max(0,py-window.innerHeight/2);
+  window.scrollTo({top:top,left:0,behavior:"smooth"});
+  /* Briefly pulse the pin so the eye lands on it after the scroll. */
+  var anno=null;
+  for(var j=0;j<annotations.length;j++){if(annotations[j].id===id){anno=annotations[j];break;}}
+  if(anno&&anno.el){
+    anno.el.classList.add("aviz-pin-focus");
+    setTimeout(function(){if(anno.el)anno.el.classList.remove("aviz-pin-focus");},1700);
+  }
 }
 
 function refresh(){renderAnnotations();renderThreads();}

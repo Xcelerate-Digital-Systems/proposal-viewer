@@ -45,14 +45,21 @@ html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-ro
 /* !important throughout this section — host pages frequently reset div
    backgrounds, borders, and box-shadows, which silently makes the pending
    marker invisible while the comment form is open. */
-.aviz-pin{position:absolute !important;z-index:2147483639 !important;width:28px !important;height:28px !important;border-radius:50% !important;
-  background:${PIN_COLOR} !important;color:#fff !important;font-size:13px !important;font-weight:700 !important;display:flex !important;align-items:center !important;
+.aviz-pin{position:absolute !important;z-index:2147483639 !important;width:34px !important;height:34px !important;border-radius:50% !important;
+  background:${PIN_COLOR} !important;color:#fff !important;font-size:15px !important;font-weight:700 !important;display:flex !important;align-items:center !important;
   justify-content:center !important;cursor:pointer;transform:translate(-50%,-50%) !important;
   box-shadow:0 2px 8px rgba(0,0,0,.25) !important;border:2px solid #fff !important;
   transition:transform .3s,box-shadow .3s;font-family:${FONT};line-height:1;}
 .aviz-pin:hover{transform:translate(-50%,-50%) scale(1.15) !important;box-shadow:0 4px 12px rgba(0,0,0,.3) !important;}
 .aviz-pin.pending{animation:aviz-pinPulse .8s ease-in-out infinite alternate;}
 @keyframes aviz-pinPulse{from{box-shadow:0 2px 8px rgba(0,0,0,.25);}to{box-shadow:0 2px 16px ${PIN_COLOR}60;}}
+/* Resolved pin — greyed out so reviewers can see at a glance what's done.
+   Still clickable (drops the user into the resolved thread in the panel). */
+.aviz-pin.resolved{background:#9ca3af !important;opacity:.55;animation:none !important;}
+.aviz-pin.resolved:hover{opacity:.9;}
+/* Brief pulse when the panel scrolls the viewport to this pin (Issue 3). */
+.aviz-pin.aviz-pin-focus{animation:aviz-pinFocus 1.6s ease-out 1;}
+@keyframes aviz-pinFocus{0%{box-shadow:0 0 0 0 ${PIN_COLOR}cc;}100%{box-shadow:0 0 0 22px ${PIN_COLOR}00;}}
 
 /* ── Box drawing ───────────────────────────────────────── */
 .aviz-draw-box{position:absolute !important;z-index:2147483639 !important;border:2px dashed ${ACCENT} !important;background:${ACCENT}10 !important;pointer-events:none !important;}
@@ -60,6 +67,8 @@ html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-ro
 .aviz-box:hover{background:${ACCENT}15 !important;}
 .aviz-box.pending{animation:aviz-boxPulse .8s ease-in-out infinite alternate;}
 @keyframes aviz-boxPulse{from{border-color:${ACCENT};}to{border-color:${ACCENT}80;}}
+.aviz-box.resolved{border-color:#9ca3af !important;background:rgba(156,163,175,.06) !important;opacity:.55;animation:none !important;}
+.aviz-box.resolved:hover{opacity:.9;}
 
 /* ── Text annotation input ─────────────────────────────── */
 .aviz-text-input{position:absolute;z-index:2147483639;min-width:120px;padding:6px 10px;
@@ -69,6 +78,8 @@ html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-ro
   color:#fff;font-size:12px;font-weight:500;border-radius:4px;cursor:pointer;
   white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:opacity .3s;}
 .aviz-text-ann:hover{opacity:.85;}
+.aviz-text-ann.resolved{background:#9ca3af !important;opacity:.55;}
+.aviz-text-ann.resolved:hover{opacity:.9;}
 
 /* ── Text mode: inline comment form ────────────────────── */
 .aviz-text-input-wrap{position:absolute;z-index:2147483643;width:300px;background:#fff;border-radius:12px;

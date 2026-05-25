@@ -40,6 +40,80 @@ function pxToPctY(py){return(py/docH())*100;}
 function pctToPxX(p){return(p/100)*docW();}
 function pctToPxY(p){return(p/100)*docH();}
 
+/* ── Element anchoring ─────────────────────────────────────
+   Document-percentage pin coords drift whenever docH() changes (lazy-loaded
+   images, web fonts swapping, dynamic content). Anchoring to the DOM
+   element the user actually clicked makes the pin stick to that element
+   across layout shifts. We store {selector, ox, oy} in annotation_data and
+   recompute the pixel position from getBoundingClientRect() at render. */
+function avizEscIdent(s){
+  if(window.CSS&&CSS.escape)return CSS.escape(s);
+  /* Minimal fallback — escape anything that isn't a-z, 0-9, hyphen, underscore. */
+  return String(s).replace(/[^a-zA-Z0-9_-]/g,function(ch){return"\\\\"+ch;});
+}
+function avizIsWidget(el){
+  if(!el||!el.closest)return false;
+  return !!(el.closest("#aviz-root")||el.closest("#aviz-onboard")||el.closest("#aviz-tour-backdrop")||el.closest(".aviz-tour-callout")||el.closest(".aviz-pin")||el.closest(".aviz-box")||el.closest(".aviz-text-ann")||el.closest(".aviz-pin-form")||el.closest(".aviz-text-input")||el.closest("#aviz-hover-box")||el.closest("#aviz-panel")||el.closest(".aviz-pin-form")||el.closest("mark.aviz-hl")||el.closest("mark.aviz-hl-pending"));
+}
+function elementPath(el){
+  if(!el||el.nodeType!==1)return null;
+  var parts=[];var cur=el;
+  while(cur&&cur.nodeType===1&&cur!==document.body&&cur!==document.documentElement){
+    /* Prefer a unique id as the path root — short and survives most refactors. */
+    if(cur.id){
+      try{
+        if(document.getElementById(cur.id)===cur){
+          parts.unshift("#"+avizEscIdent(cur.id));
+          return parts.join(" > ");
+        }
+      }catch(e){}
+    }
+    var tag=cur.nodeName.toLowerCase();
+    var sib=cur;var nth=1;
+    while((sib=sib.previousElementSibling)){if(sib.nodeName===cur.nodeName)nth++;}
+    parts.unshift(tag+":nth-of-type("+nth+")");
+    cur=cur.parentElement;
+  }
+  return parts.length?"body > "+parts.join(" > "):null;
+}
+/* Pick the deepest non-widget element under (clientX, clientY). Falls back
+   to e.target. Skips our own UI so a click on the hover overlay anchors to
+   the page element it's tracking, not the overlay. */
+function pickAnchorElement(clientX,clientY,fallback){
+  var stack=document.elementsFromPoint?document.elementsFromPoint(clientX,clientY):[fallback];
+  for(var i=0;i<stack.length;i++){
+    if(!avizIsWidget(stack[i]))return stack[i];
+  }
+  return fallback||null;
+}
+function computeAnchor(el,pageX,pageY){
+  if(!el||el===document.body||el===document.documentElement)return null;
+  var path=elementPath(el);
+  if(!path)return null;
+  var r=el.getBoundingClientRect();
+  if(r.width<2||r.height<2)return null;
+  var sx=window.pageXOffset||document.documentElement.scrollLeft||0;
+  var sy=window.pageYOffset||document.documentElement.scrollTop||0;
+  var ox=((pageX-(r.left+sx))/r.width)*100;
+  var oy=((pageY-(r.top+sy))/r.height)*100;
+  /* Clamp so a click slightly outside the element's visible box still anchors. */
+  ox=Math.max(0,Math.min(100,ox));
+  oy=Math.max(0,Math.min(100,oy));
+  return{selector:path,ox:ox,oy:oy};
+}
+/* Resolve a stored anchor back to page coordinates, or null if the
+   element can't be found / has zero size (caller falls back to pin_x/_y). */
+function resolveAnchor(anchor){
+  if(!anchor||!anchor.selector)return null;
+  var el;try{el=document.querySelector(anchor.selector);}catch(e){return null;}
+  if(!el)return null;
+  var r=el.getBoundingClientRect();
+  if(r.width<1||r.height<1)return null;
+  var sx=window.pageXOffset||document.documentElement.scrollLeft||0;
+  var sy=window.pageYOffset||document.documentElement.scrollTop||0;
+  return{x:r.left+sx+r.width*(anchor.ox/100),y:r.top+sy+r.height*(anchor.oy/100)};
+}
+
 /* ── API helpers ────────────────────────────────────────── */
 function api(path,opts){
   return fetch(C.api+path,Object.assign({},opts||{},{headers:Object.assign({"Content-Type":"application/json"},(opts&&opts.headers)||{})}))
@@ -111,21 +185,31 @@ function captureAutoScreenshot(cb,opts){
   root.style.display="none";
   var form=document.querySelector(".aviz-pin-form");if(form)form.style.display="none";
   loadH2C(function(){
-    html2canvas(document.body,{
-      useCORS:true,allowTaint:true,
-      scale:window.devicePixelRatio||1,
-      scrollX:-window.scrollX,scrollY:-window.scrollY,
-      windowWidth:document.documentElement.clientWidth,
-      windowHeight:document.documentElement.clientHeight,
-      width:document.documentElement.clientWidth,
-      height:document.documentElement.clientHeight,
-      x:window.scrollX,y:window.scrollY
-    }).then(function(canvas){
-      root.style.display="";if(form)form.style.display="";
-      cb(canvas.toDataURL("image/jpeg",0.85));
-    }).catch(function(err){
-      root.style.display="";if(form)form.style.display="";
-      console.error("Auto-screenshot failed:",err);cb(null);
+    /* The caller has just toggled display:none on the form + existing
+       annotations and (often) just appended the pending pin marker.
+       html2canvas snapshots the current computed DOM, so without waiting a
+       paint frame we sometimes capture before the browser has actually
+       repainted — the pin is missing or shows in its pre-layout spot.
+       Double-rAF guarantees one full paint has completed before we snap. */
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        html2canvas(document.body,{
+          useCORS:true,allowTaint:true,
+          scale:window.devicePixelRatio||1,
+          scrollX:-window.scrollX,scrollY:-window.scrollY,
+          windowWidth:document.documentElement.clientWidth,
+          windowHeight:document.documentElement.clientHeight,
+          width:document.documentElement.clientWidth,
+          height:document.documentElement.clientHeight,
+          x:window.scrollX,y:window.scrollY
+        }).then(function(canvas){
+          root.style.display="";if(form)form.style.display="";
+          cb(canvas.toDataURL("image/jpeg",0.85));
+        }).catch(function(err){
+          root.style.display="";if(form)form.style.display="";
+          console.error("Auto-screenshot failed:",err);cb(null);
+        });
+      });
     });
   });
 }
