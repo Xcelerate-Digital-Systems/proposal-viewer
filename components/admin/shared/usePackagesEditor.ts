@@ -368,6 +368,21 @@ export function usePackagesEditor({
     setExpandedTiers((prev) => new Set(Array.from(prev).concat(newTier.id)));
   }, [form.packages, updateForm]);
 
+  // Append a tier from a saved template. Always regenerates the id and
+  // sort_order so the same template can be inserted multiple times.
+  const insertTier = useCallback(
+    (tier: PackageTier) => {
+      const fresh: PackageTier = {
+        ...tier,
+        id: generateId(),
+        sort_order: form.packages.length,
+      };
+      updateForm({ packages: [...form.packages, fresh] });
+      setExpandedTiers((prev) => new Set(Array.from(prev).concat(fresh.id)));
+    },
+    [form.packages, updateForm],
+  );
+
   const updateTier = useCallback(
     (tierId: string, changes: Partial<PackageTier>) => {
       updateForm({
@@ -471,6 +486,7 @@ export function usePackagesEditor({
     // Tiers
     expandedTiers,
     addTier,
+    insertTier,
     updateTier,
     deleteTier,
     duplicateTier,

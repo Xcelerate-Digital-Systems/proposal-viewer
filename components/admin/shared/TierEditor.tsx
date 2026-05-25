@@ -1,7 +1,7 @@
 // components/admin/shared/TierEditor.tsx
 'use client';
 
-import { GripVertical, ChevronDown, ChevronUp, Star, ArrowUp, ArrowDown, Trash2, Plus, Copy } from 'lucide-react';
+import { GripVertical, ChevronDown, ChevronUp, Star, ArrowUp, ArrowDown, Trash2, Plus, Copy, Bookmark } from 'lucide-react';
 import { PackageTier, PackageFeature } from '@/lib/supabase';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import CurrencyInput from '@/components/ui/CurrencyInput';
@@ -16,6 +16,7 @@ export interface TierEditorProps {
   onToggleRecommended: () => void;
   onMove: (dir: 'up' | 'down') => void;
   onDuplicate: () => void;
+  onSaveAsTemplate?: () => void;
   onRemove: () => void;
   onAddFeature: () => void;
   onUpdateFeature: (fi: number, changes: Partial<PackageFeature>) => void;
@@ -30,7 +31,7 @@ export interface TierEditorProps {
 
 export default function TierEditor({
   tier, tierIdx, totalTiers, isExpanded, onToggleExpand,
-  onUpdate, onToggleRecommended, onMove, onDuplicate, onRemove,
+  onUpdate, onToggleRecommended, onMove, onDuplicate, onSaveAsTemplate, onRemove,
   onAddFeature, onUpdateFeature, onRemoveFeature,
   onAddCondition, onUpdateCondition, onRemoveCondition,
   onAddChild, onUpdateChild, onRemoveChild,
@@ -76,6 +77,15 @@ export default function TierEditor({
           >
             <Copy size={12} />
           </button>
+          {onSaveAsTemplate && (
+            <button
+              onClick={onSaveAsTemplate}
+              title="Save as template"
+              className="p-1 rounded hover:bg-teal/10 text-gray-300 hover:text-teal transition-colors"
+            >
+              <Bookmark size={12} />
+            </button>
+          )}
           <button onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors">
             <Trash2 size={12} />
           </button>

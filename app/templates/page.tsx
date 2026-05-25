@@ -23,7 +23,7 @@ async function authHeaders(): Promise<HeadersInit> {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
-type TabKey = 'proposal' | 'quote' | 'line_items';
+type TabKey = 'proposal' | 'quote' | 'line_items' | 'packages';
 
 interface LineItemTemplateRow {
   id: string;
@@ -33,10 +33,19 @@ interface LineItemTemplateRow {
   created_at: string;
 }
 
+interface PackageTemplateRow {
+  id: string;
+  name: string;
+  description: string | null;
+  tier: { name?: string; features?: unknown[] } | null;
+  created_at: string;
+}
+
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'proposal', label: 'Proposals' },
   { key: 'quote', label: 'Quotes' },
   { key: 'line_items', label: 'Line items' },
+  { key: 'packages', label: 'Packages' },
 ];
 
 export default function TemplatesPage() {
@@ -51,13 +60,19 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   const toast = useToast();
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [lineItemTemplates, setLineItemTemplates] = useState<LineItemTemplateRow[]>([]);
+  const [packageTemplates, setPackageTemplates] = useState<PackageTemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('agencyviz-templates-tab') as TabKey | null;
-      if (stored === 'proposal' || stored === 'quote' || stored === 'line_items') return stored;
+      if (
+        stored === 'proposal' ||
+        stored === 'quote' ||
+        stored === 'line_items' ||
+        stored === 'packages'
+      ) return stored;
     }
     return 'proposal';
   });
@@ -98,18 +113,30 @@ function TemplatesContent({ companyId }: { companyId: string }) {
     }
   }, []);
 
+  const fetchPackageTemplates = useCallback(async () => {
+    const res = await fetch('/api/package-templates', { headers: await authHeaders() });
+    if (res.ok) {
+      const json = await res.json();
+      setPackageTemplates(json.templates ?? []);
+    }
+  }, []);
+
   const refetch = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchProposalTemplates(), fetchLineItemTemplates()]);
+    await Promise.all([
+      fetchProposalTemplates(),
+      fetchLineItemTemplates(),
+      fetchPackageTemplates(),
+    ]);
     setLoading(false);
-  }, [fetchProposalTemplates, fetchLineItemTemplates]);
+  }, [fetchProposalTemplates, fetchLineItemTemplates, fetchPackageTemplates]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
   // For proposal/quote tabs: filter proposal_templates by entity_type.
-  const scoped = activeTab === 'line_items'
+  const scoped = activeTab === 'line_items' || activeTab === 'packages'
     ? []
     : templates.filter((t) => (t.entity_type ?? 'proposal') === activeTab);
 
@@ -127,7 +154,14 @@ function TemplatesContent({ companyId }: { companyId: string }) {
       )
     : lineItemTemplates;
 
-  const showRecent = !searchQuery && activeTab !== 'line_items' && scoped.length >= 8;
+  const filteredPackageTemplates = searchQuery
+    ? packageTemplates.filter((t) =>
+        (t.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (t.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+      )
+    : packageTemplates;
+
+  const showRecent = !searchQuery && activeTab !== 'line_items' && activeTab !== 'packages' && scoped.length >= 8;
   const recent = showRecent
     ? [...scoped]
         .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at))
@@ -137,9 +171,35 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   const tabCount =
     activeTab === 'line_items'
       ? lineItemTemplates.length
+      : activeTab === 'packages'
+      ? packageTemplates.length
       : scoped.length;
   const tabNoun =
-    activeTab === 'line_items' ? 'line-item template' : 'template';
+    activeTab === 'line_items'
+      ? 'line-item template'
+      : activeTab === 'packages'
+      ? 'package template'
+      : 'template';
+
+  const deletePackageTemplate = async (t: PackageTemplateRow) => {
+    const ok = await confirm({
+      title: 'Delete package template?',
+      message: `"${t.name}" will be removed from the library.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch(`/api/package-templates/${t.id}`, {
+      method: 'DELETE',
+      headers: await authHeaders(),
+    });
+    if (res.ok) {
+      setPackageTemplates((prev) => prev.filter((x) => x.id !== t.id));
+      toast.success('Template deleted');
+    } else {
+      toast.error('Failed to delete');
+    }
+  };
 
   const deleteLineItemTemplate = async (t: LineItemTemplateRow) => {
     const ok = await confirm({
@@ -208,16 +268,23 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             <Search size={16} className="text-faint shrink-0" />
             <input
               type="text"
-              placeholder={`Search ${activeTab === 'line_items' ? 'line-item templates' : 'templates'}...`}
+              placeholder={`Search ${
+                activeTab === 'line_items'
+                  ? 'line-item templates'
+                  : activeTab === 'packages'
+                  ? 'package templates'
+                  : 'templates'
+              }...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
             />
           </div>
 
-          {/* New template (proposals/quotes only — line-item templates are
-              created from inside the quote builder via "Save as Template"). */}
-          {activeTab !== 'line_items' && (
+          {/* New template (proposals/quotes only — line-item and package
+              templates are created from inside their editors via "Save as
+              Template"). */}
+          {activeTab !== 'line_items' && activeTab !== 'packages' && (
             <button
               onClick={() => setShowUpload(true)}
               className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
@@ -237,6 +304,8 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             const count =
               tab.key === 'line_items'
                 ? lineItemTemplates.length
+                : tab.key === 'packages'
+                ? packageTemplates.length
                 : templates.filter((t) => (t.entity_type ?? 'proposal') === tab.key).length;
             return (
               <button
@@ -278,6 +347,13 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             allCount={lineItemTemplates.length}
             searchQuery={searchQuery}
             onDelete={deleteLineItemTemplate}
+          />
+        ) : activeTab === 'packages' ? (
+          <PackageTemplatesView
+            templates={filteredPackageTemplates}
+            allCount={packageTemplates.length}
+            searchQuery={searchQuery}
+            onDelete={deletePackageTemplate}
           />
         ) : filteredProposalTemplates.length === 0 && searchQuery ? (
           <div className="text-center py-20">
@@ -431,6 +507,74 @@ function LineItemTemplatesView({
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function PackageTemplatesView({
+  templates,
+  allCount,
+  searchQuery,
+  onDelete,
+}: {
+  templates: PackageTemplateRow[];
+  allCount: number;
+  searchQuery: string;
+  onDelete: (t: PackageTemplateRow) => void;
+}) {
+  if (templates.length === 0 && searchQuery) {
+    return (
+      <div className="text-center py-20">
+        <Search size={28} className="text-faint mx-auto mb-3" />
+        <p className="text-sm text-muted">No package templates matching &ldquo;{searchQuery}&rdquo;</p>
+      </div>
+    );
+  }
+  if (allCount === 0) {
+    return (
+      <div className="text-center py-20">
+        <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <FileText size={28} className="text-faint" />
+        </div>
+        <h3 className="text-lg font-semibold text-muted mb-1">No package templates yet</h3>
+        <p className="text-sm text-faint max-w-md mx-auto">
+          Inside any proposal&rsquo;s packages page, click the bookmark icon on a
+          package to save it to your library. It will show up here.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {templates.map((t) => {
+        const featureCount = Array.isArray(t.tier?.features) ? t.tier!.features!.length : 0;
+        return (
+          <div
+            key={t.id}
+            className="group relative bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
+              <button
+                onClick={() => onDelete(t)}
+                className="opacity-0 group-hover:opacity-100 text-faint hover:text-red-500 transition"
+                title="Delete"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+            {t.description && (
+              <p className="text-xs text-muted line-clamp-2 mb-3">{t.description}</p>
+            )}
+            <div className="flex items-center justify-between text-[11px] text-faint">
+              <span>
+                {featureCount} feature{featureCount === 1 ? '' : 's'}
+              </span>
+              <span>{new Date(t.created_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

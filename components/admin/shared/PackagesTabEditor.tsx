@@ -12,6 +12,10 @@ import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import PackagesAppearanceSection from '@/components/admin/shared/PackagesAppearanceSection';
 import TierEditor from '@/components/admin/shared/TierEditor';
+import {
+  PackageTemplatesLibraryBar,
+  SavePackageTemplateModal,
+} from '@/components/admin/shared/PackageTemplatesLibraryBar';
 import { usePackagesEditor, type UsePackagesEditorOptions } from './usePackagesEditor';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
@@ -26,6 +30,7 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
   useReportSaveStatus(editor.saveStatus);
 
   const [showPreview, setShowPreview] = useState(true);
+  const [tierToSave, setTierToSave] = useState<PackageTier | null>(null);
 
   /* ── Loading ────────────────────────────────────────────────── */
 
@@ -95,12 +100,15 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
                       <label className="text-xs font-medium text-gray-600">
                         Packages ({editor.form.packages.length})
                       </label>
-                      <button
-                        onClick={editor.addTier}
-                        className="flex items-center gap-1 text-xs font-medium text-teal hover:text-teal/80 transition-colors"
-                      >
-                        <Plus size={11} /> Add Package
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <PackageTemplatesLibraryBar onPick={editor.insertTier} />
+                        <button
+                          onClick={editor.addTier}
+                          className="flex items-center gap-1 text-xs font-medium text-teal hover:text-teal/80 transition-colors"
+                        >
+                          <Plus size={11} /> Add Package
+                        </button>
+                      </div>
                     </div>
 
                     {editor.form.packages.length === 0 ? (
@@ -124,6 +132,7 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
                             }
                             onMove={(dir) => editor.moveTier(tier.id, dir)}
                             onDuplicate={() => editor.duplicateTier(tier.id)}
+                            onSaveAsTemplate={() => setTierToSave(tier)}
                             onRemove={() => editor.deleteTier(tier.id)}
                             onAddFeature={() =>
                               editor.updateTier(tier.id, {
@@ -229,6 +238,11 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
           </StickyPreviewAside>
         )}
       </div>
+
+      <SavePackageTemplateModal
+        tier={tierToSave}
+        onClose={() => setTierToSave(null)}
+      />
     </div>
   );
 }
