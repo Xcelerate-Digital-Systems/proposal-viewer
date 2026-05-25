@@ -68,7 +68,38 @@ export async function GET(
       return corsJson({ error: 'Failed to load comments' }, 500);
     }
 
-    return corsJson({ comments: comments || [] });
+    // Enrich team-authored comments with the author's avatar URL so the
+    // widget panel can render a real photo instead of an initial bubble.
+    // Guests (author_user_id null) skip this lookup entirely.
+    const userIds = Array.from(
+      new Set(
+        (comments || [])
+          .map((c) => c.author_user_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      ),
+    );
+
+    const avatarByUserId = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: members } = await supabase
+        .from('team_members')
+        .select('user_id, avatar_path')
+        .in('user_id', userIds);
+      for (const m of members || []) {
+        if (!m.user_id || !m.avatar_path) continue;
+        const { data: signed } = await supabase.storage
+          .from('proposals')
+          .createSignedUrl(m.avatar_path, 3600);
+        if (signed?.signedUrl) avatarByUserId.set(m.user_id, signed.signedUrl);
+      }
+    }
+
+    const enriched = (comments || []).map((c) => ({
+      ...c,
+      author_avatar_url: c.author_user_id ? avatarByUserId.get(c.author_user_id) ?? null : null,
+    }));
+
+    return corsJson({ comments: enriched });
   } catch (err) {
     console.error('Comments GET error:', err);
     return corsJson({ error: 'Internal server error' }, 500);

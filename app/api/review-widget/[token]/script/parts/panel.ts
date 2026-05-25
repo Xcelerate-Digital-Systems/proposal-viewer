@@ -159,11 +159,17 @@ function reactionBarHTML(commentId){
   return h;
 }
 
-function avatarFor(name,isTeam){
+function avatarFor(name,isTeam,url){
+  if(url){
+    return '<img class="aviz-avatar aviz-avatar-img" src="'+esc(url)+'" alt="'+esc(name||"")+'" />';
+  }
   var initial=esc((name||"?").charAt(0).toUpperCase());
   return '<div class="aviz-avatar'+(isTeam?'':' guest')+'">'+initial+'</div>';
 }
-function replyAvatarFor(name,isTeam){
+function replyAvatarFor(name,isTeam,url){
+  if(url){
+    return '<img class="aviz-card-reply-avatar aviz-avatar-img" src="'+esc(url)+'" alt="'+esc(name||"")+'" />';
+  }
   var initial=esc((name||"?").charAt(0).toUpperCase());
   return '<div class="aviz-card-reply-avatar'+(isTeam?'':' guest')+'">'+initial+'</div>';
 }
@@ -187,7 +193,7 @@ function threadHTML(c){
 
   /* Author row */
   h+='<div class="aviz-card-row">';
-  h+=avatarFor(c.author_name,isTeam);
+  h+=avatarFor(c.author_name,isTeam,c.author_avatar_url);
   h+='<div class="aviz-card-main">';
   h+='<div class="aviz-card-meta-row">';
   h+='<span class="aviz-card-author">'+esc(c.author_name)+'</span>';
@@ -240,7 +246,7 @@ function threadHTML(c){
       var rTeam=r.author_type==="team";
       h+='<div class="aviz-card-reply" data-id="'+r.id+'">';
       h+='<div class="aviz-card-reply-row">';
-      h+=replyAvatarFor(r.author_name,rTeam);
+      h+=replyAvatarFor(r.author_name,rTeam,r.author_avatar_url);
       h+='<div class="aviz-card-reply-main">';
       h+='<div class="aviz-card-reply-meta">';
       h+='<span class="aviz-card-reply-author">'+esc(r.author_name)+'</span>';
@@ -302,7 +308,11 @@ function resolvedHTML(c){
     h+='<div class="aviz-resolved-pin"><span class="aviz-resolved-pin-num">'+c.thread_number+'</span></div>';
   }
   h+='<div class="aviz-resolved-row">';
-  h+='<div class="aviz-resolved-avatar">'+initial+'</div>';
+  if(c.author_avatar_url){
+    h+='<img class="aviz-resolved-avatar aviz-avatar-img" src="'+esc(c.author_avatar_url)+'" alt="'+esc(c.author_name||"")+'" />';
+  }else{
+    h+='<div class="aviz-resolved-avatar">'+initial+'</div>';
+  }
   h+='<div style="min-width:0;flex:1">';
   h+='<span class="aviz-resolved-author">'+esc(c.author_name)+'</span>';
   h+='<p class="aviz-resolved-text">'+esc(c.content)+'</p>';

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Globe, Code2, Copy, Check, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Plus, Globe, Code2, Copy, Check, CheckCircle2, Clock, ExternalLink, Power } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -131,6 +131,13 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
         ) : (
           <div className="max-w-3xl space-y-6">
             <StatusCard project={project} items={items} installed={installed} />
+
+            <WidgetEnabledToggle
+              project={project}
+              onChange={(next) =>
+                setProject((prev) => (prev ? { ...prev, widget_enabled: next } : prev))
+              }
+            />
 
             {items.length > 0 && <PagesList items={items} />}
           </div>
@@ -309,6 +316,77 @@ function StatusCard({
 /* ------------------------------------------------------------------ */
 /*  Per-page status list                                               */
 /* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/*  Widget on/off toggle                                                */
+/* ------------------------------------------------------------------ */
+
+function WidgetEnabledToggle({
+  project,
+  onChange,
+}: {
+  project: FeedbackProject;
+  onChange: (next: boolean) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  // `widget_enabled` defaults to true on the server; treat any non-false
+  // as on so projects predating the column don't appear disabled.
+  const enabled = project.widget_enabled !== false;
+
+  const toggle = async () => {
+    if (saving) return;
+    const next = !enabled;
+    setSaving(true);
+    // Optimistic flip — revert if the write fails.
+    onChange(next);
+    const { error } = await supabase
+      .from('review_projects')
+      .update({ widget_enabled: next, updated_at: new Date().toISOString() })
+      .eq('id', project.id);
+    setSaving(false);
+    if (error) {
+      onChange(!next);
+      console.error('widget_enabled update failed:', error);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-5 flex items-center gap-4">
+      <div
+        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+          enabled ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400'
+        }`}
+      >
+        <Power size={18} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-sm font-semibold text-gray-900">Widget on website</h3>
+        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+          {enabled
+            ? 'The feedback toolbar is live on every embedded page. Toggle off to hide it without removing the script tag.'
+            : 'The script is installed but the toolbar is hidden. Reviewers can’t leave new feedback until you switch it back on.'}
+        </p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label={enabled ? 'Disable widget' : 'Enable widget'}
+        onClick={toggle}
+        disabled={saving}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+          enabled ? 'bg-teal' : 'bg-gray-300'
+        }`}
+      >
+        <span
+          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out my-0.5 ${
+            enabled ? 'translate-x-5' : 'translate-x-0.5'
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
 
 function PagesList({ items }: { items: FeedbackItem[] }) {
   return (

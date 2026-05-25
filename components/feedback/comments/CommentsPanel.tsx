@@ -6,6 +6,7 @@ import type { FeedbackComment } from '@/lib/supabase';
 import GeneralCommentForm from './GeneralCommentForm';
 import CommentThread from './CommentThread';
 import ResolvedSection from './ResolvedSection';
+import { useTeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 
 interface CommentsPanelProps {
   /** All unresolved top-level comments */
@@ -80,6 +81,9 @@ export default function CommentsPanel({
   commentFormAlwaysExpanded,
 }: CommentsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // Avatars are looked up by share_token so guests on the public review
+  // page still see real team photos (and not just initials) on team comments.
+  const memberLookup = useTeamMemberLookup(shareToken);
 
   // Auto-scroll to highlighted comment when a pin marker is clicked
   useEffect(() => {
@@ -134,6 +138,7 @@ export default function CommentsPanel({
             onEditReply={onEdit}
             onDeleteReply={onDelete}
             highlighted={highlightCommentId === c.id}
+            memberLookup={memberLookup}
           />
         ))}
 
@@ -142,6 +147,7 @@ export default function CommentsPanel({
           comments={resolvedComments}
           getReplies={getReplies}
           onUnresolve={onUnresolve}
+          memberLookup={memberLookup}
         />
 
         {/* Empty state */}

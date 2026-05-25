@@ -44,12 +44,25 @@ export async function GET(
 
   const { data: project } = await supabaseAdmin
     .from('review_projects')
-    .select('id, status')
+    .select('id, status, widget_enabled')
     .eq('share_token', params.token)
     .single();
 
   if (!project || project.status === 'archived') {
     return jsResponse('/* AgencyViz: invalid or archived project */');
+  }
+
+  // Admin has toggled the widget off from the Setup tab. The <script> tag
+  // is still in the customer's site, so we still want a successful 200 to
+  // avoid noisy 4xx errors in their console. Heartbeat still fires so the
+  // Setup tab can finish its install-detection flow even while disabled.
+  if (project.widget_enabled === false) {
+    return jsResponse(
+      `(function(){"use strict";try{fetch(${JSON.stringify(
+        `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.agencyviz.com'}/api/review-widget/${params.token}/heartbeat`,
+      )},{method:"POST",keepalive:true}).catch(function(){});}catch(e){}})();
+/* AgencyViz: widget disabled by project admin */`,
+    );
   }
 
   let pinnedItemId: string | null = null;

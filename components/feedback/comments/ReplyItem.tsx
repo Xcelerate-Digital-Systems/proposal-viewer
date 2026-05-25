@@ -9,16 +9,20 @@ import { useCommentReactions } from '@/hooks/useCommentReactions';
 import AttachmentList from './AttachmentList';
 import ReactionBar from './ReactionBar';
 import ThreadMenu from './ThreadMenu';
+import CommentAvatar from './CommentAvatar';
+import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 
 interface Props {
   reply: FeedbackComment;
   currentUserName: string | null;
   onEdit?: (content: string) => Promise<void>;
   onDelete?: () => Promise<void>;
+  /** Map of user_id → {name, avatarUrl} so team replies render the user's photo. */
+  memberLookup?: TeamMemberLookup;
 }
 
 /** A single threaded reply rendered under its parent comment. */
-export default function ReplyItem({ reply, currentUserName, onEdit, onDelete }: Props) {
+export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, memberLookup }: Props) {
   const confirm = useConfirm();
   const rIsTeam = reply.author_type === 'team';
   const { reactions, toggle } = useCommentReactions(reply.id, { currentUserName });
@@ -55,13 +59,13 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete }: 
 
   return (
     <div className="flex items-start gap-3 group">
-      <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold ${
-          rIsTeam ? 'bg-teal/10 text-teal' : 'bg-violet-100 text-violet-700'
-        }`}
-      >
-        {reply.author_name.charAt(0).toUpperCase()}
-      </div>
+      <CommentAvatar
+        authorName={reply.author_name}
+        authorUserId={reply.author_user_id}
+        isTeam={rIsTeam}
+        memberLookup={memberLookup}
+        className="w-7 h-7 text-[11px]"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-medium text-ink">{reply.author_name}</span>

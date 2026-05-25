@@ -13,6 +13,8 @@ import ReplyItem from './ReplyItem';
 import ThreadMenu from './ThreadMenu';
 import { getPriorityDef } from './PrioritySelector';
 import { useCommentReactions } from '@/hooks/useCommentReactions';
+import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
+import CommentAvatar from './CommentAvatar';
 
 interface CommentThreadProps {
   comment: FeedbackComment;
@@ -43,6 +45,11 @@ interface CommentThreadProps {
 
   /** When true, show a temporary highlight ring (e.g. when scrolled to via pin click) */
   highlighted?: boolean;
+
+  /** Map of user_id → {name, avatarUrl} for team members. When the
+   *  comment's author_user_id is in the map we render their photo
+   *  instead of the initial bubble. */
+  memberLookup?: TeamMemberLookup;
 }
 
 export default function CommentThread({
@@ -59,6 +66,7 @@ export default function CommentThread({
   onEditReply,
   onDeleteReply,
   highlighted = false,
+  memberLookup,
 }: CommentThreadProps) {
   const confirm = useConfirm();
   const [showReply, setShowReply] = useState(false);
@@ -149,13 +157,13 @@ export default function CommentThread({
 
       {/* Author + content */}
       <div className="flex items-start gap-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[12px] font-semibold ${
-          isTeam
-            ? 'bg-teal/10 text-teal'
-            : 'bg-violet-100 text-violet-700'
-        }`}>
-          {comment.author_name.charAt(0).toUpperCase()}
-        </div>
+        <CommentAvatar
+          authorName={comment.author_name}
+          authorUserId={comment.author_user_id}
+          isTeam={isTeam}
+          memberLookup={memberLookup}
+          className="w-8 h-8 text-[12px]"
+        />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-sm font-medium text-ink">{comment.author_name}</span>
@@ -265,6 +273,7 @@ export default function CommentThread({
               currentUserName={currentUserName}
               onEdit={onEditReply ? (content) => onEditReply(r.id, content) : undefined}
               onDelete={onDeleteReply ? () => onDeleteReply(r.id) : undefined}
+              memberLookup={memberLookup}
             />
           ))}
         </div>

@@ -86,30 +86,40 @@ html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-ro
   box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);padding:14px;
   animation:aviz-fadeIn .15s ease-out;}
 
-/* ── Toolbar ───────────────────────────────────────────── */
+/* ── Toolbar ───────────────────────────────────────────────
+   Mirrors the in-app FeedbackToolbar component: rounded card, small
+   pill buttons individually rounded, full accent fill when active,
+   dark pill tooltip on hover, light centred separator. */
 #aviz-toolbar{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:2147483640;
-  display:flex;flex-direction:column;background:#fff;border-radius:16px;
-  box-shadow:0 4px 24px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.06);overflow:visible;
-  border:1px solid rgba(0,0,0,.06);transition:right .25s cubic-bezier(.4,0,.2,1);}
-.aviz-tool{position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;
-  background:transparent;border:none;cursor:pointer;color:#666;transition:all .3s;margin:0;padding:0;}
-.aviz-tool:not(:last-child){border-bottom:1px solid #f0f0f0;}
-.aviz-tool:first-child{border-radius:16px 16px 0 0;}.aviz-tool:last-child{border-radius:0 0 16px 16px;}
-.aviz-tool:hover{background:#f5f5f5;color:#333;}
-.aviz-tool.active{background:${ACCENT}12;color:${ACCENT};}
-.aviz-tool .aviz-badge{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:8px;
-  background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;
-  justify-content:center;padding:0 3px;border:2px solid #fff;line-height:1;}
+  display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border-radius:16px;
+  box-shadow:0 2px 4px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);
+  padding:6px;overflow:visible;border:1px solid rgba(0,0,0,.04);
+  transition:right .25s cubic-bezier(.4,0,.2,1);}
+.aviz-tool{position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  background:transparent;border:none;border-radius:12px;cursor:pointer;color:#6b7280;
+  transition:background-color .2s,color .2s;margin:0;padding:0;}
+.aviz-tool svg{width:18px;height:18px;display:block;}
+.aviz-tool:hover{background:#f9fafb;color:#111827;}
+.aviz-tool.active{background:${ACCENT} !important;color:#fff !important;
+  box-shadow:0 1px 2px rgba(20,20,40,.06);}
+.aviz-tool.active:hover{background:${ACCENT} !important;color:#fff !important;}
+.aviz-tool .aviz-badge{position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;border-radius:9999px;
+  background:${ACCENT};color:#fff;font-size:9px;font-weight:600;display:flex;align-items:center;
+  justify-content:center;padding:0 4px;line-height:1;}
+.aviz-tool.active .aviz-badge{background:#fff;color:${ACCENT};}
 .aviz-tool .aviz-badge:empty{display:none;}
-.aviz-tooltip{position:absolute;right:calc(100% + 10px);top:50%;transform:translateY(-50%);
-  background:#111;color:#fff;font-size:11px;font-weight:500;padding:6px 10px;border-radius:8px;
-  white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s;z-index:2147483641;}
+.aviz-tooltip{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);
+  background:#111827;color:#fff;font-size:11px;font-weight:500;padding:5px 10px;border-radius:8px;
+  white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:2147483641;
+  box-shadow:0 2px 6px rgba(0,0,0,.12);}
 .aviz-tool:hover .aviz-tooltip{opacity:1;}
-.aviz-sep{width:100%;height:1px;background:#e5e7eb;flex-shrink:0;margin:0;padding:0;}
+.aviz-tooltip .soon{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:9999px;
+  background:rgba(255,255,255,.18);color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+.aviz-sep{width:20px;height:1px;background:#f3f4f6;flex-shrink:0;margin:2px 0;padding:0;}
 /* Toolbar lives on the right; panel lives on the left — no shift needed on desktop. */
 @media(max-width:480px){
-  #aviz-toolbar{right:10px;}
-  .aviz-tool{width:42px;height:42px;}
+  #aviz-toolbar{right:10px;padding:5px;}
+  .aviz-tool{width:34px;height:34px;}
   /* Panel covers the viewport on mobile; tuck the toolbar off-screen so it's not on top. */
   #aviz-toolbar.panel-open{right:-100px;}
 }
@@ -316,6 +326,15 @@ html.aviz-tour-on .aviz-tool.aviz-tour-target{background:${ACCENT}18;color:${ACC
 #aviz-panel .aviz-avatar{width:32px;height:32px;border-radius:9999px;display:flex;align-items:center;justify-content:center;
   font-size:12px;font-weight:600;flex-shrink:0;background:${ACCENT}1a;color:${ACCENT};line-height:1;}
 #aviz-panel .aviz-avatar.guest{background:#ede9fe;color:#6d28d9;}
+/* Photo variant — same circle, but the <img> fills it. Override the bubble
+   background/colour so we don't get a tint behind transparent PNGs. Listed
+   with every avatar class so it beats their #aviz-panel-prefixed defaults
+   regardless of cascade order. */
+#aviz-panel .aviz-avatar.aviz-avatar-img,
+#aviz-panel .aviz-card-reply-avatar.aviz-avatar-img,
+#aviz-panel .aviz-resolved-avatar.aviz-avatar-img{
+  display:block;object-fit:cover;background:#f3f4f6;border:1px solid rgba(0,0,0,.04);color:transparent;
+}
 #aviz-panel .aviz-card-main{flex:1;min-width:0;}
 #aviz-panel .aviz-card-meta-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0;padding:0;}
 #aviz-panel .aviz-card-author{font-size:14px;font-weight:500;color:#111827;margin:0;padding:0;line-height:1.3;}
