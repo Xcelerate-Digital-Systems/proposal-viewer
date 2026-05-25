@@ -2,9 +2,10 @@
 
 /**
  * Dashboard inbox row — a single unresolved client comment with the actual
- * comment body shown (3 lines, expandable on hover), an inline reply
- * composer, and resolve / open actions. Used by the dashboard's "Needs your
- * reply" panel so the agency can triage without leaving the page.
+ * comment body, the project/item context, a screenshot thumbnail (when the
+ * client captured one), an inline reply composer, and resolve / open
+ * actions. Used by the dashboard's "Needs your reply" panel so the agency
+ * can triage without leaving the page.
  *
  * Two kinds of comments flow through here:
  *   - 'proposal' → proposal_comments (reply via direct supabase insert)
@@ -14,7 +15,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Reply, Check, ExternalLink, Send, X, FileText, MessageSquare } from 'lucide-react';
+import {
+  Reply, Check, ExternalLink, Send, X, FileText, MessageSquareText, FileImage, ChevronRight,
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export type InboxComment =
@@ -33,11 +36,13 @@ export type InboxComment =
       kind: 'review';
       commentId: string;
       projectId: string;
+      projectName: string;
       itemId: string;
       itemTitle: string;
       clientName: string;
       content: string;
       createdAt: string;
+      screenshotUrl: string | null;
       companyId: string;
     };
 
@@ -76,17 +81,39 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
   const [sending, setSending] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shotPreviewOpen, setShotPreviewOpen] = useState(false);
 
   const isProposal = item.kind === 'proposal';
   const tone = isProposal
     ? { bg: '#E6F5F3', color: '#017C87', label: 'Proposal' }
-    : { bg: '#F3E8FF', color: '#7C3AED', label: 'Review' };
-  const ContextIcon = isProposal ? FileText : MessageSquare;
+    : { bg: '#F3E8FF', color: '#7C3AED', label: 'Feedback' };
+  const ContextIcon = isProposal ? FileText : MessageSquareText;
 
-  const itemTitle = isProposal ? item.proposalTitle : item.itemTitle;
   const openHref = isProposal
     ? `/proposals/${item.proposalId}/pages${item.pageNumber ? `?page=${item.pageNumber}` : ''}`
     : `/feedback/${item.projectId}/items/${item.itemId}`;
+
+  // Breadcrumb context — what the comment is attached to. Reviews get
+  // Project → Item, proposals get Title · Page N.
+  const breadcrumb = isProposal ? (
+    <>
+      <span className="font-medium text-ink truncate">{item.proposalTitle}</span>
+      {item.pageNumber != null && (
+        <>
+          <ChevronRight size={11} className="text-faint shrink-0" />
+          <span className="text-muted shrink-0">Page {item.pageNumber}</span>
+        </>
+      )}
+    </>
+  ) : (
+    <>
+      <span className="font-medium text-ink truncate">{item.projectName}</span>
+      <ChevronRight size={11} className="text-faint shrink-0" />
+      <span className="text-muted truncate">{item.itemTitle}</span>
+    </>
+  );
+
+  const screenshotUrl = !isProposal ? item.screenshotUrl : null;
 
   const sendReply = async () => {
     const trimmed = replyText.trim();
@@ -166,7 +193,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* Header row: client name, context badge, time */}
+          {/* Top row: author + type badge + time */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[13px] font-semibold text-ink">{item.clientName}</span>
             <span
@@ -176,28 +203,55 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
               <ContextIcon size={10} />
               {tone.label}
             </span>
-            <span className="text-[12px] text-muted truncate">on {itemTitle}</span>
             <span className="text-[11px] text-faint ml-auto shrink-0">
               {formatRelative(item.createdAt)}
             </span>
           </div>
 
-          {/* Comment body */}
-          <p
-            className={`text-[13px] text-ink/80 mt-2 whitespace-pre-wrap ${
-              expanded ? '' : 'line-clamp-3'
-            }`}
-          >
-            {item.content}
-          </p>
-          {item.content.length > 220 && (
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              className="text-[11px] text-teal hover:underline mt-1"
-            >
-              {expanded ? 'Show less' : 'Show more'}
-            </button>
-          )}
+          {/* Breadcrumb — clearly identifies which proposal/project+item */}
+          <div className="flex items-center gap-1.5 text-[12px] mt-1 min-w-0">
+            {breadcrumb}
+          </div>
+
+          {/* Body row — comment text + (optional) screenshot thumb */}
+          <div className="flex gap-3 mt-2.5">
+            <div className="flex-1 min-w-0">
+              <p
+                className={`text-[13px] text-ink/85 whitespace-pre-wrap ${
+                  expanded ? '' : 'line-clamp-3'
+                }`}
+              >
+                {item.content}
+              </p>
+              {item.content.length > 220 && (
+                <button
+                  onClick={() => setExpanded((v) => !v)}
+                  className="text-[11px] text-teal hover:underline mt-1"
+                >
+                  {expanded ? 'Show less' : 'Show more'}
+                </button>
+              )}
+            </div>
+
+            {screenshotUrl && (
+              <button
+                type="button"
+                onClick={() => setShotPreviewOpen(true)}
+                className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-surface ring-1 ring-gray-200 hover:ring-teal/40 transition-all group"
+                title="View screenshot"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={screenshotUrl}
+                  alt="Screenshot from client"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                  <FileImage size={16} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </span>
+              </button>
+            )}
+          </div>
 
           {/* Reply composer */}
           {replyOpen && (
@@ -268,6 +322,29 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
           )}
         </div>
       </div>
+
+      {/* Screenshot lightbox */}
+      {shotPreviewOpen && screenshotUrl && (
+        <div
+          onClick={() => setShotPreviewOpen(false)}
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 cursor-zoom-out"
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setShotPreviewOpen(false); }}
+            className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur text-white flex items-center justify-center"
+            title="Close"
+          >
+            <X size={18} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={screenshotUrl}
+            alt="Screenshot"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+          />
+        </div>
+      )}
     </div>
   );
 }
