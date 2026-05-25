@@ -41,7 +41,7 @@ function QuotesContent({ companyId }: { companyId: string }) {
   const [showNewDropdown, setShowNewDropdown] = useState(false);
   const newDropdownRef = useRef<HTMLDivElement>(null);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -205,8 +205,9 @@ function QuotesContent({ companyId }: { companyId: string }) {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+      {/* Content — board needs overflow-hidden so columns fill the viewport,
+          horizontal scroll stays inside the board, etc. */}
+      <div className={`flex-1 px-6 lg:px-10 ${viewMode === 'board' ? 'pt-4 pb-8 overflow-hidden' : 'py-8 overflow-y-auto'}`}>
         {showUpload && (
           <UploadModal
             companyId={companyId}

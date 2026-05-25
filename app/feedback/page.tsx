@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare } from 'lucide-react';
+import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, ExternalLink, Calendar } from 'lucide-react';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import type { FeedbackStatus } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -60,7 +60,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
       const stored = localStorage.getItem('agencyviz-reviews-view');
       if (stored === 'grid' || stored === 'list' || stored === 'board') return stored;
     }
-    return 'grid';
+    return 'board';
   });
 
   const toggleView = (mode: 'grid' | 'list' | 'board') => {
@@ -226,8 +226,10 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+      {/* Content — board needs overflow-hidden so its column heights resolve
+          and the horizontal scroll stays inside the board. List/grid keep
+          the normal vertical scroll. */}
+      <div className={`flex-1 px-6 lg:px-10 ${viewMode === 'board' ? 'pt-4 pb-8 overflow-hidden' : 'py-8 overflow-y-auto'}`}>
         {showCreate && (
           <CreateFeedbackProjectModal
             companyId={companyId}
@@ -311,20 +313,57 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
   );
 }
 
-/* ─── Compact card used on the kanban board ──────────────── */
+/* ─── Card used on the kanban board ───────────────────────
+   Mirrors the in-project KanbanCard styling (white rounded-2xl with the
+   double-layer shadow, icon tile in the top-left, footer divided by a
+   light border with meta on the left + Open link on the right). */
 
 function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
+  const updated = project.updated_at || project.created_at;
   return (
-    <Link
-      href={`/feedback/${project.id}/feedback`}
-      className="block bg-white rounded-xl border border-edge p-3 hover:border-teal/40 hover:shadow-sm transition-all"
-    >
-      <div className="text-[13px] font-semibold text-ink line-clamp-2 leading-snug">
-        {project.title}
+    <div className="group relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all">
+      <div className="flex items-start gap-2.5">
+        <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-teal/10">
+          <MessageSquareText size={15} className="text-teal" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[13px] font-medium text-ink truncate leading-tight">
+            {project.title}
+          </h4>
+          <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+            {project.client_name || 'Feedback project'}
+          </p>
+        </div>
       </div>
-      {project.client_name && (
-        <div className="text-[11px] text-faint mt-1 truncate">{project.client_name}</div>
-      )}
-    </Link>
+
+      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-1 text-[11px] text-gray-500">
+          <Calendar size={11} />
+          <span>{relativeShort(updated)}</span>
+        </div>
+        <Link
+          href={`/feedback/${project.id}/feedback`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium text-teal hover:text-teal-hover"
+        >
+          <ExternalLink size={11} />
+          Open
+        </Link>
+      </div>
+    </div>
   );
+}
+
+function relativeShort(iso: string): string {
+  const t = new Date(iso).getTime();
+  const diff = Date.now() - t;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }

@@ -120,7 +120,9 @@ export default function KanbanBoard<T extends { id: string }>({
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2">
+      {/* Negative margins bleed the board to the page edges to match the
+          per-project kanban (see components/admin/feedback/kanban/KanbanBoard.tsx). */}
+      <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 lg:-mx-10 px-6 lg:px-10 h-full">
         {local.map((col) => (
           <KanbanColumnView
             key={col.id}
@@ -131,9 +133,9 @@ export default function KanbanBoard<T extends { id: string }>({
           />
         ))}
       </div>
-      <DragOverlay dropAnimation={null}>
+      <DragOverlay>
         {activeItem ? (
-          <div className="opacity-90 rotate-1 cursor-grabbing">{renderCard(activeItem.item)}</div>
+          <div className="opacity-90 rotate-1">{renderCard(activeItem.item)}</div>
         ) : null}
       </DragOverlay>
     </DndContext>
@@ -156,30 +158,28 @@ function KanbanColumnView<T extends { id: string }>({
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const disabled = column.dropDisabled;
   return (
-    <div
-      ref={setNodeRef}
-      className={`flex flex-col flex-shrink-0 w-[280px] rounded-2xl border transition-colors ${
-        isOver && !disabled
-          ? 'border-teal/40 bg-teal/5'
-          : 'border-edge bg-surface/40'
-      }`}
-      title={disabled ? disabledHint : undefined}
-    >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-edge/60">
-        <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: column.accentHex }}
-          />
-          <span className="text-[12px] font-semibold uppercase tracking-wider text-ink truncate">
-            {column.label}
-          </span>
-          <span className="text-[11px] text-faint">{column.items.length}</span>
-        </div>
+    <div className="shrink-0 w-[280px] flex flex-col h-full min-h-0">
+      {/* Header sits OUTSIDE the drop zone — matches the per-project kanban */}
+      <div className="flex items-center gap-2 mb-3 shrink-0">
+        <span
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{ backgroundColor: column.accentHex }}
+        />
+        <h3 className="text-[13px] font-semibold text-gray-800 truncate">{column.label}</h3>
+        <span className="text-[11px] font-medium text-gray-400">{column.items.length}</span>
       </div>
-      <div className="flex-1 px-3 py-3 space-y-2 min-h-[120px] max-h-[calc(100dvh-280px)] overflow-y-auto">
+
+      <div
+        ref={setNodeRef}
+        title={disabled ? disabledHint : undefined}
+        className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors ${
+          isOver && !disabled ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-gray-50'
+        }`}
+      >
         {column.items.length === 0 ? (
-          <div className="text-[11px] text-faint text-center py-6">{emptyMessage}</div>
+          <div className="text-[11px] text-gray-400 italic text-center py-4">
+            {emptyMessage}
+          </div>
         ) : (
           column.items.map((item) => (
             <KanbanCardWrapper key={item.id} id={item.id}>
@@ -202,9 +202,9 @@ function KanbanCardWrapper({ id, children }: { id: string; children: React.React
       {...attributes}
       {...listeners}
       style={{
-        // Hide the card in its source slot while the overlay floats — avoids
-        // the "ghost twin" effect during drag.
-        opacity: isDragging ? 0 : 1,
+        // 0.4 opacity (not 0) — the per-project board does the same so users
+        // see where the card came from while the overlay floats.
+        opacity: isDragging ? 0.4 : 1,
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
       }}
       className="cursor-grab active:cursor-grabbing touch-none"
