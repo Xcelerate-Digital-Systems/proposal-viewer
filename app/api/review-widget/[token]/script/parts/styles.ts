@@ -110,11 +110,15 @@ html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
   transition:right .25s cubic-bezier(.4,0,.2,1);}
 
 /* ── Mode toggle (Comment / Browse) ────────────────────────
-   Segmented pill control above the toolbar. The lit pill is the
+   Floating segmented pill control anchored to the bottom-centre of
+   the viewport, independent of the right-edge toolbar stack so it
+   doesn't read as a sub-control of the toolbar. The lit pill is the
    reviewer's current mode; the unlit pill is a one-click switch. */
-#aviz-mode-toggle{display:inline-flex;background:#fff;border-radius:9999px;padding:5px;gap:2px;
+#aviz-mode-toggle{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483640;
+  display:inline-flex;background:#fff;border-radius:9999px;padding:5px;gap:2px;
   border:1px solid rgba(0,0,0,.04);
-  box-shadow:0 2px 4px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);}
+  box-shadow:0 2px 4px rgba(20,20,40,.06),0 10px 30px rgba(20,20,40,.12);
+  transition:bottom .25s cubic-bezier(.4,0,.2,1),opacity .2s;}
 .aviz-toggle-pill{background:transparent;border:none;color:#6b7280;font-family:${FONT};
   font-size:13px;font-weight:600;letter-spacing:.01em;padding:8px 18px;border-radius:9999px;
   cursor:pointer;line-height:1;margin:0;transition:background-color .2s,color .2s;}
@@ -155,9 +159,13 @@ html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
   #aviz-stack{right:10px;gap:8px;}
   #aviz-toolbar{padding:5px;}
   .aviz-tool{width:34px;height:34px;}
+  #aviz-mode-toggle{bottom:14px;}
   .aviz-toggle-pill{padding:7px 14px;font-size:12.5px;}
-  /* Panel covers the viewport on mobile; tuck the stack (toggle + toolbar) off-screen so it's not on top. */
+  /* Panel covers the viewport on mobile; tuck the toolbar off the right
+     edge and slide the floating toggle off the bottom so neither sit on
+     top of the panel. */
   #aviz-stack.panel-open{right:-160px;}
+  #aviz-mode-toggle.panel-open{bottom:-80px;opacity:0;pointer-events:none;}
 }
 
 /* ── Mode bar (top bar when pin/box/text active) ───────── */
@@ -287,7 +295,7 @@ mark.aviz-hl.resolved{background:rgba(${HIGHLIGHT_COLOR},.15) !important;}
 #aviz-tour-backdrop{position:fixed;inset:0;z-index:2147483635;background:rgba(15,23,42,.55);
   animation:aviz-fadeIn .2s ease-out;}
 html.aviz-tour-on #aviz-stack{pointer-events:none;z-index:2147483640;}
-html.aviz-tour-on #aviz-mode-toggle{opacity:.45;}
+html.aviz-tour-on #aviz-mode-toggle{opacity:.45;pointer-events:none;}
 html.aviz-tour-on .aviz-tool .aviz-tooltip{display:none;}
 html.aviz-tour-on .aviz-tool.aviz-tour-target{background:${ACCENT}18;color:${ACCENT};
   box-shadow:0 0 0 3px ${ACCENT}55,0 0 22px ${ACCENT}99;animation:aviz-tourPulse 1.5s ease-in-out infinite;position:relative;z-index:1;}

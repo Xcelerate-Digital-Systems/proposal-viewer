@@ -26,9 +26,11 @@ togglePills.comment.setAttribute("data-mode","comment");togglePills.comment.text
 togglePills.browse.type="button";togglePills.browse.className="aviz-toggle-pill";
 togglePills.browse.setAttribute("data-mode","browse");togglePills.browse.textContent="Browse";
 modeToggle.appendChild(togglePills.comment);modeToggle.appendChild(togglePills.browse);
-/* modeToggle is appended to the stack below the toolbar -- anchoring
-   it at the bottom keeps it closer to the host page's natural reading
-   flow without the toolbar pushing it off-centre. */
+/* modeToggle is appended directly to the root (not the stack) so it
+   anchors to the bottom-centre of the viewport independently of the
+   right-edge toolbar -- floating it underneath the toolbar made it
+   read like an orphaned dropdown. */
+root.appendChild(modeToggle);
 
 /* ── Toolbar ────────────────────────────────────────────── */
 var toolbar=document.createElement("div");toolbar.id="aviz-toolbar";
@@ -53,7 +55,6 @@ tools.forEach(function(t){
   toolbar.appendChild(btn);toolBtns[t.id]=btn;
 });
 stack.appendChild(toolbar);
-stack.appendChild(modeToggle);
 root.appendChild(stack);
 
 /* ── Top bar ────────────────────────────────────────────── */
