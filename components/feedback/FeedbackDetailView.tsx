@@ -351,11 +351,19 @@ export default function FeedbackDetailView({
       // (lead form pages, email clients, ad platforms, etc.). For Google Search
       // ads we also stamp plain general comments, so the sidebar selection acts
       // as a per-asset feedback target.
+      //
+      // Special case: a pin dropped inside a `[data-creative]` element (Meta ad
+      // image) is *shared* across every variant/platform, since the creative
+      // doesn't change between variants. Those pins get view='creative' instead
+      // of the active variant view, and the visible-pins filter in
+      // ItemContentView lets them through on every view.
       const isGoogleSearchAd = selectedItem?.type === 'google_search_ad';
       const isAnnotation = pinX != null || !!pendingAnnotation || !!highlight;
-      const shouldStampView = (isAnnotation || isGoogleSearchAd) && currentMockupView != null;
+      const isCreativePin = pendingPin?.target === 'creative' && pinX != null;
+      const shouldStampView = (isAnnotation || isGoogleSearchAd) && (isCreativePin || currentMockupView != null);
+      const stampedView = isCreativePin ? 'creative' : currentMockupView;
       const annotationPayload = shouldStampView
-        ? { ...(pendingAnnotation || {}), view: currentMockupView }
+        ? { ...(pendingAnnotation || {}), view: stampedView }
         : (pendingAnnotation || undefined);
 
       await onSubmitComment(selectedItemId, content, pinX, pinY, parentId, annotationPayload, pendingScreenshotUrl || undefined, highlight, priority, attachments, videoUrl);
@@ -363,7 +371,7 @@ export default function FeedbackDetailView({
       setPendingScreenshotUrl(null);
       setPendingHighlight(null);
     },
-    [selectedItemId, selectedItem, currentMockupView, onSubmitComment, pendingAnnotation, pendingScreenshotUrl, pendingHighlight]
+    [selectedItemId, selectedItem, currentMockupView, onSubmitComment, pendingAnnotation, pendingScreenshotUrl, pendingHighlight, pendingPin]
   );
 
   const currentIdx = filteredItems.findIndex((i) => i.id === selectedItemId);

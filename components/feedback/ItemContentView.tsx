@@ -105,10 +105,17 @@ export default function ItemContentView({
   );
 
   // For sub-view-scoped mockups, only show pins / highlights placed on the
-  // current view. Single-view items pass through unchanged.
+  // current view. Single-view items pass through unchanged. Pins with the
+  // special `creative` view are *always* visible (they were placed on a
+  // shared element — the Meta ad image — so the feedback applies across
+  // every variant/platform). Highlights aren't relevant on the creative
+  // image so they only honour the current-view filter.
   const visiblePins = useMemo(() => {
     if (currentView == null) return pinComments;
-    return pinComments.filter((c) => getCommentView(c.annotation_data) === currentView);
+    return pinComments.filter((c) => {
+      const v = getCommentView(c.annotation_data);
+      return v === currentView || v === 'creative';
+    });
   }, [pinComments, currentView]);
   const visibleHighlights = useMemo(() => {
     if (currentView == null) return highlightComments;

@@ -9,9 +9,18 @@ import { type FeedbackMode } from '@/components/feedback/tools';
  * Pin placement is always active by default — clicking content places a pin
  * unless a drawing tool (arrow/box/text) is active.
  */
+/** Pin click target. 'creative' = click landed inside a `[data-creative]`
+ *  element (e.g. the Meta ad's image) → pin should be variant-independent so
+ *  feedback on the creative shows on every variant. Anything else (including
+ *  undefined) means the click was on text/UI and the pin scopes to whatever
+ *  the active view is at submit time. */
+export type PinTarget = 'creative' | undefined;
+
+export type PendingPin = { x: number; y: number; target?: PinTarget };
+
 export function usePinFeedback() {
   const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('idle');
-  const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
+  const [pendingPin, setPendingPin] = useState<PendingPin | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   // Whether pin placement is active (always on unless a drawing tool is selected)
@@ -36,7 +45,11 @@ export function usePinFeedback() {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setPendingPin({ x, y });
+    // Snapshot whether the click landed inside a creative element (e.g. the
+    // Meta ad image). Stored on the pending pin so the submit handler can
+    // stamp creative pins with a shared view that survives variant switches.
+    const isCreative = !!target.closest('[data-creative]');
+    setPendingPin({ x, y, target: isCreative ? 'creative' : undefined });
   }, [pinActive]);
 
   // Clicking an existing pin — parent uses this to scroll to comment
