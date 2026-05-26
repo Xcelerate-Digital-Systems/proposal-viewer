@@ -69,7 +69,7 @@ export default function TextPageEditorPanel({
                 Saved
               </span>
             )}
-            <span className="text-xs text-purple-600 font-medium flex items-center gap-1">
+            <span className="text-xs text-content-type-text font-medium flex items-center gap-1">
               <FileText size={11} />
               {page.title || 'Text Page'}
             </span>

@@ -196,7 +196,7 @@ export default function QuoteShellHeader({
               </span>
             )}
             {proposal.is_test && (
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-50 text-purple-600 border border-purple-200 shrink-0">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-status-test-tint text-status-test border border-status-test-border shrink-0">
                 Test
               </span>
             )}

@@ -81,7 +81,7 @@ export default function TextPageEditorModal({
         <div className="shrink-0 px-5 py-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-              <FileText size={16} className="text-purple-600" />
+              <FileText size={16} className="text-content-type-text" />
               Edit Text Page
             </span>
             {/* Save status */}

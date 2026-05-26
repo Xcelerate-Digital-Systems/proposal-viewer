@@ -70,6 +70,20 @@ module.exports = {
             'tint-hover': '#F3E8FF', // purple-100 — button hover
           },
         },
+        // Status / mode indicators — short labels that flag a row or document
+        // as being in a particular state (test/sandbox, archived, draft, etc.)
+        // Distinct from accent.* (feature areas) and content-type.* (content
+        // categorisation) because the meaning is "this thing is in <state>"
+        // rather than "this thing belongs to <area>".
+        status: {
+          // Amber — for "sandbox / not live data" indicators. Amber reads as
+          // 'be careful, this isn't real' more clearly than purple did.
+          test: {
+            DEFAULT: '#B45309', // amber-700 — fg (good contrast on amber-50)
+            tint: '#FFFBEB',    // amber-50  — pill bg
+            border: '#FDE68A',  // amber-200 — pill border
+          },
+        },
         // Content-type accent palette — used to color-code page/asset types
         // (pdf, text, pricing, packages) in pills and indicators. Each entry
         // is a tint bg + a darker fg, sampled from Tailwind's -50 / -400/-500.
