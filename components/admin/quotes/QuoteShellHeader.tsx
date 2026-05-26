@@ -24,6 +24,7 @@ import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
 import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
 import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
+import { Button, buttonClasses } from '@/components/ui/Button';
 
 type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
 
@@ -221,17 +222,18 @@ export default function QuoteShellHeader({
             onChange={handleStatusChange}
             fullWidth={false}
           />
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={copied ? Check : Copy}
             onClick={copyLink}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
           >
-            {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Link'}
-          </button>
+          </Button>
           <a
             href={`/view/${proposal.share_token}`}
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-teal hover:bg-teal/5 border border-teal/20 transition-colors"
+            className={buttonClasses({ variant: 'outline', size: 'sm' })}
           >
             <ExternalLink size={14} />
             Preview
@@ -239,8 +241,8 @@ export default function QuoteShellHeader({
           <a
             href={`/view/${proposal.share_token}?print=1`}
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
             title="Open the public viewer and trigger print/save-PDF"
+            className={buttonClasses({ variant: 'secondary', size: 'sm' })}
           >
             <Download size={14} />
             PDF

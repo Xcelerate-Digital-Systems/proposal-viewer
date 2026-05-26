@@ -7,6 +7,7 @@ import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { parseQuoteExtras } from '@/lib/types/quote-extras';
 import SectionCard from '../SectionCard';
+import { Button } from '@/components/ui/Button';
 
 interface Props {
   proposal: Proposal;
@@ -87,15 +88,15 @@ export default function AboutUsSection({ proposal, onSaved }: Props) {
         className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
       />
       <div className="flex items-center justify-end mt-3">
-        <button
+        <Button
           type="button"
+          size="sm"
+          loading={saving}
+          disabled={!dirty}
           onClick={save}
-          disabled={saving || !dirty}
-          className="flex items-center gap-1.5 px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving && <Loader2 size={14} className="animate-spin" />}
-          {saving ? 'Saving…' : 'Save'}
-        </button>
+          Save
+        </Button>
       </div>
     </SectionCard>
   );

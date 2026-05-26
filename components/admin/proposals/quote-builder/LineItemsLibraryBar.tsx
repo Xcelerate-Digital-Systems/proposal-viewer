@@ -6,6 +6,7 @@ import { BookOpen, Save, ChevronDown, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import type { PricingLineItem } from '@/lib/types/packages';
+import { Button } from '@/components/ui/Button';
 
 interface LineItemsLibraryBarProps {
   items: PricingLineItem[];
@@ -120,18 +121,19 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
   return (
     <div className="flex items-center gap-2 mb-3">
       <div className="relative">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
+          leftIcon={BookOpen}
+          rightIcon={ChevronDown}
           onClick={() => {
             setShowLibrary((v) => !v);
             setShowSave(false);
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:border-gray-300 transition-colors"
         >
-          <BookOpen size={12} />
           From Library
-          <ChevronDown size={12} className="text-gray-400" />
-        </button>
+        </Button>
         {showLibrary && (
           <div className="absolute z-20 mt-1 w-80 bg-white rounded-lg border border-gray-200 shadow-lg max-h-96 overflow-y-auto">
             {loading ? (
@@ -174,18 +176,19 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
       </div>
 
       <div className="relative">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
+          leftIcon={Save}
+          disabled={items.length === 0}
           onClick={() => {
             setShowSave((v) => !v);
             setShowLibrary(false);
           }}
-          disabled={items.length === 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Save size={12} />
           Save as Template
-        </button>
+        </Button>
         {showSave && (
           <div className="absolute z-20 mt-1 w-72 bg-white rounded-lg border border-gray-200 shadow-lg p-3">
             <label className="block text-xs font-medium text-gray-600 mb-1.5">
@@ -203,22 +206,22 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
               Saving {items.length} line item{items.length === 1 ? '' : 's'}.
             </p>
             <div className="flex items-center justify-end gap-2 mt-3">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowSave(false)}
-                className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                size="sm"
+                loading={saving}
                 onClick={saveTemplate}
-                disabled={saving}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-teal text-white rounded-md text-xs font-medium hover:bg-[#01434A] disabled:opacity-50"
               >
-                {saving && <Loader2 size={12} className="animate-spin" />}
                 Save
-              </button>
+              </Button>
             </div>
           </div>
         )}

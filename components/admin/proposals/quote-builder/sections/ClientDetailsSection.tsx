@@ -6,6 +6,7 @@ import { ChevronDown, Loader2, FlaskConical, User } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import SectionCard from '../SectionCard';
+import { Button } from '@/components/ui/Button';
 
 interface ClientDetailsSectionProps {
   proposal: Proposal;
@@ -259,15 +260,15 @@ export default function ClientDetailsSection({
             ? 'Test mode — these values won\'t be saved until you switch back to Real.'
             : 'Saved as the client on this quote.'}
         </p>
-        <button
+        <Button
           type="button"
+          size="sm"
+          loading={saving}
+          disabled={mode === 'test' || !dirty}
           onClick={save}
-          disabled={saving || mode === 'test' || !dirty}
-          className="flex items-center gap-1.5 px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving && <Loader2 size={14} className="animate-spin" />}
-          {saving ? 'Saving…' : 'Save Client'}
-        </button>
+          Save Client
+        </Button>
       </div>
     </SectionCard>
   );

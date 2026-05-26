@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { AlertCircle, X } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface CompanyInfoLite {
   phone: string | null;
@@ -65,13 +66,15 @@ export default function MissingInfoBanner({ companyInfo }: Props) {
             </Link>
           </span>
         </p>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
+          leftIcon={X}
           onClick={() => setDismissed(true)}
-          className="p-1 rounded-md text-amber-600 hover:bg-amber-100 transition-colors"
           aria-label="Dismiss"
-        >
-          <X size={14} />
-        </button>
+          className="text-amber-600 hover:bg-amber-100"
+        />
       </div>
     </div>
   );

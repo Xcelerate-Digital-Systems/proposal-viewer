@@ -7,6 +7,7 @@ import { ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import { authedFetch } from '@/lib/api-fetch';
 import { FormField } from '@/components/ui/FormField';
+import { Button } from '@/components/ui/Button';
 
 interface CreateFromTemplateProps {
   companyId: string;
@@ -310,13 +311,15 @@ export default function CreateFromTemplate({
   if (!selectedTemplate) {
     return (
       <div>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={ArrowLeft}
           onClick={onBack}
-          className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-sm mb-4 transition-colors"
+          className="mb-4"
         >
-          <ArrowLeft size={14} />
           Back
-        </button>
+        </Button>
         <h3 className="text-gray-900 font-semibold mb-4">Choose a Template</h3>
         {loading ? (
           <div className="flex justify-center py-8">
@@ -352,13 +355,15 @@ export default function CreateFromTemplate({
   // ── Proposal creation form ───────────────────────────────────────
   return (
     <div>
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
+        leftIcon={ArrowLeft}
         onClick={() => { setSelectedTemplate(null); setPages([]); }}
-        className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-sm mb-4 transition-colors"
+        className="mb-4"
       >
-        <ArrowLeft size={14} />
         Back to templates
-      </button>
+      </Button>
 
       <div className="flex items-center gap-2 mb-4">
         <div className="w-7 h-7 rounded-lg bg-teal/10 flex items-center justify-center">
@@ -403,20 +408,15 @@ export default function CreateFromTemplate({
           </p>
         )}
 
-        <button
+        <Button
           type="submit"
-          disabled={creating || !title.trim() || !clientName.trim()}
-          className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          size="md"
+          fullWidth
+          loading={creating}
+          disabled={!title.trim() || !clientName.trim()}
         >
-          {creating ? (
-            <>
-              <Loader2 size={14} className="animate-spin" />
-              {status || 'Creating...'}
-            </>
-          ) : (
-            'Create Proposal'
-          )}
-        </button>
+          Create Proposal
+        </Button>
       </form>
     </div>
   );
