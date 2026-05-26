@@ -29,6 +29,19 @@ export async function POST(req: NextRequest) {
   const key_prefix = plaintext.slice(0, 16);
 
   const supabase = createServiceClient();
+
+  // Re-authorization (e.g. user reinstalls the extension on a new machine)
+  // revokes prior tokens for this (company, user, label) so the Connected
+  // Apps list stays at one row per integration instead of accreting forever.
+  await supabase
+    .from('api_keys')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('company_id', auth.companyId)
+    .eq('user_id', auth.member.user_id)
+    .eq('source', 'oauth_extension')
+    .eq('label', label)
+    .is('revoked_at', null);
+
   const { data: key, error: keyErr } = await supabase
     .from('api_keys')
     .insert({
@@ -37,6 +50,7 @@ export async function POST(req: NextRequest) {
       label,
       key_prefix,
       key_hash,
+      source: 'oauth_extension',
     })
     .select('id')
     .single();

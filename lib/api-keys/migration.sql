@@ -17,5 +17,13 @@ CREATE TABLE IF NOT EXISTS api_keys (
   revoked_at TIMESTAMPTZ
 );
 
+-- source distinguishes user-managed keys (shown in Settings → API Keys) from
+-- tokens minted by an OAuth flow (shown in Settings → Connected Apps and
+-- managed by disconnecting the integration, not by revoking individual rows).
+ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual'
+    CHECK (source IN ('manual', 'oauth_extension', 'oauth_client'));
+
 CREATE INDEX IF NOT EXISTS idx_api_keys_company ON api_keys(company_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_keys_company_source ON api_keys(company_id, source);

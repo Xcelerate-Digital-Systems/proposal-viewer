@@ -17,10 +17,15 @@ export async function GET(req: NextRequest) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = createServiceClient();
+  // Only surface user-managed keys here. OAuth-issued tokens (Chrome extension,
+  // Looker Studio, future OAuth clients) live in the same table but are
+  // managed via /api/settings/connected-apps so the user disconnects an
+  // integration rather than revoking individual rows.
   const { data, error } = await supabase
     .from('api_keys')
     .select('id, label, key_prefix, last_used_at, created_at, revoked_at')
     .eq('company_id', auth.companyId)
+    .eq('source', 'manual')
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -49,6 +54,7 @@ export async function POST(req: NextRequest) {
       label,
       key_prefix,
       key_hash,
+      source: 'manual',
     })
     .select('id, label, key_prefix, created_at')
     .single();
@@ -67,11 +73,14 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
   const supabase = createServiceClient();
+  // Scope to source='manual' so OAuth-issued tokens can only be revoked via
+  // /api/settings/connected-apps — keeps the two surfaces honest.
   const { error } = await supabase
     .from('api_keys')
     .update({ revoked_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('company_id', auth.companyId);
+    .eq('company_id', auth.companyId)
+    .eq('source', 'manual');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

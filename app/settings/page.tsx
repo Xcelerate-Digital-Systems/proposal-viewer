@@ -11,6 +11,7 @@ import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import NotificationSection from '@/components/admin/settings/NotificationSection';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
+import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
 import MembersTab from '@/components/admin/settings/MembersTab';
 import { type TeamMember } from '@/lib/supabase';
 import { NOTIFICATION_OPTIONS } from '@/components/admin/settings/settings-config';
@@ -199,6 +200,13 @@ function SettingsContent({ auth }: {
                   description="Send HTTP POST requests when events occur in your workspace."
                 />
                 <WebhookManager companyId={companyId} isSuperAdmin={isSuperAdmin} />
+              </div>
+              <div>
+                <SectionHeader
+                  title="Connected Apps"
+                  description="Integrations authorized via OAuth — Chrome extension, Looker Studio connector, and other approved apps."
+                />
+                <ConnectedAppsManager />
               </div>
               <div>
                 <SectionHeader

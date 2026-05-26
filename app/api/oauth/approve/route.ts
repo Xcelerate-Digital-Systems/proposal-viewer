@@ -45,6 +45,19 @@ export async function POST(req: NextRequest) {
   const key_hash = hashApiKey(plaintext);
   const key_prefix = plaintext.slice(0, 16);
 
+  // Re-authorization replaces the existing token for this (company, user,
+  // client) instead of stacking another row in Settings. Without this every
+  // re-auth piles up another permanent token even though the previous one is
+  // about to be silently abandoned by the client.
+  await supabase
+    .from('api_keys')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('company_id', auth.companyId)
+    .eq('user_id', auth.member.user_id)
+    .eq('source', 'oauth_client')
+    .eq('label', client.name)
+    .is('revoked_at', null);
+
   const { data: key, error: keyErr } = await supabase
     .from('api_keys')
     .insert({
@@ -53,6 +66,7 @@ export async function POST(req: NextRequest) {
       label: client.name,
       key_prefix,
       key_hash,
+      source: 'oauth_client',
     })
     .select('id')
     .single();
