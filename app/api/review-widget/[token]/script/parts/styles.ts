@@ -112,11 +112,11 @@ html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
 /* ── Mode toggle (Comment / Browse) ────────────────────────
    Segmented pill control above the toolbar. The lit pill is the
    reviewer's current mode; the unlit pill is a one-click switch. */
-#aviz-mode-toggle{display:inline-flex;background:#fff;border-radius:9999px;padding:4px;gap:2px;
+#aviz-mode-toggle{display:inline-flex;background:#fff;border-radius:9999px;padding:5px;gap:2px;
   border:1px solid rgba(0,0,0,.04);
   box-shadow:0 2px 4px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);}
 .aviz-toggle-pill{background:transparent;border:none;color:#6b7280;font-family:${FONT};
-  font-size:12px;font-weight:600;letter-spacing:.01em;padding:6px 14px;border-radius:9999px;
+  font-size:13px;font-weight:600;letter-spacing:.01em;padding:8px 18px;border-radius:9999px;
   cursor:pointer;line-height:1;margin:0;transition:background-color .2s,color .2s;}
 .aviz-toggle-pill:hover{color:#111827;}
 .aviz-toggle-pill.active,.aviz-toggle-pill.active:hover{background:${ACCENT};color:#fff;
@@ -155,7 +155,7 @@ html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
   #aviz-stack{right:10px;gap:8px;}
   #aviz-toolbar{padding:5px;}
   .aviz-tool{width:34px;height:34px;}
-  .aviz-toggle-pill{padding:6px 12px;font-size:11.5px;}
+  .aviz-toggle-pill{padding:7px 14px;font-size:12.5px;}
   /* Panel covers the viewport on mobile; tuck the stack (toggle + toolbar) off-screen so it's not on top. */
   #aviz-stack.panel-open{right:-160px;}
 }
