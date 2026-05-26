@@ -58,14 +58,23 @@ async function getAuthContextFromApiKey(token: string) {
 /**
  * Get the authenticated team member and resolve the effective company_id.
  *
- * Supports two company override modes via ?company_id= query parameter:
- *  1. Super admin override — can enter any company unconditionally.
- *  2. Agency override — owners/admins of an agency account can enter any
- *     client company that has agency_id = their own company_id.
+ * A user can hold a team_members row in N companies (unique constraint is
+ * on (user_id, company_id), not user_id alone). Resolution order for the
+ * incoming request:
+ *
+ *  1. `?membership_id=<id>` — if the id maps to one of the user's rows,
+ *     use it. The `member` returned reflects the role *in that workspace*.
+ *  2. `?company_id=<id>` — if the id matches a company the user is a real
+ *     member of, the matching membership row is used (no override needed).
+ *  3. `?company_id=<id>` + super admin — enter any company unconditionally
+ *     (read-only "view as" for support / debugging).
+ *  4. `?company_id=<id>` + agency owner/admin — enter their own client
+ *     companies (agency_id = their company_id).
+ *  5. No override — the user's default membership (super-admin row first,
+ *     else oldest).
  *
  * Returns { member, companyId, accountType } where companyId and accountType
- * reflect the currently active company (may differ from member.company_id
- * when an override is active).
+ * reflect the currently active company.
  */
 export async function getAuthContext(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
@@ -89,73 +98,108 @@ export async function getAuthContext(req: NextRequest) {
   if (!user) return null;
 
   const supabase = createServiceClient();
-  // A user can have rows in multiple companies; prefer the super-admin row
-  // if any, then fall back to the oldest. Cross-company access still flows
-  // through the company-override branch below.
   const { data: members } = await supabase
     .from('team_members')
     .select('*')
     .eq('user_id', user.id)
     .order('is_super_admin', { ascending: false })
     .order('created_at', { ascending: true });
-  const member = members?.[0] ?? null;
 
-  if (!member) return null;
+  if (!members || members.length === 0) return null;
 
-  // Check for company override via query param
+  const defaultMember = members[0];
+  const requestedMembershipId = req.nextUrl.searchParams.get('membership_id');
   const requestedCompanyId = req.nextUrl.searchParams.get('company_id');
 
-  if (requestedCompanyId && requestedCompanyId !== member.company_id) {
-    // Super admins can enter any company unconditionally
-    if (member.is_super_admin) {
+  // (1) explicit membership id — caller has picked a specific workspace they
+  // belong to. The role/permissions come from THAT membership, not from the
+  // user's default home company. This is how the workspace switcher tells
+  // the server which workspace to act inside of.
+  if (requestedMembershipId) {
+    const picked = members.find((m) => m.id === requestedMembershipId);
+    if (picked) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('account_type')
+        .eq('id', picked.company_id)
+        .single();
+      return {
+        member: picked,
+        companyId: picked.company_id as string,
+        accountType: (company?.account_type ?? 'agency') as 'agency' | 'client',
+      };
+    }
+    // Unknown membership id — fall through; don't 403 because the caller may
+    // have stale localStorage from a deleted membership.
+  }
+
+  // (2) ?company_id= that matches one of the user's real memberships — use
+  // that membership directly (no override gate required).
+  if (requestedCompanyId) {
+    const matchingMembership = members.find((m) => m.company_id === requestedCompanyId);
+    if (matchingMembership) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('account_type')
+        .eq('id', matchingMembership.company_id)
+        .single();
+      return {
+        member: matchingMembership,
+        companyId: matchingMembership.company_id as string,
+        accountType: (company?.account_type ?? 'agency') as 'agency' | 'client',
+      };
+    }
+  }
+
+  // (3 + 4) ?company_id= override — super admin or agency admin viewing a
+  // company they are NOT a real member of. Member object stays as the user's
+  // default (so role is preserved for permission checks).
+  if (requestedCompanyId && requestedCompanyId !== defaultMember.company_id) {
+    if (defaultMember.is_super_admin) {
       const { data: targetCompany } = await supabase
         .from('companies')
         .select('account_type')
         .eq('id', requestedCompanyId)
         .single();
-
       return {
-        member,
+        member: defaultMember,
         companyId: requestedCompanyId,
         accountType: (targetCompany?.account_type ?? 'agency') as 'agency' | 'client',
       };
     }
 
-    // Agency owners/admins can enter their own client companies
-    const isAgencyAdmin = member.role === 'owner' || member.role === 'admin';
+    const isAgencyAdmin = defaultMember.role === 'owner' || defaultMember.role === 'admin';
     if (isAgencyAdmin) {
       const { data: targetCompany } = await supabase
         .from('companies')
         .select('account_type, agency_id')
         .eq('id', requestedCompanyId)
         .single();
-
       if (
         targetCompany?.account_type === 'client' &&
-        targetCompany?.agency_id === member.company_id
+        targetCompany?.agency_id === defaultMember.company_id
       ) {
         return {
-          member,
+          member: defaultMember,
           companyId: requestedCompanyId,
           accountType: 'client' as const,
         };
       }
     }
 
-    // All other cross-company attempts are unauthorized
     return null;
   }
 
-  // No override — resolve own company's account_type
+  // (5) default membership
   const { data: ownCompany } = await supabase
     .from('companies')
     .select('account_type')
-    .eq('id', member.company_id)
+    .eq('id', defaultMember.company_id)
     .single();
 
   return {
-    member,
-    companyId: member.company_id as string,
+    member: defaultMember,
+    companyId: defaultMember.company_id as string,
     accountType: (ownCompany?.account_type ?? 'agency') as 'agency' | 'client',
   };
 }

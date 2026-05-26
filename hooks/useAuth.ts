@@ -5,17 +5,38 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase, TeamMember } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
-// Renamed from 'super_admin_company_override' — agencies also use this mechanism
 const COMPANY_OVERRIDE_KEY = 'company_override';
+const ACTIVE_MEMBERSHIP_KEY = 'active_membership_id';
 
 type AccountType = 'agency' | 'client';
 
+/**
+ * useAuth (Stage 1 of the multi-membership refactor).
+ *
+ * A single auth.users identity can hold a team_members row in N companies
+ * (the schema's unique constraint is on (user_id, company_id), not user_id
+ * alone). This hook now embraces that: `memberships` is the full list of
+ * rows for the signed-in user, `activeMembership` is the one currently in
+ * effect, and the legacy `teamMember` / `companyId` fields are aliased to
+ * the active membership so every existing caller keeps working unchanged.
+ *
+ * Cross-company access still flows through `companyOverride` for super
+ * admins and agency owners "viewing as" a client company — but switching
+ * between workspaces you are a *real* member of no longer goes through
+ * override (it's just a different activeMembership).
+ *
+ * Picking the active membership on load:
+ *   1. localStorage[active_membership_id] if it still resolves to a row,
+ *   2. else the super-admin row (preserves the prior behaviour),
+ *   3. else the oldest row by created_at.
+ */
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
-  const [teamMember, setTeamMember] = useState<TeamMember | null>(null);
+  const [memberships, setMemberships] = useState<TeamMember[]>([]);
+  const [activeMembershipId, setActiveMembershipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // account_type of the user's own company (never changes with override)
+  // account_type of the active membership's company (never changes with override)
   const [ownAccountType, setOwnAccountType] = useState<AccountType>('agency');
   // account_type of the currently active (possibly overridden) company
   const [accountType, setAccountType] = useState<AccountType>('agency');
@@ -41,24 +62,36 @@ export function useAuth() {
     } catch {}
   }, []);
 
-  const fetchTeamMember = useCallback(async (userId: string) => {
-    // A single auth user can have a team_members row in multiple companies
-    // (e.g. a super-admin who's also a member of an agency they manage).
-    // Pick the super-admin row when one exists, otherwise the oldest row,
-    // and treat that as the user's "home" identity. Cross-company access
-    // continues to flow through the existing company-override mechanism.
-    const { data: rows } = await supabase
+  /** Choose which row in `rows` should be the active membership. */
+  const pickActiveMembership = useCallback((rows: TeamMember[]): TeamMember | null => {
+    if (rows.length === 0) return null;
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(ACTIVE_MEMBERSHIP_KEY);
+    } catch {}
+    if (stored) {
+      const hit = rows.find((r) => r.id === stored);
+      if (hit) return hit;
+    }
+    // Super-admin row first (preserves prior pick), then oldest
+    const sorted = [...rows].sort((a, b) => {
+      if (a.is_super_admin !== b.is_super_admin) return a.is_super_admin ? -1 : 1;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
+    return sorted[0];
+  }, []);
+
+  const fetchMemberships = useCallback(async (userId: string) => {
+    let { data: rows } = await supabase
       .from('team_members')
       .select('*')
       .eq('user_id', userId)
-      .order('is_super_admin', { ascending: false })
       .order('created_at', { ascending: true });
-    let member = rows?.[0] ?? null;
 
     // Self-heal: a logged-in user with no team_members row probably came in
     // via magic link and never went through /api/auth/register. If there's a
     // pending invite for their email, claim it now.
-    if (!member) {
+    if (!rows || rows.length === 0) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
@@ -73,9 +106,8 @@ export function useAuth() {
                 .from('team_members')
                 .select('*')
                 .eq('user_id', userId)
-                .order('is_super_admin', { ascending: false })
                 .order('created_at', { ascending: true });
-              member = refetch.data?.[0] ?? null;
+              rows = refetch.data ?? [];
             }
           }
         }
@@ -84,18 +116,26 @@ export function useAuth() {
       }
     }
 
-    if (!member) {
-      setTeamMember(null);
+    const all = rows ?? [];
+    setMemberships(all);
+
+    const active = pickActiveMembership(all);
+    if (!active) {
+      setActiveMembershipId(null);
       return;
     }
+    setActiveMembershipId(active.id);
 
-    setTeamMember(member);
+    // Persist the pick so a hard refresh lands on the same workspace.
+    try {
+      localStorage.setItem(ACTIVE_MEMBERSHIP_KEY, active.id);
+    } catch {}
 
-    // Fetch own company's account_type
+    // Fetch active membership's company's account_type
     const { data: ownCompany } = await supabase
       .from('companies')
       .select('account_type')
-      .eq('id', member.company_id)
+      .eq('id', active.company_id)
       .single();
 
     const ownType = (ownCompany?.account_type as AccountType) ?? 'agency';
@@ -108,12 +148,12 @@ export function useAuth() {
         localStorage.getItem('super_admin_company_override');
       if (stored) {
         const override = JSON.parse(stored) as { companyId: string; companyName: string };
-        const isSuperAdmin = member.is_super_admin;
+        const isSuperAdmin = active.is_super_admin;
         const isAgencyAdmin =
           ownType === 'agency' &&
-          (member.role === 'owner' || member.role === 'admin');
+          (active.role === 'owner' || active.role === 'admin');
 
-        if (override.companyId !== member.company_id && (isSuperAdmin || isAgencyAdmin)) {
+        if (override.companyId !== active.company_id && (isSuperAdmin || isAgencyAdmin)) {
           const { data: overrideCompany } = await supabase
             .from('companies')
             .select('account_type')
@@ -126,13 +166,13 @@ export function useAuth() {
     } catch {}
 
     setAccountType(ownType);
-  }, []);
+  }, [pickActiveMembership]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        fetchTeamMember(session.user.id).finally(() => setLoading(false));
+        fetchMemberships(session.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -141,14 +181,15 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
-        fetchTeamMember(session.user.id);
+        fetchMemberships(session.user.id);
       } else {
-        setTeamMember(null);
+        setMemberships([]);
+        setActiveMembershipId(null);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchTeamMember]);
+  }, [fetchMemberships]);
 
   const signInWithPassword = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -192,7 +233,7 @@ export function useAuth() {
       });
       const result = await res.json();
       if (result.error) return { error: { message: result.error } };
-      await fetchTeamMember(data.user.id);
+      await fetchMemberships(data.user.id);
     }
 
     return { error: null };
@@ -221,30 +262,66 @@ export function useAuth() {
   };
 
   const signOut = async () => {
-    localStorage.removeItem(COMPANY_OVERRIDE_KEY);
-    localStorage.removeItem('super_admin_company_override'); // clean up legacy key
+    try {
+      localStorage.removeItem(COMPANY_OVERRIDE_KEY);
+      localStorage.removeItem('super_admin_company_override');
+      localStorage.removeItem(ACTIVE_MEMBERSHIP_KEY);
+    } catch {}
     setCompanyOverrideState(null);
     setAccountType(ownAccountType);
+    setMemberships([]);
+    setActiveMembershipId(null);
     await supabase.auth.signOut();
     setSession(null);
-    setTeamMember(null);
   };
+
+  // Derive the active membership object from the id (so React batches
+  // re-renders correctly when memberships[] / activeMembershipId change).
+  const activeMembership: TeamMember | null =
+    memberships.find((m) => m.id === activeMembershipId) ?? null;
 
   const updatePreferences = async (prefs: Partial<Pick<TeamMember,
     | 'notify_proposal_viewed' | 'notify_proposal_accepted'
     | 'notify_comment_added' | 'notify_comment_resolved'
     | 'name' | 'avatar_path'
   >>) => {
-    if (!teamMember) return;
+    if (!activeMembership) return;
     const { error } = await supabase
       .from('team_members')
       .update({ ...prefs, updated_at: new Date().toISOString() })
-      .eq('id', teamMember.id);
+      .eq('id', activeMembership.id);
     if (!error) {
-      setTeamMember({ ...teamMember, ...prefs });
+      setMemberships((prev) =>
+        prev.map((m) => (m.id === activeMembership.id ? { ...m, ...prefs } : m)),
+      );
     }
     return { error };
   };
+
+  /**
+   * Switch to a different workspace the user is a real member of. Clears
+   * any active "view as" override (they're meaningfully different actions —
+   * being a member trumps borrowing). Persists locally so a refresh sticks
+   * on the same workspace.
+   */
+  const setActiveMembership = useCallback(async (id: string) => {
+    const target = memberships.find((m) => m.id === id);
+    if (!target) return;
+    try {
+      localStorage.setItem(ACTIVE_MEMBERSHIP_KEY, id);
+      localStorage.removeItem(COMPANY_OVERRIDE_KEY);
+    } catch {}
+    setCompanyOverrideState(null);
+    setActiveMembershipId(id);
+    const { data: targetCompany } = await supabase
+      .from('companies')
+      .select('account_type')
+      .eq('id', target.company_id)
+      .single();
+    const t = (targetCompany?.account_type as AccountType) ?? 'agency';
+    setOwnAccountType(t);
+    setAccountType(t);
+  }, [memberships]);
 
   // Enter another company's account (super admin or agency admin)
   const setCompanyOverride = async (companyId: string, companyName: string) => {
@@ -268,23 +345,29 @@ export function useAuth() {
     setAccountType(ownAccountType);
   };
 
-  const isSuperAdmin = teamMember?.is_super_admin ?? false;
+  const isSuperAdmin = activeMembership?.is_super_admin ?? false;
 
   const isAgencyAdmin =
     ownAccountType === 'agency' &&
-    (teamMember?.role === 'owner' || teamMember?.role === 'admin');
+    (activeMembership?.role === 'owner' || activeMembership?.role === 'admin');
 
   // Effective company_id: super admin or agency admin override takes precedence
   const effectiveCompanyId =
     companyOverride && (isSuperAdmin || isAgencyAdmin)
       ? companyOverride.companyId
-      : (teamMember?.company_id ?? null);
+      : (activeMembership?.company_id ?? null);
 
   return {
     session,
-    teamMember,
+    // Legacy: `teamMember` is the active membership; every existing caller
+    // already treats this as "the row I'm currently acting as".
+    teamMember: activeMembership,
+    // New API for multi-workspace UIs.
+    memberships,
+    activeMembership,
+    setActiveMembership,
     companyId: effectiveCompanyId,
-    ownCompanyId: teamMember?.company_id ?? null,
+    ownCompanyId: activeMembership?.company_id ?? null,
     isSuperAdmin,
     isAgencyAdmin,
     accountType,        // account_type of the currently active company
