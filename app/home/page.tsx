@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { buttonClasses } from '@/components/ui/Button';
+import { buttonClasses } from '@/components/ui/buttonClasses';
 
 export const metadata: Metadata = {
   title: 'AgencyViz — Agency Toolbox',
