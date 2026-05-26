@@ -220,7 +220,7 @@ function StatusCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-6 space-y-4">
+    <div className="bg-white rounded-2xl shadow-card p-6 space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
@@ -356,7 +356,7 @@ function WidgetEnabledToggle({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] p-5 flex items-center gap-4">
+    <div className="bg-white rounded-2xl shadow-card p-5 flex items-center gap-4">
       <div
         className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
           enabled ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400'

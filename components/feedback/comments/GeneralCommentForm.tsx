@@ -93,12 +93,12 @@ export default function GeneralCommentForm({
       {!expanded ? (
         <button
           onClick={() => setExpanded(true)}
-          className="w-full text-left px-4 py-3 rounded-2xl text-[13px] text-gray-400 bg-white shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)] hover:text-gray-600 transition-colors"
+          className="w-full text-left px-4 py-3 rounded-2xl text-[13px] text-gray-400 bg-white shadow-card hover:text-gray-600 transition-colors"
         >
           {placeholder}
         </button>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)] px-4 py-3 space-y-2">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-card px-4 py-3 space-y-2">
           {authorName ? (
             <p className="text-[11px] text-gray-400">Posting as {authorName}</p>
           ) : (

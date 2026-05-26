@@ -82,7 +82,7 @@ export default function EntityCard({
   const aspectClass = aspectRatio === '4/3' ? 'aspect-[4/3]' : 'aspect-[16/10]';
 
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_24px_rgba(20,20,40,0.06)] transition-shadow flex flex-col">
+    <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow flex flex-col">
       {/* ── Visual header — link to open ─────────────────────── */}
       <Link
         href={href}

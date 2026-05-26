@@ -44,7 +44,7 @@ export default function ProposalBoardCard({ proposal, kind = 'proposal' }: Props
   const MetaIcon = meta?.Icon;
 
   return (
-    <div className="group relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all">
+    <div className="group relative bg-white rounded-2xl shadow-card-soft hover:shadow-card-hover p-3.5 transition-all">
       <div className="flex items-start gap-2.5">
         <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
           <Icon size={15} className={iconColor} />

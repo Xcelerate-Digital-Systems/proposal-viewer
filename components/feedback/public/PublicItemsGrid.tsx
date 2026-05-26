@@ -72,7 +72,7 @@ export default function PublicItemsGrid({
             <button
               key={item.id}
               onClick={() => onSelectItem(item.id)}
-              className="group relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_24px_rgba(20,20,40,0.08)] transition-all overflow-hidden text-left flex flex-col"
+              className="group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden text-left flex flex-col"
             >
               <div className="aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden border-b border-gray-100">
                 <FeedbackItemThumb item={item} />

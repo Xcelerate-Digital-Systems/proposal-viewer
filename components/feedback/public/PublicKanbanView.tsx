@@ -245,7 +245,7 @@ function DraggableKanbanCard({
   return (
     <div ref={setNodeRef} style={style}>
       <div
-        className={`relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all ${
+        className={`relative bg-white rounded-2xl shadow-card-soft hover:shadow-card-hover p-3.5 transition-all ${
           isDragging ? 'ring-2' : ''
         }`}
         style={isDragging ? { boxShadow: `0 0 0 2px ${accent}66` } : undefined}
@@ -310,7 +310,7 @@ function KanbanCardView({
   const Icon = meta.Icon;
   return (
     <div
-      className={`relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] p-3.5 ${
+      className={`relative bg-white rounded-2xl shadow-card-soft p-3.5 ${
         isDragging ? 'ring-2' : ''
       }`}
       style={isDragging ? { boxShadow: `0 0 0 2px ${accent}66` } : undefined}

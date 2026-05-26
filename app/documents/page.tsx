@@ -87,7 +87,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-ivory shadow-[0_1px_0_rgba(20,20,40,0.05)] px-6 lg:px-10 py-6 flex items-center gap-4">
+      <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6 flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold text-ink">
             Documents

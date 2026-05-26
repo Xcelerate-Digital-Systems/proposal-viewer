@@ -65,7 +65,7 @@ export default function ReviewerNoteOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-[2147483646] flex items-center justify-center p-5 bg-slate-950/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+      className="fixed inset-0 z-[2147483646] flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="reviewer-note-title"

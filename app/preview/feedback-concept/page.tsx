@@ -128,7 +128,7 @@ interface ThreadProps {
 
 function Thread({ n, general, author, avatarTone, time, priority, body, replies, showReplyForm }: ThreadProps) {
   return (
-    <article className="bg-white rounded-2xl px-5 py-4 shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)]">
+    <article className="bg-white rounded-2xl px-5 py-4 shadow-card">
       {/* Pin tag (top) */}
       {!general && n && (
         <div className="flex items-center gap-2 mb-3">
@@ -242,7 +242,7 @@ function ResolvedThread({ n, author, time, body }: { n: number; author: string; 
 function Composer() {
   return (
     <div className="px-4 pb-5 pt-3">
-      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)] px-4 py-3">
+      <div className="bg-white rounded-2xl shadow-card px-4 py-3">
         <textarea
           placeholder="Leave a general comment…"
           rows={2}

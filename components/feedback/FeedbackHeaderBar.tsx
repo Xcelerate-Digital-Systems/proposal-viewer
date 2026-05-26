@@ -105,7 +105,7 @@ export default function FeedbackHeaderBar({
   return (
     <div
       className={`flex items-center gap-3 px-5 py-3 shrink-0 ${
-        headerBranded ? '' : 'bg-white shadow-[0_1px_0_rgba(20,20,40,0.05)]'
+        headerBranded ? '' : 'bg-white shadow-divider'
       }`}
       style={
         headerBranded

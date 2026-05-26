@@ -142,7 +142,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-ivory px-6 lg:px-10 py-6 shadow-[0_1px_0_rgba(20,20,40,0.05)]">
+      <div className="bg-ivory px-6 lg:px-10 py-6 shadow-divider">
         <div className="flex items-center gap-4 mb-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight text-ink">
@@ -328,7 +328,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
 function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
   const updated = project.updated_at || project.created_at;
   return (
-    <div className="group relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all">
+    <div className="group relative bg-white rounded-2xl shadow-card-soft hover:shadow-card-hover p-3.5 transition-all">
       <div className="flex items-start gap-2.5">
         <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-teal/10">
           <MessageSquareText size={15} className="text-teal" />

@@ -114,7 +114,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-[0_24px_48px_rgba(20,20,40,0.18)] w-full max-w-lg border border-gray-200">
+      <div className="bg-white rounded-2xl shadow-modal w-full max-w-lg border border-gray-200">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-gray-900">
             New Document

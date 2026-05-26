@@ -135,7 +135,7 @@ function ClientsContent({
           {clients.map((client) => (
             <div
               key={client.id}
-              className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)]   hover: transition-all flex flex-col"
+              className="bg-white rounded-2xl shadow-card   hover: transition-all flex flex-col"
             >
               {/* Card header */}
               <div className="p-5 flex-1">
@@ -259,7 +259,7 @@ function CreateClientModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-2xl shadow-[0_24px_48px_rgba(20,20,40,0.18)] w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-modal w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-ink">New Client</h2>

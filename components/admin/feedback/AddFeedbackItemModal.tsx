@@ -99,7 +99,7 @@ export default function AddFeedbackItemModal({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       <div
-        className={`relative bg-white rounded-2xl shadow-[0_24px_48px_rgba(20,20,40,0.18)] mx-4 ${
+        className={`relative bg-white rounded-2xl shadow-modal mx-4 ${
           isWide ? 'w-full max-w-4xl' : 'w-full max-w-lg'
         } max-h-[90vh] flex flex-col`}
       >

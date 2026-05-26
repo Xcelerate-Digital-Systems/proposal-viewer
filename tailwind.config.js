@@ -105,6 +105,21 @@ module.exports = {
       boxShadow: {
         sketch: '2px 3px 0 0 rgba(0,0,0,0.08)',
         'sketch-lg': '3px 5px 0 0 rgba(0,0,0,0.1)',
+        // Card / surface shadow scale — replaces a tangle of arbitrary
+        // `shadow-[...]` values that were spelled inline 50+ times. All four
+        // use the same rgba(20,20,40, X) palette so cards sit in the same
+        // shadow family; the difference is depth.
+        card: '0 1px 2px rgba(20,20,40,0.04), 0 4px 16px rgba(20,20,40,0.04)',
+        'card-soft': '0 1px 2px rgba(20,20,40,0.04), 0 2px 8px rgba(20,20,40,0.04)',
+        'card-hover': '0 2px 4px rgba(20,20,40,0.06), 0 8px 20px rgba(20,20,40,0.06)',
+        // Heavy lift for floating modals / dialogs.
+        modal: '0 24px 48px rgba(20,20,40,0.18)',
+        // 1px hairline under sticky headers — looks like a border but is a
+        // shadow so it doesn't shift layout.
+        divider: '0 1px 0 rgba(20,20,40,0.05)',
+        // Popover / tooltip shadow — uses a cooler slate base for a slightly
+        // more clinical look (matches dropdowns and floating UI).
+        popover: '0 10px 40px -12px rgba(15,23,42,0.25), 0 4px 12px -4px rgba(15,23,42,0.08)',
       },
     },
   },

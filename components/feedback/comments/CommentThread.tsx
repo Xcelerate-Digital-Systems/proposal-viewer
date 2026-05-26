@@ -142,7 +142,7 @@ export default function CommentThread({
   return (
     <div
       data-comment-id={comment.id}
-      className={`rounded-2xl bg-white px-5 py-4 shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.03)] transition-all duration-300 ${
+      className={`rounded-2xl bg-white px-5 py-4 shadow-card transition-all duration-300 ${
         highlighted ? 'ring-2 ring-teal ring-offset-1' : ''
       }`}
     >

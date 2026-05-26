@@ -128,7 +128,7 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
             "Download PDF" affordance now floats in the corner (see below). */}
         <PrintTrigger autoPrint={autoPrint} />
         <div className="max-w-3xl mx-auto pt-6 pb-10 px-4 print:max-w-none print:px-0 print:pb-0 print:pt-0">
-          <div className="rounded-2xl overflow-hidden shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] print:rounded-none print:shadow-none">
+          <div className="rounded-2xl overflow-hidden shadow-popover print:rounded-none print:shadow-none">
             <QuoteSinglePageView
               proposal={v.proposal}
               pricing={(v.pricing as unknown as ProposalPricing | null) ?? null}

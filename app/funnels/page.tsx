@@ -114,7 +114,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-ivory px-6 lg:px-10 py-6 shadow-[0_1px_0_rgba(20,20,40,0.05)]">
+      <div className="bg-ivory px-6 lg:px-10 py-6 shadow-divider">
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight text-ink">Funnels</h1>

@@ -179,7 +179,7 @@ export default function DecisionPagePreview({
           ProposalDecisionPanel rendering the live form. */}
       <div className="relative w-full min-h-[100vh] flex items-start justify-center px-6 sm:px-14 py-12">
         <div
-          className="w-full max-w-2xl rounded-2xl shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] px-6 sm:px-12 py-10"
+          className="w-full max-w-2xl rounded-2xl shadow-popover px-6 sm:px-12 py-10"
           style={{
             backgroundColor: bodyBg,
             color: bodyText,
