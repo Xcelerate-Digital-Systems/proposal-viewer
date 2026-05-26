@@ -65,14 +65,17 @@ export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
 
 /**
  * Handles for CardShell (Web Page / Image / Video / PDF cards) — top/bottom
- * sit on the actual top/bottom edges of the card, but left/right are pinned
- * to the shared connection Y of 100 so a card lines up flush with the
- * Email/SMS circles and the flow diamonds when placed on the same row.
+ * sit on the actual top/bottom edges, and left/right are anchored to the
+ * card's true vertical centre via top:50% + translateY so the connection
+ * dots stay visually centred no matter the rendered card height. Edges
+ * crossing into Email/SMS circles or flow diamonds will pick up a small
+ * vertical offset because those node types still use SHARED_SIDE_HANDLE_Y;
+ * a centred card was the explicit ask, so we accept that trade-off.
  */
 export function CardHandles({ readOnly }: { readOnly?: boolean }) {
   const outset = 14;
-  const leftStyle  = { top: SHARED_SIDE_HANDLE_Y, left: -outset };
-  const rightStyle = { top: SHARED_SIDE_HANDLE_Y, right: -outset };
+  const leftStyle  = { top: '50%' as const, left: -outset, transform: 'translateY(-50%)' };
+  const rightStyle = { top: '50%' as const, right: -outset, transform: 'translateY(-50%)' };
   const topStyle    = { top: -outset };
   const bottomStyle = { top: 'auto' as const, bottom: -outset };
   return (
