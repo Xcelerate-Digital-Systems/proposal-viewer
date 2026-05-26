@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe,
-  ChevronRight, AlignLeft, MessageSquare, Plus,
+  ChevronRight, MessageSquare, Plus,
 } from 'lucide-react';
 import type { MetaAdVariant } from '@/lib/types/feedback';
 
@@ -85,10 +85,27 @@ export default function AdMockupPreview({
   const effectivePrimaryText = active.primary_text;
   const showSidebar = variantList.length >= 2;
 
-  const mockup = (
-    <div className="flex flex-col items-center gap-3">
+  // Brand colour for active pills / toggles. Per-project branding is
+  // threaded in via `accentColor`; everything else falls back to the
+  // AgencyViz teal so unbranded projects still look on-brand.
+  const brand = accentColor || '#017C87';
+
+  return (
+    <div className="flex flex-col items-center gap-3 w-full">
+      {showSidebar && (
+        <VariantPillRow
+          variants={variantList}
+          activeId={active.id}
+          onSelect={onVariantChange}
+          commentCounts={commentCountsByVariantId}
+          brand={brand}
+          dark={dark}
+        />
+      )}
+
       {showPlatformToggle && (
-        <div className="flex rounded-lg overflow-hidden border"
+        <div
+          className="flex rounded-lg overflow-hidden border"
           style={{
             borderColor: dark ? '#ffffff18' : '#e5e7eb',
             backgroundColor: dark ? '#ffffff08' : '#f9fafb',
@@ -103,9 +120,7 @@ export default function AdMockupPreview({
               onClick={(e) => { e.stopPropagation(); handlePlatformChange(p.key); }}
               className="px-4 py-1.5 text-xs font-medium transition-colors"
               style={{
-                backgroundColor: currentPlatform === p.key
-                  ? (accentColor || '#017C87')
-                  : 'transparent',
+                backgroundColor: currentPlatform === p.key ? brand : 'transparent',
                 color: currentPlatform === p.key
                   ? '#ffffff'
                   : (dark ? '#ffffff88' : '#6b7280'),
@@ -142,124 +157,78 @@ export default function AdMockupPreview({
       )}
     </div>
   );
-
-  if (!showSidebar) {
-    return <div className="flex flex-col items-center gap-3 w-full">{mockup}</div>;
-  }
-
-  return (
-    <div className="w-full flex gap-8 items-start">
-      <VariantSidebar
-        variants={variantList}
-        activeId={active.id}
-        onSelect={onVariantChange}
-        commentCounts={commentCountsByVariantId}
-        dark={dark}
-      />
-      <div className="flex-1 flex justify-center">{mockup}</div>
-    </div>
-  );
 }
 
 /* ================================================================== */
-/*  Variant sidebar                                                    */
+/*  Variant pill row                                                   */
 /* ================================================================== */
 
-function VariantSidebar({
-  variants, activeId, onSelect, commentCounts, dark,
+/** Horizontal row of variant pills shown above the platform toggle. Active
+ *  pill picks up the project's brand colour (per-project accent or
+ *  AgencyViz teal); inactive pills are muted. Wraps onto two lines once
+ *  there are too many variants to fit. */
+function VariantPillRow({
+  variants, activeId, onSelect, commentCounts, brand, dark,
 }: {
   variants: MetaAdVariant[];
   activeId: string;
   onSelect?: (id: string) => void;
   commentCounts?: Record<string, number>;
+  brand: string;
   dark?: boolean;
 }) {
-  // Brand tokens — match the AgencyViz teal palette used across admin nav
-  // and primary buttons. We define them inline (rather than via Tailwind
-  // classes) so the dark-mode public viewer can swap surface tones cleanly.
-  const teal = '#017C87';
-  const tealTint = dark ? 'rgba(138, 217, 209, 0.16)' : 'rgba(1, 124, 135, 0.08)';
-  const tealText = dark ? '#8AD9D1' : teal;
   return (
-    <aside
-      className="w-60 shrink-0 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)]"
-      style={{
-        backgroundColor: dark ? '#013036' : '#ffffff',
-        border: `1px solid ${dark ? '#01434A' : '#E5E7EB'}`,
-      }}
-    >
-      <div
-        className="px-4 py-3 flex items-center gap-2 border-b"
-        style={{
-          backgroundColor: dark ? '#01262B' : '#F9FAFB',
-          borderColor: dark ? '#01434A' : '#F3F4F6',
-        }}
-      >
-        <AlignLeft size={14} style={{ color: tealText }} />
-        <p
-          className="text-[11px] font-semibold uppercase tracking-wider flex-1"
-          style={{ color: dark ? 'rgba(255,255,255,0.55)' : '#6B6B6B' }}
-        >
-          Copy variants
-        </p>
-        <span
-          className="text-[10px] font-semibold tabular-nums rounded-full px-1.5 py-0.5"
-          style={{
-            backgroundColor: tealTint,
-            color: tealText,
-          }}
-        >
-          {variants.length}
-        </span>
-      </div>
-      <ul className="py-1.5">
-        {variants.map((v, i) => {
-          const active = v.id === activeId;
-          const commentCount = commentCounts?.[v.id] ?? 0;
-          const variantLabel = v.label?.trim() || `Variant ${i + 1}`;
-          return (
-            <li key={v.id}>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onSelect?.(v.id); }}
-                className="w-full text-left px-3 py-2 flex items-center gap-2.5 text-[13px] transition-colors"
+    <div className="w-full flex flex-wrap items-center justify-center gap-1.5">
+      {variants.map((v, i) => {
+        const active = v.id === activeId;
+        const commentCount = commentCounts?.[v.id] ?? 0;
+        const variantLabel = v.label?.trim() || `Variant ${i + 1}`;
+        const inactiveBg = dark ? 'rgba(255,255,255,0.06)' : '#F3F4F6';
+        const inactiveText = dark ? 'rgba(255,255,255,0.7)' : '#374151';
+        const inactiveHoverBg = dark ? 'rgba(255,255,255,0.1)' : '#E5E7EB';
+        return (
+          <button
+            key={v.id}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onSelect?.(v.id); }}
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium rounded-full pl-1 pr-3 py-1 transition-colors"
+            style={{
+              backgroundColor: active ? brand : inactiveBg,
+              color: active ? '#FFFFFF' : inactiveText,
+            }}
+            onMouseEnter={(e) => {
+              if (!active) e.currentTarget.style.backgroundColor = inactiveHoverBg;
+            }}
+            onMouseLeave={(e) => {
+              if (!active) e.currentTarget.style.backgroundColor = inactiveBg;
+            }}
+          >
+            <span
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold shrink-0"
+              style={{
+                backgroundColor: active ? 'rgba(255,255,255,0.22)' : (dark ? 'rgba(255,255,255,0.08)' : '#FFFFFF'),
+                color: active ? '#FFFFFF' : (dark ? 'rgba(255,255,255,0.6)' : '#6B7280'),
+              }}
+            >
+              {i + 1}
+            </span>
+            <span className="max-w-[180px] truncate">{variantLabel}</span>
+            {commentCount > 0 && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 h-4 rounded-full text-[10px] font-semibold shrink-0"
                 style={{
-                  backgroundColor: active ? tealTint : 'transparent',
-                  color: active ? tealText : (dark ? 'rgba(255,255,255,0.75)' : '#1F2937'),
-                  fontWeight: active ? 600 : 500,
-                }}
-                onMouseEnter={(e) => {
-                  if (!active) e.currentTarget.style.backgroundColor = dark ? 'rgba(255,255,255,0.04)' : '#F9FAFB';
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) e.currentTarget.style.backgroundColor = 'transparent';
+                  backgroundColor: active ? 'rgba(255,255,255,0.22)' : '#FFF1D6',
+                  color: active ? '#FFFFFF' : '#92500F',
                 }}
               >
-                <span
-                  className="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-semibold shrink-0"
-                  style={{
-                    backgroundColor: active ? teal : (dark ? 'rgba(255,255,255,0.08)' : '#F3F4F6'),
-                    color: active ? '#FFFFFF' : (dark ? 'rgba(255,255,255,0.6)' : '#6B7280'),
-                  }}
-                >
-                  {i + 1}
-                </span>
-                <span className="flex-1 min-w-0 truncate">{variantLabel}</span>
-                {commentCount > 0 && (
-                  <span
-                    className="inline-flex items-center gap-1 px-1.5 h-5 rounded-full text-[10px] font-semibold shrink-0"
-                    style={{ backgroundColor: '#FFF1D6', color: '#92500F' }}
-                  >
-                    <MessageSquare size={10} />
-                    {commentCount}
-                  </span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </aside>
+                <MessageSquare size={9} />
+                {commentCount}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

@@ -99,28 +99,35 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
     return () => document.removeEventListener('mousedown', handler);
   }, [importPickerOpen]);
 
-  const importVariantsFromAd = (ad: ImportableAd) => {
-    // Clone each variant with a fresh id so pins on the source ad don't
-    // alias to this new ad's variants. Append to whatever the user already
-    // has (so they can stack from multiple sources if they want).
-    const cloned = ad.variants.map<MetaAdVariant>((v) => ({
+  /** Core importer used by both per-variant and per-ad import actions.
+   *  Clones each source variant with a fresh id so pins on the source ad
+   *  don't alias to this new ad's variants. Replaces a lone empty starter
+   *  variant; otherwise appends so multiple imports can stack. */
+  const importVariants = (sourceVariants: MetaAdVariant[], sourceTitle: string) => {
+    const cloned = sourceVariants.map<MetaAdVariant>((v) => ({
       id: newVariantId(),
       label: v.label ?? '',
       headline: v.headline,
       primary_text: v.primary_text,
     }));
     setVariants((prev) => {
-      // If the only existing variant is empty (i.e. the default starter
-      // variant we created on mount), replace it with the imported set so
-      // the user doesn't have to clean up an empty row.
       const hasOnlyEmptyStarter = prev.length === 1 && !prev[0].headline.trim() && !prev[0].primary_text.trim();
       const next = hasOnlyEmptyStarter ? cloned : [...prev, ...cloned];
-      setActiveVariantId(next[0].id);
+      setActiveVariantId(next[next.length - cloned.length].id);
       return next;
     });
     setImportPickerOpen(false);
-    toast.success(`Imported ${cloned.length} variant${cloned.length === 1 ? '' : 's'} from “${ad.title}”`);
+    if (cloned.length === 1) {
+      const label = cloned[0].label?.trim() || 'variant';
+      toast.success(`Imported “${label}” from “${sourceTitle}”`);
+    } else {
+      toast.success(`Imported ${cloned.length} variants from “${sourceTitle}”`);
+    }
   };
+
+  const importAllFromAd = (ad: ImportableAd) => importVariants(ad.variants, ad.title);
+  const importOneVariant = (ad: ImportableAd, variant: MetaAdVariant) =>
+    importVariants([variant], ad.title);
 
   const togglePreview = () => {
     const next = !showPreview;
@@ -300,59 +307,78 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                     <ChevronDown size={11} className={`transition-transform ${importPickerOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {importPickerOpen && (
-                    <div className="absolute right-0 top-full mt-1.5 w-72 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-20">
+                    <div className="absolute right-0 top-full mt-1.5 w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-20">
                       <div className="px-3 py-2 border-b border-gray-100">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                           Existing ads in this project
                         </p>
                       </div>
-                      <ul className="max-h-72 overflow-y-auto py-1">
-                        {importableAds.map((ad) => {
-                          const labels = ad.variants
-                            .map((v, i) => v.label?.trim() || `Variant ${i + 1}`)
-                            .slice(0, 4);
-                          const more = ad.variants.length - labels.length;
-                          return (
-                            <li key={ad.id}>
-                              <button
-                                type="button"
-                                onClick={() => importVariantsFromAd(ad)}
-                                className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
-                              >
-                                <span className="w-7 h-7 shrink-0 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                                  <Megaphone size={13} />
+                      <div className="max-h-80 overflow-y-auto">
+                        {importableAds.map((ad) => (
+                          <div key={ad.id} className="border-b border-gray-100 last:border-b-0">
+                            {/* Ad header: title + "Import all" */}
+                            <div className="flex items-center gap-2.5 px-3 pt-2 pb-1">
+                              <span className="w-6 h-6 shrink-0 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                <Megaphone size={12} />
+                              </span>
+                              <span className="flex-1 min-w-0">
+                                <span className="block text-[12px] font-semibold text-ink truncate">
+                                  {ad.title}
                                 </span>
-                                <span className="flex-1 min-w-0">
-                                  <span className="flex items-center justify-between gap-2">
-                                    <span className="block text-[13px] font-medium text-ink truncate">
-                                      {ad.title}
-                                    </span>
-                                    <span className="text-[10px] text-gray-400 shrink-0">
-                                      {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
-                                    </span>
-                                  </span>
-                                  <span className="mt-1 flex flex-wrap gap-1">
-                                    {labels.map((l, idx) => (
+                                <span className="block text-[10px] text-gray-400">
+                                  {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
+                                </span>
+                              </span>
+                              {ad.variants.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => importAllFromAd(ad)}
+                                  className="text-[11px] font-semibold text-teal hover:text-teal-hover shrink-0"
+                                  title="Import all variants from this ad"
+                                >
+                                  Import all
+                                </button>
+                              )}
+                            </div>
+                            {/* Per-variant rows */}
+                            <ul className="pb-1.5">
+                              {ad.variants.map((v, i) => {
+                                const label = v.label?.trim() || `Variant ${i + 1}`;
+                                const preview = v.headline?.trim() || v.primary_text?.trim() || '';
+                                return (
+                                  <li key={v.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => importOneVariant(ad, v)}
+                                      className="w-full flex items-center gap-2 pl-10 pr-3 py-1.5 text-left hover:bg-gray-50 transition-colors group"
+                                    >
+                                      <span className="inline-flex items-center justify-center w-4 h-4 rounded text-[10px] font-semibold bg-gray-100 text-gray-500 shrink-0">
+                                        {i + 1}
+                                      </span>
+                                      <span className="flex-1 min-w-0">
+                                        <span className="block text-[12px] font-medium text-ink truncate">
+                                          {label}
+                                        </span>
+                                        {preview && (
+                                          <span className="block text-[11px] text-gray-400 truncate">
+                                            {preview}
+                                          </span>
+                                        )}
+                                      </span>
                                       <span
-                                        key={idx}
-                                        className="inline-block max-w-[140px] truncate text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600"
+                                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-400 group-hover:bg-teal/10 group-hover:text-teal shrink-0 transition-colors"
+                                        title="Add this variant"
                                       >
-                                        {l}
+                                        <Plus size={11} />
                                       </span>
-                                    ))}
-                                    {more > 0 && (
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-400">
-                                        +{more} more
-                                      </span>
-                                    )}
-                                  </span>
-                                </span>
-                                <Plus size={13} className="mt-1 text-faint" />
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
