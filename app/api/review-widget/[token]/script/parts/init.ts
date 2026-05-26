@@ -23,11 +23,13 @@ document.addEventListener("visibilitychange",function(){if(document.hidden)stopP
 /* ── Init ───────────────────────────────────────────────── */
 document.documentElement.classList.add("aviz-active");
 armPinMode();
-/* Open the comments panel by default so reviewers land already seeing
-   existing feedback and can leave new comments straight away. Pin mode
-   stays armed underneath — page clicks still drop pins, and clicking
-   the Pin tool just closes the panel via its own handler. */
-loadComments(function(){refresh();if(typeof openPanel==="function")openPanel();startPolling();});
+/* Load existing comments + start polling, but leave the panel closed
+   on first paint -- reviewers found it intrusive to land with a 360px
+   sidebar already covering part of the page. The Comments toolbar
+   button still surfaces an unread badge so they know feedback is
+   waiting, and existing pin/box/text markers on the page open the
+   panel via their own click handlers when interacted with. */
+loadComments(function(){refresh();startPolling();});
 if(!guestName){
   /* Delay onboarding slightly so the page isn't blocked on first paint. */
   setTimeout(function(){if(!guestName&&typeof showOnboard==="function")showOnboard();},600);
