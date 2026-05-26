@@ -107,7 +107,7 @@ function FeedbackProjectCard({
             {project.title}
           </h4>
           <p className="text-[11px] text-gray-400 mt-0.5 truncate">
-            {project.client_name || 'Feedback project'}
+            {project.client_company || project.client_name || 'Feedback project'}
           </p>
         </div>
 

@@ -29,6 +29,7 @@ export type FeedbackProject = {
   description: string | null;
   client_name: string | null;
   client_email: string | null;
+  client_company: string | null;
   status: FeedbackStatus;
   share_token: string;
   board_share_token: string | null;

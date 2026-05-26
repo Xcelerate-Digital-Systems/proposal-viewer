@@ -64,6 +64,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
   const [showEdit, setShowEdit] = useState(false);
   const [editTitle, setEditTitle] = useState(project.title);
   const [editDescription, setEditDescription] = useState(project.description || '');
+  const [editClientCompany, setEditClientCompany] = useState(project.client_company || '');
   const [editClientName, setEditClientName] = useState(project.client_name || '');
   const [editClientEmail, setEditClientEmail] = useState(project.client_email || '');
   const [saving, setSaving] = useState(false);
@@ -149,6 +150,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
       .update({
         title: editTitle.trim(),
         description: editDescription.trim() || null,
+        client_company: editClientCompany.trim() || null,
         client_name: editClientName.trim() || null,
         client_email: editClientEmail.trim() || null,
         updated_at: new Date().toISOString(),
@@ -168,6 +170,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
   const openEditModal = () => {
     setEditTitle(project.title);
     setEditDescription(project.description || '');
+    setEditClientCompany(project.client_company || '');
     setEditClientName(project.client_name || '');
     setEditClientEmail(project.client_email || '');
     setShowEdit(true);
@@ -261,11 +264,11 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
             {project.title}
           </h3>
 
-          {/* Client / description */}
-          {(project.client_name || project.description) && (
+          {/* Client / description — show company first, fall back to contact name. */}
+          {(project.client_company || project.client_name || project.description) && (
             <p className="text-[12px] text-faint truncate mb-2.5">
-              {project.client_name}
-              {project.client_name && project.description && ' · '}
+              {project.client_company || project.client_name}
+              {(project.client_company || project.client_name) && project.description && ' · '}
               {project.description}
             </p>
           )}
@@ -371,9 +374,22 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
                 className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors resize-none"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1.5">Company / Brand Name</label>
+              <input
+                type="text"
+                value={editClientCompany}
+                onChange={(e) => setEditClientCompany(e.target.value)}
+                placeholder="e.g. Premier Shipping Containers"
+                className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                Used as the page name in Meta ad previews and the sender on email previews.
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Client Name</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">Contact Name</label>
                 <input
                   type="text"
                   value={editClientName}
@@ -382,7 +398,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Client Email</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">Contact Email</label>
                 <input
                   type="email"
                   value={editClientEmail}

@@ -69,8 +69,8 @@ export default function FeedbackProjectHeader({
               {project.title}
             </h1>
             <p className="text-xs text-gray-400 truncate">
-              {project.client_name}
-              {project.client_name && project.description && ' · '}
+              {project.client_company || project.client_name}
+              {(project.client_company || project.client_name) && project.description && ' · '}
               {project.description}
             </p>
           </div>

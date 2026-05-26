@@ -162,12 +162,12 @@ export default function FeedbackHeaderBar({
         >
           {project.title}
         </span>
-        {project.client_name && (
+        {(project.client_company || project.client_name) && (
           <span
             className={`text-xs truncate hidden xl:inline ${headerBranded ? '' : 'text-gray-400'}`}
             style={headerBranded ? { color: `${sidebarText}80` } : undefined}
           >
-            · {project.client_name}
+            · {project.client_company || project.client_name}
           </span>
         )}
       </div>

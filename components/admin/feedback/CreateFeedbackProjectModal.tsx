@@ -22,6 +22,7 @@ export default function CreateFeedbackProjectModal({
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [clientCompany, setClientCompany] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
 
@@ -36,6 +37,7 @@ export default function CreateFeedbackProjectModal({
         company_id: companyId,
         title: title.trim(),
         description: description.trim() || null,
+        client_company: clientCompany.trim() || null,
         client_name: clientName.trim() || null,
         client_email: clientEmail.trim() || null,
         created_by: userId,
@@ -124,29 +126,46 @@ export default function CreateFeedbackProjectModal({
             />
           </div>
 
-          {/* Client info row */}
+          {/* Company name — shown as the brand in ad/email previews. */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Company / Brand Name
+            </label>
+            <input
+              type="text"
+              value={clientCompany}
+              onChange={(e) => setClientCompany(e.target.value)}
+              placeholder="e.g. Premier Shipping Containers"
+              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">
+              Used as the page name in Meta ad previews and the sender on email previews.
+            </p>
+          </div>
+
+          {/* Contact row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Client Name
+                Contact Name
               </label>
               <input
                 type="text"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                placeholder="e.g. Acme Corp"
+                placeholder="e.g. Mia Gordon"
                 className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Client Email
+                Contact Email
               </label>
               <input
                 type="email"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
-                placeholder="client@example.com"
+                placeholder="contact@example.com"
                 className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />
             </div>

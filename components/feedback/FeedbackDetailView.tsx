@@ -655,7 +655,7 @@ export default function FeedbackDetailView({
                     : null
                 }
                 accentColor={branding?.accent_color || accent}
-                brandName={project.client_name || undefined}
+                brandName={project.client_company || project.client_name || undefined}
                 activeView={activeView}
                 onViewChange={setActiveView}
                 commentCountsByView={commentCountsByView}

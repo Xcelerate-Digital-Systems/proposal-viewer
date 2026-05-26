@@ -94,10 +94,10 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
         <h3 className="text-sm font-medium text-ink truncate group-hover:text-teal transition-colors">
           {project.title}
         </h3>
-        {(project.client_name || project.description) && (
+        {(project.client_company || project.client_name || project.description) && (
           <p className="text-xs text-faint truncate">
-            {project.client_name}
-            {project.client_name && project.description && ' · '}
+            {project.client_company || project.client_name}
+            {(project.client_company || project.client_name) && project.description && ' · '}
             {project.description}
           </p>
         )}
