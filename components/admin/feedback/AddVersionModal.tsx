@@ -1,15 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Upload, Loader2, Plus, Trash2, Type, AlignLeft } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Upload, Loader2, Plus, Trash2, Type, AlignLeft, Copy, ChevronDown, Megaphone } from 'lucide-react';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
 import { useToast } from '@/components/ui/Toast';
-import type { MetaAdVariant } from '@/lib/types/feedback';
+import { type MetaAdVariant, getMetaAdVariants } from '@/lib/types/feedback';
+import { supabase } from '@/lib/supabase';
+
+function newVariantId(): string {
+  return crypto.randomUUID().slice(0, 8);
+}
 
 function newAdVariant(): MetaAdVariant {
-  return { id: crypto.randomUUID().slice(0, 8), label: '', primary_text: '', headline: '' };
+  return { id: newVariantId(), label: '', primary_text: '', headline: '' };
 }
+
+/** Shape returned by the "import variants from another ad" picker query
+ *  inside the version modal. Mirrors AdItemForm's ImportableAd. */
+type ImportableAd = {
+  id: string;
+  title: string;
+  variants: MetaAdVariant[];
+};
 
 const MAX_GAD_HEADLINES = 15;
 const MAX_GAD_DESCRIPTIONS = 4;
@@ -105,6 +118,68 @@ export default function AddVersionModal({
   const addAdVariant = () => setAdVariants((prev) => [...prev, newAdVariant()]);
   const removeAdVariant = (id: string) =>
     setAdVariants((prev) => (prev.length > 1 ? prev.filter((v) => v.id !== id) : prev));
+
+  // Import-from-ad picker — only relevant when this version is for a Meta
+  // ad. Fetches other ads in the same project that have variants (or
+  // legacy ad_headline/ad_copy folded into a synthesised variant) so users
+  // can clone copy across ads without retyping. Mirrors AdItemForm.
+  const [importableAds, setImportableAds] = useState<ImportableAd[]>([]);
+  const [importPickerOpen, setImportPickerOpen] = useState(false);
+  const importPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (item.type !== 'ad') return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('review_items')
+        .select('id, title, ad_headline, ad_copy, meta_ad_variants')
+        .eq('review_project_id', item.review_project_id)
+        .eq('type', 'ad')
+        .neq('id', item.id)
+        .order('updated_at', { ascending: false });
+      if (cancelled || error || !data) return;
+      const ads = data
+        .map<ImportableAd>((row) => ({
+          id: row.id,
+          title: row.title || 'Untitled ad',
+          variants: getMetaAdVariants(row).filter((v) => v.headline.trim() || v.primary_text.trim()),
+        }))
+        .filter((ad) => ad.variants.length > 0);
+      setImportableAds(ads);
+    })();
+    return () => { cancelled = true; };
+  }, [item.id, item.review_project_id, item.type]);
+
+  useEffect(() => {
+    if (!importPickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (importPickerRef.current && !importPickerRef.current.contains(e.target as Node)) {
+        setImportPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [importPickerOpen]);
+
+  const importVariantsFromAd = (ad: ImportableAd) => {
+    const cloned = ad.variants.map<MetaAdVariant>((v) => ({
+      id: newVariantId(),
+      label: v.label ?? '',
+      headline: v.headline,
+      primary_text: v.primary_text,
+    }));
+    setAdVariants((prev) => {
+      // Replace a lone empty starter variant; otherwise append so the user
+      // can stack from multiple sources.
+      const hasOnlyEmptyStarter = prev.length === 1
+        && !prev[0].headline.trim()
+        && !prev[0].primary_text.trim();
+      return hasOnlyEmptyStarter ? cloned : [...prev, ...cloned];
+    });
+    setImportPickerOpen(false);
+    toast.success(`Imported ${cloned.length} variant${cloned.length === 1 ? '' : 's'} from “${ad.title}”`);
+  };
 
   // Meta lead form (copy-iteration version: swap cover + edit headline/description/CTA)
   const lf = seed.meta_lead_form_data ?? item.meta_lead_form_data;
@@ -314,14 +389,86 @@ export default function AddVersionModal({
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Copy Variants
                   </label>
-                  <button
-                    type="button"
-                    onClick={addAdVariant}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal hover:text-teal-hover"
-                  >
-                    <Plus size={12} />
-                    Add variant
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {importableAds.length > 0 && (
+                      <div className="relative" ref={importPickerRef}>
+                        <button
+                          type="button"
+                          onClick={() => setImportPickerOpen((v) => !v)}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal hover:text-teal-hover"
+                          title="Reuse variants from another ad in this project"
+                        >
+                          <Copy size={12} />
+                          Import from ad
+                          <ChevronDown size={11} className={`transition-transform ${importPickerOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {importPickerOpen && (
+                          <div className="absolute right-0 top-full mt-1.5 w-72 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
+                            <div className="px-3 py-2 border-b border-gray-100">
+                              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                                Existing ads in this project
+                              </p>
+                            </div>
+                            <ul className="max-h-72 overflow-y-auto py-1">
+                              {importableAds.map((ad) => {
+                                const labels = ad.variants
+                                  .map((v, i) => v.label?.trim() || `Variant ${i + 1}`)
+                                  .slice(0, 4);
+                                const more = ad.variants.length - labels.length;
+                                return (
+                                  <li key={ad.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => importVariantsFromAd(ad)}
+                                      className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
+                                    >
+                                      <span className="w-7 h-7 shrink-0 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                        <Megaphone size={13} />
+                                      </span>
+                                      <span className="flex-1 min-w-0">
+                                        <span className="flex items-center justify-between gap-2">
+                                          <span className="block text-[13px] font-medium text-ink truncate">
+                                            {ad.title}
+                                          </span>
+                                          <span className="text-[10px] text-gray-400 shrink-0">
+                                            {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
+                                          </span>
+                                        </span>
+                                        <span className="mt-1 flex flex-wrap gap-1">
+                                          {labels.map((l, idx) => (
+                                            <span
+                                              key={idx}
+                                              className="inline-block max-w-[140px] truncate text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600"
+                                            >
+                                              {l}
+                                            </span>
+                                          ))}
+                                          {more > 0 && (
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-400">
+                                              +{more} more
+                                            </span>
+                                          )}
+                                        </span>
+                                      </span>
+                                      <Plus size={13} className="mt-1 text-faint" />
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={addAdVariant}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal hover:text-teal-hover"
+                    >
+                      <Plus size={12} />
+                      Add variant
+                    </button>
+                  </div>
                 </div>
                 <p className="text-[11px] text-gray-400 mb-2">
                   Each variant is a (primary text, headline) pair on the same creative. Reviewers switch in the sidebar; pins scope to the active variant.
