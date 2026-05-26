@@ -11,20 +11,21 @@ export default function ReviewBoardPage({ params }: { params: { id: string } }) 
   return (
     <AdminLayout collapseSidebar>
       {(auth) => (
-        <BoardGate isSuperAdmin={auth.isSuperAdmin} projectId={params.id} />
+        <BoardGate accountType={auth.accountType} projectId={params.id} />
       )}
     </AdminLayout>
   );
 }
 
-function BoardGate({ isSuperAdmin, projectId }: { isSuperAdmin?: boolean; projectId: string }) {
+function BoardGate({ accountType, projectId }: { accountType?: 'agency' | 'client'; projectId: string }) {
   const router = useRouter();
+  const allowed = accountType === 'agency';
 
   useEffect(() => {
-    if (!isSuperAdmin) router.replace('/dashboard');
-  }, [isSuperAdmin, router]);
+    if (!allowed) router.replace('/dashboard');
+  }, [allowed, router]);
 
-  if (!isSuperAdmin) return null;
+  if (!allowed) return null;
 
   return <BoardContent projectId={projectId} />;
 }

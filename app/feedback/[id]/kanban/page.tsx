@@ -14,7 +14,7 @@ export default function FeedbackKanbanPage({ params }: { params: { id: string } 
     <AdminLayout>
       {(auth) => (
         <KanbanGate
-          isSuperAdmin={auth.isSuperAdmin}
+          accountType={auth.accountType}
           projectId={params.id}
           companyId={auth.companyId!}
           userId={auth.session?.user?.id ?? null}
@@ -24,16 +24,17 @@ export default function FeedbackKanbanPage({ params }: { params: { id: string } 
   );
 }
 
-function KanbanGate({ isSuperAdmin, projectId, companyId, userId }: {
-  isSuperAdmin?: boolean; projectId: string; companyId: string; userId: string | null;
+function KanbanGate({ accountType, projectId, companyId, userId }: {
+  accountType?: 'agency' | 'client'; projectId: string; companyId: string; userId: string | null;
 }) {
   const router = useRouter();
+  const allowed = accountType === 'agency';
 
   useEffect(() => {
-    if (!isSuperAdmin) router.replace('/dashboard');
-  }, [isSuperAdmin, router]);
+    if (!allowed) router.replace('/dashboard');
+  }, [allowed, router]);
 
-  if (!isSuperAdmin) return null;
+  if (!allowed) return null;
 
   return <KanbanContent projectId={projectId} companyId={companyId} userId={userId} />;
 }

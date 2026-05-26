@@ -18,7 +18,7 @@ export default function ReviewsPage() {
     <AdminLayout>
       {(auth) => (
         <ReviewsGate
-          isSuperAdmin={auth.isSuperAdmin}
+          accountType={auth.accountType}
           companyId={auth.companyId!}
           userId={auth.session?.user?.id ?? null}
         />
@@ -27,14 +27,19 @@ export default function ReviewsPage() {
   );
 }
 
-function ReviewsGate({ isSuperAdmin, companyId, userId }: { isSuperAdmin?: boolean; companyId: string; userId: string | null }) {
+// Feedback is an agency-side tool. All agency members get access; client
+// accounts don't have feedback projects so they bounce. Was previously
+// super-admin-only — a leftover gate that broke navigation as soon as
+// the user joined a second agency.
+function ReviewsGate({ accountType, companyId, userId }: { accountType?: 'agency' | 'client'; companyId: string; userId: string | null }) {
   const router = useRouter();
+  const allowed = accountType === 'agency';
 
   useEffect(() => {
-    if (!isSuperAdmin) router.replace('/dashboard');
-  }, [isSuperAdmin, router]);
+    if (!allowed) router.replace('/dashboard');
+  }, [allowed, router]);
 
-  if (!isSuperAdmin) return null;
+  if (!allowed) return null;
 
   return <ReviewsContent companyId={companyId} userId={userId} />;
 }

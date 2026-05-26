@@ -16,16 +16,17 @@ export default function FunnelBoardPage({ params }: { params: { id: string } }) 
   return (
     <AdminLayout collapseSidebar>
       {(auth) => (
-        <BoardGate isSuperAdmin={auth.isSuperAdmin} funnelId={params.id} />
+        <BoardGate accountType={auth.accountType} funnelId={params.id} />
       )}
     </AdminLayout>
   );
 }
 
-function BoardGate({ isSuperAdmin, funnelId }: { isSuperAdmin?: boolean; funnelId: string }) {
+function BoardGate({ accountType, funnelId }: { accountType?: 'agency' | 'client'; funnelId: string }) {
   const router = useRouter();
-  useEffect(() => { if (!isSuperAdmin) router.replace('/dashboard'); }, [isSuperAdmin, router]);
-  if (!isSuperAdmin) return null;
+  const allowed = accountType === 'agency';
+  useEffect(() => { if (!allowed) router.replace('/dashboard'); }, [allowed, router]);
+  if (!allowed) return null;
   return <BoardContent funnelId={funnelId} />;
 }
 

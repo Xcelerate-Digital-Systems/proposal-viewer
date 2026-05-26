@@ -38,7 +38,7 @@ export default function ReviewFeedbackPage({ params }: { params: { id: string } 
     <AdminLayout>
       {(auth) => (
         <FeedbackGate
-          isSuperAdmin={auth.isSuperAdmin}
+          accountType={auth.accountType}
           projectId={params.id}
           companyId={auth.companyId!}
           session={auth.session}
@@ -49,20 +49,21 @@ export default function ReviewFeedbackPage({ params }: { params: { id: string } 
   );
 }
 
-function FeedbackGate({ isSuperAdmin, projectId, companyId, session, teamMember }: {
-  isSuperAdmin?: boolean;
+function FeedbackGate({ accountType, projectId, companyId, session, teamMember }: {
+  accountType?: 'agency' | 'client';
   projectId: string;
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
   teamMember: { name?: string; email?: string } | null;
 }) {
   const router = useRouter();
+  const allowed = accountType === 'agency';
 
   useEffect(() => {
-    if (!isSuperAdmin) router.replace('/dashboard');
-  }, [isSuperAdmin, router]);
+    if (!allowed) router.replace('/dashboard');
+  }, [allowed, router]);
 
-  if (!isSuperAdmin) return null;
+  if (!allowed) return null;
 
   return <FeedbackContent projectId={projectId} companyId={companyId} session={session} teamMember={teamMember} />;
 }

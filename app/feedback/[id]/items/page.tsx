@@ -18,7 +18,7 @@ export default function ReviewItemsPage({ params, searchParams }: { params: { id
     <AdminLayout>
       {(auth) => (
         <ItemsGate
-          isSuperAdmin={auth.isSuperAdmin}
+          accountType={auth.accountType}
           projectId={params.id}
           companyId={auth.companyId!}
           userId={auth.session?.user?.id ?? null}
@@ -29,16 +29,17 @@ export default function ReviewItemsPage({ params, searchParams }: { params: { id
   );
 }
 
-function ItemsGate({ isSuperAdmin, projectId, companyId, userId, initialTypeFilter }: {
-  isSuperAdmin?: boolean; projectId: string; companyId: string; userId: string | null; initialTypeFilter: string | null;
+function ItemsGate({ accountType, projectId, companyId, userId, initialTypeFilter }: {
+  accountType?: 'agency' | 'client'; projectId: string; companyId: string; userId: string | null; initialTypeFilter: string | null;
 }) {
   const router = useRouter();
+  const allowed = accountType === 'agency';
 
   useEffect(() => {
-    if (!isSuperAdmin) router.replace('/dashboard');
-  }, [isSuperAdmin, router]);
+    if (!allowed) router.replace('/dashboard');
+  }, [allowed, router]);
 
-  if (!isSuperAdmin) return null;
+  if (!allowed) return null;
 
   return <ItemsContent projectId={projectId} companyId={companyId} userId={userId} initialTypeFilter={initialTypeFilter} />;
 }

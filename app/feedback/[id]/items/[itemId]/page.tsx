@@ -22,7 +22,7 @@ export default function ReviewItemViewerPage({
     <AdminLayout collapseSidebar>
       {(auth) => (
         <ItemViewerGate
-          isSuperAdmin={auth.isSuperAdmin}
+          accountType={auth.accountType}
           projectId={params.id}
           itemId={params.itemId}
           companyId={auth.companyId!}
@@ -35,7 +35,7 @@ export default function ReviewItemViewerPage({
 }
 
 function ItemViewerGate(props: {
-  isSuperAdmin?: boolean;
+  accountType?: 'agency' | 'client';
   projectId: string;
   itemId: string;
   companyId: string;
@@ -43,12 +43,13 @@ function ItemViewerGate(props: {
   teamMember: { name?: string; email?: string } | null;
 }) {
   const router = useRouter();
+  const allowed = props.accountType === 'agency';
 
   useEffect(() => {
-    if (!props.isSuperAdmin) router.replace('/dashboard');
-  }, [props.isSuperAdmin, router]);
+    if (!allowed) router.replace('/dashboard');
+  }, [allowed, router]);
 
-  if (!props.isSuperAdmin) return null;
+  if (!allowed) return null;
 
   return <ItemViewerContent {...props} />;
 }

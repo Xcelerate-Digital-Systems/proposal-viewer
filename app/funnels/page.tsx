@@ -15,7 +15,7 @@ export default function FunnelsPage() {
     <AdminLayout>
       {(auth) => (
         <FunnelsGate
-          isSuperAdmin={auth.isSuperAdmin}
+          accountType={auth.accountType}
           companyId={auth.companyId!}
           userId={auth.session?.user?.id ?? null}
         />
@@ -24,10 +24,15 @@ export default function FunnelsPage() {
   );
 }
 
-function FunnelsGate({ isSuperAdmin, companyId, userId }: { isSuperAdmin?: boolean; companyId: string; userId: string | null }) {
+// Funnels is an agency-side tool — every member of an agency workspace can
+// use it. Client workspaces don't have funnels, so we bounce them back to
+// the dashboard. The previous super-admin-only gate was a leftover from
+// the alpha and broke navigation for users joined to a second agency.
+function FunnelsGate({ accountType, companyId, userId }: { accountType?: 'agency' | 'client'; companyId: string; userId: string | null }) {
   const router = useRouter();
-  useEffect(() => { if (!isSuperAdmin) router.replace('/dashboard'); }, [isSuperAdmin, router]);
-  if (!isSuperAdmin) return null;
+  const allowed = accountType === 'agency';
+  useEffect(() => { if (!allowed) router.replace('/dashboard'); }, [allowed, router]);
+  if (!allowed) return null;
   return <FunnelsContent companyId={companyId} userId={userId} />;
 }
 

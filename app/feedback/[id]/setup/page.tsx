@@ -17,7 +17,7 @@ export default function ReviewSetupPage({ params }: { params: { id: string } }) 
     <AdminLayout>
       {(auth) => (
         <SetupGate
-          isSuperAdmin={auth.isSuperAdmin}
+          accountType={auth.accountType}
           projectId={params.id}
           companyId={auth.companyId!}
         />
@@ -26,16 +26,17 @@ export default function ReviewSetupPage({ params }: { params: { id: string } }) 
   );
 }
 
-function SetupGate({ isSuperAdmin, projectId, companyId }: {
-  isSuperAdmin?: boolean; projectId: string; companyId: string;
+function SetupGate({ accountType, projectId, companyId }: {
+  accountType?: 'agency' | 'client'; projectId: string; companyId: string;
 }) {
   const router = useRouter();
+  const allowed = accountType === 'agency';
 
   useEffect(() => {
-    if (!isSuperAdmin) router.replace('/dashboard');
-  }, [isSuperAdmin, router]);
+    if (!allowed) router.replace('/dashboard');
+  }, [allowed, router]);
 
-  if (!isSuperAdmin) return null;
+  if (!allowed) return null;
 
   return <SetupContent projectId={projectId} companyId={companyId} />;
 }
