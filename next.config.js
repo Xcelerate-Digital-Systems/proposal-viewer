@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // pdf-lib / react-pdf import an optional `canvas` module that only exists
+  // in Node, not the browser. Alias it to false in both bundlers so the
+  // client bundle doesn't try to resolve it. Keeping both blocks means the
+  // project still works if anyone runs `next build` (Turbopack default in
+  // Next 16+) or `next build --webpack` (legacy escape hatch).
+  turbopack: {
+    resolveAlias: {
+      canvas: { browser: 'next/dist/compiled/empty' },
+    },
+  },
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     return config;
