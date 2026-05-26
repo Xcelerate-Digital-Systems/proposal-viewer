@@ -8,6 +8,7 @@ import { supabase, type ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
+import { buttonClasses } from '@/components/ui/Button';
 import TemplateTabs from './TemplateTabs';
 
 /* ------------------------------------------------------------------ */
@@ -113,13 +114,13 @@ export default function TemplateDetailHeader({ template }: TemplateDetailHeaderP
           <a
             href={`/template-preview/${template.id}`}
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-teal hover:bg-teal/5 border border-teal/20 transition-colors"
+            className={buttonClasses({ variant: 'outline', size: 'sm' })}
           >
             <ExternalLink size={14} />
             Preview
           </a>
 
-          {/* Delete */}
+          {/* Delete — red-on-hover icon button; left inline per migration rules */}
           <button
             onClick={deleteTemplate}
             className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"

@@ -7,6 +7,7 @@ import { X, Upload, FileText, Loader2 } from 'lucide-react';
 import { authedFetch } from '@/lib/api-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
+import { Button } from '@/components/ui/Button';
 
 interface TemplateUploadModalProps {
   companyId: string;
@@ -139,9 +140,7 @@ export default function TemplateUploadModal({
           <h2 className="text-lg font-semibold text-gray-900 font-[family-name:var(--font-display)]">
             New Template
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" disabled={uploading}>
-            <X size={20} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} disabled={uploading} aria-label="Close" />
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -231,13 +230,15 @@ export default function TemplateUploadModal({
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
+            size="md"
+            loading={uploading}
             disabled={uploading || !name.trim()}
-            className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            fullWidth
           >
-            {uploading ? 'Processing...' : 'Create Template'}
-          </button>
+            Create Template
+          </Button>
         </form>
       </div>
     </div>

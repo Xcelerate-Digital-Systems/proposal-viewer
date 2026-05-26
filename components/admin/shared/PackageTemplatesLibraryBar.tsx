@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { BookOpen, ChevronDown, Loader2, Save, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
 import type { PackageTier } from '@/lib/types/packages';
 
 async function authHeaders(): Promise<HeadersInit> {
@@ -208,22 +209,19 @@ export function SavePackageTemplateModal({ tier, onClose, onSaved }: SaveModalPr
           the &ldquo;From Library&rdquo; menu on any packages page.
         </p>
         <div className="flex items-center justify-end gap-2 mt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700"
-          >
+          <Button variant="ghost" size="sm" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             type="button"
-            onClick={save}
+            leftIcon={Save}
+            loading={saving}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal text-white rounded-md text-xs font-medium hover:bg-[#01434A] disabled:opacity-50"
+            onClick={save}
           >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
             Save Template
-          </button>
+          </Button>
         </div>
       </div>
     </div>

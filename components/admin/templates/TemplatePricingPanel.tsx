@@ -2,6 +2,7 @@
 'use client';
 
 import { Check, DollarSign, Loader2, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import PricingSettings from '../pricing/PricingSettings';
 import PricingLineItems from '../pricing/PricingLineItems';
 import PricingOptionalItems from '../pricing/PricingOptionalItems';
@@ -47,13 +48,14 @@ export default function TemplatePricingPanel({
         <div className="flex items-center gap-2">
           {pricingSaveStatus === 'saving' && <Loader2 size={12} className="animate-spin text-gray-300" />}
           {pricingSaveStatus === 'saved' && <Check size={13} className="text-emerald-400" />}
-          <button
+          <Button
+            variant="danger"
+            size="sm"
+            leftIcon={Trash2}
             onClick={onRemove}
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
           >
-            <Trash2 size={11} />
             Remove
-          </button>
+          </Button>
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">

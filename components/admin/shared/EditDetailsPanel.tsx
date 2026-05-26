@@ -2,11 +2,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Info } from 'lucide-react';
+import { Info, Save } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType, type EntityType } from '@/components/ui/FormField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
+import { Button } from '@/components/ui/Button';
 
 const tableByType: Record<EntityType, string> = {
   proposal: 'proposals',
@@ -93,21 +94,19 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, onCa
 
         <div className="flex items-center justify-end gap-2 pt-2">
           {onCancel && (
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={onCancel}>
               Cancel
-            </button>
+            </Button>
           )}
-          <button
-            onClick={handleSave}
+          <Button
+            size="sm"
+            leftIcon={Save}
+            loading={saving}
             disabled={saving || !hasChanges}
-            className="flex items-center gap-1.5 px-5 py-2 bg-teal text-white rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSave}
           >
-            {saving && <Loader2 size={14} className="animate-spin" />}
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+            Save Changes
+          </Button>
         </div>
       </div>
     </SectionCard>
