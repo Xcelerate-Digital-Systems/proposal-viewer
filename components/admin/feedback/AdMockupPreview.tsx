@@ -93,14 +93,22 @@ export default function AdMockupPreview({
   return (
     <div className="flex flex-col items-center gap-3 w-full">
       {showSidebar && (
-        <VariantPillRow
-          variants={variantList}
-          activeId={active.id}
-          onSelect={onVariantChange}
-          commentCounts={commentCountsByVariantId}
-          brand={brand}
-          dark={dark}
-        />
+        <div className="flex flex-col items-center gap-2 w-full mb-4">
+          <p
+            className="text-[12px] font-medium tracking-wide"
+            style={{ color: dark ? 'rgba(255,255,255,0.55)' : '#6B6B6B' }}
+          >
+            Switch between your different copy variations here
+          </p>
+          <VariantPillRow
+            variants={variantList}
+            activeId={active.id}
+            onSelect={onVariantChange}
+            commentCounts={commentCountsByVariantId}
+            brand={brand}
+            dark={dark}
+          />
+        </div>
       )}
 
       {showPlatformToggle && (
