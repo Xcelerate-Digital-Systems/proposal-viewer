@@ -117,7 +117,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
 
   const handleDelete = async () => {
     const ok = await confirm({
-      title: 'Delete Feedback Project',
+      title: 'Delete Markup Project',
       message: `Delete "${project.title}"? This will remove all items, comments, and versions permanently.`,
       confirmLabel: 'Delete',
       destructive: true,

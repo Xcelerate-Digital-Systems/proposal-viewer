@@ -24,8 +24,8 @@ const formatSize = (bytes: number | null) => {
 };
 
 const modalTitles = {
-  upload:           'New Proposal',
-  template:         'New Proposal from Template',
+  upload:           'New Pitch',
+  template:         'New Pitch from Template',
   quote:            'New Quote',
   'quote-template': 'New Quote from Template',
 };

@@ -44,7 +44,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           <Building2 size={20} className="text-teal" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-ink">Company Settings</h1>
+          <h1 className="text-xl font-semibold text-ink">Brand Kit</h1>
           <p className="text-sm text-muted">
             {s.isOwner ? 'Manage your company profile and branding' : 'View company profile'}
           </p>

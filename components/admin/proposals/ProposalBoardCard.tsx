@@ -27,7 +27,7 @@ export default function ProposalBoardCard({ proposal, kind = 'proposal' }: Props
   const Icon = kind === 'quote' ? ReceiptText : FileText;
   const iconBg = kind === 'quote' ? 'bg-amber-50' : 'bg-sky-50';
   const iconColor = kind === 'quote' ? 'text-amber-600' : 'text-sky-600';
-  const typeLabel = kind === 'quote' ? 'Quote' : 'Proposal';
+  const typeLabel = kind === 'quote' ? 'Quote' : 'Pitch';
 
   // Pick the most relevant timestamp + matching icon for the footer meta.
   const meta = (() => {

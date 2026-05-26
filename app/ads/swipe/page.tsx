@@ -29,7 +29,7 @@ function SwipeFileIndexContent() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-6">
       <Bookmark size={32} className="text-faint mb-3" />
-      <h2 className="text-lg font-semibold text-ink mb-1">Swipe File</h2>
+      <h2 className="text-lg font-semibold text-ink mb-1">Swipe Vault</h2>
       <p className="text-sm text-muted max-w-sm">
         {swipe.loading
           ? 'Loading your ad types…'

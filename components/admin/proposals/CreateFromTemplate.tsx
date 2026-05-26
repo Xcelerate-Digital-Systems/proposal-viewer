@@ -377,7 +377,7 @@ export default function CreateFromTemplate({
 
       <form onSubmit={handleCreate} className="space-y-3">
         <FormField
-          config={{ key: 'title', label: 'Proposal Title', required: true, placeholder: 'e.g. Website Redesign for Acme Co.' }}
+          config={{ key: 'title', label: 'Pitch Title', required: true, placeholder: 'e.g. Website Redesign for Acme Co.' }}
           value={title}
           onChange={(v) => setTitle(v)}
         />

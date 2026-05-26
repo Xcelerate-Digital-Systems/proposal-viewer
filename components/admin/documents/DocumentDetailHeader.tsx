@@ -45,7 +45,7 @@ export default function DocumentDetailHeader({
 
   const deleteDocument = async () => {
     const ok = await confirm({
-      title: 'Delete Document',
+      title: 'Delete Doc',
       message: `Delete "${doc.title}"? This will remove the PDF permanently.`,
       confirmLabel: 'Delete',
       destructive: true,
@@ -60,9 +60,9 @@ export default function DocumentDetailHeader({
 
     const { error } = await supabase.from('documents').delete().eq('id', doc.id);
     if (error) {
-      toast.error('Failed to delete document');
+      toast.error('Failed to delete doc');
     } else {
-      toast.success('Document deleted');
+      toast.success('Doc deleted');
       router.push('/documents');
     }
   };

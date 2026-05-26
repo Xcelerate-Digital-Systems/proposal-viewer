@@ -35,7 +35,7 @@ export default function DocumentListCard({ document: doc, onRefresh, customDomai
 
   const handleDelete = async () => {
     const ok = await confirm({
-      title: 'Delete Document',
+      title: 'Delete Doc',
       message: `Delete "${doc.title}"? This will remove the PDF permanently.`,
       confirmLabel: 'Delete',
       destructive: true,
@@ -51,7 +51,7 @@ export default function DocumentListCard({ document: doc, onRefresh, customDomai
     if (error) {
       toast.error('Failed to delete');
     } else {
-      toast.success('Document deleted');
+      toast.success('Doc deleted');
       onRefresh();
     }
   };

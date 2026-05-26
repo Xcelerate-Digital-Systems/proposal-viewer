@@ -87,14 +87,14 @@ export default function ProposalDetailHeader({
       toast.error('Failed to update status');
     } else {
       const label = statusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
-      toast.success(`Proposal marked as ${label}`);
+      toast.success(`Pitch marked as ${label}`);
       onProposalChange?.({ ...proposal, status: newStatus } as Proposal);
     }
   };
 
   const deleteProposal = async () => {
     const ok = await confirm({
-      title: 'Delete Proposal',
+      title: 'Delete Pitch',
       message: `Delete "${proposal.title}"? This cannot be undone.`,
       confirmLabel: 'Delete',
       destructive: true,
@@ -103,9 +103,9 @@ export default function ProposalDetailHeader({
 
     const { error } = await supabase.from('proposals').delete().eq('id', proposal.id);
     if (error) {
-      toast.error('Failed to delete proposal');
+      toast.error('Failed to delete pitch');
     } else {
-      toast.success('Proposal deleted');
+      toast.success('Pitch deleted');
       router.push('/');
     }
   };

@@ -120,7 +120,7 @@ function QuotesContent({ companyId }: { companyId: string }) {
       {/* Header */}
       <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6 flex items-center gap-4">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-semibold text-ink">Quotes</h1>
+          <h1 className="text-2xl font-semibold text-ink">Quote Builder</h1>
           <p className="text-sm text-muted mt-1">
             {quotes.length} quote{quotes.length !== 1 ? 's' : ''}
           </p>

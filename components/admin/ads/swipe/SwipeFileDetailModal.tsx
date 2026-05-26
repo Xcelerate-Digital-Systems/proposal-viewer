@@ -154,7 +154,7 @@ export default function SwipeFileDetailModal({
         onClick={(e) => e.stopPropagation()}
       >
         {readOnly ? (
-          <div className="text-sm font-semibold text-ink">Swipe File</div>
+          <div className="text-sm font-semibold text-ink">Swipe Vault</div>
         ) : (
           <button
             onClick={() => canPrev && onNavigate(currentIndex - 1)}

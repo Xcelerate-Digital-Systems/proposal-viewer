@@ -33,7 +33,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
 
       <div className="px-3 pt-1 pb-2 flex items-center justify-between">
         <span className="text-2xs font-semibold uppercase tracking-wider text-white/30">
-          Swipe File
+          Swipe Vault
         </span>
       </div>
 

@@ -58,7 +58,7 @@ export default function AdminSidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const visibleSections = ALL_SECTIONS.filter(
-    (s) => s.key !== 'feedback' || accountType === 'agency'
+    (s) => s.key !== 'markup' || accountType === 'agency'
   );
 
   const activeSection = getActiveSection(pathname, visibleSections);
@@ -70,7 +70,7 @@ export default function AdminSidebar({
       !activeSection ||
       pathname === '/dashboard' ||
       pathname === '/clients' ||
-      (accountType !== 'agency' && activeSection.key === 'feedback')
+      (accountType !== 'agency' && activeSection.key === 'markup')
     );
 
   const isActive = (href: string) => {

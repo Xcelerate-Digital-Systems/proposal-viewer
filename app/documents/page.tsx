@@ -90,10 +90,10 @@ function DocumentsContent({ companyId }: { companyId: string }) {
       <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6 flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold text-ink">
-            Documents
+            Docs
           </h1>
           <p className="text-sm text-muted mt-1">
-            {documents.length} document{documents.length !== 1 ? 's' : ''}
+            {documents.length} doc{documents.length !== 1 ? 's' : ''}
           </p>
         </div>
 
@@ -129,7 +129,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
             <Search size={16} className="text-faint shrink-0" />
             <input
               type="text"
-              placeholder="Search documents..."
+              placeholder="Search docs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
@@ -142,7 +142,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
             leftIcon={Plus}
             onClick={() => setShowUpload(true)}
           >
-            New Document
+            New Doc
           </Button>
         </div>
       </div>
@@ -166,14 +166,14 @@ function DocumentsContent({ companyId }: { companyId: string }) {
         ) : filtered.length === 0 && searchQuery ? (
           <div className="text-center py-20">
             <Search size={28} className="text-faint mx-auto mb-3" />
-            <p className="text-sm text-muted">No documents matching &ldquo;{searchQuery}&rdquo;</p>
+            <p className="text-sm text-muted">No docs matching &ldquo;{searchQuery}&rdquo;</p>
           </div>
         ) : documents.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
               <FileText size={28} className="text-faint" />
             </div>
-            <h3 className="text-lg font-semibold text-muted mb-1">No documents yet</h3>
+            <h3 className="text-lg font-semibold text-muted mb-1">No docs yet</h3>
             <p className="text-sm text-faint">Upload a PDF to create a shareable document</p>
             <Button
               size="sm"
@@ -181,7 +181,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
               onClick={() => setShowUpload(true)}
               className="mt-4"
             >
-              New Document
+              New Doc
             </Button>
           </div>
         ) : (
@@ -215,7 +215,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
                   </div>
                 )}
                 <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mt-8 mb-3">
-                  All documents · {documents.length}
+                  All docs · {documents.length}
                 </h2>
               </section>
             )}

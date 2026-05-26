@@ -72,7 +72,7 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
   const deleteProposal = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const ok = await confirm({
-      title: 'Delete Proposal',
+      title: 'Delete Pitch',
       message: `Delete "${p.title}"? This cannot be undone.`,
       confirmLabel: 'Delete',
       destructive: true,
@@ -83,7 +83,7 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
     if (error) {
       toast.error('Failed to delete');
     } else {
-      toast.success('Proposal deleted');
+      toast.success('Pitch deleted');
       onRefresh();
     }
   };

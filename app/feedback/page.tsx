@@ -146,7 +146,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
         <div className="flex items-center gap-4 mb-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight text-ink">
-              Feedback
+              Markup
             </h1>
             <p className="text-sm text-muted mt-1">
               {projects.length} project{projects.length !== 1 ? 's' : ''}
@@ -260,11 +260,11 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               <MessageSquareText size={28} className="text-faint" />
             </div>
             <h3 className="text-lg font-semibold text-muted mb-1">
-              {filter === 'active' ? 'No active feedback projects' : `No ${filter} projects`}
+              {filter === 'active' ? 'No active markup projects' : `No ${filter} projects`}
             </h3>
             <p className="text-sm text-faint">
               {filter === 'active'
-                ? 'Create a project to start collecting feedback on your creative work'
+                ? 'Create a project to start collecting markup on your creative work'
                 : 'Projects will appear here when their status changes'}
             </p>
             {filter === 'active' && (

@@ -68,9 +68,9 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
       <div className="border-b border-edge bg-ivory px-6 lg:px-10 py-6">
         <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-faint">Swipe File</p>
+            <p className="text-xs text-faint">Swipe Vault</p>
             <h1 className="text-2xl font-semibold text-ink truncate">
-              {currentType?.name || 'Swipe File'}
+              {currentType?.name || 'Swipe Vault'}
             </h1>
             {currentType?.description && (
               <p className="text-sm text-muted mt-1 whitespace-pre-line">{currentType.description}</p>

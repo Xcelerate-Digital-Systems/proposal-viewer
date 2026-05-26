@@ -29,26 +29,26 @@ export interface SectionDef {
 
 export const ALL_SECTIONS: SectionDef[] = [
   {
-    key: 'proposals',
-    label: 'Proposals',
+    key: 'studio',
+    label: 'Studio',
     icon: FileText,
     defaultHref: '/proposals',
     matchPaths: ['/proposals', '/quotes', '/documents', '/templates', '/template-preview'],
     items: [
-      { href: '/proposals', label: 'Proposals', icon: FileText },
-      { href: '/quotes',    label: 'Quotes',    icon: ReceiptText },
-      { href: '/documents', label: 'Documents', icon: Files },
-      { href: '/templates', label: 'Templates', icon: LayoutTemplate },
+      { href: '/proposals', label: 'Pitch Studio',     icon: FileText },
+      { href: '/quotes',    label: 'Quote Builder',    icon: ReceiptText },
+      { href: '/documents', label: 'Docs',             icon: Files },
+      { href: '/templates', label: 'Template Library', icon: LayoutTemplate },
     ],
   },
   {
-    key: 'feedback',
-    label: 'Feedback',
+    key: 'markup',
+    label: 'Markup',
     icon: MessageSquareText,
     defaultHref: '/feedback',
     matchPaths: ['/feedback'],
     items: [
-      { href: '/feedback', label: 'Projects', icon: MessageSquareText },
+      { href: '/feedback', label: 'Markup', icon: MessageSquareText },
     ],
   },
   {
@@ -58,22 +58,22 @@ export const ALL_SECTIONS: SectionDef[] = [
     defaultHref: '/funnels',
     matchPaths: ['/funnels'],
     items: [
-      { href: '/funnels', label: 'Funnels', icon: Workflow },
+      { href: '/funnels', label: 'Funnel Planner', icon: Workflow },
     ],
   },
   {
     key: 'swipe',
-    label: 'Swipe File',
+    label: 'Swipe Vault',
     icon: Bookmark,
     defaultHref: '/ads/swipe',
     matchPaths: ['/ads/swipe'],
     items: [
-      { href: '/ads/swipe', label: 'Swipe File', icon: Bookmark },
+      { href: '/ads/swipe', label: 'Swipe Vault', icon: Bookmark },
     ],
   },
   {
     key: 'integrations',
-    label: 'Integrations',
+    label: 'Integration Hub',
     icon: Plug,
     defaultHref: '/integrations/looker-studio',
     matchPaths: ['/integrations'],
@@ -84,8 +84,8 @@ export const ALL_SECTIONS: SectionDef[] = [
 ];
 
 export const STANDALONE_ITEMS: NavItem[] = [
-  { href: '/company', label: 'Branding', icon: Palette },
-  { href: '/settings', label: 'Settings', icon: SettingsIcon },
+  { href: '/company', label: 'Brand Kit', icon: Palette },
+  { href: '/settings', label: 'Settings',  icon: SettingsIcon },
 ];
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */

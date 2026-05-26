@@ -65,7 +65,7 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const ok = await confirm({
-      title: 'Delete Feedback Project',
+      title: 'Delete Markup Project',
       message: `Delete "${project.title}"? This will remove all items, comments, and versions permanently.`,
       confirmLabel: 'Delete',
       destructive: true,

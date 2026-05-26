@@ -90,7 +90,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
 
       if (!splitRes.ok) {
         // Non-fatal — page editor falls back gracefully, but warn the user
-        toast.error('Document created but page splitting failed. Try re-uploading.');
+        toast.error('Doc created but page splitting failed. Try re-uploading.');
         setUploading(false);
         onSuccess();
         onClose();
@@ -98,7 +98,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
       }
 
       const splitData = await splitRes.json();
-      toast.success(`Document created with ${splitData.page_count} pages!`);
+      toast.success(`Doc created with ${splitData.page_count} pages!`);
 
       setTimeout(() => {
         onSuccess();

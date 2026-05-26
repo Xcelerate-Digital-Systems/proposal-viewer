@@ -137,10 +137,10 @@ function ProposalsContent({ companyId }: { companyId: string }) {
       <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6 flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold text-ink">
-            Proposals
+            Pitch Studio
           </h1>
           <p className="text-sm text-muted mt-1">
-            {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
+            {proposals.length} pitch{proposals.length !== 1 ? 'es' : ''}
           </p>
         </div>
 
@@ -187,7 +187,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             <Search size={16} className="text-faint shrink-0" />
             <input
               type="text"
-              placeholder="Search proposals..."
+              placeholder="Search pitches..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
@@ -213,7 +213,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                 >
                   <Upload size={15} className="text-gray-400 shrink-0" />
                   <div>
-                    <div className="font-medium">New Proposal</div>
+                    <div className="font-medium">New Pitch</div>
                     <div className="text-xs text-gray-400">Upload a PDF</div>
                   </div>
                 </button>
@@ -223,8 +223,8 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                 >
                   <LayoutTemplate size={15} className="text-gray-400 shrink-0" />
                   <div>
-                    <div className="font-medium">Proposal from Template</div>
-                    <div className="text-xs text-gray-400">Use a proposal template</div>
+                    <div className="font-medium">Pitch from Template</div>
+                    <div className="text-xs text-gray-400">Use a pitch template</div>
                   </div>
                 </button>
               </div>
@@ -250,22 +250,22 @@ function ProposalsContent({ companyId }: { companyId: string }) {
         ) : filtered.length === 0 && searchQuery ? (
           <div className="text-center py-20">
             <Search size={28} className="text-faint mx-auto mb-3" />
-            <p className="text-sm text-muted">No proposals matching &ldquo;{searchQuery}&rdquo;</p>
+            <p className="text-sm text-muted">No pitches matching &ldquo;{searchQuery}&rdquo;</p>
           </div>
         ) : proposals.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
               <FileText size={28} className="text-faint" />
             </div>
-            <h3 className="text-lg font-semibold text-muted mb-1">No proposals yet</h3>
-            <p className="text-sm text-faint">Upload your first proposal to get started</p>
+            <h3 className="text-lg font-semibold text-muted mb-1">No pitches yet</h3>
+            <p className="text-sm text-faint">Upload your first pitch to get started</p>
             <Button
               size="sm"
               leftIcon={Plus}
               onClick={() => openModal('upload')}
               className="mt-4"
             >
-              New Proposal
+              New Pitch
             </Button>
           </div>
         ) : viewMode === 'board' ? (
@@ -280,7 +280,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             }
             renderCard={(p) => <ProposalBoardCard proposal={p} kind="proposal" />}
             onMove={(id, _from, to) => updateProposalStatus(id, to as ProposalStatus)}
-            emptyMessage="Drag a proposal here."
+            emptyMessage="Drag a pitch here."
           />
         ) : (
           <>
@@ -313,7 +313,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                   </div>
                 )}
                 <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mt-8 mb-3">
-                  All proposals · {proposals.length}
+                  All pitches · {proposals.length}
                 </h2>
               </section>
             )}

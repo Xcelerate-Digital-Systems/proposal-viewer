@@ -117,7 +117,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
       <div className="bg-ivory px-6 lg:px-10 py-6 shadow-divider">
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-ink">Funnels</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-ink">Funnel Planner</h1>
             <p className="text-sm text-muted mt-1">
               {liveFunnels.length} funnel{liveFunnels.length !== 1 ? 's' : ''}
               {customTemplates.length > 0 && ` · ${customTemplates.length} template${customTemplates.length !== 1 ? 's' : ''}`}

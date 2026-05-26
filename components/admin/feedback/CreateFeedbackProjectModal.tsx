@@ -71,13 +71,13 @@ export default function CreateFeedbackProjectModal({
       }
     }
 
-    toast.success('Feedback project created');
+    toast.success('Markup project created');
     onSuccess();
     onClose();
   };
 
   return (
-    <Modal open onClose={onClose} title="New Feedback Project" size="lg">
+    <Modal open onClose={onClose} title="New Markup Project" size="lg">
       <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
         <Modal.Body className="space-y-5">
           {/* Title */}

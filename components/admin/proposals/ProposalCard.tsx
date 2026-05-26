@@ -75,7 +75,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
       body: JSON.stringify({ proposal_id: p.id }),
     });
     if (res.ok) {
-      toast.success('Proposal marked as sent');
+      toast.success('Pitch marked as sent');
       onRefresh();
     } else {
       const data = await res.json().catch(() => ({}));
@@ -85,7 +85,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
 
   const deleteProposal = async () => {
     const ok = await confirm({
-      title: 'Delete Proposal',
+      title: 'Delete Pitch',
       message: `Delete "${p.title}"? This will remove the PDF and all associated data permanently.`,
       confirmLabel: 'Delete',
       destructive: true,
@@ -93,7 +93,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
     if (!ok) return;
     await supabase.storage.from('proposals').remove([p.file_path]);
     await supabase.from('proposals').delete().eq('id', p.id);
-    toast.success('Proposal deleted');
+    toast.success('Pitch deleted');
     onRefresh();
   };
 
