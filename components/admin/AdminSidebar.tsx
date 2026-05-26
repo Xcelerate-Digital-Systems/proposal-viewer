@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LogOut, Menu, X, ChevronRight, Building2, ArrowLeft, UserSquare2,
+  LogOut, Menu, X, ChevronRight, Building2, ArrowLeft, UserSquare2, Shield,
 } from 'lucide-react';
 
 import WorkspaceSwitcher from './sidebar/WorkspaceSwitcher';
@@ -159,6 +159,12 @@ export default function AdminSidebar({
       </div>
       <div className="space-y-0.5">
         {showClients && renderNavLink({ href: '/clients', label: 'Clients', icon: UserSquare2 })}
+        {/* Super-admin-only platform entry. Gated by isSuperAdmin which only
+            lights up for the platform owner (single team_members row with
+            is_super_admin=true today). The /accounts page itself + the
+            /api/admin/* endpoints repeat the check server-side so this is
+            purely a navigation affordance, not the access boundary. */}
+        {isSuperAdmin && renderNavLink({ href: '/accounts', label: 'Accounts', icon: Shield })}
         {STANDALONE_ITEMS.map((item) => renderNavLink(item))}
       </div>
     </>
