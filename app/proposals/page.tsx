@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, FileText, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTemplate, KanbanSquare } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import NoResults from '@/components/ui/NoResults';
 import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
@@ -248,26 +250,18 @@ function ProposalsContent({ companyId }: { companyId: string }) {
         {loading ? (
           <EntityListSkeleton viewMode={viewMode === 'board' ? 'grid' : viewMode} />
         ) : filtered.length === 0 && searchQuery ? (
-          <div className="text-center py-20">
-            <Search size={28} className="text-faint mx-auto mb-3" />
-            <p className="text-sm text-muted">No pitches matching &ldquo;{searchQuery}&rdquo;</p>
-          </div>
+          <NoResults message={`No pitches matching “${searchQuery}”`} />
         ) : proposals.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FileText size={28} className="text-faint" />
-            </div>
-            <h3 className="text-lg font-semibold text-muted mb-1">No pitches yet</h3>
-            <p className="text-sm text-faint">Upload your first pitch to get started</p>
-            <Button
-              size="sm"
-              leftIcon={Plus}
-              onClick={() => openModal('upload')}
-              className="mt-4"
-            >
-              New Pitch
-            </Button>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No pitches yet"
+            description="Upload your first pitch to get started."
+            action={
+              <Button size="sm" leftIcon={Plus} onClick={() => openModal('upload')}>
+                New Pitch
+              </Button>
+            }
+          />
         ) : viewMode === 'board' ? (
           <KanbanBoard
             columns={

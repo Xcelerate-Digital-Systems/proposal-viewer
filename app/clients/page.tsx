@@ -6,6 +6,7 @@ import {
   UserSquare2, Plus, LogIn, Users, FileText, Clock, X, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
 import { supabase } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 
@@ -115,21 +116,16 @@ function ClientsContent({
           <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
         </div>
       ) : clients.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <UserSquare2 size={28} className="text-faint" />
-          </div>
-          <h3 className="text-lg font-semibold text-muted mb-1">No clients yet</h3>
-          <p className="text-sm text-faint mb-6">
-            Create your first client account to get started.
-          </p>
-          <Button
-            leftIcon={Plus}
-            onClick={() => setShowCreate(true)}
-          >
-            New Client
-          </Button>
-        </div>
+        <EmptyState
+          icon={UserSquare2}
+          title="No clients yet"
+          description="Create your first client account to get started."
+          action={
+            <Button leftIcon={Plus} onClick={() => setShowCreate(true)}>
+              New Client
+            </Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {clients.map((client) => (

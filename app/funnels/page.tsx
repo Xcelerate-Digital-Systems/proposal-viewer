@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
 import { supabase, type Funnel } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -162,21 +163,16 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
             <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
           </div>
         ) : funnels.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Workflow size={28} className="text-faint" />
-            </div>
-            <h3 className="text-lg font-semibold text-muted mb-1">No funnels yet</h3>
-            <p className="text-sm text-faint">Create a funnel to map out a client&apos;s journey visually.</p>
-            <Button
-              size="sm"
-              leftIcon={Plus}
-              onClick={() => setShowCreate(true)}
-              className="mt-4"
-            >
-              New Funnel
-            </Button>
-          </div>
+          <EmptyState
+            icon={Workflow}
+            title="No funnels yet"
+            description="Create a funnel to map out a client's journey visually."
+            action={
+              <Button size="sm" leftIcon={Plus} onClick={() => setShowCreate(true)}>
+                New Funnel
+              </Button>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((f) => (

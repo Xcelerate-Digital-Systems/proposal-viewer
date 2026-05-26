@@ -9,6 +9,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, FileText, Upload, LayoutGrid, List, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import NoResults from '@/components/ui/NoResults';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -357,31 +359,22 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             onDelete={deletePackageTemplate}
           />
         ) : filteredProposalTemplates.length === 0 && searchQuery ? (
-          <div className="text-center py-20">
-            <Search size={28} className="text-faint mx-auto mb-3" />
-            <p className="text-sm text-muted">No templates matching &ldquo;{searchQuery}&rdquo;</p>
-          </div>
+          <NoResults message={`No templates matching “${searchQuery}”`} />
         ) : scoped.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FileText size={28} className="text-faint" />
-            </div>
-            <h3 className="text-lg font-semibold text-muted mb-1">
-              No {activeTab === 'quote' ? 'quote' : 'proposal'} templates yet
-            </h3>
-            <p className="text-sm text-faint mb-4">
-              {activeTab === 'quote'
+          <EmptyState
+            icon={FileText}
+            title={`No ${activeTab === 'quote' ? 'quote' : 'proposal'} templates yet`}
+            description={
+              activeTab === 'quote'
                 ? 'Save a quote as a template, or upload a PDF to start one.'
-                : 'Upload a PDF to create your first template.'}
-            </p>
-            <Button
-              size="sm"
-              leftIcon={Upload}
-              onClick={() => setShowUpload(true)}
-            >
-              New Template
-            </Button>
-          </div>
+                : 'Upload a PDF to create your first template.'
+            }
+            action={
+              <Button size="sm" leftIcon={Upload} onClick={() => setShowUpload(true)}>
+                New Template
+              </Button>
+            }
+          />
         ) : (
           <>
             {showRecent && (
@@ -458,25 +451,15 @@ function LineItemTemplatesView({
   onDelete: (t: LineItemTemplateRow) => void;
 }) {
   if (templates.length === 0 && searchQuery) {
-    return (
-      <div className="text-center py-20">
-        <Search size={28} className="text-faint mx-auto mb-3" />
-        <p className="text-sm text-muted">No line-item templates matching &ldquo;{searchQuery}&rdquo;</p>
-      </div>
-    );
+    return <NoResults message={`No line-item templates matching “${searchQuery}”`} />;
   }
   if (allCount === 0) {
     return (
-      <div className="text-center py-20">
-        <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <FileText size={28} className="text-faint" />
-        </div>
-        <h3 className="text-lg font-semibold text-muted mb-1">No line-item templates yet</h3>
-        <p className="text-sm text-faint max-w-md mx-auto">
-          Inside any quote&rsquo;s line items, click &ldquo;Save as Template&rdquo; to save the
-          current item set to your library. It will show up here.
-        </p>
-      </div>
+      <EmptyState
+        icon={FileText}
+        title="No line-item templates yet"
+        description="Inside any quote's line items, click “Save as Template” to save the current item set to your library. It will show up here."
+      />
     );
   }
   return (

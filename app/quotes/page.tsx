@@ -7,6 +7,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, ReceiptText, LayoutGrid, List, Search, ChevronDown, LayoutTemplate, KanbanSquare } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import NoResults from '@/components/ui/NoResults';
 import { supabase, type Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
@@ -221,26 +223,18 @@ function QuotesContent({ companyId }: { companyId: string }) {
         {loading ? (
           <EntityListSkeleton viewMode={viewMode === 'board' ? 'grid' : viewMode} />
         ) : filtered.length === 0 && searchQuery ? (
-          <div className="text-center py-20">
-            <Search size={28} className="text-faint mx-auto mb-3" />
-            <p className="text-sm text-muted">No quotes matching &ldquo;{searchQuery}&rdquo;</p>
-          </div>
+          <NoResults message={`No quotes matching “${searchQuery}”`} />
         ) : quotes.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <ReceiptText size={28} className="text-faint" />
-            </div>
-            <h3 className="text-lg font-semibold text-muted mb-1">No quotes yet</h3>
-            <p className="text-sm text-faint">Send your first quote in a few minutes.</p>
-            <Button
-              size="sm"
-              leftIcon={Plus}
-              onClick={() => openModal('quote')}
-              className="mt-4"
-            >
-              New Quote
-            </Button>
-          </div>
+          <EmptyState
+            icon={ReceiptText}
+            title="No quotes yet"
+            description="Send your first quote in a few minutes."
+            action={
+              <Button size="sm" leftIcon={Plus} onClick={() => openModal('quote')}>
+                New Quote
+              </Button>
+            }
+          />
         ) : viewMode === 'board' ? (
           <KanbanBoard
             columns={

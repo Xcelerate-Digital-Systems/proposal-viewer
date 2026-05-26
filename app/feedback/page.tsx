@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, ExternalLink, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import NoResults from '@/components/ui/NoResults';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import type { FeedbackStatus } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -250,34 +252,24 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 && searchQuery ? (
-          <div className="text-center py-20">
-            <Search size={28} className="text-faint mx-auto mb-3" />
-            <p className="text-sm text-muted">No projects matching &ldquo;{searchQuery}&rdquo;</p>
-          </div>
+          <NoResults message={`No projects matching “${searchQuery}”`} />
         ) : projects.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <MessageSquareText size={28} className="text-faint" />
-            </div>
-            <h3 className="text-lg font-semibold text-muted mb-1">
-              {filter === 'active' ? 'No active markup projects' : `No ${filter} projects`}
-            </h3>
-            <p className="text-sm text-faint">
-              {filter === 'active'
-                ? 'Create a project to start collecting markup on your creative work'
-                : 'Projects will appear here when their status changes'}
-            </p>
-            {filter === 'active' && (
-              <Button
-                size="sm"
-                leftIcon={Plus}
-                onClick={() => setShowCreate(true)}
-                className="mt-4"
-              >
-                New Project
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            icon={MessageSquareText}
+            title={filter === 'active' ? 'No active markup projects' : `No ${filter} projects`}
+            description={
+              filter === 'active'
+                ? 'Create a project to start collecting markup on your creative work.'
+                : 'Projects will appear here when their status changes.'
+            }
+            action={
+              filter === 'active' ? (
+                <Button size="sm" leftIcon={Plus} onClick={() => setShowCreate(true)}>
+                  New Project
+                </Button>
+              ) : undefined
+            }
+          />
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((project) => (
