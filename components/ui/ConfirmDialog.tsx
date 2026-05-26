@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { Button } from './Button';
 
 interface ConfirmOptions {
   title?: string;
@@ -73,22 +74,16 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={handleCancel}>
                 {state.options.cancelLabel || 'Cancel'}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant={state.options.destructive ? 'danger' : 'primary'}
+                size="sm"
                 onClick={handleConfirm}
-                className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors ${
-                  state.options.destructive
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-teal hover:bg-[#01434A]'
-                }`}
               >
                 {state.options.confirmLabel || 'Confirm'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Upload, FileText, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
+import { Button } from '@/components/ui/Button';
 import { authedFetch } from '@/lib/api-fetch';
 import CreateFromTemplate from './CreateFromTemplate';
 
@@ -179,9 +180,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
           <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-gray-900">
             {modalTitles[mode]}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={20} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
 
         {/* Content — no tabs, just the right form */}
@@ -234,13 +233,9 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={uploading || !file}
-              className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploading ? 'Creating proposal...' : 'Create Proposal'}
-            </button>
+            <Button type="submit" fullWidth loading={uploading} disabled={!file}>
+              Create Proposal
+            </Button>
           </form>
         )}
 
@@ -309,13 +304,14 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
               />
             </div>
-            <button
+            <Button
               type="submit"
-              disabled={uploading || !quoteForm.title || !quoteForm.client_name}
-              className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              fullWidth
+              loading={uploading}
+              disabled={!quoteForm.title || !quoteForm.client_name}
             >
-              {uploading ? 'Creating quote...' : 'Create Quote'}
-            </button>
+              Create Quote
+            </Button>
           </form>
         )}
 

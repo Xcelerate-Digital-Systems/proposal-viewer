@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, ClipboardList, RectangleHorizontal, type LucideIcon } from 'lucide-react';
 import { type FeedbackItemType } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
 import { useFeedbackItemSubmit, type CreatedItemSummary } from './feedback-item-forms/useFeedbackItemSubmit';
 import ImageItemForm from './feedback-item-forms/ImageItemForm';
 import AdItemForm from './feedback-item-forms/AdItemForm';
@@ -107,12 +108,7 @@ export default function AddFeedbackItemModal({
           <h2 className="text-lg font-semibold tracking-tight text-ink font-[family-name:var(--font-display)]">
             {step === 'type' ? 'Add Item' : (TITLES[itemType] || 'New Item')}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
 
         {/* Step 1: Choose type */}

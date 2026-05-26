@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
 
 interface CreateReviewProjectModalProps {
   companyId: string;
@@ -87,12 +88,14 @@ export default function CreateFeedbackProjectModal({
           <h2 className="text-lg font-semibold tracking-tight text-ink font-[family-name:var(--font-display)]">
             New Feedback Project
           </h2>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            leftIcon={X}
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <X size={18} />
-          </button>
+            aria-label="Close"
+          />
         </div>
 
         {/* Form */}
@@ -173,20 +176,17 @@ export default function CreateFeedbackProjectModal({
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={!title.trim() || saving}
-              className="px-5 py-2 bg-teal text-white text-sm font-semibold rounded-full hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              size="sm"
+              loading={saving}
+              disabled={!title.trim()}
             >
-              {saving ? 'Creating…' : 'Create Project'}
-            </button>
+              Create Project
+            </Button>
           </div>
         </form>
       </div>

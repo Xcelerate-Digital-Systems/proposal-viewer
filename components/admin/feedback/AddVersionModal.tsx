@@ -5,6 +5,7 @@ import { X, Upload, Loader2, Plus, Trash2, Type, AlignLeft, Copy, ChevronDown, M
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
 import { type MetaAdVariant, getMetaAdVariants } from '@/lib/types/feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -362,7 +363,7 @@ export default function AddVersionModal({
             </h3>
             <p className="text-[12px] text-gray-500 mt-0.5 truncate max-w-[360px]">{item.title}</p>
           </div>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
 
         <div className="p-5 space-y-4">
@@ -625,21 +626,12 @@ export default function AddVersionModal({
         </div>
 
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100">
-          <button
-            onClick={onClose}
-            disabled={busy}
-            className="px-3 py-1.5 text-[13px] text-gray-600 hover:bg-gray-50 rounded-full disabled:opacity-50"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={busy}
-            className="inline-flex items-center gap-2 px-4 py-1.5 bg-teal text-white text-[13px] font-semibold rounded-full hover:bg-teal-hover disabled:opacity-60 transition-colors shadow-sm"
-          >
-            {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-            {busy ? 'Saving…' : isEditing ? 'Save Changes' : 'Save Version'}
-          </button>
+          </Button>
+          <Button size="sm" loading={busy} leftIcon={Upload} onClick={handleSubmit}>
+            {isEditing ? 'Save Changes' : 'Save Version'}
+          </Button>
         </div>
       </div>
     </div>

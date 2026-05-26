@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Check, X, Clock, Loader2, Link2, Send } from 'lucide-react';
 import { useInvites, CompanyInvite } from '@/hooks/useInvites';
+import { Button } from '@/components/ui/Button';
 
 interface InviteManagerProps {
   companyId?: string;
@@ -136,18 +137,9 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
             <p className="text-xs text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">{success}</p>
           )}
 
-          <button
-            type="submit"
-            disabled={sending}
-            className="flex items-center gap-2 px-4 py-2 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover disabled:opacity-50 transition-colors"
-          >
-            {sending ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <UserPlus size={14} />
-            )}
+          <Button type="submit" loading={sending} leftIcon={UserPlus} size="sm">
             Send Invite
-          </button>
+          </Button>
         </form>
 
         <p className="text-xs text-faint mt-3">

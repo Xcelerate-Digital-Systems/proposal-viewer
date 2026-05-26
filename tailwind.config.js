@@ -35,6 +35,23 @@ module.exports = {
           hover: '#016670',
           tint: '#E6F5F3',
         },
+        // Semantic brand tokens — prefer these in new code.
+        // `teal.*` above is kept as an alias for the ~thousands of existing
+        // usages; new components should use the semantic names below so we
+        // can re-skin the brand in one place later.
+        primary: {
+          DEFAULT: '#017C87',  // saturated teal — CTAs, links, focus rings, active states on light surfaces
+          hover: '#016670',
+          tint: '#E6F5F3',     // pale wash — selected-row bg, hover bg on light
+        },
+        // Dark-surface palette — the cluster the sidebar lives in. Use for
+        // any dark-on-teal UI chrome (sidebar, dark modals, toolbars).
+        'surface-dark': {
+          DEFAULT: '#043946',  // primary dark surface (sidebar bg)
+          border: '#01434A',   // dividers/borders on dark surface
+          hover: '#013036',    // hover bg on dark surface
+          accent: '#8AD9D1',   // bright text/icon accent on dark surface
+        },
       },
       boxShadow: {
         sketch: '2px 3px 0 0 rgba(0,0,0,0.08)',

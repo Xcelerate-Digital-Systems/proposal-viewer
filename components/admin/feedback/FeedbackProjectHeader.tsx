@@ -10,6 +10,7 @@ import { buildReviewProjectUrl } from '@/lib/proposal-url';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import { DEFAULT_SHARED_VIEWS } from '@/lib/types/feedback';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
 
 interface Props {
   projectId: string;
@@ -117,13 +118,9 @@ export default function FeedbackProjectHeader({
           />
 
           {onAddItem && (
-            <button
-              onClick={onAddItem}
-              className="flex items-center gap-2 bg-teal text-white px-4 py-1.5 rounded-full text-[13px] font-semibold hover:bg-teal-hover transition-colors shadow-sm"
-            >
-              <Plus size={15} />
+            <Button size="sm" leftIcon={Plus} onClick={onAddItem}>
               Add Item
-            </button>
+            </Button>
           )}
         </div>
       </div>

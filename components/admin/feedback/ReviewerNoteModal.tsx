@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
 
 interface ReviewerNoteModalProps {
   projectId: string;
@@ -85,12 +86,7 @@ export default function ReviewerNoteModal({
               Add details and any other important information reviewers may need to complete their feedback.
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
 
         <div className="px-6 pb-4">
@@ -114,19 +110,12 @@ export default function ReviewerNoteModal({
         </div>
 
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 rounded-full hover:bg-white transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!dirty || saving}
-            className="px-5 py-1.5 rounded-full bg-teal text-white text-sm font-semibold hover:bg-teal-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
-          >
-            {saving ? 'Saving…' : 'Save note'}
-          </button>
+          </Button>
+          <Button size="sm" loading={saving} disabled={!dirty} onClick={handleSave}>
+            Save note
+          </Button>
         </div>
       </div>
     </div>

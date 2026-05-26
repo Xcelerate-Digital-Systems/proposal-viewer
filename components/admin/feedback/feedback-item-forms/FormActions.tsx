@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface FormActionsProps {
   onBack: () => void;
@@ -50,20 +51,12 @@ export default function FormActions({
         )}
       </div>
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
-        >
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={disabled}
-          className="px-5 py-2 bg-teal text-white text-sm font-semibold rounded-full hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-        >
-          {uploading ? 'Saving…' : (submitLabel || 'Add Item')}
-        </button>
+        </Button>
+        <Button type="submit" size="sm" loading={uploading} disabled={disabled}>
+          {submitLabel || 'Add Item'}
+        </Button>
       </div>
     </div>
   );
