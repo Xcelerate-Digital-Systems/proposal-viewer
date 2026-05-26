@@ -91,7 +91,15 @@ export default function AdMockupPreview({
   const brand = accentColor || '#017C87';
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full">
+    // max-w-[500px] matches the FB feed mockup card (Instagram is 468px so it
+    // stays comfortably inside). Pinning the whole column to one width means
+    // the variant pill row can't reflow when the comments panel opens — and
+    // therefore the container's total height stays constant between when we
+    // measure the click position (%) and when the pin is rendered. Without
+    // this, opening the panel grew the variant row, pushed the creative down,
+    // and the cached pct% no longer pointed at the image (pin landed in the
+    // copy above it — that's what the reviewer saw as "scrolling to the copy").
+    <div className="flex flex-col items-center gap-3 w-full max-w-[500px] mx-auto">
       {showSidebar && (
         <div className="flex flex-col items-center gap-2 w-full mb-4">
           <p
