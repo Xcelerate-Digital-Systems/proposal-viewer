@@ -250,7 +250,7 @@ function FontSelect({
                     >
                       {font.family}
                     </span>
-                    <span className="text-[10px] text-edge-hover uppercase tracking-wider">
+                    <span className="text-2xs text-edge-hover uppercase tracking-wider">
                       {font.category}
                     </span>
                   </button>

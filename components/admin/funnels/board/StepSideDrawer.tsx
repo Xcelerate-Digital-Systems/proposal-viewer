@@ -105,7 +105,7 @@ export default function StepSideDrawer({
           >
             <StepIcon slug={step.icon || defaults.icon} size={16} />
           </div>
-          <span className="text-[12px] font-semibold text-ink truncate">{step.label || defaults.label}</span>
+          <span className="text-xs font-semibold text-ink truncate">{step.label || defaults.label}</span>
         </div>
         <button
           onClick={onClose}
@@ -163,7 +163,7 @@ export default function StepSideDrawer({
 
         {/* Metrics — fields scoped to the step type */}
         <div>
-          <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Metrics</h4>
+          <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Metrics</h4>
           <div className="space-y-2">
             {showVisitors && (
               <MetricInput
@@ -212,7 +212,7 @@ export default function StepSideDrawer({
             )}
           </div>
           {isRecurring && (
-            <p className="text-[10px] text-muted mt-2 leading-snug">
+            <p className="text-2xs text-muted mt-2 leading-snug">
               For subscriptions, the forecast multiplies the per-conversion value
               by recurring months to model LTV.
             </p>
@@ -221,11 +221,11 @@ export default function StepSideDrawer({
 
         {/* Icon picker */}
         <div>
-          <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Icon</h4>
+          <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Icon</h4>
           <div className="space-y-3">
             {visibleIconGroups.map((group) => (
               <div key={group.group}>
-                <div className="text-[10px] text-muted mb-1.5">{group.group}</div>
+                <div className="text-2xs text-muted mb-1.5">{group.group}</div>
                 <div className="grid grid-cols-8 gap-1">
                   {group.icons.map((slug) => {
                     const active = (step.icon || defaults.icon) === slug;
@@ -254,12 +254,12 @@ export default function StepSideDrawer({
 
         {/* Color picker */}
         <div>
-          <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Color</h4>
+          <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Color</h4>
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={resetColor}
-              className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-[9px] uppercase ${
+              className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-2xs uppercase ${
                 step.color == null ? 'border-teal' : 'border-edge'
               }`}
               style={{ backgroundColor: defaults.tint, color: 'white' }}
@@ -305,7 +305,7 @@ export default function StepSideDrawer({
         <button
           type="button"
           onClick={onDelete}
-          className="w-full flex items-center justify-center gap-1.5 text-[12px] text-rose-600 hover:text-white hover:bg-rose-500 border border-rose-200 hover:border-rose-500 rounded-md py-1.5 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 text-xs text-rose-600 hover:text-white hover:bg-rose-500 border border-rose-200 hover:border-rose-500 rounded-md py-1.5 transition-colors"
         >
           <Trash2 size={12} />
           Delete step
@@ -318,7 +318,7 @@ export default function StepSideDrawer({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</label>
+      <label className="block text-2xs uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</label>
       {children}
     </div>
   );
@@ -328,8 +328,8 @@ function Stat({ label, value, tone = 'neutral' }: { label: string; value: string
   const toneCls = tone === 'positive' ? 'text-emerald-600' : tone === 'negative' ? 'text-rose-600' : 'text-ink';
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-muted">{label}</div>
-      <div className={`text-[14px] font-semibold ${toneCls}`}>{value}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
+      <div className={`text-sm font-semibold ${toneCls}`}>{value}</div>
     </div>
   );
 }
@@ -352,7 +352,7 @@ function MetricInput({
     <div className="flex items-center gap-2">
       <label className="text-[11px] text-muted w-[110px] shrink-0">{label}</label>
       <div className="flex-1 flex items-center bg-white border border-edge rounded-md focus-within:border-teal transition-colors">
-        {prefix && <span className="text-[12px] text-muted pl-2">{prefix}</span>}
+        {prefix && <span className="text-xs text-muted pl-2">{prefix}</span>}
         <input
           type="number"
           inputMode="decimal"
@@ -366,7 +366,7 @@ function MetricInput({
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
           className="flex-1 px-2 py-1.5 text-[13px] bg-transparent outline-none w-full"
         />
-        {suffix && <span className="text-[12px] text-muted pr-2">{suffix}</span>}
+        {suffix && <span className="text-xs text-muted pr-2">{suffix}</span>}
       </div>
     </div>
   );

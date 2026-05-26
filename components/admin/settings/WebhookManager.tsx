@@ -47,7 +47,7 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
           {/* Proposal webhooks */}
           <div className="space-y-3">
             <div className="mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-faint px-1">
+              <span className="text-2xs font-semibold uppercase tracking-wider text-faint px-1">
                 Proposal Events
               </span>
             </div>
@@ -69,10 +69,10 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
           {isSuperAdmin && (
             <div className="space-y-3">
               <div className="mb-1 flex items-center gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-faint px-1">
+                <span className="text-2xs font-semibold uppercase tracking-wider text-faint px-1">
                   Feedback Events
                 </span>
-                <span className="text-[9px] font-semibold uppercase tracking-wider bg-teal/10 text-teal px-1.5 py-0.5 rounded">
+                <span className="text-2xs font-semibold uppercase tracking-wider bg-teal/10 text-teal px-1.5 py-0.5 rounded">
                   Feedback
                 </span>
               </div>

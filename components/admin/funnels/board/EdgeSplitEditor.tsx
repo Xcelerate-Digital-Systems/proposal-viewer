@@ -47,7 +47,7 @@ export default function EdgeSplitEditor({ edge, siblings, flowThrough, onUpdate 
           onChange={(e) => setLocal(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-          className="w-16 px-2 py-1 text-[12px] bg-transparent outline-none"
+          className="w-16 px-2 py-1 text-xs bg-transparent outline-none"
         />
         <span className="text-[11px] text-muted pr-2">%</span>
       </div>
@@ -57,7 +57,7 @@ export default function EdgeSplitEditor({ edge, siblings, flowThrough, onUpdate 
         </span>
       )}
       {siblings.length > 0 && remaining > 0 && (
-        <span className="text-[10px] text-muted">{remaining.toFixed(0)}% remaining</span>
+        <span className="text-2xs text-muted">{remaining.toFixed(0)}% remaining</span>
       )}
     </div>
   );

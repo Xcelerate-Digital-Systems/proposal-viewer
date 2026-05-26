@@ -204,7 +204,7 @@ export default function FeedbackHeaderBar({
             <button
               onClick={() => onGoToItem(currentIdx - 1)}
               disabled={currentIdx <= 0}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
                 headerBranded ? '' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
               }`}
               style={
@@ -227,7 +227,7 @@ export default function FeedbackHeaderBar({
             <button
               onClick={() => onGoToItem(currentIdx + 1)}
               disabled={currentIdx >= filteredItems.length - 1}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
                 headerBranded ? '' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
               }`}
               style={
@@ -297,7 +297,7 @@ export default function FeedbackHeaderBar({
             <button
               type="button"
               onClick={() => onReviewModeChange('comment')}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors"
               style={
                 reviewMode === 'comment'
                   ? { backgroundColor: `${sidebarText}26`, color: sidebarText }
@@ -310,7 +310,7 @@ export default function FeedbackHeaderBar({
             <button
               type="button"
               onClick={() => onReviewModeChange('browse')}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors"
               style={
                 reviewMode === 'browse'
                   ? { backgroundColor: `${sidebarText}26`, color: sidebarText }
@@ -335,14 +335,14 @@ export default function FeedbackHeaderBar({
 
         {hasFinishHandler &&
           (reviewSubmitted ? (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[12px] font-semibold shrink-0">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold shrink-0">
               Review submitted
             </span>
           ) : (
             <button
               type="button"
               onClick={onOpenFinishModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[12px] font-semibold hover:brightness-110 transition-all shadow-sm shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold hover:brightness-110 transition-all shadow-sm shrink-0"
               style={{ backgroundColor: branding?.accent_color || '#017C87' }}
             >
               Finish reviewing

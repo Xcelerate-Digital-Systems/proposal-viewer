@@ -76,7 +76,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
       <div className="bg-ivory px-6 py-3 border-b border-edge flex items-center gap-3">
         <button
           onClick={() => router.push('/funnels')}
-          className="flex items-center gap-1.5 text-[12px] text-muted hover:text-ink transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors"
         >
           <ArrowLeft size={14} />
           Funnels
@@ -93,12 +93,12 @@ function BoardContent({ funnelId }: { funnelId: string }) {
                 if (e.key === 'Enter') saveName();
                 if (e.key === 'Escape') setEditingName(false);
               }}
-              className="text-[14px] font-semibold text-ink bg-white border border-edge rounded px-2 py-0.5 outline-none focus:border-teal"
+              className="text-sm font-semibold text-ink bg-white border border-edge rounded px-2 py-0.5 outline-none focus:border-teal"
             />
           ) : (
             <button
               onClick={() => { setNameDraft(funnel.name); setEditingName(true); }}
-              className="text-[14px] font-semibold text-ink hover:bg-surface px-2 py-0.5 rounded transition-colors"
+              className="text-sm font-semibold text-ink hover:bg-surface px-2 py-0.5 rounded transition-colors"
               title="Rename"
             >
               {funnel.name}
@@ -127,7 +127,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
               />
               <button
                 onClick={saveAsTemplate}
-                className="flex items-center gap-1.5 text-[12px] text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"
+                className="flex items-center gap-1.5 text-xs text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"
                 title="Save this funnel as a reusable template"
               >
                 {funnel.is_template ? <Bookmark size={12} className="text-teal" /> : <BookmarkPlus size={12} />}
@@ -135,7 +135,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
               </button>
               <button
                 onClick={copyShareLink}
-                className="flex items-center gap-1.5 text-[12px] text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"
+                className="flex items-center gap-1.5 text-xs text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"
               >
                 <Copy size={12} />
                 Share link
@@ -144,7 +144,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
                 href={`/funnel/${funnel.share_token}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[12px] text-white bg-teal hover:bg-teal-hover px-3 py-1.5 rounded-full transition-colors"
+                className="flex items-center gap-1.5 text-xs text-white bg-teal hover:bg-teal-hover px-3 py-1.5 rounded-full transition-colors"
               >
                 <ExternalLink size={12} />
                 Preview

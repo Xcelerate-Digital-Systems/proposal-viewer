@@ -171,7 +171,7 @@ export function CommentBadge({ count, unresolved }: { count: number; unresolved:
   if (count === 0) return null;
   return (
     <div
-      className={`absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-white ${
+      className={`absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-2xs font-bold border-2 border-white ${
         unresolved > 0 ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-600'
       }`}
     >
@@ -183,7 +183,7 @@ export function CommentBadge({ count, unresolved }: { count: number; unresolved:
 export function StatusPill({ status }: { status: FeedbackStatus }) {
   const s = getFeedbackStatusDef(status);
   return (
-    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${s.bg} ${s.text}`}>
+    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium ${s.bg} ${s.text}`}>
       {s.icon}
       {s.label}
     </div>
@@ -254,7 +254,7 @@ export function StatusPicker({ status, onChange, variant = 'pill' }: StatusPicke
           e.stopPropagation();
           if (!readOnly) setOpen((o) => !o);
         }}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${current.bg} ${current.text} ${current.border} ${
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border ${current.bg} ${current.text} ${current.border} ${
           readOnly ? 'cursor-default' : 'hover:brightness-95 cursor-pointer'
         }`}
         type="button"
@@ -292,7 +292,7 @@ function StatusDropdown({
         <button
           key={opt.value}
           onClick={() => onPick(opt.value)}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left hover:bg-surface transition-colors ${
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-surface transition-colors ${
             opt.value === currentValue ? 'bg-surface' : ''
           }`}
           type="button"
@@ -361,7 +361,7 @@ export function CardShell({
 
             {/* Version badge only — type badge moved below */}
             {item.version > 1 && (
-              <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/95 text-[10px] font-medium text-ink border border-edge">
+              <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/95 text-2xs font-medium text-ink border border-edge">
                 v{item.version}
               </span>
             )}
@@ -369,7 +369,7 @@ export function CardShell({
 
           {/* Type badge + title */}
           <div className="flex items-center gap-1.5">
-            <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface text-[10px] font-medium text-ink/70 border border-edge">
+            <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface text-2xs font-medium text-ink/70 border border-edge">
               {typeIcon}
               {typeLabel}
             </span>
@@ -471,7 +471,7 @@ export function IconShell({
               <Eye size={13} />
               View
             </span>
-            <span className="text-[9px] uppercase tracking-wider text-white/80">{label}</span>
+            <span className="text-2xs uppercase tracking-wider text-white/80">{label}</span>
           </button>
         </div>
 

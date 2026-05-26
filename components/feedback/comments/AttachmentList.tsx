@@ -40,7 +40,7 @@ export default function AttachmentList({ attachments, size = 'md' }: AttachmentL
             className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 hover:border-teal/40 transition-colors"
           >
             <FileText size={10} className="text-gray-400 shrink-0" />
-            <span className={`text-[10px] text-gray-600 truncate ${fileNameMax}`}>{a.name}</span>
+            <span className={`text-2xs text-gray-600 truncate ${fileNameMax}`}>{a.name}</span>
             <ExternalLink size={8} className="text-gray-300 shrink-0" />
           </a>
         );

@@ -171,7 +171,7 @@ export default function AttachFilesModal({
                   >
                     <X size={10} />
                   </button>
-                  <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-white text-center truncate px-1 py-0.5">
+                  <span className="absolute bottom-0 inset-x-0 bg-black/60 text-2xs text-white text-center truncate px-1 py-0.5">
                     {f.file.name}
                   </span>
                 </div>

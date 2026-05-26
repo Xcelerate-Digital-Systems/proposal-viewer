@@ -333,7 +333,7 @@ export default function FontSelect({
                     >
                       {font.family}
                     </span>
-                    <span className="text-[10px] text-gray-300 uppercase tracking-wider">
+                    <span className="text-2xs text-gray-300 uppercase tracking-wider">
                       {font.category}
                     </span>
                   </button>

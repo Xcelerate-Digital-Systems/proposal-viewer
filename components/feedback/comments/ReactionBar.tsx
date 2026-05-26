@@ -60,7 +60,7 @@ export default function ReactionBar({
             key={emoji}
             onClick={() => handleToggle(emoji)}
             disabled={toggling === emoji}
-            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] border transition-colors ${
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-2xs border transition-colors ${
               active
                 ? 'bg-teal/10 border-teal/30 text-teal'
                 : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300'

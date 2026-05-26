@@ -120,12 +120,12 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
             placeholder="https://youtube.com/watch?v=… or https://vimeo.com/…"
             className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
           />
-          <p className="text-[10px] text-gray-400 mt-1">YouTube, Vimeo, or direct video URL</p>
+          <p className="text-2xs text-gray-400 mt-1">YouTube, Vimeo, or direct video URL</p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-gray-200" />
-          <span className="text-[10px] text-gray-400 uppercase tracking-wider">or upload</span>
+          <span className="text-2xs text-gray-400 uppercase tracking-wider">or upload</span>
           <div className="h-px flex-1 bg-gray-200" />
         </div>
 
@@ -138,7 +138,7 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
             <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-gray-900 truncate">{file.name}</p>
-                <p className="text-[10px] text-gray-400">{(file.size / (1024 * 1024)).toFixed(1)}MB</p>
+                <p className="text-2xs text-gray-400">{(file.size / (1024 * 1024)).toFixed(1)}MB</p>
               </div>
               <button type="button" onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
                 <X size={14} className="text-gray-400 hover:text-red-500" />
@@ -152,7 +152,7 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
             >
               <Upload size={20} className="mx-auto mb-1.5 text-gray-400" />
               <p className="text-xs font-medium text-gray-600">Upload video</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">MP4, MOV, WEBM up to 100MB</p>
+              <p className="text-2xs text-gray-400 mt-0.5">MP4, MOV, WEBM up to 100MB</p>
             </button>
           )}
         </div>
@@ -180,7 +180,7 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
               className="w-full border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:border-teal hover:bg-teal/5 transition-colors"
             >
               <Upload size={16} className="mx-auto mb-1 text-gray-400" />
-              <p className="text-[10px] text-gray-500">Upload thumbnail image</p>
+              <p className="text-2xs text-gray-500">Upload thumbnail image</p>
             </button>
           )}
         </div>

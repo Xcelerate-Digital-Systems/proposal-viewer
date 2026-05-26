@@ -27,7 +27,7 @@ export default function NotificationSection({
       <div className="px-4 py-3 border-b border-edge flex items-center gap-2">
         <span className="text-sm font-semibold text-ink">{title}</span>
         {accentLabel && (
-          <span className="text-[9px] font-semibold uppercase tracking-wider bg-teal/10 text-teal px-1.5 py-0.5 rounded">
+          <span className="text-2xs font-semibold uppercase tracking-wider bg-teal/10 text-teal px-1.5 py-0.5 rounded">
             {accentLabel}
           </span>
         )}

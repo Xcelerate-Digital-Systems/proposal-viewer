@@ -339,7 +339,7 @@ function Section({
 function CharCount({ value, limit, required }: { value: string; limit: number; required?: boolean }) {
   const over = value.length > limit;
   return (
-    <p className={`text-[10px] mt-0.5 text-right ${over ? 'text-red-500' : 'text-gray-400'}`}>
+    <p className={`text-2xs mt-0.5 text-right ${over ? 'text-red-500' : 'text-gray-400'}`}>
       {value.length}/{limit}{required ? ' · required' : ''}
     </p>
   );

@@ -90,12 +90,12 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
       <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 text-white text-[10px] font-semibold"
+            className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 text-white text-2xs font-semibold"
             style={{ backgroundColor: shape.color || '#2B2B2B' }}
           >
             {typeLabel.charAt(0)}
           </div>
-          <span className="text-[12px] font-semibold text-ink truncate">{typeLabel}</span>
+          <span className="text-xs font-semibold text-ink truncate">{typeLabel}</span>
         </div>
         <button
           onClick={onClose}
@@ -129,7 +129,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
         </Field>
 
         <div>
-          <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Color</h4>
+          <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Color</h4>
           <div className="flex flex-wrap gap-1.5">
             {FUNNEL_COLOR_PRESETS.map((hex) => {
               const active = shape.color === hex;
@@ -156,7 +156,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
 
         {hasStroke && (
         <div>
-          <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Stroke</h4>
+          <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Stroke</h4>
           <div className="flex items-center gap-1.5">
             {STROKE_WIDTHS.map((w) => {
               const active = shape.stroke_width === w;
@@ -207,7 +207,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
       <div className="px-4 py-3 border-t border-edge">
         <button
           onClick={onDelete}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-rose-200 text-[12px] text-rose-600 hover:bg-rose-50 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
         >
           <Trash2 size={13} /> Delete {typeLabel.toLowerCase()}
         </button>
@@ -219,7 +219,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</label>
+      <label className="block text-2xs uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</label>
       {children}
     </div>
   );

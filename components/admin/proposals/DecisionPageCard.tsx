@@ -150,7 +150,7 @@ export default function DecisionPageCard({
             disabled={!titleOnly && !enabled}
             className={`${inputClassName} ${(!titleOnly && !enabled) ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
-          <p className="text-[10px] text-gray-400">
+          <p className="text-2xs text-gray-400">
             Shown in the sidebar TOC + on the page itself. Leave blank to use &ldquo;Decision&rdquo;.
           </p>
         </div>

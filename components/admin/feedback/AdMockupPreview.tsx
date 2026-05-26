@@ -103,7 +103,7 @@ export default function AdMockupPreview({
       {showSidebar && (
         <div className="flex flex-col items-center gap-2 w-full mb-4">
           <p
-            className="text-[12px] font-medium tracking-wide"
+            className="text-xs font-medium tracking-wide"
             style={{ color: dark ? 'rgba(255,255,255,0.55)' : '#6B6B6B' }}
           >
             Switch between your different copy variations here
@@ -207,7 +207,7 @@ function VariantPillRow({
             key={v.id}
             type="button"
             onClick={(e) => { e.stopPropagation(); onSelect?.(v.id); }}
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium rounded-full pl-1 pr-3 py-1 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-medium rounded-full pl-1 pr-3 py-1 transition-colors"
             style={{
               backgroundColor: active ? brand : inactiveBg,
               color: active ? '#FFFFFF' : inactiveText,
@@ -220,7 +220,7 @@ function VariantPillRow({
             }}
           >
             <span
-              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold shrink-0"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-2xs font-semibold shrink-0"
               style={{
                 backgroundColor: active ? 'rgba(255,255,255,0.22)' : (dark ? 'rgba(255,255,255,0.08)' : '#FFFFFF'),
                 color: active ? '#FFFFFF' : (dark ? 'rgba(255,255,255,0.6)' : '#6B7280'),
@@ -231,7 +231,7 @@ function VariantPillRow({
             <span className="max-w-[180px] truncate">{variantLabel}</span>
             {commentCount > 0 && (
               <span
-                className="inline-flex items-center gap-1 px-1.5 h-4 rounded-full text-[10px] font-semibold shrink-0"
+                className="inline-flex items-center gap-1 px-1.5 h-4 rounded-full text-2xs font-semibold shrink-0"
                 style={{
                   backgroundColor: active ? 'rgba(255,255,255,0.22)' : '#FFF1D6',
                   color: active ? '#FFFFFF' : '#92500F',
@@ -256,7 +256,7 @@ export function AdMockupPreviewAddVariantButton({ onClick }: { onClick: () => vo
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 text-[12px] font-medium text-teal hover:text-teal-hover bg-teal/10 hover:bg-teal/15 rounded-full px-3 py-1.5 transition-colors"
+      className="inline-flex items-center gap-1.5 text-xs font-medium text-teal hover:text-teal-hover bg-teal/10 hover:bg-teal/15 rounded-full px-3 py-1.5 transition-colors"
     >
       <Plus size={12} />
       Add variant
@@ -327,7 +327,7 @@ function FacebookFeedAd({
         style={{ backgroundColor: dark ? '#3a3b3c' : '#f0f2f5' }}>
         <div className="flex-1 min-w-0 mr-3">
           {displayUrl && (
-            <p className="text-[12px] uppercase tracking-wide truncate" style={{ color: textSecondary }}>
+            <p className="text-xs uppercase tracking-wide truncate" style={{ color: textSecondary }}>
               {displayUrl}
             </p>
           )}

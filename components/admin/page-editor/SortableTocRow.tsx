@@ -60,7 +60,7 @@ export default function SortableTocRow({
         </span>
 
         {/* Read-only badge — managed in TOC tab */}
-        <span className="text-[10px] text-amber-500/60 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded shrink-0">
+        <span className="text-2xs text-amber-500/60 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded shrink-0">
           TOC
         </span>
       </div>

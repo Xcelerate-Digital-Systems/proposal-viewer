@@ -43,7 +43,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Title colour ──────────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</label>
+        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Title</label>
         <ColorPickerField
           label="Title text colour"
           value={styling.title_color}
@@ -55,7 +55,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Card Background ───────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Background</label>
+        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Card Background</label>
         <ColorPickerField
           label="All cards"
           value={styling.card_bg_color}
@@ -88,7 +88,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Card Text ─────────────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Text</label>
+        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Card Text</label>
         <ColorPickerField
           label="All cards"
           value={styling.card_text_color}
@@ -121,7 +121,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Recommended Badge ─────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Recommended Badge</label>
+        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Recommended Badge</label>
         <ColorPickerField
           label="Badge text"
           value={styling.recommended_text_color}
@@ -133,7 +133,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Feature Icon ──────────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Feature Icon</label>
+        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Feature Icon</label>
         <div className="flex flex-wrap gap-1.5">
           {ICON_OPTIONS.map((opt) => (
             <button
@@ -147,7 +147,7 @@ export default function PackagesAppearanceSection({
               title={opt.label}
             >
               {opt.icon}
-              <span className="text-[9px] font-medium leading-none">{opt.label}</span>
+              <span className="text-2xs font-medium leading-none">{opt.label}</span>
             </button>
           ))}
         </div>
@@ -155,7 +155,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Card Shape ────────────────────────────────────── */}
       <div className="space-y-4">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Card Shape</label>
+        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Card Shape</label>
         <Slider
           label="Border radius"
           value={styling.border_radius}

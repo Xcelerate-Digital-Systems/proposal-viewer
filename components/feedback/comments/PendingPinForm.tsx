@@ -154,7 +154,7 @@ export default function PendingPinForm({
           }}
           rows={3}
           placeholder="Add a comment…"
-          className="w-full text-[14px] text-gray-900 placeholder-gray-400 resize-none outline-none border-0 p-0 min-h-[72px] bg-transparent"
+          className="w-full text-sm text-gray-900 placeholder-gray-400 resize-none outline-none border-0 p-0 min-h-[72px] bg-transparent"
         />
 
         {pendingFiles.length > 0 && (
@@ -189,7 +189,7 @@ export default function PendingPinForm({
         >
           <Paperclip size={16} />
           {pendingFiles.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-teal text-white text-[9px] font-bold flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-teal text-white text-2xs font-bold flex items-center justify-center">
               {pendingFiles.length}
             </span>
           )}
@@ -208,7 +208,7 @@ export default function PendingPinForm({
             </button>
             {showDrawMenu && (
               <div className="absolute left-0 bottom-full mb-1 w-40 bg-white rounded-xl border border-gray-200 shadow-lg py-1 z-50">
-                <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                <p className="px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-gray-400">
                   Draw
                 </p>
                 {[

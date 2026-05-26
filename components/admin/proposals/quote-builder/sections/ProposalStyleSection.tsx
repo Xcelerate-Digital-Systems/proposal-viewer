@@ -109,7 +109,7 @@ export default function ProposalStyleSection({
                 )}
                 {/* Top-row tiny "QUOTE" tag — mirrors what shows in the cover */}
                 <div
-                  className="relative z-10 text-[7px] font-medium tracking-[0.2em] uppercase opacity-60"
+                  className="relative z-10 text-2xs font-medium tracking-[0.2em] uppercase opacity-60"
                   style={{ color: preset.fields.cover_text_color }}
                 >
                   Quote
@@ -123,8 +123,8 @@ export default function ProposalStyleSection({
                     Bathroom Renovation
                   </div>
                   <div className="flex items-end justify-between">
-                    <div className="text-[6px] opacity-60 tracking-[0.18em] uppercase">Total</div>
-                    <div className="text-[10px] font-semibold tabular-nums opacity-90">
+                    <div className="text-2xs opacity-60 tracking-[0.18em] uppercase">Total</div>
+                    <div className="text-2xs font-semibold tabular-nums opacity-90">
                       $24,200
                     </div>
                   </div>

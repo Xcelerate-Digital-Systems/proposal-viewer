@@ -34,7 +34,7 @@ export default function AccordionSection({ title, icon, badge, children, ...rest
         <span className="shrink-0">{icon}</span>
         <span className="text-[13px] font-semibold text-ink flex-1">{title}</span>
         {badge && (
-          <span className="text-[10px] bg-teal/10 text-teal px-1.5 py-0.5 rounded-full font-medium">{badge}</span>
+          <span className="text-2xs bg-teal/10 text-teal px-1.5 py-0.5 rounded-full font-medium">{badge}</span>
         )}
         <ChevronDown
           size={14}

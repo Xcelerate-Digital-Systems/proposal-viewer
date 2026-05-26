@@ -127,7 +127,7 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={!!busy}
-        className="flex items-center gap-1.5 bg-white border border-edge shadow-sm rounded-lg px-3 py-1.5 text-[12px] text-ink hover:bg-surface transition-colors disabled:opacity-60"
+        className="flex items-center gap-1.5 bg-white border border-edge shadow-sm rounded-lg px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors disabled:opacity-60"
         title="Export funnel"
       >
         {busy ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
@@ -139,7 +139,7 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
             type="button"
             onClick={exportPng}
             disabled={!!busy}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-ink hover:bg-surface transition-colors disabled:opacity-50"
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors disabled:opacity-50"
           >
             <FileImage size={13} className="text-muted" />
             Download PNG
@@ -148,7 +148,7 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
             type="button"
             onClick={exportPdf}
             disabled={!!busy}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-ink hover:bg-surface transition-colors disabled:opacity-50"
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors disabled:opacity-50"
           >
             <FileText size={13} className="text-muted" />
             Download PDF

@@ -146,7 +146,7 @@ export default function ProfileEditor({
               }}
             />
           </div>
-          <p className="text-[10px] text-faint text-center mt-1.5 max-w-[64px]">
+          <p className="text-2xs text-faint text-center mt-1.5 max-w-[64px]">
             {avatarUrl ? 'Hover to edit' : 'Add photo'}
           </p>
         </div>

@@ -14,7 +14,7 @@ interface Props {
   authorUserId: string | null;
   isTeam: boolean;
   memberLookup?: TeamMemberLookup;
-  /** Tailwind size classes — pass `w-8 h-8 text-[12px]` etc. */
+  /** Tailwind size classes — pass `w-8 h-8 text-xs` etc. */
   className?: string;
   /** Optional muted variant — used in ResolvedSection. */
   muted?: boolean;
@@ -25,7 +25,7 @@ export default function CommentAvatar({
   authorUserId,
   isTeam,
   memberLookup,
-  className = 'w-8 h-8 text-[12px]',
+  className = 'w-8 h-8 text-xs',
   muted = false,
 }: Props) {
   const url = authorUserId ? memberLookup?.[authorUserId]?.avatarUrl : null;

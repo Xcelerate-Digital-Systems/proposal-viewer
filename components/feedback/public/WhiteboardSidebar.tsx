@@ -111,7 +111,7 @@ export default function WhiteboardSidebar({
         >
           Items
         </p>
-        <p className="text-[10px] mt-0.5" style={{ color: `${sidebarText}55` }}>
+        <p className="text-2xs mt-0.5" style={{ color: `${sidebarText}55` }}>
           {items.length} item{items.length !== 1 ? 's' : ''} · {comments.filter((c) => !c.parent_comment_id).length} comments
         </p>
       </div>
@@ -146,7 +146,7 @@ export default function WhiteboardSidebar({
                   {TYPE_LABELS[type] || type}
                 </span>
                 <span
-                  className="text-[10px] px-1.5 py-0.5 rounded-full"
+                  className="text-2xs px-1.5 py-0.5 rounded-full"
                   style={{ backgroundColor: `${sidebarText}10`, color: `${sidebarText}66` }}
                 >
                   {typeItems.length}
@@ -190,7 +190,7 @@ export default function WhiteboardSidebar({
                         {/* Comment count */}
                         {count > 0 && (
                           <span
-                            className="flex items-center gap-1 text-[10px] shrink-0"
+                            className="flex items-center gap-1 text-2xs shrink-0"
                             style={{ color: `${sidebarText}55` }}
                           >
                             <MessageSquare size={10} />

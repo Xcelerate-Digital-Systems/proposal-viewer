@@ -190,7 +190,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                       <Workflow size={18} className="text-teal" />
                     </div>
                     {f.parent_funnel_id && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-muted bg-surface border border-edge rounded-full px-2 py-0.5">
+                      <span className="inline-flex items-center gap-1 text-2xs text-muted bg-surface border border-edge rounded-full px-2 py-0.5">
                         <GitBranch size={10} />
                         Scenario
                       </span>
@@ -327,7 +327,7 @@ function CreateFunnelModal({
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors shrink-0 ${
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shrink-0 ${
                     tab === t.key ? 'bg-ink text-white' : 'text-muted hover:text-ink hover:bg-surface'
                   }`}
                 >
@@ -339,7 +339,7 @@ function CreateFunnelModal({
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               {showCustomTemplates && (
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2 flex items-center gap-1.5">
+                  <div className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2 flex items-center gap-1.5">
                     <Bookmark size={11} className="text-teal" />
                     My templates
                   </div>
@@ -358,7 +358,7 @@ function CreateFunnelModal({
                         {t.description && (
                           <div className="text-[11px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
                         )}
-                        <div className="text-[10px] text-faint mt-2">
+                        <div className="text-2xs text-faint mt-2">
                           Saved {new Date(t.created_at).toLocaleDateString()}
                         </div>
                       </button>
@@ -369,7 +369,7 @@ function CreateFunnelModal({
 
               <div>
                 {showCustomTemplates && (
-                  <div className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2 flex items-center gap-1.5">
+                  <div className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2 flex items-center gap-1.5">
                     <FileText size={11} />
                     Built-in templates
                   </div>
@@ -399,7 +399,7 @@ function CreateFunnelModal({
                       </div>
                       <div className="text-[13px] font-semibold text-ink">{t.name}</div>
                       <div className="text-[11px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
-                      <div className="text-[10px] text-faint mt-2">
+                      <div className="text-2xs text-faint mt-2">
                         {t.steps.length} steps · {t.edges.length} connections
                       </div>
                     </button>

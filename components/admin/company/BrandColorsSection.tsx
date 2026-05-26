@@ -98,7 +98,7 @@ export default function BrandColorsSection({
                 className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-gray-200 rounded-full text-gray-400 hover:text-red-500 hover:border-red-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm z-10"
                 title="Remove"
               >
-                <span className="text-[9px] font-bold leading-none">×</span>
+                <span className="text-2xs font-bold leading-none">×</span>
               </button>
             )}
           </div>
@@ -121,7 +121,7 @@ export default function BrandColorsSection({
       </div>
 
       {brandColors.length > 0 && (
-        <p className="text-[10px] text-faint mt-3">
+        <p className="text-2xs text-faint mt-3">
           Click a swatch to edit. Hover to remove.
         </p>
       )}

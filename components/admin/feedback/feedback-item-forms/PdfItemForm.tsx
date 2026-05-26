@@ -82,7 +82,7 @@ export default function PdfItemForm({ onSubmit, onBack, onCancel, uploading }: P
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-gray-900 truncate">{file.name}</p>
-                <p className="text-[10px] text-gray-400">{(file.size / (1024 * 1024)).toFixed(1)}MB</p>
+                <p className="text-2xs text-gray-400">{(file.size / (1024 * 1024)).toFixed(1)}MB</p>
               </div>
               <button type="button" onClick={clearFile}>
                 <X size={14} className="text-gray-400 hover:text-red-500" />
@@ -96,7 +96,7 @@ export default function PdfItemForm({ onSubmit, onBack, onCancel, uploading }: P
             >
               <Upload size={20} className="mx-auto mb-1.5 text-gray-400" />
               <p className="text-xs font-medium text-gray-600">Upload PDF</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">Up to 50MB</p>
+              <p className="text-2xs text-gray-400 mt-0.5">Up to 50MB</p>
             </button>
           )}
         </div>

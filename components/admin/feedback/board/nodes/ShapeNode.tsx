@@ -512,7 +512,7 @@ function DecisionShape({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); startEditBranch(side, b.label); }}
-              className="w-4 h-4 rounded-full bg-white border border-edge flex items-center justify-center text-ink/70 hover:text-ink shadow-sm text-[9px] font-bold"
+              className="w-4 h-4 rounded-full bg-white border border-edge flex items-center justify-center text-ink/70 hover:text-ink shadow-sm text-2xs font-bold"
               title="Rename"
             >
               ✎

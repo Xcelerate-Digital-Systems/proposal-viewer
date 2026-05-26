@@ -255,7 +255,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                 className="w-16 h-16 object-cover rounded-lg border border-gray-200 bg-white shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-medium text-gray-700 truncate">{file?.name || 'Creative loaded'}</p>
+                <p className="text-xs font-medium text-gray-700 truncate">{file?.name || 'Creative loaded'}</p>
                 <p className="text-[11px] text-gray-400">1:1 ratio recommended</p>
               </div>
               <button
@@ -282,7 +282,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
             >
               <Upload size={18} className="mx-auto mb-1 text-gray-400" />
               <p className="text-xs font-medium text-gray-600">Upload ad creative</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">1:1 ratio recommended · max 10MB</p>
+              <p className="text-2xs text-gray-400 mt-0.5">1:1 ratio recommended · max 10MB</p>
             </button>
           )}
         </div>
@@ -322,10 +322,10 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                                 <Megaphone size={12} />
                               </span>
                               <span className="flex-1 min-w-0">
-                                <span className="block text-[12px] font-semibold text-ink truncate">
+                                <span className="block text-xs font-semibold text-ink truncate">
                                   {ad.title}
                                 </span>
-                                <span className="block text-[10px] text-gray-400">
+                                <span className="block text-2xs text-gray-400">
                                   {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
                                 </span>
                               </span>
@@ -352,11 +352,11 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                                       onClick={() => importOneVariant(ad, v)}
                                       className="w-full flex items-center gap-2 pl-10 pr-3 py-1.5 text-left hover:bg-gray-50 transition-colors group"
                                     >
-                                      <span className="inline-flex items-center justify-center w-4 h-4 rounded text-[10px] font-semibold bg-gray-100 text-gray-500 shrink-0">
+                                      <span className="inline-flex items-center justify-center w-4 h-4 rounded text-2xs font-semibold bg-gray-100 text-gray-500 shrink-0">
                                         {i + 1}
                                       </span>
                                       <span className="flex-1 min-w-0">
-                                        <span className="block text-[12px] font-medium text-ink truncate">
+                                        <span className="block text-xs font-medium text-ink truncate">
                                           {label}
                                         </span>
                                         {preview && (
@@ -441,7 +441,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                   {/* Body */}
                   <div className="px-3 pb-3 pt-2 space-y-2">
                     <div>
-                      <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
                         <AlignLeft size={10} /> Primary text
                       </label>
                       <textarea
@@ -454,7 +454,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                       />
                     </div>
                     <div>
-                      <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
                         <Type size={10} /> Headline
                       </label>
                       <input

@@ -89,7 +89,7 @@ if (pages && pages.length > 0) {
             {t.name}
           </h3>
           {t.entity_type === 'quote' && (
-            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+            <span className="px-1.5 py-0.5 rounded-md text-2xs font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
               Quote
             </span>
           )}

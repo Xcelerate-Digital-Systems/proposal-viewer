@@ -153,7 +153,7 @@ export default function ProjectPhotosSection({ proposal, onSaved }: Props) {
                     <span className="text-xs">
                       {isUploading ? 'Uploading…' : 'Click to upload'}
                     </span>
-                    <span className="text-[10px] text-gray-400">JPG/PNG · max 4 MB</span>
+                    <span className="text-2xs text-gray-400">JPG/PNG · max 4 MB</span>
                   </button>
                 )}
                 <input

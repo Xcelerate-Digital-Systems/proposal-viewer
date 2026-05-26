@@ -24,7 +24,7 @@ export default function SwipeFileCard({ file, onShared }: Props) {
       {file.tags && file.tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {file.tags.map((t) => (
-            <span key={t} className="text-[10px] bg-teal/10 text-teal px-2 py-0.5 rounded-full">
+            <span key={t} className="text-2xs bg-teal/10 text-teal px-2 py-0.5 rounded-full">
               {t}
             </span>
           ))}

@@ -72,7 +72,7 @@ export default function ColorPickerDropdown({
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-2" style={{ width: columns === 5 ? 170 : 180 }}>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-semibold uppercase text-gray-400 tracking-wider">{title}</span>
+            <span className="text-2xs font-semibold uppercase text-gray-400 tracking-wider">{title}</span>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-0.5">
               <X size={10} />
             </button>
@@ -110,7 +110,7 @@ export default function ColorPickerDropdown({
                 className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0"
                 title="Custom color"
               />
-              <span className="text-[10px] text-gray-400">Custom</span>
+              <span className="text-2xs text-gray-400">Custom</span>
             </div>
           )}
         </div>

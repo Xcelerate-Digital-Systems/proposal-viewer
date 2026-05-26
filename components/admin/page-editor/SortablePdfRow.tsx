@@ -83,7 +83,7 @@ export default function SortablePdfRow({
         </button>
 
         {page.indent > 0 && (
-          <span className="text-[10px] text-teal/50 shrink-0">SUB</span>
+          <span className="text-2xs text-teal/50 shrink-0">SUB</span>
         )}
 
         {/* Label */}

@@ -58,13 +58,13 @@ export default function TextPageEditorPanel({
           <div className="flex items-center gap-2">
             {/* Save status indicator */}
             {saveStatus === 'saving' && (
-              <span className="flex items-center gap-1 text-[10px] text-gray-400">
+              <span className="flex items-center gap-1 text-2xs text-gray-400">
                 <Loader2 size={10} className="animate-spin" />
                 Saving...
               </span>
             )}
             {saveStatus === 'saved' && (
-              <span className="flex items-center gap-1 text-[10px] text-green-500">
+              <span className="flex items-center gap-1 text-2xs text-green-500">
                 <Check size={10} />
                 Saved
               </span>
@@ -101,7 +101,7 @@ export default function TextPageEditorPanel({
           </div>
 
           {/* Hint */}
-          <p className="text-[10px] text-gray-400 leading-relaxed">
+          <p className="text-2xs text-gray-400 leading-relaxed">
             💡 Use the <strong>Fields</strong> button in the toolbar to insert dynamic fields that auto-populate with client/company information in the viewer.
           </p>
         </div>

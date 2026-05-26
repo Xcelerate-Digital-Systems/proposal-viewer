@@ -111,13 +111,13 @@ export default function ReviewerNoteOverlay({
 
           <h2
             id="reviewer-note-title"
-            className="text-[20px] leading-tight font-semibold text-gray-900"
+            className="text-xl leading-tight font-semibold text-gray-900"
             style={{ fontFamily: headingFont }}
           >
             Note to reviewers
           </h2>
 
-          <p className="mt-4 text-[14px] text-gray-700 leading-relaxed whitespace-pre-wrap">
+          <p className="mt-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
             {note}
           </p>
 

@@ -60,7 +60,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
       </Link>
 
       <div className="px-3 pt-1 pb-2">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+        <div className="text-2xs font-semibold uppercase tracking-wider text-white/30">
           Feedback Project
         </div>
         <div className="text-sm font-semibold text-white mt-0.5 truncate">
@@ -74,10 +74,10 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
       <div className="border-t border-[#01434A] my-2" />
 
       <div className="px-3 pt-1 pb-2 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+        <span className="text-2xs font-semibold uppercase tracking-wider text-white/30">
           Add to Board
         </span>
-        <span className="text-[10px] text-white/30">
+        <span className="text-2xs text-white/30">
           {unplacedItems.length}
         </span>
       </div>
@@ -108,7 +108,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block truncate leading-tight">{item.title}</span>
-                  <span className="block text-[10px] text-white/40 leading-tight">
+                  <span className="block text-2xs text-white/40 leading-tight">
                     {TYPE_LABELS[item.type]}
                   </span>
                 </span>
@@ -135,7 +135,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
             onClick={() => setShowPlaced(!showPlaced)}
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#013036] transition-colors"
           >
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+            <span className="text-2xs font-semibold uppercase tracking-wider text-white/30">
               On Board ({placedItems.length})
             </span>
             {showPlaced ? (
@@ -155,7 +155,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
                     className="group flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[#013036] transition-colors"
                   >
                     <span className={`w-2 h-2 rounded-full shrink-0 ${statusDef.dot}`} />
-                    <span className="flex-1 text-[12px] text-white/60 truncate">{item.title}</span>
+                    <span className="flex-1 text-xs text-white/60 truncate">{item.title}</span>
                     <button
                       onClick={() => removeItemFromBoard(item.id)}
                       className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-white/40 hover:text-red-400 transition-all"

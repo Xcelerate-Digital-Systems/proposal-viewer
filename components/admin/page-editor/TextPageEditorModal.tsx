@@ -113,7 +113,7 @@ export default function TextPageEditorModal({
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-medium text-gray-500">Page Title</label>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-gray-400">Show on page</span>
+                <span className="text-2xs text-gray-400">Show on page</span>
                 <button
                   type="button"
                   role="switch"
@@ -167,7 +167,7 @@ export default function TextPageEditorModal({
             {/* Member selector — visible when badge is enabled */}
             {page.show_member_badge && companyId && (
               <div>
-                <label className="block text-[10px] font-medium text-gray-400 mb-1">Team Member</label>
+                <label className="block text-2xs font-medium text-gray-400 mb-1">Team Member</label>
                 <PreparedBySelector
                   companyId={companyId}
                   selectedMemberId={page.prepared_by_member_id || null}
@@ -177,7 +177,7 @@ export default function TextPageEditorModal({
             )}
 
             {page.show_member_badge && !companyId && (
-              <p className="text-[10px] text-gray-400">
+              <p className="text-2xs text-gray-400">
                 Save and reopen this page to select a team member.
               </p>
             )}
@@ -206,7 +206,7 @@ export default function TextPageEditorModal({
                 />
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 leading-relaxed">
+            <p className="text-2xs text-gray-400 leading-relaxed">
               Displays the client logo. Appears top-right on portrait pages, side column on landscape pages.
             </p>
           </div>
@@ -222,7 +222,7 @@ export default function TextPageEditorModal({
           </div>
 
           {/* Hint */}
-          <p className="text-[10px] text-gray-400 leading-relaxed">
+          <p className="text-2xs text-gray-400 leading-relaxed">
             💡 Use the <strong>Fields</strong> button in the toolbar to insert dynamic fields that auto-populate with client/company information in the viewer.
           </p>
         </div>

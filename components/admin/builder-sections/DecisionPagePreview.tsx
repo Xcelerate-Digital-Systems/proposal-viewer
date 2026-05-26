@@ -190,16 +190,16 @@ export default function DecisionPagePreview({
           {fallbackSteps.length > 0 && (
             <section className="mb-8">
               <p
-                className="text-[10px] tracking-[0.18em] uppercase mb-4"
+                className="text-2xs tracking-[0.18em] uppercase mb-4"
                 style={{ color: faint, fontFamily: headingFontFamily }}
               >
                 Next Steps
               </p>
               <ol className="space-y-3">
                 {fallbackSteps.map((step, i) => (
-                  <li key={i} className="flex items-start gap-3 text-[14px] leading-[1.55]">
+                  <li key={i} className="flex items-start gap-3 text-sm leading-[1.55]">
                     <span
-                      className="shrink-0 tabular-nums text-[12px] font-medium mt-0.5"
+                      className="shrink-0 tabular-nums text-xs font-medium mt-0.5"
                       style={{ color: muted }}
                     >
                       0{i + 1}
@@ -214,13 +214,13 @@ export default function DecisionPagePreview({
           {hasTerms && (
             <section className="mb-8">
               <p
-                className="text-[10px] tracking-[0.18em] uppercase mb-3"
+                className="text-2xs tracking-[0.18em] uppercase mb-3"
                 style={{ color: faint, fontFamily: headingFontFamily }}
               >
                 Terms
               </p>
               <p
-                className="text-[12.5px] whitespace-pre-wrap leading-[1.7]"
+                className="text-xs whitespace-pre-wrap leading-[1.7]"
                 style={{ color: muted }}
               >
                 {terms}

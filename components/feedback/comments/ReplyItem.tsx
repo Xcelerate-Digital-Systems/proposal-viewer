@@ -70,7 +70,7 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-medium text-ink">{reply.author_name}</span>
           {rIsTeam && (
-            <span className="text-[10px] font-medium bg-teal/10 text-teal px-2 py-0.5 rounded-full">
+            <span className="text-2xs font-medium bg-teal/10 text-teal px-2 py-0.5 rounded-full">
               Team
             </span>
           )}
@@ -104,7 +104,7 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
               <button
                 onClick={handleSave}
                 disabled={saving || !editText.trim()}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal text-white text-[10px] font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal text-white text-2xs font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
               >
                 {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
                 {saving ? 'Saving…' : 'Save'}
@@ -112,7 +112,7 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
               <button
                 onClick={() => { setEditing(false); setEditText(reply.content); }}
                 disabled={saving}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 text-[10px] font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 text-2xs font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
               >
                 <X size={10} />
                 Cancel

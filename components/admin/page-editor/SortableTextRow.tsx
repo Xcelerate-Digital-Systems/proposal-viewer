@@ -92,7 +92,7 @@ export default function SortableTextRow({
         </button>
 
         {indent > 0 && (
-          <span className="text-[10px] text-teal/50 shrink-0">SUB</span>
+          <span className="text-2xs text-teal/50 shrink-0">SUB</span>
         )}
 
         <FileText size={14} className="text-teal/70 shrink-0" />

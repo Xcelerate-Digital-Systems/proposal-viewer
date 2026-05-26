@@ -85,7 +85,7 @@ export default function SortableGroupRow({ id, name, indent, isFirst, isSelected
         </button>
 
         {indent > 0 && (
-          <span className="text-[10px] text-teal/50 shrink-0">SUB</span>
+          <span className="text-2xs text-teal/50 shrink-0">SUB</span>
         )}
 
         <div className="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-teal/10">
@@ -112,7 +112,7 @@ export default function SortableGroupRow({ id, name, indent, isFirst, isSelected
           </span>
         )}
 
-        <span className="text-[9px] font-medium text-teal/50 uppercase tracking-wider shrink-0">
+        <span className="text-2xs font-medium text-teal/50 uppercase tracking-wider shrink-0">
           Section
         </span>
 

@@ -91,7 +91,7 @@ function SalesLayout({ tint }: { tint: string }) {
       <Line w="90%" />
       <Line w="70%" />
       <div className="flex items-center justify-between mt-auto">
-        <span className="text-[10px] font-bold" style={{ color: tint }}>$49</span>
+        <span className="text-2xs font-bold" style={{ color: tint }}>$49</span>
         <CTA tint={tint} label="Buy" inline />
       </div>
     </>
@@ -118,14 +118,14 @@ function CheckoutLayout({ tint }: { tint: string }) {
     <>
       <div className="flex items-center gap-1 mb-1">
         <Lock size={9} className="text-muted" />
-        <span className="text-[7px] uppercase tracking-wider text-muted font-semibold">Secure Checkout</span>
+        <span className="text-2xs uppercase tracking-wider text-muted font-semibold">Secure Checkout</span>
       </div>
       <FieldPlaceholder label="Email" />
       <FieldPlaceholder label="Card" />
       <FieldPlaceholder label="Address" />
       <div className="flex items-center justify-between mt-1">
-        <span className="text-[8px] text-muted">Total</span>
-        <span className="text-[10px] font-bold" style={{ color: tint }}>$97.00</span>
+        <span className="text-2xs text-muted">Total</span>
+        <span className="text-2xs font-bold" style={{ color: tint }}>$97.00</span>
       </div>
       <CTA tint={tint} label="Place Order" />
     </>
@@ -136,8 +136,8 @@ function ThankYouLayout({ tint }: { tint: string }) {
   return (
     <div className="flex flex-col items-center justify-center text-center h-full">
       <PartyPopper size={32} style={{ color: tint }} strokeWidth={2.2} />
-      <div className="text-[10px] font-bold text-ink mt-1.5">Congratulations!</div>
-      <div className="text-[7px] text-muted">Thank You</div>
+      <div className="text-2xs font-bold text-ink mt-1.5">Congratulations!</div>
+      <div className="text-2xs text-muted">Thank You</div>
       <Line w="80%" />
       <Line w="60%" />
       <CheckCircle2 size={12} style={{ color: tint }} className="mt-1" />
@@ -156,7 +156,7 @@ function FormLayout({ tint }: { tint: string }) {
         <FieldPlaceholder label="Email" />
         <FieldPlaceholder label="Phone" />
         <div className="h-6 rounded-sm bg-surface border border-edge/60 flex items-start px-1 pt-0.5">
-          <span className="text-[6.5px] text-muted/80">Message</span>
+          <span className="text-2xs text-muted/80">Message</span>
         </div>
       </div>
       <CTA tint={tint} label="Submit" />
@@ -170,12 +170,12 @@ function CalendarLayout({ tint }: { tint: string }) {
   return (
     <>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[8px] font-bold text-ink">Book a Time</span>
-        <span className="text-[6.5px] text-muted">Mar 2026</span>
+        <span className="text-2xs font-bold text-ink">Book a Time</span>
+        <span className="text-2xs text-muted">Mar 2026</span>
       </div>
       <div className="grid grid-cols-7 gap-[1.5px] mb-1">
         {['M','T','W','T','F','S','S'].map((d, i) => (
-          <div key={i} className="text-center text-[5.5px] font-semibold text-muted">{d}</div>
+          <div key={i} className="text-center text-2xs font-semibold text-muted">{d}</div>
         ))}
         {cells.map((n) => {
           const isToday = n === 12;
@@ -183,7 +183,7 @@ function CalendarLayout({ tint }: { tint: string }) {
           return (
             <div
               key={n}
-              className={`text-center text-[5.5px] py-[1px] rounded-[1.5px] ${
+              className={`text-center text-2xs py-[1px] rounded-[1.5px] ${
                 isToday ? 'text-white font-bold' : isBooked ? 'text-white' : 'text-ink/60 bg-surface/60'
               }`}
               style={
@@ -206,7 +206,7 @@ function UpsellLayout({ tint, badge }: { tint: string; badge: string }) {
   return (
     <>
       <div
-        className="text-[7px] font-bold uppercase tracking-wider text-center py-0.5 rounded-sm"
+        className="text-2xs font-bold uppercase tracking-wider text-center py-0.5 rounded-sm"
         style={{ backgroundColor: tint, color: 'white' }}
       >
         {badge}
@@ -216,7 +216,7 @@ function UpsellLayout({ tint, badge }: { tint: string; badge: string }) {
       <Line w="100%" />
       <Line w="85%" />
       <CTA tint={tint} label="Yes, Add to Order" />
-      <div className="text-[7px] text-center text-muted underline mt-1">No thanks</div>
+      <div className="text-2xs text-center text-muted underline mt-1">No thanks</div>
     </>
   );
 }
@@ -252,7 +252,7 @@ function Line({ w }: { w: string }) {
 function FieldPlaceholder({ label }: { label?: string }) {
   return (
     <div className="h-3.5 rounded-sm bg-surface border border-edge/60 flex items-center px-1">
-      {label && <span className="text-[6.5px] text-muted/80">{label}</span>}
+      {label && <span className="text-2xs text-muted/80">{label}</span>}
     </div>
   );
 }
@@ -260,7 +260,7 @@ function FieldPlaceholder({ label }: { label?: string }) {
 function CTA({ tint, label, inline = false }: { tint: string; label: string; inline?: boolean }) {
   return (
     <div
-      className={`${inline ? 'inline-flex' : 'flex'} items-center justify-center rounded-sm px-2 py-1 text-[8px] font-semibold text-white mt-auto`}
+      className={`${inline ? 'inline-flex' : 'flex'} items-center justify-center rounded-sm px-2 py-1 text-2xs font-semibold text-white mt-auto`}
       style={{ backgroundColor: tint }}
     >
       {label}

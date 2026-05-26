@@ -110,7 +110,7 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
         {tool.icon}
         {!soon && (
           <span
-            className={`absolute bottom-1 right-1.5 text-[10px] leading-none ${
+            className={`absolute bottom-1 right-1.5 text-2xs leading-none ${
               active ? 'text-white/70' : 'text-ink/40'
             }`}
           >
@@ -118,7 +118,7 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
           </span>
         )}
         {soon && (
-          <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[9px] font-bold leading-none">
+          <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-2xs font-bold leading-none">
             soon
           </span>
         )}
@@ -146,7 +146,7 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
       >
         <Workflow size={22} strokeWidth={1.7} />
         <span
-          className={`absolute bottom-1 right-1.5 text-[10px] leading-none ${
+          className={`absolute bottom-1 right-1.5 text-2xs leading-none ${
             flowGroupActive || flowOpen ? 'text-white/70' : 'text-ink/40'
           }`}
         >
@@ -228,7 +228,7 @@ function PickerSection({
 }) {
   return (
     <div>
-      <div className="text-[10px] font-semibold tracking-wider uppercase text-muted mb-2">{title}</div>
+      <div className="text-2xs font-semibold tracking-wider uppercase text-muted mb-2">{title}</div>
       <div className="grid grid-cols-4 gap-2">
         {tools.map((tool) => {
           const active = activeTool === tool.id;

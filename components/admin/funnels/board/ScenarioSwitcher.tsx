@@ -86,7 +86,7 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-[12px] text-muted hover:text-ink px-2.5 py-1 rounded-full hover:bg-surface transition-colors"
+        className="flex items-center gap-1.5 text-xs text-muted hover:text-ink px-2.5 py-1 rounded-full hover:bg-surface transition-colors"
         title="Scenarios"
       >
         <GitBranch size={12} />
@@ -97,7 +97,7 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
       {open && (
         <div className="absolute left-0 top-full mt-1.5 w-[280px] bg-white border border-edge rounded-lg shadow-xl z-30 overflow-hidden">
           <div className="px-3 py-2 border-b border-edge flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-muted">
+            <span className="text-2xs uppercase tracking-wider font-semibold text-muted">
               {family.length > 0 ? `${family.length} scenarios` : 'Scenarios'}
             </span>
             {loadingFamily && <Loader2 size={11} className="animate-spin text-muted" />}
@@ -125,10 +125,10 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
                     {isCurrent && <Check size={12} className="text-teal" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className={`text-[12px] truncate ${isCurrent ? 'font-semibold text-ink' : 'text-ink/80'}`}>
+                    <div className={`text-xs truncate ${isCurrent ? 'font-semibold text-ink' : 'text-ink/80'}`}>
                       {f.name}
                     </div>
-                    <div className="text-[10px] text-muted mt-0.5">
+                    <div className="text-2xs text-muted mt-0.5">
                       {isRoot ? 'Base funnel' : 'Scenario'}
                       {f.id === funnel.id && ' · viewing'}
                     </div>
@@ -143,12 +143,12 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
               type="button"
               onClick={handleNewScenario}
               disabled={creating}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] text-teal hover:bg-teal/10 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-teal hover:bg-teal/10 transition-colors disabled:opacity-50"
             >
               {creating ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
               New scenario from this
             </button>
-            <p className="text-[10px] text-muted mt-1.5 px-1 leading-snug">
+            <p className="text-2xs text-muted mt-1.5 px-1 leading-snug">
               Clones the current funnel — change metrics to compare against {scenarioCount > 0 ? 'siblings' : 'the base'}.
             </p>
           </div>

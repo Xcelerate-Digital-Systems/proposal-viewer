@@ -307,7 +307,7 @@ export default function MetaLeadFormItemForm({
                 className="w-full border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-teal hover:bg-teal/5 transition-colors">
                 <Upload size={20} className="mx-auto mb-1.5 text-gray-400" />
                 <p className="text-xs font-medium text-gray-600">Upload cover image</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">1.91:1 ratio recommended</p>
+                <p className="text-2xs text-gray-400 mt-0.5">1.91:1 ratio recommended</p>
               </button>
             )}
           </Field>
@@ -412,13 +412,13 @@ export default function MetaLeadFormItemForm({
             {screens.map((s, i) => (
               <div key={s.id} className="border border-gray-200 rounded-xl p-3 bg-gray-50/50">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-gray-500">
                     {i === 0 ? 'Default' : `Screen ${i + 1}`}
                   </span>
                   <div className="flex items-center gap-1.5">
                     <button type="button"
                       onClick={() => { setPreviewPage('completion'); setPreviewScreenId(s.id); }}
-                      className="text-[10px] text-teal hover:text-teal-hover font-medium">
+                      className="text-2xs text-teal hover:text-teal-hover font-medium">
                       Preview
                     </button>
                     {screens.length > 1 && (
@@ -518,7 +518,7 @@ function QuestionCard({
     <div className="border border-gray-200 rounded-xl p-3 bg-gray-50/50">
       <div className="flex items-center gap-1 mb-2">
         <GripVertical size={14} className="text-gray-300" />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        <span className="text-2xs font-semibold uppercase tracking-wider text-gray-400">
           {positionLabel}
         </span>
         <select
@@ -532,7 +532,7 @@ function QuestionCard({
                 : undefined,
             });
           }}
-          className="ml-2 text-[12px] px-2 py-1 rounded-md border border-gray-200 bg-white"
+          className="ml-2 text-xs px-2 py-1 rounded-md border border-gray-200 bg-white"
         >
           {isGrouped(typeOptions)
             ? typeOptions.map((g) => (
@@ -578,7 +578,7 @@ function QuestionCard({
                   onUpdate({ options: next });
                 }}
                 placeholder={`Option ${oi + 1}`}
-                className="flex-1 px-2 py-1.5 bg-white rounded-md text-[12px] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal/20" />
+                className="flex-1 px-2 py-1.5 bg-white rounded-md text-xs border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal/20" />
               <button type="button"
                 onClick={() => {
                   const next = (question.options || []).filter((_, j) => j !== oi);
@@ -666,7 +666,7 @@ function ConditionalLogicEditor({
         <select
           value={logic.question_id}
           onChange={(e) => onChange({ ...logic, question_id: e.target.value, rules: [] })}
-          className="flex-1 text-[12px] px-2 py-1 rounded-md border border-gray-200 bg-white"
+          className="flex-1 text-xs px-2 py-1 rounded-md border border-gray-200 bg-white"
         >
           {multipleChoiceQuestions.map((q) => (
             <option key={q.id} value={q.id}>
@@ -689,7 +689,7 @@ function ConditionalLogicEditor({
             <select
               value={ruleFor(opt)}
               onChange={(e) => setRule(opt, e.target.value)}
-              className="flex-1 text-[12px] px-2 py-1 rounded-md border border-gray-200 bg-white"
+              className="flex-1 text-xs px-2 py-1 rounded-md border border-gray-200 bg-white"
             >
               <option value="">Use default</option>
               {screens.map((s, i) => (
@@ -707,7 +707,7 @@ function ConditionalLogicEditor({
         <select
           value={logic.default_screen_id}
           onChange={(e) => onChange({ ...logic, default_screen_id: e.target.value })}
-          className="flex-1 text-[12px] px-2 py-1 rounded-md border border-gray-200 bg-white"
+          className="flex-1 text-xs px-2 py-1 rounded-md border border-gray-200 bg-white"
         >
           {screens.map((s, i) => (
             <option key={s.id} value={s.id}>
@@ -753,7 +753,7 @@ function Section({
         <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-700">{title}</h4>
         {onJump && (
           <button type="button" onClick={onJump}
-            className="text-[10px] font-medium text-teal hover:text-teal-hover">
+            className="text-2xs font-medium text-teal hover:text-teal-hover">
             Jump to preview →
           </button>
         )}

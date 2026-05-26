@@ -361,7 +361,7 @@ export default function AddVersionModal({
                 ? `Edit Version ${editingVersion?.versionNumber ?? ''}`
                 : `Upload Version ${nextVersionNumber}`}
             </h3>
-            <p className="text-[12px] text-gray-500 mt-0.5 truncate max-w-[360px]">{item.title}</p>
+            <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[360px]">{item.title}</p>
           </div>
           <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
@@ -427,10 +427,10 @@ export default function AddVersionModal({
                                       <Megaphone size={12} />
                                     </span>
                                     <span className="flex-1 min-w-0">
-                                      <span className="block text-[12px] font-semibold text-ink truncate">
+                                      <span className="block text-xs font-semibold text-ink truncate">
                                         {ad.title}
                                       </span>
-                                      <span className="block text-[10px] text-gray-400">
+                                      <span className="block text-2xs text-gray-400">
                                         {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
                                       </span>
                                     </span>
@@ -456,11 +456,11 @@ export default function AddVersionModal({
                                             onClick={() => importOneVariant(ad, v)}
                                             className="w-full flex items-center gap-2 pl-10 pr-3 py-1.5 text-left hover:bg-gray-50 transition-colors group"
                                           >
-                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded text-[10px] font-semibold bg-gray-100 text-gray-500 shrink-0">
+                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded text-2xs font-semibold bg-gray-100 text-gray-500 shrink-0">
                                               {i + 1}
                                             </span>
                                             <span className="flex-1 min-w-0">
-                                              <span className="block text-[12px] font-medium text-ink truncate">
+                                              <span className="block text-xs font-medium text-ink truncate">
                                                 {label}
                                               </span>
                                               {preview && (
@@ -527,7 +527,7 @@ export default function AddVersionModal({
                       </div>
                       <div className="px-3 pb-3 pt-2 space-y-2">
                         <div>
-                          <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
                             <AlignLeft size={10} /> Primary text
                           </label>
                           <textarea
@@ -538,7 +538,7 @@ export default function AddVersionModal({
                           />
                         </div>
                         <div>
-                          <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
                             <Type size={10} /> Headline
                           </label>
                           <input
@@ -671,12 +671,12 @@ function AssetListField({
         <span className="text-[11px] font-medium uppercase tracking-wider text-gray-500">
           {label}
         </span>
-        <span className="text-[10px] tabular-nums text-gray-400">{filled}/{max}</span>
+        <span className="text-2xs tabular-nums text-gray-400">{filled}/{max}</span>
       </div>
       <div className="space-y-1.5">
         {items.map((value, i) => (
           <div key={i} className="flex items-start gap-1.5">
-            <span className="mt-2 text-[10px] tabular-nums text-gray-400 w-4 text-right">{i + 1}.</span>
+            <span className="mt-2 text-2xs tabular-nums text-gray-400 w-4 text-right">{i + 1}.</span>
             {multiline ? (
               <textarea
                 className={`${inputCls} min-h-[52px]`}
@@ -709,7 +709,7 @@ function AssetListField({
         <button
           type="button"
           onClick={onAdd}
-          className="mt-2 inline-flex items-center gap-1 text-[12px] text-teal hover:text-teal-hover font-medium"
+          className="mt-2 inline-flex items-center gap-1 text-xs text-teal hover:text-teal-hover font-medium"
         >
           <Plus size={13} /> {addLabel}
         </button>
@@ -728,7 +728,7 @@ function FileInput({
           type="file"
           accept={accept}
           onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-          className="block w-full text-[13px] text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-gray-200 file:text-[12px] file:font-medium file:bg-gray-50 hover:file:bg-gray-100"
+          className="block w-full text-[13px] text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-gray-200 file:text-xs file:font-medium file:bg-gray-50 hover:file:bg-gray-100"
         />
         {file && <span className="text-[11px] text-gray-500 truncate max-w-[120px]">{file.name}</span>}
       </div>

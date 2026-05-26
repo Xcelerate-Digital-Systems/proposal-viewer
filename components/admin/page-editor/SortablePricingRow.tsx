@@ -68,7 +68,7 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
           {indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
         </button>
         {indent > 0 && (
-          <span className="text-[10px] text-teal/50 shrink-0">SUB</span>
+          <span className="text-2xs text-teal/50 shrink-0">SUB</span>
         )}
         <DollarSign size={14} className="text-teal shrink-0" />
         <span className="text-sm font-medium text-teal flex-1 truncate">

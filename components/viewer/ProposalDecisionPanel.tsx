@@ -280,7 +280,7 @@ export default function ProposalDecisionPanel({
           {activeAction !== 'accept' && (
             <div className="text-left mb-5">
               <label
-                className="block text-[10px] tracking-[0.18em] uppercase mb-1.5"
+                className="block text-2xs tracking-[0.18em] uppercase mb-1.5"
                 style={{ color: faint, fontFamily: headingFontFamily }}
               >
                 {activeAction === 'revision' ? 'What changes do you need?' : 'Reason (optional)'}
@@ -306,7 +306,7 @@ export default function ProposalDecisionPanel({
 
           <div className="text-left mb-6">
             <label
-              className="block text-[10px] tracking-[0.18em] uppercase mb-1.5"
+              className="block text-2xs tracking-[0.18em] uppercase mb-1.5"
               style={{ color: faint, fontFamily: headingFontFamily }}
             >
               Type your full name to confirm

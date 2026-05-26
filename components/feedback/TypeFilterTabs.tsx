@@ -32,7 +32,7 @@ export default function TypeFilterTabs({
       <div className="flex items-center gap-1 flex-wrap">
         <button
           onClick={() => onFilterChange(null)}
-          className="px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors"
+          className="px-2.5 py-1 rounded-md text-2xs font-medium transition-colors"
           style={{
             backgroundColor: !typeFilter ? `${sidebarTextColor}18` : 'transparent',
             color: !typeFilter ? sidebarTextColor : `${sidebarTextColor}55`,
@@ -44,7 +44,7 @@ export default function TypeFilterTabs({
           <button
             key={t}
             onClick={() => onFilterChange(t)}
-            className="px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors capitalize"
+            className="px-2.5 py-1 rounded-md text-2xs font-medium transition-colors capitalize"
             style={{
               backgroundColor: typeFilter === t ? `${sidebarTextColor}18` : 'transparent',
               color: typeFilter === t ? sidebarTextColor : `${sidebarTextColor}55`,

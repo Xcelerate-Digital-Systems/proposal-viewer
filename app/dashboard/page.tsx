@@ -246,7 +246,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
                   {inbox.length > 0 && ` · ${inbox.length} awaiting reply`}
                 </span>
               </div>
-              <Link href="/feedback" className="text-[12px] font-medium text-teal hover:underline inline-flex items-center gap-1">
+              <Link href="/feedback" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
                 All projects <ArrowRight size={12} />
               </Link>
             </header>
@@ -255,11 +255,11 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
             <div>
               <div className="flex items-center gap-2 px-5 pt-4 pb-2">
                 <Reply size={13} className="text-[#92500F]" />
-                <h3 className="text-[12px] font-semibold uppercase tracking-wider text-muted">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
                   Needs your reply
                 </h3>
                 {inbox.length > 0 && (
-                  <span className="text-[10px] font-semibold text-muted bg-surface rounded-full px-1.5 py-0.5">
+                  <span className="text-2xs font-semibold text-muted bg-surface rounded-full px-1.5 py-0.5">
                     {inbox.length}
                   </span>
                 )}
@@ -286,7 +286,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
                   ))}
                   {inbox.length > 8 && (
                     <div className="px-5 py-3 border-t border-gray-100 text-center">
-                      <span className="text-[12px] text-muted">
+                      <span className="text-xs text-muted">
                         Plus {inbox.length - 8} more — open them from their feedback project.
                       </span>
                     </div>
@@ -299,7 +299,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
             <div className="border-t border-gray-100">
               <div className="flex items-center gap-2 px-5 pt-4 pb-2">
                 <MessageSquareText size={13} className="text-accent-feedback" />
-                <h3 className="text-[12px] font-semibold uppercase tracking-wider text-muted">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
                   Projects
                 </h3>
                 <span className="text-[11px] text-faint">Drag to update status</span>
@@ -310,9 +310,9 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
               ) : feedbackProjects.length === 0 ? (
                 <div className="px-5 py-12 flex flex-col items-center text-center">
                   <MessageSquareText size={24} className="text-faint mb-2" />
-                  <p className="text-[14px] font-medium text-ink">No feedback projects yet</p>
-                  <p className="text-[12px] text-muted mt-1">Spin one up to start collecting client feedback on creative.</p>
-                  <Link href="/feedback" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-[12px] font-semibold rounded-full px-3.5 py-1.5 mt-4">
+                  <p className="text-sm font-medium text-ink">No feedback projects yet</p>
+                  <p className="text-xs text-muted mt-1">Spin one up to start collecting client feedback on creative.</p>
+                  <Link href="/feedback" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-xs font-semibold rounded-full px-3.5 py-1.5 mt-4">
                     New project
                   </Link>
                 </div>
@@ -342,17 +342,17 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <Link href="/proposals" className="text-[12px] font-medium text-teal hover:underline inline-flex items-center gap-1">
+                <Link href="/proposals" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
                   Proposals <ArrowRight size={12} />
                 </Link>
-                <Link href="/quotes" className="text-[12px] font-medium text-teal hover:underline inline-flex items-center gap-1">
+                <Link href="/quotes" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
                   Quotes <ArrowRight size={12} />
                 </Link>
               </div>
             </header>
 
             <div className="px-5 pt-4 pb-2">
-              <p className="text-[12px] text-muted">Drag a card between columns to update its status.</p>
+              <p className="text-xs text-muted">Drag a card between columns to update its status.</p>
             </div>
 
             {loading ? (
@@ -360,13 +360,13 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
             ) : pipeline.length === 0 ? (
               <div className="px-5 py-12 flex flex-col items-center text-center">
                 <FileText size={24} className="text-faint mb-2" />
-                <p className="text-[14px] font-medium text-ink">No proposals or quotes yet</p>
-                <p className="text-[12px] text-muted mt-1">Create your first one to see it on the board.</p>
+                <p className="text-sm font-medium text-ink">No proposals or quotes yet</p>
+                <p className="text-xs text-muted mt-1">Create your first one to see it on the board.</p>
                 <div className="flex items-center gap-2 mt-4">
-                  <Link href="/proposals" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-[12px] font-semibold rounded-full px-3.5 py-1.5">
+                  <Link href="/proposals" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-xs font-semibold rounded-full px-3.5 py-1.5">
                     New proposal
                   </Link>
-                  <Link href="/quotes" className="inline-flex items-center gap-1.5 bg-surface hover:bg-gray-100 text-ink text-[12px] font-semibold rounded-full px-3.5 py-1.5">
+                  <Link href="/quotes" className="inline-flex items-center gap-1.5 bg-surface hover:bg-gray-100 text-ink text-xs font-semibold rounded-full px-3.5 py-1.5">
                     New quote
                   </Link>
                 </div>

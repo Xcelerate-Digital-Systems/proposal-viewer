@@ -153,7 +153,7 @@ export default function PostAcceptSection({
                   {opt.label}
                 </span>
               </div>
-              <p className="text-[10px] text-gray-400 leading-tight">{opt.description}</p>
+              <p className="text-2xs text-gray-400 leading-tight">{opt.description}</p>
             </button>
           );
         })}
@@ -171,11 +171,11 @@ export default function PostAcceptSection({
             className={inputClassName}
           />
           <div className="flex items-center gap-2 pt-0.5">
-            <span className="text-[10px] text-gray-400">Common uses:</span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-[10px] text-gray-500">
+            <span className="text-2xs text-gray-400">Common uses:</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-2xs text-gray-500">
               <CreditCard size={9} /> Payment link
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-[10px] text-gray-500">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-2xs text-gray-500">
               <Calendar size={9} /> Booking page
             </span>
           </div>
@@ -193,7 +193,7 @@ export default function PostAcceptSection({
             placeholder="e.g. Thank you for approving! We'll be in touch within 24 hours to kick things off."
             className={`${inputClassName} resize-none`}
           />
-          <p className="text-[10px] text-gray-400">
+          <p className="text-2xs text-gray-400">
             {isTemplate
               ? 'This default message will be pre-filled when creating proposals from this template.'
               : 'This message is shown to the client inside the approval modal after they submit their name.'}

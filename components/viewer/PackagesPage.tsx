@@ -241,7 +241,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
         <div className="mt-3 mb-4">
           {tier.price_prefix && (
             <span
-              className="block text-[10px] font-semibold uppercase tracking-widest mb-0.5"
+              className="block text-2xs font-semibold uppercase tracking-widest mb-0.5"
               style={{ color: cardText }}
             >
               {tier.price_prefix}

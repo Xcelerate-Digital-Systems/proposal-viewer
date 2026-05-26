@@ -387,7 +387,7 @@ export default function QuoteSinglePageView({
         )}
 
         <div
-          className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-4 flex items-center gap-3"
+          className="text-2xs tracking-[0.22em] uppercase opacity-60 mb-4 flex items-center gap-3"
           style={{ color: headerSubtle, fontFamily: headingFontFamily }}
         >
           <span>Quote</span>
@@ -416,7 +416,7 @@ export default function QuoteSinglePageView({
         >
           <div className="min-w-0">
             <div
-              className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-1"
+              className="text-2xs tracking-[0.22em] uppercase opacity-60 mb-1"
               style={{ color: headerSubtle, fontFamily: headingFontFamily }}
             >
               Prepared for
@@ -437,7 +437,7 @@ export default function QuoteSinglePageView({
           </div>
           <div className="text-left sm:text-right">
             <div
-              className="text-[10px] tracking-[0.22em] uppercase opacity-60 mb-1"
+              className="text-2xs tracking-[0.22em] uppercase opacity-60 mb-1"
               style={{ color: headerSubtle, fontFamily: headingFontFamily }}
             >
               Total
@@ -456,7 +456,7 @@ export default function QuoteSinglePageView({
             </div>
             {validUntil && (
               <div
-                className="text-[10px] tracking-[0.18em] uppercase mt-2 opacity-60"
+                className="text-2xs tracking-[0.18em] uppercase mt-2 opacity-60"
                 style={{ color: headerSubtle, fontFamily: headingFontFamily }}
               >
                 Valid until {validUntil}
@@ -552,7 +552,7 @@ export default function QuoteSinglePageView({
             <table className="w-full min-w-[480px]" style={TABULAR}>
               <thead>
                 <tr
-                  className="text-[10px] tracking-[0.18em] uppercase"
+                  className="text-2xs tracking-[0.18em] uppercase"
                   style={{
                     color: faint,
                     fontFamily: headingFontFamily,
@@ -577,15 +577,15 @@ export default function QuoteSinglePageView({
                         {it.label || '—'}
                       </div>
                       {it.description && (
-                        <div className="text-[12.5px] mt-1 leading-relaxed" style={{ color: muted }}>
+                        <div className="text-xs mt-1 leading-relaxed" style={{ color: muted }}>
                           {it.description}
                         </div>
                       )}
                     </td>
-                    <td className="py-4 text-right text-[14px]" style={{ color: muted }}>
+                    <td className="py-4 text-right text-sm" style={{ color: muted }}>
                       {it.qty ?? 1}
                     </td>
-                    <td className="py-4 text-right text-[14px]" style={{ color: muted }}>
+                    <td className="py-4 text-right text-sm" style={{ color: muted }}>
                       {it.unit_price != null ? formatAUD(it.unit_price) : '—'}
                     </td>
                     <td className="py-4 text-right text-[15px]" style={{ color: bodyText }}>
@@ -624,7 +624,7 @@ export default function QuoteSinglePageView({
                         {it.label || '—'}
                       </div>
                       {it.description && (
-                        <div className="text-[12.5px] mt-1 leading-relaxed" style={{ color: muted }}>
+                        <div className="text-xs mt-1 leading-relaxed" style={{ color: muted }}>
                           {it.description}
                         </div>
                       )}
@@ -766,7 +766,7 @@ export default function QuoteSinglePageView({
         <>
           <Section>
             <SectionLabel style={labelStyle}>Attachments</SectionLabel>
-            <ul className="space-y-2 text-[14px] max-w-xl">
+            <ul className="space-y-2 text-sm max-w-xl">
               {attachments.map((a, i) => (
                 <li key={`${a.path}-${i}`}>
                   <AttachmentLink path={a.path} name={a.name} mime={a.mime} muted={muted} />
@@ -784,7 +784,7 @@ export default function QuoteSinglePageView({
           <Section>
             <SectionLabel style={labelStyle}>Terms</SectionLabel>
             <p
-              className="text-[12.5px] whitespace-pre-wrap leading-[1.7] max-w-2xl"
+              className="text-xs whitespace-pre-wrap leading-[1.7] max-w-2xl"
               style={{ color: muted }}
             >
               {extras.terms}

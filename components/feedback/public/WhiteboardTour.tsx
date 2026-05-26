@@ -225,7 +225,7 @@ export default function WhiteboardTour({
           }}
         >
           <div
-            className="text-[10px] uppercase tracking-[0.08em] font-semibold mb-1.5"
+            className="text-2xs uppercase tracking-[0.08em] font-semibold mb-1.5"
             style={{ color: accentColor }}
           >
             Step {stepIdx + 1} of {total}
@@ -243,7 +243,7 @@ export default function WhiteboardTour({
               <button
                 type="button"
                 onClick={end}
-                className="text-[12px] font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-100 px-2 py-1.5 rounded-md transition-all duration-300"
+                className="text-xs font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-100 px-2 py-1.5 rounded-md transition-all duration-300"
               >
                 Skip tour
               </button>

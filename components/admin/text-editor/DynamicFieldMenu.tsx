@@ -44,7 +44,7 @@ export default function DynamicFieldMenu({ isOpen, onToggle, onClose, onInsert }
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
-          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-gray-400 tracking-wider">
+          <div className="px-3 py-1.5 text-2xs font-semibold uppercase text-gray-400 tracking-wider">
             Insert Dynamic Field
           </div>
           {DYNAMIC_FIELDS.map((f) => (
@@ -55,9 +55,9 @@ export default function DynamicFieldMenu({ isOpen, onToggle, onClose, onInsert }
             >
               <div>
                 <span className="text-sm text-gray-700">{f.label}</span>
-                <p className="text-[10px] text-gray-400">{f.description}</p>
+                <p className="text-2xs text-gray-400">{f.description}</p>
               </div>
-              <span className="text-[10px] text-teal font-mono bg-teal/5 px-1.5 py-0.5 rounded">
+              <span className="text-2xs text-teal font-mono bg-teal/5 px-1.5 py-0.5 rounded">
                 {'{' + f.field + '}'}
               </span>
             </button>

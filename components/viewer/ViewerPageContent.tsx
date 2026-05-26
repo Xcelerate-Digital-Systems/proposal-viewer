@@ -170,16 +170,16 @@ export default function ViewerPageContent({
               {hasSteps && (
                 <section className="mb-8">
                   <p
-                    className="text-[10px] tracking-[0.18em] uppercase mb-4"
+                    className="text-2xs tracking-[0.18em] uppercase mb-4"
                     style={{ color: tokens.faint, fontFamily: tokens.headingFontFamily }}
                   >
                     Next Steps
                   </p>
                   <ol className="space-y-3">
                     {extras.next_steps.map((step, i) => (
-                      <li key={i} className="flex items-start gap-3 text-[14px] leading-[1.55]">
+                      <li key={i} className="flex items-start gap-3 text-sm leading-[1.55]">
                         <span
-                          className="shrink-0 tabular-nums text-[12px] font-medium mt-0.5"
+                          className="shrink-0 tabular-nums text-xs font-medium mt-0.5"
                           style={{ color: tokens.muted }}
                         >
                           0{i + 1}
@@ -194,13 +194,13 @@ export default function ViewerPageContent({
               {hasTerms && (
                 <section className="mb-8">
                   <p
-                    className="text-[10px] tracking-[0.18em] uppercase mb-3"
+                    className="text-2xs tracking-[0.18em] uppercase mb-3"
                     style={{ color: tokens.faint, fontFamily: tokens.headingFontFamily }}
                   >
                     Terms
                   </p>
                   <p
-                    className="text-[12.5px] whitespace-pre-wrap leading-[1.7]"
+                    className="text-xs whitespace-pre-wrap leading-[1.7]"
                     style={{ color: tokens.muted }}
                   >
                     {extras.terms}

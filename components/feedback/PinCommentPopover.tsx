@@ -113,10 +113,10 @@ export default function PinCommentPopover({
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-[10px] font-bold">
+            <span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-2xs font-bold">
               {comment.thread_number || '•'}
             </span>
-            <span className="text-[10px] text-gray-400">
+            <span className="text-2xs text-gray-400">
               Pin Comment
             </span>
           </div>
@@ -131,19 +131,19 @@ export default function PinCommentPopover({
               authorUserId={comment.author_user_id}
               isTeam={isTeam}
               memberLookup={memberLookup}
-              className="w-6 h-6 text-[10px]"
+              className="w-6 h-6 text-2xs"
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-gray-900">{comment.author_name}</span>
                 {isTeam && (
-                  <span className="text-[9px] font-medium uppercase bg-teal/10 text-teal px-1.5 py-0.5 rounded">Team</span>
+                  <span className="text-2xs font-medium uppercase bg-teal/10 text-teal px-1.5 py-0.5 rounded">Team</span>
                 )}
-                <span className="text-[10px] text-gray-400">{timeAgo(comment.created_at)}</span>
+                <span className="text-2xs text-gray-400">{timeAgo(comment.created_at)}</span>
               </div>
               {comment.comment_type === 'text_highlight' && comment.highlight_text && (
                 <div className="mt-1 mb-1 px-2 py-1.5 rounded bg-yellow-50 border-l-2 border-yellow-300">
-                  <p className="text-[10px] text-yellow-700 italic line-clamp-2">&ldquo;{comment.highlight_text}&rdquo;</p>
+                  <p className="text-2xs text-yellow-700 italic line-clamp-2">&ldquo;{comment.highlight_text}&rdquo;</p>
                 </div>
               )}
               <p className="text-xs text-gray-600 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
@@ -198,21 +198,21 @@ export default function PinCommentPopover({
           <div className="flex items-center gap-3">
             {!showReply && (
               <button onClick={() => setShowReply(true)}
-                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-gray-600 transition-colors">
                 <CornerDownRight size={10} />
                 Reply
               </button>
             )}
             {!comment.resolved && onResolve && (
               <button onClick={() => onResolve(comment.id)}
-                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-emerald-600 transition-colors">
+                className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-emerald-600 transition-colors">
                 <CheckCircle2 size={10} />
                 Resolve
               </button>
             )}
             {comment.resolved && onUnresolve && (
               <button onClick={() => onUnresolve(comment.id)}
-                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-amber-600 transition-colors">
+                className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-amber-600 transition-colors">
                 <RotateCcw size={10} />
                 Reopen
               </button>
@@ -223,7 +223,7 @@ export default function PinCommentPopover({
                   await onDelete(comment.id);
                   onClose();
                 }}
-                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-red-600 transition-colors ml-auto">
+                className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-red-600 transition-colors ml-auto">
                 <Trash2 size={10} />
                 Delete
               </button>
@@ -280,15 +280,15 @@ function PopoverReplyItem({
         authorUserId={reply.author_user_id}
         isTeam={rIsTeam}
         memberLookup={memberLookup}
-        className="w-5 h-5 text-[9px]"
+        className="w-5 h-5 text-2xs"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-medium text-gray-900">{reply.author_name}</span>
           {rIsTeam && (
-            <span className="text-[8px] font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">Team</span>
+            <span className="text-2xs font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">Team</span>
           )}
-          <span className="text-[10px] text-gray-400">{timeAgo(reply.created_at)}</span>
+          <span className="text-2xs text-gray-400">{timeAgo(reply.created_at)}</span>
         </div>
         <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">{reply.content}</p>
         <AttachmentList attachments={reply.attachments} size="sm" />

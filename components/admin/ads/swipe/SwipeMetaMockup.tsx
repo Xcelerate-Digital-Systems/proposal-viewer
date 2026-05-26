@@ -70,11 +70,11 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
           {pageName.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <div className={`font-semibold text-[#050505] ${compact ? 'text-[12px]' : 'text-[13px]'} truncate`}>
+          <div className={`font-semibold text-[#050505] ${compact ? 'text-xs' : 'text-[13px]'} truncate`}>
             {pageName}
           </div>
           <div className="flex items-center gap-1">
-            <span className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-[#65676b]`}>Sponsored</span>
+            <span className={`${compact ? 'text-2xs' : 'text-[11px]'} text-[#65676b]`}>Sponsored</span>
             <span className="text-[11px] text-[#65676b]">·</span>
             <Globe size={10} className="text-[#65676b]" />
           </div>
@@ -100,7 +100,7 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
       {/* Primary text (collapsed with "See more" if long) */}
       {primary && (
         <div className="px-4 pb-2.5">
-          <p className={`${compact ? 'text-[12px] leading-[16px]' : 'text-[15px] leading-[20px]'} text-[#050505] whitespace-pre-wrap`}>
+          <p className={`${compact ? 'text-xs leading-[16px]' : 'text-[15px] leading-[20px]'} text-[#050505] whitespace-pre-wrap`}>
             {visiblePrimary}
             {shouldCollapse && !expanded && (
               <>
@@ -150,7 +150,7 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
         <div className="flex items-center justify-between px-4 py-3 bg-[#f0f2f5]">
           <div className="flex-1 min-w-0 mr-3">
             {displayUrl && (
-              <p className={`${compact ? 'text-[10px]' : 'text-[12px]'} uppercase tracking-wide truncate text-[#65676b]`}>
+              <p className={`${compact ? 'text-2xs' : 'text-xs'} uppercase tracking-wide truncate text-[#65676b]`}>
                 {displayUrl}
               </p>
             )}

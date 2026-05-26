@@ -29,7 +29,7 @@ export default function ResolvedSection({
     <div>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 w-full py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+        className="flex items-center gap-1.5 w-full py-2 text-2xs font-semibold uppercase tracking-wider text-gray-400"
       >
         {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         Resolved ({comments.length})
@@ -40,7 +40,7 @@ export default function ResolvedSection({
             <div key={c.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3 opacity-70">
               {c.comment_type === 'pin' && c.thread_number && (
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="w-4 h-4 rounded-full bg-gray-400 text-white flex items-center justify-center text-[9px] font-bold">
+                  <span className="w-4 h-4 rounded-full bg-gray-400 text-white flex items-center justify-center text-2xs font-bold">
                     {c.thread_number}
                   </span>
                 </div>
@@ -51,7 +51,7 @@ export default function ResolvedSection({
                   authorUserId={c.author_user_id}
                   isTeam={c.author_type === 'team'}
                   memberLookup={memberLookup}
-                  className="w-5 h-5 text-[9px]"
+                  className="w-5 h-5 text-2xs"
                   muted
                 />
                 <div className="min-w-0 flex-1">
@@ -60,14 +60,14 @@ export default function ResolvedSection({
                   <div className="flex items-center gap-2 mt-1.5">
                     <div className="flex items-center gap-1">
                       <CheckCircle2 size={10} className="text-emerald-500" />
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-2xs text-gray-400">
                         Resolved{c.resolved_by ? ` by ${c.resolved_by}` : ''}
                       </span>
                     </div>
                     {onUnresolve && (
                       <button
                         onClick={() => onUnresolve(c.id)}
-                        className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors"
+                        className="flex items-center gap-1 text-2xs text-gray-400 hover:text-amber-600 transition-colors"
                       >
                         <RotateCcw size={9} />
                         Reopen

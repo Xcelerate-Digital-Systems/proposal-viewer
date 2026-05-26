@@ -122,7 +122,7 @@ export default function AccountSwitcher({
               <p className="text-xs text-white/30 text-center py-4 px-3">No agencies found</p>
             ) : (
               <>
-                <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-white/25">
+                <p className="px-3 pt-1 pb-1 text-2xs font-semibold uppercase tracking-wider text-white/25">
                   Agencies
                 </p>
                 {agencies.map((agency) => (
@@ -136,7 +136,7 @@ export default function AccountSwitcher({
                     }`}
                   >
                     <div
-                      className="w-5 h-5 rounded flex items-center justify-center shrink-0 text-[10px] font-bold"
+                      className="w-5 h-5 rounded flex items-center justify-center shrink-0 text-2xs font-bold"
                       style={{ background: 'rgba(138,217,209,0.12)', color: '#8AD9D1' }}
                     >
                       {agency.name.charAt(0).toUpperCase()}

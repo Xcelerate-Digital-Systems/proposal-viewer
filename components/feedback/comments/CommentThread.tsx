@@ -163,13 +163,13 @@ export default function CommentThread({
           authorUserId={comment.author_user_id}
           isTeam={isTeam}
           memberLookup={memberLookup}
-          className="w-8 h-8 text-[12px]"
+          className="w-8 h-8 text-xs"
         />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-sm font-medium text-ink">{comment.author_name}</span>
             {isTeam && (
-              <span className="text-[10px] font-medium bg-teal/10 text-teal px-2 py-0.5 rounded-full">
+              <span className="text-2xs font-medium bg-teal/10 text-teal px-2 py-0.5 rounded-full">
                 Team
               </span>
             )}
@@ -183,7 +183,7 @@ export default function CommentThread({
               const label = `${asset.type === 'headline' ? 'Headline' : 'Description'} ${asset.index + 1}`;
               return (
                 <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#1a0dab]"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-blue-50 text-[#1a0dab]"
                   title={label}
                 >
                   <Icon size={10} />
@@ -321,7 +321,7 @@ export default function CommentThread({
             </Button>
           )}
           {deleting && (
-            <span className="flex items-center gap-1 text-[12px] text-gray-400">
+            <span className="flex items-center gap-1 text-xs text-gray-400">
               <Loader2 size={12} className="animate-spin" />
               Deleting…
             </span>

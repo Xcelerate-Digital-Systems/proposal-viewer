@@ -52,7 +52,7 @@ export default function ViewerPreview({
             ) : companyName ? (
               <div className="flex items-center gap-1.5">
                 <Building2 size={12} className="text-[#555]" />
-                <span className="text-[10px] text-white font-medium truncate">{companyName}</span>
+                <span className="text-2xs text-white font-medium truncate">{companyName}</span>
               </div>
             ) : (
               <div className="w-16 h-3 rounded" style={{ backgroundColor: border }} />
@@ -62,7 +62,7 @@ export default function ViewerPreview({
             {['Executive Summary', 'Our Approach', 'Project Timeline', 'Investment', 'Case Studies', 'Next Steps'].map((item, i) => (
               <div
                 key={item}
-                className="flex items-center gap-1 px-2 py-1.5 rounded text-[9px] truncate"
+                className="flex items-center gap-1 px-2 py-1.5 rounded text-2xs truncate"
                 style={{
                   color: i === 0 ? sidebarTextColor : `${sidebarTextColor}88`,
                   fontWeight: i === 0 ? 600 : 400,
@@ -76,14 +76,14 @@ export default function ViewerPreview({
           </div>
           <div className="p-2 space-y-1.5 border-t" style={{ borderColor: border }}>
             <div
-              className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[9px] font-semibold"
+              className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-2xs font-semibold"
               style={{ backgroundColor: accent, color: acceptTextColor }}
             >
               <CheckCircle2 size={10} />
               Accept Proposal
             </div>
             <div
-              className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[9px] font-medium border"
+              className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-2xs font-medium border"
               style={{
                 backgroundColor: `${accent}15`,
                 borderColor: `${accent}40`,
@@ -93,7 +93,7 @@ export default function ViewerPreview({
               <MessageSquare size={10} />
               Comments
               <span
-                className="text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center"
+                className="text-2xs w-3.5 h-3.5 rounded-full flex items-center justify-center"
                 style={{ backgroundColor: `${accent}30`, color: accent }}
               >
                 3

@@ -16,9 +16,9 @@ export default function DynamicFieldNodeView({ node }: NodeViewProps) {
         contentEditable={false}
         title={fieldDef?.description}
       >
-        <span className="text-[10px] opacity-60">{'{'}</span>
+        <span className="text-2xs opacity-60">{'{'}</span>
         {label}
-        <span className="text-[10px] opacity-60">{'}'}</span>
+        <span className="text-2xs opacity-60">{'}'}</span>
       </span>
     </NodeViewWrapper>
   );

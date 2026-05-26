@@ -50,7 +50,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: 'pos
   const cls = tone === 'positive' ? 'text-emerald-600' : tone === 'negative' ? 'text-rose-600' : 'text-ink';
   return (
     <div className="leading-tight">
-      <div className="text-[9px] uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
       <div className={`text-[13px] font-semibold ${cls}`}>{value}</div>
     </div>
   );

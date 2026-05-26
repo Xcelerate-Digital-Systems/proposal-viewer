@@ -135,7 +135,7 @@ function FeedbackProjectCard({
                   e.stopPropagation();
                   handleDelete();
                 }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-600 hover:bg-red-50 transition-colors text-left"
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors text-left"
               >
                 <Trash2 size={13} />
                 Delete project

@@ -91,7 +91,7 @@ export default function InsertPageMenu({
         type="button"
         onClick={() => !disabled && setOpen((prev) => !prev)}
         disabled={disabled}
-        className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] transition-colors ${
+        className={`flex items-center gap-1 px-2.5 py-1 rounded text-2xs transition-colors ${
           disabled
             ? 'text-gray-300 cursor-not-allowed'
             : open
@@ -125,7 +125,7 @@ export default function InsertPageMenu({
             <FileUp size={14} className="text-gray-400 shrink-0" />
             <div>
               <div className="font-medium">PDF Page</div>
-              <div className="text-[10px] text-gray-400 mt-0.5">Upload a PDF file</div>
+              <div className="text-2xs text-gray-400 mt-0.5">Upload a PDF file</div>
             </div>
           </button>
 
@@ -141,7 +141,7 @@ export default function InsertPageMenu({
             <FileText size={14} className="text-teal/60 shrink-0" />
             <div>
               <div className="font-medium">Text Page</div>
-              <div className="text-[10px] text-gray-400 mt-0.5">Rich text content page</div>
+              <div className="text-2xs text-gray-400 mt-0.5">Rich text content page</div>
             </div>
           </button>
 
@@ -155,7 +155,7 @@ export default function InsertPageMenu({
               <DollarSign size={14} className="text-teal/60 shrink-0" />
               <div>
                 <div className="font-medium">Quote Page</div>
-                <div className="text-[10px] text-gray-400 mt-0.5">Add investment breakdown</div>
+                <div className="text-2xs text-gray-400 mt-0.5">Add investment breakdown</div>
               </div>
             </button>
           )}

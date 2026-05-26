@@ -139,7 +139,7 @@ export default function AdminSidebar({
     <>
       {/* WORKSPACE section */}
       <div className="px-3 pt-1 pb-2">
-        <span className="text-[10px] font-semibold uppercase tracking-[3px] text-[#8AD9D1]/50">
+        <span className="text-2xs font-semibold uppercase tracking-[3px] text-[#8AD9D1]/50">
           Workspace
         </span>
       </div>
@@ -153,7 +153,7 @@ export default function AdminSidebar({
 
       {/* ACCOUNT section */}
       <div className="px-3 pt-1 pb-2">
-        <span className="text-[10px] font-semibold uppercase tracking-[3px] text-[#8AD9D1]/50">
+        <span className="text-2xs font-semibold uppercase tracking-[3px] text-[#8AD9D1]/50">
           Account
         </span>
       </div>
@@ -183,7 +183,7 @@ export default function AdminSidebar({
         <span>Back</span>
       </Link>
       <div className="px-3 pt-1 pb-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+        <span className="text-2xs font-semibold uppercase tracking-wider text-white/30">
           {section.label}
         </span>
       </div>

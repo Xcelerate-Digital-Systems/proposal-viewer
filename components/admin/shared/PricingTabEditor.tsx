@@ -120,7 +120,7 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
           >
             <DollarSign size={13} className="shrink-0 opacity-70" />
             <span className="truncate max-w-[160px]">{page.title || 'Untitled'}</span>
-            {!page.enabled && <span className="text-[10px] opacity-40 ml-0.5">(off)</span>}
+            {!page.enabled && <span className="text-2xs opacity-40 ml-0.5">(off)</span>}
             <span
               role="button"
               onClick={(e) => { e.stopPropagation(); editor.deletePage(page.id); }}

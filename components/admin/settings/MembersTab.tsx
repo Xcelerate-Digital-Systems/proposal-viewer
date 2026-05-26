@@ -444,7 +444,7 @@ function MemberRowItem({
               </button>
             )}
             {isCurrentUser && (
-              <span className="text-[10px] text-faint font-medium shrink-0">(you)</span>
+              <span className="text-2xs text-faint font-medium shrink-0">(you)</span>
             )}
           </div>
         ) : (

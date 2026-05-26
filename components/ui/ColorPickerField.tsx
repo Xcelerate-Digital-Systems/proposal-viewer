@@ -222,8 +222,8 @@ export default function ColorPickerField({
       {/* Alpha slider */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Opacity</span>
-          <span className="text-[10px] font-mono text-gray-500">{alphaPct}%</span>
+          <span className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Opacity</span>
+          <span className="text-2xs font-mono text-gray-500">{alphaPct}%</span>
         </div>
         <div className="relative h-5 rounded-md overflow-hidden border border-gray-100" style={CHECKER_BG}>
           <div
@@ -250,7 +250,7 @@ export default function ColorPickerField({
       {/* Brand colours */}
       {branding.length > 0 && (
         <div className="mb-3">
-          <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Brand</span>
+          <span className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Brand</span>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {branding.map((c) => (
               <button
@@ -272,7 +272,7 @@ export default function ColorPickerField({
       {/* Recently used colours */}
       {recent.length > 0 && (
         <div className="mb-3">
-          <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Recent</span>
+          <span className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Recent</span>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {recent.map((c) => {
               const r = parseColor(c);
@@ -300,7 +300,7 @@ export default function ColorPickerField({
       {/* Hex input + preview */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/10 transition-all">
-          <span className="text-[10px] text-gray-400 font-mono">#</span>
+          <span className="text-2xs text-gray-400 font-mono">#</span>
           <input
             type="text"
             value={hexInput.replace('#', '')}
@@ -356,7 +356,7 @@ export default function ColorPickerField({
     <div className="flex items-center justify-between group">
       <div className="flex-1 min-w-0">
         <span className="text-xs text-gray-600">{label}</span>
-        {hint && <p className="text-[10px] text-gray-400 mt-0.5">{hint}</p>}
+        {hint && <p className="text-2xs text-gray-400 mt-0.5">{hint}</p>}
       </div>
 
       <div className="relative flex items-center gap-1.5" ref={popoverRef}>
@@ -377,7 +377,7 @@ export default function ColorPickerField({
         </button>
 
         {/* Hex badge */}
-        <span className="text-[10px] text-gray-400 font-mono w-[64px] text-center select-all">
+        <span className="text-2xs text-gray-400 font-mono w-[64px] text-center select-all">
           {displayColor}
         </span>
 

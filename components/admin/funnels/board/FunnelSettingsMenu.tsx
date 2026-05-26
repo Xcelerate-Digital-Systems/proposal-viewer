@@ -37,7 +37,7 @@ export default function FunnelSettingsMenu({ funnel, onUpdate }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-[12px] text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"
+        className="flex items-center gap-1.5 text-xs text-muted hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface transition-colors"
         title="Forecast settings"
       >
         <Settings2 size={12} />
@@ -72,7 +72,7 @@ export default function FunnelSettingsMenu({ funnel, onUpdate }: Props) {
                 </Row>
               ))}
             </div>
-            <p className="text-[10px] text-muted mt-1.5 leading-snug">
+            <p className="text-2xs text-muted mt-1.5 leading-snug">
               Yearly multiplies your source visitor counts by 12 so the totals
               reflect a year of running this funnel.
             </p>
@@ -86,7 +86,7 @@ export default function FunnelSettingsMenu({ funnel, onUpdate }: Props) {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</div>
+      <div className="text-2xs uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</div>
       {children}
     </div>
   );
@@ -97,7 +97,7 @@ function Row({ active, onClick, children }: { active: boolean; onClick: () => vo
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-[12px] transition-colors ${
+      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors ${
         active ? 'bg-teal/10 text-ink' : 'text-ink hover:bg-surface'
       }`}
     >

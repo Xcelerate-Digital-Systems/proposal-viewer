@@ -155,7 +155,7 @@ export default function ReviewTopBar({
           <button
             type="button"
             onClick={() => onModeChange('comment')}
-            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[12px] font-semibold transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-colors ${
               branded
                 ? ''
                 : mode === 'comment'
@@ -170,7 +170,7 @@ export default function ReviewTopBar({
           <button
             type="button"
             onClick={() => onModeChange('browse')}
-            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[12px] font-semibold transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-colors ${
               branded
                 ? ''
                 : mode === 'browse'
@@ -194,14 +194,14 @@ export default function ReviewTopBar({
             {initials}
           </div>
           {submitted ? (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[12px] font-semibold">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">
               Review submitted
             </span>
           ) : (
             <button
               type="button"
               onClick={() => setShowFinish(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[12px] font-semibold hover:brightness-110 transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold hover:brightness-110 transition-all shadow-sm"
               style={{ backgroundColor: accentColor }}
             >
               Finish reviewing
@@ -212,7 +212,7 @@ export default function ReviewTopBar({
       </div>
 
       {commentsPaused && (
-        <div className="fixed top-12 inset-x-0 z-20 bg-amber-50 border-b border-amber-200 text-amber-800 text-[12px] font-medium px-4 py-1.5 flex items-center justify-center gap-2">
+        <div className="fixed top-12 inset-x-0 z-20 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-medium px-4 py-1.5 flex items-center justify-center gap-2">
           <Pause size={12} />
           The team has paused new comments for this review.
         </div>

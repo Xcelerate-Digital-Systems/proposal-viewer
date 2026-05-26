@@ -27,7 +27,7 @@ export default function FeedbackModeBar({ mode, onCancel, accentColor }: Feedbac
       <span>{message}</span>
       <button
         onClick={onCancel}
-        className="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-[12px] font-medium transition-colors"
+        className="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-xs font-medium transition-colors"
       >
         Cancel
       </button>

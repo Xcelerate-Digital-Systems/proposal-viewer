@@ -123,7 +123,7 @@ function ToolButton({
       {/* Badge */}
       {badge != null && (
         <span
-          className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-semibold px-1"
+          className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-2xs font-semibold px-1"
           style={{
             backgroundColor: active ? '#ffffff' : accent,
             color: active ? accent : '#ffffff',

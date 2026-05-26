@@ -100,25 +100,25 @@ export default function TierEditor({
           <div className="px-4 py-4 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-medium text-gray-400 mb-1.5">Package Name</label>
+                <label className="block text-2xs font-medium text-gray-400 mb-1.5">Package Name</label>
                 <input type="text" value={tier.name} onChange={e => onUpdate({ name: e.target.value })}
                   placeholder="Starter"
                   className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
               </div>
               <div>
-                <label className="block text-[10px] font-medium text-gray-400 mb-1.5">Price</label>
+                <label className="block text-2xs font-medium text-gray-400 mb-1.5">Price</label>
                 <CurrencyInput value={tier.price} onChange={(val) => onUpdate({ price: val })} size="md" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-medium text-gray-400 mb-1.5">Price Prefix</label>
+                <label className="block text-2xs font-medium text-gray-400 mb-1.5">Price Prefix</label>
                 <input type="text" value={tier.price_prefix} onChange={e => onUpdate({ price_prefix: e.target.value })}
                   placeholder="FROM"
                   className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
               </div>
               <div>
-                <label className="block text-[10px] font-medium text-gray-400 mb-1.5">Price Suffix</label>
+                <label className="block text-2xs font-medium text-gray-400 mb-1.5">Price Suffix</label>
                 <input type="text" value={tier.price_suffix} onChange={e => onUpdate({ price_suffix: e.target.value })}
                   placeholder="/month"
                   className="w-full px-2.5 py-2.5 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
@@ -140,7 +140,7 @@ export default function TierEditor({
           {/* Conditions / Notes */}
           <div className="px-4 py-4 space-y-2.5">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Conditions / Notes</label>
+              <label className="text-2xs font-medium text-gray-400 uppercase tracking-wider">Conditions / Notes</label>
               <button onClick={onAddCondition}
                 className="flex items-center gap-1 px-2 py-0.5 rounded border border-teal/30 text-xs text-teal hover:bg-teal/5 hover:border-teal transition-colors">
                 <Plus size={11} /> Add
@@ -162,7 +162,7 @@ export default function TierEditor({
           {/* Features */}
           <div className="px-4 py-4 space-y-2.5">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Features</label>
+              <label className="text-2xs font-medium text-gray-400 uppercase tracking-wider">Features</label>
               <button onClick={onAddFeature}
                 className="flex items-center gap-1 px-2 py-0.5 rounded border border-teal/30 text-xs text-teal hover:bg-teal/5 hover:border-teal transition-colors">
                 <Plus size={11} /> Add

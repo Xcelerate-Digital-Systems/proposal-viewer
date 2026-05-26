@@ -340,7 +340,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   // Sentence-case "People" + tight padding matches their subtle pill treatment.
   const peopleLabel = visitors > 0 ? formatCount(visitors) : 'n/a';
   const metricsEl = showMetrics && (
-    <div className="mt-2 px-2.5 py-1 rounded-[5px] bg-white border border-edge/70 shadow-[0_1px_2px_rgba(20,20,40,0.06)] leading-tight whitespace-nowrap flex items-center justify-center gap-2 text-[10.5px]">
+    <div className="mt-2 px-2.5 py-1 rounded-[5px] bg-white border border-edge/70 shadow-[0_1px_2px_rgba(20,20,40,0.06)] leading-tight whitespace-nowrap flex items-center justify-center gap-2 text-2xs">
       <span className="flex items-center gap-1">
         <span className="text-muted/80">People</span>
         <span className={`font-semibold ${visitors > 0 ? 'text-ink' : 'text-muted'}`}>{peopleLabel}</span>

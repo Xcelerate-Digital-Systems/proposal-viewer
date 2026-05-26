@@ -33,7 +33,7 @@ function ItemThumbnail({
         style={{ backgroundColor: `${textColor}08` }}
       >
         <Mail size={16} style={{ color: `${textColor}44` }} />
-        <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${textColor}55` }}>
+        <span className="text-2xs truncate max-w-full px-1" style={{ color: `${textColor}55` }}>
           {item.email_subject || 'Email'}
         </span>
       </div>
@@ -47,7 +47,7 @@ function ItemThumbnail({
         style={{ backgroundColor: `${textColor}08` }}
       >
         <Smartphone size={16} style={{ color: `${textColor}44` }} />
-        <span className="text-[9px] truncate max-w-full px-1" style={{ color: `${textColor}55` }}>
+        <span className="text-2xs truncate max-w-full px-1" style={{ color: `${textColor}55` }}>
           {item.sms_body ? `${item.sms_body.slice(0, 20)}…` : 'SMS'}
         </span>
       </div>
@@ -240,7 +240,7 @@ export default function ItemSidebar({
                   </span>
                   {itemThreads > 0 && (
                     <span
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                      className="text-2xs font-bold px-1.5 py-0.5 rounded-full shrink-0"
                       style={{ backgroundColor: `${accent}22`, color: accent }}
                     >
                       {itemThreads}

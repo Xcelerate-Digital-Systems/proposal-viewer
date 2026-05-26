@@ -104,7 +104,7 @@ export default function TextPageFormPanel({ form, companyId, onUpdate }: TextPag
 
               {form.show_member_badge && companyId && (
                 <div>
-                  <label className="block text-[10px] font-medium text-gray-400 mb-1">
+                  <label className="block text-2xs font-medium text-gray-400 mb-1">
                     Team Member
                   </label>
                   <PreparedBySelector
@@ -116,7 +116,7 @@ export default function TextPageFormPanel({ form, companyId, onUpdate }: TextPag
               )}
 
               {form.show_member_badge && !companyId && (
-                <p className="text-[10px] text-gray-400">
+                <p className="text-2xs text-gray-400">
                   Company context required to select a team member.
                 </p>
               )}
@@ -145,7 +145,7 @@ export default function TextPageFormPanel({ form, companyId, onUpdate }: TextPag
                   />
                 </button>
               </div>
-              <p className="text-[10px] text-gray-400 leading-relaxed">
+              <p className="text-2xs text-gray-400 leading-relaxed">
                 Displays the client logo. Appears top-right on portrait pages, side column on landscape pages.
               </p>
             </div>
@@ -162,7 +162,7 @@ export default function TextPageFormPanel({ form, companyId, onUpdate }: TextPag
               onUpdate={(content) => onUpdate({ content })}
               placeholder="Start writing your content... Use the Fields button to insert dynamic fields like {Client Name}."
             />
-            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
+            <p className="text-2xs text-gray-400 mt-2 leading-relaxed">
               Use the <strong>Fields</strong> button in the toolbar to insert dynamic
               fields that auto-populate with client/company information in the viewer.
             </p>

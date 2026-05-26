@@ -590,7 +590,7 @@ export default function FeedbackDetailView({
 
         {/* Comments-paused banner (client only — shown immediately below the header rows) */}
         {isClient && project.pause_new_comments && (
-          <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-[12px] font-medium px-4 py-1.5 flex items-center justify-center gap-2 shrink-0">
+          <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-medium px-4 py-1.5 flex items-center justify-center gap-2 shrink-0">
             <Pause size={12} />
             The team has paused new comments for this review.
           </div>

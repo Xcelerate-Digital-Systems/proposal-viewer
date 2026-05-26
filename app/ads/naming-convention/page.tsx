@@ -112,7 +112,7 @@ function NamingConvention() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="inline-flex items-center gap-1.5 text-[12px] text-faint hover:text-muted mb-3"
+            className="inline-flex items-center gap-1.5 text-xs text-faint hover:text-muted mb-3"
           >
             <ArrowLeft size={13} />
             Back
@@ -122,7 +122,7 @@ function NamingConvention() {
               <BookOpen size={18} className="text-teal" />
             </div>
             <div>
-              <h1 className="text-[20px] font-semibold text-ink">Ad Naming Convention</h1>
+              <h1 className="text-xl font-semibold text-ink">Ad Naming Convention</h1>
               <p className="text-[13px] text-faint mt-0.5">
                 Post-Andromeda creative naming for AgencyViz
               </p>
@@ -134,7 +134,7 @@ function NamingConvention() {
       <div className="max-w-5xl mx-auto px-8 py-8 space-y-10">
         {/* Pattern */}
         <section>
-          <h2 className="text-[14px] font-semibold text-ink mb-3">Pattern</h2>
+          <h2 className="text-sm font-semibold text-ink mb-3">Pattern</h2>
           <div className="bg-white rounded-2xl border border-edge px-6 py-5">
             <div className="font-mono text-[15px] text-ink tracking-wide">
               [OFFER]_[ANGLE]_[PERSONA]_[FORMAT##]_[HOOK##]
@@ -142,7 +142,7 @@ function NamingConvention() {
             <div className="mt-3 font-mono text-[13px] text-teal">
               FREEQUOTE_PROOF_TRADIES_VID01_HOOK02
             </div>
-            <p className="text-[12px] text-faint mt-3">
+            <p className="text-xs text-faint mt-3">
               Underscores between fields. No spaces. Zero-pad numbers (VID01, not VID1).
               Inside a field use no separator (COSTSAVINGS, not COST_SAVINGS).
             </p>
@@ -151,19 +151,19 @@ function NamingConvention() {
 
         {/* Segment legend */}
         <section>
-          <h2 className="text-[14px] font-semibold text-ink mb-3">Segment Legend</h2>
+          <h2 className="text-sm font-semibold text-ink mb-3">Segment Legend</h2>
           <div className="bg-white rounded-2xl border border-edge overflow-hidden">
             {SEGMENT_CODES.map((row, i) => (
               <div
                 key={row.code}
                 className={`flex gap-5 px-6 py-4 ${i < SEGMENT_CODES.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
-                <span className="font-mono text-[12px] text-teal shrink-0 w-[110px] pt-0.5">
+                <span className="font-mono text-xs text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
                 </span>
                 <div className="min-w-0">
                   <p className="text-[13px] text-ink leading-relaxed">{row.description}</p>
-                  <p className="text-[12px] text-faint mt-1 font-mono">{row.examples}</p>
+                  <p className="text-xs text-faint mt-1 font-mono">{row.examples}</p>
                 </div>
               </div>
             ))}
@@ -172,8 +172,8 @@ function NamingConvention() {
 
         {/* Angle list */}
         <section>
-          <h2 className="text-[14px] font-semibold text-ink mb-1">Angle List</h2>
-          <p className="text-[12px] text-faint mb-3">
+          <h2 className="text-sm font-semibold text-ink mb-1">Angle List</h2>
+          <p className="text-xs text-faint mb-3">
             Same nine angles used as standard tags in the swipe file. Pick one per ad.
           </p>
           <div className="bg-white rounded-2xl border border-edge overflow-hidden">
@@ -182,10 +182,10 @@ function NamingConvention() {
                 key={row.code}
                 className={`flex gap-5 px-5 py-3 ${i < ANGLES.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
-                <span className="font-mono text-[12px] text-teal shrink-0 w-[110px] pt-0.5">
+                <span className="font-mono text-xs text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
                 </span>
-                <span className="text-[12px] text-muted">{row.desc}</span>
+                <span className="text-xs text-muted">{row.desc}</span>
               </div>
             ))}
           </div>
@@ -193,14 +193,14 @@ function NamingConvention() {
 
         {/* Persona — how to name */}
         <section>
-          <h2 className="text-[14px] font-semibold text-ink mb-1">Persona</h2>
-          <p className="text-[12px] text-faint mb-3">
+          <h2 className="text-sm font-semibold text-ink mb-1">Persona</h2>
+          <p className="text-xs text-faint mb-3">
             Persona is the audience the ad is built for. Unlike angles, there&apos;s no fixed list —
             each client has their own customer. Pick a short, obvious code per client and stick with it.
           </p>
 
           <div className="bg-white rounded-2xl border border-edge p-5 mb-4">
-            <h3 className="text-[12px] font-semibold text-ink mb-2 uppercase tracking-wide">How to name a persona</h3>
+            <h3 className="text-xs font-semibold text-ink mb-2 uppercase tracking-wide">How to name a persona</h3>
             <ul className="space-y-2 text-[13px] text-muted">
               <li>
                 <span className="text-teal font-medium">Use the customer, not the business size.</span>{' '}
@@ -216,23 +216,23 @@ function NamingConvention() {
               </li>
               <li>
                 <span className="text-teal font-medium">If a client has two distinct audiences,</span>{' '}
-                use two persona codes (e.g. <span className="font-mono text-[12px]">TRADIES</span> and{' '}
-                <span className="font-mono text-[12px]">OFFICEMGR</span>) and run them as parallel tests.
+                use two persona codes (e.g. <span className="font-mono text-xs">TRADIES</span> and{' '}
+                <span className="font-mono text-xs">OFFICEMGR</span>) and run them as parallel tests.
               </li>
             </ul>
           </div>
 
-          <p className="text-[12px] text-faint mb-2">Example persona codes you might define:</p>
+          <p className="text-xs text-faint mb-2">Example persona codes you might define:</p>
           <div className="bg-white rounded-2xl border border-edge overflow-hidden">
             {PERSONA_EXAMPLES.map((row, i) => (
               <div
                 key={row.code}
                 className={`flex gap-5 px-5 py-3 ${i < PERSONA_EXAMPLES.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
-                <span className="font-mono text-[12px] text-teal shrink-0 w-[110px] pt-0.5">
+                <span className="font-mono text-xs text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
                 </span>
-                <span className="text-[12px] text-muted">{row.desc}</span>
+                <span className="text-xs text-muted">{row.desc}</span>
               </div>
             ))}
           </div>
@@ -240,14 +240,14 @@ function NamingConvention() {
 
         {/* Format codes */}
         <section>
-          <h2 className="text-[14px] font-semibold text-ink mb-3">Format Codes</h2>
+          <h2 className="text-sm font-semibold text-ink mb-3">Format Codes</h2>
           <div className="bg-white rounded-2xl border border-edge overflow-hidden">
             {FORMAT_CODES.map((row, i) => (
               <div
                 key={row.code}
                 className={`flex items-center gap-4 px-5 py-3 ${i < FORMAT_CODES.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
-                <span className="font-mono text-[12px] text-teal w-[80px] shrink-0">{row.code}</span>
+                <span className="font-mono text-xs text-teal w-[80px] shrink-0">{row.code}</span>
                 <span className="text-[13px] text-muted">{row.label}</span>
               </div>
             ))}
@@ -256,12 +256,12 @@ function NamingConvention() {
 
         {/* Examples */}
         <section>
-          <h2 className="text-[14px] font-semibold text-ink mb-3">Examples</h2>
+          <h2 className="text-sm font-semibold text-ink mb-3">Examples</h2>
           <div className="space-y-2">
             {EXAMPLES.map((ex) => (
               <div key={ex.name} className="bg-white rounded-2xl border border-edge px-5 py-4">
                 <p className="font-mono text-[13px] text-ink">{ex.name}</p>
-                <p className="text-[12px] text-faint mt-1">{ex.note}</p>
+                <p className="text-xs text-faint mt-1">{ex.note}</p>
               </div>
             ))}
           </div>
@@ -269,7 +269,7 @@ function NamingConvention() {
 
         {/* Rules */}
         <section>
-          <h2 className="text-[14px] font-semibold text-ink mb-3">Rules</h2>
+          <h2 className="text-sm font-semibold text-ink mb-3">Rules</h2>
           <div className="bg-white rounded-2xl border border-edge px-6 py-5 space-y-3">
             {[
               ['Did the argument change?', 'New ANGLE.'],
@@ -293,9 +293,9 @@ function NamingConvention() {
         <section className="pt-4 border-t border-gray-100">
           <div className="flex items-center gap-2.5 mb-4">
             <Sparkles size={16} className="text-teal" />
-            <h2 className="text-[16px] font-semibold text-ink">Meta Andromeda, explained simply</h2>
+            <h2 className="text-base font-semibold text-ink">Meta Andromeda, explained simply</h2>
           </div>
-          <p className="text-[14px] text-muted leading-relaxed mb-6">
+          <p className="text-sm text-muted leading-relaxed mb-6">
             Andromeda is the AI engine Meta now uses to decide which ad to show which person.
             It rolled out globally through late 2024 and 2025 and quietly rewrote the rules of how
             Meta ads work. If you&apos;ve never heard of it, here&apos;s the whole thing in five
@@ -306,9 +306,9 @@ function NamingConvention() {
           <div className="bg-white rounded-2xl border border-edge p-6 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles size={15} className="text-teal" />
-              <h3 className="text-[14px] font-semibold text-ink">1. What it actually is</h3>
+              <h3 className="text-sm font-semibold text-ink">1. What it actually is</h3>
             </div>
-            <p className="text-[14px] text-muted leading-relaxed">
+            <p className="text-sm text-muted leading-relaxed">
               Andromeda is a giant matchmaker. Every time someone opens Facebook or Instagram, Meta
               has to pick one ad to show them out of millions of options — in about a tenth of a
               second. Andromeda is the AI brain that does that picking. It looks at the person, it
@@ -322,9 +322,9 @@ function NamingConvention() {
           <div className="bg-white rounded-2xl border border-edge p-6 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <Layers size={15} className="text-teal" />
-              <h3 className="text-[14px] font-semibold text-ink">2. How it sees your ads (Entity IDs)</h3>
+              <h3 className="text-sm font-semibold text-ink">2. How it sees your ads (Entity IDs)</h3>
             </div>
-            <p className="text-[14px] text-muted leading-relaxed">
+            <p className="text-sm text-muted leading-relaxed">
               When you upload an ad, Andromeda doesn&apos;t see it as &quot;ad #47 in account X.&quot;
               It looks at the actual image or video and gives it a fingerprint based on what it
               looks like. Meta calls this an <span className="text-ink font-medium">Entity ID</span>.
@@ -332,7 +332,7 @@ function NamingConvention() {
               get the same fingerprint, even if you uploaded them as separate ads. To Andromeda
               they are literally the same thing.
             </p>
-            <p className="text-[14px] text-muted leading-relaxed mt-3">
+            <p className="text-sm text-muted leading-relaxed mt-3">
               The consequence: if you upload 30 ads that look almost identical, Andromeda groups
               them into maybe 2 or 3 buckets and only one ad in each bucket actually gets shown.
               The other 27 sit there doing nothing. To get real reach you need ads that look
@@ -346,16 +346,16 @@ function NamingConvention() {
           <div className="bg-white rounded-2xl border border-edge p-6 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <Lock size={15} className="text-teal" />
-              <h3 className="text-[14px] font-semibold text-ink">3. What it actually impacts</h3>
+              <h3 className="text-sm font-semibold text-ink">3. What it actually impacts</h3>
             </div>
-            <p className="text-[14px] text-muted leading-relaxed mb-4">
+            <p className="text-sm text-muted leading-relaxed mb-4">
               Andromeda changed which parts of an ad matter for performance. The visual side of the
               ad — the bit baked into the image or video file — is now doing almost all of the
               heavy lifting. The text fields around it (primary text, headline, description) matter
               far less than they used to.
             </p>
             <div className="rounded-xl border border-edge overflow-hidden">
-              <div className="grid grid-cols-[1fr_140px_140px] bg-surface text-[12px] text-faint px-4 py-2.5 font-medium uppercase tracking-wide">
+              <div className="grid grid-cols-[1fr_140px_140px] bg-surface text-xs text-faint px-4 py-2.5 font-medium uppercase tracking-wide">
                 <div>Element</div>
                 <div className="text-center">Baked into asset</div>
                 <div className="text-center">Affects Entity ID</div>
@@ -388,13 +388,13 @@ function NamingConvention() {
           <div className="bg-white rounded-2xl border border-edge p-6 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <RefreshCw size={15} className="text-teal" />
-              <h3 className="text-[14px] font-semibold text-ink">4. What Andromeda rewards</h3>
+              <h3 className="text-sm font-semibold text-ink">4. What Andromeda rewards</h3>
             </div>
-            <p className="text-[14px] text-muted leading-relaxed">
+            <p className="text-sm text-muted leading-relaxed">
               Andromeda is hungry for fresh, varied creative. The pattern that consistently wins
               under it:
             </p>
-            <ul className="mt-3 space-y-2 text-[14px] text-ink">
+            <ul className="mt-3 space-y-2 text-sm text-ink">
               <li>
                 <span className="text-teal font-medium">8–15 genuinely different concepts</span> at
                 a time, not 50 near-duplicates
@@ -418,36 +418,36 @@ function NamingConvention() {
           <div className="bg-white rounded-2xl border-2 border-teal/30 p-6">
             <div className="flex items-center gap-2 mb-2">
               <BookOpen size={15} className="text-teal" />
-              <h3 className="text-[14px] font-semibold text-ink">5. How this naming convention helps</h3>
+              <h3 className="text-sm font-semibold text-ink">5. How this naming convention helps</h3>
             </div>
-            <p className="text-[14px] text-muted leading-relaxed mb-4">
+            <p className="text-sm text-muted leading-relaxed mb-4">
               Now look back at the pattern at the top of this page:
             </p>
             <div className="bg-surface rounded-xl px-4 py-3 mb-4 font-mono text-[13px] text-ink">
               [OFFER]_[ANGLE]_[PERSONA]_[FORMAT##]_[HOOK##]
             </div>
-            <p className="text-[14px] text-muted leading-relaxed mb-3">
+            <p className="text-sm text-muted leading-relaxed mb-3">
               Every field exists because Andromeda made it matter:
             </p>
-            <ul className="space-y-2.5 text-[14px] text-ink">
+            <ul className="space-y-2.5 text-sm text-ink">
               <li>
-                <span className="font-mono text-[12px] text-teal mr-2">ANGLE</span>
+                <span className="font-mono text-xs text-teal mr-2">ANGLE</span>
                 <span className="text-muted">forces us to track <em>which persuasion argument</em> a winning ad used, so we can make more like it.</span>
               </li>
               <li>
-                <span className="font-mono text-[12px] text-teal mr-2">PERSONA</span>
+                <span className="font-mono text-xs text-teal mr-2">PERSONA</span>
                 <span className="text-muted">forces us to label <em>who</em> an ad was made for, so reports can show which audiences a concept actually resonates with.</span>
               </li>
               <li>
-                <span className="font-mono text-[12px] text-teal mr-2">FORMAT</span>
+                <span className="font-mono text-xs text-teal mr-2">FORMAT</span>
                 <span className="text-muted">forces format diversity into the naming itself — we can see at a glance whether we&apos;re leaning too hard on one type.</span>
               </li>
               <li>
-                <span className="font-mono text-[12px] text-teal mr-2">HOOK</span>
+                <span className="font-mono text-xs text-teal mr-2">HOOK</span>
                 <span className="text-muted">tracks the only thing Andromeda cares about most: what the ad <em>looks like in the first second</em>. Different hook = different fingerprint = different ad in Meta&apos;s eyes.</span>
               </li>
             </ul>
-            <p className="text-[14px] text-muted leading-relaxed mt-4">
+            <p className="text-sm text-muted leading-relaxed mt-4">
               The naming convention isn&apos;t just paperwork. It mirrors exactly how Andromeda
               thinks about your ads — so when we look at our own reports, we&apos;re grouping them
               the same way Meta is. That&apos;s how we figure out what to make more of.
@@ -457,10 +457,10 @@ function NamingConvention() {
 
         {/* Sources */}
         <section className="pt-4 pb-12">
-          <h2 className="text-[12px] font-semibold text-faint uppercase tracking-wide mb-3">
+          <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mb-3">
             Sources
           </h2>
-          <ul className="space-y-1.5 text-[12px] text-muted">
+          <ul className="space-y-1.5 text-xs text-muted">
             <li>
               <a href="https://adsuploader.com/blog/meta-andromeda" target="_blank" rel="noreferrer" className="hover:text-teal">
                 Meta Andromeda Explained: Entity IDs vs Creative Volume — Adsuploader

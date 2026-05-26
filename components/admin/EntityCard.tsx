@@ -148,7 +148,7 @@ export default function EntityCard({
         )}
 
         {/* Date overlay */}
-        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-medium text-faint shadow-sm">
+        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-faint shadow-sm">
           {formatDate(createdAt)}
         </span>
 
@@ -173,7 +173,7 @@ export default function EntityCard({
         </div>
 
         {subtitle && (
-          <p className="text-[12px] text-faint truncate mb-2.5">
+          <p className="text-xs text-faint truncate mb-2.5">
             {subtitle}
           </p>
         )}

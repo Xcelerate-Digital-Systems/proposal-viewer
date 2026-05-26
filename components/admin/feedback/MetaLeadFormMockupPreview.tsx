@@ -277,7 +277,7 @@ function IntroPage({
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-2">
-        <h2 className="text-[18px] font-bold leading-tight">
+        <h2 className="text-lg font-bold leading-tight">
           {data.intro_headline?.trim() || 'Headline goes here'}
         </h2>
         <p className="text-[13px] leading-snug whitespace-pre-wrap" style={{ color: subtle }}>
@@ -288,7 +288,7 @@ function IntroPage({
       <div className="mt-auto px-4 pb-4 pt-2">
         <button
           onClick={(e) => { e.stopPropagation(); onContinue(); }}
-          className="w-full py-3 rounded-full text-[14px] font-semibold text-white"
+          className="w-full py-3 rounded-full text-sm font-semibold text-white"
           style={{ backgroundColor: fbBlue }}
           type="button"
         >
@@ -322,13 +322,13 @@ function QuestionsPage({
   return (
     <div className="flex flex-col">
       <div className="px-4 pt-4 pb-2">
-        <h2 className="text-[16px] font-bold leading-tight">{title}</h2>
-        <p className="text-[12px] leading-snug mt-1" style={{ color: subtle }}>{subtitle}</p>
+        <h2 className="text-base font-bold leading-tight">{title}</h2>
+        <p className="text-xs leading-snug mt-1" style={{ color: subtle }}>{subtitle}</p>
       </div>
 
       <div className="px-4 py-2 flex flex-col gap-3">
         {questions.length === 0 && (
-          <div className="text-[12px] italic py-6 text-center" style={{ color: subtle }}>
+          <div className="text-xs italic py-6 text-center" style={{ color: subtle }}>
             No questions on this page yet.
           </div>
         )}
@@ -348,7 +348,7 @@ function QuestionsPage({
       <div className="mt-auto px-4 pb-4 pt-2">
         <button
           onClick={(e) => { e.stopPropagation(); onNext(); }}
-          className="w-full py-3 rounded-full text-[14px] font-semibold text-white"
+          className="w-full py-3 rounded-full text-sm font-semibold text-white"
           style={{ backgroundColor: fbBlue }}
           type="button"
         >
@@ -418,14 +418,14 @@ function QuestionField({
     const options = question.options?.length ? question.options : ['Option 1', 'Option 2'];
     return (
       <div>
-        <label className="text-[12px] font-semibold block mb-1.5">
+        <label className="text-xs font-semibold block mb-1.5">
           {label}{question.required && <span style={{ color: '#ef4444' }}> *</span>}
         </label>
         <div className="flex flex-col gap-1.5">
           {options.map((opt, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-[12px]"
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-xs"
               style={{ backgroundColor: fieldBg, border: `1px solid ${border}`, color: dark ? '#f5f5f5' : '#050505' }}
             >
               <span
@@ -442,11 +442,11 @@ function QuestionField({
 
   return (
     <div>
-      <label className="text-[12px] font-semibold block mb-1.5">
+      <label className="text-xs font-semibold block mb-1.5">
         {label}{question.required && <span style={{ color: '#ef4444' }}> *</span>}
       </label>
       <div
-        className="px-3 py-2.5 rounded-md text-[12px]"
+        className="px-3 py-2.5 rounded-md text-xs"
         style={{
           backgroundColor: fieldBg,
           border: `1px solid ${border}`,
@@ -496,9 +496,9 @@ function PrivacyPage({
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center gap-2 mb-2">
           <Lock size={14} style={{ color: subtle }} />
-          <span className="text-[12px] font-semibold">Privacy</span>
+          <span className="text-xs font-semibold">Privacy</span>
         </div>
-        <p className="text-[12px] leading-snug" style={{ color: subtle }}>
+        <p className="text-xs leading-snug" style={{ color: subtle }}>
           By clicking Continue, you agree to send your info to {businessName} who agrees to use it according to their privacy policy. Meta will also use it subject to the Meta Privacy Policy, including to autofill forms for ads.
         </p>
 
@@ -507,7 +507,7 @@ function PrivacyPage({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-md text-[12px] font-medium border"
+          className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-medium border"
           style={{ borderColor: dark ? '#2a2a2a' : '#dadde1' }}
         >
           <span className="truncate">
@@ -521,7 +521,7 @@ function PrivacyPage({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="mt-2 flex items-center justify-between px-3 py-2.5 rounded-md text-[12px] font-medium border"
+          className="mt-2 flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-medium border"
           style={{ borderColor: dark ? '#2a2a2a' : '#dadde1' }}
         >
           <span>View Meta Privacy Policy</span>
@@ -532,7 +532,7 @@ function PrivacyPage({
       <div className="mt-auto px-4 pb-4 pt-2">
         <button
           onClick={(e) => { e.stopPropagation(); onSubmit(); }}
-          className="w-full py-3 rounded-full text-[14px] font-semibold text-white"
+          className="w-full py-3 rounded-full text-sm font-semibold text-white"
           style={{ backgroundColor: fbBlue }}
           type="button"
         >
@@ -570,15 +570,15 @@ function ReviewPage({
   return (
     <div className="flex flex-col">
       <div className="px-4 pt-4 pb-2">
-        <h2 className="text-[16px] font-bold leading-tight">Review your info</h2>
-        <p className="text-[12px] leading-snug mt-1" style={{ color: subtle }}>
+        <h2 className="text-base font-bold leading-tight">Review your info</h2>
+        <p className="text-xs leading-snug mt-1" style={{ color: subtle }}>
           Tap to edit anything that's not quite right.
         </p>
       </div>
 
       <div className="px-4 py-2 flex flex-col gap-2">
         {[...customQuestions, ...prefillQuestions].length === 0 && (
-          <div className="text-[12px] italic py-6 text-center" style={{ color: subtle }}>
+          <div className="text-xs italic py-6 text-center" style={{ color: subtle }}>
             Nothing to review.
           </div>
         )}
@@ -589,10 +589,10 @@ function ReviewPage({
             style={{ borderColor: border }}
           >
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: subtle }}>
+              <div className="text-2xs uppercase tracking-wider font-semibold" style={{ color: subtle }}>
                 {q.label?.trim() || labelForType(q.type)}
               </div>
-              <div className="text-[12px] mt-0.5 truncate">{sample(q)}</div>
+              <div className="text-xs mt-0.5 truncate">{sample(q)}</div>
             </div>
             <Pencil size={12} className="mt-0.5 shrink-0" style={{ color: subtle }} />
           </div>
@@ -602,7 +602,7 @@ function ReviewPage({
       <div className="mt-auto px-4 pb-4 pt-2">
         <button
           onClick={(e) => { e.stopPropagation(); onSubmit(); }}
-          className="w-full py-3 rounded-full text-[14px] font-semibold text-white"
+          className="w-full py-3 rounded-full text-sm font-semibold text-white"
           style={{ backgroundColor: fbBlue }}
           type="button"
         >
@@ -634,7 +634,7 @@ function CompletionPage({
     <div className="flex flex-col h-full">
       {showPicker && (
         <div
-          className="px-3 py-2 flex items-center gap-2 text-[10px] border-b"
+          className="px-3 py-2 flex items-center gap-2 text-2xs border-b"
           style={{
             borderColor: dark ? '#222' : '#e4e6e9',
             color: subtle,
@@ -674,7 +674,7 @@ function CompletionPage({
         >
           <Check size={28} className="text-white" strokeWidth={3} />
         </div>
-        <h2 className="text-[18px] font-bold leading-tight">
+        <h2 className="text-lg font-bold leading-tight">
           {screen.headline?.trim() || 'Thanks, you’re all set.'}
         </h2>
         <p className="text-[13px] leading-snug whitespace-pre-wrap" style={{ color: subtle }}>
@@ -684,7 +684,7 @@ function CompletionPage({
 
       <div className="mt-auto px-4 pb-4 pt-2">
         <button
-          className="w-full py-3 rounded-full text-[14px] font-semibold text-white"
+          className="w-full py-3 rounded-full text-sm font-semibold text-white"
           style={{ backgroundColor: fbBlue }}
           type="button"
         >

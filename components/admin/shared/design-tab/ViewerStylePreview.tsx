@@ -180,7 +180,7 @@ function TocMock(props: ViewerStylePreviewProps) {
               return (
                 <div key={idx} className="mt-6 mb-1">
                   <span
-                    className="text-[9px] font-bold uppercase"
+                    className="text-2xs font-bold uppercase"
                     style={{ color: subtitle, letterSpacing: '0.2em', fontFamily: bodyFont }}
                   >
                     {item.label}
@@ -265,7 +265,7 @@ function PricingMock(props: ViewerStylePreviewProps) {
 
           <div className="mb-4">
             <div
-              className="flex items-center justify-between px-3 py-2 text-[9px] font-semibold uppercase tracking-wider rounded-t-lg"
+              className="flex items-center justify-between px-3 py-2 text-2xs font-semibold uppercase tracking-wider rounded-t-lg"
               style={{ backgroundColor: surface, color: faint }}
             >
               <span>Description</span>
@@ -410,7 +410,7 @@ export function ViewerStylePreviewTabs({
           <button
             key={tab.key}
             onClick={() => onTabChange(tab.key)}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-colors ${
               isActive
                 ? 'bg-teal/10 text-teal'
                 : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'

@@ -129,37 +129,37 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
 
         {/* Results body */}
         <div className="px-6 py-4 max-w-[680px]">
-          <p className="text-[12px] text-gray-500 mb-4">About 1,540,000,000 results (0.42 seconds)</p>
+          <p className="text-xs text-gray-500 mb-4">About 1,540,000,000 results (0.42 seconds)</p>
 
           {/* Ad card */}
           <div className="mb-6">
-            <p className="text-[12px] font-medium text-gray-900 mb-1.5">Sponsored</p>
+            <p className="text-xs font-medium text-gray-900 mb-1.5">Sponsored</p>
 
             <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-[10px] font-semibold text-gray-500 shrink-0">
+              <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-2xs font-semibold text-gray-500 shrink-0">
                 {(data.business_name || data.display_url || 'A').slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-[14px] text-gray-900 truncate font-medium leading-tight">
+                <p className="text-sm text-gray-900 truncate font-medium leading-tight">
                   {data.business_name || data.display_url || 'example.com'}
                 </p>
-                <p className="text-[12px] text-gray-500 truncate leading-tight">{displayPath}</p>
+                <p className="text-xs text-gray-500 truncate leading-tight">{displayPath}</p>
               </div>
             </div>
 
-            <h3 className="text-[20px] leading-[26px] text-[#1a0dab] cursor-pointer mt-1 mb-1 line-clamp-2 break-words font-normal">
+            <h3 className="text-xl leading-[26px] text-[#1a0dab] cursor-pointer mt-1 mb-1 line-clamp-2 break-words font-normal">
               {headline}
             </h3>
 
-            <p className="text-[14px] leading-[22px] text-[#4d5156] break-words">{description}</p>
+            <p className="text-sm leading-[22px] text-[#4d5156] break-words">{description}</p>
 
             {sitelinks.length > 0 && (
               <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2.5">
                 {sitelinks.map((s) => (
                   <div key={s.id} className="min-w-0">
-                    <p className="text-[14px] text-[#1a0dab] truncate cursor-pointer hover:underline">{s.text}</p>
+                    <p className="text-sm text-[#1a0dab] truncate cursor-pointer hover:underline">{s.text}</p>
                     {(s.description1 || s.description2) && (
-                      <p className="text-[12px] text-gray-500 line-clamp-2">
+                      <p className="text-xs text-gray-500 line-clamp-2">
                         {s.description1}{s.description2 ? ` ${s.description2}` : ''}
                       </p>
                     )}
@@ -193,7 +193,7 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
           </div>
         </div>
 
-        <p className="text-[10px] text-gray-400 text-center pb-3">
+        <p className="text-2xs text-gray-400 text-center pb-3">
           Previews are examples and don&apos;t include all possible formats.
         </p>
       </div>
@@ -226,13 +226,13 @@ function AssetSection({
     <div className="border-b border-gray-100 last:border-b-0">
       <div className="px-3.5 py-2.5 flex items-center gap-2 bg-gray-50/60">
         <Icon size={15} className="text-gray-500" />
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-gray-600 flex-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 flex-1">
           {label}
         </p>
         <span className="text-[11px] tabular-nums text-gray-400">{count}/{max}</span>
       </div>
       {items.length === 0 ? (
-        <p className="px-3.5 py-3 text-[12px] text-gray-400 italic">{emptyHint}</p>
+        <p className="px-3.5 py-3 text-xs text-gray-400 italic">{emptyHint}</p>
       ) : (
         <ul className="py-1.5">
           {items.map((text, i) => {
@@ -272,7 +272,7 @@ function AssetSection({
                     )}
                   </span>
                   {commentCount > 0 && (
-                    <span className="mt-0.5 inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-medium shrink-0">
+                    <span className="mt-0.5 inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-amber-100 text-amber-700 text-2xs font-medium shrink-0">
                       <MessageSquare size={10} />
                       {commentCount}
                     </span>

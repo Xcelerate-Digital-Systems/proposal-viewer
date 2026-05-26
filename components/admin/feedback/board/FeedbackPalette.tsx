@@ -193,7 +193,7 @@ export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, o
     <aside className="w-[300px] shrink-0 border-r border-edge bg-white flex flex-col">
       <div className="px-4 py-3 border-b border-edge flex items-start justify-between gap-2 shrink-0">
         <div className="min-w-0">
-          <h3 className="text-[14px] font-semibold text-ink">Add to canvas</h3>
+          <h3 className="text-sm font-semibold text-ink">Add to canvas</h3>
           <p className="text-[11px] text-muted mt-0.5">Click or drag any tile to the canvas</p>
         </div>
         <button
@@ -215,7 +215,7 @@ export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, o
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10.5px] font-medium transition-colors border-b-2 ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-2xs font-medium transition-colors border-b-2 ${
                 isActive
                   ? 'border-teal text-teal bg-teal/[0.04]'
                   : 'border-transparent text-muted hover:text-ink hover:bg-surface'
@@ -277,10 +277,10 @@ function ItemsTabContent() {
 
       <div>
         <div className="flex items-center justify-between mb-1.5 px-1">
-          <span className="text-[10px] uppercase tracking-wider font-semibold text-muted">
+          <span className="text-2xs uppercase tracking-wider font-semibold text-muted">
             Add to board
           </span>
-          <span className="text-[10px] text-faint">{unplacedItems.length}</span>
+          <span className="text-2xs text-faint">{unplacedItems.length}</span>
         </div>
 
         {loading ? (
@@ -313,7 +313,7 @@ function ItemsTabContent() {
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] truncate leading-tight">{item.title}</span>
-                    <span className="block text-[10px] text-faint leading-tight">
+                    <span className="block text-2xs text-faint leading-tight">
                       {ITEM_TYPE_LABELS[item.type]}
                     </span>
                   </span>
@@ -333,7 +333,7 @@ function ItemsTabContent() {
             onClick={() => setShowPlaced((v) => !v)}
             className="w-full flex items-center justify-between px-1 py-1.5 rounded text-muted hover:text-ink transition-colors"
           >
-            <span className="text-[10px] uppercase tracking-wider font-semibold">
+            <span className="text-2xs uppercase tracking-wider font-semibold">
               On board ({placedItems.length})
             </span>
             {showPlaced ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -348,7 +348,7 @@ function ItemsTabContent() {
                     className="group flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-surface transition-colors"
                   >
                     <span className={`w-2 h-2 rounded-full shrink-0 ${statusDef.dot}`} />
-                    <span className="flex-1 text-[12px] text-ink/70 truncate">{item.title}</span>
+                    <span className="flex-1 text-xs text-ink/70 truncate">{item.title}</span>
                     <button
                       type="button"
                       onClick={() => removeItemFromBoard(item.id)}
@@ -382,7 +382,7 @@ function PaletteSection({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between text-[10px] uppercase tracking-wider font-semibold text-muted hover:text-ink transition-colors mb-1.5"
+        className="w-full flex items-center justify-between text-2xs uppercase tracking-wider font-semibold text-muted hover:text-ink transition-colors mb-1.5"
       >
         <span>{group.label}</span>
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -431,7 +431,7 @@ function PaletteTile({ item, activeTool, onClick }: {
         >
           <Icon size={22} strokeWidth={1.8} className="text-white" />
         </span>
-        <span className="text-[10px] text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none px-0.5">
+        <span className="text-2xs text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none px-0.5">
           {item.label}
         </span>
       </button>
@@ -459,7 +459,7 @@ function PaletteTile({ item, activeTool, onClick }: {
         >
           <Icon size={22} strokeWidth={1.8} />
         </span>
-        <span className="text-[10px] text-center leading-tight line-clamp-2 pointer-events-none px-0.5">
+        <span className="text-2xs text-center leading-tight line-clamp-2 pointer-events-none px-0.5">
           {item.label}
         </span>
       </button>
@@ -479,7 +479,7 @@ function PaletteTile({ item, activeTool, onClick }: {
       <span className="w-11 h-11 flex items-center justify-center rounded-sm bg-sticky-yellow text-ink/70 pointer-events-none">
         <StickyNote size={20} strokeWidth={1.7} />
       </span>
-      <span className="text-[10px] text-ink/80 text-center leading-tight pointer-events-none">
+      <span className="text-2xs text-ink/80 text-center leading-tight pointer-events-none">
         {item.label}
       </span>
     </button>

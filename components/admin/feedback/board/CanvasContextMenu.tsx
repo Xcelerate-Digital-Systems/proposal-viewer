@@ -71,7 +71,7 @@ export default function CanvasContextMenu({
           type="button"
           onClick={it.onClick}
           disabled={it.disabled}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left transition-colors ${
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
             it.disabled
               ? 'text-faint cursor-not-allowed'
               : it.danger
@@ -81,7 +81,7 @@ export default function CanvasContextMenu({
         >
           <span className={`shrink-0 ${it.danger ? 'text-rose-500' : 'text-muted'}`}>{it.icon}</span>
           <span className="flex-1">{it.label}</span>
-          {it.shortcut && <span className="text-[10px] text-faint">{it.shortcut}</span>}
+          {it.shortcut && <span className="text-2xs text-faint">{it.shortcut}</span>}
         </button>
       ))}
     </div>

@@ -40,7 +40,7 @@ export default function VersionPicker({
   const active = versions.find((v) => (v.id ?? null) === activeVersionId) || versions[0];
   const ordered = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
 
-  const padding = compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-[12px]';
+  const padding = compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-xs';
 
   return (
     <div ref={wrapperRef} className="relative flex items-center gap-1">
@@ -74,14 +74,14 @@ export default function VersionPicker({
                   }}
                   className="flex items-start gap-2 flex-1 min-w-0 text-left"
                 >
-                  <span className="text-[12px] font-semibold text-ink tabular-nums shrink-0 mt-0.5">
+                  <span className="text-xs font-semibold text-ink tabular-nums shrink-0 mt-0.5">
                     v{v.versionNumber}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] text-gray-500 truncate">
+                    <p className="text-xs text-gray-500 truncate">
                       {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
                     </p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">
+                    <p className="text-2xs text-gray-400 mt-0.5">
                       {formatTimestamp(v.createdAt)}
                     </p>
                   </div>
@@ -112,7 +112,7 @@ export default function VersionPicker({
       {onAddVersion && (
         <button
           onClick={onAddVersion}
-          className={`${compact ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-[12px]'} inline-flex items-center gap-1 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 font-medium transition-colors`}
+          className={`${compact ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'} inline-flex items-center gap-1 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 font-medium transition-colors`}
           title="Upload a new version"
         >
           <Plus size={compact ? 11 : 12} />

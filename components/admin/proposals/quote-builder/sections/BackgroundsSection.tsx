@@ -46,7 +46,7 @@ function ColorField({
           <button
             type="button"
             onClick={() => onChange(defaultValue)}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+            className="flex items-center gap-1 text-2xs text-gray-400 hover:text-gray-600 transition-colors"
           >
             <RotateCcw size={9} />
             Reset

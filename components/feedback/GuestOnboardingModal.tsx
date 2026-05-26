@@ -154,7 +154,7 @@ export default function GuestOnboardingModal({
               />
               <label
                 htmlFor="guest-name"
-                className="absolute left-3.5 top-1.5 text-[10px] uppercase tracking-wide font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-gray-500"
+                className="absolute left-3.5 top-1.5 text-2xs uppercase tracking-wide font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-2xs peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-gray-500"
               >
                 Your name
               </label>
@@ -175,7 +175,7 @@ export default function GuestOnboardingModal({
               />
               <label
                 htmlFor="guest-email"
-                className="absolute left-3.5 top-1.5 text-[10px] uppercase tracking-wide font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-gray-500"
+                className="absolute left-3.5 top-1.5 text-2xs uppercase tracking-wide font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-2xs peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-gray-500"
               >
                 Email (optional)
               </label>

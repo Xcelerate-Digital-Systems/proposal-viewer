@@ -69,7 +69,7 @@ function DeploymentIdField() {
   };
   return (
     <div className="flex items-stretch gap-2">
-      <code className="flex-1 min-w-0 px-3 py-2 text-[12px] font-mono text-ink bg-white border border-line rounded-lg overflow-x-auto whitespace-nowrap">
+      <code className="flex-1 min-w-0 px-3 py-2 text-xs font-mono text-ink bg-white border border-line rounded-lg overflow-x-auto whitespace-nowrap">
         {META_DEPLOYMENT_ID}
       </code>
       <Button

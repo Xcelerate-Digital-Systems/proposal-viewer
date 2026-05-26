@@ -104,7 +104,7 @@ function StatusPill({
                     setOpen(false);
                     onChange(opt);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left hover:bg-gray-50 transition-colors ${
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-50 transition-colors ${
                     opt === value ? 'bg-gray-50' : ''
                   }`}
                 >

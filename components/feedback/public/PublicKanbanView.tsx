@@ -266,7 +266,7 @@ function DraggableKanbanCard({
                 {item.title}
               </h4>
               {item.version > 1 && (
-                <span className="text-[10px] font-semibold text-gray-400 shrink-0">v{item.version}</span>
+                <span className="text-2xs font-semibold text-gray-400 shrink-0">v{item.version}</span>
               )}
             </div>
             <p className="text-[11px] text-gray-400 mt-0.5 truncate">{meta.label}</p>

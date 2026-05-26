@@ -21,9 +21,9 @@ export default function GoogleBannerAdMockupPreview({ headline, displayUrl, crea
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="text-xs font-medium text-gray-900 truncate">{headline || 'Your Headline'}</p>
-            <p className="text-[10px] text-gray-400 truncate">{displayUrl || 'example.com'}</p>
+            <p className="text-2xs text-gray-400 truncate">{displayUrl || 'example.com'}</p>
           </div>
-          <span className="text-[9px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded shrink-0">Ad</span>
+          <span className="text-2xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded shrink-0">Ad</span>
         </div>
       </div>
     </div>

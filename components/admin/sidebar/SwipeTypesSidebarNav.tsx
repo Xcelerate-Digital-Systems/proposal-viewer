@@ -32,7 +32,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
       </Link>
 
       <div className="px-3 pt-1 pb-2 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+        <span className="text-2xs font-semibold uppercase tracking-wider text-white/30">
           Swipe File
         </span>
       </div>
@@ -69,7 +69,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                       aria-label={isShared ? 'Shared with you' : 'Shared with a partner'}
                     />
                   )}
-                  <span className="text-[10px] text-white/40 shrink-0">{type.file_count}</span>
+                  <span className="text-2xs text-white/40 shrink-0">{type.file_count}</span>
                   {active && <ChevronRight size={12} className="text-[#8AD9D1]/50 shrink-0" />}
                 </Link>
                 {/* Owner-only actions: rename / delete / change share list. */}

@@ -332,7 +332,7 @@ export default function SwipeFileDetailModal({
                   file.transcription ? (
                     <p className="text-[13px] text-ink whitespace-pre-wrap">{file.transcription}</p>
                   ) : (
-                    <p className="text-[12px] text-faint italic">No transcript available.</p>
+                    <p className="text-xs text-faint italic">No transcript available.</p>
                   )
                 ) : (
                   <div className="space-y-2">
@@ -351,7 +351,7 @@ export default function SwipeFileDetailModal({
                       type="button"
                       onClick={handleTranscribe}
                       disabled={transcribing}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-edge text-[12px] font-medium text-ink hover:bg-surface disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-edge text-xs font-medium text-ink hover:bg-surface disabled:opacity-50"
                     >
                       {transcribing ? (
                         <><Loader2 size={12} className="animate-spin" /> Transcribing…</>
@@ -399,20 +399,20 @@ export default function SwipeFileDetailModal({
             <div className="px-5 py-4 border-t border-edge">
               {confirmingDelete ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-[12px] text-red-700 font-medium mb-2">Delete this swipe?</p>
+                  <p className="text-xs text-red-700 font-medium mb-2">Delete this swipe?</p>
                   <p className="text-[11px] text-red-600 mb-3">This can&apos;t be undone.</p>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="flex-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[12px] font-semibold disabled:opacity-50"
+                      className="flex-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-50"
                     >
                       {deleting ? 'Deleting…' : 'Yes, delete'}
                     </button>
                     <button
                       onClick={() => setConfirmingDelete(false)}
                       disabled={deleting}
-                      className="px-3 py-1.5 rounded-lg border border-edge text-[12px] text-ink hover:bg-white"
+                      className="px-3 py-1.5 rounded-lg border border-edge text-xs text-ink hover:bg-white"
                     >
                       Cancel
                     </button>

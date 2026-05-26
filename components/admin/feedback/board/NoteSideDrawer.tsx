@@ -28,7 +28,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
             className="w-7 h-7 rounded-md shrink-0"
             style={{ backgroundColor: note.color || '#FFF4B8' }}
           />
-          <span className="text-[12px] font-semibold text-ink truncate">Sticky note</span>
+          <span className="text-xs font-semibold text-ink truncate">Sticky note</span>
         </div>
         <button
           onClick={onClose}
@@ -51,7 +51,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
         </Field>
 
         <div>
-          <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted mb-2">Color</h4>
+          <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Color</h4>
           <div className="flex flex-wrap gap-1.5">
             {NOTE_COLORS.map((c) => {
               const active = (note.color || '#FFF4B8') === c.value;
@@ -87,7 +87,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
       <div className="px-4 py-3 border-t border-edge">
         <button
           onClick={onDelete}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-rose-200 text-[12px] text-rose-600 hover:bg-rose-50 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
         >
           <Trash2 size={13} /> Delete note
         </button>
@@ -99,7 +99,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</label>
+      <label className="block text-2xs uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</label>
       {children}
     </div>
   );

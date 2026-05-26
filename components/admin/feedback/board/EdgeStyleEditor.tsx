@@ -289,7 +289,7 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
           className="w-12 h-7 px-1.5 rounded-md border border-edge bg-surface text-xs text-center text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
           title="Label font size (px)"
         />
-        <span className="text-[10px] text-ink/50">px</span>
+        <span className="text-2xs text-ink/50">px</span>
       </div>
 
       {/* Label colour */}

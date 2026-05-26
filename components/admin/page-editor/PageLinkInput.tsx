@@ -40,11 +40,11 @@ export default function PageLinkInput({ linkUrl, linkLabel, onChange, variant = 
         <div className="mt-1.5 ml-0 p-2.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Link2 size={11} className="text-teal" />
-            <span className="text-[10px] font-semibold text-teal uppercase tracking-wide">External Link</span>
+            <span className="text-2xs font-semibold text-teal uppercase tracking-wide">External Link</span>
             {hasLink && (
               <button
                 onClick={() => { onChange('', ''); }}
-                className="ml-auto text-[10px] text-red-400 hover:text-red-500 flex items-center gap-0.5"
+                className="ml-auto text-2xs text-red-400 hover:text-red-500 flex items-center gap-0.5"
               >
                 <X size={10} /> Remove
               </button>

@@ -148,7 +148,7 @@ export default function WorkspaceSwitcher({
 
           {memberships.length > 0 && (
             <>
-              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-white/25">
+              <p className="px-3 pt-2.5 pb-1 text-2xs font-semibold uppercase tracking-wider text-white/25">
                 My Workspaces
               </p>
               <div className="max-h-64 overflow-y-auto py-1">
@@ -166,14 +166,14 @@ export default function WorkspaceSwitcher({
                       }`}
                     >
                       <div
-                        className="w-5 h-5 rounded flex items-center justify-center shrink-0 text-[10px] font-bold"
+                        className="w-5 h-5 rounded flex items-center justify-center shrink-0 text-2xs font-bold"
                         style={{ background: 'rgba(138,217,209,0.12)', color: '#8AD9D1' }}
                       >
                         {(company?.name ?? '?').charAt(0).toUpperCase()}
                       </div>
                       <span className="flex-1 min-w-0 text-left">
                         <span className="block truncate">{company?.name ?? 'Workspace'}</span>
-                        <span className="block text-[10px] text-white/30 truncate capitalize">
+                        <span className="block text-2xs text-white/30 truncate capitalize">
                           {m.role}{company?.account_type === 'client' ? ' · client' : ''}
                         </span>
                       </span>

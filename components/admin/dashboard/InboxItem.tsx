@@ -121,7 +121,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
     <div className={`px-5 py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}>
       <div className="flex gap-3">
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0 bg-accent-feedback-tint text-accent-feedback">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 bg-accent-feedback-tint text-accent-feedback">
           {initials(item.clientName)}
         </div>
 
@@ -129,7 +129,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
           {/* Top row: author + time */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[13px] font-semibold text-ink">{item.clientName}</span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent-feedback-tint text-accent-feedback">
+            <span className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded-full bg-accent-feedback-tint text-accent-feedback">
               <MessageSquareText size={10} />
               Feedback
             </span>
@@ -139,7 +139,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
           </div>
 
           {/* Breadcrumb: Project → Item */}
-          <div className="flex items-center gap-1.5 text-[12px] mt-1 min-w-0">
+          <div className="flex items-center gap-1.5 text-xs mt-1 min-w-0">
             <span className="font-medium text-ink truncate">{item.projectName}</span>
             <ChevronRight size={11} className="text-faint shrink-0" />
             <span className="text-muted truncate">{item.itemTitle}</span>
@@ -206,14 +206,14 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
                     setError(null);
                   }}
                   disabled={sending}
-                  className="text-[12px] font-medium text-muted hover:text-ink px-2 py-1.5"
+                  className="text-xs font-medium text-muted hover:text-ink px-2 py-1.5"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={sendReply}
                   disabled={sending || !replyText.trim()}
-                  className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover disabled:bg-teal/50 disabled:cursor-not-allowed text-white text-[12px] font-semibold rounded-full px-3 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover disabled:bg-teal/50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-full px-3 py-1.5 transition-colors"
                 >
                   <Send size={12} />
                   {sending ? 'Sending…' : 'Reply & resolve'}
@@ -227,7 +227,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
             <div className="flex items-center gap-1 mt-3">
               <button
                 onClick={() => setReplyOpen(true)}
-                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-ink bg-surface hover:bg-gray-100 rounded-full px-3 py-1.5 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-ink bg-surface hover:bg-gray-100 rounded-full px-3 py-1.5 transition-colors"
               >
                 <Reply size={12} />
                 Reply
@@ -235,14 +235,14 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
               <button
                 onClick={() => markResolved()}
                 disabled={resolving}
-                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted hover:text-ink rounded-full px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-ink rounded-full px-3 py-1.5 transition-colors disabled:opacity-50"
               >
                 {resolving ? <X size={12} className="animate-pulse" /> : <Check size={12} />}
                 {resolving ? 'Resolving…' : 'Resolve'}
               </button>
               <Link
                 href={openHref}
-                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-teal hover:text-teal-hover rounded-full px-3 py-1.5 transition-colors ml-auto"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-teal hover:text-teal-hover rounded-full px-3 py-1.5 transition-colors ml-auto"
               >
                 <ExternalLink size={12} />
                 Open

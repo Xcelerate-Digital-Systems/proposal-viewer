@@ -162,7 +162,7 @@ function Thread({ n, general, author, avatarTone, time, priority, body, replies,
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-medium text-ink">{r.author}</span>
                   {r.isTeam && (
-                    <span className="text-[10px] text-teal bg-teal/10 px-1.5 py-0.5 rounded-full">Team</span>
+                    <span className="text-2xs text-teal bg-teal/10 px-1.5 py-0.5 rounded-full">Team</span>
                   )}
                   <span className="text-[11px] text-gray-400">{r.time}</span>
                 </div>
@@ -191,7 +191,7 @@ function Thread({ n, general, author, avatarTone, time, priority, body, replies,
       )}
 
       {/* Footer actions */}
-      <div className="flex items-center gap-4 mt-3 ml-11 text-[12px] text-gray-400">
+      <div className="flex items-center gap-4 mt-3 ml-11 text-xs text-gray-400">
         <button className="inline-flex items-center gap-1 hover:text-ink transition-colors">
           <CornerDownRight size={12} /> Reply
         </button>
@@ -280,7 +280,7 @@ function Avatar({ tone, initial, small }: { tone: 'teal' | 'amber' | 'violet' | 
     violet: 'bg-violet-100 text-violet-700',
     rose: 'bg-rose-100 text-rose-700',
   };
-  const size = small ? 'w-7 h-7 text-[11px]' : 'w-8 h-8 text-[12px]';
+  const size = small ? 'w-7 h-7 text-[11px]' : 'w-8 h-8 text-xs';
   return (
     <div className={`${size} ${tones[tone]} rounded-full inline-flex items-center justify-center font-semibold shrink-0`}>
       {initial}

@@ -11,6 +11,14 @@ module.exports = {
         display: ['var(--font-sans)'],
         hand: ['var(--font-hand)', 'cursive'],
       },
+      // Extends Tailwind's default fontSize scale with `2xs` (10px) for
+      // tiny labels (badges, uppercase tracking-wider section headers).
+      // Tailwind's smallest default is text-xs (12px); 10px is the most-used
+      // badge size in this codebase and deserves a scale token instead of
+      // 266 `text-[10px]` arbitrary-value usages.
+      fontSize: {
+        '2xs': ['10px', { lineHeight: '14px' }],
+      },
       colors: {
         ink: '#1E2432',
         muted: '#8A8A8A',

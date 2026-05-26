@@ -296,11 +296,11 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
 
         {/* Section label badge */}
         {isGroup ? (
-          <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full shrink-0 bg-gray-100 text-gray-400">
+          <span className="ml-auto text-2xs px-1.5 py-0.5 rounded-full shrink-0 bg-gray-100 text-gray-400">
             section
           </span>
         ) : (
-          <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
+          <span className={`ml-auto text-2xs px-1.5 py-0.5 rounded-full shrink-0 ${
             item.type === 'pdf'      ? 'bg-content-type-pdf-tint text-content-type-pdf'           :
             item.type === 'text'     ? 'bg-content-type-text-tint text-content-type-text'         :
             item.type === 'pricing'  ? 'bg-content-type-pricing-tint text-content-type-pricing'   :

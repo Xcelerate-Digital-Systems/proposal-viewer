@@ -92,7 +92,7 @@ export default function GoogleBannerAdItemForm({ onSubmit, onBack, onCancel, upl
             placeholder="Your ad headline"
             className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
           />
-          <p className="text-[10px] text-gray-400 mt-0.5 text-right">{headline.length}/90</p>
+          <p className="text-2xs text-gray-400 mt-0.5 text-right">{headline.length}/90</p>
         </div>
 
         <div>
@@ -113,7 +113,7 @@ export default function GoogleBannerAdItemForm({ onSubmit, onBack, onCancel, upl
             >
               <Upload size={20} className="mx-auto mb-1.5 text-gray-400" />
               <p className="text-xs font-medium text-gray-600">Upload banner creative</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">336×280, 300×250, or 728×90 recommended</p>
+              <p className="text-2xs text-gray-400 mt-0.5">336×280, 300×250, or 728×90 recommended</p>
             </button>
           )}
         </div>

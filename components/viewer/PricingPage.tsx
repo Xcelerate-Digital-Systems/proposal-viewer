@@ -424,11 +424,11 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           })}
                         </div>
                         <div className="flex justify-between mt-1.5">
-                          <span className="text-[10px]" style={{ color: faint, fontFamily: brandFont }}>
+                          <span className="text-2xs" style={{ color: faint, fontFamily: brandFont }}>
                             {ps.milestones.payments[0]?.label} — {formatAUD(milestoneAmount(ps.milestones.payments[0], total))}
                           </span>
                           {ps.milestones.payments.length > 1 && (
-                            <span className="text-[10px]" style={{ color: faint, fontFamily: brandFont }}>
+                            <span className="text-2xs" style={{ color: faint, fontFamily: brandFont }}>
                               {ps.milestones.payments[ps.milestones.payments.length - 1]?.label} — {formatAUD(milestoneAmount(ps.milestones.payments[ps.milestones.payments.length - 1], total))}
                             </span>
                           )}

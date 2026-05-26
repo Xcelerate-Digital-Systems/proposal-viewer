@@ -129,7 +129,7 @@ export default function ItemThumbStrip({
 
             {threads > 0 && (
               <span
-                className="absolute -top-1 -right-1 text-[9px] leading-none font-bold px-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center"
+                className="absolute -top-1 -right-1 text-2xs leading-none font-bold px-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center"
                 style={{
                   backgroundColor: accent,
                   color: isAdmin ? '#ffffff' : text,

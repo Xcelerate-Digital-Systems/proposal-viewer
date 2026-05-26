@@ -244,7 +244,7 @@ export default function TocPage({
         {companyName && (
           <div className={`${isTwoCol ? 'mt-10' : 'mt-20'} flex items-center justify-end`}>
             <span
-              className="text-[10px] uppercase tracking-[0.25em] font-medium"
+              className="text-2xs uppercase tracking-[0.25em] font-medium"
               style={{ color: subtitleColor, fontFamily: bodyFont }}
             >
               {companyName}

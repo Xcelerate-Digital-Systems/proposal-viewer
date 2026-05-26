@@ -101,7 +101,7 @@ function IMessagePreview({
                 style={{ height: 4 + i * 2 }} />
             ))}
           </div>
-          <span className="text-[10px] font-medium text-gray-900 ml-1">5G</span>
+          <span className="text-2xs font-medium text-gray-900 ml-1">5G</span>
           <div className="w-6 h-3 rounded-sm border border-gray-900 ml-1 relative">
             <div className="absolute inset-[1px] right-[3px] bg-gray-900 rounded-[1px]" />
             <div className="absolute right-[-2px] top-[3px] w-[1.5px] h-[4px] bg-gray-900 rounded-r-sm" />
@@ -127,7 +127,7 @@ function IMessagePreview({
       {/* Messages area */}
       <div className="px-4 py-6 min-h-[220px] bg-white flex flex-col justify-end gap-2">
         {/* Timestamp */}
-        <p className="text-[10px] text-gray-400 text-center mb-1">Today 9:41 AM</p>
+        <p className="text-2xs text-gray-400 text-center mb-1">Today 9:41 AM</p>
 
         {/* The SMS bubble */}
         <div className="flex justify-start">
@@ -137,7 +137,7 @@ function IMessagePreview({
                 {body || 'Your SMS message will appear here…'}
               </p>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1 ml-1">
+            <p className="text-2xs text-gray-400 mt-1 ml-1">
               Delivered
             </p>
           </div>
@@ -154,7 +154,7 @@ function IMessagePreview({
 
       {/* Character count info */}
       <div className="px-4 pb-3 pt-1">
-        <p className="text-[10px] text-center" style={{ color: charCount > 160 ? '#f59e0b' : '#9ca3af' }}>
+        <p className="text-2xs text-center" style={{ color: charCount > 160 ? '#f59e0b' : '#9ca3af' }}>
           {charCount} / 160 characters
           {charCount > 160 && ` · ${Math.ceil(charCount / 160)} segments`}
         </p>
@@ -194,7 +194,7 @@ function AndroidPreview({
                 style={{ height: 4 + i * 2 }} />
             ))}
           </div>
-          <span className="text-[10px] font-medium text-gray-900 ml-1">5G</span>
+          <span className="text-2xs font-medium text-gray-900 ml-1">5G</span>
           <div className="w-6 h-3 rounded-sm border border-gray-900 ml-1 relative">
             <div className="absolute inset-[1px] right-[3px] bg-gray-900 rounded-[1px]" />
             <div className="absolute right-[-2px] top-[3px] w-[1.5px] h-[4px] bg-gray-900 rounded-r-sm" />
@@ -219,11 +219,11 @@ function AndroidPreview({
       {/* Messages area */}
       <div className="px-4 py-6 min-h-[220px] bg-[#f8f9fa] flex flex-col justify-end gap-2">
         {/* Timestamp */}
-        <p className="text-[10px] text-gray-400 text-center mb-1">Today 9:41 AM</p>
+        <p className="text-2xs text-gray-400 text-center mb-1">Today 9:41 AM</p>
 
         {/* The SMS bubble */}
         <div className="flex items-end gap-2">
-          <div className="w-7 h-7 rounded-full bg-[#1a73e8] flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+          <div className="w-7 h-7 rounded-full bg-[#1a73e8] flex items-center justify-center text-2xs font-bold text-white shrink-0">
             {initial}
           </div>
           <div className="max-w-[80%] relative">
@@ -232,7 +232,7 @@ function AndroidPreview({
                 {body || 'Your SMS message will appear here…'}
               </p>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1 ml-1">
+            <p className="text-2xs text-gray-400 mt-1 ml-1">
               9:41 AM
             </p>
           </div>
@@ -254,7 +254,7 @@ function AndroidPreview({
 
       {/* Character count info */}
       <div className="px-4 pb-3 pt-1 bg-white">
-        <p className="text-[10px] text-center" style={{ color: charCount > 160 ? '#f59e0b' : '#9ca3af' }}>
+        <p className="text-2xs text-center" style={{ color: charCount > 160 ? '#f59e0b' : '#9ca3af' }}>
           {charCount} / 160 characters
           {charCount > 160 && ` · ${Math.ceil(charCount / 160)} segments`}
         </p>

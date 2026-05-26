@@ -198,7 +198,7 @@ export default function CoverPreview({
           {/* Date */}
           {showDate && coverDate && (
             <p
-              className="text-[10px] opacity-70 mb-1"
+              className="text-2xs opacity-70 mb-1"
               style={{
                 color: colors.coverSubtitleColor,
                 fontFamily: resolvedBodyFont || undefined,
@@ -229,7 +229,7 @@ export default function CoverPreview({
               {showAvatar && resolvedMember.avatar_url && (
                 <img src={resolvedMember.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
               )}
-              <span className="text-[10px] opacity-80" style={{ color: colors.coverSubtitleColor }}>
+              <span className="text-2xs opacity-80" style={{ color: colors.coverSubtitleColor }}>
                 Prepared by {resolvedMember.name}
               </span>
             </div>
@@ -238,7 +238,7 @@ export default function CoverPreview({
           {/* CTA button */}
           <div className="mt-3">
             <div
-              className="inline-block px-4 py-1.5 text-[10px] tracking-wider uppercase rounded-sm"
+              className="inline-block px-4 py-1.5 text-2xs tracking-wider uppercase rounded-sm"
               style={{
                 backgroundColor: colors.coverButtonBg,
                 color: colors.coverButtonTextColor,

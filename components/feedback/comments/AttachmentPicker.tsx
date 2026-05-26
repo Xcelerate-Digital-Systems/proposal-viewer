@@ -105,7 +105,7 @@ export default function AttachmentPicker({
               >
                 <X size={8} />
               </button>
-              <span className="absolute bottom-0 inset-x-0 bg-black/50 text-[7px] text-white text-center truncate px-0.5">
+              <span className="absolute bottom-0 inset-x-0 bg-black/50 text-2xs text-white text-center truncate px-0.5">
                 {a.file.name}
               </span>
             </div>
@@ -118,7 +118,7 @@ export default function AttachmentPicker({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
         >
           <Paperclip size={10} />
           Attach file
@@ -126,7 +126,7 @@ export default function AttachmentPicker({
       )}
 
       {error && (
-        <p className="text-[10px] text-red-500">{error}</p>
+        <p className="text-2xs text-red-500">{error}</p>
       )}
 
       <input

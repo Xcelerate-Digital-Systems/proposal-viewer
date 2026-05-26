@@ -63,7 +63,7 @@ export default function SmsItemForm({ onSubmit, onBack, onCancel, uploading, onP
             placeholder="Your SMS message text…"
             className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  resize-y min-h-[100px]"
           />
-          <p className="text-[10px] mt-1" style={{ color: smsBody.length > 160 ? '#f59e0b' : '#9ca3af' }}>
+          <p className="text-2xs mt-1" style={{ color: smsBody.length > 160 ? '#f59e0b' : '#9ca3af' }}>
             {smsBody.length} / 160 characters
             {smsBody.length > 160 && ` · ${Math.ceil(smsBody.length / 160)} segments`}
           </p>

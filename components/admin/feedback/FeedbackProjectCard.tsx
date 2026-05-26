@@ -219,7 +219,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
                   if (count === 0) return null;
                   const def = getFeedbackStatusDef(s);
                   return (
-                    <span key={s} className={`flex items-center gap-1 text-[10px] font-medium ${def.text}`}>
+                    <span key={s} className={`flex items-center gap-1 text-2xs font-medium ${def.text}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${def.dot}`} />
                       {count} {def.label.toLowerCase()}
                     </span>
@@ -250,7 +250,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           )}
 
           {/* Date overlay */}
-          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-medium text-faint shadow-sm">
+          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-faint shadow-sm">
             {formatDate(project.created_at)}
           </span>
         </button>
@@ -267,7 +267,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
 
           {/* Client / description — show company first, fall back to contact name. */}
           {(project.client_company || project.client_name || project.description) && (
-            <p className="text-[12px] text-faint truncate mb-2.5">
+            <p className="text-xs text-faint truncate mb-2.5">
               {project.client_company || project.client_name}
               {(project.client_company || project.client_name) && project.description && ' · '}
               {project.description}

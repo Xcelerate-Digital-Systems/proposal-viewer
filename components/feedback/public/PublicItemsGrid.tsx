@@ -83,12 +83,12 @@ export default function PublicItemsGrid({
                     {item.title}
                   </h3>
                   {item.version > 1 && (
-                    <span className="text-[10px] font-semibold text-gray-400 shrink-0">v{item.version}</span>
+                    <span className="text-2xs font-semibold text-gray-400 shrink-0">v{item.version}</span>
                   )}
                 </div>
                 <div className="flex items-center justify-between mt-auto pt-1">
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusDef.bg} ${statusDef.text} ${statusDef.border}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border ${statusDef.bg} ${statusDef.text} ${statusDef.border}`}
                   >
                     {statusDef.label}
                   </span>
