@@ -52,14 +52,32 @@ module.exports = {
           hover: '#013036',    // hover bg on dark surface
           accent: '#8AD9D1',   // bright text/icon accent on dark surface
         },
-        // Section-accent palette — small set of complementary colors used to
-        // color-code major dashboard sections so they're scannable at a
-        // glance. Add new section colors here, not as one-off hex values.
+        // Section / feature accent palette — small set of complementary
+        // colors used to color-code major dashboard sections or feature
+        // areas so they're scannable at a glance. Same hex can appear in
+        // multiple entries — the semantic name is what matters.
         accent: {
           feedback: {
             DEFAULT: '#9333EA',  // purple-600 — icon/text color
             tint: '#FAF5FF',     // purple-50  — swatch background
           },
+          // AI / generation features — "Generate with AI" buttons, AI badges.
+          // Currently same purple as feedback; split if we want them visually
+          // distinct later.
+          ai: {
+            DEFAULT: '#9333EA',  // purple-600 — icon/text color
+            tint: '#FAF5FF',     // purple-50  — button background
+            'tint-hover': '#F3E8FF', // purple-100 — button hover
+          },
+        },
+        // Content-type accent palette — used to color-code page/asset types
+        // (pdf, text, pricing, packages) in pills and indicators. Each entry
+        // is a tint bg + a darker fg, sampled from Tailwind's -50 / -400/-500.
+        'content-type': {
+          pdf: { DEFAULT: '#9CA3AF', tint: '#F3F4F6' },     // gray-400  / gray-100
+          text: { DEFAULT: '#60A5FA', tint: '#EFF6FF' },    // blue-400  / blue-50
+          pricing: { DEFAULT: '#22C55E', tint: '#F0FDF4' }, // green-500 / green-50
+          packages: { DEFAULT: '#A855F7', tint: '#FAF5FF' },// purple-500 / purple-50
         },
       },
       boxShadow: {

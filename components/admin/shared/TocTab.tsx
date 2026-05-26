@@ -301,10 +301,10 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
           </span>
         ) : (
           <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
-            item.type === 'pdf'      ? 'bg-gray-100 text-gray-400'    :
-            item.type === 'text'     ? 'bg-blue-50 text-blue-400'     :
-            item.type === 'pricing'  ? 'bg-green-50 text-green-500'   :
-            item.type === 'packages' ? 'bg-purple-50 text-purple-500' :
+            item.type === 'pdf'      ? 'bg-content-type-pdf-tint text-content-type-pdf'           :
+            item.type === 'text'     ? 'bg-content-type-text-tint text-content-type-text'         :
+            item.type === 'pricing'  ? 'bg-content-type-pricing-tint text-content-type-pricing'   :
+            item.type === 'packages' ? 'bg-content-type-packages-tint text-content-type-packages' :
             'hidden'
           }`}>
             {item.type}
