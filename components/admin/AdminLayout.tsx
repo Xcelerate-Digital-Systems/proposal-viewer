@@ -68,6 +68,9 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
                 companyOverride={auth.companyOverride}
                 onClearOverride={auth.clearCompanyOverride}
                 onSetOverride={auth.setCompanyOverride}
+                memberships={auth.memberships}
+                activeMembershipId={auth.activeMembership?.id ?? null}
+                onSwitchMembership={auth.setActiveMembership}
                 onSignOut={auth.signOut}
               />
             )}

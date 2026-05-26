@@ -8,13 +8,14 @@ import {
   LogOut, Menu, X, ChevronRight, Building2, ArrowLeft, UserSquare2,
 } from 'lucide-react';
 
-import AccountSwitcher from './sidebar/AccountSwitcher';
+import WorkspaceSwitcher from './sidebar/WorkspaceSwitcher';
 import SwipeTypesSidebarNav from './sidebar/SwipeTypesSidebarNav';
 import FeedbackItemsSidebarNav from './sidebar/FeedbackItemsSidebarNav';
 import {
   ALL_SECTIONS, STANDALONE_ITEMS, getActiveSection, LayoutDashboard,
   type NavItem, type SectionDef,
 } from './sidebar/sidebar-config';
+import type { TeamMember } from '@/lib/supabase';
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 
@@ -29,6 +30,12 @@ interface AdminSidebarProps {
   companyOverride?: { companyId: string; companyName: string } | null;
   onClearOverride?: () => void;
   onSetOverride?: (companyId: string, companyName: string) => void;
+  /** All team_members rows for the signed-in user. */
+  memberships?: TeamMember[];
+  /** id of the membership currently in effect (null when there are none). */
+  activeMembershipId?: string | null;
+  /** Switch to a different real workspace the user is a member of. */
+  onSwitchMembership?: (membershipId: string) => void;
   onSignOut: () => Promise<void>;
 }
 
@@ -42,7 +49,9 @@ export default function AdminSidebar({
   accountType = 'agency',
   companyOverride,
   onClearOverride,
-  onSetOverride,
+  memberships = [],
+  activeMembershipId = null,
+  onSwitchMembership,
   onSignOut,
 }: AdminSidebarProps) {
   const pathname = usePathname();
@@ -204,11 +213,19 @@ export default function AdminSidebar({
         <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
       </div>
 
-      {isSuperAdmin && (
+      {/* Show the workspace switcher when the user has any kind of cross-
+          workspace navigation available: multiple real memberships, super-
+          admin (gets the Platform Admin link), or currently overriding into
+          another company. Single-membership users with no admin powers
+          don't need the switcher at all. */}
+      {(memberships.length > 1 || isSuperAdmin || !!companyOverride) && (
         <div className="border-b border-[#01434A] py-2">
-          <AccountSwitcher
+          <WorkspaceSwitcher
+            memberships={memberships}
+            activeMembershipId={activeMembershipId}
+            onSwitch={(id) => onSwitchMembership?.(id)}
+            isSuperAdmin={isSuperAdmin}
             companyOverride={companyOverride}
-            onSetOverride={onSetOverride}
             onClearOverride={onClearOverride}
           />
         </div>
