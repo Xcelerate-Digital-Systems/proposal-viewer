@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, KeyRound, Plus, Copy, Check, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Copy, Check, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface ApiKey {
@@ -72,17 +72,7 @@ export default function ApiKeyManager() {
   const active = keys.filter((k) => !k.revoked_at);
 
   return (
-    <div className="mt-8">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 bg-teal-tint rounded-lg flex items-center justify-center">
-          <KeyRound size={16} className="text-teal" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-ink">API Keys</h2>
-          <p className="text-xs text-faint">For the Agency Viz Chrome extension and external integrations</p>
-        </div>
-      </div>
-
+    <div>
       {justCreated && (
         <div className="mb-4 p-4 bg-teal-tint border border-teal/30 rounded-xl max-w-lg">
           <p className="text-xs font-semibold text-ink mb-1">Key created — copy it now</p>

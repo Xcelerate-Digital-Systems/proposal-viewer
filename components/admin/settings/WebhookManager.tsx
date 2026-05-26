@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Webhook } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { supabase, type WebhookEndpoint } from '@/lib/supabase';
 import { WEBHOOK_EVENTS, REVIEW_WEBHOOK_EVENTS } from './settings-config';
 import WebhookEventCard from './WebhookEventCard';
@@ -37,17 +37,7 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
   useEffect(() => { fetchEndpoints(); }, [companyId]);
 
   return (
-    <div className="mt-8">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 bg-teal-tint rounded-lg flex items-center justify-center">
-          <Webhook size={16} className="text-teal" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-ink">Webhooks</h2>
-          <p className="text-xs text-faint">Send HTTP POST requests when events occur</p>
-        </div>
-      </div>
-
+    <div>
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 size={16} className="animate-spin text-faint" />

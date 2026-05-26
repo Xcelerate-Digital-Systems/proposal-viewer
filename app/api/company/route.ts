@@ -1,53 +1,17 @@
 // app/api/company/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
-
-async function getAuthenticatedMember(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { data: { user } } = await supabaseAuth.auth.getUser(token);
-  if (!user) return null;
-
-  const supabase = createServiceClient();
-  const { data: member } = await supabase
-    .from('team_members')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  return member;
-}
-
-/**
- * Resolve the effective company_id, respecting super admin overrides.
- * If a company_id query param is provided and the user is a super admin,
- * use that instead of their own company_id.
- */
-function resolveCompanyId(req: NextRequest, member: { company_id: string; is_super_admin?: boolean }): string {
-  const overrideId = req.nextUrl.searchParams.get('company_id');
-  if (overrideId && member.is_super_admin) {
-    return overrideId;
-  }
-  return member.company_id;
-}
+import { getAuthContext } from '@/lib/api-auth';
 
 // GET - Get company details
 export async function GET(req: NextRequest) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const companyId = resolveCompanyId(req, member);
+    const { member, companyId } = auth;
     const supabase = createServiceClient();
 
     const { data: company, error } = await supabase
@@ -84,10 +48,16 @@ export async function GET(req: NextRequest) {
       cover_image_url = coverUrlData?.publicUrl || null;
     }
 
-    // If super admin is viewing another company, treat as owner for UI purposes
-    const effectiveRole = (member.is_super_admin && companyId !== member.company_id)
-      ? 'owner'
-      : member.role;
+    // Super admins always have owner-level access in the UI. Agency owners
+    // viewing one of their client companies via override also get 'owner'
+    // (the override is only granted by getAuthContext when the relationship
+    // checks out).
+    const overridingAnotherCompany = companyId !== member.company_id;
+    const effectiveRole =
+      member.is_super_admin ||
+      (overridingAnotherCompany && member.role === 'owner')
+        ? 'owner'
+        : member.role;
 
     return NextResponse.json({
       ...company,
@@ -105,16 +75,16 @@ export async function GET(req: NextRequest) {
 // PATCH - Update company settings
 export async function PATCH(req: NextRequest) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const companyId = resolveCompanyId(req, member);
+    const { member, companyId } = auth;
 
-    // Allow if owner of the company OR super admin
-    const isSuperAdminOverride = member.is_super_admin && companyId !== member.company_id;
-    if (member.role !== 'owner' && !isSuperAdminOverride) {
+    // Super admins can edit any company. Otherwise owner-only — getAuthContext
+    // already enforced that the caller is allowed to act on `companyId`.
+    if (!member.is_super_admin && member.role !== 'owner') {
       return NextResponse.json({ error: 'Only owners can update company settings' }, { status: 403 });
     }
 

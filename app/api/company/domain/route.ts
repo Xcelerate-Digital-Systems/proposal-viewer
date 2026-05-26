@@ -1,42 +1,11 @@
 // app/api/company/domain/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { getAuthContext } from '@/lib/api-auth';
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
 const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
-
-async function getAuthenticatedMember(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { data: { user } } = await supabaseAuth.auth.getUser(token);
-  if (!user) return null;
-
-  const supabase = createServiceClient();
-  const { data: member } = await supabase
-    .from('team_members')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  return member;
-}
-
-function resolveCompanyId(req: NextRequest, member: { company_id: string; is_super_admin?: boolean }): string {
-  const overrideId = req.nextUrl.searchParams.get('company_id');
-  if (overrideId && member.is_super_admin) {
-    return overrideId;
-  }
-  return member.company_id;
-}
 
 /**
  * Helper to call the Vercel API
@@ -85,12 +54,12 @@ async function checkDnsConfigured(domain: string): Promise<{ configured: boolean
 // ─── GET — Get current domain status ────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const companyId = resolveCompanyId(req, member);
+    const { companyId } = auth;
     const supabase = createServiceClient();
 
     const { data: company } = await supabase
@@ -163,14 +132,13 @@ export async function GET(req: NextRequest) {
 // ─── POST — Add or update custom domain ─────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const companyId = resolveCompanyId(req, member);
-    const isSuperAdminOverride = member.is_super_admin && companyId !== member.company_id;
-    if (member.role !== 'owner' && !isSuperAdminOverride) {
+    const { member, companyId } = auth;
+    if (!member.is_super_admin && member.role !== 'owner') {
       return NextResponse.json({ error: 'Only owners can manage custom domains' }, { status: 403 });
     }
 
@@ -276,14 +244,13 @@ export async function POST(req: NextRequest) {
 // ─── DELETE — Remove custom domain ───────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   try {
-    const member = await getAuthenticatedMember(req);
-    if (!member) {
+    const auth = await getAuthContext(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const companyId = resolveCompanyId(req, member);
-    const isSuperAdminOverride = member.is_super_admin && companyId !== member.company_id;
-    if (member.role !== 'owner' && !isSuperAdminOverride) {
+    const { member, companyId } = auth;
+    if (!member.is_super_admin && member.role !== 'owner') {
       return NextResponse.json({ error: 'Only owners can manage custom domains' }, { status: 403 });
     }
 

@@ -91,8 +91,6 @@ export default function ProfileEditor({
 
   return (
     <div className="bg-white border border-gray-100 rounded-[14px] p-5 ">
-      <h2 className="text-sm font-medium text-muted mb-4">Profile</h2>
-
       <div className="flex items-start gap-5">
         {/* Avatar */}
         <div className="shrink-0">

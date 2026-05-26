@@ -3,7 +3,7 @@
 
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
-  Palette, Bell, Users, Megaphone, Bookmark, Plug, BarChart3, ReceiptText,
+  Palette, Settings as SettingsIcon, Bookmark, Plug, BarChart3, ReceiptText,
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
@@ -85,8 +85,7 @@ export const ALL_SECTIONS: SectionDef[] = [
 
 export const STANDALONE_ITEMS: NavItem[] = [
   { href: '/company', label: 'Branding', icon: Palette },
-  { href: '/settings', label: 'Settings', icon: Bell },
-  { href: '/team', label: 'Team', icon: Users },
+  { href: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
