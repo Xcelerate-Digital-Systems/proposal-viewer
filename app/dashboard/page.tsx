@@ -12,6 +12,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import InboxItem, { type InboxComment } from '@/components/admin/dashboard/InboxItem';
 import DashboardPipeline from '@/components/admin/dashboard/DashboardPipeline';
 import FeedbackPipeline from '@/components/admin/dashboard/FeedbackPipeline';
+import ErrorState from '@/components/ui/ErrorState';
 import { buildStatusPatch, type ProposalStatus } from '@/lib/proposals/status';
 
 export default function DashboardPage() {
@@ -36,6 +37,7 @@ interface DashboardContentProps {
 
 function DashboardContent({ companyId, memberName, accountType }: DashboardContentProps) {
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [pipeline, setPipeline] = useState<Proposal[]>([]);
   const [inbox, setInbox] = useState<InboxComment[]>([]);
   const [feedbackProjects, setFeedbackProjects] = useState<FeedbackProject[]>([]);
@@ -46,6 +48,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
 
   const fetchData = useCallback(async () => {
     if (!companyId) return;
+    setFetchError(null);
     try {
       const [pipelineRes, reviewCommentsRes, feedbackProjectsRes, feedbackItemsRes] = await Promise.all([
         supabase
@@ -126,6 +129,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
       setFeedbackItemCounts(counts);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load your dashboard');
     } finally {
       setLoading(false);
     }
@@ -171,6 +175,23 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
+
+  /* ── Fetch error — render once for both client and agency views ─ */
+  if (fetchError) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6">
+          <h1 className="text-2xl font-semibold text-ink">{getGreeting()}, {firstName}</h1>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+          <ErrorState
+            description={fetchError}
+            onRetry={() => { setLoading(true); fetchData(); }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   /* ── Client view ──────────────────────────────────────── */
   if (isClient) {

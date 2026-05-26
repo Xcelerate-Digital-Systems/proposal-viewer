@@ -6,6 +6,7 @@ import { Plus, FileText, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTe
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
+import ErrorState from '@/components/ui/ErrorState';
 import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
@@ -38,6 +39,7 @@ export default function ProposalsPage() {
 function ProposalsContent({ companyId }: { companyId: string }) {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadInitialTab, setUploadInitialTab] = useState<'upload' | 'template'>('upload');
   const [showNewDropdown, setShowNewDropdown] = useState(false);
@@ -72,14 +74,22 @@ function ProposalsContent({ companyId }: { companyId: string }) {
 
   const fetchProposals = useCallback(async () => {
     if (!companyId) return;
-    const { data } = await supabase
-      .from('proposals')
-      .select('*')
-      .eq('company_id', companyId)
-      .eq('entity_type', 'proposal')
-      .order('created_at', { ascending: false });
-    setProposals(data || []);
-    setLoading(false);
+    setFetchError(null);
+    try {
+      const { data, error } = await supabase
+        .from('proposals')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('entity_type', 'proposal')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setProposals(data || []);
+    } catch (err) {
+      console.error('Failed to fetch proposals:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load pitches');
+    } finally {
+      setLoading(false);
+    }
   }, [companyId]);
 
   const fetchCustomDomain = useCallback(async () => {
@@ -249,6 +259,11 @@ function ProposalsContent({ companyId }: { companyId: string }) {
 
         {loading ? (
           <EntityListSkeleton viewMode={viewMode === 'board' ? 'grid' : viewMode} />
+        ) : fetchError ? (
+          <ErrorState
+            description={fetchError}
+            onRetry={() => { setLoading(true); fetchProposals(); }}
+          />
         ) : filtered.length === 0 && searchQuery ? (
           <NoResults message={`No pitches matching “${searchQuery}”`} />
         ) : proposals.length === 0 ? (
