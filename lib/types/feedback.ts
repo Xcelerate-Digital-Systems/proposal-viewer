@@ -223,15 +223,72 @@ export function emptyGoogleAdData(): GoogleAdData {
  *  no sub-views (image, video, pdf, webpage). */
 export type FeedbackItemView = string | null;
 
+/** One copy variant of a Meta ad — a (primary text, headline) pair that
+ *  shares the item's creative image, CTA, and platform. Reviewers can
+ *  switch between variants in the sidebar and pin comments to a specific
+ *  variant. Variant IDs are stable (not positional), so deleting / reordering
+ *  variants doesn't move pins on the other variants. */
+export type MetaAdVariant = {
+  /** Stable short id (e.g. 8-char nanoid). Used inside `variant-<id>` view strings. */
+  id: string;
+  primary_text: string;
+  headline: string;
+};
+
+/** Build the view string used to scope pin comments to a specific variant. */
+export function metaAdVariantView(variantId: string): string {
+  return `variant-${variantId}`;
+}
+
+/** Inverse of {@link metaAdVariantView}. Returns null for non-variant views. */
+export function parseMetaAdVariantView(view: FeedbackItemView): { id: string } | null {
+  if (!view) return null;
+  const match = /^variant-(.+)$/.exec(view);
+  return match ? { id: match[1] } : null;
+}
+
+/** Returns the variants array for an ad item, synthesising a single
+ *  fallback variant from the legacy `ad_headline` / `ad_copy` columns when
+ *  no explicit variants have been saved yet. The synthesised id is stable
+ *  for an item so pins placed during the legacy flow keep their target if
+ *  callers later choose to migrate (currently unused — legacy pins use
+ *  platform views and don't show in variant mode). */
+export function getMetaAdVariants(item: {
+  meta_ad_variants?: MetaAdVariant[] | null;
+  ad_headline?: string | null;
+  ad_copy?: string | null;
+}): MetaAdVariant[] {
+  const stored = Array.isArray(item.meta_ad_variants) ? item.meta_ad_variants : null;
+  if (stored && stored.length > 0) return stored;
+  return [{
+    id: 'legacy-v1',
+    headline: item.ad_headline ?? '',
+    primary_text: item.ad_copy ?? '',
+  }];
+}
+
 /** Default sub-view to show when an item is first opened. Pins persist their
  *  view in `annotation_data.view`, so this also defines which pins are
  *  visible by default. */
-export function defaultViewForItem(item: { type: FeedbackItemType; ad_platform?: string | null }): FeedbackItemView {
+export function defaultViewForItem(item: {
+  type: FeedbackItemType;
+  ad_platform?: string | null;
+  meta_ad_variants?: MetaAdVariant[] | null;
+  ad_headline?: string | null;
+  ad_copy?: string | null;
+}): FeedbackItemView {
   switch (item.type) {
     case 'meta_lead_form':   return 'intro';
     case 'email':            return 'inbox_preview';
     case 'sms':              return 'imessage';
-    case 'ad':               return item.ad_platform || 'facebook_feed';
+    case 'ad': {
+      // When the item has explicit copy variants, the view is variant-scoped
+      // so pin comments follow the active variant. Otherwise fall back to
+      // legacy platform-scoped views.
+      const variants = Array.isArray(item.meta_ad_variants) ? item.meta_ad_variants : null;
+      if (variants && variants.length > 0) return metaAdVariantView(variants[0].id);
+      return item.ad_platform || 'facebook_feed';
+    }
     // Google Search ads: the "view" doubles as the per-asset feedback target.
     // Default to the first headline so the comments panel + composer are scoped
     // to a concrete asset on first open.
@@ -280,6 +337,10 @@ export type FeedbackItem = {
   ad_cta: string | null;
   ad_creative_url: string | null;
   ad_platform: string | null;
+  /** When non-empty, replaces the single ad_headline/ad_copy preview with
+   *  a sidebar of (primary_text, headline) variants. ad_headline / ad_copy
+   *  are kept in sync with the first variant for legacy consumers. */
+  meta_ad_variants: MetaAdVariant[] | null;
   // Email fields
   email_subject: string | null;
   email_preheader: string | null;
@@ -323,6 +384,7 @@ export type FeedbackItemVersion = {
   ad_cta: string | null;
   ad_creative_url: string | null;
   ad_platform: string | null;
+  meta_ad_variants: MetaAdVariant[] | null;
   email_subject: string | null;
   email_preheader: string | null;
   email_body: string | null;

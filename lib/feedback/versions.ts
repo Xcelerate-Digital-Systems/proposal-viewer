@@ -11,6 +11,7 @@ export type VersionAssets = Pick<
   FeedbackItemVersion,
   | 'url' | 'screenshot_url' | 'html_content'
   | 'ad_headline' | 'ad_copy' | 'ad_cta' | 'ad_creative_url' | 'ad_platform'
+  | 'meta_ad_variants'
   | 'email_subject' | 'email_preheader' | 'email_body'
   | 'sms_body'
   | 'image_url' | 'video_url' | 'pdf_url'
@@ -68,6 +69,7 @@ export function extractAssets(src: FeedbackItem | FeedbackItemVersion): VersionA
     ad_cta: src.ad_cta,
     ad_creative_url: src.ad_creative_url,
     ad_platform: src.ad_platform,
+    meta_ad_variants: src.meta_ad_variants,
     email_subject: src.email_subject,
     email_preheader: src.email_preheader,
     email_body: src.email_body,

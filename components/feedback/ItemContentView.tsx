@@ -16,6 +16,9 @@ import {
   type FeedbackItemView,
   defaultViewForItem,
   getCommentView,
+  getMetaAdVariants,
+  metaAdVariantView,
+  parseMetaAdVariantView,
 } from '@/lib/types/feedback';
 
 /* ================================================================== */
@@ -407,21 +410,57 @@ export default function ItemContentView({
         onClick={onImageClick}
       >
         {/* Ad mockup */}
-        {isAd && (
-          <div>
-            <AdMockupPreview
-              creativeUrl={item.ad_creative_url!}
-              headline={item.ad_headline || ''}
-              primaryText={item.ad_copy || ''}
-              ctaText={item.ad_cta || 'Learn More'}
-              platform={(currentView as AdPlatform | null) || (item.ad_platform as AdPlatform) || 'facebook_feed'}
-              pageName={displayBrandName}
-              showPlatformToggle
-              accentColor={accentColor}
-              onPlatformChange={(p) => onViewChange?.(p)}
-            />
-          </div>
-        )}
+        {isAd && (() => {
+          // Resolve which variants to render. When the item has stored
+          // variants we use them; otherwise fall back to a one-variant
+          // shim synthesised from the legacy ad_headline / ad_copy columns
+          // so existing items keep working unchanged.
+          const variants = getMetaAdVariants(item);
+          const parsed = parseMetaAdVariantView(currentView);
+          const activeVariantId = parsed?.id && variants.some((v) => v.id === parsed.id)
+            ? parsed.id
+            : variants[0].id;
+          // For legacy ads (no stored variants) the view stays platform-scoped
+          // so existing pins keep showing. For variant ads the platform is a
+          // pure UI toggle that doesn't affect pin filtering.
+          const hasStoredVariants = Array.isArray(item.meta_ad_variants) && item.meta_ad_variants.length > 0;
+          const platformForRender = hasStoredVariants
+            ? (item.ad_platform as AdPlatform) || 'facebook_feed'
+            : ((currentView as AdPlatform | null) || (item.ad_platform as AdPlatform) || 'facebook_feed');
+
+          // Count unresolved pin comments per variant for the sidebar badge.
+          const commentCountsByVariantId = hasStoredVariants
+            ? pinComments.reduce<Record<string, number>>((acc, c) => {
+                const parsedView = parseMetaAdVariantView(getCommentView(c.annotation_data));
+                if (parsedView?.id) acc[parsedView.id] = (acc[parsedView.id] ?? 0) + 1;
+                return acc;
+              }, {})
+            : undefined;
+
+          return (
+            <div>
+              <AdMockupPreview
+                creativeUrl={item.ad_creative_url!}
+                ctaText={item.ad_cta || 'Learn More'}
+                platform={platformForRender}
+                pageName={displayBrandName}
+                showPlatformToggle
+                accentColor={accentColor}
+                onPlatformChange={(p) => {
+                  // Only stamp the view from platform changes for legacy ads;
+                  // variant ads keep their view = variant-<id>.
+                  if (!hasStoredVariants) onViewChange?.(p);
+                }}
+                variants={hasStoredVariants ? variants : undefined}
+                activeVariantId={hasStoredVariants ? activeVariantId : undefined}
+                onVariantChange={hasStoredVariants ? (id) => onViewChange?.(metaAdVariantView(id)) : undefined}
+                commentCountsByVariantId={commentCountsByVariantId}
+                headline={hasStoredVariants ? undefined : (item.ad_headline || '')}
+                primaryText={hasStoredVariants ? undefined : (item.ad_copy || '')}
+              />
+            </div>
+          );
+        })()}
 
         {/* Image (non-ad) */}
         {!isAd && imageUrl && (

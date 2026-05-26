@@ -1,17 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe, ChevronRight } from 'lucide-react';
+import {
+  ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe,
+  ChevronRight, AlignLeft, Type, MessageSquare, Plus,
+} from 'lucide-react';
+import type { MetaAdVariant } from '@/lib/types/feedback';
 
 export type AdPlatform = 'facebook_feed' | 'instagram_feed' | 'instagram_story';
 
 interface AdMockupPreviewProps {
   /** The ad creative image URL */
   creativeUrl: string;
-  /** Headline text (shown below image on Facebook, or as first comment on Instagram) */
-  headline: string;
-  /** Primary text / body copy (shown above image) */
-  primaryText: string;
+  /** Headline text — used when `variants` is not provided. */
+  headline?: string;
+  /** Primary text / body copy — used when `variants` is not provided. */
+  primaryText?: string;
   /** CTA button text */
   ctaText: string;
   /** Which platform frame to show */
@@ -30,12 +34,22 @@ interface AdMockupPreviewProps {
   accentColor?: string;
   /** Dark mode (for client viewer) */
   dark?: boolean;
+  /** When supplied, replaces the single headline/primaryText with a variant
+   *  sidebar (rendered only when there are 2+ variants). The active
+   *  variant's text feeds the mockup; clicking another variant calls
+   *  `onVariantChange` so pin/highlight creation can scope to that variant. */
+  variants?: MetaAdVariant[];
+  activeVariantId?: string | null;
+  onVariantChange?: (variantId: string) => void;
+  /** Unresolved comment count keyed by variant id, used to badge rows that
+   *  already have feedback. */
+  commentCountsByVariantId?: Record<string, number>;
 }
 
 export default function AdMockupPreview({
   creativeUrl,
-  headline,
-  primaryText,
+  headline = '',
+  primaryText = '',
   ctaText,
   platform,
   pageName = 'Your Brand',
@@ -45,6 +59,10 @@ export default function AdMockupPreview({
   onPlatformChange,
   accentColor,
   dark = false,
+  variants,
+  activeVariantId,
+  onVariantChange,
+  commentCountsByVariantId,
 }: AdMockupPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<AdPlatform>(platform);
   useEffect(() => { setActivePlatform(platform); }, [platform]);
@@ -56,9 +74,19 @@ export default function AdMockupPreview({
 
   const currentPlatform = showPlatformToggle ? activePlatform : platform;
 
-  return (
-    <div className="flex flex-col items-center gap-3 w-full">
-      {/* Platform toggle */}
+  // Pick the active variant. When no variants are passed, synthesise a
+  // single-row list from the legacy props so the downstream mockup code
+  // only ever reads `effectiveHeadline` / `effectivePrimaryText`.
+  const variantList = variants && variants.length > 0
+    ? variants
+    : [{ id: 'inline', headline, primary_text: primaryText }];
+  const active = variantList.find((v) => v.id === activeVariantId) ?? variantList[0];
+  const effectiveHeadline = active.headline;
+  const effectivePrimaryText = active.primary_text;
+  const showSidebar = variantList.length >= 2;
+
+  const mockup = (
+    <div className="flex flex-col items-center gap-3">
       {showPlatformToggle && (
         <div className="flex rounded-lg overflow-hidden border"
           style={{
@@ -89,12 +117,11 @@ export default function AdMockupPreview({
         </div>
       )}
 
-      {/* Ad frame */}
       {currentPlatform === 'facebook_feed' && (
         <FacebookFeedAd
           creativeUrl={creativeUrl}
-          headline={headline}
-          primaryText={primaryText}
+          headline={effectiveHeadline}
+          primaryText={effectivePrimaryText}
           ctaText={ctaText}
           pageName={pageName}
           pageImageUrl={pageImageUrl}
@@ -105,8 +132,8 @@ export default function AdMockupPreview({
       {currentPlatform === 'instagram_feed' && (
         <InstagramFeedAd
           creativeUrl={creativeUrl}
-          headline={headline}
-          primaryText={primaryText}
+          headline={effectiveHeadline}
+          primaryText={effectivePrimaryText}
           ctaText={ctaText}
           pageName={pageName}
           pageImageUrl={pageImageUrl}
@@ -114,6 +141,132 @@ export default function AdMockupPreview({
         />
       )}
     </div>
+  );
+
+  if (!showSidebar) {
+    return <div className="flex flex-col items-center gap-3 w-full">{mockup}</div>;
+  }
+
+  return (
+    <div className="w-full flex gap-4 items-start">
+      <VariantSidebar
+        variants={variantList}
+        activeId={active.id}
+        onSelect={onVariantChange}
+        commentCounts={commentCountsByVariantId}
+        dark={dark}
+      />
+      <div className="flex-1 flex justify-center">{mockup}</div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Variant sidebar                                                    */
+/* ================================================================== */
+
+function VariantSidebar({
+  variants, activeId, onSelect, commentCounts, dark,
+}: {
+  variants: MetaAdVariant[];
+  activeId: string;
+  onSelect?: (id: string) => void;
+  commentCounts?: Record<string, number>;
+  dark?: boolean;
+}) {
+  return (
+    <aside
+      className="w-72 shrink-0 rounded-xl border overflow-hidden"
+      style={{
+        backgroundColor: dark ? '#ffffff08' : '#ffffff',
+        borderColor: dark ? '#ffffff18' : '#e5e7eb',
+      }}
+    >
+      <div
+        className="px-3.5 py-2.5 flex items-center gap-2 border-b"
+        style={{
+          backgroundColor: dark ? '#ffffff05' : '#f9fafb',
+          borderColor: dark ? '#ffffff18' : '#f3f4f6',
+        }}
+      >
+        <AlignLeft size={15} className="text-gray-500" />
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-gray-600 flex-1">
+          Copy variants
+        </p>
+        <span className="text-[11px] tabular-nums text-gray-400">{variants.length}</span>
+      </div>
+      <ul className="py-1.5">
+        {variants.map((v, i) => {
+          const active = v.id === activeId;
+          const commentCount = commentCounts?.[v.id] ?? 0;
+          const headlinePreview = v.headline?.trim() || 'Untitled headline';
+          const copyPreview = v.primary_text?.trim() || 'No primary text';
+          return (
+            <li key={v.id}>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onSelect?.(v.id); }}
+                className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 text-[13px] leading-snug transition-colors ${
+                  active
+                    ? 'bg-blue-50 text-[#1a0dab]'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <span
+                  className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-medium shrink-0 ${
+                    active ? 'bg-[#1a0dab] text-white' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center gap-1 text-[11px] text-gray-400 uppercase tracking-wide">
+                    <Type size={10} /> Headline
+                  </span>
+                  <span className="block truncate font-medium text-[13px]" style={{ color: active ? '#1a0dab' : '#111827' }}>
+                    {headlinePreview}
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px] text-gray-400 uppercase tracking-wide mt-1.5">
+                    <AlignLeft size={10} /> Primary text
+                  </span>
+                  <span className="block text-[12px] line-clamp-2" style={{ color: active ? '#1a0dab' : '#4b5563' }}>
+                    {copyPreview}
+                  </span>
+                </span>
+                {commentCount > 0 && (
+                  <span className="mt-0.5 inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-medium shrink-0">
+                    <MessageSquare size={10} />
+                    {commentCount}
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <p
+        className="px-3.5 py-3 text-[11px] text-gray-400 border-t leading-snug"
+        style={{ borderColor: dark ? '#ffffff18' : '#f3f4f6' }}
+      >
+        Click any variant to preview and pin comments to that headline + primary text pair.
+      </p>
+    </aside>
+  );
+}
+
+/* Inline placeholder for the editor — used to render an "Add variant" link
+   in the editor preview only (not in the read-only viewer). Kept here so
+   the sidebar visual styling stays consistent. */
+export function AdMockupPreviewAddVariantButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 text-[12px] font-medium text-teal hover:text-teal-hover bg-teal/10 hover:bg-teal/15 rounded-full px-3 py-1.5 transition-colors"
+    >
+      <Plus size={12} />
+      Add variant
+    </button>
   );
 }
 
@@ -131,7 +284,6 @@ function FacebookFeedAd({
   const text = dark ? '#e4e6eb' : '#050505';
   const textSecondary = dark ? '#b0b3b8' : '#65676b';
   const borderColor = dark ? '#3e4042' : '#e4e6e9';
-  const hoverBg = dark ? '#3a3b3c' : '#f0f2f5';
 
   return (
     <div className="w-full max-w-[500px] rounded-lg overflow-hidden shadow-sm"

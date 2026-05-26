@@ -1,10 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, Loader2, Plus, Trash2 } from 'lucide-react';
+import { X, Upload, Loader2, Plus, Trash2, Type, AlignLeft } from 'lucide-react';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
 import { useToast } from '@/components/ui/Toast';
+import type { MetaAdVariant } from '@/lib/types/feedback';
+
+function newAdVariant(): MetaAdVariant {
+  return { id: crypto.randomUUID().slice(0, 8), primary_text: '', headline: '' };
+}
 
 const MAX_GAD_HEADLINES = 15;
 const MAX_GAD_DESCRIPTIONS = 4;
@@ -81,10 +86,24 @@ export default function AddVersionModal({
   const [emailBody, setEmailBody] = useState(seed.email_body ?? '');
   const [smsBody, setSmsBody] = useState(seed.sms_body ?? '');
 
-  // Meta ad copy
-  const [adHeadline, setAdHeadline] = useState(seed.ad_headline ?? '');
-  const [adCopy, setAdCopy] = useState(seed.ad_copy ?? '');
+  // Meta ad copy — variants array is the source of truth. When editing a
+  // legacy version with only ad_headline/ad_copy set, synthesise a single
+  // starter variant so the user sees their existing copy in the editor.
   const [adCta, setAdCta] = useState(seed.ad_cta ?? '');
+  const [adVariants, setAdVariants] = useState<MetaAdVariant[]>(() => {
+    const stored = Array.isArray(seed.meta_ad_variants) ? seed.meta_ad_variants as MetaAdVariant[] : null;
+    if (stored && stored.length > 0) return stored.map((v) => ({ ...v }));
+    return [{
+      id: newAdVariant().id,
+      headline: seed.ad_headline ?? '',
+      primary_text: seed.ad_copy ?? '',
+    }];
+  });
+  const patchAdVariant = (id: string, patch: Partial<MetaAdVariant>) =>
+    setAdVariants((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+  const addAdVariant = () => setAdVariants((prev) => [...prev, newAdVariant()]);
+  const removeAdVariant = (id: string) =>
+    setAdVariants((prev) => (prev.length > 1 ? prev.filter((v) => v.id !== id) : prev));
 
   // Meta lead form (copy-iteration version: swap cover + edit headline/description/CTA)
   const lf = seed.meta_lead_form_data ?? item.meta_lead_form_data;
@@ -155,10 +174,18 @@ export default function AddVersionModal({
           if (!url) { setUploading(false); return; }
           assets.ad_creative_url = url;
         }
-        assets.ad_headline = adHeadline || null;
-        assets.ad_copy = adCopy || null;
+        const cleanVariants = adVariants
+          .map((v) => ({ ...v, headline: v.headline.trim(), primary_text: v.primary_text.trim() }))
+          .filter((v) => v.headline || v.primary_text);
+        const first = cleanVariants[0];
+        // Mirror the first variant into the legacy columns so any downstream
+        // consumer that still reads ad_headline / ad_copy directly keeps
+        // working with the latest copy.
+        assets.ad_headline = first?.headline || null;
+        assets.ad_copy = first?.primary_text || null;
         assets.ad_cta = adCta || null;
         assets.ad_platform = item.ad_platform;
+        assets.meta_ad_variants = cleanVariants.length > 0 ? cleanVariants : null;
       }
 
       if (kind === 'meta_lead_form') {
@@ -276,12 +303,66 @@ export default function AddVersionModal({
           {kind === 'ad' && (
             <>
               <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
-              <Field label="Headline">
-                <input className={inputCls} value={adHeadline} onChange={(e) => setAdHeadline(e.target.value)} />
-              </Field>
-              <Field label="Primary text">
-                <textarea className={`${inputCls} min-h-[80px]`} value={adCopy} onChange={(e) => setAdCopy(e.target.value)} />
-              </Field>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Copy Variants
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addAdVariant}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal hover:text-teal-hover"
+                  >
+                    <Plus size={12} />
+                    Add variant
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400 mb-2">
+                  Each variant is a (primary text, headline) pair on the same creative. Reviewers switch in the sidebar; pins scope to the active variant.
+                </p>
+                <ol className="space-y-3">
+                  {adVariants.map((v, i) => (
+                    <li key={v.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-medium bg-gray-100 text-gray-600">
+                            {i + 1}
+                          </span>
+                          Variant {i + 1}
+                        </span>
+                        {adVariants.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeAdVariant(v.id)}
+                            className="text-gray-400 hover:text-red-500 p-1 rounded"
+                            title="Remove variant"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                      <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                        <AlignLeft size={10} /> Primary text
+                      </label>
+                      <textarea
+                        value={v.primary_text}
+                        onChange={(e) => patchAdVariant(v.id, { primary_text: e.target.value })}
+                        rows={2}
+                        className={`${inputCls} min-h-[56px]`}
+                      />
+                      <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mt-2.5 mb-1">
+                        <Type size={10} /> Headline
+                      </label>
+                      <input
+                        type="text"
+                        value={v.headline}
+                        onChange={(e) => patchAdVariant(v.id, { headline: e.target.value })}
+                        className={inputCls}
+                      />
+                    </li>
+                  ))}
+                </ol>
+              </div>
               <Field label="Call to action">
                 <input className={inputCls} value={adCta} onChange={(e) => setAdCta(e.target.value)} />
               </Field>
