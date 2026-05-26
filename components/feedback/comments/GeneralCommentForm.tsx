@@ -5,6 +5,7 @@ import { Send } from 'lucide-react';
 import AttachmentPicker, { type PendingAttachment } from './AttachmentPicker';
 import EmojiPicker from './EmojiPicker';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
 
 interface GeneralCommentFormProps {
   onSubmit: (content: string, attachments?: FeedbackCommentAttachment[]) => Promise<void>;
@@ -128,22 +129,24 @@ export default function GeneralCommentForm({
 
           <div className="flex items-center justify-end gap-2">
             {!alwaysExpanded && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => { setExpanded(false); setPendingFiles([]); }}
-                className="text-[12px] px-2 py-1 text-gray-400 hover:text-ink"
               >
                 Cancel
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={isDisabled}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-teal text-white text-[12px] font-semibold hover:bg-teal-hover disabled:opacity-40 transition-colors"
+              leftIcon={Send}
             >
-              <Send size={11} />
               Post
-            </button>
+            </Button>
           </div>
         </form>
       )}

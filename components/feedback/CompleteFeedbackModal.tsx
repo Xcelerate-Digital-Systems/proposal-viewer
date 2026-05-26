@@ -6,6 +6,7 @@ import { ChevronDown, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
 import type { FeedbackItem, FeedbackStatus } from '@/lib/types/feedback';
+import { Button } from '@/components/ui/Button';
 
 interface CompleteFeedbackModalProps {
   shareToken: string;
@@ -253,12 +254,7 @@ export default function CompleteFeedbackModal({
 
         <div className="flex items-start justify-between px-6 pt-5 pb-2 shrink-0">
           <h3 className="text-lg font-semibold text-gray-900">Complete your feedback</h3>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
 
         <div className="px-6 pb-5 space-y-4 overflow-y-auto">

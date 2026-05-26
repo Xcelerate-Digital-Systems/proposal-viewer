@@ -10,6 +10,7 @@ import VideoRecorderModal from './VideoRecorderModal';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 import type { FeedbackMode } from '@/components/feedback/tools';
+import { Button } from '@/components/ui/Button';
 
 interface PendingPinFormProps {
   onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority, videoUrl?: string | null) => Promise<void>;
@@ -244,14 +245,16 @@ export default function PendingPinForm({
 
         <PrioritySelector value={priority} onChange={setPriority} />
         <div className="flex-1" />
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          size="sm"
           disabled={isDisabled}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-teal text-white text-[13px] font-semibold hover:bg-teal-hover disabled:opacity-40 transition-colors"
+          loading={submitting}
+          leftIcon={Send}
         >
-          <Send size={12} />
-          {submitting ? 'Sending…' : 'Post'}
-        </button>
+          Post
+        </Button>
       </div>
 
       {showAttachModal && (

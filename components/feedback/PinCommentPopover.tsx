@@ -11,6 +11,7 @@ import CommentAvatar from './comments/CommentAvatar';
 import { usePopoverPosition } from '@/hooks/usePopoverPosition';
 import { useCommentReactions } from '@/hooks/useCommentReactions';
 import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
+import { Button } from '@/components/ui/Button';
 
 interface PinCommentPopoverProps {
   /** The parent comment for this pin */
@@ -119,9 +120,7 @@ export default function PinCommentPopover({
               Pin Comment
             </span>
           </div>
-          <button onClick={onClose} className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={12} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
 
         <div className="p-3 space-y-2.5">
@@ -243,10 +242,16 @@ export default function PinCommentPopover({
                 <input type="text" value={replyText} onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Write a reply…" autoFocus
                   className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-[11px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
-                <button type="submit" disabled={replyDisabled}
-                  className="p-1.5 rounded-lg bg-teal text-white disabled:opacity-40 hover:bg-teal-hover transition-colors">
-                  <Send size={11} />
-                </button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={replyDisabled}
+                  loading={submitting}
+                  iconOnly
+                  leftIcon={Send}
+                  aria-label="Send reply"
+                />
               </div>
             </form>
           )}

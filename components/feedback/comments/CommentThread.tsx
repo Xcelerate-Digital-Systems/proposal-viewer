@@ -15,6 +15,7 @@ import { getPriorityDef } from './PrioritySelector';
 import { useCommentReactions } from '@/hooks/useCommentReactions';
 import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 import CommentAvatar from './CommentAvatar';
+import { Button } from '@/components/ui/Button';
 
 interface CommentThreadProps {
   comment: FeedbackComment;
@@ -220,22 +221,25 @@ export default function CommentThread({
                 autoFocus
               />
               <div className="flex items-center gap-1.5">
-                <button
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={handleSaveEdit}
                   disabled={savingEdit || !editText.trim()}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-teal text-white text-[10px] font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
+                  loading={savingEdit}
+                  leftIcon={Check}
                 >
-                  {savingEdit ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-                  {savingEdit ? 'Saving…' : 'Save'}
-                </button>
-                <button
+                  Save
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => { setEditing(false); setEditText(comment.content); }}
                   disabled={savingEdit}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md border border-gray-200 text-gray-500 text-[10px] font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                  leftIcon={X}
                 >
-                  <X size={10} />
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -281,35 +285,40 @@ export default function CommentThread({
 
       {/* Actions */}
       {!editing && (
-        <div className="flex items-center gap-4 mt-3 ml-11">
+        <div className="flex items-center gap-2 mt-3 ml-11">
           {!showReply && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowReply(true)}
-              className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-ink transition-colors"
+              leftIcon={CornerDownRight}
             >
-              <CornerDownRight size={12} />
               Reply
-            </button>
+            </Button>
           )}
           {!comment.resolved && onResolve && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleResolve}
               disabled={resolving || deleting}
-              className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-emerald-600 transition-colors disabled:opacity-50"
+              loading={resolving}
+              leftIcon={resolving ? undefined : CheckCircle2}
             >
-              {resolving ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
               {resolving ? 'Resolving…' : 'Resolve'}
-            </button>
+            </Button>
           )}
           {comment.resolved && onUnresolve && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleUnresolve}
               disabled={resolving || deleting}
-              className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-amber-600 transition-colors disabled:opacity-50"
+              loading={resolving}
+              leftIcon={resolving ? undefined : RotateCcw}
             >
-              {resolving ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
               {resolving ? 'Reopening…' : 'Reopen'}
-            </button>
+            </Button>
           )}
           {deleting && (
             <span className="flex items-center gap-1 text-[12px] text-gray-400">
@@ -352,13 +361,16 @@ export default function CommentThread({
               />
               <EmojiPicker onSelect={(emoji) => setReplyText((prev) => prev + emoji)} />
             </div>
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={replyDisabled}
-              className="w-8 h-8 rounded-full bg-teal text-white inline-flex items-center justify-center disabled:opacity-40 hover:bg-teal-hover transition-colors"
-            >
-              {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-            </button>
+              loading={submitting}
+              iconOnly
+              leftIcon={Send}
+              aria-label="Send reply"
+            />
           </div>
         </form>
       )}
