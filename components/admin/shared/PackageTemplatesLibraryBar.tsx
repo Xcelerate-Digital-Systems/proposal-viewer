@@ -11,6 +11,7 @@ import { BookOpen, ChevronDown, Loader2, Save, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import type { PackageTier } from '@/lib/types/packages';
 
 async function authHeaders(): Promise<HeadersInit> {
@@ -184,46 +185,41 @@ export function SavePackageTemplateModal({ tier, onClose, onSaved }: SaveModalPr
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-      onClick={onClose}
-    >
-      <div
-        className="w-[400px] bg-white rounded-xl shadow-xl p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Save package as template</h3>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">
-          Template name
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Local SEO Bronze"
-          className="w-full px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
-          autoFocus
-        />
-        <p className="text-xs text-gray-400 mt-2">
-          Saves &ldquo;{tier.name || 'this package'}&rdquo; with its price, features and conditions. It will appear in
-          the &ldquo;From Library&rdquo; menu on any packages page.
-        </p>
-        <div className="flex items-center justify-end gap-2 mt-4">
-          <Button variant="ghost" size="sm" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            type="button"
-            leftIcon={Save}
-            loading={saving}
-            disabled={saving}
-            onClick={save}
-          >
-            Save Template
-          </Button>
+    <Modal open onClose={onClose} title="Save package as template" size="sm">
+      <Modal.Body className="space-y-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            Template name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Local SEO Bronze"
+            className="w-full px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            autoFocus
+          />
+          <p className="text-xs text-gray-400 mt-2">
+            Saves &ldquo;{tier.name || 'this package'}&rdquo; with its price, features and conditions. It will appear in
+            the &ldquo;From Library&rdquo; menu on any packages page.
+          </p>
         </div>
-      </div>
-    </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="ghost" size="sm" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          type="button"
+          leftIcon={Save}
+          loading={saving}
+          disabled={saving}
+          onClick={save}
+        >
+          Save Template
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
