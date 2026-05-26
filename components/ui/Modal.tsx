@@ -22,9 +22,17 @@
 //
 'use client';
 
-import { useEffect, useCallback, type ReactNode } from 'react';
+import { useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
+
+// Anything tabbable inside the modal — used by the focus trap to find the
+// first/last focusable element. Skips disabled controls and tabindex=-1
+// (which is intentionally "focusable programmatically but not via Tab").
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea:not([disabled]), ' +
+  'input:not([disabled]):not([type="hidden"]), select:not([disabled]), ' +
+  '[tabindex]:not([tabindex="-1"])';
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -65,6 +73,9 @@ function ModalRoot({
   containerClassName = 'p-4',
   children,
 }: ModalProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
   // ESC key handler.
   useEffect(() => {
     if (!open || !closeOnEscape) return;
@@ -81,6 +92,69 @@ function ModalRoot({
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  // Focus management — when the modal opens:
+  //   1. Remember whatever was focused on the page (usually the trigger button)
+  //   2. Move focus inside the modal (prefer an element with autoFocus,
+  //      otherwise the first focusable element, otherwise the card itself)
+  //   3. While open, trap Tab inside the modal so screen readers and keyboard
+  //      users don't accidentally land on background page chrome
+  //   4. When the modal closes, restore focus to the trigger
+  useEffect(() => {
+    if (!open) return;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+
+    // Defer one tick so React has mounted the children before we query them.
+    const t = setTimeout(() => {
+      const card = cardRef.current;
+      if (!card) return;
+      const autoFocus = card.querySelector<HTMLElement>('[autofocus]');
+      if (autoFocus) {
+        autoFocus.focus();
+        return;
+      }
+      const first = card.querySelector<HTMLElement>(FOCUSABLE);
+      (first ?? card).focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(t);
+      const trigger = previouslyFocusedRef.current;
+      if (trigger && typeof trigger.focus === 'function') {
+        trigger.focus();
+      }
+    };
+  }, [open]);
+
+  // Tab/Shift+Tab trap — keeps keyboard focus cycling inside the modal card.
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const card = cardRef.current;
+      if (!card) return;
+      const focusables = Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE))
+        .filter((el) => !el.hasAttribute('aria-hidden') && el.offsetParent !== null);
+      if (focusables.length === 0) {
+        e.preventDefault();
+        card.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      // Shift+Tab on first → wrap to last. Tab on last → wrap to first.
+      if (e.shiftKey && (active === first || !card.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !card.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, [open]);
 
   const handleBackdrop = useCallback(
@@ -101,7 +175,11 @@ function ModalRoot({
       className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm animate-[fadeIn_150ms_ease-out] ${backdropClassName} ${containerClassName}`}
     >
       <div
-        className={`relative w-full ${sizeWidth[size]} max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-modal overflow-hidden`}
+        ref={cardRef}
+        // tabIndex={-1} so the card itself can receive focus as a fallback
+        // when the modal has no focusable children (rare, e.g. a "loading…" splash).
+        tabIndex={-1}
+        className={`relative w-full ${sizeWidth[size]} max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-modal overflow-hidden outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
         {title && <DefaultHeader title={title} onClose={onClose} />}

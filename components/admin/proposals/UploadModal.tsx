@@ -3,10 +3,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { authedFetch } from '@/lib/api-fetch';
 import CreateFromTemplate from './CreateFromTemplate';
 
@@ -171,21 +172,22 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
     }
   };
 
+  // Prevent accidental dismiss while a file is uploading or a quote is being
+  // created — match the protective pattern Phase 5 added to TemplateUploadModal.
+  const lockClose = uploading;
+
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-modal w-full max-w-lg border border-gray-200">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-gray-900">
-            {modalTitles[mode]}
-          </h2>
-          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
-        </div>
-
-        {/* Content — no tabs, just the right form */}
-        {mode === 'upload' && (
-          <form onSubmit={handleUpload} className="p-6 space-y-4">
+    <Modal
+      open
+      onClose={onClose}
+      title={modalTitles[mode]}
+      size="lg"
+      closeOnBackdrop={!lockClose}
+      closeOnEscape={!lockClose}
+    >
+      {mode === 'upload' && (
+        <form onSubmit={handleUpload} className="flex flex-col min-h-0 flex-1">
+          <Modal.Body className="space-y-4">
             <FormFields
               fields={fieldsByType.proposal}
               values={form}
@@ -232,37 +234,40 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 </div>
               </div>
             )}
-
+          </Modal.Body>
+          <Modal.Footer>
             <Button type="submit" fullWidth loading={uploading} disabled={!file}>
               Create Proposal
             </Button>
-          </form>
-        )}
+          </Modal.Footer>
+        </form>
+      )}
 
-        {mode === 'template' && (
-          <div className="p-6">
-            <CreateFromTemplate
-              companyId={companyId}
-              entityType="proposal"
-              onBack={onClose}
-              onSuccess={() => { onSuccess(); onClose(); }}
-            />
-          </div>
-        )}
+      {mode === 'template' && (
+        <Modal.Body>
+          <CreateFromTemplate
+            companyId={companyId}
+            entityType="proposal"
+            onBack={onClose}
+            onSuccess={() => { onSuccess(); onClose(); }}
+          />
+        </Modal.Body>
+      )}
 
-        {mode === 'quote-template' && (
-          <div className="p-6">
-            <CreateFromTemplate
-              companyId={companyId}
-              entityType="quote"
-              onBack={onClose}
-              onSuccess={() => { onSuccess(); onClose(); }}
-            />
-          </div>
-        )}
+      {mode === 'quote-template' && (
+        <Modal.Body>
+          <CreateFromTemplate
+            companyId={companyId}
+            entityType="quote"
+            onBack={onClose}
+            onSuccess={() => { onSuccess(); onClose(); }}
+          />
+        </Modal.Body>
+      )}
 
-        {mode === 'quote' && (
-          <form onSubmit={handleCreateQuote} className="p-6 space-y-4">
+      {mode === 'quote' && (
+        <form onSubmit={handleCreateQuote} className="flex flex-col min-h-0 flex-1">
+          <Modal.Body className="space-y-4">
             <p className="text-sm text-gray-500">
               Create a quick quote to send pricing to a client. You can add line items and payment terms after creation.
             </p>
@@ -304,6 +309,8 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
               />
             </div>
+          </Modal.Body>
+          <Modal.Footer>
             <Button
               type="submit"
               fullWidth
@@ -312,10 +319,9 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
             >
               Create Quote
             </Button>
-          </form>
-        )}
-
-      </div>
-    </div>
+          </Modal.Footer>
+        </form>
+      )}
+    </Modal>
   );
 }
