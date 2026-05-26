@@ -12,11 +12,13 @@ No test suite or linter configured. Use `npm run build` to catch TypeScript erro
 
 ## Tech Stack
 
-- **Framework**: Next.js 14.2 (App Router), React 18, TypeScript 5.4
+- **Framework**: Next.js 16.2 (App Router, webpack), React 19, TypeScript 5.4
 - **Styling**: Tailwind CSS 3.4, lucide-react icons
 - **Database**: Supabase (PostgreSQL + Auth + Storage)
 - **Email**: Resend
 - **Key libs**: TipTap (rich text), @xyflow/react (whiteboard), @dnd-kit (drag-and-drop), react-pdf, pdf-lib, html2canvas
+
+Build/dev scripts pin `--webpack` because the project's webpack config aliases `canvas: false` for pdf-lib/react-pdf SSR. Turbopack is the Next 16 default; migrating to it is a follow-up. `.npmrc` has `legacy-peer-deps=true` because `@emoji-mart/react@1.1.1` hasn't published a React-19-compatible peer-dep declaration — works at runtime, fix is to swap the package.
 
 ## Project Structure
 
@@ -48,11 +50,15 @@ lib/
 ├── supabase.ts                 # Client-side Supabase + type re-exports
 ├── supabase-server.ts          # Server-side service client (bypasses RLS)
 ├── api-auth.ts                 # Auth context extraction for API routes
+├── auth-fetch.ts               # Client-side fetch wrapper that injects the Supabase session as Bearer auth — use for any admin call to a getAuthContext-gated route
+├── rate-limit.ts               # Postgres-backed sliding-window rate limiter (API mirrors @upstash/ratelimit so the impl is swappable)
 ├── page-operations.ts          # CRUD barrel for page queries/mutations
 ├── notifications.ts            # Email + webhook notification orchestrator
-└── sanitize.ts                 # Input validation, URL/email sanitization
+├── sanitize.ts                 # Input validation, URL/email sanitization
+└── *-migration.sql             # Schema/policy migrations are checked into the repo alongside the code that depends on them (no central supabase/migrations dir)
 
 apps-script/looker-connector/   # Google Apps Script community connector source
+proxy.ts                        # Edge middleware (renamed from middleware.ts in Next 16)
 ```
 
 ## Architecture Patterns
@@ -71,6 +77,16 @@ apps-script/looker-connector/   # Google Apps Script community connector source
 ### API Routes
 - Pattern: validate auth → validate input → service client operation → return JSON
 - Standard responses: `{ success, data }` or `{ error }` with appropriate status codes
+- Routes that mutate proposals / documents / templates page rows: mirror the `ownsTemplate` / `ownsPage` helpers in [`app/api/templates/pages/route.ts`](../app/api/templates/pages/route.ts) — fetch the entity's `company_id` via service-role + `getAuthContext` and verify it matches `auth.companyId` before delegating to `lib/page-operations`. The proposal and document variants live in `app/api/proposals/pages/route.ts` and `app/api/documents/pages/route.ts`.
+
+### Public-viewer mutations
+Anon clients have NO INSERT/UPDATE on `proposals` or `proposal_views`. Anything the public proposal viewer needs to write goes through `POST /api/proposals/share/[token]/action` with `{ action: 'accept' | 'decline' | 'request_revision' | 'view', name?, reason?, notes? }`. The route authenticates by share_token in the URL + service-role writes. Hook callers: `hooks/useProposalActions.ts`, `hooks/useProposal.ts`.
+
+### Rate limiting
+`lib/rate-limit.ts` exposes `rateLimit({ key, limit, windowSeconds }) → { success, remaining, reset }` backed by a `rate_limits` table + atomic `check_rate_limit` RPC. Already wired into `/api/auth/{register,forgot-password,claim-invite}` (5/min/IP), `/api/ai/generate-text` (10/min/company burst), `/api/notify` (10/min/share_token), `/api/proposals/share/[token]/action` (30/min/share_token). For new endpoints, key by IP for unauthenticated flows, by `auth.companyId` for authenticated flows, by share_token for public-token flows. Fail-open — rate limiting is defense in depth.
+
+### AI usage quota
+`/api/ai/generate-text` runs through `increment_ai_usage(p_company_id uuid)` RPC before each Anthropic call. The RPC UPSERTs the company's daily counter and returns the new count atomically; the route rejects with 429 above 50/day. Bump `AI_DAILY_QUOTA` in the route to change the cap (eventually swap for a per-tier `companies.ai_daily_quota` column).
 
 ### Component Conventions
 - Admin pages use `AdminLayout` wrapper with `(auth) => ...` render prop
@@ -122,3 +138,10 @@ NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_GHL=     # GoHighLevel → Looker Studio connec
 ## Terminology
 
 - **Quote** (not "Pricing") — all admin-facing labels use "Quote" for the line-item pricing page. Internal code identifiers and URL paths still use `pricing` for backwards compatibility.
+
+## Gotchas
+
+- **Postgres function `SET search_path = ''` breaks unqualified table refs.** Most of our SECURITY DEFINER functions reference public tables without a `public.` prefix (e.g. `is_super_admin()` does `FROM team_members`); an empty search_path makes those throw "relation does not exist" inside RLS policy evaluation, which surfaces as the user being silently denied everything. Always use `SET search_path = 'public'` — still satisfies the Supabase `function_search_path_mutable` lint (any explicit value clears it) and `pg_catalog` is always implicitly prepended.
+- **Supabase auto-grants EXECUTE to `anon` and `authenticated` on every new public-schema function.** A bare `REVOKE EXECUTE ... FROM PUBLIC` does NOT remove those role-specific grants. Always pair it with explicit `REVOKE EXECUTE ... FROM anon, authenticated` for server-only helpers, then `GRANT EXECUTE ... TO service_role`. Verify with `SELECT array_agg(rolname) FROM pg_roles WHERE has_function_privilege(rolname, 'public.fn_name'::regproc, 'execute') AND rolname IN ('anon','authenticated','service_role')`.
+- **Next 16 forbids sibling dynamic routes with different param names.** `app/api/proposals/[id]/...` and `app/api/proposals/[token]/...` can't coexist — boot fails with "You cannot use different slug names for the same dynamic path". Workaround: nest under a static segment (e.g. `app/api/proposals/share/[token]/...`).
+- **Supabase Data Cache + `supabase-js`.** Next's fetch cache silently memoizes supabase-js GETs by URL. `supabase-server.ts` passes a no-store fetch wrapper to defeat this; if you write a new server-side Supabase client, copy that pattern or stale-empty results will haunt you.
