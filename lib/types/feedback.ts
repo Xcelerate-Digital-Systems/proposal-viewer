@@ -231,6 +231,9 @@ export type FeedbackItemView = string | null;
 export type MetaAdVariant = {
   /** Stable short id (e.g. 8-char nanoid). Used inside `variant-<id>` view strings. */
   id: string;
+  /** Optional human label (e.g. "Pain point hook", "Original copy"). Falls
+   *  back to "Variant N" in the editor / sidebar / picker when empty. */
+  label?: string | null;
   primary_text: string;
   headline: string;
 };
@@ -262,6 +265,7 @@ export function getMetaAdVariants(item: {
   if (stored && stored.length > 0) return stored;
   return [{
     id: 'legacy-v1',
+    label: null,
     headline: item.ad_headline ?? '',
     primary_text: item.ad_copy ?? '',
   }];

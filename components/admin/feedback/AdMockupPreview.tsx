@@ -201,6 +201,7 @@ function VariantSidebar({
           const commentCount = commentCounts?.[v.id] ?? 0;
           const headlinePreview = v.headline?.trim() || 'Untitled headline';
           const copyPreview = v.primary_text?.trim() || 'No primary text';
+          const variantLabel = v.label?.trim() || `Variant ${i + 1}`;
           return (
             <li key={v.id}>
               <button
@@ -220,13 +221,19 @@ function VariantSidebar({
                   {i + 1}
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="flex items-center gap-1 text-[11px] text-gray-400 uppercase tracking-wide">
+                  <span
+                    className="block text-[12px] font-semibold truncate"
+                    style={{ color: active ? '#1a0dab' : '#111827' }}
+                  >
+                    {variantLabel}
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] text-gray-400 uppercase tracking-wide mt-1.5">
                     <Type size={10} /> Headline
                   </span>
-                  <span className="block truncate font-medium text-[13px]" style={{ color: active ? '#1a0dab' : '#111827' }}>
+                  <span className="block truncate text-[12px]" style={{ color: active ? '#1a0dab' : '#374151' }}>
                     {headlinePreview}
                   </span>
-                  <span className="flex items-center gap-1 text-[11px] text-gray-400 uppercase tracking-wide mt-1.5">
+                  <span className="flex items-center gap-1 text-[10px] text-gray-400 uppercase tracking-wide mt-1.5">
                     <AlignLeft size={10} /> Primary text
                   </span>
                   <span className="block text-[12px] line-clamp-2" style={{ color: active ? '#1a0dab' : '#4b5563' }}>

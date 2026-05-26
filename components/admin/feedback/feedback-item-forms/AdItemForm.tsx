@@ -40,7 +40,7 @@ function newVariantId(): string {
 }
 
 function newVariant(): MetaAdVariant {
-  return { id: newVariantId(), primary_text: '', headline: '' };
+  return { id: newVariantId(), label: '', primary_text: '', headline: '' };
 }
 
 export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPreviewChange, reviewProjectId }: AdItemFormProps) {
@@ -105,6 +105,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
     // has (so they can stack from multiple sources if they want).
     const cloned = ad.variants.map<MetaAdVariant>((v) => ({
       id: newVariantId(),
+      label: v.label ?? '',
       headline: v.headline,
       primary_text: v.primary_text,
     }));
@@ -175,7 +176,12 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
     e.preventDefault();
     if (!file || !title.trim()) return;
     const cleanVariants = variants
-      .map((v) => ({ ...v, primary_text: v.primary_text.trim(), headline: v.headline.trim() }))
+      .map((v) => ({
+        ...v,
+        label: (v.label ?? '').trim() || null,
+        primary_text: v.primary_text.trim(),
+        headline: v.headline.trim(),
+      }))
       .filter((v) => v.primary_text || v.headline);
     const first = cleanVariants[0] ?? { primary_text: '', headline: '' };
     await onSubmit(
@@ -196,46 +202,80 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
 
   return (
     <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex">
-      <div className={`${showPreview ? 'w-1/2 border-r border-gray-200' : 'w-full'} p-6 space-y-4 overflow-y-auto`}>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-            Item Title <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Summer Sale"
-            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
-            autoFocus
-          />
+      <div className={`${showPreview ? 'w-1/2 border-r border-gray-200' : 'w-full'} p-6 space-y-5 overflow-y-auto`}>
+        {/* Title + CTA on a single row — both short, no point stacking. */}
+        <div className="grid grid-cols-[1fr_180px] gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+              Item Title <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Summer Sale"
+              className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+              CTA
+            </label>
+            <select
+              value={adCta}
+              onChange={(e) => setAdCta(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20"
+            >
+              {CTA_OPTIONS.map((cta) => (
+                <option key={cta} value={cta}>{cta}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
+        {/* Creative Image — slim preview row when a file is set, large upload tile otherwise. */}
         <div>
           <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
             Creative Image <span className="text-red-400">*</span>
           </label>
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
           {preview ? (
-            <div className="relative">
-              <img src={preview} alt="Preview" className="w-full max-h-[160px] object-contain rounded-lg border border-gray-200 bg-gray-50" />
+            <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-2">
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-16 h-16 object-cover rounded-lg border border-gray-200 bg-white shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] font-medium text-gray-700 truncate">{file?.name || 'Creative loaded'}</p>
+                <p className="text-[11px] text-gray-400">1:1 ratio recommended</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[11px] font-semibold text-teal hover:text-teal-hover px-2 py-1 rounded"
+              >
+                Replace
+              </button>
               <button
                 type="button"
                 onClick={clearFile}
-                className="absolute top-2 right-2 p-1 bg-white/90 rounded-full border border-gray-200 text-gray-500 hover:text-red-500 transition-colors"
+                className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-white transition-colors"
+                title="Remove"
               >
-                <X size={12} />
+                <X size={13} />
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-teal hover:bg-teal/5 transition-colors"
+              className="w-full border-2 border-dashed border-gray-200 rounded-xl p-5 text-center hover:border-teal hover:bg-teal/5 transition-colors"
             >
-              <Upload size={20} className="mx-auto mb-1.5 text-gray-400" />
+              <Upload size={18} className="mx-auto mb-1 text-gray-400" />
               <p className="text-xs font-medium text-gray-600">Upload ad creative</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">1:1 ratio recommended</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">1:1 ratio recommended · max 10MB</p>
             </button>
           )}
         </div>
@@ -260,35 +300,58 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                     <ChevronDown size={11} className={`transition-transform ${importPickerOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {importPickerOpen && (
-                    <div className="absolute right-0 top-full mt-1.5 w-64 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-20">
+                    <div className="absolute right-0 top-full mt-1.5 w-72 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-20">
                       <div className="px-3 py-2 border-b border-gray-100">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                           Existing ads in this project
                         </p>
                       </div>
-                      <ul className="max-h-64 overflow-y-auto py-1">
-                        {importableAds.map((ad) => (
-                          <li key={ad.id}>
-                            <button
-                              type="button"
-                              onClick={() => importVariantsFromAd(ad)}
-                              className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
-                            >
-                              <span className="w-7 h-7 shrink-0 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                                <Megaphone size={13} />
-                              </span>
-                              <span className="flex-1 min-w-0">
-                                <span className="block text-[13px] font-medium text-ink truncate">
-                                  {ad.title}
+                      <ul className="max-h-72 overflow-y-auto py-1">
+                        {importableAds.map((ad) => {
+                          const labels = ad.variants
+                            .map((v, i) => v.label?.trim() || `Variant ${i + 1}`)
+                            .slice(0, 4);
+                          const more = ad.variants.length - labels.length;
+                          return (
+                            <li key={ad.id}>
+                              <button
+                                type="button"
+                                onClick={() => importVariantsFromAd(ad)}
+                                className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
+                              >
+                                <span className="w-7 h-7 shrink-0 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                  <Megaphone size={13} />
                                 </span>
-                                <span className="block text-[11px] text-gray-400">
-                                  {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
+                                <span className="flex-1 min-w-0">
+                                  <span className="flex items-center justify-between gap-2">
+                                    <span className="block text-[13px] font-medium text-ink truncate">
+                                      {ad.title}
+                                    </span>
+                                    <span className="text-[10px] text-gray-400 shrink-0">
+                                      {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
+                                    </span>
+                                  </span>
+                                  <span className="mt-1 flex flex-wrap gap-1">
+                                    {labels.map((l, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-block max-w-[140px] truncate text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600"
+                                      >
+                                        {l}
+                                      </span>
+                                    ))}
+                                    {more > 0 && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-400">
+                                        +{more} more
+                                      </span>
+                                    )}
+                                  </span>
                                 </span>
-                              </span>
-                              <Plus size={13} className="mt-1 text-faint" />
-                            </button>
-                          </li>
-                        ))}
+                                <Plus size={13} className="mt-1 text-faint" />
+                              </button>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}
@@ -307,79 +370,81 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
           <p className="text-[11px] text-gray-400 mb-2">
             Each variant is a (primary text, headline) pair. Reviewers switch between them in the sidebar — pin comments stay scoped to the active variant.
           </p>
-          <ol className="space-y-3">
+          <ol className="space-y-2.5">
             {variants.map((v, i) => {
               const active = v.id === activeVariantId;
               return (
                 <li
                   key={v.id}
-                  className={`rounded-xl border p-3 transition-colors ${
+                  className={`rounded-xl border transition-colors ${
                     active ? 'border-teal/40 bg-teal/5' : 'border-gray-200 bg-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2.5">
+                  {/* Header: number badge + label input + delete */}
+                  <div className="flex items-center gap-2 px-3 pt-2.5">
                     <button
                       type="button"
                       onClick={() => setActiveVariantId(v.id)}
-                      className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink"
+                      className={`inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-semibold shrink-0 transition-colors ${
+                        active ? 'bg-teal text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={`Make variant ${i + 1} the active one`}
                     >
-                      <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-medium ${
-                        active ? 'bg-teal text-white' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {i + 1}
-                      </span>
-                      Variant {i + 1}
+                      {i + 1}
                     </button>
+                    <input
+                      type="text"
+                      value={v.label ?? ''}
+                      onChange={(e) => patchVariant(v.id, { label: e.target.value })}
+                      onFocus={() => setActiveVariantId(v.id)}
+                      placeholder={`Variant ${i + 1} name (optional)`}
+                      className="flex-1 min-w-0 bg-transparent text-[13px] font-semibold text-ink placeholder:text-gray-400 placeholder:font-normal outline-none"
+                    />
                     {variants.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeVariant(v.id)}
-                        className="text-gray-400 hover:text-red-500 p-1 rounded"
+                        className="text-gray-400 hover:text-red-500 p-1 rounded shrink-0"
                         title="Remove variant"
                       >
                         <Trash2 size={13} />
                       </button>
                     )}
                   </div>
-                  <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                    <AlignLeft size={10} /> Primary text
-                  </label>
-                  <textarea
-                    value={v.primary_text}
-                    onChange={(e) => patchVariant(v.id, { primary_text: e.target.value })}
-                    onFocus={() => setActiveVariantId(v.id)}
-                    rows={2}
-                    placeholder="Body copy shown above the image…"
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 resize-y min-h-[56px]"
-                  />
-                  <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mt-2.5 mb-1">
-                    <Type size={10} /> Headline
-                  </label>
-                  <input
-                    type="text"
-                    value={v.headline}
-                    onChange={(e) => patchVariant(v.id, { headline: e.target.value })}
-                    onFocus={() => setActiveVariantId(v.id)}
-                    placeholder="Short punchy headline…"
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
-                  />
+
+                  {/* Body */}
+                  <div className="px-3 pb-3 pt-2 space-y-2">
+                    <div>
+                      <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                        <AlignLeft size={10} /> Primary text
+                      </label>
+                      <textarea
+                        value={v.primary_text}
+                        onChange={(e) => patchVariant(v.id, { primary_text: e.target.value })}
+                        onFocus={() => setActiveVariantId(v.id)}
+                        rows={2}
+                        placeholder="Body copy shown above the image…"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 resize-y min-h-[52px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                        <Type size={10} /> Headline
+                      </label>
+                      <input
+                        type="text"
+                        value={v.headline}
+                        onChange={(e) => patchVariant(v.id, { headline: e.target.value })}
+                        onFocus={() => setActiveVariantId(v.id)}
+                        placeholder="Short punchy headline…"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
+                      />
+                    </div>
+                  </div>
                 </li>
               );
             })}
           </ol>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Call to Action</label>
-          <select
-            value={adCta}
-            onChange={(e) => setAdCta(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20  bg-white"
-          >
-            {CTA_OPTIONS.map((cta) => (
-              <option key={cta} value={cta}>{cta}</option>
-            ))}
-          </select>
         </div>
 
         <FormActions

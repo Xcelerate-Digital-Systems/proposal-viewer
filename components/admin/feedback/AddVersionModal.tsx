@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { MetaAdVariant } from '@/lib/types/feedback';
 
 function newAdVariant(): MetaAdVariant {
-  return { id: crypto.randomUUID().slice(0, 8), primary_text: '', headline: '' };
+  return { id: crypto.randomUUID().slice(0, 8), label: '', primary_text: '', headline: '' };
 }
 
 const MAX_GAD_HEADLINES = 15;
@@ -92,9 +92,10 @@ export default function AddVersionModal({
   const [adCta, setAdCta] = useState(seed.ad_cta ?? '');
   const [adVariants, setAdVariants] = useState<MetaAdVariant[]>(() => {
     const stored = Array.isArray(seed.meta_ad_variants) ? seed.meta_ad_variants as MetaAdVariant[] : null;
-    if (stored && stored.length > 0) return stored.map((v) => ({ ...v }));
+    if (stored && stored.length > 0) return stored.map((v) => ({ ...v, label: v.label ?? '' }));
     return [{
       id: newAdVariant().id,
+      label: '',
       headline: seed.ad_headline ?? '',
       primary_text: seed.ad_copy ?? '',
     }];
@@ -175,7 +176,12 @@ export default function AddVersionModal({
           assets.ad_creative_url = url;
         }
         const cleanVariants = adVariants
-          .map((v) => ({ ...v, headline: v.headline.trim(), primary_text: v.primary_text.trim() }))
+          .map((v) => ({
+            ...v,
+            label: (v.label ?? '').trim() || null,
+            headline: v.headline.trim(),
+            primary_text: v.primary_text.trim(),
+          }))
           .filter((v) => v.headline || v.primary_text);
         const first = cleanVariants[0];
         // Mirror the first variant into the legacy columns so any downstream
@@ -320,45 +326,55 @@ export default function AddVersionModal({
                 <p className="text-[11px] text-gray-400 mb-2">
                   Each variant is a (primary text, headline) pair on the same creative. Reviewers switch in the sidebar; pins scope to the active variant.
                 </p>
-                <ol className="space-y-3">
+                <ol className="space-y-2.5">
                   {adVariants.map((v, i) => (
-                    <li key={v.id} className="rounded-xl border border-gray-200 bg-white p-3">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink">
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-medium bg-gray-100 text-gray-600">
-                            {i + 1}
-                          </span>
-                          Variant {i + 1}
+                    <li key={v.id} className="rounded-xl border border-gray-200 bg-white">
+                      <div className="flex items-center gap-2 px-3 pt-2.5">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-semibold bg-gray-100 text-gray-600 shrink-0">
+                          {i + 1}
                         </span>
+                        <input
+                          type="text"
+                          value={v.label ?? ''}
+                          onChange={(e) => patchAdVariant(v.id, { label: e.target.value })}
+                          placeholder={`Variant ${i + 1} name (optional)`}
+                          className="flex-1 min-w-0 bg-transparent text-[13px] font-semibold text-ink placeholder:text-gray-400 placeholder:font-normal outline-none"
+                        />
                         {adVariants.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeAdVariant(v.id)}
-                            className="text-gray-400 hover:text-red-500 p-1 rounded"
+                            className="text-gray-400 hover:text-red-500 p-1 rounded shrink-0"
                             title="Remove variant"
                           >
                             <Trash2 size={13} />
                           </button>
                         )}
                       </div>
-                      <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                        <AlignLeft size={10} /> Primary text
-                      </label>
-                      <textarea
-                        value={v.primary_text}
-                        onChange={(e) => patchAdVariant(v.id, { primary_text: e.target.value })}
-                        rows={2}
-                        className={`${inputCls} min-h-[56px]`}
-                      />
-                      <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mt-2.5 mb-1">
-                        <Type size={10} /> Headline
-                      </label>
-                      <input
-                        type="text"
-                        value={v.headline}
-                        onChange={(e) => patchAdVariant(v.id, { headline: e.target.value })}
-                        className={inputCls}
-                      />
+                      <div className="px-3 pb-3 pt-2 space-y-2">
+                        <div>
+                          <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                            <AlignLeft size={10} /> Primary text
+                          </label>
+                          <textarea
+                            value={v.primary_text}
+                            onChange={(e) => patchAdVariant(v.id, { primary_text: e.target.value })}
+                            rows={2}
+                            className={`${inputCls} min-h-[52px]`}
+                          />
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                            <Type size={10} /> Headline
+                          </label>
+                          <input
+                            type="text"
+                            value={v.headline}
+                            onChange={(e) => patchAdVariant(v.id, { headline: e.target.value })}
+                            className={inputCls}
+                          />
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ol>
