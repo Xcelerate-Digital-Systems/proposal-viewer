@@ -18,7 +18,7 @@ No test suite or linter configured. Use `npm run build` to catch TypeScript erro
 - **Email**: Resend
 - **Key libs**: TipTap (rich text), @xyflow/react (whiteboard), @dnd-kit (drag-and-drop), react-pdf, pdf-lib, html2canvas
 
-Build/dev scripts pin `--webpack` because the project's webpack config aliases `canvas: false` for pdf-lib/react-pdf SSR. Turbopack is the Next 16 default; migrating to it is a follow-up. `.npmrc` has `legacy-peer-deps=true` because `@emoji-mart/react@1.1.1` hasn't published a React-19-compatible peer-dep declaration — works at runtime, fix is to swap the package.
+Build uses Turbopack (the Next 16 default). The `canvas: false` alias for pdf-lib/react-pdf SSR lives in both `turbopack.resolveAlias` and the legacy `webpack: (config) =>` block in `next.config.js`, so falling back to `next build --webpack` still works as an escape hatch.
 
 ## Project Structure
 
