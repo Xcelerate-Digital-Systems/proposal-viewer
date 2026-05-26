@@ -13,6 +13,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
 import { REVIEW_STATUS_OPTIONS, REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
+import { Button } from '@/components/ui/Button';
 
 interface ReviewProjectCardProps {
   project: FeedbackProject;
@@ -409,19 +410,17 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                onClick={() => setShowEdit(false)}
-                className="px-4 py-2 text-sm font-medium text-muted hover:text-ink hover:bg-surface rounded-full transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowEdit(false)}>
                 Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
+              </Button>
+              <Button
+                size="sm"
+                loading={saving}
                 disabled={!editTitle.trim() || saving}
-                className="px-4 py-2 bg-teal text-white text-sm font-semibold rounded-full hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                onClick={handleSaveEdit}
               >
-                {saving ? 'Saving…' : 'Save Changes'}
-              </button>
+                Save Changes
+              </Button>
             </div>
           </div>
         </div>

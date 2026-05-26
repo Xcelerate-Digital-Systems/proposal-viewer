@@ -8,6 +8,7 @@ import {
 import { formatTimeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
 import { TYPE_ICONS, type CommentWithItem } from './types';
+import { Button } from '@/components/ui/Button';
 
 interface Props {
   comment: CommentWithItem;
@@ -68,20 +69,23 @@ export default function FeedbackModal({
             </span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              leftIcon={Trash2}
               onClick={() => onDelete(comment)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-              title="Delete"
-            >
-              <Trash2 size={16} />
-            </button>
-            <button
+              aria-label="Delete"
+              className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              leftIcon={X}
               onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              title="Close"
-            >
-              <X size={18} />
-            </button>
+              aria-label="Close"
+            />
           </div>
         </div>
 
@@ -158,14 +162,15 @@ export default function FeedbackModal({
                     rows={2}
                     className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
                   />
-                  <button
-                    onClick={handleReplySubmit}
+                  <Button
+                    size="sm"
+                    loading={submittingReply}
                     disabled={!replyText.trim() || submittingReply}
-                    className="flex items-center gap-1.5 bg-teal text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    leftIcon={Send}
+                    onClick={handleReplySubmit}
                   >
-                    <Send size={14} />
                     Reply
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

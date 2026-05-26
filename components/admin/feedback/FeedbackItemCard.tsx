@@ -12,6 +12,7 @@ import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdow
 import { buildReviewItemUrl } from '@/lib/proposal-url';
 import { REVIEW_STATUS_OPTIONS } from '@/lib/feedback/status';
 import FeedbackItemThumb from './FeedbackItemThumb';
+import { Button } from '@/components/ui/Button';
 
 interface ReviewItemCardProps {
   item: FeedbackItem;
@@ -289,13 +290,14 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
 
         {/* Actions */}
         <div className="flex items-center justify-between border-t border-gray-100 pt-2 -mx-3 px-3">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={Eye}
             onClick={() => onOpenViewer(item.id)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
           >
-            <Eye size={13} />
             View
-          </button>
+          </Button>
 
           <div className="relative">
             <button
