@@ -191,13 +191,15 @@ function StatusCard({
 
   const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
   const scriptSrc = `${apiBase}/api/review-widget/${project.share_token}/script`;
-  const scriptTag = `<script>
+  const scriptTag = `<!-- AgencyViz Code -->
+<script>
 (function(){
   var s=document.createElement('script');s.defer=true;
   s.src=${JSON.stringify(scriptSrc)};
   document.head.appendChild(s);
 })();
-<\/script>`;
+<\/script>
+<!-- End AgencyViz Code -->`;
 
   const handleCopy = async () => {
     try {

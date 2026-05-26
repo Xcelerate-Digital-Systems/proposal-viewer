@@ -217,19 +217,23 @@ export default function WebpageItemForm({
           Page Path
         </label>
         <div className="flex items-stretch rounded-lg border border-gray-200 focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal overflow-hidden">
-          <span className="px-3 py-2.5 text-xs font-mono text-gray-400 bg-gray-50 border-r border-gray-200 shrink-0">
-            {project?.root_domain}
+          <span className="px-2.5 py-2.5 text-sm font-mono text-gray-400 bg-gray-50 border-r border-gray-200 shrink-0">
+            /
           </span>
           <input
             type="text"
-            value={pagePath}
-            onChange={(e) => setPagePath(e.target.value)}
-            placeholder="/offer"
+            value={pagePath.replace(/^\//, '')}
+            onChange={(e) => {
+              const v = e.target.value.replace(/^\/+/, '');
+              setPagePath(v ? `/${v}` : '/');
+            }}
+            placeholder="offer"
             className="flex-1 px-3 py-2.5 text-sm text-gray-900 font-mono placeholder:text-gray-400 focus:outline-none min-w-0"
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1.5">
-          Leave as <code className="font-mono">/</code> for the homepage.
+        <p className="text-xs text-gray-400 mt-1.5 break-all">
+          Full URL: <code className="font-mono text-gray-500">{project?.root_domain}{pagePath || '/'}</code>
+          <span className="text-gray-400"> · Leave blank for the homepage.</span>
         </p>
       </div>
 
