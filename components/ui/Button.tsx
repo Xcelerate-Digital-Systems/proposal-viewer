@@ -17,6 +17,8 @@ type Variant =
   | 'ghost'
   | 'ghost-on-dark'
   | 'danger'
+  | 'danger-outline'
+  | 'warning'
   | 'link';
 type Size = 'sm' | 'md' | 'lg';
 
@@ -49,6 +51,13 @@ const variants: Record<Variant, string> = {
   'ghost-on-dark':
     'bg-transparent text-white/60 hover:text-white hover:bg-surface-dark-hover',
   danger: 'bg-red-600 text-white hover:bg-red-700',
+  // Subtle destructive — red text + thin red border, hover wash. Use when
+  // solid `danger` is too aggressive (e.g. "Disconnect" in a settings list).
+  'danger-outline':
+    'bg-transparent text-red-600 border border-red-200 hover:bg-red-50',
+  // Amber warning — for pending/needs-attention CTAs (e.g. "Check DNS
+  // configuration" while a domain is unverified).
+  warning: 'bg-amber-600 text-white hover:bg-amber-700',
   link: 'bg-transparent text-primary hover:underline px-0 h-auto rounded-none',
 };
 
