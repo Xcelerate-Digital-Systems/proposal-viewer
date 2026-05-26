@@ -10,10 +10,8 @@ import { DEFAULT_SHARED_VIEWS, type FeedbackSharedViews } from '@/lib/types/feed
  * Update which tabs the project's public share link exposes.
  * Body: { shared_views: { board: boolean; kanban: boolean; items: boolean } }
  */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -71,10 +69,8 @@ export async function PATCH(
  *   { token: string, url: string }   — on generate
  *   { revoked: true }                — on revoke
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await getAuthContext(req);
     if (!auth) {

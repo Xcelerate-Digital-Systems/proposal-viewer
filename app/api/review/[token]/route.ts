@@ -10,10 +10,8 @@ import { createServiceClient } from '@/lib/supabase-server';
  *
  * Item tokens are checked first (more specific), then project tokens (backward compat).
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
 

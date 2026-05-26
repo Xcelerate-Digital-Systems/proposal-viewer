@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Copy, ExternalLink, BookmarkPlus, Bookmark } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -12,7 +12,8 @@ import { useToast } from '@/components/ui/Toast';
 import { supabase, type Funnel } from '@/lib/supabase';
 import { duplicateFunnelAsScenario } from '@/lib/funnel/duplicate-funnel';
 
-export default function FunnelBoardPage({ params }: { params: { id: string } }) {
+export default function FunnelBoardPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   return (
     <AdminLayout collapseSidebar>
       {(auth) => (

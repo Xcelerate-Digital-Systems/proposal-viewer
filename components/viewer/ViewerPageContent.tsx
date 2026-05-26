@@ -18,7 +18,7 @@ interface ViewerPageContentProps {
   branding: CompanyBranding;
   bgPrimary: string;
   pageOrientation: 'portrait' | 'landscape';
-  scrollRef: RefObject<HTMLDivElement>;
+  scrollRef: RefObject<HTMLDivElement | null>;
   // Page type flags
   onTocPage: boolean;
   onTextPage: boolean;

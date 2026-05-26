@@ -38,7 +38,7 @@ interface ItemContentViewProps {
   /** Callback when existing pin marker is clicked */
   onPinClick: (commentId?: string) => void;
   /** Optional ref for the container */
-  containerRef?: React.RefObject<HTMLDivElement>;
+  containerRef?: React.RefObject<HTMLDivElement | null>;
   /** Render prop for webpage items — optional override */
   renderWebpage?: (item: FeedbackItem) => React.ReactNode;
   /** Share token for building embed script URL */
@@ -162,7 +162,7 @@ export default function ItemContentView({
           onPinClick={onPinClick}
         />
         <HighlightOverlay
-          containerRef={containerRef as React.RefObject<HTMLElement>}
+          containerRef={containerRef as React.RefObject<HTMLElement | null>}
           highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
@@ -196,7 +196,7 @@ export default function ItemContentView({
           onPinClick={onPinClick}
         />
         <HighlightOverlay
-          containerRef={containerRef as React.RefObject<HTMLElement>}
+          containerRef={containerRef as React.RefObject<HTMLElement | null>}
           highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}
@@ -361,7 +361,7 @@ export default function ItemContentView({
               onPinClick={onPinClick}
             />
             <HighlightOverlay
-              containerRef={containerRef as React.RefObject<HTMLElement>}
+              containerRef={containerRef as React.RefObject<HTMLElement | null>}
               highlightComments={visibleHighlights}
               highlightedCommentId={highlightedCommentId}
               onHighlightClick={onHighlightClick}
@@ -468,7 +468,6 @@ export default function ItemContentView({
             </div>
           );
         })()}
-
         {/* Image (non-ad) */}
         {!isAd && imageUrl && (
           <img
@@ -478,7 +477,6 @@ export default function ItemContentView({
             draggable={false}
           />
         )}
-
         {/* Pin overlay */}
         <PinOverlay
           pinComments={visiblePins}
@@ -486,7 +484,7 @@ export default function ItemContentView({
           onPinClick={onPinClick}
         />
         <HighlightOverlay
-          containerRef={containerRef as React.RefObject<HTMLElement>}
+          containerRef={containerRef as React.RefObject<HTMLElement | null>}
           highlightComments={visibleHighlights}
           highlightedCommentId={highlightedCommentId}
           onHighlightClick={onHighlightClick}

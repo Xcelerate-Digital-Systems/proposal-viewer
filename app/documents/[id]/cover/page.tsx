@@ -3,6 +3,7 @@
 // existing /cover bookmarks to /design.
 import { redirect } from 'next/navigation';
 
-export default function DocumentCoverRedirect({ params }: { params: { id: string } }) {
+export default async function DocumentCoverRedirect(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   redirect(`/documents/${params.id}/design`);
 }

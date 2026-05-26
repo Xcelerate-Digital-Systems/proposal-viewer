@@ -20,7 +20,7 @@ interface PdfViewerProps {
   /** Current virtual PDF page number (1-based) */
   currentPage: number;
   onLoadSuccess: (data: { numPages: number }) => void;
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
   bgColor?: string;
   accentColor?: string;
   branding?: CompanyBranding;
@@ -211,7 +211,6 @@ export default function PdfViewer({
   return (
     <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: bgColor }}>
       {branding && <ViewerBackground branding={branding} />}
-
       {/* Branded loader overlay while PDF loads */}
       {showBrandedLoader && (
         <ViewerLoader
@@ -221,7 +220,6 @@ export default function PdfViewer({
           minDisplayTime={600}
         />
       )}
-
       {/* Branded loader when no URL yet */}
       {!fileUrl && branding && (
         <ViewerLoader
@@ -231,7 +229,6 @@ export default function PdfViewer({
           minDisplayTime={600}
         />
       )}
-
       <div
         ref={scrollRef}
         className="absolute inset-0 overflow-auto"
@@ -280,12 +277,11 @@ export default function PdfViewer({
               </Document>
             ) : (
               /* Fallback: empty space — ViewerLoader overlay handles the visual */
-              <div className="py-20" />
+              (<div className="py-20" />)
             )}
           </div>
         </div>
       </div>
-
       {/* Zoom controls */}
       <div
         className={`absolute z-10 transition-opacity duration-200 ${

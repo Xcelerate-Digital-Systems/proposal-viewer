@@ -60,10 +60,8 @@ async function notifyParticipantsAsync(params: {
  *
  * Both are validated to ensure the commenter has legitimate access.
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
     const body = await req.json();

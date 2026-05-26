@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { FeedbackBoard } from '@/components/admin/feedback/board';
 import { useFeedbackBoardContext } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 
-export default function ReviewBoardPage({ params }: { params: { id: string } }) {
+export default function ReviewBoardPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   return (
     <AdminLayout collapseSidebar>
       {(auth) => (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
@@ -33,7 +33,8 @@ type ReviewCompletion = {
 /*  Entry point                                                        */
 /* ------------------------------------------------------------------ */
 
-export default function ReviewFeedbackPage({ params }: { params: { id: string } }) {
+export default function ReviewFeedbackPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   return (
     <AdminLayout>
       {(auth) => (

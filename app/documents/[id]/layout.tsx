@@ -1,7 +1,7 @@
 // app/documents/[id]/layout.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, type Document as DocType } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -9,13 +9,18 @@ import DocumentDetailHeader from '@/components/admin/documents/DocumentDetailHea
 import { DocumentDetailProvider } from '@/components/admin/documents/DocumentDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
 
-export default function DocumentDetailLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { id: string };
-}) {
+export default function DocumentDetailLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    children
+  } = props;
+
   return (
     <AdminLayout>
       {(auth) => (

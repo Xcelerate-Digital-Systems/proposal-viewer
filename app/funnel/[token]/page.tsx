@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, use } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap,
   ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge,
@@ -32,7 +32,8 @@ const nodeTypes: NodeTypes = {
 };
 const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
 
-export default function PublicFunnelPage({ params }: { params: { token: string } }) {
+export default function PublicFunnelPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const [funnel, setFunnel] = useState<Funnel | null>(null);
   const [steps, setSteps] = useState<FunnelStep[]>([]);
   const [boardEdges, setBoardEdges] = useState<FunnelBoardEdge[]>([]);

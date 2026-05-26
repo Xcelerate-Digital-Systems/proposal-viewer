@@ -3,16 +3,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { isValidEmail } from '@/lib/sanitize';
 import { sendPasswordResetEmail } from '@/lib/auth-emails';
+import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
+
+const FORGOT_LIMIT = 5;
+const FORGOT_WINDOW_SECONDS = 60;
 
 export async function POST(req: NextRequest) {
   try {
+    // IP-based rate limit. Prevents enumeration via send-and-time and
+    // bounds Resend cost from spray attacks.
+    const rl = await rateLimit({
+      key: `auth:forgot:${ipFromRequest(req)}`,
+      limit: FORGOT_LIMIT,
+      windowSeconds: FORGOT_WINDOW_SECONDS,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: rateLimitHeaders(rl, FORGOT_LIMIT) },
+      );
+    }
+
     const { email } = await req.json();
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
     }
 
-    const baseUrl = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || '';
+    // Hardcoded base URL — never trust the Origin header. An attacker can set
+    // Origin: https://evil.com on a cross-origin POST and trick us into
+    // emailing the victim a recovery link that lands on evil.com with the
+    // session token in the URL.
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '');
+    if (!baseUrl) {
+      console.error('NEXT_PUBLIC_APP_URL is not configured — cannot mint a safe reset link');
+      return NextResponse.json({ success: true }); // don't leak the misconfig
+    }
     const redirectTo = `${baseUrl}/reset-password`;
 
     const supabase = createServiceClient();

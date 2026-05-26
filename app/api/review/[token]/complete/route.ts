@@ -10,10 +10,8 @@ import { createServiceClient } from '@/lib/supabase-server';
  *
  * Token must be a review_projects.share_token.
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
     const body = await req.json().catch(() => ({}));

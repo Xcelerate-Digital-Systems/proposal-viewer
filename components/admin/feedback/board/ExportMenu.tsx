@@ -8,7 +8,7 @@ import { PDFDocument } from 'pdf-lib';
 
 interface Props {
   /** Canvas container element ref — the wrapper around .react-flow. */
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   /** Filename stem (typically the review project name). */
   boardName: string;
 }

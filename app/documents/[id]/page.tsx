@@ -1,6 +1,7 @@
 // app/documents/[id]/page.tsx
 import { redirect } from 'next/navigation';
 
-export default function DocumentDetailRedirect({ params }: { params: { id: string } }) {
+export default async function DocumentDetailRedirect(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   redirect(`/documents/${params.id}/pages`);
 }

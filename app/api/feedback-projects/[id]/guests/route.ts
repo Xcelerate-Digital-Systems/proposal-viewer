@@ -27,10 +27,8 @@ const PREF_KEYS: (keyof GuestPrefs)[] = [
 // project's `client_email`) along with whatever stored prefs we have.
 // Excludes emails that belong to a team member of the same company,
 // since those are managed via the assignees panel.
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -148,10 +146,8 @@ export async function GET(
 }
 
 // PATCH — upsert prefs (or removed flag) for a single guest email.
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

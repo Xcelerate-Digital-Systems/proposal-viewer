@@ -1,6 +1,7 @@
 // app/api/proposals/pages/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 import {
   getPages,
   addPage,
@@ -13,37 +14,61 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+// Verify the proposal belongs to the authenticated caller's company.
+async function ownsProposal(req: NextRequest, proposalId: string) {
+  const auth = await getAuthContext(req);
+  if (!auth) return null;
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from('proposals')
+    .select('company_id')
+    .eq('id', proposalId)
+    .eq('company_id', auth.companyId)
+    .maybeSingle();
+  return data ? { auth, companyId: data.company_id as string } : null;
+}
+
+// For PUT that operates on a page id, resolve the page → proposal, then verify
+// proposal ownership.
+async function ownsPage(req: NextRequest, pageId: string) {
+  const auth = await getAuthContext(req);
+  if (!auth) return null;
+  const supabase = createServiceClient();
+  const { data: page } = await supabase
+    .from('proposal_pages_v2')
+    .select('proposal_id')
+    .eq('id', pageId)
+    .maybeSingle();
+  if (!page?.proposal_id) return null;
+  const { data: proposal } = await supabase
+    .from('proposals')
+    .select('company_id')
+    .eq('id', page.proposal_id)
+    .eq('company_id', auth.companyId)
+    .maybeSingle();
+  return proposal
+    ? { auth, proposalId: page.proposal_id as string, companyId: proposal.company_id as string }
+    : null;
+}
+
 /* ─── GET — fetch all pages for a proposal ───────────────────────────────── */
 /*
- * Query params: proposal_id | share_token
+ * Query param: proposal_id (required, ownership-checked)
  */
 
 export async function GET(req: NextRequest) {
   try {
     const supabase   = createServiceClient();
     const proposalId = req.nextUrl.searchParams.get('proposal_id');
-    const shareToken = req.nextUrl.searchParams.get('share_token');
 
-    if (!proposalId && !shareToken) {
-      return NextResponse.json({ error: 'proposal_id or share_token required' }, { status: 400 });
+    if (!proposalId) {
+      return NextResponse.json({ error: 'proposal_id required' }, { status: 400 });
     }
 
-    let resolvedId = proposalId;
+    const ownership = await ownsProposal(req, proposalId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!resolvedId && shareToken) {
-      const { data: proposal, error } = await supabase
-        .from('proposals')
-        .select('id')
-        .eq('share_token', shareToken)
-        .single();
-
-      if (error || !proposal) {
-        return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
-      }
-      resolvedId = proposal.id;
-    }
-
-    const { pages, error } = await getPages(supabase, 'proposal', resolvedId!);
+    const { pages, error } = await getPages(supabase, 'proposal', proposalId);
 
     if (error) {
       return NextResponse.json({ error }, { status: 500 });
@@ -59,7 +84,7 @@ export async function GET(req: NextRequest) {
 /* ─── POST — add a page ──────────────────────────────────────────────────── */
 /*
  * op: 'insert_pdf'
- *   Body: { proposal_id, company_id?, after_position, temp_path }
+ *   Body: { proposal_id, after_position, temp_path }
  *   Inserts a new PDF page (file already uploaded to storage).
  *
  * op: 'replace_pdf'
@@ -67,7 +92,7 @@ export async function GET(req: NextRequest) {
  *   Replaces the file_path on an existing PDF page.
  *
  * op: (absent)  →  non-PDF page add
- *   Body: { proposal_id, company_id?, type, position?, title?, payload?, ...meta }
+ *   Body: { proposal_id, type, position?, title?, payload?, ...meta }
  *   Proposals support: text, pricing, packages, section, toc
  */
 
@@ -75,8 +100,16 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = createServiceClient();
     const body     = await req.json();
-    const { op }   = body;
+    const proposalId = body.proposal_id as string | undefined;
+    if (!proposalId) {
+      return NextResponse.json({ error: 'proposal_id is required' }, { status: 400 });
+    }
+    const ownership = await ownsProposal(req, proposalId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Force company_id to the verified value so handlers can't be tricked.
+    body.company_id = ownership.companyId;
 
+    const { op } = body;
     if (op === 'insert_pdf')  return handleInsertPdf(supabase, body);
     if (op === 'replace_pdf') return handleReplacePdf(supabase, body);
     return handleAdd(supabase, body);
@@ -96,25 +129,11 @@ async function handleInsertPdf(
     return NextResponse.json({ error: 'proposal_id and temp_path are required' }, { status: 400 });
   }
 
-  let resolvedCompanyId = company_id as string | undefined;
-  if (!resolvedCompanyId) {
-    const { data: proposal } = await supabase
-      .from('proposals')
-      .select('company_id')
-      .eq('id', proposal_id)
-      .single();
-    resolvedCompanyId = proposal?.company_id;
-  }
-
-  if (!resolvedCompanyId) {
-    return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
-  }
-
   const afterPos = typeof after_position === 'number' ? after_position : -1;
 
   const { page, totalPages, error } = await insertPdfPage(supabase, 'proposal', {
     entityId:      proposal_id as string,
-    companyId:     resolvedCompanyId,
+    companyId:     company_id as string,
     afterPosition: afterPos,
     tempPath:      temp_path as string,
   });
@@ -166,23 +185,9 @@ async function handleAdd(
     );
   }
 
-  let resolvedCompanyId = company_id as string | undefined;
-  if (!resolvedCompanyId) {
-    const { data: proposal } = await supabase
-      .from('proposals')
-      .select('company_id')
-      .eq('id', proposal_id)
-      .single();
-    resolvedCompanyId = proposal?.company_id;
-  }
-
-  if (!resolvedCompanyId) {
-    return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
-  }
-
   const { page, error } = await addPage(supabase, 'proposal', {
     entityId:         proposal_id as string,
-    companyId:        resolvedCompanyId,
+    companyId:        company_id as string,
     type:             type as PageType,
     position:         position as number | undefined,
     title:            title as string | undefined,
@@ -216,6 +221,9 @@ export async function PUT(req: NextRequest) {
     if (!pageId) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
+
+    const ownership = await ownsPage(req, pageId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
     const {
@@ -263,6 +271,9 @@ export async function DELETE(req: NextRequest) {
     if (!proposal_id || !page_id) {
       return NextResponse.json({ error: 'proposal_id and page_id are required' }, { status: 400 });
     }
+
+    const ownership = await ownsProposal(req, proposal_id);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { success, totalPages, error, status } = await deletePage(supabase, 'proposal', {
       entityId: proposal_id,

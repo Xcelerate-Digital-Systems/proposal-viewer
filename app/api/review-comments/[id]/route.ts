@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 
-type RouteContext = { params: { id: string } };
+type RouteContext = { params: Promise<{ id: string }> };
 
 async function loadAuthorisedComment(req: NextRequest, id: string) {
   const auth = await getAuthContext(req);
@@ -46,7 +46,8 @@ async function loadAuthorisedComment(req: NextRequest, id: string) {
  * Edit a comment's content. Agency team members only.
  * Body: { content: string }
  */
-export async function PATCH(req: NextRequest, { params }: RouteContext) {
+export async function PATCH(req: NextRequest, props: RouteContext) {
+  const params = await props.params;
   try {
     const ctx = await loadAuthorisedComment(req, params.id);
     if ('error' in ctx) return ctx.error;
@@ -84,7 +85,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
  * DELETE /api/review-comments/[id]
  * Delete a comment and any replies + reactions. Agency team members only.
  */
-export async function DELETE(req: NextRequest, { params }: RouteContext) {
+export async function DELETE(req: NextRequest, props: RouteContext) {
+  const params = await props.params;
   try {
     const ctx = await loadAuthorisedComment(req, params.id);
     if ('error' in ctx) return ctx.error;

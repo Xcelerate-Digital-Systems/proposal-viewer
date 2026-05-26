@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { supabase, type Proposal, formatAUD, pricingEffectiveSubtotal } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
 import Toggle from '@/components/ui/Toggle';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
@@ -48,7 +49,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const res = await fetch(`/api/proposals/pages?proposal_id=${proposal.id}`);
+      const res = await authFetch(`/api/proposals/pages?proposal_id=${proposal.id}`);
       if (!res.ok) return;
       const json = await res.json();
       const pages = (json.pages ?? json) as Array<Record<string, unknown>>;

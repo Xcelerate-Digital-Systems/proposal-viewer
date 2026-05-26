@@ -12,10 +12,8 @@ export const dynamic = 'force-dynamic';
  * Public route: loads a feedback project and all its items for the card grid view.
  * Token is the review_projects.share_token.
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
 

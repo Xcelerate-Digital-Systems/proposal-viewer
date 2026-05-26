@@ -16,10 +16,8 @@ export const dynamic = 'force-dynamic';
  * Uses the get_whiteboard_data() RPC function to fetch all data in one
  * call, bypassing PostgREST schema cache issues with newer columns.
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
 

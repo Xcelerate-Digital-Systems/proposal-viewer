@@ -5,7 +5,7 @@ import type { FeedbackComment } from '@/lib/supabase';
 
 interface HighlightOverlayProps {
   /** The container element containing the highlightable HTML content */
-  containerRef: React.RefObject<HTMLElement>;
+  containerRef: React.RefObject<HTMLElement | null>;
   /** Comments with text_highlight comment_type */
   highlightComments: FeedbackComment[];
   /** Currently highlighted comment ID (for pulse effect) */

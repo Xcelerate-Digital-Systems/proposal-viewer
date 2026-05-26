@@ -1,7 +1,7 @@
 // app/doc/[token]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, use } from 'react';
 import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import Sidebar from '@/components/viewer/Sidebar';
@@ -20,7 +20,8 @@ import PageNumberBadge from '@/components/viewer/PageNumberBadge';
 
 /* ─── Document Viewer Page ────────────────────────────────────────── */
 
-export default function DocumentViewerPage({ params }: { params: { token: string } }) {
+export default function DocumentViewerPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const {
     document: doc,
     pdfUrl,
@@ -66,12 +67,12 @@ export default function DocumentViewerPage({ params }: { params: { token: string
 
   // Auto-skip section pages — they are sidebar group headers, not renderable pages
   // Auto-skip section pages — they are sidebar group headers, not renderable pages
-useEffect(() => {
-  if (isSectionPage && pageUrls.length > 0) {
-    const next = currentPage < pageUrls.length ? currentPage + 1 : currentPage - 1;
-    goToPage(next);
-  }
-}, [isSectionPage, currentPage, pageUrls.length, goToPage]);
+  useEffect(() => {
+    if (isSectionPage && pageUrls.length > 0) {
+      const next = currentPage < pageUrls.length ? currentPage + 1 : currentPage - 1;
+      goToPage(next);
+    }
+  }, [isSectionPage, currentPage, pageUrls.length, goToPage]);
 
   // Dismiss cover state when cover isn't enabled so keyboard nav works
   useEffect(() => {
@@ -123,39 +124,39 @@ useEffect(() => {
   const hasSpecialPages = textPages.length > 0;
   const noPricing = useCallback(() => false, []);
 
-const handleCompositeDownload = useCallback(async () => {
-  if (!pdfUrl && pageUrls.length === 0) throw new Error('No PDF data available');
-  const entityOrientation = doc?.page_orientation || 'auto';
-  const textPageOrientations: Record<string, 'auto' | 'portrait' | 'landscape'> = Object.fromEntries(
-    textPages.map(tp => [tp.id, entityOrientation])
-  );
-  return exportCompositePdf({
-    pdfUrl,
-    pageUrls,
-    title: doc?.title || 'document',
-    numPages,
-    isPricingPage: () => false,
-    isPackagesPage: () => false,
-    isTextPage,
-    getTextPageId,
-    toPdfPage,
-    getTextPage,
-    pricing: null,
-    packages: [],
-    getPackagesId: () => null,
-    branding,
-    companyName: branding.name,
-    proposalTitle: doc?.title,
-    textPageOrientations,
-    pageEntries,
-    isTocPage,
-    tocSettings,
-    pageSequence,
-    proposal: null,
-    includeCover: false,
-  });
-}, [pdfUrl, pageUrls, doc, numPages, isTextPage, getTextPageId, toPdfPage, getTextPage,
-    branding, textPages, pageEntries, isTocPage, tocSettings, pageSequence]);
+  const handleCompositeDownload = useCallback(async () => {
+    if (!pdfUrl && pageUrls.length === 0) throw new Error('No PDF data available');
+    const entityOrientation = doc?.page_orientation || 'auto';
+    const textPageOrientations: Record<string, 'auto' | 'portrait' | 'landscape'> = Object.fromEntries(
+      textPages.map(tp => [tp.id, entityOrientation])
+    );
+    return exportCompositePdf({
+      pdfUrl,
+      pageUrls,
+      title: doc?.title || 'document',
+      numPages,
+      isPricingPage: () => false,
+      isPackagesPage: () => false,
+      isTextPage,
+      getTextPageId,
+      toPdfPage,
+      getTextPage,
+      pricing: null,
+      packages: [],
+      getPackagesId: () => null,
+      branding,
+      companyName: branding.name,
+      proposalTitle: doc?.title,
+      textPageOrientations,
+      pageEntries,
+      isTocPage,
+      tocSettings,
+      pageSequence,
+      proposal: null,
+      includeCover: false,
+    });
+  }, [pdfUrl, pageUrls, doc, numPages, isTextPage, getTextPageId, toPdfPage, getTextPage,
+      branding, textPages, pageEntries, isTocPage, tocSettings, pageSequence]);
 
   // ── Early returns AFTER all hooks ──────────────────────────────────
 

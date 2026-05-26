@@ -7,11 +7,12 @@ import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default function MetaConnectorSettingsPage({
-  searchParams,
-}: {
-  searchParams: { connected?: string; error?: string };
-}) {
+export default async function MetaConnectorSettingsPage(
+  props: {
+    searchParams: Promise<{ connected?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const qs = new URLSearchParams();
   if (searchParams.connected) qs.set('connected', searchParams.connected);
   if (searchParams.error) qs.set('error', searchParams.error);

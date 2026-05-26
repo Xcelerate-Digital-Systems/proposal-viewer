@@ -12,10 +12,8 @@ export const dynamic = 'force-dynamic';
  * Uses get_funnel_data RPC (mirrors get_whiteboard_data) so we fetch
  * everything in one round trip.
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
     const { data, error } = await supabase.rpc('get_funnel_data', { p_token: params.token });

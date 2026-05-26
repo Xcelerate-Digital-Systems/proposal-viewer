@@ -20,8 +20,9 @@ const CLIENT_ALLOWED_STATUSES: FeedbackStatus[] = [
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { token: string; itemId: string } }
+  props: { params: Promise<{ token: string; itemId: string }> }
 ) {
+  const params = await props.params;
   try {
     const body = await req.json().catch(() => null);
     const status: FeedbackStatus | undefined = body?.status;

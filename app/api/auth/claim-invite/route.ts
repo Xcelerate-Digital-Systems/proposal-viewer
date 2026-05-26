@@ -10,11 +10,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
+const CLAIM_LIMIT = 5;
+const CLAIM_WINDOW_SECONDS = 60;
+
 export async function POST(req: NextRequest) {
   try {
+    const rl = await rateLimit({
+      key: `auth:claim:${ipFromRequest(req)}`,
+      limit: CLAIM_LIMIT,
+      windowSeconds: CLAIM_WINDOW_SECONDS,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: rateLimitHeaders(rl, CLAIM_LIMIT) },
+      );
+    }
+
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

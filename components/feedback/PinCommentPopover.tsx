@@ -7,8 +7,10 @@ import { POPOVER_STYLE, POPOVER_INLINE_STYLE } from '@/lib/feedback/popover-styl
 import type { FeedbackComment } from '@/lib/supabase';
 import AttachmentList from './comments/AttachmentList';
 import ReactionBar from './comments/ReactionBar';
+import CommentAvatar from './comments/CommentAvatar';
 import { usePopoverPosition } from '@/hooks/usePopoverPosition';
 import { useCommentReactions } from '@/hooks/useCommentReactions';
+import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 
 interface PinCommentPopoverProps {
   /** The parent comment for this pin */
@@ -19,7 +21,7 @@ interface PinCommentPopoverProps {
   pinX: number;
   pinY: number;
   /** Container element for positioning */
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   /** Close the popover */
   onClose: () => void;
   /** Submit a reply */
@@ -36,6 +38,10 @@ interface PinCommentPopoverProps {
   guestName?: string;
   /** Guest name change handler */
   onNameChange?: (name: string) => void;
+  /** Map of user_id → {name, avatarUrl} for team members. When the comment's
+   *  author_user_id is in the map we render their photo instead of the
+   *  initial bubble — mirrors CommentThread / ReplyItem. */
+  memberLookup?: TeamMemberLookup;
 }
 
 export default function PinCommentPopover({
@@ -51,6 +57,7 @@ export default function PinCommentPopover({
   authorName,
   guestName,
   onNameChange,
+  memberLookup,
 }: PinCommentPopoverProps) {
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -120,11 +127,13 @@ export default function PinCommentPopover({
         <div className="p-3 space-y-2.5">
           {/* Main comment */}
           <div className="flex items-start gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
-              isTeam ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-500'
-            }`}>
-              {comment.author_name.charAt(0).toUpperCase()}
-            </div>
+            <CommentAvatar
+              authorName={comment.author_name}
+              authorUserId={comment.author_user_id}
+              isTeam={isTeam}
+              memberLookup={memberLookup}
+              className="w-6 h-6 text-[10px]"
+            />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-gray-900">{comment.author_name}</span>
@@ -176,7 +185,12 @@ export default function PinCommentPopover({
           {replies.length > 0 && (
             <div className="ml-4 pl-3 border-l-2 border-gray-100 space-y-2">
               {replies.map((r) => (
-                <PopoverReplyItem key={r.id} reply={r} currentUserName={currentUserName} />
+                <PopoverReplyItem
+                  key={r.id}
+                  reply={r}
+                  currentUserName={currentUserName}
+                  memberLookup={memberLookup}
+                />
               ))}
             </div>
           )}
@@ -245,20 +259,24 @@ export default function PinCommentPopover({
 function PopoverReplyItem({
   reply,
   currentUserName,
+  memberLookup,
 }: {
   reply: FeedbackComment;
   currentUserName: string | null;
+  memberLookup?: TeamMemberLookup;
 }) {
   const rIsTeam = reply.author_type === 'team';
   const { reactions, toggle } = useCommentReactions(reply.id, { currentUserName });
 
   return (
     <div className="flex items-start gap-2">
-      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
-        rIsTeam ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400'
-      }`}>
-        {reply.author_name.charAt(0).toUpperCase()}
-      </div>
+      <CommentAvatar
+        authorName={reply.author_name}
+        authorUserId={reply.author_user_id}
+        isTeam={rIsTeam}
+        memberLookup={memberLookup}
+        className="w-5 h-5 text-[9px]"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-medium text-gray-900">{reply.author_name}</span>

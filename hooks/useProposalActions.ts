@@ -10,6 +10,18 @@ function notify(payload: Record<string, string | undefined>) {
   }).catch(() => {});
 }
 
+/** Public-viewer mutation — server-side service role, gated by share_token in URL. */
+async function publicAction(
+  token: string,
+  body: { action: 'accept' | 'decline' | 'request_revision' | 'view'; name?: string; reason?: string; notes?: string },
+) {
+  await fetch(`/api/proposals/share/${encodeURIComponent(token)}/action`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 export interface ProposalActionsParams {
   proposal: Proposal | null;
   token: string;
@@ -38,25 +50,14 @@ export function createProposalActions({
 
   const acceptProposal = async (name: string) => {
     if (!proposal) return;
-    await supabase
-      .from('proposals')
-      .update({ status: 'accepted', accepted_at: new Date().toISOString(), accepted_by_name: name })
-      .eq('id', proposal.id);
+    await publicAction(token, { action: 'accept', name });
     setAccepted(true);
     notify({ event_type: 'proposal_accepted', share_token: token });
   };
 
   const declineProposal = async (name: string, reason: string) => {
     if (!proposal) return;
-    await supabase
-      .from('proposals')
-      .update({
-        status: 'declined',
-        declined_at: new Date().toISOString(),
-        declined_by_name: name,
-        decline_reason: reason,
-      })
-      .eq('id', proposal.id);
+    await publicAction(token, { action: 'decline', name, reason });
     setDeclined(true);
     notify({
       event_type: 'proposal_declined',
@@ -68,15 +69,7 @@ export function createProposalActions({
 
   const requestRevision = async (name: string, notes: string) => {
     if (!proposal) return;
-    await supabase
-      .from('proposals')
-      .update({
-        status: 'revision_requested',
-        revision_requested_at: new Date().toISOString(),
-        revision_requested_by_name: name,
-        revision_notes: notes,
-      })
-      .eq('id', proposal.id);
+    await publicAction(token, { action: 'request_revision', name, notes });
     setRevisionRequested(true);
     notify({
       event_type: 'proposal_revision_requested',

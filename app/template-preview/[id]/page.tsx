@@ -1,7 +1,7 @@
 // app/template-preview/[id]/page.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, use } from 'react';
 import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import { deriveBorderColor } from '@/hooks/useProposal';
@@ -25,7 +25,8 @@ import type { CompanyBranding } from '@/hooks/useProposal';
 import { parseDecisionExtras } from '@/lib/types/decision-extras';
 
 
-export default function TemplatePreviewPage({ params }: { params: { id: string } }) {
+export default function TemplatePreviewPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const {
     template,
     pdfUrl,
@@ -60,13 +61,13 @@ export default function TemplatePreviewPage({ params }: { params: { id: string }
   const [showCover, setShowCover] = useState(true);
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const [clientLogoUrl, setClientLogoUrl] = useState<string | undefined>(undefined);
-useEffect(() => {
-  if (!template?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
-  supabase.storage
-    .from('proposals')
-    .createSignedUrl(template.cover_client_logo_path, 3600)
-    .then(({ data }) => setClientLogoUrl(data?.signedUrl || undefined));
-}, [template?.cover_client_logo_path]);
+  useEffect(() => {
+    if (!template?.cover_client_logo_path) { setClientLogoUrl(undefined); return; }
+    supabase.storage
+      .from('proposals')
+      .createSignedUrl(template.cover_client_logo_path, 3600)
+      .then(({ data }) => setClientLogoUrl(data?.signedUrl || undefined));
+  }, [template?.cover_client_logo_path]);
 
   const mainRef = useRef<HTMLDivElement>(null);
   const goToPage = useCallback((page: number) => {
@@ -414,7 +415,7 @@ interface DecisionPageBranchProps {
   template: { decision_extras?: unknown } | null;
   branding: CompanyBranding;
   bgPrimary: string;
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
 /** Renders the synthetic Decision page exactly the way ViewerPageContent does

@@ -9,10 +9,8 @@ import { createServiceClient } from '@/lib/supabase-server';
  * token — there is no separate "make public" toggle. The public viewer renders
  * the same detail layout as the admin-side popup.
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
 

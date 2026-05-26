@@ -3,7 +3,7 @@
 // QuoteShellHeader and forces 404→redirect for non-quote rows.
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, type Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -12,13 +12,18 @@ import MissingInfoBanner from '@/components/admin/quotes/MissingInfoBanner';
 import { ProposalDetailProvider } from '@/components/admin/proposals/ProposalDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
 
-export default function QuoteDetailLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { id: string };
-}) {
+export default function QuoteDetailLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    children
+  } = props;
+
   return (
     <AdminLayout>
       {(auth) => (

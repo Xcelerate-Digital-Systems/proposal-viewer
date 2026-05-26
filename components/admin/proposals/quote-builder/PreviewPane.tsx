@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, Eye } from 'lucide-react';
 import { supabase, type Proposal, type ProposalPricing } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import QuoteSinglePageView from '@/components/viewer/QuoteSinglePageView';
@@ -28,9 +29,9 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
     setRefreshing(true);
     try {
       // Pricing — find the first 'pricing' page for this proposal in the
-      // unified pages table. Reads via the public API route to honour the
+      // unified pages table. Reads via the auth-gated API route to honour the
       // same shape PricingTabEditor uses internally.
-      const res = await fetch(`/api/proposals/pages?proposal_id=${proposal.id}`);
+      const res = await authFetch(`/api/proposals/pages?proposal_id=${proposal.id}`);
       if (res.ok) {
         const json = await res.json();
         // The unified pages API returns { pages: [...] }; pricing pages have

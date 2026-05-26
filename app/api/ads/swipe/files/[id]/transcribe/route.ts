@@ -10,7 +10,8 @@ export const maxDuration = 60;
 
 const MAX_WHISPER_BYTES = 25 * 1024 * 1024;
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

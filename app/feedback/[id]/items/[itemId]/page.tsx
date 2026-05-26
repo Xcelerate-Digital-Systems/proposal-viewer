@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackStatus } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
@@ -13,11 +13,12 @@ import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 
 
-export default function ReviewItemViewerPage({
-  params,
-}: {
-  params: { id: string; itemId: string };
-}) {
+export default function ReviewItemViewerPage(
+  props: {
+    params: Promise<{ id: string; itemId: string }>;
+  }
+) {
+  const params = use(props.params);
   return (
     <AdminLayout collapseSidebar>
       {(auth) => (

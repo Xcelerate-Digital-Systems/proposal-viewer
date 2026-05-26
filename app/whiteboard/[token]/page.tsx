@@ -1,7 +1,7 @@
 // app/whiteboard/[token]/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Monitor } from 'lucide-react';
 import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackBoardShape } from '@/lib/supabase';
@@ -29,7 +29,8 @@ import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
  * where the client can see the item details and leave comments.
  * A back param is included so the review page can show a "Back to board" button.
  */
-export default function PublicWhiteboardPage({ params }: { params: { token: string } }) {
+export default function PublicWhiteboardPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const [project, setProject] = useState<FeedbackProject | null>(null);
   const [items, setItems] = useState<FeedbackItem[]>([]);

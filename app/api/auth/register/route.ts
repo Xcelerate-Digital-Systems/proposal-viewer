@@ -2,11 +2,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
+const REGISTER_LIMIT = 5;
+const REGISTER_WINDOW_SECONDS = 60;
+
 export async function POST(req: NextRequest) {
   try {
+    const rl = await rateLimit({
+      key: `auth:register:${ipFromRequest(req)}`,
+      limit: REGISTER_LIMIT,
+      windowSeconds: REGISTER_WINDOW_SECONDS,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: rateLimitHeaders(rl, REGISTER_LIMIT) },
+      );
+    }
+
     // The user must already be authenticated against Supabase Auth (signUp
     // returns a session immediately for email/password). Trust the verified
     // identity, never the body — otherwise an attacker with a leaked invite

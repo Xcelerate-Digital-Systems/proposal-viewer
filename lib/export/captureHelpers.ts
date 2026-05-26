@@ -48,7 +48,7 @@ export async function preloadImageAsDataUrl(url: string): Promise<string | null>
  * is deterministic and always works.
  */
 export async function captureComponent(
-  element: React.ReactElement,
+  element: React.ReactElement<any>,
   bgColor: string,
   targetAspect: number,
   overrideCaptureWidth?: number,
@@ -151,7 +151,7 @@ export async function captureComponent(
  */
 export async function captureAndAddPage(
   outDoc: PDFDocument,
-  element: React.ReactElement,
+  element: React.ReactElement<any>,
   bgColor: string,
   pageWidth: number,
   pageHeight: number,

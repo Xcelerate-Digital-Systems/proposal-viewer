@@ -9,7 +9,7 @@ interface SplitPanelLayoutProps {
   /** Preview column (35%). When omitted, left fills full width. */
   right?: React.ReactNode;
   /** Optional ref for height measurement */
-  containerRef?: RefObject<HTMLDivElement>;
+  containerRef?: RefObject<HTMLDivElement | null>;
   /** Explicit height from measurement hook */
   panelHeight?: number;
   /** Extra classes for the left column */

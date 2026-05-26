@@ -6,7 +6,7 @@ import SwipePublicView from './SwipePublicView';
 import type { PublicSwipePayload, SwipeFile } from '@/lib/types/swipe-files';
 
 async function fetchPayload(token: string): Promise<PublicSwipePayload | null> {
-  const h = headers();
+  const h = await headers();
   const host = h.get('host');
   const proto = h.get('x-forwarded-proto') || 'http';
   const base = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`;
@@ -26,9 +26,8 @@ function truncate(input: string | null | undefined, max = 280): string {
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
-export async function generateMetadata(
-  { params }: { params: { token: string } }
-): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const payload = await fetchPayload(params.token);
   if (!payload || payload.mode !== 'file') {
     return { title: 'Swipe file' };
@@ -85,7 +84,12 @@ function SwipeStructuredContent({ file, typeName }: { file: SwipeFile; typeName:
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // JSON.stringify does NOT escape `</script>`; without this replace,
+        // a swipe file with `title: "</script><script>alert(1)</script>"`
+        // would break out and run on every public viewer.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+        }}
       />
       <section className="sr-only" aria-label="Swipe file details">
         <h1>{file.title}</h1>
@@ -133,7 +137,8 @@ function SwipeStructuredContent({ file, typeName }: { file: SwipeFile; typeName:
   );
 }
 
-export default async function SwipeTokenPage({ params }: { params: { token: string } }) {
+export default async function SwipeTokenPage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const payload = await fetchPayload(params.token);
   if (!payload) notFound();
   return (

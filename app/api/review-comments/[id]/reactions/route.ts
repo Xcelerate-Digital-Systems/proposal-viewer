@@ -6,10 +6,8 @@ import { createServiceClient } from '@/lib/supabase-server';
  * GET /api/review-comments/[id]/reactions
  * Fetch all reactions for a comment.
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -32,10 +30,8 @@ export async function GET(
  *
  * Body: { emoji, author_name, author_user_id? }
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
     const body = await req.json();

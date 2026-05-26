@@ -1,6 +1,7 @@
 // app/api/documents/pages/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 import {
   getPages,
   addPage,
@@ -12,37 +13,61 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+// Verify the document belongs to the authenticated caller's company.
+async function ownsDocument(req: NextRequest, documentId: string) {
+  const auth = await getAuthContext(req);
+  if (!auth) return null;
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from('documents')
+    .select('company_id')
+    .eq('id', documentId)
+    .eq('company_id', auth.companyId)
+    .maybeSingle();
+  return data ? { auth, companyId: data.company_id as string } : null;
+}
+
+// For PUT that operates on a page id, resolve the page → document, then verify
+// document ownership.
+async function ownsPage(req: NextRequest, pageId: string) {
+  const auth = await getAuthContext(req);
+  if (!auth) return null;
+  const supabase = createServiceClient();
+  const { data: page } = await supabase
+    .from('document_pages_v2')
+    .select('document_id')
+    .eq('id', pageId)
+    .maybeSingle();
+  if (!page?.document_id) return null;
+  const { data: doc } = await supabase
+    .from('documents')
+    .select('company_id')
+    .eq('id', page.document_id)
+    .eq('company_id', auth.companyId)
+    .maybeSingle();
+  return doc
+    ? { auth, documentId: page.document_id as string, companyId: doc.company_id as string }
+    : null;
+}
+
 /* ─── GET — fetch all pages for a document ───────────────────────────────── */
 /*
- * Query params: document_id | share_token
+ * Query param: document_id (required, ownership-checked)
  */
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase    = createServiceClient();
-    const documentId  = req.nextUrl.searchParams.get('document_id');
-    const shareToken  = req.nextUrl.searchParams.get('share_token');
+    const supabase   = createServiceClient();
+    const documentId = req.nextUrl.searchParams.get('document_id');
 
-    if (!documentId && !shareToken) {
-      return NextResponse.json({ error: 'document_id or share_token required' }, { status: 400 });
+    if (!documentId) {
+      return NextResponse.json({ error: 'document_id required' }, { status: 400 });
     }
 
-    let resolvedId = documentId;
+    const ownership = await ownsDocument(req, documentId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!resolvedId && shareToken) {
-      const { data: doc, error } = await supabase
-        .from('documents')
-        .select('id')
-        .eq('share_token', shareToken)
-        .single();
-
-      if (error || !doc) {
-        return NextResponse.json({ error: 'Document not found' }, { status: 404 });
-      }
-      resolvedId = doc.id;
-    }
-
-    const { pages, error } = await getPages(supabase, 'document', resolvedId!);
+    const { pages, error } = await getPages(supabase, 'document', documentId);
 
     if (error) {
       return NextResponse.json({ error }, { status: 500 });
@@ -60,7 +85,7 @@ export async function GET(req: NextRequest) {
  * Two sub-operations detected by `op` field in JSON body:
  *
  * op: 'insert_pdf'
- *   Body: { document_id, company_id, after_position, temp_path }
+ *   Body: { document_id, after_position, temp_path }
  *   Inserts a new PDF page (file already uploaded to storage).
  *
  * op: 'replace_pdf'
@@ -68,7 +93,7 @@ export async function GET(req: NextRequest) {
  *   Replaces the file_path on an existing PDF page.
  *
  * op: (absent)  →  non-PDF page add
- *   Body: { document_id, company_id, type, position?, title?, payload?, ...meta }
+ *   Body: { document_id, type, position?, title?, payload?, ...meta }
  *   Documents support: text, section, toc
  */
 
@@ -76,16 +101,18 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = createServiceClient();
     const body     = await req.json();
-    const { op }   = body;
-
-    if (op === 'insert_pdf') {
-      return handleInsertPdf(supabase, body);
+    const documentId = body.document_id as string | undefined;
+    if (!documentId) {
+      return NextResponse.json({ error: 'document_id is required' }, { status: 400 });
     }
+    const ownership = await ownsDocument(req, documentId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Force company_id to the verified value so handlers can't be tricked.
+    body.company_id = ownership.companyId;
 
-    if (op === 'replace_pdf') {
-      return handleReplacePdf(supabase, body);
-    }
-
+    const { op } = body;
+    if (op === 'insert_pdf')  return handleInsertPdf(supabase, body);
+    if (op === 'replace_pdf') return handleReplacePdf(supabase, body);
     return handleAdd(supabase, body);
   } catch (err) {
     console.error('Document pages POST error:', err);
@@ -100,26 +127,11 @@ async function handleInsertPdf(supabase: ReturnType<typeof createServiceClient>,
     return NextResponse.json({ error: 'document_id and temp_path are required' }, { status: 400 });
   }
 
-  // Resolve company_id if not provided
-  let resolvedCompanyId = company_id as string | undefined;
-  if (!resolvedCompanyId) {
-    const { data: doc } = await supabase
-      .from('documents')
-      .select('company_id')
-      .eq('id', document_id)
-      .single();
-    resolvedCompanyId = doc?.company_id;
-  }
-
-  if (!resolvedCompanyId) {
-    return NextResponse.json({ error: 'Document not found' }, { status: 404 });
-  }
-
   const afterPos = typeof after_position === 'number' ? after_position : -1;
 
   const { page, totalPages, error } = await insertPdfPage(supabase, 'document', {
     entityId:      document_id as string,
-    companyId:     resolvedCompanyId,
+    companyId:     company_id as string,
     afterPosition: afterPos,
     tempPath:      temp_path as string,
   });
@@ -165,23 +177,9 @@ async function handleAdd(supabase: ReturnType<typeof createServiceClient>, body:
     );
   }
 
-  let resolvedCompanyId = company_id as string | undefined;
-  if (!resolvedCompanyId) {
-    const { data: doc } = await supabase
-      .from('documents')
-      .select('company_id')
-      .eq('id', document_id)
-      .single();
-    resolvedCompanyId = doc?.company_id;
-  }
-
-  if (!resolvedCompanyId) {
-    return NextResponse.json({ error: 'Document not found' }, { status: 404 });
-  }
-
   const { page, error } = await addPage(supabase, 'document', {
     entityId:         document_id as string,
-    companyId:        resolvedCompanyId,
+    companyId:        company_id as string,
     type:             type as 'text' | 'section' | 'toc',
     position:         position as number | undefined,
     title:            title as string | undefined,
@@ -215,6 +213,9 @@ export async function PUT(req: NextRequest) {
     if (!pageId) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
+
+    const ownership = await ownsPage(req, pageId);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
     const {
@@ -261,6 +262,9 @@ export async function DELETE(req: NextRequest) {
     if (!document_id || !page_id) {
       return NextResponse.json({ error: 'document_id and page_id are required' }, { status: 400 });
     }
+
+    const ownership = await ownsDocument(req, document_id);
+    if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { success, totalPages, error, status } = await deletePage(supabase, 'document', {
       entityId: document_id,

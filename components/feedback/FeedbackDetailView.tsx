@@ -27,6 +27,7 @@ import WebpageClientPlaceholder from '@/components/feedback/WebpageClientPlaceho
 import { FeedbackToolbar, FeedbackModeBar, DrawingOverlay } from '@/components/feedback/tools';
 import type { AnnotationData } from '@/components/feedback/tools';
 import { useTextHighlight, type TextHighlightData } from '@/hooks/useTextHighlight';
+import { useTeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 
@@ -209,6 +210,12 @@ export default function FeedbackDetailView({
     shareToken,
     itemId: selectedItemId,
   });
+
+  // Team-member avatar lookup. CommentsPanel already calls this hook for its
+  // own list; the request is cached per-token in the hook module, so this
+  // duplicate call here (needed to populate PinCommentPopover's avatars from
+  // anywhere on the page) is essentially free.
+  const memberLookup = useTeamMemberLookup(shareToken);
   const [pendingScreenshotUrl, setPendingScreenshotUrl] = useState<string | null>(null);
 
   // ── Drawing annotation state ──
@@ -296,7 +303,7 @@ export default function FeedbackDetailView({
 
   // ── Text highlight state (available for all content types) ──
   const { selection: textSelection, clearSelection: clearTextSelection, resetSelection: resetTextSelection } = useTextHighlight({
-    containerRef: imageContainerRef as React.RefObject<HTMLElement>,
+    containerRef: imageContainerRef as React.RefObject<HTMLElement | null>,
     enabled: !browseMode && !(!isAdmin && !!project?.pause_new_comments) && (feedbackMode === 'idle' || feedbackMode === 'highlight'),
   });
 
@@ -695,6 +702,7 @@ export default function FeedbackDetailView({
                 authorName={isAdmin ? authorName : undefined}
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
+                memberLookup={memberLookup}
               />
             )}
 

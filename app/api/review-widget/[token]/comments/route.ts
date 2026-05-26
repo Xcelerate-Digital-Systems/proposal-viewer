@@ -40,10 +40,8 @@ async function verifyProjectAccess(supabase: ReturnType<typeof createServiceClie
 }
 
 /* ── GET — load comments for an item ────────────────────── */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
     const itemId = req.nextUrl.searchParams.get('item');
@@ -107,10 +105,8 @@ export async function GET(
 }
 
 /* ── POST — create a comment ────────────────────────────── */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
     const body = await req.json();
@@ -204,10 +200,8 @@ export async function POST(
 }
 
 /* ── PATCH — resolve/unresolve OR edit comment content ─── */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
     const commentId = req.nextUrl.searchParams.get('comment_id');
@@ -287,10 +281,8 @@ export async function PATCH(
 }
 
 /* ── DELETE — delete a comment (and its replies) ────────── */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createServiceClient();
     const commentId = req.nextUrl.searchParams.get('comment_id');

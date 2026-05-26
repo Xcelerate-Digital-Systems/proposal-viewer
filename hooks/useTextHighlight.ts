@@ -14,7 +14,7 @@ export interface TextHighlightData {
 
 interface UseTextHighlightOptions {
   /** The container element to watch for text selections */
-  containerRef: React.RefObject<HTMLElement>;
+  containerRef: React.RefObject<HTMLElement | null>;
   /** Whether text highlight mode is enabled */
   enabled: boolean;
 }

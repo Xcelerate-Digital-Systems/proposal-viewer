@@ -2,8 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { sendNotifications } from '@/lib/notifications';
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
+
+const NOTIFY_LIMIT = 10;
+const NOTIFY_WINDOW_SECONDS = 60;
 
 // This endpoint is called by the public proposal viewer (no Supabase session).
 // Authentication is via knowledge of the proposal's `share_token` — the same
@@ -27,6 +31,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing event_type or share_token' }, { status: 400 });
     }
 
+    // Per-share_token throttle. Bounds inbox flooding even if a leaked
+    // share_token is being exploited; legitimate viewer activity (1 view
+    // ping + maybe an accept/decline + a few comments) is well under 10/min.
+    const rl = await rateLimit({
+      key: `notify:${share_token}`,
+      limit: NOTIFY_LIMIT,
+      windowSeconds: NOTIFY_WINDOW_SECONDS,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many notification triggers for this proposal' },
+        { status: 429, headers: rateLimitHeaders(rl, NOTIFY_LIMIT) },
+      );
+    }
+
     const validEvents = [
       'proposal_viewed',
       'proposal_accepted',
@@ -37,6 +56,20 @@ export async function POST(req: NextRequest) {
     ];
     if (!validEvents.includes(event_type)) {
       return NextResponse.json({ error: 'Invalid event_type' }, { status: 400 });
+    }
+
+    // Comment events MUST carry a comment_id. Otherwise notifications.ts
+    // falls through to its `else` branch where event_ref becomes
+    // `${event_type}_${Date.now()}` — unique on every call, so the
+    // dedup lookup against notification_log never matches and the team
+    // gets emailed once per request. Anyone with a leaked share_token
+    // could flood inboxes / burn Resend quota that way.
+    const isCommentEvent = event_type === 'comment_added' || event_type === 'comment_resolved';
+    if (isCommentEvent && !comment_id) {
+      return NextResponse.json(
+        { error: 'comment_id is required for comment_added / comment_resolved events' },
+        { status: 400 },
+      );
     }
 
     if (comment_id) {

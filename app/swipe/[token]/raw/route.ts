@@ -9,10 +9,8 @@ import { createServiceClient } from '@/lib/supabase-server';
  * shared directly with AI tools. Same token as the human share link, so one
  * URL works for designers (/swipe/[token]) and another for AI (/swipe/[token]/raw).
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const supabase = createServiceClient();
 
   const { data: file } = await supabase

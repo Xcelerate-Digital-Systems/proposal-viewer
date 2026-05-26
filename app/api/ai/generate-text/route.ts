@@ -9,12 +9,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { isValidWebhookUrl } from '@/lib/sanitize';
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
 const MODEL = 'claude-sonnet-4-6';
 const ANTHROPIC_VERSION = '2023-06-01';
+
+// Per-company daily request cap. Generous for normal trade-quote use
+// (a busy day might be ~10-15 generations across all sparkle buttons);
+// the cap exists to bound damage from a compromised account or runaway
+// client loop, not to limit legitimate usage. Bump per-tier later by
+// reading from a companies.ai_daily_quota column.
+const AI_DAILY_QUOTA = 50;
+
+// Short-window burst cap (per company). Even under the daily quota a
+// runaway client could fire 50 calls in 10 seconds and hammer Anthropic.
+const AI_BURST_LIMIT = 10;
+const AI_BURST_WINDOW_SECONDS = 60;
 
 type GenerateKind =
   | 'scope'
@@ -154,10 +167,49 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Per-company burst limit. Runs *before* the daily quota increment so
+  // a paused frontend bug can't drain the day's allowance in one second.
+  const burstRl = await rateLimit({
+    key: `ai:gen:${auth.companyId}`,
+    limit: AI_BURST_LIMIT,
+    windowSeconds: AI_BURST_WINDOW_SECONDS,
+  });
+  if (!burstRl.success) {
+    return NextResponse.json(
+      { error: 'Too many AI requests — try again in a minute' },
+      { status: 429, headers: rateLimitHeaders(burstRl, AI_BURST_LIMIT) },
+    );
+  }
+
   const body = await req.json().catch(() => null);
   const kind: GenerateKind | undefined = body?.kind;
   if (!kind || !PROMPTS[kind]) {
     return NextResponse.json({ error: 'Invalid kind' }, { status: 400 });
+  }
+
+  // Atomically bump and check today's usage for this company. The DB
+  // function INSERTs/UPSERTs the row and returns the new count in one
+  // round-trip, so two concurrent requests can't both pass the quota
+  // check by racing each other.
+  const usageSupabase = createServiceClient();
+  const { data: usageCount, error: usageErr } = await usageSupabase.rpc(
+    'increment_ai_usage',
+    { p_company_id: auth.companyId },
+  );
+  if (usageErr) {
+    console.error('AI usage tracking error:', usageErr);
+    // Fail closed — better to surface a transient error than to skip the cap.
+    return NextResponse.json({ error: 'Usage tracking unavailable' }, { status: 503 });
+  }
+  if (typeof usageCount === 'number' && usageCount > AI_DAILY_QUOTA) {
+    return NextResponse.json(
+      {
+        error: 'Daily AI generation limit reached for your company. Contact support to raise the cap.',
+        limit: AI_DAILY_QUOTA,
+        used: usageCount,
+      },
+      { status: 429 },
+    );
   }
 
   // Resolve the company so we can ground the prompt in their website. Falls

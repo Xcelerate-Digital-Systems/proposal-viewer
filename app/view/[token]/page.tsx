@@ -1,7 +1,7 @@
 // app/view/[token]/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FileText, Menu, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
@@ -17,7 +17,8 @@ import QuoteSinglePageView from '@/components/viewer/QuoteSinglePageView';
 import { useViewerPage } from '@/components/viewer/useViewerPage';
 import { supabase, type ProposalPricing } from '@/lib/supabase';
 
-export default function ProposalViewerPage({ params }: { params: { token: string } }) {
+export default function ProposalViewerPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const v = useViewerPage(params.token);
   const searchParams = useSearchParams();
   const autoPrint = searchParams?.get('print') === '1';

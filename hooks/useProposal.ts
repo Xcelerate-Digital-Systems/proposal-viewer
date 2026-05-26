@@ -150,19 +150,15 @@ export function useProposal(token: string) {
     // Only track views for actual client views, and never while in draft
     // (drafts can be opened internally for QA — those views shouldn't count as
     // "first seen by client" and shouldn't fire the proposal_viewed webhook).
+    // The actual UPDATE + INSERT runs server-side in /api/proposals/[token]/action
+    // (anon has no UPDATE on proposals; the share_token in the URL is the auth).
     if (!teamPreview && data.status !== 'draft') {
       const isFirstView = !data.first_viewed_at;
-      const now = new Date().toISOString();
-      const updates: Record<string, string> = { last_viewed_at: now };
-      if (isFirstView) updates.first_viewed_at = now;
-      if (data.status === 'sent') updates.status = 'viewed';
-
-      await supabase.from('proposals').update(updates).eq('id', data.id);
-      await supabase.from('proposal_views').insert({
-        proposal_id: data.id,
-        user_agent: navigator.userAgent,
-        company_id: data.company_id,
-      });
+      await fetch(`/api/proposals/share/${encodeURIComponent(token)}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'view' }),
+      }).catch(() => {});
 
       if (isFirstView) {
         fetch('/api/notify', {

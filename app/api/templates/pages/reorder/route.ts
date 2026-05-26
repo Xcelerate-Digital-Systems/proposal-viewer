@@ -1,6 +1,7 @@
 // app/api/templates/pages/reorder/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 import { reorderPages } from '@/lib/page-operations';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic';
 /*
  * Body: { template_id: string, ordered_ids: string[] }
  * ordered_ids is the full ordered array of page IDs — position is assigned by index.
+ * reorderPages scopes each UPDATE by template_id, so foreign page ids in the
+ * list are silently no-ops; ownership of the template is sufficient.
  */
 
 export async function POST(req: NextRequest) {
@@ -22,6 +25,17 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: tmpl } = await supabase
+      .from('proposal_templates')
+      .select('company_id')
+      .eq('id', template_id)
+      .eq('company_id', auth.companyId)
+      .maybeSingle();
+    if (!tmpl) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { success, error } = await reorderPages(supabase, 'template', {
       entityId:   template_id,

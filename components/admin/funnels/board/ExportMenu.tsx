@@ -8,7 +8,7 @@ import { PDFDocument } from 'pdf-lib';
 
 interface Props {
   /** The canvas container element ref (the wrapper that owns .react-flow__viewport). */
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   /** Funnel name — used for the downloaded filename. */
   funnelName: string;
 }

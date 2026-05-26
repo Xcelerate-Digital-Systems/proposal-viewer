@@ -1,7 +1,7 @@
 // app/review/[token]/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Image as ImageIcon, Monitor } from 'lucide-react';
 import { type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackBoardEdge, type FeedbackBoardNote, type FeedbackBoardShape, type FeedbackItemVersion, type FeedbackStatus } from '@/lib/supabase';
@@ -26,7 +26,8 @@ import ReviewerNoteOverlay from '@/components/feedback/ReviewerNoteOverlay';
 import ReviewTopBar, { type ReviewMode } from '@/components/feedback/ReviewTopBar';
 
 
-export default function ReviewViewerPage({ params }: { params: { token: string } }) {
+export default function ReviewViewerPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const searchParams = useSearchParams();
   const [project, setProject] = useState<FeedbackProject | null>(null);
   const [items, setItems] = useState<FeedbackItem[]>([]);

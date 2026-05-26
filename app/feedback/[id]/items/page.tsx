@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Image } from 'lucide-react';
 import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
@@ -13,7 +13,11 @@ import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
 /*  Entry point                                                        */
 /* ------------------------------------------------------------------ */
 
-export default function ReviewItemsPage({ params, searchParams }: { params: { id: string }; searchParams: { type?: string } }) {
+export default function ReviewItemsPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ type?: string }> }
+) {
+  const searchParams = use(props.searchParams);
+  const params = use(props.params);
   return (
     <AdminLayout>
       {(auth) => (

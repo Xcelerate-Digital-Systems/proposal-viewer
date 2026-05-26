@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Globe, Code2, Copy, Check, CheckCircle2, Clock, ExternalLink, Power } from 'lucide-react';
@@ -12,7 +12,8 @@ import AdminLayout from '@/components/admin/AdminLayout';
 /*  Entry point                                                        */
 /* ------------------------------------------------------------------ */
 
-export default function ReviewSetupPage({ params }: { params: { id: string } }) {
+export default function ReviewSetupPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   return (
     <AdminLayout>
       {(auth) => (

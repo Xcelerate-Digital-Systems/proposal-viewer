@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -9,7 +9,8 @@ import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHe
 import KanbanBoard from '@/components/admin/feedback/kanban/KanbanBoard';
 import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
 
-export default function FeedbackKanbanPage({ params }: { params: { id: string } }) {
+export default function FeedbackKanbanPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   return (
     <AdminLayout>
       {(auth) => (

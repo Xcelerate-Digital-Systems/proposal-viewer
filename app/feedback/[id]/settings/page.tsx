@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -9,11 +9,12 @@ import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import ProjectAssigneesPanel from '@/components/admin/feedback/ProjectAssigneesPanel';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 
-export default function FeedbackProjectSettingsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function FeedbackProjectSettingsPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = use(props.params);
   return (
     <AdminLayout>
       {(auth) => (

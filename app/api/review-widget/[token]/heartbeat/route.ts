@@ -22,10 +22,8 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function POST(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const { data: project } = await supabaseAdmin
       .from('review_projects')

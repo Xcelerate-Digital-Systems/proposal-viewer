@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function FunnelRedirect({ params }: { params: { id: string } }) {
+export default function FunnelRedirect(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   useEffect(() => {
     router.replace(`/funnels/${params.id}/board`);

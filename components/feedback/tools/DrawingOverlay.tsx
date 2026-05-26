@@ -19,7 +19,7 @@ export interface AnnotationData {
 
 interface DrawingOverlayProps {
   mode: FeedbackMode;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   onAnnotationComplete: (pinX: number, pinY: number, annotation: AnnotationData) => void;
   annotationComments?: FeedbackComment[];
   highlightedCommentId?: string | null;

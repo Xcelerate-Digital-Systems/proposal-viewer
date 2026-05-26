@@ -20,7 +20,7 @@ interface CompanyProfileCardProps {
   profileSaved: boolean;
   // Logo
   logoUploading: boolean;
-  fileInputRef: RefObject<HTMLInputElement>;
+  fileInputRef: RefObject<HTMLInputElement | null>;
   onLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onLogoRemove: () => void;
 }

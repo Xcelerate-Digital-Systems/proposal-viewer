@@ -13,7 +13,7 @@ interface PendingPinPopoverProps {
   pinX: number;
   pinY: number;
   /** Container element for positioning context (must be position: relative) */
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   /** Submit handler — receives content, attachments, priority, and an optional video URL */
   onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority, videoUrl?: string | null) => Promise<void>;
   /** Cancel/dismiss handler — clears pending pin */

@@ -1,7 +1,7 @@
 // app/templates/[id]/layout.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, type ProposalTemplate } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -9,13 +9,18 @@ import TemplateDetailHeader from '@/components/admin/templates/TemplateDetailHea
 import { TemplateDetailProvider } from '@/components/admin/templates/TemplateDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
 
-export default function TemplateDetailLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { id: string };
-}) {
+export default function TemplateDetailLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    children
+  } = props;
+
   return (
     <AdminLayout>
       {(auth) => (
