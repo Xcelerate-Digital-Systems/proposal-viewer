@@ -1,50 +1,38 @@
 'use client';
 
 /**
- * Dashboard inbox row — a single unresolved client comment with the actual
- * comment body, the project/item context, a screenshot thumbnail (when the
- * client captured one), an inline reply composer, and resolve / open
- * actions. Used by the dashboard's "Needs your reply" panel so the agency
- * can triage without leaving the page.
+ * Dashboard inbox row — a single unresolved client comment on a feedback
+ * item. Shows the project → item breadcrumb, comment body (3 lines,
+ * expandable), the screenshot the client captured (if any, with a
+ * full-size lightbox), and inline reply / resolve / open actions.
  *
- * Two kinds of comments flow through here:
- *   - 'proposal' → proposal_comments (reply via direct supabase insert)
- *   - 'review'   → review_comments  (reply via direct supabase insert)
- * Both inserts run client-side and rely on RLS to scope by company_id.
+ * Used by the dashboard's "Needs your reply" panel so the agency can
+ * triage feedback without leaving the page. Reply and resolve mutate
+ * review_comments via direct supabase calls — RLS scopes by company_id.
+ *
+ * Proposals don't expose commenting in the viewer anymore, so this is
+ * feedback-only.
  */
 
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  Reply, Check, ExternalLink, Send, X, FileText, MessageSquareText, FileImage, ChevronRight,
+  Reply, Check, ExternalLink, Send, X, MessageSquareText, FileImage, ChevronRight,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-export type InboxComment =
-  | {
-      kind: 'proposal';
-      commentId: string;
-      proposalId: string;
-      proposalTitle: string;
-      clientName: string;
-      content: string;
-      createdAt: string;
-      pageNumber: number | null;
-      companyId: string;
-    }
-  | {
-      kind: 'review';
-      commentId: string;
-      projectId: string;
-      projectName: string;
-      itemId: string;
-      itemTitle: string;
-      clientName: string;
-      content: string;
-      createdAt: string;
-      screenshotUrl: string | null;
-      companyId: string;
-    };
+export type InboxComment = {
+  commentId: string;
+  projectId: string;
+  projectName: string;
+  itemId: string;
+  itemTitle: string;
+  clientName: string;
+  content: string;
+  createdAt: string;
+  screenshotUrl: string | null;
+  companyId: string;
+};
 
 interface Props {
   item: InboxComment;
@@ -83,37 +71,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
   const [error, setError] = useState<string | null>(null);
   const [shotPreviewOpen, setShotPreviewOpen] = useState(false);
 
-  const isProposal = item.kind === 'proposal';
-  const tone = isProposal
-    ? { bg: '#E6F5F3', color: '#017C87', label: 'Proposal' }
-    : { bg: '#F3E8FF', color: '#7C3AED', label: 'Feedback' };
-  const ContextIcon = isProposal ? FileText : MessageSquareText;
-
-  const openHref = isProposal
-    ? `/proposals/${item.proposalId}/pages${item.pageNumber ? `?page=${item.pageNumber}` : ''}`
-    : `/feedback/${item.projectId}/items/${item.itemId}`;
-
-  // Breadcrumb context — what the comment is attached to. Reviews get
-  // Project → Item, proposals get Title · Page N.
-  const breadcrumb = isProposal ? (
-    <>
-      <span className="font-medium text-ink truncate">{item.proposalTitle}</span>
-      {item.pageNumber != null && (
-        <>
-          <ChevronRight size={11} className="text-faint shrink-0" />
-          <span className="text-muted shrink-0">Page {item.pageNumber}</span>
-        </>
-      )}
-    </>
-  ) : (
-    <>
-      <span className="font-medium text-ink truncate">{item.projectName}</span>
-      <ChevronRight size={11} className="text-faint shrink-0" />
-      <span className="text-muted truncate">{item.itemTitle}</span>
-    </>
-  );
-
-  const screenshotUrl = !isProposal ? item.screenshotUrl : null;
+  const openHref = `/feedback/${item.projectId}/items/${item.itemId}`;
 
   const sendReply = async () => {
     const trimmed = replyText.trim();
@@ -121,32 +79,18 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
     setSending(true);
     setError(null);
     try {
-      if (item.kind === 'proposal') {
-        const { error: insertErr } = await supabase.from('proposal_comments').insert({
-          proposal_id: item.proposalId,
-          parent_id: item.commentId,
-          author_name: memberName,
-          author_type: 'team',
-          content: trimmed,
-          page_number: item.pageNumber,
-          is_internal: false,
-          company_id: item.companyId,
-        });
-        if (insertErr) throw insertErr;
-      } else {
-        const { error: insertErr } = await supabase.from('review_comments').insert({
-          review_item_id: item.itemId,
-          parent_comment_id: item.commentId,
-          author_name: memberName,
-          author_type: 'team',
-          content: trimmed,
-          comment_type: 'general',
-          company_id: item.companyId,
-        });
-        if (insertErr) throw insertErr;
-      }
-      // Mark the parent comment resolved — we replied, the ball is back in
-      // the client's court. They can comment again to reopen.
+      const { error: insertErr } = await supabase.from('review_comments').insert({
+        review_item_id: item.itemId,
+        parent_comment_id: item.commentId,
+        author_name: memberName,
+        author_type: 'team',
+        content: trimmed,
+        comment_type: 'general',
+        company_id: item.companyId,
+      });
+      if (insertErr) throw insertErr;
+      // Mark the parent resolved — we replied, ball's back in the client's
+      // court. They can comment again to reopen.
       await markResolved(false);
       onDismiss();
     } catch (e) {
@@ -160,19 +104,11 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
     setResolving(true);
     setError(null);
     try {
-      if (item.kind === 'proposal') {
-        const { error: updErr } = await supabase
-          .from('proposal_comments')
-          .update({ resolved_at: new Date().toISOString(), resolved_by: memberName })
-          .eq('id', item.commentId);
-        if (updErr) throw updErr;
-      } else {
-        const { error: updErr } = await supabase
-          .from('review_comments')
-          .update({ resolved: true, resolved_at: new Date().toISOString(), resolved_by: memberName })
-          .eq('id', item.commentId);
-        if (updErr) throw updErr;
-      }
+      const { error: updErr } = await supabase
+        .from('review_comments')
+        .update({ resolved: true, resolved_at: new Date().toISOString(), resolved_by: memberName })
+        .eq('id', item.commentId);
+      if (updErr) throw updErr;
       if (dismissOnSuccess) onDismiss();
     } catch (e) {
       console.error('Resolve failed:', e);
@@ -185,32 +121,28 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
     <div className={`px-5 py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}>
       <div className="flex gap-3">
         {/* Avatar */}
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0"
-          style={{ backgroundColor: tone.bg, color: tone.color }}
-        >
+        <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0 bg-purple-50 text-purple-600">
           {initials(item.clientName)}
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* Top row: author + type badge + time */}
+          {/* Top row: author + time */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[13px] font-semibold text-ink">{item.clientName}</span>
-            <span
-              className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-              style={{ backgroundColor: tone.bg, color: tone.color }}
-            >
-              <ContextIcon size={10} />
-              {tone.label}
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600">
+              <MessageSquareText size={10} />
+              Feedback
             </span>
             <span className="text-[11px] text-faint ml-auto shrink-0">
               {formatRelative(item.createdAt)}
             </span>
           </div>
 
-          {/* Breadcrumb — clearly identifies which proposal/project+item */}
+          {/* Breadcrumb: Project → Item */}
           <div className="flex items-center gap-1.5 text-[12px] mt-1 min-w-0">
-            {breadcrumb}
+            <span className="font-medium text-ink truncate">{item.projectName}</span>
+            <ChevronRight size={11} className="text-faint shrink-0" />
+            <span className="text-muted truncate">{item.itemTitle}</span>
           </div>
 
           {/* Body row — comment text + (optional) screenshot thumb */}
@@ -233,7 +165,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
               )}
             </div>
 
-            {screenshotUrl && (
+            {item.screenshotUrl && (
               <button
                 type="button"
                 onClick={() => setShotPreviewOpen(true)}
@@ -242,7 +174,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={screenshotUrl}
+                  src={item.screenshotUrl}
                   alt="Screenshot from client"
                   className="w-full h-full object-cover"
                 />
@@ -324,7 +256,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
       </div>
 
       {/* Screenshot lightbox */}
-      {shotPreviewOpen && screenshotUrl && (
+      {shotPreviewOpen && item.screenshotUrl && (
         <div
           onClick={() => setShotPreviewOpen(false)}
           className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 cursor-zoom-out"
@@ -338,7 +270,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
           </button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={screenshotUrl}
+            src={item.screenshotUrl}
             alt="Screenshot"
             onClick={(e) => e.stopPropagation()}
             className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"

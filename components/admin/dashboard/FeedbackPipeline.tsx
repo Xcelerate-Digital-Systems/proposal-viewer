@@ -5,21 +5,30 @@
  * grouped by status. Mirrors what's on /feedback in board view so dragging
  * a project here has the same effect as dragging it there.
  *
+ * Each card has a three-dot menu with Delete (with confirm) — same pattern
+ * as FeedbackProjectCard on /feedback.
+ *
  * Items within a project don't appear at this level — open a project to
  * see its per-item kanban at /feedback/[id]/kanban.
  */
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { MessageSquareText, ExternalLink, Layers, Calendar } from 'lucide-react';
+import {
+  MessageSquareText, ExternalLink, Layers, Calendar, MoreHorizontal, Trash2,
+} from 'lucide-react';
 import KanbanBoard, { type KanbanColumn } from '@/components/kanban/KanbanBoard';
 import { REVIEW_STATUS_ORDER, REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
-import type { FeedbackProject } from '@/lib/supabase';
+import { supabase, type FeedbackProject } from '@/lib/supabase';
 import type { FeedbackStatus } from '@/lib/types/feedback';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
 
 interface Props {
   projects: FeedbackProject[];
   itemCounts: Record<string, number>;
   onMove: (id: string, next: FeedbackStatus) => Promise<void>;
+  onDeleted: (id: string) => void;
 }
 
 function relativeShort(iso: string): string {
@@ -34,10 +43,61 @@ function relativeShort(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
-function FeedbackProjectCard({ project, itemCount }: { project: FeedbackProject; itemCount: number }) {
+function FeedbackProjectCard({
+  project,
+  itemCount,
+  onDeleted,
+}: {
+  project: FeedbackProject;
+  itemCount: number;
+  onDeleted: (id: string) => void;
+}) {
+  const confirm = useConfirm();
+  const toast = useToast();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  const handleDelete = async () => {
+    setMenuOpen(false);
+    const ok = await confirm({
+      title: 'Delete Feedback Project',
+      message: `Delete "${project.title}"? This will remove all items, comments, and versions permanently.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+    setDeleting(true);
+    const { error } = await supabase.from('review_projects').delete().eq('id', project.id);
+    if (error) {
+      toast.error('Failed to delete project');
+      setDeleting(false);
+      return;
+    }
+    toast.success('Project deleted');
+    onDeleted(project.id);
+  };
+
   const updated = project.updated_at || project.created_at;
+
   return (
-    <div className="group relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all">
+    <div
+      className={`group relative bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_2px_8px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_4px_rgba(20,20,40,0.06),0_8px_20px_rgba(20,20,40,0.06)] p-3.5 transition-all ${
+        deleting ? 'opacity-50 pointer-events-none' : ''
+      }`}
+    >
       <div className="flex items-start gap-2.5">
         <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-purple-50">
           <MessageSquareText size={15} className="text-purple-600" />
@@ -49,6 +109,39 @@ function FeedbackProjectCard({ project, itemCount }: { project: FeedbackProject;
           <p className="text-[11px] text-gray-400 mt-0.5 truncate">
             {project.client_name || 'Feedback project'}
           </p>
+        </div>
+
+        {/* Three-dot menu — stops drag propagation so menu/click work. */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((v) => !v);
+            }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface"
+            title="More"
+            aria-label="More actions"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+          {menuOpen && (
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-20"
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete();
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-600 hover:bg-red-50 transition-colors text-left"
+              >
+                <Trash2 size={13} />
+                Delete project
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -75,7 +168,7 @@ function FeedbackProjectCard({ project, itemCount }: { project: FeedbackProject;
   );
 }
 
-export default function FeedbackPipeline({ projects, itemCounts, onMove }: Props) {
+export default function FeedbackPipeline({ projects, itemCounts, onMove, onDeleted }: Props) {
   return (
     <KanbanBoard
       columns={REVIEW_STATUS_ORDER.map<KanbanColumn<FeedbackProject>>((status) => ({
@@ -84,7 +177,13 @@ export default function FeedbackPipeline({ projects, itemCounts, onMove }: Props
         accentHex: REVIEW_STATUS_CONFIG[status].hex,
         items: projects.filter((p) => p.status === status),
       }))}
-      renderCard={(p) => <FeedbackProjectCard project={p} itemCount={itemCounts[p.id] ?? 0} />}
+      renderCard={(p) => (
+        <FeedbackProjectCard
+          project={p}
+          itemCount={itemCounts[p.id] ?? 0}
+          onDeleted={onDeleted}
+        />
+      )}
       onMove={(id, _from, to) => onMove(id, to as FeedbackStatus)}
       emptyMessage="Drag a project here."
     />
