@@ -211,7 +211,12 @@ export function useAuth() {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, name: string, inviteToken?: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    name: string,
+    opts?: { inviteToken?: string; companyName?: string },
+  ) => {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { error };
 
@@ -228,7 +233,8 @@ export function useAuth() {
         headers,
         body: JSON.stringify({
           name,
-          invite_token: inviteToken || undefined,
+          invite_token: opts?.inviteToken || undefined,
+          company_name: opts?.companyName || undefined,
         }),
       });
       const result = await res.json();
