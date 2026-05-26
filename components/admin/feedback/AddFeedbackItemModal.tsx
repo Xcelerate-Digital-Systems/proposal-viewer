@@ -155,7 +155,14 @@ export default function AddFeedbackItemModal({
           <ImageItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} />
         )}
         {step === 'details' && itemType === 'ad' && (
-          <AdItemForm onSubmit={submitWithFile} onBack={handleBack} onCancel={onClose} uploading={uploading} onPreviewChange={handlePreviewChange} />
+          <AdItemForm
+            onSubmit={submitWithFile}
+            onBack={handleBack}
+            onCancel={onClose}
+            uploading={uploading}
+            onPreviewChange={handlePreviewChange}
+            reviewProjectId={reviewProjectId}
+          />
         )}
         {step === 'details' && itemType === 'email' && (
           <EmailItemForm onSubmit={submitPayload} onBack={handleBack} onCancel={onClose} uploading={uploading} onPreviewChange={handlePreviewChange} />
