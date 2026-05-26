@@ -5,10 +5,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Building2, Plus, LogIn, Users, FileText, Clock,
-  X, Loader2, ExternalLink,
+  X, Loader2, ExternalLink, UserPlus, Check,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CompanyWithStats {
   id: string;
@@ -43,9 +45,18 @@ export default function AccountsPage() {
 
 function AccountsContent() {
   const router = useRouter();
+  const toast = useToast();
+  const { memberships, setActiveMembership } = useAuth();
   const [companies, setCompanies] = useState<CompanyWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+
+  // Lookup: company_id → membership_id, so "Join" turns into "Switch" once
+  // the platform admin has actually joined the workspace.
+  const membershipByCompanyId = new Map(
+    memberships.map((m) => [m.company_id, m.id] as const),
+  );
 
   const fetchCompanies = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -66,9 +77,57 @@ function AccountsContent() {
   }, [fetchCompanies]);
 
   const handleEnter = (company: CompanyWithStats) => {
+    // If the platform admin is already a real member of this workspace,
+    // switch via the proper membership path so role + permissions reflect
+    // the workspace (not an override). Otherwise fall back to "view as".
+    const existingMembershipId = membershipByCompanyId.get(company.id);
+    if (existingMembershipId) {
+      setActiveMembership(existingMembershipId).then(() => {
+        window.location.href = '/';
+      });
+      return;
+    }
     const override = JSON.stringify({ companyId: company.id, companyName: company.name });
-    localStorage.setItem('super_admin_company_override', override);
+    localStorage.setItem('company_override', override);
+    localStorage.removeItem('super_admin_company_override'); // legacy key cleanup
     window.location.href = '/';
+  };
+
+  const handleJoin = async (company: CompanyWithStats) => {
+    setJoining(company.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setJoining(null); return; }
+      const res = await fetch('/api/admin/join-as-member', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ company_id: company.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || 'Failed to join workspace');
+        setJoining(null);
+        return;
+      }
+      // Hard nav so useAuth re-pulls the membership list and lands inside
+      // the new workspace via active_membership_id localStorage.
+      try {
+        localStorage.setItem('active_membership_id', json.membership.id);
+        localStorage.removeItem('company_override');
+      } catch {}
+      toast.success(
+        json.already_member
+          ? `Already a member of ${company.name} — switching in`
+          : `Joined ${company.name}`,
+      );
+      window.location.href = '/';
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to join workspace');
+      setJoining(null);
+    }
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -169,18 +228,45 @@ function AccountsContent() {
                 </div>
               </div>
 
-              {/* Card footer */}
-              <div className="px-5 py-3 border-t border-gray-100">
+              {/* Card footer — Enter Account always available; "Join" is
+                  only offered when not already a member, otherwise we show
+                  a small "Member" pill to make the state obvious. */}
+              <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-2">
                 <button
                   onClick={() => handleEnter(company)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
                     bg-surface text-muted border border-edge
                     hover:bg-teal/10 hover:text-teal hover:border-teal/30
                     transition-all"
                 >
                   <LogIn size={14} />
-                  Enter Account
+                  {membershipByCompanyId.has(company.id) ? 'Open workspace' : 'View as'}
                 </button>
+                {membershipByCompanyId.has(company.id) ? (
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    title="You're a member of this workspace"
+                  >
+                    <Check size={12} />
+                    Member
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleJoin(company)}
+                    disabled={joining === company.id}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
+                      bg-teal text-white hover:bg-teal-hover disabled:opacity-50 disabled:cursor-not-allowed
+                      transition-all"
+                    title="Add yourself as an admin of this workspace"
+                  >
+                    {joining === company.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <UserPlus size={14} />
+                    )}
+                    Join
+                  </button>
+                )}
               </div>
             </div>
           ))}

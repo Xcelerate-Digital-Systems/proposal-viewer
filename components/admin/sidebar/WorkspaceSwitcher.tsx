@@ -189,7 +189,7 @@ export default function WorkspaceSwitcher({
             <>
               <div className="border-t border-[#01434A]" />
               <Link
-                href="/admin"
+                href="/accounts"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-white/70 hover:text-[#8AD9D1] hover:bg-white/5 transition-colors"
               >
