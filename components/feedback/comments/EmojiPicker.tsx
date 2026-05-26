@@ -3,25 +3,27 @@
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Smile } from 'lucide-react';
-import data from '@emoji-mart/data';
 
-// emoji-mart's React entry brings a ~150kb Picker into the bundle and only
-// needs to hydrate once it's actually opened. Load it on demand so the
-// first paint of the composer stays cheap.
-const Picker = dynamic(() => import('@emoji-mart/react'), { ssr: false });
+// emoji-picker-react bundles its own data + UI (~150kb). Load it on demand
+// so the first paint of the composer stays cheap; ssr:false because the
+// picker reaches for window during init.
+const Picker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
 }
 
-interface EmojiMartSelection {
-  native: string;
+// emoji-picker-react's onEmojiClick gets a full EmojiClickData object; we
+// only need the `emoji` field (the native character). Typed inline to avoid
+// pulling the package's types into our public component surface.
+interface EmojiClickPayload {
+  emoji: string;
 }
 
 /**
- * Drop-in emoji picker powered by emoji-mart — categories, search, frequently
- * used, skin tones. Preserves the original `onSelect(emoji)` contract so all
- * existing call-sites keep working without changes.
+ * Drop-in emoji picker — categories, search, frequently used, skin tones.
+ * Preserves the `onSelect(emoji)` contract so all existing call-sites keep
+ * working without changes.
  */
 export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
   const [open, setOpen] = useState(false);
@@ -45,9 +47,9 @@ export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
     };
   }, [open]);
 
-  const handleSelect = (emoji: EmojiMartSelection) => {
-    if (emoji?.native) {
-      onSelect(emoji.native);
+  const handleSelect = (payload: EmojiClickPayload) => {
+    if (payload?.emoji) {
+      onSelect(payload.emoji);
       setOpen(false);
     }
   };
@@ -66,14 +68,11 @@ export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
       {open && (
         <div className="absolute bottom-full left-0 mb-1 z-50">
           <Picker
-            data={data}
-            onEmojiSelect={handleSelect}
-            theme="light"
-            previewPosition="none"
-            skinTonePosition="search"
-            perLine={8}
-            maxFrequentRows={1}
-            dynamicWidth={false}
+            onEmojiClick={handleSelect}
+            previewConfig={{ showPreview: false }}
+            skinTonesDisabled={false}
+            width={320}
+            height={400}
           />
         </div>
       )}
