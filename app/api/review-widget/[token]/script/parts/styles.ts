@@ -101,15 +101,34 @@ html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
   box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);padding:14px;
   animation:aviz-fadeIn .15s ease-out;}
 
+/* ── Stack (mode toggle + toolbar) ─────────────────────────
+   The fixed right-edge anchor lives on the stack so the toggle pill
+   and the toolbar stay vertically aligned and slide off together on
+   mobile when the comments panel opens. */
+#aviz-stack{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:2147483640;
+  display:flex;flex-direction:column;align-items:flex-end;gap:10px;
+  transition:right .25s cubic-bezier(.4,0,.2,1);}
+
+/* ── Mode toggle (Comment / Browse) ────────────────────────
+   Segmented pill control above the toolbar. The lit pill is the
+   reviewer's current mode; the unlit pill is a one-click switch. */
+#aviz-mode-toggle{display:inline-flex;background:#fff;border-radius:9999px;padding:4px;gap:2px;
+  border:1px solid rgba(0,0,0,.04);
+  box-shadow:0 2px 4px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);}
+.aviz-toggle-pill{background:transparent;border:none;color:#6b7280;font-family:${FONT};
+  font-size:12px;font-weight:600;letter-spacing:.01em;padding:6px 14px;border-radius:9999px;
+  cursor:pointer;line-height:1;margin:0;transition:background-color .2s,color .2s;}
+.aviz-toggle-pill:hover{color:#111827;}
+.aviz-toggle-pill.active,.aviz-toggle-pill.active:hover{background:${ACCENT};color:#fff;
+  box-shadow:0 1px 2px rgba(20,20,40,.06);}
+
 /* ── Toolbar ───────────────────────────────────────────────
    Mirrors the in-app FeedbackToolbar component: rounded card, small
    pill buttons individually rounded, full accent fill when active,
    dark pill tooltip on hover, light centred separator. */
-#aviz-toolbar{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:2147483640;
-  display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border-radius:16px;
+#aviz-toolbar{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border-radius:16px;
   box-shadow:0 2px 4px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);
-  padding:6px;overflow:visible;border:1px solid rgba(0,0,0,.04);
-  transition:right .25s cubic-bezier(.4,0,.2,1);}
+  padding:6px;overflow:visible;border:1px solid rgba(0,0,0,.04);}
 .aviz-tool{position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
   background:transparent;border:none;border-radius:12px;cursor:pointer;color:#6b7280;
   transition:background-color .2s,color .2s;margin:0;padding:0;}
@@ -133,10 +152,12 @@ html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
 .aviz-sep{width:20px;height:1px;background:#f3f4f6;flex-shrink:0;margin:2px 0;padding:0;}
 /* Toolbar lives on the right; panel lives on the left — no shift needed on desktop. */
 @media(max-width:480px){
-  #aviz-toolbar{right:10px;padding:5px;}
+  #aviz-stack{right:10px;gap:8px;}
+  #aviz-toolbar{padding:5px;}
   .aviz-tool{width:34px;height:34px;}
-  /* Panel covers the viewport on mobile; tuck the toolbar off-screen so it's not on top. */
-  #aviz-toolbar.panel-open{right:-100px;}
+  .aviz-toggle-pill{padding:6px 12px;font-size:11.5px;}
+  /* Panel covers the viewport on mobile; tuck the stack (toggle + toolbar) off-screen so it's not on top. */
+  #aviz-stack.panel-open{right:-160px;}
 }
 
 /* ── Mode bar (top bar when pin/box/text active) ───────── */
@@ -265,7 +286,8 @@ mark.aviz-hl.resolved{background:rgba(${HIGHLIGHT_COLOR},.15) !important;}
 /* ── Guided tour (first-visit walkthrough of toolbar) ──── */
 #aviz-tour-backdrop{position:fixed;inset:0;z-index:2147483635;background:rgba(15,23,42,.55);
   animation:aviz-fadeIn .2s ease-out;}
-html.aviz-tour-on #aviz-toolbar{pointer-events:none;z-index:2147483640;}
+html.aviz-tour-on #aviz-stack{pointer-events:none;z-index:2147483640;}
+html.aviz-tour-on #aviz-mode-toggle{opacity:.45;}
 html.aviz-tour-on .aviz-tool .aviz-tooltip{display:none;}
 html.aviz-tour-on .aviz-tool.aviz-tour-target{background:${ACCENT}18;color:${ACCENT};
   box-shadow:0 0 0 3px ${ACCENT}55,0 0 22px ${ACCENT}99;animation:aviz-tourPulse 1.5s ease-in-out infinite;position:relative;z-index:1;}
