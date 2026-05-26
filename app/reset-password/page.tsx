@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Loader2, Lock, Check, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { Button, buttonClasses } from '@/components/ui/Button';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function ResetPasswordPage() {
           </p>
           <Link
             href="/forgot-password"
-            className="inline-flex items-center justify-center gap-2 bg-teal text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
+            className={buttonClasses({ variant: 'primary', size: 'md' })}
           >
             Request new link
           </Link>
@@ -136,14 +137,14 @@ export default function ResetPasswordPage() {
             <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-teal text-white py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover disabled:opacity-50 transition-colors"
+            fullWidth
+            loading={loading}
+            rightIcon={ArrowRight}
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
             Update Password
-          </button>
+          </Button>
         </form>
       </div>
     </div>

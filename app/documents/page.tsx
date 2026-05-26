@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, FileText, LayoutGrid, List, Search } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { supabase, Document as DocType } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import DocumentUploadModal from '@/components/admin/documents/DocumentUploadModal';
@@ -136,13 +137,13 @@ function DocumentsContent({ companyId }: { companyId: string }) {
           </div>
 
           {/* New document */}
-          <button
+          <Button
+            size="sm"
+            leftIcon={Plus}
             onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
           >
-            <Plus size={16} />
             New Document
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -174,13 +175,14 @@ function DocumentsContent({ companyId }: { companyId: string }) {
             </div>
             <h3 className="text-lg font-semibold text-muted mb-1">No documents yet</h3>
             <p className="text-sm text-faint">Upload a PDF to create a shareable document</p>
-            <button
+            <Button
+              size="sm"
+              leftIcon={Plus}
               onClick={() => setShowUpload(true)}
-              className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
+              className="mt-4"
             >
-              <Plus size={16} />
               New Document
-            </button>
+            </Button>
           </div>
         ) : (
           <>

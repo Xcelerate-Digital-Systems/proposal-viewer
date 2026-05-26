@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Globe, Code2, Copy, Check, CheckCircle2, Clock, Extern
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { buttonClasses } from '@/components/ui/Button';
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -166,7 +167,7 @@ function NotStartedCard({ projectId }: { projectId: string }) {
       </p>
       <Link
         href={`/feedback/${projectId}/items`}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-teal text-white text-sm font-semibold rounded-full hover:bg-teal-hover transition-colors shadow-sm"
+        className={buttonClasses({ variant: 'primary', size: 'sm' })}
       >
         <Plus size={16} />
         Add a webpage

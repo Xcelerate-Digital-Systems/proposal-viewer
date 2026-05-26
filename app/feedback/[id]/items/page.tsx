@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Image } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
@@ -187,13 +188,12 @@ function ItemsContent({
             <p className="text-sm text-gray-400 mb-4">
               Add images, web pages, or ad creatives to start collecting feedback
             </p>
-            <button
+            <Button
+              leftIcon={Plus}
               onClick={() => setShowAddItem(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover transition-colors"
             >
-              <Plus size={16} />
               Add First Item
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="space-y-4 mt-4">

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Loader2, Mail, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/Button';
 
 export default function ForgotPasswordPage() {
   const { resetPasswordForEmail } = useAuth();
@@ -76,14 +77,14 @@ export default function ForgotPasswordPage() {
             <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-teal text-white py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover disabled:opacity-50 transition-colors"
+            fullWidth
+            loading={loading}
+            rightIcon={ArrowRight}
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
             Send Reset Link
-          </button>
+          </Button>
         </form>
 
         <div className="mt-6 text-center">

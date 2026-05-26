@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, ReceiptText, LayoutGrid, List, Search, ChevronDown, LayoutTemplate, KanbanSquare } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { supabase, type Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
@@ -168,14 +169,14 @@ function QuotesContent({ companyId }: { companyId: string }) {
           </div>
 
           <div className="relative" ref={newDropdownRef}>
-            <button
+            <Button
+              size="sm"
+              leftIcon={Plus}
+              rightIcon={ChevronDown}
               onClick={() => setShowNewDropdown((v) => !v)}
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
             >
-              <Plus size={16} />
               New
-              <ChevronDown size={14} className={`transition-transform ${showNewDropdown ? 'rotate-180' : ''}`} />
-            </button>
+            </Button>
 
             {showNewDropdown && (
               <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
@@ -231,13 +232,14 @@ function QuotesContent({ companyId }: { companyId: string }) {
             </div>
             <h3 className="text-lg font-semibold text-muted mb-1">No quotes yet</h3>
             <p className="text-sm text-faint">Send your first quote in a few minutes.</p>
-            <button
+            <Button
+              size="sm"
+              leftIcon={Plus}
               onClick={() => openModal('quote')}
-              className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
+              className="mt-4"
             >
-              <Plus size={16} />
               New Quote
-            </button>
+            </Button>
           </div>
         ) : viewMode === 'board' ? (
           <KanbanBoard

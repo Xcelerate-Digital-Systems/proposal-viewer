@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch, Bookmark } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { supabase, type Funnel } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -134,13 +135,13 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                 className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
               />
             </div>
-            <button
+            <Button
+              size="sm"
+              leftIcon={Plus}
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 transition-colors shadow-sm"
             >
-              <Plus size={16} />
               New Funnel
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -167,13 +168,14 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
             </div>
             <h3 className="text-lg font-semibold text-muted mb-1">No funnels yet</h3>
             <p className="text-sm text-faint">Create a funnel to map out a client&apos;s journey visually.</p>
-            <button
+            <Button
+              size="sm"
+              leftIcon={Plus}
               onClick={() => setShowCreate(true)}
-              className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
+              className="mt-4"
             >
-              <Plus size={16} />
               New Funnel
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -428,13 +430,14 @@ function CreateFunnelModal({
               <button type="button" onClick={() => setStep('pick')} className="px-3 py-1.5 rounded-full text-sm text-muted hover:text-ink hover:bg-surface transition-colors">
                 ← Templates
               </button>
-              <button
+              <Button
                 type="submit"
-                disabled={!name.trim() || submitting}
-                className="px-4 py-1.5 rounded-full bg-teal text-white text-sm font-semibold hover:bg-teal-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                size="sm"
+                loading={submitting}
+                disabled={!name.trim()}
               >
-                {submitting ? 'Creating…' : 'Create'}
-              </button>
+                Create
+              </Button>
             </div>
           </form>
         )}

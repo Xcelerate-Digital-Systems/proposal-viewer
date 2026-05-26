@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, ExternalLink, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import type { FeedbackStatus } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -203,13 +204,13 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             </div>
 
             {/* New project */}
-            <button
+            <Button
+              size="sm"
+              leftIcon={Plus}
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 transition-colors shadow-sm"
             >
-              <Plus size={16} />
               New Project
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -267,13 +268,14 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
                 : 'Projects will appear here when their status changes'}
             </p>
             {filter === 'active' && (
-              <button
+              <Button
+                size="sm"
+                leftIcon={Plus}
                 onClick={() => setShowCreate(true)}
-                className="mt-4 inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
+                className="mt-4"
               >
-                <Plus size={16} />
                 New Project
-              </button>
+              </Button>
             )}
           </div>
         ) : viewMode === 'grid' ? (

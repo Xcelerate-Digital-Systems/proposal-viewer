@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { buttonClasses } from '@/components/ui/Button';
 
 export const metadata: Metadata = {
   title: 'AgencyViz — Agency Toolbox',
@@ -23,7 +24,7 @@ export default function HomePage() {
             </Link>
             <a
               href="https://app.agencyviz.io/login"
-              className="inline-flex items-center gap-1.5 bg-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
+              className={buttonClasses({ variant: 'primary', size: 'sm' })}
             >
               Sign in
               <ArrowRight size={14} />
@@ -43,7 +44,7 @@ export default function HomePage() {
         </p>
         <a
           href="https://app.agencyviz.io/login"
-          className="inline-flex items-center gap-2 bg-teal text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-teal-hover transition-colors"
+          className={buttonClasses({ variant: 'primary', size: 'lg' })}
         >
           Open AgencyViz
           <ArrowRight size={16} />

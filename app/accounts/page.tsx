@@ -7,6 +7,7 @@ import {
   Building2, Plus, LogIn, Users, FileText, Clock,
   X, Loader2, ExternalLink, UserPlus, Check,
 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -155,13 +156,13 @@ function AccountsContent() {
             {companies.length} account{companies.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
+        <Button
+          leftIcon={Plus}
+          size="sm"
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-teal text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
         >
-          <Plus size={16} />
           New Account
-        </button>
+        </Button>
       </div>
 
       {/* Loading */}
@@ -176,13 +177,12 @@ function AccountsContent() {
           </div>
           <h3 className="text-lg font-semibold text-muted mb-1">No accounts yet</h3>
           <p className="text-sm text-faint mb-6">Create your first client account to get started.</p>
-          <button
+          <Button
+            leftIcon={Plus}
             onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 bg-teal text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors"
           >
-            <Plus size={16} />
             New Account
-          </button>
+          </Button>
         </div>
       ) : (
         /* Company card grid */
@@ -251,21 +251,15 @@ function AccountsContent() {
                     Member
                   </span>
                 ) : (
-                  <button
+                  <Button
+                    size="sm"
+                    leftIcon={UserPlus}
+                    loading={joining === company.id}
                     onClick={() => handleJoin(company)}
-                    disabled={joining === company.id}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
-                      bg-teal text-white hover:bg-teal-hover disabled:opacity-50 disabled:cursor-not-allowed
-                      transition-all"
                     title="Add yourself as an admin of this workspace"
                   >
-                    {joining === company.id ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <UserPlus size={14} />
-                    )}
                     Join
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -387,20 +381,22 @@ function CreateAccountModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="px-4 py-2 text-sm text-muted hover:text-ink transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            leftIcon={Plus}
+            loading={saving}
+            disabled={!name.trim() || !slug.trim()}
             onClick={handleSubmit}
-            disabled={!name.trim() || !slug.trim() || saving}
-            className="flex items-center gap-2 bg-teal text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             Create Account
-          </button>
+          </Button>
         </div>
       </div>
     </div>

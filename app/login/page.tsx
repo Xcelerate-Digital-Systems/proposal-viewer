@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Mail, Lock, User, ArrowRight, Building2, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/Button';
 
 type Method = 'password' | 'magic';
 
@@ -134,12 +135,12 @@ function LoginContent() {
           </div>
           <h2 className="text-xl font-semibold text-ink mb-2">Invalid Invite</h2>
           <p className="text-muted text-sm mb-6">{inviteError}</p>
-          <button
+          <Button
+            variant="link"
             onClick={() => router.replace('/login')}
-            className="text-sm text-teal hover:text-[#01434A] transition-colors"
           >
             Go to sign in
-          </button>
+          </Button>
         </div>
         <LegalFooter />
       </div>
@@ -157,12 +158,12 @@ function LoginContent() {
           <p className="text-muted text-sm mb-6">
             We sent a sign-in link to <strong className="text-ink">{email}</strong>
           </p>
-          <button
+          <Button
+            variant="link"
             onClick={() => { setMagicLinkSent(false); setEmail(''); }}
-            className="text-sm text-teal hover:text-[#01434A] transition-colors"
           >
             Use a different email
-          </button>
+          </Button>
         </div>
         <LegalFooter />
       </div>
@@ -270,14 +271,14 @@ function LoginContent() {
                 <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
               )}
 
-              <button
+              <Button
                 type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-teal text-white py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover disabled:opacity-50 transition-colors"
+                fullWidth
+                loading={loading}
+                rightIcon={ArrowRight}
               >
-                {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                 {method === 'magic' ? 'Send Magic Link' : 'Sign In'}
-              </button>
+              </Button>
             </form>
           </>
         ) : (
@@ -324,14 +325,14 @@ function LoginContent() {
               <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
             )}
 
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-teal text-white py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover disabled:opacity-50 transition-colors"
+              fullWidth
+              loading={loading}
+              rightIcon={ArrowRight}
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
               {inviteInfo ? `Join ${inviteInfo.company_name}` : 'Create Account'}
-            </button>
+            </Button>
           </form>
         )}
 
@@ -339,12 +340,12 @@ function LoginContent() {
         {inviteInfo && (
           <p className="text-xs text-faint text-center mt-4">
             Already have an account?{' '}
-            <button
+            <Button
+              variant="link"
               onClick={() => router.replace('/login')}
-              className="text-teal hover:text-[#01434A]"
             >
               Sign in instead
-            </button>
+            </Button>
           </p>
         )}
       </div>

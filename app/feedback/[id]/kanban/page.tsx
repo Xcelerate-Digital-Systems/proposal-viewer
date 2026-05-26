@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
@@ -162,13 +163,12 @@ function KanbanContent({
             <p className="text-sm text-gray-400 mb-4">
               Add items to organise them across the pipeline.
             </p>
-            <button
+            <Button
+              leftIcon={Plus}
               onClick={() => setShowAddItem(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal text-white text-sm font-medium rounded-lg hover:bg-teal-hover transition-colors"
             >
-              <Plus size={16} />
               Add First Item
-            </button>
+            </Button>
           </div>
         ) : (
           <KanbanBoard

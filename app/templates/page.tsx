@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, FileText, Upload, LayoutGrid, List, Search, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -285,13 +286,13 @@ function TemplatesContent({ companyId }: { companyId: string }) {
               templates are created from inside their editors via "Save as
               Template"). */}
           {activeTab !== 'line_items' && activeTab !== 'packages' && (
-            <button
+            <Button
+              size="sm"
+              leftIcon={Plus}
               onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
             >
-              <Plus size={16} />
               New Template
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -373,13 +374,13 @@ function TemplatesContent({ companyId }: { companyId: string }) {
                 ? 'Save a quote as a template, or upload a PDF to start one.'
                 : 'Upload a PDF to create your first template.'}
             </p>
-            <button
+            <Button
+              size="sm"
+              leftIcon={Upload}
               onClick={() => setShowUpload(true)}
-              className="inline-flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-full px-4 py-2 shadow-sm transition-colors"
             >
-              <Upload size={16} />
               New Template
-            </button>
+            </Button>
           </div>
         ) : (
           <>

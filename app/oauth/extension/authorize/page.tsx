@@ -12,6 +12,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
 
 // Only allow redirects back to the Chrome extension's own identity URL.
 // Anything else would be an open-redirect vector for the code.
@@ -142,21 +143,21 @@ function AuthorizeContent() {
         )}
 
         <div className="flex gap-2">
-          <button
+          <Button
+            variant="secondary"
+            fullWidth
             onClick={handleDeny}
             disabled={approving}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-edge text-muted hover:border-edge-hover disabled:opacity-50"
           >
             Deny
-          </button>
-          <button
+          </Button>
+          <Button
+            fullWidth
+            loading={approving}
             onClick={handleApprove}
-            disabled={approving}
-            className="flex-1 flex items-center justify-center gap-2 bg-teal text-white py-2.5 rounded-lg text-sm font-medium hover:bg-teal-hover disabled:opacity-50"
           >
-            {approving && <Loader2 size={16} className="animate-spin" />}
             Approve
-          </button>
+          </Button>
         </div>
       </div>
     </div>
