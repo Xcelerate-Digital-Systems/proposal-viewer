@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, ClipboardList, RectangleHorizontal, type LucideIcon } from 'lucide-react';
+import { Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, ClipboardList, RectangleHorizontal, type LucideIcon } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 import { type FeedbackItemType } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
@@ -95,25 +96,15 @@ export default function AddFeedbackItemModal({
   const handlePreviewChange = (visible: boolean) => setIsWide(visible);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
-      <div
-        className={`relative bg-white rounded-2xl shadow-modal mx-4 ${
-          isWide ? 'w-full max-w-4xl' : 'w-full max-w-lg'
-        } max-h-[90vh] flex flex-col`}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
-          <h2 className="text-lg font-semibold tracking-tight text-ink font-[family-name:var(--font-display)]">
-            {step === 'type' ? 'Add Item' : (TITLES[itemType] || 'New Item')}
-          </h2>
-          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
-        </div>
-
+    <Modal
+      open
+      onClose={onClose}
+      title={step === 'type' ? 'Add Item' : (TITLES[itemType] || 'New Item')}
+      size={isWide ? 'xl' : 'lg'}
+    >
         {/* Step 1: Choose type */}
         {step === 'type' && (
-          <div className="p-6 space-y-2 overflow-y-auto">
+          <Modal.Body className="space-y-2">
             {typeOptions.map((opt) => {
               const Icon = opt.icon;
               return (
@@ -143,7 +134,7 @@ export default function AddFeedbackItemModal({
                 </button>
               );
             })}
-          </div>
+          </Modal.Body>
         )}
 
         {/* Step 2: Type-specific form */}
@@ -197,7 +188,6 @@ export default function AddFeedbackItemModal({
             uploading={uploading}
           />
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }

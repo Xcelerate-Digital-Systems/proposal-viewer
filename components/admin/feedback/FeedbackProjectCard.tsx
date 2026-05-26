@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Copy, Check, Trash2, ExternalLink, MessageSquareText,
-  Image, MoreHorizontal, Pencil,
+  MoreHorizontal, Pencil,
   Eye, FolderOpen,
 } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 import { supabase, type FeedbackProject, type FeedbackStatus } from '@/lib/supabase';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -349,82 +350,74 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
       </div>
 
       {/* ─── Edit Modal ──────────────────────────────────────── */}
-      {showEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowEdit(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-base font-semibold text-ink">
-              Edit Project
-            </h3>
-
+      <Modal open={showEdit} onClose={() => setShowEdit(false)} title="Edit Project" size="md">
+        <Modal.Body className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1.5">Title</label>
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1.5">Description</label>
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              rows={2}
+              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors resize-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1.5">Company / Brand Name</label>
+            <input
+              type="text"
+              value={editClientCompany}
+              onChange={(e) => setEditClientCompany(e.target.value)}
+              placeholder="e.g. Premier Shipping Containers"
+              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">
+              Used as the page name in Meta ad previews and the sender on email previews.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">Title</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">Contact Name</label>
               <input
                 type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
+                value={editClientName}
+                onChange={(e) => setEditClientName(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">Description</label>
-              <textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                rows={2}
-                className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors resize-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">Company / Brand Name</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">Contact Email</label>
               <input
-                type="text"
-                value={editClientCompany}
-                onChange={(e) => setEditClientCompany(e.target.value)}
-                placeholder="e.g. Premier Shipping Containers"
+                type="email"
+                value={editClientEmail}
+                onChange={(e) => setEditClientEmail(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />
-              <p className="text-xs text-gray-400 mt-1.5">
-                Used as the page name in Meta ad previews and the sender on email previews.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Contact Name</label>
-                <input
-                  type="text"
-                  value={editClientName}
-                  onChange={(e) => setEditClientName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Contact Email</label>
-                <input
-                  type="email"
-                  value={editClientEmail}
-                  onChange={(e) => setEditClientEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setShowEdit(false)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                loading={saving}
-                disabled={!editTitle.trim() || saving}
-                onClick={handleSaveEdit}
-              >
-                Save Changes
-              </Button>
             </div>
           </div>
-        </div>
-      )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" size="sm" onClick={() => setShowEdit(false)}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            loading={saving}
+            disabled={!editTitle.trim() || saving}
+            onClick={handleSaveEdit}
+          >
+            Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }

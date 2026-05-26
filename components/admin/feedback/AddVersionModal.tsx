@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Loader2, Plus, Trash2, Type, AlignLeft, Copy, ChevronDown, Megaphone } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Type, AlignLeft, Copy, ChevronDown, Megaphone } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
 import { useToast } from '@/components/ui/Toast';
@@ -352,9 +353,9 @@ export default function AddVersionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <Modal open onClose={onClose} size="lg">
+      <Modal.Header>
+        <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold tracking-tight text-ink">
               {isEditing
@@ -365,8 +366,9 @@ export default function AddVersionModal({
           </div>
           <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
+      </Modal.Header>
 
-        <div className="p-5 space-y-4">
+      <Modal.Body className="space-y-4">
           {kind === 'file' && (
             <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional={isEditing} />
           )}
@@ -623,18 +625,17 @@ export default function AddVersionModal({
               placeholder="e.g. tightened copy, swapped hero shot"
             />
           </Field>
-        </div>
+      </Modal.Body>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100">
-          <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
-            Cancel
-          </Button>
-          <Button size="sm" loading={busy} leftIcon={Upload} onClick={handleSubmit}>
-            {isEditing ? 'Save Changes' : 'Save Version'}
-          </Button>
-        </div>
-      </div>
-    </div>
+      <Modal.Footer>
+        <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
+          Cancel
+        </Button>
+        <Button size="sm" loading={busy} leftIcon={Upload} onClick={handleSubmit}>
+          {isEditing ? 'Save Changes' : 'Save Version'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
 

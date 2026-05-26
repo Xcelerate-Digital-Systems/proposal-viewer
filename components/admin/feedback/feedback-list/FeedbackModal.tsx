@@ -5,6 +5,7 @@ import {
   CheckCircle2, ChevronDown, ChevronUp, Clock, ExternalLink, MessageSquare,
   Send, Trash2, X,
 } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 import { formatTimeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
 import { TYPE_ICONS, type CommentWithItem } from './types';
@@ -51,13 +52,9 @@ export default function FeedbackModal({
   const TypeIcon = TYPE_ICONS[comment.item_type] || MessageSquare;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div
-        className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+    <Modal open onClose={onClose} size="xl">
+      <Modal.Header>
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             {comment.thread_number && (
               <span className="px-2 py-0.5 rounded-md bg-teal/10 text-xs font-bold text-teal">
@@ -88,10 +85,10 @@ export default function FeedbackModal({
             />
           </div>
         </div>
+      </Modal.Header>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col lg:flex-row">
+      <Modal.Body className="p-0">
+        <div className="flex flex-col lg:flex-row">
             {/* Left — screenshot + comment + replies + composer */}
             <div className="flex-1 p-6 space-y-4 min-w-0">
               {comment.screenshot_url && (
@@ -264,8 +261,7 @@ export default function FeedbackModal({
               )}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+      </Modal.Body>
+    </Modal>
   );
 }

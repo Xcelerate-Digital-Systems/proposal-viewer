@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   MousePointer2, Square, Circle, MoveRight, Minus, Type, StickyNote, Diamond, Clock, Phone, CalendarDays, Zap, Flag, Workflow, X,
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingCart, ShoppingBag, BellRing, Sparkles,
   MessageSquare, Mail, Bell, Sheet,
 } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import type { ReactNode } from 'react';
 
 export type BoardTool =
@@ -174,47 +176,24 @@ function FlowNodePicker({
   onPick: (tool: BoardTool) => void;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]" />
-
-      <div
-        className="relative w-full max-w-xl bg-white rounded-2xl border border-edge shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-label="Flow nodes"
-      >
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-edge">
+    <Modal open onClose={onClose} size="lg" backdropClassName="bg-ink/30">
+      <Modal.Header>
+        <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-ink">Flow nodes</h3>
             <p className="text-xs text-muted mt-0.5">Click any tile to add it to the board.</p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors"
-            type="button"
-            title="Close"
-          >
-            <X size={16} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
+      </Modal.Header>
 
-        <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-          <PickerSection title="Logic" tools={FLOW_TOOLS} activeTool={activeTool} onPick={onPick} />
-          <PickerSection title="Events" tools={EVENT_TOOLS} activeTool={activeTool} onPick={onPick} />
-          <PickerSection title="Notifications" tools={NOTIFICATION_TOOLS} activeTool={activeTool} onPick={onPick} />
-        </div>
-      </div>
-    </div>
+      <Modal.Body className="space-y-4">
+        <PickerSection title="Logic" tools={FLOW_TOOLS} activeTool={activeTool} onPick={onPick} />
+        <PickerSection title="Events" tools={EVENT_TOOLS} activeTool={activeTool} onPick={onPick} />
+        <PickerSection title="Notifications" tools={NOTIFICATION_TOOLS} activeTool={activeTool} onPick={onPick} />
+      </Modal.Body>
+    </Modal>
   );
 }
 
