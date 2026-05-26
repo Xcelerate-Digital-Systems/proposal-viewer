@@ -5,6 +5,7 @@
 // dumb and re-styling is in one place.
 
 import { ReactNode } from 'react';
+import { Button } from '@/components/ui/Button';
 
 export type ConnectorStatus = 'connected' | 'disconnected' | 'needs_reauth' | 'coming_soon';
 
@@ -73,25 +74,24 @@ export default function ConnectorCard({
       {(primaryAction || secondaryAction) && (
         <div className="flex items-center gap-2 mt-5 pt-4 border-t border-line">
           {primaryAction && (
-            <button
+            <Button
+              size="sm"
+              variant={status === 'connected' ? 'secondary' : 'primary'}
               onClick={primaryAction.onClick}
-              disabled={primaryAction.disabled || primaryAction.loading}
-              className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                status === 'connected'
-                  ? 'text-faint hover:text-ink border border-line hover:bg-surface'
-                  : 'bg-teal text-white hover:bg-teal/90'
-              }`}
+              disabled={primaryAction.disabled}
+              loading={primaryAction.loading}
             >
-              {primaryAction.loading ? 'Working…' : primaryAction.label}
-            </button>
+              {primaryAction.label}
+            </Button>
           )}
           {secondaryAction && (
-            <button
+            <Button
+              size="sm"
+              variant="secondary"
               onClick={secondaryAction.onClick}
-              className="px-3.5 py-2 text-xs font-medium text-faint hover:text-ink border border-line rounded-lg hover:bg-surface transition-colors"
             >
               {secondaryAction.label}
-            </button>
+            </Button>
           )}
         </div>
       )}

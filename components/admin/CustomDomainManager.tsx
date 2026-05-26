@@ -7,6 +7,7 @@ import {
   Trash2, RefreshCw, ExternalLink, Link2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
 
 interface DnsInstruction {
   type: string;
@@ -261,13 +262,14 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
         {isOwner && (
           <>
             {!hasDomain || isNewDomain ? (
-              <button
+              <Button
+                size="sm"
                 onClick={handleAddDomain}
-                disabled={saving || !domainInput.trim()}
-                className="px-4 py-2 bg-teal text-white text-sm rounded-lg hover:bg-teal-hover disabled:opacity-50 transition-colors whitespace-nowrap"
+                disabled={!domainInput.trim()}
+                loading={saving}
               >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : 'Connect'}
-              </button>
+                Connect
+              </Button>
             ) : null}
           </>
         )}
@@ -309,13 +311,14 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
                   <td className="px-3 py-2 font-mono text-ink">{effectiveDns.name}</td>
                   <td className="px-3 py-2 font-mono text-ink">{effectiveDns.value}</td>
                   <td className="px-3 py-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      iconOnly
+                      leftIcon={copied === 'dns' ? CheckCircle2 : Copy}
                       onClick={() => handleCopy(effectiveDns.value, 'dns')}
-                      className="p-1 text-faint hover:text-muted transition-colors"
-                      title="Copy value"
-                    >
-                      {copied === 'dns' ? <CheckCircle2 size={13} className="text-green-500" /> : <Copy size={13} />}
-                    </button>
+                      aria-label="Copy value"
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -343,13 +346,14 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
                         <td className="px-3 py-2 font-mono text-ink break-all">{v.domain}</td>
                         <td className="px-3 py-2 font-mono text-ink break-all max-w-[200px] truncate">{v.value}</td>
                         <td className="px-3 py-2">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            iconOnly
+                            leftIcon={copied === `txt-${i}` ? CheckCircle2 : Copy}
                             onClick={() => handleCopy(v.value, `txt-${i}`)}
-                            className="p-1 text-faint hover:text-muted transition-colors"
-                            title="Copy value"
-                          >
-                            {copied === `txt-${i}` ? <CheckCircle2 size={13} className="text-green-500" /> : <Copy size={13} />}
-                          </button>
+                            aria-label="Copy value"
+                          />
                         </td>
                       </tr>
                     ))}

@@ -14,6 +14,7 @@ import { Check, Copy, Trash2, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
 
 // Apps Script deployment ID (AKfyc…) for the Meta Looker Studio community
 // connector. Distinct from the Apps Script project's *script* id — Looker
@@ -71,15 +72,17 @@ function DeploymentIdField() {
       <code className="flex-1 min-w-0 px-3 py-2 text-[12px] font-mono text-ink bg-white border border-line rounded-lg overflow-x-auto whitespace-nowrap">
         {META_DEPLOYMENT_ID}
       </code>
-      <button
+      <Button
         type="button"
+        size="sm"
+        variant="secondary"
         onClick={copy}
-        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-ink bg-white border border-line rounded-lg hover:bg-surface transition-colors shrink-0"
+        leftIcon={copied ? Check : Copy}
         aria-label="Copy deployment ID"
+        className="shrink-0"
       >
-        {copied ? <Check size={13} className="text-teal" /> : <Copy size={13} />}
         {copied ? 'Copied' : 'Copy'}
-      </button>
+      </Button>
     </div>
   );
 }
