@@ -6,14 +6,17 @@ import {
   Diamond,
   StickyNote, PanelLeftOpen,
   MousePointer2, Square, Circle, MoveRight, Minus, Type,
-  Workflow, Pencil,
+  Workflow, Pencil, Layers, Plus, CheckCircle2, X,
+  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList, Search, RectangleHorizontal,
   type LucideIcon,
 } from 'lucide-react';
 import type { BoardTool } from './BoardTopToolbar';
-import type { FeedbackShapeType } from '@/lib/types/feedback';
+import type { FeedbackShapeType, FeedbackItemType } from '@/lib/types/feedback';
 import {
   BOARD_ACTION_GROUPS, BOARD_ACTION_ICONS, BOARD_ACTION_TINTS,
 } from '@/lib/types/board-actions';
+import { useFeedbackBoardContext } from './FeedbackBoardContext';
+import { getFeedbackStatusDef } from '@/lib/feedback/status';
 
 interface Props {
   /** Currently active drawing tool — drives which Drawing-tab tile is highlighted. */
@@ -26,7 +29,33 @@ interface Props {
   onPickSticky: () => void;
 }
 
-type PaletteTabId = 'actions' | 'drawing';
+type PaletteTabId = 'items' | 'actions' | 'drawing';
+
+const ITEM_TYPE_ICONS: Record<FeedbackItemType, LucideIcon> = {
+  webpage: Globe,
+  email: Mail,
+  sms: Smartphone,
+  image: ImageIcon,
+  video: Video,
+  ad: Megaphone,
+  google_search_ad: Search,
+  google_banner_ad: RectangleHorizontal,
+  pdf: FileText,
+  meta_lead_form: ClipboardList,
+};
+
+const ITEM_TYPE_LABELS: Record<FeedbackItemType, string> = {
+  webpage: 'Web Page',
+  email: 'Email',
+  sms: 'SMS',
+  image: 'Image',
+  video: 'Video',
+  ad: 'Meta Ad',
+  google_search_ad: 'Google Search Ad',
+  google_banner_ad: 'Google Banner Ad',
+  pdf: 'PDF',
+  meta_lead_form: 'Lead Form',
+};
 
 interface ShapeItem {
   kind: 'shape';
@@ -62,6 +91,15 @@ interface PaletteTab {
   icon: LucideIcon;
   groups: PaletteGroup[];
 }
+
+// "Items" tab is rendered out of the generic group/section pattern (it pulls
+// live unplaced/placed items from board context) so it doesn't appear in the
+// shared TABS list — instead it's special-cased in the renderer below.
+const ITEMS_TAB: { id: PaletteTabId; label: string; icon: LucideIcon } = {
+  id: 'items',
+  label: 'Items',
+  icon: Layers,
+};
 
 const TABS: PaletteTab[] = [
   {
@@ -123,7 +161,9 @@ export type PaletteDragPayload =
 
 export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, onPickSticky }: Props) {
   const [collapsed, setCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<PaletteTabId>('actions');
+  // Default to Items — adding feedback items is the most common board action
+  // and was previously the default surface in the admin sidebar.
+  const [activeTab, setActiveTab] = useState<PaletteTabId>('items');
   const [open, setOpen] = useState<Record<string, boolean>>(DEFAULT_OPEN);
 
   if (collapsed) {
@@ -167,7 +207,7 @@ export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, o
       </div>
 
       <div className="flex border-b border-edge shrink-0">
-        {TABS.map((t) => {
+        {[ITEMS_TAB, ...TABS].map((t) => {
           const Icon = t.icon;
           const isActive = t.id === activeTab;
           return (
@@ -188,19 +228,143 @@ export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, o
         })}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {active.groups.map((group) => (
-          <PaletteSection
-            key={group.key}
-            group={group}
-            open={!!open[group.key]}
-            onToggle={() => setOpen((p) => ({ ...p, [group.key]: !p[group.key] }))}
-            activeTool={activeTool}
-            onPick={handlePick}
-          />
-        ))}
-      </div>
+      {activeTab === 'items' ? (
+        <ItemsTabContent />
+      ) : (
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          {active.groups.map((group) => (
+            <PaletteSection
+              key={group.key}
+              group={group}
+              open={!!open[group.key]}
+              onToggle={() => setOpen((p) => ({ ...p, [group.key]: !p[group.key] }))}
+              activeTool={activeTool}
+              onPick={handlePick}
+            />
+          ))}
+        </div>
+      )}
     </aside>
+  );
+}
+
+/* ─── Items tab ─────────────────────────────────────────────
+   Pulls unplaced + placed feedback items from board context and lets the
+   user place them with a single click (mirrors the original
+   FeedbackItemsSidebarNav UX that lived in the admin sidebar before this
+   page switched to `collapseSidebar`). */
+
+function ItemsTabContent() {
+  const ctx = useFeedbackBoardContext();
+  const [showPlaced, setShowPlaced] = useState(true);
+
+  if (!ctx) {
+    return <p className="px-3 py-4 text-xs text-muted">Loading…</p>;
+  }
+
+  const { unplacedItems, placedItems, placeItem, removeItemFromBoard, openAddItem, loading } = ctx;
+
+  return (
+    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <button
+        type="button"
+        onClick={openAddItem}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-semibold text-white bg-teal hover:bg-teal-hover transition-colors shadow-sm"
+      >
+        <Plus size={14} />
+        New item
+      </button>
+
+      <div>
+        <div className="flex items-center justify-between mb-1.5 px-1">
+          <span className="text-[10px] uppercase tracking-wider font-semibold text-muted">
+            Add to board
+          </span>
+          <span className="text-[10px] text-faint">{unplacedItems.length}</span>
+        </div>
+
+        {loading ? (
+          <p className="text-xs text-faint px-1 py-2">Loading…</p>
+        ) : unplacedItems.length === 0 ? (
+          placedItems.length > 0 ? (
+            <div className="flex items-center gap-2 px-2 py-3 text-xs text-muted bg-surface/60 rounded-lg">
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              All items on the board
+            </div>
+          ) : (
+            <p className="text-xs text-faint px-1 py-2">
+              No items yet. Use the “New item” button to add one.
+            </p>
+          )
+        ) : (
+          <div className="space-y-0.5">
+            {unplacedItems.map((item) => {
+              const statusDef = getFeedbackStatusDef(item.status);
+              const Icon = ITEM_TYPE_ICONS[item.type] ?? Eye;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => placeItem(item.id)}
+                  className="group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-ink/80 hover:text-ink hover:bg-surface transition-colors"
+                >
+                  <span className="w-5 flex justify-center text-muted group-hover:text-teal">
+                    <Icon size={13} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] truncate leading-tight">{item.title}</span>
+                    <span className="block text-[10px] text-faint leading-tight">
+                      {ITEM_TYPE_LABELS[item.type]}
+                    </span>
+                  </span>
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${statusDef.dot}`} />
+                  <Plus size={13} className="text-faint group-hover:text-teal transition-colors shrink-0" />
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {placedItems.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowPlaced((v) => !v)}
+            className="w-full flex items-center justify-between px-1 py-1.5 rounded text-muted hover:text-ink transition-colors"
+          >
+            <span className="text-[10px] uppercase tracking-wider font-semibold">
+              On board ({placedItems.length})
+            </span>
+            {showPlaced ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          </button>
+          {showPlaced && (
+            <div className="space-y-0.5 mt-1">
+              {placedItems.map((item) => {
+                const statusDef = getFeedbackStatusDef(item.status);
+                return (
+                  <div
+                    key={item.id}
+                    className="group flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-surface transition-colors"
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${statusDef.dot}`} />
+                    <span className="flex-1 text-[12px] text-ink/70 truncate">{item.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeItemFromBoard(item.id)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted hover:text-red-500 transition-all"
+                      title="Remove from board"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
