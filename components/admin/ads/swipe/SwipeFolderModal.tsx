@@ -2,7 +2,9 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 
 type ShareTarget = { id: string; name: string };
 
@@ -60,13 +62,9 @@ export default function SwipeFolderModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
-          <h2 className="text-base font-semibold text-ink">{title}</h2>
-          <button onClick={onClose} className="text-faint hover:text-ink"><X size={18} /></button>
-        </div>
-        <form onSubmit={submit} className="p-6 space-y-4">
+    <Modal open onClose={onClose} title={title} size="md">
+      <form onSubmit={submit} className="flex flex-col min-h-0 flex-1">
+        <Modal.Body className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-muted mb-1.5">Name</label>
             <input
@@ -111,23 +109,17 @@ export default function SwipeFolderModal({
                   );
                 })}
               </div>
-              <p className="mt-1.5 text-[11px] text-faint">
+              <p className="mt-1.5 text-2xs text-faint">
                 Selected agencies can read and edit this folder&apos;s swipes. Only you can rename, delete, or change sharing.
               </p>
             </div>
           )}
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] text-muted hover:text-ink">Cancel</button>
-            <button
-              type="submit"
-              disabled={saving || !name.trim()}
-              className="px-4 py-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-lg disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          <Button type="submit" size="sm" loading={saving} disabled={!name.trim()}>Save</Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   );
 }

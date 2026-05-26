@@ -106,7 +106,7 @@ function LoginContent() {
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
 
     setLoading(true);
-    const { error } = await signUp(email, password, name, inviteToken || undefined);
+    const { error } = await signUp(email, password, name, inviteToken ? { inviteToken } : undefined);
     if (error) setError((error as any).message || 'Signup failed');
     else router.replace(postLoginTarget);
     setLoading(false);

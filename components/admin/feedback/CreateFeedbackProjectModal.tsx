@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 
 interface CreateReviewProjectModalProps {
   companyId: string;
@@ -77,29 +77,9 @@ export default function CreateFeedbackProjectModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-modal w-full max-w-lg mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold tracking-tight text-ink font-[family-name:var(--font-display)]">
-            New Feedback Project
-          </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            iconOnly
-            leftIcon={X}
-            onClick={onClose}
-            aria-label="Close"
-          />
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+    <Modal open onClose={onClose} title="New Feedback Project" size="lg">
+      <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+        <Modal.Body className="space-y-5">
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -173,23 +153,16 @@ export default function CreateFeedbackProjectModal({
               />
             </div>
           </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              loading={saving}
-              disabled={!title.trim()}
-            >
-              Create Project
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" size="sm" loading={saving} disabled={!title.trim()}>
+            Create Project
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   );
 }

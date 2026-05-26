@@ -107,6 +107,12 @@ body {
 .animate-slide-up {
   animation: slideUp 0.25s ease-out;
 }
+
+/* Modal fade-in. Used by <Modal> primitive for backdrop entrance. */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 /* ── Quote viewer print styles ─────────────────────────────────────────────
    Triggered by the "Download PDF" button on /view/[token] for quotes —
    strips the surrounding page chrome and lets the browser's native PDF
