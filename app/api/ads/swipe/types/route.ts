@@ -11,31 +11,6 @@ export async function OPTIONS() {
   return corsPreflight();
 }
 
-/**
- * Standard ad-type folders seeded on first visit. Order matters — it's how
- * they'll appear in the sidebar. Users can rename, reorder, or delete any of them.
- */
-const STANDARD_AD_TYPES = [
-  'Image + Headline Overlay',
-  'Before and After',
-  'Testimonial Overlay',
-  'Grid / Collage',
-  'Big Question',
-  'Reasons Why (Listicle)',
-  'Native UI',
-  'Meme',
-  'Process / Steps',
-  'Feature / Benefit Callouts',
-  'Us vs. Them',
-  'Hand-Written (Ugly Ads)',
-  'Copy-Heavy (Text Only)',
-  'Educational',
-  'Social Screenshot Overlay',
-  'Media / News (PR Callout)',
-  'UGC AI Video',
-  'Founder Video',
-];
-
 /* ─── GET — list type folders with file counts ──────────────────────────── */
 
 export async function GET(req: NextRequest) {
@@ -44,36 +19,6 @@ export async function GET(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const supabase = createServiceClient();
-
-    // First-time seed: fire only if the caller has no own folders AND no
-    // partner has already shared folders with them. Seeding on top of a
-    // partner's shared standards would create duplicate rows with the same
-    // names and split the swipes across two owners (which is exactly the
-    // bug that produced empty-folder duplicates for cross-company users).
-    const { data: visibleAny, error: visErr } = await supabase
-      .from('swipe_types')
-      .select('id, company_id')
-      .or(visibleTypesOrFilter(auth.companyId))
-      .limit(1);
-
-    if (visErr) return NextResponse.json({ error: visErr.message }, { status: 500 });
-
-    if (!visibleAny || visibleAny.length === 0) {
-      // If this company already has a sharing relationship established with
-      // partner companies (e.g. via backfill or prior manual sharing), the
-      // newly-seeded standard folders inherit the same partner set so the
-      // user doesn't have to re-share 18 folders one by one.
-      const partners = await getPartnerCompanyIds(supabase, auth.companyId);
-      const rows = STANDARD_AD_TYPES.map((name, idx) => ({
-        company_id: auth.companyId,
-        name,
-        sort_order: idx,
-        is_standard: true,
-        shared_with_company_ids: partners,
-      }));
-      const { error: seedErr } = await supabase.from('swipe_types').insert(rows);
-      if (seedErr) return NextResponse.json({ error: seedErr.message }, { status: 500 });
-    }
 
     // Fetch everything the caller can see: own folders + folders explicitly
     // shared with them. Own folders sort first so the user's own structure

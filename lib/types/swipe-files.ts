@@ -11,7 +11,6 @@ export type SwipeType = {
   sort_order: number;
   share_token: string;
   public_share_enabled: boolean;
-  is_standard: boolean;
   /**
    * Additional company_ids this folder is visible/writable to.
    * The owning company_id retains exclusive control over folder metadata

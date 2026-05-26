@@ -11,8 +11,6 @@ type Props = {
   initialName?: string;
   initialDescription?: string;
   initialShared?: string[];
-  /** When true the name field is locked — used for standard folders. */
-  nameLocked?: boolean;
   /** Companies the current user can share this folder with. */
   shareTargets?: ShareTarget[];
   onClose: () => void;
@@ -28,7 +26,6 @@ export default function SwipeFolderModal({
   initialName = '',
   initialDescription = '',
   initialShared = [],
-  nameLocked = false,
   shareTargets = [],
   onClose,
   onSave,
@@ -52,12 +49,11 @@ export default function SwipeFolderModal({
     if (!name.trim()) return;
     setSaving(true);
     try {
-      // When the name is locked (standard folder) omit it from the PATCH —
-      // the server rejects any `name` field on standards even if unchanged.
-      const base = nameLocked
-        ? { description: description.trim() || '' }
-        : { name: name.trim(), description: description.trim() || undefined };
-      await onSave({ ...base, shared_with_company_ids: Array.from(shared) });
+      await onSave({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        shared_with_company_ids: Array.from(shared),
+      });
     } finally {
       setSaving(false);
     }
@@ -74,18 +70,12 @@ export default function SwipeFolderModal({
           <div>
             <label className="block text-xs font-medium text-muted mb-1.5">Name</label>
             <input
-              autoFocus={!nameLocked}
+              autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              readOnly={nameLocked}
-              className={`w-full px-3 py-2.5 border border-edge rounded-lg text-sm focus:ring-2 focus:ring-teal/20 outline-none ${
-                nameLocked ? 'bg-surface text-faint cursor-not-allowed' : ''
-              }`}
+              className="w-full px-3 py-2.5 border border-edge rounded-lg text-sm focus:ring-2 focus:ring-teal/20 outline-none"
               placeholder="e.g. Direct To Offer"
             />
-            {nameLocked && (
-              <p className="mt-1 text-[11px] text-faint">Standard folder names can&apos;t be changed.</p>
-            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-muted mb-1.5">Description (optional)</label>

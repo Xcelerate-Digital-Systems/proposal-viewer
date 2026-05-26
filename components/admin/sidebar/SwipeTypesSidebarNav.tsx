@@ -90,25 +90,23 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                       className="w-full text-left px-3 py-2 text-[13px] text-ink hover:bg-surface flex items-center gap-2"
                     >
                       <Pencil size={13} />
-                      {type.is_standard ? 'Edit & share' : 'Rename & share'}
+                      Rename & share
                     </button>
-                    {!type.is_standard && (
-                      <button
-                        onClick={async () => {
-                          if (confirm(`Delete ad type "${type.name}" and all its swipes?`)) {
-                            await swipe.deleteType(type.id);
-                            if (currentTypeId === type.id) {
-                              const next = swipe.types.find((t) => t.id !== type.id);
-                              router.push(next ? `/ads/swipe/${next.id}` : '/ads/swipe');
-                            }
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Delete ad type "${type.name}" and all its swipes?`)) {
+                          await swipe.deleteType(type.id);
+                          if (currentTypeId === type.id) {
+                            const next = swipe.types.find((t) => t.id !== type.id);
+                            router.push(next ? `/ads/swipe/${next.id}` : '/ads/swipe');
                           }
-                          setMenuFor(null);
-                        }}
-                        className="w-full text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
-                      >
-                        <Trash2 size={13} /> Delete
-                      </button>
-                    )}
+                        }
+                        setMenuFor(null);
+                      }}
+                      className="w-full text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
                   </div>
                 )}
               </div>
@@ -127,17 +125,10 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
 
       {modal.open && (
         <SwipeFolderModal
-          title={
-            modal.type
-              ? modal.type.is_standard
-                ? 'Edit Description'
-                : 'Rename Ad Type'
-              : 'New Ad Type'
-          }
+          title={modal.type ? 'Rename Ad Type' : 'New Ad Type'}
           initialName={modal.type?.name || ''}
           initialDescription={modal.type?.description || ''}
           initialShared={modal.type?.shared_with_company_ids || []}
-          nameLocked={modal.type?.is_standard === true}
           shareTargets={swipe.shareTargets}
           onClose={() => setModal({ open: false })}
           onSave={async (data) => {

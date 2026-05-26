@@ -43,19 +43,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 
     const supabase = createServiceClient();
 
-    // Look up the existing row so we can block rename attempts on standard types.
     // PATCH is owner-only — partners can't rename/delete or change the share list.
-    const { data: existing } = await supabase
-      .from('swipe_types')
-      .select('is_standard')
-      .eq('id', params.id)
-      .eq('company_id', auth.companyId)
-      .single();
-    if (!existing) return NextResponse.json({ error: 'Type not found' }, { status: 404 });
-
-    if (existing.is_standard && updates.name !== undefined) {
-      return NextResponse.json({ error: 'Standard ad types can\'t be renamed' }, { status: 403 });
-    }
+    // The owner check is enforced by the .eq('company_id', auth.companyId) clause
+    // on the UPDATE below; a non-owner's UPDATE simply matches zero rows.
 
     // Validate that every share target is a real company the caller is
     // actually a member of — prevents a user from broadcasting to random
@@ -99,18 +89,6 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const supabase = createServiceClient();
-
-    const { data: existing } = await supabase
-      .from('swipe_types')
-      .select('is_standard')
-      .eq('id', params.id)
-      .eq('company_id', auth.companyId)
-      .single();
-    if (!existing) return NextResponse.json({ error: 'Type not found' }, { status: 404 });
-
-    if (existing.is_standard) {
-      return NextResponse.json({ error: 'Standard ad types can\'t be deleted' }, { status: 403 });
-    }
 
     const { error } = await supabase
       .from('swipe_types')
