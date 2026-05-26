@@ -52,6 +52,15 @@ module.exports = {
           hover: '#013036',    // hover bg on dark surface
           accent: '#8AD9D1',   // bright text/icon accent on dark surface
         },
+        // Section-accent palette — small set of complementary colors used to
+        // color-code major dashboard sections so they're scannable at a
+        // glance. Add new section colors here, not as one-off hex values.
+        accent: {
+          feedback: {
+            DEFAULT: '#9333EA',  // purple-600 — icon/text color
+            tint: '#FAF5FF',     // purple-50  — swatch background
+          },
+        },
       },
       boxShadow: {
         sketch: '2px 3px 0 0 rgba(0,0,0,0.08)',

@@ -121,7 +121,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
     <div className={`px-5 py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}>
       <div className="flex gap-3">
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0 bg-purple-50 text-purple-600">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0 bg-accent-feedback-tint text-accent-feedback">
           {initials(item.clientName)}
         </div>
 
@@ -129,7 +129,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
           {/* Top row: author + time */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[13px] font-semibold text-ink">{item.clientName}</span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent-feedback-tint text-accent-feedback">
               <MessageSquareText size={10} />
               Feedback
             </span>

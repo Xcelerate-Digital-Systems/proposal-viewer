@@ -237,8 +237,8 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
           <section className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] overflow-hidden flex flex-col">
             <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center">
-                  <MessageSquareText size={14} className="text-purple-600" />
+                <div className="w-7 h-7 rounded-lg bg-accent-feedback-tint flex items-center justify-center">
+                  <MessageSquareText size={14} className="text-accent-feedback" />
                 </div>
                 <h2 className="text-[15px] font-semibold text-ink">Feedback</h2>
                 <span className="text-[11px] text-muted">
@@ -298,7 +298,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
             {/* Kanban sub-area */}
             <div className="border-t border-gray-100">
               <div className="flex items-center gap-2 px-5 pt-4 pb-2">
-                <MessageSquareText size={13} className="text-purple-600" />
+                <MessageSquareText size={13} className="text-accent-feedback" />
                 <h3 className="text-[12px] font-semibold uppercase tracking-wider text-muted">
                   Projects
                 </h3>
@@ -333,8 +333,8 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
           <section className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)] overflow-hidden flex flex-col">
             <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#E6F5F3] flex items-center justify-center">
-                  <FileText size={14} className="text-[#017C87]" />
+                <div className="w-7 h-7 rounded-lg bg-primary-tint flex items-center justify-center">
+                  <FileText size={14} className="text-primary" />
                 </div>
                 <h2 className="text-[15px] font-semibold text-ink">Proposals &amp; Quotes</h2>
                 <span className="text-[11px] text-muted">
