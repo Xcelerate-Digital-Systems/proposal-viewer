@@ -163,7 +163,7 @@ export default function FeedbackModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your full name"
-              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none"
+              className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none"
               style={{
                 backgroundColor: border,
                 color:            textColor,
@@ -185,7 +185,7 @@ export default function FeedbackModal({
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder={cfg.placeholder}
-              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none resize-none"
+              className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none resize-none"
               style={{
                 backgroundColor: border,
                 color:            textColor,

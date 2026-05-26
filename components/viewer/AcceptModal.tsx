@@ -176,7 +176,7 @@ export default function AcceptModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your full name to confirm"
-              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none"
+              className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none"
               style={{
                 backgroundColor: border,
                 color: textColor,

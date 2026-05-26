@@ -294,7 +294,7 @@ export default function ProposalDecisionPanel({
                     ? 'e.g. Could you split the bathroom into two phases?'
                     : 'e.g. Going with another quote for now.'
                 }
-                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none transition-colors"
+                className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none transition-colors"
                 style={{
                   border: `1px solid ${hairline}`,
                   backgroundColor: bodyBg,
@@ -316,7 +316,7 @@ export default function ProposalDecisionPanel({
               value={signerName}
               onChange={(e) => setSignerName(e.target.value)}
               placeholder="e.g. John Smith"
-              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none transition-colors"
+              className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none transition-colors"
               style={{
                 border: `1px solid ${hairline}`,
                 backgroundColor: bodyBg,

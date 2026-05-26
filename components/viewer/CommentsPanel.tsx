@@ -149,12 +149,12 @@ export default function CommentsPanel({
         {replyingTo === comment.id && (
           <div className="ml-4 mt-2 space-y-2">
             <input type="text" placeholder="Your name" value={replyName} onChange={(e) => setReplyName(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-md text-xs focus:outline-none border"
+              className="w-full px-2.5 py-1.5 rounded-md text-base md:text-xs focus:outline-none border"
               style={{ backgroundColor: border, color: textColor, borderColor: border }} />
             <div className="flex gap-2">
               <input type="text" placeholder="Write a reply..." value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(comment.id); } }}
-                className="flex-1 px-2.5 py-1.5 rounded-md text-xs focus:outline-none border"
+                className="flex-1 px-2.5 py-1.5 rounded-md text-base md:text-xs focus:outline-none border"
                 style={{ backgroundColor: border, color: textColor, borderColor: border }}
                 autoFocus />
               <button onClick={() => handleReply(comment.id)} disabled={replySubmitting || !replyText.trim() || !replyName.trim()}
@@ -206,11 +206,11 @@ export default function CommentsPanel({
 
         <form onSubmit={handleSubmit} className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
           <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none border"
+            className="w-full px-3 py-2 rounded-lg text-base md:text-sm focus:outline-none border"
             style={{ backgroundColor: border, color: textColor, borderColor: border }} />
           <div className="flex gap-2">
             <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none border"
+              className="flex-1 px-3 py-2 rounded-lg text-base md:text-sm focus:outline-none border"
               style={{ backgroundColor: border, color: textColor, borderColor: border }} />
             <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
               className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
