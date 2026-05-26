@@ -23,7 +23,11 @@ document.addEventListener("visibilitychange",function(){if(document.hidden)stopP
 /* ── Init ───────────────────────────────────────────────── */
 document.documentElement.classList.add("aviz-active");
 armPinMode();
-loadComments(function(){refresh();startPolling();});
+/* Open the comments panel by default so reviewers land already seeing
+   existing feedback and can leave new comments straight away. Pin mode
+   stays armed underneath — page clicks still drop pins, and clicking
+   the Pin tool just closes the panel via its own handler. */
+loadComments(function(){refresh();if(typeof openPanel==="function")openPanel();startPolling();});
 if(!guestName){
   /* Delay onboarding slightly so the page isn't blocked on first paint. */
   setTimeout(function(){if(!guestName&&typeof showOnboard==="function")showOnboard();},600);

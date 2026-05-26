@@ -1,6 +1,6 @@
 import { POPOVER_STYLE } from '@/lib/feedback/popover-style';
 
-const ACCENT = '#017C87';
+const DEFAULT_ACCENT = '#017C87';
 const PIN_COLOR = '#22c55e'; // green-500 — consistent with in-app PinOverlay
 const HOVER_COLOR = '#2563eb'; // blue-600 — markup.io-style element hover outline
 const HIGHLIGHT_COLOR = '37,99,235'; // blue-600 rgb — text-highlight tint
@@ -12,7 +12,10 @@ const FONT = `'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-s
 const PIN_CURSOR_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><circle cx='16' cy='16' r='12' fill='%232563eb' stroke='%23ffffff' stroke-width='2'/><line x1='16' y1='9' x2='16' y2='23' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/><line x1='9' y1='16' x2='23' y2='16' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/></svg>`;
 const PIN_CURSOR = `url("data:image/svg+xml;utf8,${PIN_CURSOR_SVG}") 16 16, crosshair`;
 
-export function stylesJS(_apiBase: string): string {
+/** Per-agency accent threaded in from the route; falls back to AgencyViz
+ *  teal so unbranded companies still look on-brand. */
+export function stylesJS(_apiBase: string, accentColor: string = DEFAULT_ACCENT): string {
+  const ACCENT = accentColor;
   return `
 // Load Outfit from Google Fonts (widget runs on third-party pages)
 var fontLink=document.createElement("link");
@@ -25,11 +28,23 @@ sty.textContent=\`
 #aviz-root{box-sizing:border-box;margin:0;padding:0;font-family:${FONT};line-height:1.45;}
 #aviz-root *{box-sizing:border-box;font-family:${FONT};line-height:1.45;}
 
-/* ── Per-mode cursor (matches the active tool) ─────────── */
-html.aviz-mode-pin,html.aviz-mode-pin *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *),
-html.aviz-mode-box,html.aviz-mode-box *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:${PIN_CURSOR} !important;}
-html.aviz-mode-text,html.aviz-mode-text *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *),
-html.aviz-mode-highlight,html.aviz-mode-highlight *:not(#aviz-root):not(#aviz-root *):not(#aviz-onboard):not(#aviz-onboard *){cursor:text !important;}
+/* ── Per-mode cursor (matches the active tool) ───────────
+   Apply mode cursor to every element under html, then explicitly reset
+   inside the widget chrome. The old form relied on CSS Selectors L4
+   complex-:not() support and was leaking the crosshair onto the toolbar
+   in some browsers — the override below is bullet-proof regardless of
+   L4 support. Browse mode intentionally has no cursor rule, so the
+   host page's native cursors come back. */
+html.aviz-mode-pin *,html.aviz-mode-box *{cursor:${PIN_CURSOR} !important;}
+html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
+
+/* Force-reset cursor inside any widget-owned chrome so the mode cursor
+   never bleeds in. Specific interactive elements re-declare cursor:pointer
+   / cursor:text below with !important to win against this reset. */
+#aviz-root,#aviz-root *,#aviz-onboard,#aviz-onboard *,#aviz-tour-backdrop,#aviz-tour-backdrop *,.aviz-tour-callout,.aviz-tour-callout *,#aviz-hover-box,.aviz-pin-form,.aviz-pin-form *,.aviz-text-input,.aviz-text-input *{cursor:auto !important;}
+/* Restore explicit cursors on interactive widget elements. */
+.aviz-tool,#aviz-root button,#aviz-root [role="button"],#aviz-root a,.aviz-pin,.aviz-hl-badge,.aviz-priority-btn,#aviz-bar-cancel,.aviz-pf-cancel,.aviz-pf-send{cursor:pointer !important;}
+#aviz-root input,#aviz-root textarea,#aviz-root [contenteditable="true"],.aviz-pin-form textarea,.aviz-pin-form input,.aviz-text-input{cursor:text !important;}
 
 /* ── Element hover highlight (single floating overlay — markup.io-style)
    A single fixed-position box transitions between hovered elements via

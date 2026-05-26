@@ -44,12 +44,26 @@ export async function GET(
 
   const { data: project } = await supabaseAdmin
     .from('review_projects')
-    .select('id, status, widget_enabled')
+    .select('id, status, widget_enabled, company_id')
     .eq('share_token', params.token)
     .single();
 
   if (!project || project.status === 'archived') {
     return jsResponse('/* AgencyViz: invalid or archived project */');
+  }
+
+  // Pull the agency's brand accent so the widget chrome (active toolbar
+  // states, send button, hover ring on comment cards, etc.) feels like
+  // part of their site. Falls back to the AgencyViz teal when no custom
+  // colour is set, matching the rest of the public viewer.
+  let accentColor = '#017C87';
+  if (project.company_id) {
+    const { data: company } = await supabaseAdmin
+      .from('companies')
+      .select('accent_color')
+      .eq('id', project.company_id)
+      .maybeSingle();
+    if (company?.accent_color) accentColor = company.accent_color;
   }
 
   // Admin has toggled the widget off from the Setup tab. The <script> tag
@@ -106,6 +120,7 @@ export async function GET(
     pinnedItemId,
     items,
     apiBase,
+    accentColor,
   });
 
   return jsResponse(js);
@@ -117,6 +132,7 @@ function buildWidgetScript(c: {
   pinnedItemId: string | null;
   items: ItemRef[];
   apiBase: string;
+  accentColor: string;
 }) {
   const resolver = `
 /* ══ AgencyViz: heartbeat + resolve feedback item from current URL ══ */
@@ -151,7 +167,7 @@ if(!__aviz_resolvedItem)return;
     '(function(){\n"use strict";\nif(window.__aviz_widget)return;\nwindow.__aviz_widget=true;\n',
     resolver,
     iconsJS(),
-    stylesJS(c.apiBase),
+    stylesJS(c.apiBase, c.accentColor),
     coreJS({ token: c.token, apiBase: c.apiBase }),
     toolbarJS(),
     panelJS(),
