@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, ExternalLink, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
 import NoResults from '@/components/ui/NoResults';
+import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import type { FeedbackStatus } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -59,6 +61,7 @@ const FILTER_STATUSES: Record<FilterTab, FeedbackStatus[] | null> = {
 function ReviewsContent({ companyId, userId }: { companyId: string; userId: string | null }) {
   const [projects, setProjects] = useState<FeedbackProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterTab>('active');
@@ -90,41 +93,49 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
 
   const fetchProjects = useCallback(async () => {
     if (!companyId) return;
-    let query = supabase
-      .from('review_projects')
-      .select('*')
-      .eq('company_id', companyId)
-      .order('updated_at', { ascending: false });
+    setFetchError(null);
+    try {
+      let query = supabase
+        .from('review_projects')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('updated_at', { ascending: false });
 
-    const statuses = FILTER_STATUSES[filter];
-    if (statuses) {
-      query = query.in('status', statuses);
+      const statuses = FILTER_STATUSES[filter];
+      if (statuses) {
+        query = query.in('status', statuses);
+      }
+
+      const [projectsResult, domainResult] = await Promise.all([
+        query,
+        supabase
+          .from('companies')
+          .select('custom_domain, domain_verified')
+          .eq('id', companyId)
+          .single(),
+      ]);
+
+      if (projectsResult.error) throw projectsResult.error;
+      setProjects(projectsResult.data || []);
+
+      const domainData = domainResult.data;
+      if (domainData?.domain_verified && domainData.custom_domain) {
+        setCustomDomain(domainData.custom_domain);
+      } else {
+        setCustomDomain(null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch projects:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load projects');
+    } finally {
+      setLoading(false);
     }
-
-    const { data } = await query;
-    setProjects(data || []);
-    setLoading(false);
   }, [companyId, filter]);
-
-  const fetchCustomDomain = useCallback(async () => {
-    if (!companyId) return;
-    const { data } = await supabase
-      .from('companies')
-      .select('custom_domain, domain_verified')
-      .eq('id', companyId)
-      .single();
-    if (data?.domain_verified && data.custom_domain) {
-      setCustomDomain(data.custom_domain);
-    } else {
-      setCustomDomain(null);
-    }
-  }, [companyId]);
 
   useEffect(() => {
     setLoading(true);
     fetchProjects();
-    fetchCustomDomain();
-  }, [fetchProjects, fetchCustomDomain]);
+  }, [fetchProjects]);
 
   const tabs: { key: FilterTab; label: string }[] = [
     { key: 'active', label: 'Active' },
@@ -248,9 +259,12 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
-          </div>
+          <EntityListSkeleton viewMode={viewMode === 'board' ? 'grid' : viewMode} />
+        ) : fetchError ? (
+          <ErrorState
+            description={fetchError}
+            onRetry={() => { setLoading(true); fetchProjects(); }}
+          />
         ) : filtered.length === 0 && searchQuery ? (
           <NoResults message={`No projects matching “${searchQuery}”`} />
         ) : projects.length === 0 ? (

@@ -8,6 +8,8 @@ import {
   X, Loader2, ExternalLink, UserPlus, Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import ErrorState from '@/components/ui/ErrorState';
+import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import { supabase } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -50,6 +52,7 @@ function AccountsContent() {
   const { memberships, setActiveMembership } = useAuth();
   const [companies, setCompanies] = useState<CompanyWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [joining, setJoining] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
@@ -60,17 +63,23 @@ function AccountsContent() {
   );
 
   const fetchCompanies = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    setFetchError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    const res = await fetch('/api/admin/accounts', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    if (res.ok) {
+      const res = await fetch('/api/admin/accounts', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error(`Failed to load accounts (${res.status})`);
       const data = await res.json();
       setCompanies(data);
+    } catch (err) {
+      console.error('Failed to fetch accounts:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load accounts');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -165,11 +174,14 @@ function AccountsContent() {
         </Button>
       </div>
 
-      {/* Loading */}
+      {/* Loading / Error / Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
-        </div>
+        <EntityListSkeleton viewMode="grid" />
+      ) : fetchError ? (
+        <ErrorState
+          description={fetchError}
+          onRetry={() => { setLoading(true); fetchCompanies(); }}
+        />
       ) : companies.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">

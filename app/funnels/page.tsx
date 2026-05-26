@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
+import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import { supabase, type Funnel } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -43,16 +45,25 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
   const toast = useToast();
   const [funnels, setFunnels] = useState<Funnel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from('funnels').select('*')
-      .eq('company_id', companyId)
-      .order('updated_at', { ascending: false });
-    setFunnels(data || []);
-    setLoading(false);
+    setFetchError(null);
+    try {
+      const { data, error } = await supabase
+        .from('funnels').select('*')
+        .eq('company_id', companyId)
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      setFunnels(data || []);
+    } catch (err) {
+      console.error('Failed to fetch funnels:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load funnels');
+    } finally {
+      setLoading(false);
+    }
   }, [companyId]);
 
   useEffect(() => { setLoading(true); load(); }, [load]);
@@ -159,9 +170,12 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
-          </div>
+          <EntityListSkeleton viewMode="grid" />
+        ) : fetchError ? (
+          <ErrorState
+            description={fetchError}
+            onRetry={() => { setLoading(true); load(); }}
+          />
         ) : funnels.length === 0 ? (
           <EmptyState
             icon={Workflow}

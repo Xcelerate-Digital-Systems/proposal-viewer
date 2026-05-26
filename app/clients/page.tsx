@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
+import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import { supabase } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 
@@ -52,20 +54,27 @@ function ClientsContent({
 }) {
   const [clients, setClients] = useState<ClientWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   const fetchClients = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    setFetchError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    const res = await fetch('/api/clients', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    if (res.ok) {
+      const res = await fetch('/api/clients', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error(`Failed to load clients (${res.status})`);
       const data = await res.json();
       setClients(data);
+    } catch (err) {
+      console.error('Failed to fetch clients:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load clients');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -110,11 +119,14 @@ function ClientsContent({
         </Button>
       </div>
 
-      {/* Loading */}
+      {/* Loading / Error / Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-edge border-t-teal rounded-full animate-spin" />
-        </div>
+        <EntityListSkeleton viewMode="grid" />
+      ) : fetchError ? (
+        <ErrorState
+          description={fetchError}
+          onRetry={() => { setLoading(true); fetchClients(); }}
+        />
       ) : clients.length === 0 ? (
         <EmptyState
           icon={UserSquare2}

@@ -18,6 +18,7 @@ import TemplateUploadModal from '@/components/admin/templates/TemplateUploadModa
 import TemplateListCard from '@/components/admin/templates/TemplateListCard';
 import TemplateListRow from '@/components/admin/templates/TemplateListRow';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
+import ErrorState from '@/components/ui/ErrorState';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 async function authHeaders(): Promise<HeadersInit> {
@@ -65,6 +66,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   const [lineItemTemplates, setLineItemTemplates] = useState<LineItemTemplateRow[]>([]);
   const [packageTemplates, setPackageTemplates] = useState<PackageTemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
@@ -100,38 +102,44 @@ function TemplatesContent({ companyId }: { companyId: string }) {
 
   const fetchProposalTemplates = useCallback(async () => {
     if (!companyId) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('proposal_templates')
       .select('*')
       .eq('company_id', companyId)
       .order('created_at', { ascending: false });
+    if (error) throw error;
     setTemplates(data || []);
   }, [companyId]);
 
   const fetchLineItemTemplates = useCallback(async () => {
     const res = await fetch('/api/line-item-templates', { headers: await authHeaders() });
-    if (res.ok) {
-      const json = await res.json();
-      setLineItemTemplates(json.templates ?? []);
-    }
+    if (!res.ok) throw new Error(`Failed to load line-item templates (${res.status})`);
+    const json = await res.json();
+    setLineItemTemplates(json.templates ?? []);
   }, []);
 
   const fetchPackageTemplates = useCallback(async () => {
     const res = await fetch('/api/package-templates', { headers: await authHeaders() });
-    if (res.ok) {
-      const json = await res.json();
-      setPackageTemplates(json.templates ?? []);
-    }
+    if (!res.ok) throw new Error(`Failed to load package templates (${res.status})`);
+    const json = await res.json();
+    setPackageTemplates(json.templates ?? []);
   }, []);
 
   const refetch = useCallback(async () => {
     setLoading(true);
-    await Promise.all([
-      fetchProposalTemplates(),
-      fetchLineItemTemplates(),
-      fetchPackageTemplates(),
-    ]);
-    setLoading(false);
+    setFetchError(null);
+    try {
+      await Promise.all([
+        fetchProposalTemplates(),
+        fetchLineItemTemplates(),
+        fetchPackageTemplates(),
+      ]);
+    } catch (err) {
+      console.error('Failed to fetch templates:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load templates');
+    } finally {
+      setLoading(false);
+    }
   }, [fetchProposalTemplates, fetchLineItemTemplates, fetchPackageTemplates]);
 
   useEffect(() => {
@@ -344,6 +352,11 @@ function TemplatesContent({ companyId }: { companyId: string }) {
 
         {loading ? (
           <EntityListSkeleton viewMode={viewMode} />
+        ) : fetchError ? (
+          <ErrorState
+            description={fetchError}
+            onRetry={refetch}
+          />
         ) : activeTab === 'line_items' ? (
           <LineItemTemplatesView
             templates={filteredLineItemTemplates}
