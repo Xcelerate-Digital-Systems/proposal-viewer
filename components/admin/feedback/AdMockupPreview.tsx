@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe,
-  ChevronRight, AlignLeft, Type, MessageSquare, Plus,
+  ChevronRight, AlignLeft, MessageSquare, Plus,
 } from 'lucide-react';
 import type { MetaAdVariant } from '@/lib/types/feedback';
 
@@ -148,7 +148,7 @@ export default function AdMockupPreview({
   }
 
   return (
-    <div className="w-full flex gap-4 items-start">
+    <div className="w-full flex gap-8 items-start">
       <VariantSidebar
         variants={variantList}
         activeId={active.id}
@@ -174,74 +174,82 @@ function VariantSidebar({
   commentCounts?: Record<string, number>;
   dark?: boolean;
 }) {
+  // Brand tokens — match the AgencyViz teal palette used across admin nav
+  // and primary buttons. We define them inline (rather than via Tailwind
+  // classes) so the dark-mode public viewer can swap surface tones cleanly.
+  const teal = '#017C87';
+  const tealTint = dark ? 'rgba(138, 217, 209, 0.16)' : 'rgba(1, 124, 135, 0.08)';
+  const tealText = dark ? '#8AD9D1' : teal;
   return (
     <aside
-      className="w-72 shrink-0 rounded-xl border overflow-hidden"
+      className="w-60 shrink-0 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(20,20,40,0.04),0_4px_16px_rgba(20,20,40,0.04)]"
       style={{
-        backgroundColor: dark ? '#ffffff08' : '#ffffff',
-        borderColor: dark ? '#ffffff18' : '#e5e7eb',
+        backgroundColor: dark ? '#013036' : '#ffffff',
+        border: `1px solid ${dark ? '#01434A' : '#E5E7EB'}`,
       }}
     >
       <div
-        className="px-3.5 py-2.5 flex items-center gap-2 border-b"
+        className="px-4 py-3 flex items-center gap-2 border-b"
         style={{
-          backgroundColor: dark ? '#ffffff05' : '#f9fafb',
-          borderColor: dark ? '#ffffff18' : '#f3f4f6',
+          backgroundColor: dark ? '#01262B' : '#F9FAFB',
+          borderColor: dark ? '#01434A' : '#F3F4F6',
         }}
       >
-        <AlignLeft size={15} className="text-gray-500" />
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-gray-600 flex-1">
+        <AlignLeft size={14} style={{ color: tealText }} />
+        <p
+          className="text-[11px] font-semibold uppercase tracking-wider flex-1"
+          style={{ color: dark ? 'rgba(255,255,255,0.55)' : '#6B6B6B' }}
+        >
           Copy variants
         </p>
-        <span className="text-[11px] tabular-nums text-gray-400">{variants.length}</span>
+        <span
+          className="text-[10px] font-semibold tabular-nums rounded-full px-1.5 py-0.5"
+          style={{
+            backgroundColor: tealTint,
+            color: tealText,
+          }}
+        >
+          {variants.length}
+        </span>
       </div>
       <ul className="py-1.5">
         {variants.map((v, i) => {
           const active = v.id === activeId;
           const commentCount = commentCounts?.[v.id] ?? 0;
-          const headlinePreview = v.headline?.trim() || 'Untitled headline';
-          const copyPreview = v.primary_text?.trim() || 'No primary text';
           const variantLabel = v.label?.trim() || `Variant ${i + 1}`;
           return (
             <li key={v.id}>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onSelect?.(v.id); }}
-                className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 text-[13px] leading-snug transition-colors ${
-                  active
-                    ? 'bg-blue-50 text-[#1a0dab]'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
+                className="w-full text-left px-3 py-2 flex items-center gap-2.5 text-[13px] transition-colors"
+                style={{
+                  backgroundColor: active ? tealTint : 'transparent',
+                  color: active ? tealText : (dark ? 'rgba(255,255,255,0.75)' : '#1F2937'),
+                  fontWeight: active ? 600 : 500,
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) e.currentTarget.style.backgroundColor = dark ? 'rgba(255,255,255,0.04)' : '#F9FAFB';
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 <span
-                  className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-medium shrink-0 ${
-                    active ? 'bg-[#1a0dab] text-white' : 'bg-gray-100 text-gray-500'
-                  }`}
+                  className="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-semibold shrink-0"
+                  style={{
+                    backgroundColor: active ? teal : (dark ? 'rgba(255,255,255,0.08)' : '#F3F4F6'),
+                    color: active ? '#FFFFFF' : (dark ? 'rgba(255,255,255,0.6)' : '#6B7280'),
+                  }}
                 >
                   {i + 1}
                 </span>
-                <span className="flex-1 min-w-0">
-                  <span
-                    className="block text-[12px] font-semibold truncate"
-                    style={{ color: active ? '#1a0dab' : '#111827' }}
-                  >
-                    {variantLabel}
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] text-gray-400 uppercase tracking-wide mt-1.5">
-                    <Type size={10} /> Headline
-                  </span>
-                  <span className="block truncate text-[12px]" style={{ color: active ? '#1a0dab' : '#374151' }}>
-                    {headlinePreview}
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] text-gray-400 uppercase tracking-wide mt-1.5">
-                    <AlignLeft size={10} /> Primary text
-                  </span>
-                  <span className="block text-[12px] line-clamp-2" style={{ color: active ? '#1a0dab' : '#4b5563' }}>
-                    {copyPreview}
-                  </span>
-                </span>
+                <span className="flex-1 min-w-0 truncate">{variantLabel}</span>
                 {commentCount > 0 && (
-                  <span className="mt-0.5 inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-medium shrink-0">
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 h-5 rounded-full text-[10px] font-semibold shrink-0"
+                    style={{ backgroundColor: '#FFF1D6', color: '#92500F' }}
+                  >
                     <MessageSquare size={10} />
                     {commentCount}
                   </span>
@@ -251,12 +259,6 @@ function VariantSidebar({
           );
         })}
       </ul>
-      <p
-        className="px-3.5 py-3 text-[11px] text-gray-400 border-t leading-snug"
-        style={{ borderColor: dark ? '#ffffff18' : '#f3f4f6' }}
-      >
-        Click any variant to preview and pin comments to that headline + primary text pair.
-      </p>
     </aside>
   );
 }
