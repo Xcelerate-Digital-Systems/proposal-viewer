@@ -3,11 +3,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Upload, FileText, Loader2 } from 'lucide-react';
+import { Upload, FileText, Loader2 } from 'lucide-react';
 import { authedFetch } from '@/lib/api-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 
 interface TemplateUploadModalProps {
   companyId: string;
@@ -134,16 +135,9 @@ export default function TemplateUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 font-[family-name:var(--font-display)]">
-            New Template
-          </h2>
-          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} disabled={uploading} aria-label="Close" />
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Modal open onClose={onClose} title="New Template" size="md" closeOnBackdrop={!uploading} closeOnEscape={!uploading}>
+      <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+        <Modal.Body className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Template type</label>
             <div className="grid grid-cols-2 gap-2">
@@ -239,8 +233,8 @@ export default function TemplateUploadModal({
           >
             Create Template
           </Button>
-        </form>
-      </div>
-    </div>
+        </Modal.Body>
+      </form>
+    </Modal>
   );
 }

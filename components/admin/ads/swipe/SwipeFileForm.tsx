@@ -4,6 +4,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, ChevronDown, Upload, Loader2 } from 'lucide-react';
 import type { SwipeFile, SwipeMediaType } from '@/lib/supabase';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 
 type Props = {
   companyId: string;
@@ -109,16 +111,9 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div
-        className="bg-white rounded-2xl w-full max-w-2xl shadow-xl flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-edge shrink-0">
-          <h2 className="text-base font-semibold text-ink">{file ? 'Edit Swipe' : 'New Swipe'}</h2>
-          <button onClick={onClose} className="text-faint hover:text-ink"><X size={18} /></button>
-        </div>
-        <form onSubmit={submit} className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
+    <Modal open onClose={onClose} title={file ? 'Edit Swipe' : 'New Swipe'} size="xl">
+      <form onSubmit={submit} className="flex flex-col min-h-0 flex-1">
+        <Modal.Body className="space-y-5">
           {error && <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2">{error}</div>}
 
           <div>
@@ -347,20 +342,15 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
               className="w-full px-3 py-2.5 border border-edge rounded-lg text-sm focus:ring-2 focus:ring-teal/20 outline-none resize-none"
             />
           </div>
-        </form>
+        </Modal.Body>
 
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-edge shrink-0 bg-white rounded-b-2xl">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] text-muted hover:text-ink">Cancel</button>
-          <button
-            type="button"
-            onClick={(e) => submit(e as unknown as React.FormEvent)}
-            disabled={saving}
-            className="px-4 py-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-lg disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : 'Save Swipe'}
-          </button>
-        </div>
-      </div>
-    </div>
+        <Modal.Footer>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          <Button type="submit" size="sm" loading={saving} disabled={saving}>
+            Save Swipe
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   );
 }

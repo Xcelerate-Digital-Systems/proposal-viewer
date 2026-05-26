@@ -1,11 +1,13 @@
 // components/admin/page-editor/TextPageEditorModal.tsx
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { X, FileText, Check, Loader2, User, Image } from 'lucide-react';
 import RichTextEditor from '@/components/admin/text-editor/RichTextEditor';
 import { TextPageData } from './pageEditorTypes';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 
 interface TextPageEditorModalProps {
   page: TextPageData;
@@ -61,24 +63,10 @@ export default function TextPageEditorModal({
     [page.id, onUpdate],
   );
 
-  // Close on Escape
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-3xl max-h-[85vh] mx-4 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="shrink-0 px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+    <Modal open onClose={onClose} size="xl">
+      <Modal.Header>
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
               <FileText size={16} className="text-content-type-text" />
@@ -98,16 +86,12 @@ export default function TextPageEditorModal({
               </span>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
+      </Modal.Header>
 
-        {/* Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
+      {/* Body */}
+      <Modal.Body className="space-y-4">
           {/* Page title */}
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -225,18 +209,11 @@ export default function TextPageEditorModal({
           <p className="text-2xs text-gray-400 leading-relaxed">
             💡 Use the <strong>Fields</strong> button in the toolbar to insert dynamic fields that auto-populate with client/company information in the viewer.
           </p>
-        </div>
+      </Modal.Body>
 
-        {/* Footer */}
-        <div className="shrink-0 px-5 py-3 border-t border-gray-200 flex items-center justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-teal hover:bg-[#015F68] transition-colors"
-          >
-            Done
-          </button>
-        </div>
-      </div>
-    </div>
+      <Modal.Footer>
+        <Button size="sm" onClick={onClose}>Done</Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
