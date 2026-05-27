@@ -1,7 +1,7 @@
 // components/admin/AdminSidebar.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -17,6 +17,7 @@ import {
   type NavItem, type SectionDef,
 } from './sidebar/sidebar-config';
 import type { TeamMember } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 
@@ -24,6 +25,7 @@ interface AdminSidebarProps {
   memberName?: string;
   memberEmail?: string;
   memberRole?: string;
+  memberAvatarPath?: string | null;
   companyId?: string;
   userId?: string | null;
   isSuperAdmin?: boolean;
@@ -46,6 +48,7 @@ interface AdminSidebarProps {
 export default function AdminSidebar({
   memberName,
   memberEmail,
+  memberAvatarPath,
   companyId,
   userId = null,
   isSuperAdmin = false,
@@ -60,6 +63,16 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!memberAvatarPath) { setAvatarUrl(null); return; }
+    let cancelled = false;
+    supabase.storage.from('proposals').createSignedUrl(memberAvatarPath, 3600).then(({ data }) => {
+      if (!cancelled) setAvatarUrl(data?.signedUrl ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [memberAvatarPath]);
 
   const visibleSections = ALL_SECTIONS.filter(
     (s) => s.key !== 'markup' || accountType === 'agency'
@@ -255,9 +268,13 @@ export default function AdminSidebar({
 
       <div className="border-t border-[#01434A] p-3">
         <div className="flex items-center gap-3 px-2 py-2 mb-1">
-          <div className="w-8 h-8 rounded-full bg-[#013036] border border-[#01434A] flex items-center justify-center shrink-0">
-            <span className="text-xs font-medium text-[#8AD9D1]">{initials}</span>
-          </div>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={memberName || 'Avatar'} className="w-8 h-8 rounded-full object-cover shrink-0 border border-[#01434A]" />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-[#013036] border border-[#01434A] flex items-center justify-center shrink-0">
+              <span className="text-xs font-medium text-[#8AD9D1]">{initials}</span>
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-white truncate">
               {memberName || 'Team Member'}

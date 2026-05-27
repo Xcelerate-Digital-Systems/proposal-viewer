@@ -81,6 +81,7 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
                 memberName={auth.teamMember?.name}
                 memberEmail={auth.teamMember?.email}
                 memberRole={auth.teamMember?.role}
+                memberAvatarPath={auth.teamMember?.avatar_path}
                 companyId={auth.companyId ?? undefined}
                 userId={auth.session?.user?.id ?? null}
                 isSuperAdmin={auth.isSuperAdmin}
