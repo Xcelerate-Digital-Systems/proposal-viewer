@@ -19,6 +19,7 @@ import TemplateListCard from '@/components/admin/templates/TemplateListCard';
 import TemplateListRow from '@/components/admin/templates/TemplateListRow';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import ErrorState from '@/components/ui/ErrorState';
+import PageHeader from '@/components/ui/PageHeader';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 async function authHeaders(): Promise<HeadersInit> {
@@ -235,17 +236,10 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6 flex items-center gap-4">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-semibold text-ink">
-            Template Library
-          </h1>
-          <p className="text-sm text-muted mt-1">
-            {tabCount} {tabNoun}{tabCount !== 1 ? 's' : ''}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Template Library"
+        description={`${tabCount} ${tabNoun}${tabCount !== 1 ? 's' : ''}`}
+        actions={<>
           {/* View toggle (only meaningful for proposal/quote tabs) */}
           {activeTab !== 'line_items' && (
             <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
@@ -304,8 +298,8 @@ function TemplatesContent({ companyId }: { companyId: string }) {
               New Template
             </Button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Tabs */}
       <div className="bg-ivory border-b border-gray-200 px-6 lg:px-10">

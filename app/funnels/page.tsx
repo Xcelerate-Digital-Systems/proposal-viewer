@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
 import { supabase, type Funnel } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -126,37 +127,32 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-ivory px-6 lg:px-10 py-6 shadow-divider">
-        <div className="flex items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-ink">Funnel Planner</h1>
-            <p className="text-sm text-muted mt-1">
-              {liveFunnels.length} funnel{liveFunnels.length !== 1 ? 's' : ''}
-              {customTemplates.length > 0 && ` · ${customTemplates.length} template${customTemplates.length !== 1 ? 's' : ''}`}
-            </p>
+      <PageHeader
+        title="Funnel Planner"
+        description={<>
+          {liveFunnels.length} funnel{liveFunnels.length !== 1 ? 's' : ''}
+          {customTemplates.length > 0 && ` · ${customTemplates.length} template${customTemplates.length !== 1 ? 's' : ''}`}
+        </>}
+        actions={<>
+          <div className="hidden md:flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[220px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
+            <Search size={15} className="text-faint shrink-0" />
+            <input
+              type="text"
+              placeholder="Search funnels..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+            />
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[220px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
-              <Search size={15} className="text-faint shrink-0" />
-              <input
-                type="text"
-                placeholder="Search funnels..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
-              />
-            </div>
-            <Button
-              size="sm"
-              leftIcon={Plus}
-              onClick={() => setShowCreate(true)}
-            >
-              New Funnel
-            </Button>
-          </div>
-        </div>
-      </div>
+          <Button
+            size="sm"
+            leftIcon={Plus}
+            onClick={() => setShowCreate(true)}
+          >
+            New Funnel
+          </Button>
+        </>}
+      />
 
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
         {showCreate && (

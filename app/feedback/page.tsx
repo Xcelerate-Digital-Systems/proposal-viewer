@@ -7,6 +7,7 @@ import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, Extern
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
+import PageHeader from '@/components/ui/PageHeader';
 import NoResults from '@/components/ui/NoResults';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
@@ -155,19 +156,11 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-ivory px-6 lg:px-10 py-6 shadow-divider">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-ink">
-              Markup
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              {projects.length} project{projects.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* View toggle */}
+      <PageHeader
+        title="Markup"
+        description={`${projects.length} project${projects.length !== 1 ? 's' : ''}`}
+        actions={<>
+          {/* View toggle */}
             <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
               <button
                 onClick={() => toggleView('grid')}
@@ -224,9 +217,8 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             >
               New Project
             </Button>
-          </div>
-        </div>
-
+        </>}
+      >
         {/* Filter tabs */}
         <div className="flex items-center gap-1">
           {tabs.map((tab) => (
@@ -243,7 +235,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             </button>
           ))}
         </div>
-      </div>
+      </PageHeader>
 
       {/* Content — board needs overflow-hidden so its column heights resolve
           and the horizontal scroll stays inside the board. List/grid keep

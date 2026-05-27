@@ -13,7 +13,9 @@ import InboxItem, { type InboxComment } from '@/components/admin/dashboard/Inbox
 import DashboardPipeline from '@/components/admin/dashboard/DashboardPipeline';
 import FeedbackPipeline from '@/components/admin/dashboard/FeedbackPipeline';
 import ErrorState from '@/components/ui/ErrorState';
+import PageHeader from '@/components/ui/PageHeader';
 import { buildStatusPatch, type ProposalStatus } from '@/lib/proposals/status';
+import { ReplayButton } from '@/components/tours/ReplayButton';
 
 export default function DashboardPage() {
   return (
@@ -180,9 +182,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
   if (fetchError) {
     return (
       <div className="flex flex-col h-full">
-        <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6">
-          <h1 className="text-2xl font-semibold text-ink">{getGreeting()}, {firstName}</h1>
-        </div>
+        <PageHeader title={`${getGreeting()}, ${firstName}`} />
         <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
           <ErrorState
             description={fetchError}
@@ -199,12 +199,10 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
     const acceptedCount = pipeline.filter((p) => p.accepted_at).length;
     return (
       <div className="flex flex-col h-full">
-        <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6">
-          <h1 className="text-2xl font-semibold text-ink">{getGreeting()}, {firstName}</h1>
-          <p className="text-sm text-muted mt-1">
-            You have {totalCount - acceptedCount} proposals waiting for your review.
-          </p>
-        </div>
+        <PageHeader
+          title={`${getGreeting()}, ${firstName}`}
+          description={`You have ${totalCount - acceptedCount} proposals waiting for your review.`}
+        />
         <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
             <div className="bg-white rounded-2xl shadow-card p-6">
@@ -241,21 +239,25 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6">
-        <h1 className="text-2xl font-semibold text-ink">{getGreeting()}, {firstName}</h1>
-        <p className="text-sm text-muted mt-1">
-          {loading
+      <PageHeader
+        title={`${getGreeting()}, ${firstName}`}
+        description={
+          loading
             ? 'Loading…'
             : inbox.length === 0
               ? 'Inbox zero — your pipelines are below.'
-              : `${inbox.length} feedback ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`}
-        </p>
-      </div>
+              : `${inbox.length} feedback ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`
+        }
+        actions={<ReplayButton tourId="dashboard" />}
+      />
 
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
         <div className="flex flex-col gap-8">
           {/* ── Section 1: Feedback (inbox + kanban) ───────── */}
-          <section className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col">
+          <section
+            data-tour="dashboard-feedback"
+            className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col"
+          >
             <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-accent-feedback-tint flex items-center justify-center">
@@ -351,7 +353,10 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
           </section>
 
           {/* ── Section 2: Proposals & Quotes pipeline ──────── */}
-          <section className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col">
+          <section
+            data-tour="dashboard-proposals"
+            className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col"
+          >
             <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-primary-tint flex items-center justify-center">
