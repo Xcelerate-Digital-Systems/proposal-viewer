@@ -18,6 +18,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -49,6 +50,16 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const [activeId, setActiveId] = useState<TourId | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
+  // Tours the user has already seen + dismissed in *this* React session.
+  // Stored in a ref (not state) so it doesn't trigger re-renders, and so
+  // the auto-launch effect can read it synchronously alongside the async
+  // PATCH that persists tours_completed to the DB. Without this we race:
+  // setActiveId(null) on TOUR_END schedules a re-render that re-runs the
+  // launch effect *before* refreshMemberships finishes, and since the
+  // persisted `completed` map is still stale the tour re-fires → infinite
+  // loop. The ref breaks the loop within the page load; the persisted
+  // value handles future loads.
+  const dismissedThisSession = useRef<Set<TourId>>(new Set());
 
   const completed =
     (auth.teamMember?.tours_completed as Record<string, string> | undefined) ?? {};
@@ -64,6 +75,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     const candidate = resolveTourForPath(pathname);
     if (!candidate) return;
     if (completed[candidate]) return;
+    if (dismissedThisSession.current.has(candidate)) return;
     const tour = getTour(candidate);
     if (!tour || tour.steps.length === 0) return;
     setActiveId(candidate);
@@ -94,6 +106,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
       if (data.type !== EVENTS.TOUR_END) return;
 
       const finishedId = activeId;
+      // Add to session-level dismissed set BEFORE clearing activeId so the
+      // auto-launch effect (which runs synchronously on the next render)
+      // doesn't re-fire while the async PATCH is in flight.
+      if (finishedId) {
+        dismissedThisSession.current.add(finishedId);
+      }
       setActiveId(null);
       setSteps([]);
 
