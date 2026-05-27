@@ -61,7 +61,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
       .eq('company_id', companyId)
       .single();
 
-    if (error || !data) { router.push('/feedback'); return; }
+    if (error || !data) { router.push('/markup'); return; }
     setProject(data);
   }, [projectId, companyId, router]);
 
@@ -102,7 +102,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex items-center gap-3">
                 <Link
-                  href="/feedback"
+                  href="/markup"
                   className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
                   title="All Projects"
                 >
@@ -166,7 +166,7 @@ function NotStartedCard({ projectId }: { projectId: string }) {
         in this project.
       </p>
       <Link
-        href={`/feedback/${projectId}/items`}
+        href={`/markup/${projectId}/items`}
         className={buttonClasses({ variant: 'primary', size: 'sm' })}
       >
         <Plus size={16} />

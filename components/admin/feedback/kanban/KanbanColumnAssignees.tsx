@@ -1,0 +1,294 @@
+'use client';
+
+// Avatar stack + `+` picker rendered in each Kanban column header. Lets the
+// project owner scope which team members (and, for client_review, which guest
+// emails) are subscribed to that stage. State is owned by the parent
+// KanbanBoard so all columns share a single fetch and one source of truth.
+
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Plus, Check, Mail, X } from 'lucide-react';
+import { authFetch } from '@/lib/auth-fetch';
+import { useToast } from '@/components/ui/Toast';
+import type { FeedbackStatus } from '@/lib/types/feedback';
+
+export type StageMember = {
+  team_member_id: string;
+  name: string;
+  email: string;
+  stages: string[];
+};
+export type StageGuest = {
+  email: string;
+  name: string;
+  stages: string[];
+};
+export type CompanyMember = { id: string; name: string | null; email: string };
+
+const GUEST_ELIGIBLE_STAGES: FeedbackStatus[] = ['client_review', 'approved', 'rejected'];
+
+function initials(name: string, email: string): string {
+  const source = (name || email || '?').trim();
+  if (!source) return '?';
+  const parts = source.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function avatarColor(seed: string): string {
+  // Stable deterministic tint per identifier.
+  const colors = [
+    'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500',
+    'bg-violet-500', 'bg-teal-500', 'bg-indigo-500', 'bg-orange-500',
+  ];
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return colors[h % colors.length];
+}
+
+interface KanbanColumnAssigneesProps {
+  projectId: string;
+  stage: FeedbackStatus;
+  /** Members already assigned to this stage. */
+  members: StageMember[];
+  /** Guests already assigned to this stage. */
+  guests: StageGuest[];
+  /** All team members of the company — picker source. */
+  companyMembers: CompanyMember[];
+  /** Called after any successful add/remove so the parent can re-fetch. */
+  onChanged: () => void;
+}
+
+export default function KanbanColumnAssignees({
+  projectId, stage, members, guests, companyMembers, onChanged,
+}: KanbanColumnAssigneesProps) {
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [guestEmail, setGuestEmail] = useState('');
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Click-outside / Escape dismissal.
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (popoverRef.current?.contains(e.target as Node)) return;
+      if (buttonRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const assignedMemberIds = new Set(members.map((m) => m.team_member_id));
+  const guestAllowed = (GUEST_ELIGIBLE_STAGES as string[]).includes(stage);
+
+  const toggleMember = useCallback(async (memberId: string) => {
+    if (busy) return;
+    setBusy(true);
+    const isAdding = !assignedMemberIds.has(memberId);
+    try {
+      const url = `/api/markup-projects/${projectId}/stage-assignees`;
+      const res = isAdding
+        ? await authFetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ kind: 'member', stage, team_member_id: memberId }),
+          })
+        : await authFetch(
+            `${url}?kind=member&stage=${stage}&team_member_id=${encodeURIComponent(memberId)}`,
+            { method: 'DELETE' },
+          );
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed');
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update assignee');
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, assignedMemberIds, projectId, stage, onChanged, toast]);
+
+  const addGuest = useCallback(async () => {
+    const email = guestEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Enter a valid email');
+      return;
+    }
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await authFetch(`/api/markup-projects/${projectId}/stage-assignees`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'guest', stage, email }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed');
+      setGuestEmail('');
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add guest');
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, guestEmail, projectId, stage, onChanged, toast]);
+
+  const removeGuest = useCallback(async (email: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await authFetch(
+        `/api/markup-projects/${projectId}/stage-assignees?kind=guest&stage=${stage}&email=${encodeURIComponent(email)}`,
+        { method: 'DELETE' },
+      );
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed');
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remove guest');
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, projectId, stage, onChanged, toast]);
+
+  const visibleAvatars = [...members, ...guests].slice(0, 4);
+  const hiddenCount = members.length + guests.length - visibleAvatars.length;
+
+  return (
+    <div className="relative flex items-center gap-1.5">
+      {/* Avatar stack */}
+      {visibleAvatars.length > 0 && (
+        <div className="flex -space-x-1.5">
+          {visibleAvatars.map((entry, i) => {
+            const isGuest = !('team_member_id' in entry);
+            const seed = isGuest ? entry.email : (entry as StageMember).team_member_id;
+            const label = isGuest
+              ? (entry.name || entry.email)
+              : ((entry as StageMember).name || (entry as StageMember).email);
+            return (
+              <div
+                key={`${isGuest ? 'g' : 'm'}-${seed}-${i}`}
+                title={`${label}${isGuest ? ' (guest)' : ''}`}
+                className={`w-6 h-6 rounded-full text-[10px] font-semibold text-white flex items-center justify-center ring-2 ring-white ${avatarColor(seed)}`}
+              >
+                {initials(label, isGuest ? entry.email : (entry as StageMember).email)}
+              </div>
+            );
+          })}
+          {hiddenCount > 0 && (
+            <div className="w-6 h-6 rounded-full bg-gray-200 text-[10px] font-semibold text-gray-700 flex items-center justify-center ring-2 ring-white">
+              +{hiddenCount}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* + button */}
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-6 h-6 rounded-full border border-dashed border-gray-300 text-gray-400 hover:text-gray-700 hover:border-gray-500 transition-colors flex items-center justify-center"
+        aria-label={`Add reviewer to ${stage}`}
+      >
+        <Plus size={13} />
+      </button>
+
+      {/* Picker popover */}
+      {open && (
+        <div
+          ref={popoverRef}
+          className="absolute top-8 left-0 z-30 w-64 rounded-xl border border-gray-200 bg-white shadow-lg p-2"
+        >
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 px-2 pb-1 pt-0.5">
+            Team
+          </div>
+          <div className="max-h-56 overflow-y-auto -mx-1 px-1">
+            {companyMembers.length === 0 ? (
+              <div className="text-xs text-gray-400 italic px-2 py-1">No team members yet.</div>
+            ) : (
+              companyMembers.map((m) => {
+                const assigned = assignedMemberIds.has(m.id);
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => toggleMember(m.id)}
+                    disabled={busy}
+                    className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <div className={`w-6 h-6 rounded-full text-[10px] font-semibold text-white flex items-center justify-center ${avatarColor(m.id)}`}>
+                      {initials(m.name ?? '', m.email)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] text-gray-800 truncate">{m.name || m.email}</div>
+                      {m.name && <div className="text-[11px] text-gray-400 truncate">{m.email}</div>}
+                    </div>
+                    {assigned && <Check size={14} className="text-emerald-500 shrink-0" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {guestAllowed && (
+            <>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 px-2 pb-1 pt-2">
+                Guests
+              </div>
+              {guests.length > 0 && (
+                <div className="mb-1">
+                  {guests.map((g) => (
+                    <div
+                      key={`g-${g.email}`}
+                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left"
+                    >
+                      <div className={`w-6 h-6 rounded-full text-[10px] font-semibold text-white flex items-center justify-center ${avatarColor(g.email)}`}>
+                        {initials(g.name, g.email)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] text-gray-800 truncate">{g.name || g.email}</div>
+                        {g.name && <div className="text-[11px] text-gray-400 truncate">{g.email}</div>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeGuest(g.email)}
+                        disabled={busy}
+                        className="text-gray-400 hover:text-gray-700 disabled:opacity-50"
+                        aria-label={`Remove ${g.email}`}
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 px-2 pb-1 pt-0.5">
+                <Mail size={13} className="text-gray-400 shrink-0" />
+                <input
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGuest(); } }}
+                  placeholder="client@email.com"
+                  type="email"
+                  className="flex-1 min-w-0 text-[13px] outline-none placeholder:text-gray-300"
+                />
+                <button
+                  type="button"
+                  onClick={addGuest}
+                  disabled={busy || !guestEmail.trim()}
+                  className="text-[11px] font-semibold text-teal hover:text-teal/80 disabled:text-gray-300"
+                >
+                  Add
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -7,8 +7,9 @@ import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
-import { type MetaAdVariant, getMetaAdVariants } from '@/lib/types/feedback';
+import { type MetaAdVariant, getMetaAdVariants, type FeedbackStatus } from '@/lib/types/feedback';
 import { supabase } from '@/lib/supabase';
+import { getFeedbackStatusDef } from '@/lib/feedback/status';
 
 function newVariantId(): string {
   return crypto.randomUUID().slice(0, 8);
@@ -39,6 +40,7 @@ interface AddVersionModalProps {
   onSubmit: (input: {
     notes?: string | null;
     assets: Partial<FeedbackItemVersion>;
+    resetToStage?: FeedbackStatus | null;
   }) => Promise<FeedbackItemVersion | null>;
   onUploadAsset: (file: File) => Promise<string | null>;
   /**
@@ -229,6 +231,16 @@ export default function AddVersionModal({
   const [uploading, setUploading] = useState(false);
   const busy = uploading || creating;
 
+  // After-upload routing. Mirrors Filestage's "send to next stage" flow —
+  // a fresh version usually wants a fresh review. Hidden in edit mode (the
+  // version is just being touched up, the item's stage shouldn't shift).
+  const RESET_OPTIONS: { value: FeedbackStatus | 'keep'; label: string }[] = [
+    { value: 'client_review',    label: 'Send to Client Review' },
+    { value: 'internal_review',  label: 'Send to Internal Review' },
+    { value: 'keep',             label: 'Keep current stage' },
+  ];
+  const [resetTo, setResetTo] = useState<FeedbackStatus | 'keep'>('client_review');
+
   const handleSubmit = async () => {
     setUploading(true);
     const assets: Partial<FeedbackItemVersion> = {};
@@ -344,7 +356,11 @@ export default function AddVersionModal({
         });
         if (ok) onClose();
       } else {
-        const result = await onSubmit({ notes: notes.trim() || null, assets });
+        const result = await onSubmit({
+          notes: notes.trim() || null,
+          assets,
+          resetToStage: resetTo === 'keep' ? null : resetTo,
+        });
         if (result) onClose();
       }
     } finally {
@@ -625,6 +641,33 @@ export default function AddVersionModal({
               placeholder="e.g. tightened copy, swapped hero shot"
             />
           </Field>
+
+          {!isEditing && (
+            <Field label="After upload">
+              <div className="flex items-center gap-2">
+                <select
+                  className={`${inputCls} flex-1`}
+                  value={resetTo}
+                  onChange={(e) => setResetTo(e.target.value as FeedbackStatus | 'keep')}
+                >
+                  {RESET_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                {resetTo !== 'keep' && (
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${getFeedbackStatusDef(resetTo).bg} ${getFeedbackStatusDef(resetTo).text} ${getFeedbackStatusDef(resetTo).border}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${getFeedbackStatusDef(resetTo).dot}`} />
+                    {getFeedbackStatusDef(resetTo).label}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Reviewers assigned to the next stage will be notified automatically.
+              </p>
+            </Field>
+          )}
       </Modal.Body>
 
       <Modal.Footer>

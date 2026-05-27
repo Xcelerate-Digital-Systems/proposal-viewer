@@ -80,7 +80,7 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
 
   return (
     <div
-      onClick={() => router.push(`/feedback/${project.id}`)}
+      onClick={() => router.push(`/markup/${project.id}`)}
       className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group"
     >
       {/* Status badge */}

@@ -51,7 +51,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
   return (
     <>
       <Link
-        href="/feedback"
+        href="/markup"
         onClick={onNavigate}
         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors mb-1"
       >

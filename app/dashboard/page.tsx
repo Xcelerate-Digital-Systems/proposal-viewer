@@ -12,6 +12,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import InboxItem, { type InboxComment } from '@/components/admin/dashboard/InboxItem';
 import DashboardPipeline from '@/components/admin/dashboard/DashboardPipeline';
 import FeedbackPipeline from '@/components/admin/dashboard/FeedbackPipeline';
+import FeedbackActionWidgets from '@/components/admin/dashboard/FeedbackActionWidgets';
 import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
 import { buildStatusPatch, type ProposalStatus } from '@/lib/proposals/status';
@@ -27,6 +28,7 @@ export default function DashboardPage() {
         <DashboardContent
           companyId={auth.companyId!}
           memberName={auth.teamMember?.name || 'You'}
+          teamMemberId={auth.teamMember?.id ?? null}
           accountType={auth.accountType}
         />
       )}
@@ -37,10 +39,11 @@ export default function DashboardPage() {
 interface DashboardContentProps {
   companyId: string;
   memberName: string;
+  teamMemberId: string | null;
   accountType?: 'agency' | 'client';
 }
 
-function DashboardContent({ companyId, memberName, accountType }: DashboardContentProps) {
+function DashboardContent({ companyId, memberName, teamMemberId, accountType }: DashboardContentProps) {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [pipeline, setPipeline] = useState<Proposal[]>([]);
@@ -113,7 +116,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
         return {
           commentId: c.id,
           projectId,
-          projectName: projectNames[projectId] ?? 'Feedback project',
+          projectName: projectNames[projectId] ?? 'Markup project',
           itemId: rel?.id ?? c.review_item_id,
           itemTitle: rel?.title ?? 'Review item',
           clientName: c.author_name || 'Client',
@@ -249,12 +252,15 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
             ? 'Loading…'
             : inbox.length === 0
               ? 'Inbox zero — your pipelines are below.'
-              : `${inbox.length} feedback ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`
+              : `${inbox.length} markup ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`
         }
       />
 
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
         <div className="flex flex-col gap-8">
+          {/* ── Action widgets: Awaiting my review / Needs new version ─ */}
+          <FeedbackActionWidgets companyId={companyId} teamMemberId={teamMemberId} />
+
           {/* ── Section 1: Feedback (inbox + kanban) ───────── */}
           <section
             data-tour="dashboard-feedback"
@@ -265,13 +271,13 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
                 <div className="w-7 h-7 rounded-lg bg-accent-feedback-tint flex items-center justify-center">
                   <MessageSquareText size={14} className="text-accent-feedback" />
                 </div>
-                <h2 className="text-[15px] font-semibold text-ink">Feedback</h2>
+                <h2 className="text-[15px] font-semibold text-ink">Markup</h2>
                 <span className="text-[11px] text-muted">
                   {feedbackProjects.length} {feedbackProjects.length === 1 ? 'project' : 'projects'}
                   {inbox.length > 0 && ` · ${inbox.length} awaiting reply`}
                 </span>
               </div>
-              <Link href="/feedback" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
+              <Link href="/markup" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
                 All projects <ArrowRight size={12} />
               </Link>
             </header>
@@ -296,7 +302,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
                 <div className="px-5 py-8 flex flex-col items-center text-center">
                   <CheckCircle2 size={20} className="text-emerald-500/70 mb-1.5" />
                   <p className="text-[13px] font-medium text-ink">All caught up</p>
-                  <p className="text-[11px] text-muted mt-0.5">No unresolved client feedback.</p>
+                  <p className="text-[11px] text-muted mt-0.5">No unresolved client comments.</p>
                 </div>
               ) : (
                 <div className="border-t border-gray-100">
@@ -312,7 +318,7 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
                   {inbox.length > 8 && (
                     <div className="px-5 py-3 border-t border-gray-100 text-center">
                       <span className="text-xs text-muted">
-                        Plus {inbox.length - 8} more — open them from their feedback project.
+                        Plus {inbox.length - 8} more — open them from their markup project.
                       </span>
                     </div>
                   )}
@@ -335,9 +341,9 @@ function DashboardContent({ companyId, memberName, accountType }: DashboardConte
               ) : feedbackProjects.length === 0 ? (
                 <div className="px-5 py-12 flex flex-col items-center text-center">
                   <MessageSquareText size={24} className="text-faint mb-2" />
-                  <p className="text-sm font-medium text-ink">No feedback projects yet</p>
-                  <p className="text-xs text-muted mt-1">Spin one up to start collecting client feedback on creative.</p>
-                  <Link href="/feedback" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-xs font-semibold rounded-full px-3.5 py-1.5 mt-4">
+                  <p className="text-sm font-medium text-ink">No markup projects yet</p>
+                  <p className="text-xs text-muted mt-1">Spin one up to start collecting client comments on creative.</p>
+                  <Link href="/markup" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-xs font-semibold rounded-full px-3.5 py-1.5 mt-4">
                     New project
                   </Link>
                 </div>

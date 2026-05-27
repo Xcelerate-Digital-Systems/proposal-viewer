@@ -5,6 +5,7 @@ import { getResend, FROM_EMAIL } from '@/lib/resend';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import crypto from 'crypto';
 import { isValidWebhookUrl } from '@/lib/sanitize';
+import { isInternalStage } from '@/lib/feedback/visibility';
 
 type ReviewEventType =
   | 'review_comment_added'
@@ -80,11 +81,26 @@ export async function POST(req: NextRequest) {
     const isNewVersion = event_type === 'review_item_new_version';
     const actorEmail = (comment_author_email || resolved_by || '').trim().toLowerCase() || null;
 
+    // Resolve the item's current stage (when scoped to one). Stage is used to
+    // filter assignees by their `stages` array and to keep internal-stage
+    // events from reaching guest emails entirely.
+    let itemStage: string | null = null;
+    if (review_item_id) {
+      const { data: itemRow } = await supabase
+        .from('review_items')
+        .select('status')
+        .eq('id', review_item_id)
+        .maybeSingle();
+      itemStage = (itemRow?.status as string | undefined) ?? null;
+    }
+
     // Resolve recipient emails per the project's assignment + thread rules.
     const recipientEmails = await collectRecipients({
       supabase,
       projectId: project.id,
+      companyId: project.company_id,
       reviewItemId: review_item_id ?? null,
+      itemStage,
       eventType: event_type,
       isComment,
       isReply,
@@ -162,7 +178,9 @@ export async function POST(req: NextRequest) {
 async function collectRecipients(params: {
   supabase: ReturnType<typeof createServiceClient>;
   projectId: string;
+  companyId: string;
   reviewItemId: string | null;
+  itemStage: string | null;
   eventType: ReviewEventType;
   isComment: boolean;
   isReply: boolean;
@@ -172,7 +190,8 @@ async function collectRecipients(params: {
   excludeEmail: string | null;
 }): Promise<Set<string>> {
   const {
-    supabase, projectId, reviewItemId, eventType, isComment, isReply, isNewVersion,
+    supabase, projectId, companyId, reviewItemId, itemStage, eventType,
+    isComment, isReply, isNewVersion,
     parentCommentId, projectClientEmail, excludeEmail,
   } = params;
   const recipients = new Set<string>();
@@ -188,16 +207,30 @@ async function collectRecipients(params: {
     ? 'notify_new_version'
     : 'notify_status';
 
-  // Assigned agency team members get the event when their toggle is on.
+  // Assigned agency team members get the event when their toggle is on AND
+  // (their `stages` array is empty — "all stages", back-compat — or includes
+  // the item's current stage).
   const { data: assignees } = await supabase
     .from('review_project_assignees')
-    .select('team_member:team_members(email)')
+    .select('stages, team_member:team_members(email)')
     .eq('review_project_id', projectId)
     .eq(prefColumn, true);
 
   for (const row of (assignees ?? []) as unknown as Array<{
+    stages: string[] | null;
     team_member: { email: string | null } | { email: string | null }[] | null;
   }>) {
+    // Stage scope: skip assignees who limited themselves to specific stages
+    // that don't include the current item stage. Project-level events with
+    // no item (itemStage === null) bypass the scope filter.
+    if (
+      itemStage &&
+      row.stages &&
+      row.stages.length > 0 &&
+      !row.stages.includes(itemStage)
+    ) {
+      continue;
+    }
     // Supabase types the joined relation as either an array or a single
     // object depending on inference; normalise both shapes.
     const rel = row.team_member;
@@ -258,7 +291,28 @@ async function collectRecipients(params: {
     projectId,
     recipients,
     prefColumn: prefColumn as keyof GuestPrefRow,
+    itemStage,
   });
+
+  // Hard backstop: if the event targets an item currently in an internal
+  // stage, drop every non-team-member recipient. This protects against any
+  // path that adds a guest email outside of `review_project_guest_recipients`
+  // (e.g. thread participants, project client_email on new versions).
+  if (itemStage && isInternalStage(itemStage) && recipients.size > 0) {
+    const { data: teamRows } = await supabase
+      .from('team_members')
+      .select('email')
+      .eq('company_id', companyId)
+      .in('email', Array.from(recipients));
+    const teamEmails = new Set(
+      (teamRows ?? [])
+        .map((r) => (r as { email: string | null }).email?.trim().toLowerCase())
+        .filter((e): e is string => !!e),
+    );
+    for (const email of Array.from(recipients)) {
+      if (!teamEmails.has(email)) recipients.delete(email);
+    }
+  }
 
   return recipients;
 }
@@ -278,23 +332,38 @@ async function applyGuestPrefs(params: {
   projectId: string;
   recipients: Set<string>;
   prefColumn: keyof GuestPrefRow;
+  itemStage: string | null;
 }) {
-  const { supabase, projectId, recipients, prefColumn } = params;
+  const { supabase, projectId, recipients, prefColumn, itemStage } = params;
   if (recipients.size === 0) return;
 
   const { data: rows } = await supabase
     .from('review_project_guest_recipients')
-    .select('email, notify_comment, notify_reply, notify_resolve, notify_status, notify_new_version, removed_at')
+    .select('email, notify_comment, notify_reply, notify_resolve, notify_status, notify_new_version, removed_at, stages')
     .eq('review_project_id', projectId)
     .in('email', Array.from(recipients));
 
-  for (const row of (rows ?? []) as GuestPrefRow[]) {
+  for (const row of (rows ?? []) as (GuestPrefRow & { stages: string[] | null })[]) {
     const email = row.email.trim().toLowerCase();
     if (row.removed_at) {
       recipients.delete(email);
       continue;
     }
-    if (row[prefColumn] === false) recipients.delete(email);
+    if (row[prefColumn] === false) {
+      recipients.delete(email);
+      continue;
+    }
+    // Stage scoping for guests: when their `stages` array is non-empty and
+    // the current item stage isn't in it, drop them. Project-level events
+    // (itemStage === null) bypass the filter.
+    if (
+      itemStage &&
+      row.stages &&
+      row.stages.length > 0 &&
+      !row.stages.includes(itemStage)
+    ) {
+      recipients.delete(email);
+    }
   }
 }
 

@@ -15,7 +15,7 @@ interface PublicItemsGridProps {
 }
 
 /**
- * Public read-only items grid. Mirrors the admin `/feedback/[id]/items`
+ * Public read-only items grid. Mirrors the admin `/markup/[id]/items`
  * card layout — type filter chips above a responsive thumbnail grid —
  * stripped of edit / delete / share menus. Clicking a card delegates
  * to the parent which opens the item detail inline.

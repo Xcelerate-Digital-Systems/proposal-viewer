@@ -45,10 +45,10 @@ export const ALL_SECTIONS: SectionDef[] = [
     key: 'markup',
     label: 'Markup',
     icon: MessageSquareText,
-    defaultHref: '/feedback',
-    matchPaths: ['/feedback'],
+    defaultHref: '/markup',
+    matchPaths: ['/markup'],
     items: [
-      { href: '/feedback', label: 'Markup', icon: MessageSquareText },
+      { href: '/markup', label: 'Markup', icon: MessageSquareText },
     ],
   },
   {

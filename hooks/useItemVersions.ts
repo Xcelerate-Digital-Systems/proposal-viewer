@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, type FeedbackItem, type FeedbackItemVersion } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { buildVersionList, getActiveVersion, type VersionView } from '@/lib/feedback/versions';
+import type { FeedbackStatus } from '@/lib/types/feedback';
 
 interface UseItemVersionsOptions {
   item: FeedbackItem | null;
@@ -84,11 +85,18 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
    * any file upload has already happened) plus optional notes. Returns the
    * inserted row or null on failure. The new version is automatically made
    * active so the UI jumps to showing it.
+   *
+   * `resetToStage` mirrors Filestage's "send for review on upload" behaviour:
+   * when set, the parent item's status is bumped to that stage after the
+   * version is saved. Notify fans out to whichever stage the item lands in
+   * (so the right reviewer cohort gets the new-version ping). Pass `null` to
+   * leave the item's status untouched.
    */
   const createVersion = useCallback(
     async (input: {
       notes?: string | null;
       assets: Partial<FeedbackItemVersion>;
+      resetToStage?: FeedbackStatus | null;
     }) => {
       if (!itemId) return null;
       setCreating(true);
@@ -105,14 +113,31 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
         .insert(payload)
         .select()
         .single();
-      setCreating(false);
       if (error || !data) {
+        setCreating(false);
         toast.error('Failed to save version');
         return null;
       }
       const row = data as FeedbackItemVersion;
       setRows((prev) => [...prev, row]);
       await persistActiveVersion(row.id);
+
+      // Reset the parent item's stage if the caller asked us to. We do this
+      // BEFORE firing notify so the route picks up the new stage when
+      // resolving assignees.
+      if (input.resetToStage && item && input.resetToStage !== item.status) {
+        const { error: stageErr } = await supabase
+          .from('review_items')
+          .update({ status: input.resetToStage, updated_at: new Date().toISOString() })
+          .eq('id', itemId);
+        if (stageErr) {
+          // Non-fatal: the version saved fine. Just leave the item's stage
+          // alone and let the user move it manually.
+          toast.error('Version saved, but failed to move the item to the new stage');
+        }
+      }
+
+      setCreating(false);
       toast.success(`Version ${row.version_number} added`);
 
       // Fire "ready for review" notifications: assignees + project client +

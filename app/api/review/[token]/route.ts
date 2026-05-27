@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import {
+  GUEST_VISIBLE_STAGES, isGuestVisibleStage, isInternalStage,
+} from '@/lib/feedback/visibility';
 
 /**
  * GET /api/review/[token]
@@ -34,7 +37,16 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
 
-      // Load comments for this single item + its versions
+      // Guests must never see an item that's currently in an internal stage,
+      // even if they had a previously-shared item token. The share doesn't
+      // "stick" — visibility is a function of current stage.
+      if (isInternalStage(item.status)) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+
+      // Load comments for this single item + its versions. Strip comments
+      // authored while the item was in an internal stage so internal review
+      // chatter never bleeds into the guest view.
       const [commentsRes, versionsRes] = await Promise.all([
         supabase
           .from('review_comments')
@@ -48,12 +60,16 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
           .order('version_number', { ascending: true }),
       ]);
 
+      const visibleComments = (commentsRes.data ?? []).filter((c) =>
+        isGuestVisibleStage((c as { stage_at_creation: string | null }).stage_at_creation),
+      );
+
       return NextResponse.json({
         mode: 'item',
         project,
         item,
         items: [item],
-        comments: commentsRes.data || [],
+        comments: visibleComments,
         itemVersions: versionsRes.data || [],
       });
     }
@@ -73,14 +89,19 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    // Load items
+    // Load items, restricted to stages that guests are allowed to see.
+    // Anything in an internal stage is filtered out at the DB level so it
+    // never appears in network responses to public-token requests.
     const { data: items } = await supabase
       .from('review_items')
       .select('*')
       .eq('review_project_id', project.id)
+      .in('status', GUEST_VISIBLE_STAGES)
       .order('sort_order', { ascending: true });
 
-    // Load all comments + all versions for every item in this project
+    // Load comments + versions for the visible items only. Comments are
+    // further filtered by `stage_at_creation` so internal-stage chatter stays
+    // hidden even after an item later moves into a client-visible stage.
     const itemIds = (items || []).map((i: { id: string }) => i.id);
     let comments: unknown[] = [];
     let itemVersions: unknown[] = [];
@@ -91,6 +112,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
           .from('review_comments')
           .select('*')
           .in('review_item_id', itemIds)
+          .in('stage_at_creation', GUEST_VISIBLE_STAGES)
           .order('created_at', { ascending: true }),
         supabase
           .from('review_item_versions')

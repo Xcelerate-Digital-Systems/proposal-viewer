@@ -1,4 +1,4 @@
-// app/api/feedback-projects/[id]/assignees/route.ts
+// app/api/markup-projects/[id]/assignees/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   const [{ data: assignees }, { data: members }] = await Promise.all([
     supabase
       .from('review_project_assignees')
-      .select('team_member_id, created_at, notify_comment, notify_reply, notify_resolve, notify_status, notify_new_version')
+      .select('team_member_id, created_at, stages, notify_comment, notify_reply, notify_resolve, notify_status, notify_new_version')
       .eq('review_project_id', params.id),
     supabase
       .from('team_members')

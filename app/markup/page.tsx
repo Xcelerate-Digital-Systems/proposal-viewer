@@ -50,22 +50,12 @@ function ReviewsGate({ accountType, companyId, userId }: { accountType?: 'agency
   return <ReviewsContent companyId={companyId} userId={userId} />;
 }
 
-type FilterTab = 'active' | 'completed' | 'archived' | 'all';
-
-const FILTER_STATUSES: Record<FilterTab, FeedbackStatus[] | null> = {
-  active: ['draft', 'in_progress', 'internal_review', 'client_review', 'revision_needed'],
-  completed: ['approved', 'rejected'],
-  archived: ['archived'],
-  all: null,
-};
-
 function ReviewsContent({ companyId, userId }: { companyId: string; userId: string | null }) {
   const [projects, setProjects] = useState<FeedbackProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterTab>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'board'>(() => {
     if (typeof window !== 'undefined') {
@@ -96,19 +86,15 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
     if (!companyId) return;
     setFetchError(null);
     try {
-      let query = supabase
-        .from('review_projects')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('updated_at', { ascending: false });
-
-      const statuses = FILTER_STATUSES[filter];
-      if (statuses) {
-        query = query.in('status', statuses);
-      }
-
+      // No status filter at the page level — the per-project status lives in
+      // the kanban / status pill. Mixing a project-level filter on top would
+      // double up on the same dimension.
       const [projectsResult, domainResult] = await Promise.all([
-        query,
+        supabase
+          .from('review_projects')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('updated_at', { ascending: false }),
         supabase
           .from('companies')
           .select('custom_domain, domain_verified')
@@ -131,19 +117,12 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
     } finally {
       setLoading(false);
     }
-  }, [companyId, filter]);
+  }, [companyId]);
 
   useEffect(() => {
     setLoading(true);
     fetchProjects();
   }, [fetchProjects]);
-
-  const tabs: { key: FilterTab; label: string }[] = [
-    { key: 'active', label: 'Active' },
-    { key: 'completed', label: 'Completed' },
-    { key: 'archived', label: 'Archived' },
-    { key: 'all', label: 'All' },
-  ];
 
   const filtered = searchQuery
     ? projects.filter((p) =>
@@ -218,24 +197,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               New Project
             </Button>
         </>}
-      >
-        {/* Filter tabs */}
-        <div className="flex items-center gap-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors ${
-                filter === tab.key
-                  ? 'bg-ink text-white'
-                  : 'text-muted hover:text-ink hover:bg-surface'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </PageHeader>
+      />
 
       {/* Content — board needs overflow-hidden so its column heights resolve
           and the horizontal scroll stays inside the board. List/grid keep
@@ -262,18 +224,12 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
         ) : projects.length === 0 ? (
           <EmptyState
             icon={MessageSquareText}
-            title={filter === 'active' ? 'No active markup projects' : `No ${filter} projects`}
-            description={
-              filter === 'active'
-                ? 'Create a project to start collecting markup on your creative work.'
-                : 'Projects will appear here when their status changes.'
-            }
+            title="No markup projects yet"
+            description="Create a project to start collecting markup on your creative work."
             action={
-              filter === 'active' ? (
-                <Button size="sm" leftIcon={Plus} onClick={() => setShowCreate(true)}>
-                  New Project
-                </Button>
-              ) : undefined
+              <Button size="sm" leftIcon={Plus} onClick={() => setShowCreate(true)}>
+                New Project
+              </Button>
             }
           />
         ) : viewMode === 'grid' ? (
@@ -336,7 +292,7 @@ function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
             {project.title}
           </h4>
           <p className="text-[11px] text-gray-400 mt-0.5 truncate">
-            {project.client_name || 'Feedback project'}
+            {project.client_name || 'Markup project'}
           </p>
         </div>
       </div>
@@ -347,7 +303,7 @@ function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
           <span>{relativeShort(updated)}</span>
         </div>
         <Link
-          href={`/feedback/${project.id}/feedback`}
+          href={`/markup/${project.id}/comments`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium text-teal hover:text-teal-hover"

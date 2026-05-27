@@ -1,6 +1,7 @@
 // app/api/review-widget/[token]/comments/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { GUEST_VISIBLE_STAGES, isGuestVisibleStage } from '@/lib/feedback/visibility';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -18,14 +19,19 @@ export async function OPTIONS() {
 }
 
 /* ── Helpers ────────────────────────────────────────────── */
+// Verify the widget caller can act on this item. Returns null when the token
+// doesn't match the item's project, or when the item is currently in an
+// internal stage — guests must never read/write comments on items they
+// can't see. Authenticated admin reads bypass this route entirely.
 async function verifyProjectAccess(supabase: ReturnType<typeof createServiceClient>, token: string, itemId: string) {
   const { data: item, error: itemErr } = await supabase
     .from('review_items')
-    .select('id, company_id, review_project_id')
+    .select('id, company_id, review_project_id, status')
     .eq('id', itemId)
     .single();
 
   if (itemErr || !item) return null;
+  if (!isGuestVisibleStage(item.status)) return null;
 
   const { data: project, error: projErr } = await supabase
     .from('review_projects')
@@ -55,10 +61,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
       return corsJson({ error: 'Unauthorized' }, 403);
     }
 
+    // Hide comments authored while the item was in an internal stage — even
+    // after the item moves to a client-visible stage, that internal-stage
+    // thread history must not surface in the guest widget.
     const { data: comments, error } = await supabase
       .from('review_comments')
       .select('*')
       .eq('review_item_id', itemId)
+      .in('stage_at_creation', GUEST_VISIBLE_STAGES)
       .order('created_at', { ascending: true });
 
     if (error) {

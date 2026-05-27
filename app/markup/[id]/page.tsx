@@ -8,7 +8,7 @@ export default function ReviewProjectRedirect(props: { params: Promise<{ id: str
   const router = useRouter();
 
   useEffect(() => {
-    router.replace(`/feedback/${params.id}/board`);
+    router.replace(`/markup/${params.id}/kanban`);
   }, [params.id, router]);
 
   return null;

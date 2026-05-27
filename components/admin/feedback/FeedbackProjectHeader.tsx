@@ -18,7 +18,7 @@ interface Props {
   setProject: (updater: (prev: FeedbackProject | null) => FeedbackProject | null) => void;
   customDomain: string | null;
   hasWebpages: boolean;
-  activeTab: 'board' | 'kanban' | 'items' | 'feedback';
+  activeTab: 'board' | 'kanban' | 'items' | 'comments';
   onAddItem?: () => void;
 }
 
@@ -59,7 +59,7 @@ export default function FeedbackProjectHeader({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex items-center gap-3">
           <Link
-            href="/feedback"
+            href="/markup"
             className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
             title="All Projects"
           >

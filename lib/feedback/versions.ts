@@ -1,4 +1,5 @@
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
+import type { FeedbackStatus } from '@/lib/types/feedback';
 
 /**
  * v1 lives on the `review_items` row itself; v2+ live in `review_item_versions`.
@@ -30,6 +31,12 @@ export type VersionView = {
   notes: string | null;
   createdAt: string;
   assets: VersionAssets;
+  /** For v2+: review_items.status at the moment THIS version was created —
+   *  i.e. the stage v(N-1) was at when it got superseded. v1 is null
+   *  (nothing preceded it). UI logic: a row's "final status" = the NEXT
+   *  version's priorStatus; the active version's display status comes from
+   *  the live item.status. */
+  priorStatus: FeedbackStatus | null;
 };
 
 /** Build an ordered list of versions for an item, v1 first. */
@@ -40,6 +47,7 @@ export function buildVersionList(item: FeedbackItem, rows: FeedbackItemVersion[]
     notes: null,
     createdAt: item.created_at,
     assets: extractAssets(item),
+    priorStatus: null,
   };
   const rest = [...rows]
     .sort((a, b) => a.version_number - b.version_number)
@@ -49,6 +57,7 @@ export function buildVersionList(item: FeedbackItem, rows: FeedbackItemVersion[]
       notes: r.notes,
       createdAt: r.created_at,
       assets: extractAssets(r),
+      priorStatus: r.prior_status ?? null,
     }));
   return [v1, ...rest];
 }

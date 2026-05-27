@@ -191,7 +191,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
       <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow flex flex-col">
         {/* ─── Visual header — click to open ──────────────────── */}
         <button
-          onClick={() => router.push(`/feedback/${project.id}`)}
+          onClick={() => router.push(`/markup/${project.id}`)}
           className="w-full aspect-[4/3] rounded-t-2xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-surface flex flex-col items-center justify-center p-3"
         >
           {itemStats.total > 0 ? (
@@ -261,7 +261,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           {/* Title */}
           <h3
             className="text-[15px] font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
-            onClick={() => router.push(`/feedback/${project.id}`)}
+            onClick={() => router.push(`/markup/${project.id}`)}
           >
             {project.title}
           </h3>
@@ -291,7 +291,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3 px-3">
             <div className="flex items-center gap-0.5">
               <button
-                onClick={() => router.push(`/feedback/${project.id}`)}
+                onClick={() => router.push(`/markup/${project.id}`)}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal-tint transition-colors"
               >
                 <Eye size={12} />

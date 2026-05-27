@@ -1,6 +1,7 @@
 // app/api/review-widget/[token]/reactions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { isGuestVisibleStage } from '@/lib/feedback/visibility';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -30,10 +31,12 @@ async function commentBelongsToProject(
 
   const { data: item } = await supabase
     .from('review_items')
-    .select('id, review_project_id')
+    .select('id, review_project_id, status')
     .eq('id', comment.review_item_id)
     .single();
   if (!item) return null;
+  // Guests can't react on items in internal stages, even with a comment ID.
+  if (!isGuestVisibleStage(item.status)) return null;
 
   const { data: project } = await supabase
     .from('review_projects')
@@ -55,10 +58,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 
     const { data: item } = await supabase
       .from('review_items')
-      .select('id, review_project_id')
+      .select('id, review_project_id, status')
       .eq('id', itemId)
       .single();
     if (!item) return corsJson({ error: 'Unauthorized' }, 403);
+    if (!isGuestVisibleStage(item.status)) return corsJson({ error: 'Unauthorized' }, 403);
 
     const { data: project } = await supabase
       .from('review_projects')

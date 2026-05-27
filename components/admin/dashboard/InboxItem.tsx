@@ -71,7 +71,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
   const [error, setError] = useState<string | null>(null);
   const [shotPreviewOpen, setShotPreviewOpen] = useState(false);
 
-  const openHref = `/feedback/${item.projectId}/items/${item.itemId}`;
+  const openHref = `/markup/${item.projectId}/items/${item.itemId}`;
 
   const sendReply = async () => {
     const trimmed = replyText.trim();

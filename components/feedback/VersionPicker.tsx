@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, History, ChevronDown, Check, Pencil } from 'lucide-react';
 import type { VersionView } from '@/lib/feedback/versions';
+import type { FeedbackStatus } from '@/lib/types/feedback';
+import { getFeedbackStatusDef } from '@/lib/feedback/status';
 
 interface VersionPickerProps {
   versions: VersionView[];
@@ -12,6 +14,10 @@ interface VersionPickerProps {
   onAddVersion?: () => void;
   /** Optional admin affordance: opens the editor for the given version. */
   onEditVersion?: (versionId: string | null) => void;
+  /** Current parent-item status. Shown as a pill next to the active version
+   *  in the trigger button. We only have one status per item (no historical
+   *  per-version status), so non-active rows render as "Superseded". */
+  itemStatus?: FeedbackStatus;
   compact?: boolean;
 }
 
@@ -21,7 +27,7 @@ interface VersionPickerProps {
  * button only renders when callers (admin) opt in via onAddVersion.
  */
 export default function VersionPicker({
-  versions, activeVersionId, onChange, onAddVersion, onEditVersion, compact = false,
+  versions, activeVersionId, onChange, onAddVersion, onEditVersion, itemStatus, compact = false,
 }: VersionPickerProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -41,6 +47,7 @@ export default function VersionPicker({
   const ordered = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
 
   const padding = compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-xs';
+  const statusDef = itemStatus ? getFeedbackStatusDef(itemStatus) : null;
 
   return (
     <div ref={wrapperRef} className="relative flex items-center gap-1">
@@ -52,13 +59,30 @@ export default function VersionPicker({
       >
         <History size={compact ? 12 : 13} className="text-gray-400" />
         <span className="tabular-nums">v{active.versionNumber}</span>
+        {statusDef && (
+          <span
+            className={`inline-flex items-center gap-1 ml-0.5 px-1.5 py-0 rounded-full text-[9px] font-medium border ${statusDef.bg} ${statusDef.text} ${statusDef.border}`}
+          >
+            <span className={`w-1 h-1 rounded-full ${statusDef.dot}`} />
+            {statusDef.label}
+          </span>
+        )}
         <ChevronDown size={compact ? 11 : 12} className="text-gray-400" />
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-1 z-30 w-64 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-72 overflow-y-auto">
-          {ordered.map((v) => {
+        <div className="absolute top-full right-0 mt-1 z-30 w-72 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-72 overflow-y-auto">
+          {ordered.map((v, i) => {
             const isActive = (v.id ?? null) === (active.id ?? null);
+            // Per-row status. Active version shows live item.status; older
+            // versions show the NEXT version's priorStatus (where this
+            // version was when it got superseded). If no per-row status is
+            // resolvable, render no badge for that row.
+            const newerVersion = ordered[i - 1];
+            const rowStatus: FeedbackStatus | null = isActive
+              ? (itemStatus ?? null)
+              : (newerVersion?.priorStatus ?? null);
+            const rowStatusDef = rowStatus ? getFeedbackStatusDef(rowStatus) : null;
             return (
               <div
                 key={v.id ?? 'v1'}
@@ -78,9 +102,20 @@ export default function VersionPicker({
                     v{v.versionNumber}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500 truncate">
-                      {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs text-gray-500 truncate flex-1 min-w-0">
+                        {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
+                      </p>
+                      {rowStatusDef && (
+                        <span
+                          className={`inline-flex items-center gap-0.5 px-1.5 py-0 rounded-full text-[9px] font-medium border shrink-0 ${rowStatusDef.bg} ${rowStatusDef.text} ${rowStatusDef.border}`}
+                          title={isActive ? 'Current status' : 'Status when superseded'}
+                        >
+                          <span className={`w-1 h-1 rounded-full ${rowStatusDef.dot}`} />
+                          {rowStatusDef.label}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-2xs text-gray-400 mt-0.5">
                       {formatTimestamp(v.createdAt)}
                     </p>

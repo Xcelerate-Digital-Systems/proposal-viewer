@@ -61,7 +61,7 @@ function KanbanContent({
       .eq('id', projectId)
       .eq('company_id', companyId)
       .single();
-    if (!data) { router.push('/feedback'); return; }
+    if (!data) { router.push('/markup'); return; }
     setProject(data);
   }, [projectId, companyId, router]);
 
@@ -118,7 +118,7 @@ function KanbanContent({
       window.open(item.url, '_blank');
       return;
     }
-    router.push(`/feedback/${projectId}/items/${itemId}`);
+    router.push(`/markup/${projectId}/items/${itemId}`);
   }, [items, projectId, router]);
 
   const hasWebpages = useMemo(() => items.some((i) => i.type === 'webpage'), [items]);
@@ -176,6 +176,8 @@ function KanbanContent({
             commentCounts={commentCounts}
             onOpen={handleOpen}
             onItemsChange={setItems}
+            projectId={projectId}
+            companyId={companyId}
           />
         )}
       </div>

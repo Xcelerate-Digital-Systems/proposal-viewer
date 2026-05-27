@@ -6,6 +6,8 @@ import {
   CheckCheck, Layers, Package, RotateCcw,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
+import type { FeedbackStatus } from '@/lib/types/feedback';
 
 type Member = { id: string; user_id: string | null; name: string | null; email: string; role: string | null };
 
@@ -16,6 +18,7 @@ type Assignee = {
   notify_resolve: boolean;
   notify_status: boolean;
   notify_new_version: boolean;
+  stages: string[];
 };
 
 type GuestPrefs = {
@@ -31,6 +34,7 @@ type Guest = {
   name: string;
   removed: boolean;
   prefs: GuestPrefs;
+  stages: string[];
 };
 
 type PrefKey =
@@ -66,7 +70,7 @@ export default function ProjectAssigneesPanel({
 
   const buildUrl = useCallback(
     (suffix = '') =>
-      `/api/feedback-projects/${projectId}/assignees${suffix}?company_id=${companyId}`,
+      `/api/markup-projects/${projectId}/assignees${suffix}?company_id=${companyId}`,
     [projectId, companyId]
   );
 
@@ -82,7 +86,7 @@ export default function ProjectAssigneesPanel({
     });
   }, []);
 
-  const guestsUrl = `/api/feedback-projects/${projectId}/guests?company_id=${companyId}`;
+  const guestsUrl = `/api/markup-projects/${projectId}/guests?company_id=${companyId}`;
 
   const refresh = useCallback(async () => {
     const [a, g] = await Promise.all([
@@ -127,7 +131,7 @@ export default function ProjectAssigneesPanel({
   const remove = async (memberId: string) => {
     setSavingFor(memberId);
     await authedFetch(
-      `/api/feedback-projects/${projectId}/assignees?team_member_id=${memberId}&company_id=${companyId}`,
+      `/api/markup-projects/${projectId}/assignees?team_member_id=${memberId}&company_id=${companyId}`,
       { method: 'DELETE' }
     );
     setSavingFor(null);
@@ -157,6 +161,56 @@ export default function ProjectAssigneesPanel({
     const res = await authedFetch(guestsUrl, {
       method: 'PATCH',
       body: JSON.stringify({ email, removed }),
+    });
+    if (!res.ok) refresh();
+  };
+
+  // Stage scoping — empty stages array means "all stages" (back-compat). The
+  // chip editor lets the admin pin an assignee to a subset of pipeline stages,
+  // mirroring the Kanban column `+` flow but accessible from project settings.
+  const stageRoute = `/api/markup-projects/${projectId}/stage-assignees`;
+
+  const toggleMemberStage = async (memberId: string, stage: FeedbackStatus) => {
+    const current = assignedById.get(memberId);
+    if (!current) return;
+    const isOn = current.stages.includes(stage);
+    const nextStages = isOn
+      ? current.stages.filter((s) => s !== stage)
+      : [...current.stages, stage];
+    // Optimistic.
+    setAssignees((prev) =>
+      prev.map((a) => (a.team_member_id === memberId ? { ...a, stages: nextStages } : a)),
+    );
+    const url = isOn
+      ? `${stageRoute}?kind=member&stage=${stage}&team_member_id=${encodeURIComponent(memberId)}`
+      : stageRoute;
+    const res = await authedFetch(url, {
+      method: isOn ? 'DELETE' : 'POST',
+      body: isOn
+        ? undefined
+        : JSON.stringify({ kind: 'member', stage, team_member_id: memberId }),
+    });
+    if (!res.ok) refresh();
+  };
+
+  const toggleGuestStage = async (email: string, stage: FeedbackStatus) => {
+    const guest = guests.find((g) => g.email === email);
+    if (!guest) return;
+    const isOn = guest.stages.includes(stage);
+    const nextStages = isOn
+      ? guest.stages.filter((s) => s !== stage)
+      : [...guest.stages, stage];
+    setGuests((prev) =>
+      prev.map((g) => (g.email === email ? { ...g, stages: nextStages } : g)),
+    );
+    const url = isOn
+      ? `${stageRoute}?kind=guest&stage=${stage}&email=${encodeURIComponent(email)}`
+      : stageRoute;
+    const res = await authedFetch(url, {
+      method: isOn ? 'DELETE' : 'POST',
+      body: isOn
+        ? undefined
+        : JSON.stringify({ kind: 'guest', stage, email, name: guest.name }),
     });
     if (!res.ok) refresh();
   };
@@ -246,6 +300,11 @@ export default function ProjectAssigneesPanel({
                     );
                   })}
                 </div>
+
+                <StagesChipRow
+                  selected={a.stages}
+                  onToggle={(stage) => toggleMemberStage(m.id, stage)}
+                />
               </div>
             );
           })
@@ -332,33 +391,96 @@ export default function ProjectAssigneesPanel({
                 </div>
 
                 {!g.removed && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {PREF_DEFS.map((p) => {
-                      const Icon = p.icon;
-                      const on = g.prefs[p.key];
-                      return (
-                        <button
-                          key={p.key}
-                          type="button"
-                          onClick={() => toggleGuestPref(g.email, p.key)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                            on
-                              ? 'bg-teal/10 text-teal'
-                              : 'bg-gray-50 text-gray-400 hover:text-gray-600'
-                          }`}
-                          title={`${on ? 'On' : 'Off'} — ${p.label}`}
-                        >
-                          <Icon size={11} />
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {PREF_DEFS.map((p) => {
+                        const Icon = p.icon;
+                        const on = g.prefs[p.key];
+                        return (
+                          <button
+                            key={p.key}
+                            type="button"
+                            onClick={() => toggleGuestPref(g.email, p.key)}
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                              on
+                                ? 'bg-teal/10 text-teal'
+                                : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                            }`}
+                            title={`${on ? 'On' : 'Off'} — ${p.label}`}
+                          >
+                            <Icon size={11} />
+                            {p.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <StagesChipRow
+                      selected={g.stages}
+                      onToggle={(stage) => toggleGuestStage(g.email, stage)}
+                      audience="guest"
+                    />
+                  </>
                 )}
               </div>
             ))
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Stages chip row ─────────────────────────────────────────────────────────
+ * Renders all 8 pipeline stages as toggle chips. Empty selection is
+ * deliberately allowed and rendered as a subtle hint ("Notifies on all
+ * stages") so admins know that's the back-compat default — clicking any chip
+ * scopes them down.
+ *
+ * Guests only see notifications, so `audience="guest"` hides internal-only
+ * stages from the chip set (those notifications would never fire for them
+ * anyway thanks to the visibility filter — showing the chip is misleading). */
+function StagesChipRow({
+  selected, onToggle, audience = 'member',
+}: {
+  selected: string[];
+  onToggle: (stage: FeedbackStatus) => void;
+  audience?: 'member' | 'guest';
+}) {
+  const allStages = REVIEW_STATUS_ORDER;
+  const visibleStages = audience === 'guest'
+    ? allStages.filter((s) => s === 'client_review' || s === 'approved' || s === 'rejected')
+    : allStages;
+  const allSelected = selected.length === 0;
+
+  return (
+    <div className="mt-2.5 pt-2.5 border-t border-dashed border-gray-100">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Layers size={11} className="text-gray-400" />
+        <span className="text-[11px] font-medium text-gray-500">
+          Stages {allSelected ? '— all (default)' : ''}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {visibleStages.map((s) => {
+          const def = getFeedbackStatusDef(s);
+          const on = selected.includes(s);
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onToggle(s)}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors border ${
+                on
+                  ? `${def.bg} ${def.text} ${def.border}`
+                  : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300'
+              }`}
+              title={on ? `Notifies on ${def.label}` : `Click to scope to ${def.label}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${def.dot}`} />
+              {def.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

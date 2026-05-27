@@ -256,6 +256,7 @@ export default function FeedbackHeaderBar({
               onChange={onVersionChange}
               onAddVersion={onAddVersion}
               onEditVersion={onEditVersion}
+              itemStatus={selectedItem?.status}
               compact
             />
             {onEditVersion && (

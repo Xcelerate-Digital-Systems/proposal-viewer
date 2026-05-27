@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { GUEST_VISIBLE_STAGES } from '@/lib/feedback/visibility';
 
 // Prevent Next.js from caching this route
 export const dynamic = 'force-dynamic';
@@ -33,14 +34,18 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    // Load all items
+    // Load items restricted to guest-visible stages — internal-stage items
+    // are filtered out at the DB level so they never reach the client grid.
     const { data: items } = await supabase
       .from('review_items')
       .select('*')
       .eq('review_project_id', project.id)
+      .in('status', GUEST_VISIBLE_STAGES)
       .order('sort_order', { ascending: true });
 
-    // Load all comments for all items
+    // Comments are further filtered by `stage_at_creation` so internal
+    // chatter stays hidden even after an item moves into a client-visible
+    // stage.
     const itemIds = (items || []).map((i: { id: string }) => i.id);
     let comments: unknown[] = [];
 
@@ -49,6 +54,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
         .from('review_comments')
         .select('*')
         .in('review_item_id', itemIds)
+        .in('stage_at_creation', GUEST_VISIBLE_STAGES)
         .order('created_at', { ascending: true });
 
       comments = commentData || [];

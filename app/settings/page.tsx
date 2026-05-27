@@ -4,7 +4,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
-  Settings, UserCircle2, Bell, Users, Code2,
+  Settings, UserCircle2, Bell, Users, Code2, CreditCard, KeyRound,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProfileEditor from '@/components/admin/settings/ProfileEditor';
@@ -13,10 +13,12 @@ import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
 import MembersTab from '@/components/admin/settings/MembersTab';
+import BillingTab from '@/components/admin/settings/BillingTab';
+import RolesTab from '@/components/admin/settings/RolesTab';
 import { type TeamMember } from '@/lib/supabase';
 import { NOTIFICATION_OPTIONS } from '@/components/admin/settings/settings-config';
 
-type TabKey = 'profile' | 'notifications' | 'members' | 'developer';
+type TabKey = 'profile' | 'notifications' | 'members' | 'roles' | 'billing' | 'developer';
 
 interface TabDef {
   key: TabKey;
@@ -29,6 +31,8 @@ const TABS: TabDef[] = [
   { key: 'profile',       label: 'Profile',       icon: UserCircle2, description: 'Your name and photo' },
   { key: 'notifications', label: 'Notifications', icon: Bell,        description: 'Email alerts for events' },
   { key: 'members',       label: 'Members',       icon: Users,       description: 'Team members, roles, and invites' },
+  { key: 'roles',         label: 'Roles',         icon: KeyRound,    description: 'What each role can do' },
+  { key: 'billing',       label: 'Billing',       icon: CreditCard,  description: 'Plan, payment, invoices' },
   { key: 'developer',     label: 'Developer',     icon: Code2,       description: 'Webhooks and API keys' },
 ];
 
@@ -84,6 +88,7 @@ function SettingsContent({ auth }: {
 
   const isAdminOrOwner = teamMember?.role === 'owner' || teamMember?.role === 'admin';
   const canSeeDeveloper = isSuperAdmin || isAdminOrOwner;
+  const canSeeBilling = isAdminOrOwner && accountType === 'agency';
 
   const [savingPref, setSavingPref] = useState<string | null>(null);
   const handleToggle = async (key: string) => {
@@ -116,6 +121,7 @@ function SettingsContent({ auth }: {
           <ul className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible">
             {TABS.map(tab => {
               if (tab.key === 'developer' && !canSeeDeveloper) return null;
+              if (tab.key === 'billing' && !canSeeBilling) return null;
               const Icon = tab.icon;
               const active = activeTab === tab.key;
               return (
@@ -188,6 +194,25 @@ function SettingsContent({ auth }: {
                 currentRole={teamMember.role}
                 isSuperAdmin={isSuperAdmin}
                 accountType={accountType}
+              />
+            </section>
+          )}
+
+          {activeTab === 'roles' && (
+            <section>
+              <RolesTab currentRole={teamMember?.role} />
+            </section>
+          )}
+
+          {activeTab === 'billing' && canSeeBilling && companyId && (
+            <section>
+              <SectionHeader
+                title="Billing"
+                description="Manage your plan, payment method, and invoices."
+              />
+              <BillingTab
+                companyId={companyId}
+                role={teamMember?.role ?? 'member'}
               />
             </section>
           )}

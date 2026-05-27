@@ -15,8 +15,9 @@ const nextConfig = {
     return config;
   },
 
-  // Legacy /proposals/[id]/quote-* URLs forward to the independent /quotes/[id]
-  // area. Old bookmarks and email links continue to resolve.
+  // Legacy redirects for renamed surfaces. Old bookmarks and email links keep
+  // resolving. /feedback → /markup tracks the 2026-05-27 rename of the
+  // creative review tool's public URL (DB tables stay `review_*`).
   async redirects() {
     return [
       { source: '/proposals/:id/quote-builder',   destination: '/quotes/:id',          permanent: false },
@@ -28,6 +29,8 @@ const nextConfig = {
       { source: '/proposals/:id/quote-contents',  destination: '/quotes/:id',          permanent: false },
       { source: '/proposals/:id/quote-details',   destination: '/quotes/:id',          permanent: false },
       { source: '/proposals/:id/quote-packages',  destination: '/quotes/:id',          permanent: false },
+      { source: '/feedback',                      destination: '/markup',              permanent: true  },
+      { source: '/feedback/:path*',               destination: '/markup/:path*',       permanent: true  },
     ];
   },
 };

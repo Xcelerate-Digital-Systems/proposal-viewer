@@ -1,4 +1,4 @@
-// app/api/feedback-projects/[id]/guests/route.ts
+// app/api/markup-projects/[id]/guests/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
@@ -100,6 +100,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     notify_new_version: boolean;
     removed_at: string | null;
     created_at: string;
+    stages: string[] | null;
   };
   const storedRowList = (storedRows ?? []) as StoredRow[];
   const storedByEmail = new Map<string, StoredRow>();
@@ -122,6 +123,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       email,
       name: info.name,
       removed: !!stored?.removed_at,
+      stages: stored?.stages ?? [],
       prefs: stored
         ? {
             notify_comment: stored.notify_comment,

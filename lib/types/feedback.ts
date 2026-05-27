@@ -398,6 +398,11 @@ export type FeedbackItemVersion = {
   pdf_url: string | null;
   google_ad_data: GoogleAdData | null;
   meta_lead_form_data: MetaLeadFormData | null;
+  /** review_items.status at the moment this version row was inserted.
+   *  Populated by the `trg_set_review_version_prior_status` BEFORE INSERT
+   *  trigger. Used by VersionPicker to render a per-row "this is the stage
+   *  the predecessor ended up at" badge. */
+  prior_status: FeedbackStatus | null;
   created_at: string;
   created_by: string | null;
 };

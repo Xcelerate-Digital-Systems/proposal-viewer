@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, useSensor, useSensors,
@@ -9,17 +9,25 @@ import { useDroppable } from '@dnd-kit/core';
 import {
   supabase, type FeedbackItem, type FeedbackStatus,
 } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
 import {
   REVIEW_STATUS_ORDER, getFeedbackStatusDef,
 } from '@/lib/feedback/status';
-import KanbanCard from './KanbanCard';
+import KanbanCard, { type ItemDecisionTally } from './KanbanCard';
+import KanbanColumnAssignees, {
+  type StageMember, type StageGuest, type CompanyMember,
+} from './KanbanColumnAssignees';
 
 interface KanbanBoardProps {
   items: FeedbackItem[];
   commentCounts: Record<string, { total: number; unresolved: number }>;
   onOpen: (itemId: string) => void;
   onItemsChange: (next: FeedbackItem[]) => void;
+  /** Project + company ids enable per-stage assignee management. Optional so
+   *  unauth/preview contexts can render the board read-only. */
+  projectId?: string;
+  companyId?: string;
 }
 
 /**
@@ -29,11 +37,107 @@ interface KanbanBoardProps {
  */
 const COLUMN_ORDER: FeedbackStatus[] = REVIEW_STATUS_ORDER;
 
-export default function KanbanBoard({ items, commentCounts, onOpen, onItemsChange }: KanbanBoardProps) {
+export default function KanbanBoard({
+  items, commentCounts, onOpen, onItemsChange, projectId, companyId,
+}: KanbanBoardProps) {
   const toast = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  // Per-stage assignee roster, loaded once per project and refreshed after edits.
+  const [stageMembers, setStageMembers] = useState<StageMember[]>([]);
+  const [stageGuests, setStageGuests] = useState<StageGuest[]>([]);
+  const [companyMembers, setCompanyMembers] = useState<CompanyMember[]>([]);
+  // Per-item decision tallies (approved / changes_requested) for the current
+  // stage, indexed by item id. Refreshed alongside items.
+  const [decisionTallies, setDecisionTallies] = useState<Record<string, ItemDecisionTally>>({});
+
+  const refetchAssignees = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const res = await authFetch(`/api/markup-projects/${projectId}/stage-assignees`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setStageMembers(data.members ?? []);
+      setStageGuests(data.guests ?? []);
+    } catch {
+      // Non-fatal; the board still functions without the assignee chips.
+    }
+  }, [projectId]);
+
+  useEffect(() => { refetchAssignees(); }, [refetchAssignees]);
+
+  // Fetch decision tallies (Filestage "N approved / M requested changes") for
+  // every item shown on the board. We aggregate per-(item, stage) so a vote
+  // only counts on the stage it was cast on — moving an item between stages
+  // doesn't leak votes forward.
+  useEffect(() => {
+    if (items.length === 0) {
+      setDecisionTallies({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const itemIds = items.map((i) => i.id);
+      const { data } = await supabase
+        .from('review_item_decisions')
+        .select('review_item_id, stage, decision')
+        .in('review_item_id', itemIds);
+      if (cancelled) return;
+      const tallies: Record<string, ItemDecisionTally> = {};
+      const itemStages = new Map(items.map((i) => [i.id, i.status]));
+      for (const row of (data ?? []) as { review_item_id: string; stage: string; decision: string }[]) {
+        // Only show votes that were cast on the item's *current* stage. A
+        // vote on a prior stage stays in the table (so we can audit) but
+        // doesn't surface once the item has moved on.
+        if (itemStages.get(row.review_item_id) !== row.stage) continue;
+        if (!tallies[row.review_item_id]) {
+          tallies[row.review_item_id] = { approved: 0, changesRequested: 0 };
+        }
+        if (row.decision === 'approved') tallies[row.review_item_id].approved += 1;
+        else if (row.decision === 'changes_requested') tallies[row.review_item_id].changesRequested += 1;
+      }
+      setDecisionTallies(tallies);
+    })();
+    return () => { cancelled = true; };
+  }, [items]);
+
+  useEffect(() => {
+    if (!companyId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('team_members')
+        .select('id, name, email')
+        .eq('company_id', companyId)
+        .order('name');
+      if (!cancelled) setCompanyMembers(data ?? []);
+    })();
+    return () => { cancelled = true; };
+  }, [companyId]);
+
+  // Index members/guests by stage so each column receives only its own slice.
+  const assigneesByStage = useMemo(() => {
+    const out: Record<FeedbackStatus, { members: StageMember[]; guests: StageGuest[] }> =
+      REVIEW_STATUS_ORDER.reduce((acc, s) => {
+        acc[s] = { members: [], guests: [] };
+        return acc;
+      }, {} as Record<FeedbackStatus, { members: StageMember[]; guests: StageGuest[] }>);
+    for (const m of stageMembers) {
+      // Empty stages array means "all stages" (back-compat); don't auto-broadcast
+      // those into every column — they're project-wide assignees managed elsewhere.
+      for (const s of m.stages) {
+        if (s in out) out[s as FeedbackStatus].members.push(m);
+      }
+    }
+    for (const g of stageGuests) {
+      for (const s of g.stages) {
+        if (s in out) out[s as FeedbackStatus].guests.push(g);
+      }
+    }
+    return out;
+  }, [stageMembers, stageGuests]);
 
   // Group items by status, preserving sort_order within each column.
   const columns = useMemo(() => {
@@ -99,7 +203,13 @@ export default function KanbanBoard({ items, commentCounts, onOpen, onItemsChang
             status={status}
             items={columns[status]}
             commentCounts={commentCounts}
+            decisionTallies={decisionTallies}
             onOpen={onOpen}
+            projectId={projectId}
+            stageMembers={assigneesByStage[status].members}
+            stageGuests={assigneesByStage[status].guests}
+            companyMembers={companyMembers}
+            onAssigneesChanged={refetchAssignees}
           />
         ))}
       </div>
@@ -111,6 +221,7 @@ export default function KanbanBoard({ items, commentCounts, onOpen, onItemsChang
               item={activeItem}
               commentCount={commentCounts[activeItem.id]?.total ?? 0}
               unresolvedCount={commentCounts[activeItem.id]?.unresolved ?? 0}
+              decisionTally={decisionTallies[activeItem.id]}
               onOpen={onOpen}
             />
           </div>
@@ -123,12 +234,19 @@ export default function KanbanBoard({ items, commentCounts, onOpen, onItemsChang
 /* ─── Column ───────────────────────────────────────────────────── */
 
 function KanbanColumn({
-  status, items, commentCounts, onOpen,
+  status, items, commentCounts, decisionTallies, onOpen,
+  projectId, stageMembers, stageGuests, companyMembers, onAssigneesChanged,
 }: {
   status: FeedbackStatus;
   items: FeedbackItem[];
   commentCounts: Record<string, { total: number; unresolved: number }>;
+  decisionTallies: Record<string, ItemDecisionTally>;
   onOpen: (itemId: string) => void;
+  projectId?: string;
+  stageMembers: StageMember[];
+  stageGuests: StageGuest[];
+  companyMembers: CompanyMember[];
+  onAssigneesChanged: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `column-${status}` });
   const def = getFeedbackStatusDef(status);
@@ -140,6 +258,18 @@ function KanbanColumn({
         <span className={`w-2 h-2 rounded-full ${def.dot}`} />
         <h3 className="text-[13px] font-semibold text-gray-800">{def.label}</h3>
         <span className="text-[11px] font-medium text-gray-400">{items.length}</span>
+        {projectId && (
+          <div className="ml-auto">
+            <KanbanColumnAssignees
+              projectId={projectId}
+              stage={status}
+              members={stageMembers}
+              guests={stageGuests}
+              companyMembers={companyMembers}
+              onChanged={onAssigneesChanged}
+            />
+          </div>
+        )}
       </div>
 
       {/* Droppable list */}
@@ -160,6 +290,7 @@ function KanbanColumn({
               item={item}
               commentCount={commentCounts[item.id]?.total ?? 0}
               unresolvedCount={commentCounts[item.id]?.unresolved ?? 0}
+              decisionTally={decisionTallies[item.id]}
               onOpen={onOpen}
             />
           ))

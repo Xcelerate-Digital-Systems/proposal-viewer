@@ -1,12 +1,23 @@
 'use client';
 
+// Status pill + decision menu. Used in the markup viewer header so reviewers
+// (admin + client) can move an item between client_review, revision_needed,
+// approved, rejected.
+//
+// Design goals:
+//  - The closed pill reads like a tag — colour-coded, dot + label + caret.
+//  - The open menu reads like an action card — each option is its own
+//    intentional decision with a one-line tagline so the reviewer knows what
+//    each choice *commits to*.
+//  - Internal stages (draft / in_progress / internal_review / archived) get a
+//    neutral pill so a branded header stays legible while the item isn't yet
+//    in front of the client.
+
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
+import { ChevronDown, Check, Loader2 } from 'lucide-react';
+import { REVIEW_STATUS_CONFIG, getFeedbackStatusDef } from '@/lib/feedback/status';
 import type { FeedbackStatus } from '@/lib/supabase';
 
-// Limited set of statuses a client is allowed to set from the review link.
-// Mirrors the allowlist in /api/review/[token]/items/[itemId]/status.
 const CLIENT_STATUS_OPTIONS: FeedbackStatus[] = [
   'client_review',
   'revision_needed',
@@ -15,6 +26,14 @@ const CLIENT_STATUS_OPTIONS: FeedbackStatus[] = [
 ];
 
 const CLIENT_FACING: Set<FeedbackStatus> = new Set(CLIENT_STATUS_OPTIONS);
+
+/** One-liners that nudge the reviewer toward the right choice. Keep short. */
+const STATUS_TAGLINE: Partial<Record<FeedbackStatus, string>> = {
+  client_review:   'Re-open for client review',
+  revision_needed: 'Send back to the team for changes',
+  approved:        'Sign this off — ready to ship',
+  rejected:        'Permanently decline this version',
+};
 
 interface Props {
   itemId: string;
@@ -34,13 +53,19 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
   const [pending, setPending] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Click-outside + Escape close.
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   const current = REVIEW_STATUS_CONFIG[status];
@@ -56,10 +81,6 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
     }
   };
 
-  // Non-client-facing statuses (draft, in_progress, internal_review, archived)
-  // get a neutral pill that matches the surrounding header chrome instead of
-  // the coloured client-facing palette. This keeps the dark/branded header
-  // legible when the project is still internal.
   const useNeutralPill = !CLIENT_FACING.has(status);
   const neutralStyle = useNeutralPill && branded && sidebarText
     ? { border: `1px solid ${sidebarText}40`, color: sidebarText, backgroundColor: `${sidebarText}10` }
@@ -67,7 +88,9 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
   const neutralClass = useNeutralPill && !branded
     ? 'border border-gray-200 bg-gray-50 text-gray-700'
     : '';
-  const colouredClass = !useNeutralPill ? `border ${current.bg} ${current.text} ${current.border}` : '';
+  const colouredClass = !useNeutralPill
+    ? `border ${current.bg} ${current.text} ${current.border}`
+    : '';
 
   return (
     <div ref={ref} className="relative inline-block" data-no-pin>
@@ -75,36 +98,80 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={pending}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors hover:brightness-95 disabled:opacity-60 ${colouredClass} ${neutralClass}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`group inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-[12px] font-semibold shadow-sm transition-all hover:shadow disabled:opacity-60 ${colouredClass} ${neutralClass} ${open ? 'ring-2 ring-offset-1 ring-black/5' : ''}`}
         style={neutralStyle}
       >
-        <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
-        {current.label}
-        <ChevronDown size={12} className="opacity-60" />
+        {pending ? (
+          <Loader2 size={11} className="animate-spin opacity-70" />
+        ) : (
+          <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+        )}
+        <span className="tracking-tight">{current.label}</span>
+        <span className="ml-0.5 h-3.5 w-px bg-current opacity-20" />
+        <ChevronDown
+          size={13}
+          className={`opacity-60 transition-transform duration-150 ${open ? 'rotate-180 opacity-100' : 'group-hover:opacity-90'}`}
+        />
       </button>
+
       {open && (
         <div
-          className="absolute top-full right-0 mt-1 z-50 w-44 bg-white rounded-lg border border-gray-200 shadow-lg py-1"
+          role="listbox"
+          className="absolute top-full right-0 mt-1.5 z-50 w-[280px] bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-900/5 py-1.5 origin-top-right animate-[fadeIn_120ms_ease-out]"
           onClick={(e) => e.stopPropagation()}
         >
+          <div className="px-3 pt-1.5 pb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              Set status
+            </p>
+          </div>
           {CLIENT_STATUS_OPTIONS.map((opt) => {
-            const def = REVIEW_STATUS_CONFIG[opt];
+            const def = getFeedbackStatusDef(opt);
+            const isCurrent = opt === status;
+            const tagline = STATUS_TAGLINE[opt];
             return (
               <button
                 key={opt}
                 type="button"
+                role="option"
+                aria-selected={isCurrent}
                 onClick={() => handlePick(opt)}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-50 transition-colors ${
-                  opt === status ? 'bg-gray-50' : ''
+                className={`w-full flex items-start gap-2.5 px-3 py-2 text-left transition-colors ${
+                  isCurrent ? 'bg-gray-50' : 'hover:bg-gray-50/70'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full shrink-0 ${def.dot}`} />
-                <span className="text-gray-700 truncate">{def.label}</span>
+                <div
+                  className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${def.bg} ${def.text} ${def.border} border`}
+                >
+                  {def.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-semibold text-ink">{def.label}</span>
+                    {isCurrent && (
+                      <Check size={12} className="text-teal" />
+                    )}
+                  </div>
+                  {tagline && (
+                    <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                      {tagline}
+                    </p>
+                  )}
+                </div>
               </button>
             );
           })}
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-3px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

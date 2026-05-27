@@ -74,7 +74,7 @@ export default function WebpageItemForm({
         // Domain already set but script not yet detected — send them to the
         // setup page which shows the snippet and polls for install.
         onCancel();
-        router.push(`/feedback/${reviewProjectId}/setup`);
+        router.push(`/markup/${reviewProjectId}/setup`);
       } else {
         setStage('domain');
       }
@@ -108,7 +108,7 @@ export default function WebpageItemForm({
       setSavingDomain(false);
     } else {
       onCancel();
-      router.push(`/feedback/${reviewProjectId}/setup`);
+      router.push(`/markup/${reviewProjectId}/setup`);
     }
   };
 

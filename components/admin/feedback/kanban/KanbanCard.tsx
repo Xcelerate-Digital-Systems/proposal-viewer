@@ -5,13 +5,20 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   MessageSquareText, ExternalLink, Globe, Mail, Smartphone,
   Image as ImageIcon, Video, FileText, Megaphone, Search, RectangleHorizontal, ClipboardList,
+  Check, RefreshCw,
 } from 'lucide-react';
 import { type FeedbackItem, type FeedbackItemType } from '@/lib/supabase';
+
+export type ItemDecisionTally = {
+  approved: number;
+  changesRequested: number;
+};
 
 interface KanbanCardProps {
   item: FeedbackItem;
   commentCount: number;
   unresolvedCount: number;
+  decisionTally?: ItemDecisionTally;
   onOpen: (itemId: string) => void;
 }
 
@@ -29,7 +36,7 @@ const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; i
 };
 
 export default function KanbanCard({
-  item, commentCount, unresolvedCount, onOpen,
+  item, commentCount, unresolvedCount, decisionTally, onOpen,
 }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
@@ -78,14 +85,39 @@ export default function KanbanCard({
       </div>
 
       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-[11px] text-gray-500">
-          <MessageSquareText size={11} />
-          <span>
-            {commentCount}
-            {unresolvedCount > 0 && (
-              <span className="text-amber-600 ml-0.5 font-semibold">({unresolvedCount})</span>
-            )}
-          </span>
+        <div className="flex items-center gap-2 text-[11px] text-gray-500">
+          <div className="flex items-center gap-1">
+            <MessageSquareText size={11} />
+            <span>
+              {commentCount}
+              {unresolvedCount > 0 && (
+                <span className="text-amber-600 ml-0.5 font-semibold">({unresolvedCount})</span>
+              )}
+            </span>
+          </div>
+          {decisionTally && (decisionTally.approved > 0 || decisionTally.changesRequested > 0) && (
+            <>
+              <span className="text-gray-200">·</span>
+              {decisionTally.approved > 0 && (
+                <div
+                  className="flex items-center gap-0.5 text-emerald-600 font-semibold"
+                  title={`${decisionTally.approved} approved this version`}
+                >
+                  <Check size={11} />
+                  {decisionTally.approved}
+                </div>
+              )}
+              {decisionTally.changesRequested > 0 && (
+                <div
+                  className="flex items-center gap-0.5 text-orange-600 font-semibold"
+                  title={`${decisionTally.changesRequested} requested changes`}
+                >
+                  <RefreshCw size={11} />
+                  {decisionTally.changesRequested}
+                </div>
+              )}
+            </>
+          )}
         </div>
         <button
           onPointerDown={(e) => e.stopPropagation()}

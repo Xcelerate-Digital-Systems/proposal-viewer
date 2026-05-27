@@ -184,18 +184,24 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
 
   // Client status change — hits the token-scoped status endpoint and
   // optimistically patches the local items list so the header updates.
+  // Reviewer identity is passed along so the per-reviewer decision log
+  // (Filestage's "N of M approved") can attribute the vote.
   const handleUpdateItemStatus = useCallback(async (itemId: string, status: FeedbackStatus) => {
     const previousStatus = items.find((it) => it.id === itemId)?.status;
     setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, status } : it)));
     const res = await fetch(`/api/review/${params.token}/items/${itemId}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({
+        status,
+        reviewer_email: guestEmail.trim() || null,
+        reviewer_name: guestName.trim() || null,
+      }),
     });
     if (!res.ok && previousStatus) {
       setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, status: previousStatus } : it)));
     }
-  }, [params.token, items]);
+  }, [params.token, items, guestEmail, guestName]);
 
   // ── Submit comment via API ──
   const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: 'high' | 'medium' | 'low' | 'none', attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => {
@@ -246,6 +252,38 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
       setPendingPin(null);
     }
   };
+
+  // ── Edit / delete own comment ──
+  const editComment = useCallback(async (commentId: string, content: string) => {
+    const res = await fetch(`/api/review/${params.token}/comments`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        comment_id: commentId,
+        content,
+        author_email: guestEmail.trim() || null,
+        author_name: guestName.trim() || null,
+      }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setComments((prev) => prev.map((c) => (c.id === commentId ? updated : c)));
+    }
+  }, [params.token, guestEmail, guestName]);
+
+  const deleteComment = useCallback(async (commentId: string) => {
+    const qs = new URLSearchParams({ comment_id: commentId });
+    if (guestEmail.trim()) qs.set('author_email', guestEmail.trim());
+    if (guestName.trim()) qs.set('author_name', guestName.trim());
+    const res = await fetch(`/api/review/${params.token}/comments?${qs.toString()}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      setComments((prev) =>
+        prev.filter((c) => c.id !== commentId && c.parent_comment_id !== commentId)
+      );
+    }
+  }, [params.token, guestEmail, guestName]);
 
   // ── Toggle reaction ──
   const toggleReaction = useCallback(async (commentId: string, emoji: string) => {
@@ -378,6 +416,8 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
             guestName={guestName}
             onGuestNameChange={setGuestName}
             onSubmitComment={submitComment}
+            onEditComment={editComment}
+            onDeleteComment={deleteComment}
             onItemChange={handleItemChange}
             shareToken={params.token}
             companyId={project?.company_id}

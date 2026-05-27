@@ -104,7 +104,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
       .eq('company_id', companyId)
       .single();
 
-    if (error || !data) { router.push('/feedback'); return; }
+    if (error || !data) { router.push('/markup'); return; }
     setProject(data);
   }, [projectId, companyId, router]);
 
@@ -321,7 +321,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           setProject={setProject}
           customDomain={customDomain}
           hasWebpages={hasWebpages}
-          activeTab="feedback"
+          activeTab="comments"
           onAddItem={() => setShowAddItem(true)}
         />
       )}
@@ -479,7 +479,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                       onSelect={() => setSelectedComment(comment)}
                       onViewItem={() =>
                         router.push(
-                          `/feedback/${projectId}/items/${comment.review_item_id}?type=${encodeURIComponent(comment.item_type)}`
+                          `/markup/${projectId}/items/${comment.review_item_id}?type=${encodeURIComponent(comment.item_type)}`
                         )
                       }
                       onToggleResolve={() => handleToggleResolve(comment, !comment.resolved)}
