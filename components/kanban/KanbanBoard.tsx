@@ -199,18 +199,13 @@ function KanbanColumnView<T extends { id: string }>({
 /* ─── Card wrapper (drag handle) ─────────────────────────── */
 
 function KanbanCardWrapper({ id, children }: { id: string; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id });
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      style={{
-        // 0.4 opacity (not 0) — the per-project board does the same so users
-        // see where the card came from while the overlay floats.
-        opacity: isDragging ? 0.4 : 1,
-        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-      }}
+      style={{ opacity: isDragging ? 0.4 : 1 }}
       className="cursor-grab active:cursor-grabbing touch-none"
     >
       {children}
