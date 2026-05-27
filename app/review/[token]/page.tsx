@@ -11,7 +11,6 @@ import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useBrandingColors } from '@/hooks/useBrandingColors';
 import { useGuestIdentity } from '@/hooks/useGuestIdentity';
-import { isValidHttpUrl } from '@/lib/sanitize';
 import { usePinFeedback } from '@/hooks/usePinFeedback';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
@@ -367,8 +366,9 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
 
   // Back action: explicit ?back= URL wins. Otherwise inline drill-downs
   // close back to the active tab. Per-item-token shares have no fallback.
+  // Only allow relative paths for ?back= — absolute URLs are an open redirect risk
   const isSafeBackPath = urlBack != null && urlBack.startsWith('/') && !urlBack.startsWith('//');
-  const backAction = urlBack && (isValidHttpUrl(urlBack) || isSafeBackPath)
+  const backAction = isSafeBackPath
     ? { label: 'Back', onClick: () => { window.location.href = urlBack; } }
     : (inlineItemId && !isSingleItem)
       ? { label: 'Back', onClick: () => setInlineItemId(null) }

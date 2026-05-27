@@ -23,6 +23,7 @@ import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { fetchInsights, MetaApiError } from '@/lib/connectors/meta/api-client';
 import { decryptToken } from '@/lib/connectors/meta/token-crypto';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 // Vercel default function timeout is fine (10s Hobby / 60s Pro). Benchmark
@@ -38,6 +39,9 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export async function POST(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const rl = await rateLimit({ key: `meta-data:${auth.companyId}`, limit: 30, windowSeconds: 60 });
+  if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object') return badRequest('Body must be JSON object');

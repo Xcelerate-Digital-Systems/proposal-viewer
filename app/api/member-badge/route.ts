@@ -42,8 +42,18 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = createServiceClient();
 
-    // Direct storage path lookup — no DB query needed
+    // Direct storage path lookup — validate against allowed prefixes to
+    // prevent arbitrary file reads via path traversal.
     if (path) {
+      const ALLOWED_PREFIXES = ['avatars/', 'company-logos/'];
+      const normalised = path.replace(/\\/g, '/');
+      if (
+        normalised.includes('..') ||
+        !ALLOWED_PREFIXES.some((prefix) => normalised.startsWith(prefix))
+      ) {
+        return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+      }
+
       const avatarUrl = await pathToDataUrl(supabase, path);
       if (!avatarUrl) {
         return NextResponse.json({ error: 'File not found' }, { status: 404 });

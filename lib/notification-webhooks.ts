@@ -71,6 +71,7 @@ export async function fireWebhooks(payload: WebhookPayload) {
         method: 'POST',
         headers,
         body,
+        redirect: 'manual',
         signal: AbortSignal.timeout(10000),
       });
     } catch (err) {

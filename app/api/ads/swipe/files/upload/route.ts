@@ -28,16 +28,16 @@ export async function POST(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { filename, content_type, company_id, swipe_id } = body as {
+    const { filename, content_type, swipe_id } = body as {
       filename?: string;
       content_type?: string;
-      company_id?: string;
+      company_id?: string; // ignored — auth.companyId used instead
       swipe_id?: string;
     };
 
-    if (!filename || !content_type || !company_id) {
+    if (!filename || !content_type) {
       return NextResponse.json(
-        { error: 'Missing filename, content_type, or company_id' },
+        { error: 'Missing filename or content_type' },
         { status: 400 }
       );
     }
@@ -55,9 +55,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    const ext = filename.split('.').pop() || 'bin';
+    // Sanitize extension to alphanumeric only to prevent path injection
+    const rawExt = filename.split('.').pop() || 'bin';
+    const ext = rawExt.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
     const stub = swipe_id || `tmp-${Math.random().toString(36).slice(2, 10)}`;
-    const path = `swipe-files/${company_id}/${stub}-${Date.now()}.${ext}`;
+    // Use auth.companyId (server-verified) — never trust company_id from the request body
+    const path = `swipe-files/${auth.companyId}/${stub}-${Date.now()}.${ext}`;
 
     const { data, error } = await supabase.storage
       .from('company-assets')

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { GUEST_VISIBLE_STAGES, isGuestVisibleStage } from '@/lib/feedback/visibility';
+import { rateLimit } from '@/lib/rate-limit';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -118,6 +119,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
+    const rl = await rateLimit({ key: `review-widget:comments:${params.token}`, limit: 30, windowSeconds: 60 });
+    if (!rl.success) return corsJson({ error: 'Too many requests' }, 429);
+
     const supabase = createServiceClient();
     const body = await req.json();
 

@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import crypto from 'crypto';
 import { isValidWebhookUrl } from '@/lib/sanitize';
+import { rateLimit } from '@/lib/rate-limit';
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
@@ -113,6 +114,9 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const rl = await rateLimit({ key: `webhook-test:${auth.companyId}`, limit: 5, windowSeconds: 60 });
+    if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
     const { endpoint_id } = await req.json();
 
     if (!endpoint_id) {
@@ -161,6 +165,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers,
       body,
+      redirect: 'manual',
       signal: AbortSignal.timeout(10000),
     });
 

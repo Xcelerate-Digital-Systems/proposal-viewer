@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       key: `auth:register:${ipFromRequest(req)}`,
       limit: REGISTER_LIMIT,
       windowSeconds: REGISTER_WINDOW_SECONDS,
+      failClosed: true,
     });
     if (!rl.success) {
       return NextResponse.json(
@@ -238,9 +239,10 @@ async function generateUniqueCompanySlug(
 
 function randomSuffix(len: number): string {
   const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = require('crypto').randomBytes(len);
   let out = '';
   for (let i = 0; i < len; i++) {
-    out += alphabet[Math.floor(Math.random() * alphabet.length)];
+    out += alphabet[bytes[i] % alphabet.length];
   }
   return out;
 }

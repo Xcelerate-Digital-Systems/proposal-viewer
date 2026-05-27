@@ -120,22 +120,17 @@ export async function POST(req: NextRequest) {
 
   const { agencyId } = verified;
 
-  const body = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   const { name, slug } = body as { name?: string; slug?: string };
 
   if (!name?.trim() || !slug?.trim()) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
-  }
-
-  // Slug must be unique
-  const { data: existing } = await supabaseAdmin
-    .from('companies')
-    .select('id')
-    .eq('slug', slug.trim())
-    .single();
-
-  if (existing) {
-    return NextResponse.json({ error: 'Slug already exists' }, { status: 409 });
   }
 
   const { data: client, error } = await supabaseAdmin
@@ -150,6 +145,9 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
+    if (error.code === '23505') {
+      return NextResponse.json({ error: 'This slug is already taken' }, { status: 409 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

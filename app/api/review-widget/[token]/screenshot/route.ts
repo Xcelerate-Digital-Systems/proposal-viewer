@@ -1,11 +1,6 @@
 // app/api/review-widget/[token]/screenshot/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServiceClient } from '@/lib/supabase-server';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +14,7 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
+  const supabase = createServiceClient();
   try {
     const body = await req.json();
     const { item: itemId, image } = body as { item?: string; image?: string };
@@ -31,7 +27,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     }
 
     // Validate project
-    const { data: project } = await supabaseAdmin
+    const { data: project } = await supabase
       .from('review_projects')
       .select('id')
       .eq('share_token', params.token)
@@ -45,7 +41,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     }
 
     // Validate item belongs to project
-    const { data: item } = await supabaseAdmin
+    const { data: item } = await supabase
       .from('review_items')
       .select('id')
       .eq('id', itemId)
@@ -88,9 +84,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     }
 
     const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
-    const filename = `${project.id}/${itemId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const filename = `${project.id}/${itemId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
 
-    const { error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await supabase.storage
       .from('review-screenshots')
       .upload(filename, buffer, {
         contentType: mimeType,
@@ -107,7 +103,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     }
 
     // Get public URL
-    const { data: urlData } = supabaseAdmin.storage
+    const { data: urlData } = supabase.storage
       .from('review-screenshots')
       .getPublicUrl(filename);
 

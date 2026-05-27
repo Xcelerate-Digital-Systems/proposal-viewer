@@ -503,6 +503,7 @@ async function fireReviewWebhooks(payload: {
         method: 'POST',
         headers,
         body,
+        redirect: 'manual',
         signal: AbortSignal.timeout(10000),
       });
     } catch (err) {

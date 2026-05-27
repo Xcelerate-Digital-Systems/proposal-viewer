@@ -154,7 +154,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
   if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
@@ -195,7 +201,13 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
 

@@ -46,7 +46,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { team_member_id } = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { team_member_id } = body;
   if (!team_member_id) {
     return NextResponse.json({ error: 'team_member_id required' }, { status: 400 });
   }
@@ -107,7 +114,14 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { team_member_id, prefs } = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { team_member_id, prefs } = body;
   if (!team_member_id || !prefs || typeof prefs !== 'object') {
     return NextResponse.json({ error: 'team_member_id and prefs required' }, { status: 400 });
   }

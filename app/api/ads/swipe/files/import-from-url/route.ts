@@ -15,6 +15,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { corsPreflight, withCors } from '@/lib/cors';
 import { canAccessType, visibleTypesOrFilter } from '@/lib/swipe-files/access';
+import { isValidWebhookUrl } from '@/lib/sanitize';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -98,6 +99,9 @@ export async function POST(req: NextRequest) {
     let thumbnail_url: string | null = null;
 
     if (typeof media_src_url === 'string' && media_src_url.length > 0) {
+      if (!isValidWebhookUrl(media_src_url)) {
+        return withCors(NextResponse.json({ error: 'media_src_url not allowed: private/internal addresses are blocked' }, { status: 400 }));
+      }
       const uploaded = await downloadAndStore(media_src_url, owningCompanyId, 'media');
       if ('error' in uploaded) {
         return withCors(NextResponse.json({ error: uploaded.error }, { status: 400 }));
@@ -107,6 +111,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (typeof thumbnail_src_url === 'string' && thumbnail_src_url.length > 0) {
+      if (!isValidWebhookUrl(thumbnail_src_url)) {
+        return withCors(NextResponse.json({ error: 'thumbnail_src_url not allowed: private/internal addresses are blocked' }, { status: 400 }));
+      }
       const uploaded = await downloadAndStore(thumbnail_src_url, owningCompanyId, 'thumb');
       if (!('error' in uploaded)) thumbnail_url = uploaded.public_url;
     }
@@ -154,9 +161,14 @@ async function downloadAndStore(
   companyId: string,
   stub: string
 ): Promise<{ error: string } | { public_url: string; media_type: 'image' | 'video' }> {
+  if (!isValidWebhookUrl(srcUrl)) {
+    return { error: 'URL not allowed: private/internal addresses are blocked' };
+  }
+
   let res: Response;
   try {
     res = await fetch(srcUrl, {
+      redirect: 'manual',
       // Meta CDN sometimes 403s without a referer/UA
       headers: {
         'User-Agent':

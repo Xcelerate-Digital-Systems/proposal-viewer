@@ -11,7 +11,6 @@ import {
 import WorkspaceSwitcher from './sidebar/WorkspaceSwitcher';
 import SwipeTypesSidebarNav from './sidebar/SwipeTypesSidebarNav';
 import FeedbackItemsSidebarNav from './sidebar/FeedbackItemsSidebarNav';
-import NotificationBell from './NotificationBell';
 import {
   ALL_SECTIONS, STANDALONE_ITEMS, WORKSPACE_ITEMS, getActiveSection, LayoutDashboard,
   type NavItem, type SectionDef,
@@ -25,7 +24,6 @@ interface AdminSidebarProps {
   memberEmail?: string;
   memberRole?: string;
   companyId?: string;
-  userId?: string;
   isSuperAdmin?: boolean;
   isAgencyAdmin?: boolean;
   accountType?: 'agency' | 'client';
@@ -47,7 +45,6 @@ export default function AdminSidebar({
   memberName,
   memberEmail,
   companyId,
-  userId,
   isSuperAdmin = false,
   isAgencyAdmin = false,
   accountType = 'agency',
@@ -264,7 +261,6 @@ export default function AdminSidebar({
             </p>
             <p className="text-xs text-white/40 truncate">{memberEmail}</p>
           </div>
-          <NotificationBell userId={userId ?? null} companyId={companyId ?? null} />
         </div>
         <button
           onClick={onSignOut}

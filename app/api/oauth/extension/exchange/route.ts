@@ -7,10 +7,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit({ key: `oauth:ext-exchange:${ipFromRequest(req)}`, limit: 10, windowSeconds: 60 });
+  if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === 'string' ? body.code : '';
   if (!code) return NextResponse.json({ error: 'code is required' }, { status: 400 });

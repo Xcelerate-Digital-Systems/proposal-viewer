@@ -1,6 +1,7 @@
 // app/api/review-comments/video-upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 /**
  * POST /api/review-comments/video-upload
@@ -49,6 +50,14 @@ export async function POST(req: NextRequest) {
     // service role, but the path is tied to a real project.
     let scope: string;
     if (companyIdRaw) {
+      // Admin path — require authentication and verify company ownership
+      const auth = await getAuthContext(req);
+      if (!auth) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      if (!auth.member.is_super_admin && companyIdRaw !== auth.companyId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
       scope = `company/${companyIdRaw}`;
     } else {
       const { data: project } = await supabase

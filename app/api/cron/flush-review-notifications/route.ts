@@ -43,7 +43,7 @@ type PendingRow = {
 
 function authorized(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // local dev — allow when unset
+  if (!secret) return false; // fail closed — require CRON_SECRET in all environments
   const header = req.headers.get('authorization');
   return header === `Bearer ${secret}`;
 }

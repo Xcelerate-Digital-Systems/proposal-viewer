@@ -4,12 +4,7 @@
 // project's `script_installed_at` the first time it succeeds so the admin
 // setup wizard can advance from "waiting for install" → "add first page".
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServiceClient } from '@/lib/supabase-server';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -24,8 +19,9 @@ export async function OPTIONS() {
 
 export async function POST(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
+  const supabase = createServiceClient();
   try {
-    const { data: project } = await supabaseAdmin
+    const { data: project } = await supabase
       .from('review_projects')
       .select('id, script_installed_at, status')
       .eq('share_token', params.token)
@@ -38,7 +34,7 @@ export async function POST(_req: NextRequest, props: { params: Promise<{ token: 
     const now = new Date().toISOString();
 
     if (!project.script_installed_at) {
-      await supabaseAdmin
+      await supabase
         .from('review_projects')
         .update({ script_installed_at: now })
         .eq('id', project.id);

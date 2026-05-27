@@ -1,14 +1,86 @@
 // app/api/review-comments/[id]/reactions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
+
+type RouteContext = { params: Promise<{ id: string }> };
+
+/**
+ * Verify the caller is allowed to interact with reactions on this comment.
+ *
+ * Admin path: Authorization header present → getAuthContext, then verify the
+ * comment's company_id matches the caller's companyId.
+ *
+ * Public path: share_token query param → look up the comment's review_item_id,
+ * then verify the review item belongs to a review_project with that share_token.
+ */
+async function authoriseReactionAccess(req: NextRequest, commentId: string) {
+  const supabase = createServiceClient();
+  const hasAuthHeader = !!req.headers.get('authorization');
+  const shareToken = req.nextUrl.searchParams.get('share_token');
+
+  if (!hasAuthHeader && !shareToken) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+
+  // Load the comment (needed for both paths)
+  const { data: comment, error: commentErr } = await supabase
+    .from('review_comments')
+    .select('id, company_id, review_item_id')
+    .eq('id', commentId)
+    .single();
+
+  if (commentErr || !comment) {
+    return { error: NextResponse.json({ error: 'Comment not found' }, { status: 404 }) };
+  }
+
+  if (hasAuthHeader) {
+    // Admin path — verify auth + company ownership
+    const auth = await getAuthContext(req);
+    if (!auth) {
+      return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+    }
+    if (!auth.member.is_super_admin && comment.company_id !== auth.companyId) {
+      return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+    }
+    return { supabase, comment };
+  }
+
+  // Public path — verify share_token matches the comment's review project
+  const { data: item } = await supabase
+    .from('review_items')
+    .select('id, project_id')
+    .eq('id', comment.review_item_id)
+    .single();
+
+  if (!item) {
+    return { error: NextResponse.json({ error: 'Review item not found' }, { status: 404 }) };
+  }
+
+  const { data: project } = await supabase
+    .from('review_projects')
+    .select('id')
+    .eq('id', item.project_id)
+    .eq('share_token', shareToken)
+    .maybeSingle();
+
+  if (!project) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+
+  return { supabase, comment };
+}
 
 /**
  * GET /api/review-comments/[id]/reactions
  * Fetch all reactions for a comment.
  */
-export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, props: RouteContext) {
   const params = await props.params;
-  const supabase = createServiceClient();
+
+  const ctx = await authoriseReactionAccess(req, params.id);
+  if ('error' in ctx) return ctx.error;
+  const { supabase } = ctx;
 
   const { data, error } = await supabase
     .from('review_comment_reactions')
@@ -30,10 +102,13 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
  *
  * Body: { emoji, author_name, author_user_id? }
  */
-export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, props: RouteContext) {
   const params = await props.params;
   try {
-    const supabase = createServiceClient();
+    const ctx = await authoriseReactionAccess(req, params.id);
+    if ('error' in ctx) return ctx.error;
+    const { supabase } = ctx;
+
     const body = await req.json();
 
     const { emoji, author_name, author_user_id } = body;

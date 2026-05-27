@@ -97,20 +97,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const { name, slug } = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { name, slug } = body;
 
   if (!name || !slug) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
-  }
-
-  const { data: existing } = await supabaseAdmin
-    .from('companies')
-    .select('id')
-    .eq('slug', slug)
-    .single();
-
-  if (existing) {
-    return NextResponse.json({ error: 'Slug already exists' }, { status: 409 });
   }
 
   const { data: company, error } = await supabaseAdmin
@@ -120,6 +117,9 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
+    if (error.code === '23505') {
+      return NextResponse.json({ error: 'This slug is already taken' }, { status: 409 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

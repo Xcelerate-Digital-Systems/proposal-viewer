@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
       key: `auth:claim:${ipFromRequest(req)}`,
       limit: CLAIM_LIMIT,
       windowSeconds: CLAIM_WINDOW_SECONDS,
+      failClosed: true,
     });
     if (!rl.success) {
       return NextResponse.json(

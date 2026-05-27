@@ -29,6 +29,10 @@ export interface RateLimitOptions {
   limit: number;
   /** Window length in seconds. */
   windowSeconds: number;
+  /** When true, RPC errors deny the request instead of allowing it through.
+   *  Use for auth endpoints where fail-open would let attackers bypass the
+   *  rate limit during a Postgres outage. */
+  failClosed?: boolean;
 }
 
 export interface RateLimitResult {
@@ -46,9 +50,19 @@ export async function rateLimit(opts: RateLimitOptions): Promise<RateLimitResult
   });
 
   if (error || !Array.isArray(data) || data.length === 0) {
-    // Fail open. Rate limiting is defense-in-depth; an outage here shouldn't
-    // lock users out of legitimate flows. Log so we notice.
-    console.error('[rate-limit] check failed, failing open:', error);
+    console.error('[rate-limit] check failed,', opts.failClosed ? 'failing closed' : 'failing open', ':', error);
+    if (opts.failClosed) {
+      // Auth-critical endpoints: deny the request when we can't verify the
+      // rate limit. An attacker could exploit a Postgres outage to bypass
+      // brute-force protection.
+      return {
+        success: false,
+        remaining: 0,
+        reset: new Date(Date.now() + opts.windowSeconds * 1000),
+      };
+    }
+    // Non-critical endpoints: fail open so a DB hiccup doesn't lock out
+    // legitimate users. Rate limiting is defense-in-depth here.
     return {
       success: true,
       remaining: opts.limit,
@@ -66,12 +80,20 @@ export async function rateLimit(opts: RateLimitOptions): Promise<RateLimitResult
 
 /** Pull the client IP off Vercel/proxy headers. Falls back to "unknown" so
  *  the rate limiter still applies (under a shared bucket) when no IP is
- *  visible — better than failing open per-request. */
+ *  visible — better than failing open per-request.
+ *
+ *  Prefers x-real-ip (set by Vercel to the true client IP and non-spoofable)
+ *  over x-forwarded-for. When falling back to XFF, takes the LAST entry
+ *  (the one appended by the trusted edge proxy) rather than the first
+ *  (attacker-controlled). */
 export function ipFromRequest(req: NextRequest | Request): string {
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
   const xRealIp = req.headers.get('x-real-ip');
-  if (xRealIp) return xRealIp;
+  if (xRealIp) return xRealIp.trim();
+  const xff = req.headers.get('x-forwarded-for');
+  if (xff) {
+    const parts = xff.split(',');
+    return parts[parts.length - 1].trim();
+  }
   return 'unknown';
 }
 

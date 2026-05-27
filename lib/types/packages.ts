@@ -204,7 +204,7 @@ export function formatAUD(amount: number): string {
 
 /** Helper: generate a short unique id for line items */
 export function generateItemId(): string {
-  return Math.random().toString(36).substring(2, 10);
+  return crypto.randomUUID().slice(0, 8);
 }
 
 /** Helper: calculate the dollar amount for a milestone payment */

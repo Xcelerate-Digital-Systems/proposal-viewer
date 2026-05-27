@@ -1,31 +1,30 @@
 // components/admin/settings/RolesTab.tsx
 'use client';
 
-// Read-only reference table for the team-role permission matrix. Mirrors the
-// shape of Filestage's Team → Roles page. Source data lives in
-// `lib/permissions.ts` so the tab and code-level gates stay in sync.
-
-import { Check, X, Crown, Shield, User } from 'lucide-react';
+import { Check, X, Crown, Shield, User, Eye, MessageSquare } from 'lucide-react';
 import {
   PERMISSION_GROUPS, PERMISSION_MATRIX, ROLE_LABELS, ROLE_DESCRIPTIONS,
-  TEAM_ROLES, type TeamRole,
+  ROLE_CATEGORIES, ALL_ROLES, type AnyRole,
 } from '@/lib/permissions';
 
-const ROLE_ICON: Record<TeamRole, typeof Crown> = {
+const ROLE_ICON: Record<AnyRole, typeof Crown> = {
   owner: Crown,
   admin: Shield,
   member: User,
+  client: Eye,
+  guest: MessageSquare,
 };
 
-const ROLE_ICON_CLASS: Record<TeamRole, string> = {
+const ROLE_ICON_CLASS: Record<AnyRole, string> = {
   owner: 'text-teal',
   admin: 'text-teal/70',
   member: 'text-faint',
+  client: 'text-blue-500',
+  guest: 'text-violet-500',
 };
 
 interface RolesTabProps {
-  /** The viewer's current role — used to subtly highlight the column. */
-  currentRole?: TeamRole | string;
+  currentRole?: AnyRole | string;
 }
 
 export default function RolesTab({ currentRole }: RolesTabProps) {
@@ -39,27 +38,67 @@ export default function RolesTab({ currentRole }: RolesTabProps) {
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-        <table className="w-full">
+      <div className="flex gap-3 flex-wrap">
+        {ROLE_CATEGORIES.map((cat) => (
+          <div key={cat.key} className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-faint">{cat.label}</span>
+            <div className="flex gap-1.5">
+              {cat.roles.map((role) => {
+                const Icon = ROLE_ICON[role];
+                return (
+                  <span
+                    key={role}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${
+                      role === currentRole
+                        ? 'bg-teal/10 text-teal ring-1 ring-teal/20'
+                        : 'bg-surface text-muted'
+                    }`}
+                  >
+                    <Icon size={11} className={ROLE_ICON_CLASS[role]} />
+                    {ROLE_LABELS[role]}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-edge overflow-x-auto">
+        <table className="w-full min-w-[700px]">
           <thead>
             <tr className="border-b border-gray-100">
-              <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-muted px-5 py-3">
+              <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-muted px-5 py-3 w-[240px]">
                 Permission
               </th>
-              {TEAM_ROLES.map((role) => {
+              {ROLE_CATEGORIES.map((cat) => (
+                <th
+                  key={cat.key}
+                  colSpan={cat.roles.length}
+                  className="text-center px-2 py-1.5 border-l border-gray-100 first:border-l-0"
+                >
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">
+                    {cat.label}
+                  </span>
+                </th>
+              ))}
+            </tr>
+            <tr className="border-b border-gray-100">
+              <th />
+              {ALL_ROLES.map((role) => {
                 const Icon = ROLE_ICON[role];
                 const isCurrent = currentRole === role;
                 return (
                   <th
                     key={role}
-                    className={`text-center px-4 py-3 ${isCurrent ? 'bg-teal/5' : ''}`}
+                    className={`text-center px-3 py-3 ${isCurrent ? 'bg-teal/5' : ''}`}
                   >
                     <div className="flex flex-col items-center gap-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <Icon size={13} className={ROLE_ICON_CLASS[role]} />
-                        <span className="text-[13px] font-semibold text-ink">{ROLE_LABELS[role]}</span>
+                      <div className="flex items-center gap-1">
+                        <Icon size={12} className={ROLE_ICON_CLASS[role]} />
+                        <span className="text-[12px] font-semibold text-ink">{ROLE_LABELS[role]}</span>
                       </div>
-                      <span className="text-[10px] text-muted leading-tight max-w-[160px]">
+                      <span className="text-[10px] text-muted leading-tight max-w-[120px]">
                         {ROLE_DESCRIPTIONS[role]}
                       </span>
                     </div>
@@ -93,30 +132,30 @@ function PermissionGroup({
 }: {
   label: string;
   rows: typeof PERMISSION_MATRIX;
-  currentRole?: TeamRole | string;
+  currentRole?: AnyRole | string;
 }) {
   return (
     <>
       <tr className="bg-surface/60 border-t border-gray-100">
-        <td colSpan={TEAM_ROLES.length + 1} className="px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+        <td colSpan={ALL_ROLES.length + 1} className="px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
           {label}
         </td>
       </tr>
       {rows.map((row) => (
-        <tr key={row.key} className="border-t border-gray-100">
+        <tr key={row.key} className="border-t border-gray-100 hover:bg-surface/30 transition-colors">
           <td className="px-5 py-3 align-top">
             <div className="text-[13px] font-medium text-ink">{row.label}</div>
             {row.description && (
               <div className="text-[11px] text-muted mt-0.5">{row.description}</div>
             )}
           </td>
-          {TEAM_ROLES.map((role) => {
+          {ALL_ROLES.map((role) => {
             const grant = row.grants[role];
             const isCurrent = currentRole === role;
             return (
               <td
                 key={role}
-                className={`px-4 py-3 text-center align-middle ${isCurrent ? 'bg-teal/5' : ''}`}
+                className={`px-3 py-3 text-center align-middle ${isCurrent ? 'bg-teal/5' : ''}`}
               >
                 <GrantCell grant={grant} />
               </td>
@@ -136,7 +175,7 @@ function GrantCell({ grant }: { grant: true | false | { partial: string } }) {
     return <X size={16} className="text-gray-300 inline" />;
   }
   return (
-    <span className="text-[11px] text-muted leading-snug inline-block max-w-[160px]">
+    <span className="text-[10px] text-muted leading-snug inline-block max-w-[120px]">
       {grant.partial}
     </span>
   );

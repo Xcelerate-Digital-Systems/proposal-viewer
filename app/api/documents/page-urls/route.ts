@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 import { getPageUrls, PageUrlEntry } from '@/lib/page-operations';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,26 @@ export async function GET(req: NextRequest) {
     }
 
     const supabase = createServiceClient();
+
+    // When accessed by entity_id (admin path), require auth and verify
+    // the document belongs to the caller's company.
+    if (entityId && !shareToken) {
+      const auth = await getAuthContext(req);
+      if (!auth) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: NO_CACHE });
+      }
+
+      const { data: document } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('id', entityId)
+        .eq('company_id', auth.companyId)
+        .maybeSingle();
+      if (!document) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404, headers: NO_CACHE });
+      }
+    }
+
     const result = await getPageUrls(supabase, 'document', { entityId, shareToken }) as PageUrlsResult;
 
     if (result.error && !result.fallback) {

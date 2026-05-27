@@ -4,13 +4,12 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
-  Settings, UserCircle2, Bell, Users, Code2, CreditCard, KeyRound,
+  Settings, UserCircle2, Users, Code2, CreditCard, KeyRound,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import BusinessDetailsCard from '@/components/admin/company/BusinessDetailsCard';
 import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
-import NotificationSection from '@/components/admin/settings/NotificationSection';
 import MarkupDefaultsSection from '@/components/admin/settings/MarkupDefaultsSection';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
@@ -19,9 +18,8 @@ import MembersTab from '@/components/admin/settings/MembersTab';
 import BillingTab from '@/components/admin/settings/BillingTab';
 import RolesTab from '@/components/admin/settings/RolesTab';
 import { type TeamMember } from '@/lib/supabase';
-import { NOTIFICATION_OPTIONS } from '@/components/admin/settings/settings-config';
 
-type TabKey = 'profile' | 'notifications' | 'members' | 'roles' | 'billing' | 'developer';
+type TabKey = 'profile' | 'members' | 'roles' | 'billing' | 'developer';
 
 interface TabDef {
   key: TabKey;
@@ -31,12 +29,11 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { key: 'profile',       label: 'Profile',       icon: UserCircle2, description: 'Your name and photo' },
-  { key: 'notifications', label: 'Notifications', icon: Bell,        description: 'Email alerts for events' },
-  { key: 'members',       label: 'Members',       icon: Users,       description: 'Team members, roles, and invites' },
-  { key: 'roles',         label: 'Roles',         icon: KeyRound,    description: 'What each role can do' },
-  { key: 'billing',       label: 'Billing',       icon: CreditCard,  description: 'Plan, payment, invoices' },
-  { key: 'developer',     label: 'Developer',     icon: Code2,       description: 'Webhooks and API keys' },
+  { key: 'profile',   label: 'Profile',   icon: UserCircle2, description: 'Your name and photo' },
+  { key: 'members',   label: 'Members',   icon: Users,       description: 'Team, notifications, and invites' },
+  { key: 'roles',     label: 'Roles',     icon: KeyRound,    description: 'What each role can do' },
+  { key: 'billing',   label: 'Billing',   icon: CreditCard,  description: 'Plan, payment, invoices' },
+  { key: 'developer', label: 'Developer', icon: Code2,       description: 'Webhooks and API keys' },
 ];
 
 export default function SettingsPage() {
@@ -61,7 +58,7 @@ function SettingsContent({ auth }: {
     updatePreferences: (prefs: Partial<TeamMember>) => Promise<{ error: unknown } | undefined>;
   };
 }) {
-  const { teamMember, companyId, isSuperAdmin, accountType, updatePreferences } = auth;
+  const { teamMember, companyId, isSuperAdmin, accountType } = auth;
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -71,8 +68,6 @@ function SettingsContent({ auth }: {
     TABS.some(t => t.key === initialTab) ? initialTab : 'profile'
   );
 
-  // Keep URL in sync when the user clicks a tab. Use replace so it doesn't
-  // pollute browser history with every tab switch.
   const setTab = (key: TabKey) => {
     setActiveTab(key);
     const params = new URLSearchParams(searchParams.toString());
@@ -80,7 +75,6 @@ function SettingsContent({ auth }: {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  // React to back/forward navigation that changes the ?tab= param.
   useEffect(() => {
     const t = searchParams.get('tab') as TabKey | null;
     if (t && TABS.some(d => d.key === t) && t !== activeTab) {
@@ -92,16 +86,6 @@ function SettingsContent({ auth }: {
   const isAdminOrOwner = teamMember?.role === 'owner' || teamMember?.role === 'admin';
   const canSeeDeveloper = isSuperAdmin || isAdminOrOwner;
   const canSeeBilling = isAdminOrOwner && accountType === 'agency';
-
-  const [savingPref, setSavingPref] = useState<string | null>(null);
-  const handleToggle = async (key: string) => {
-    if (!teamMember) return;
-    setSavingPref(key);
-    await updatePreferences({
-      [key]: !(teamMember as Record<string, unknown>)[key],
-    } as Partial<TeamMember>);
-    setSavingPref(null);
-  };
 
   return (
     <div className="px-6 lg:px-10 py-8 max-w-6xl">
@@ -160,7 +144,7 @@ function SettingsContent({ auth }: {
                   companyId={companyId || ''}
                   name={teamMember.name || ''}
                   avatarPath={(teamMember as Record<string, unknown>).avatar_path as string || ''}
-                  onSave={(updates) => updatePreferences(updates as Partial<TeamMember>)}
+                  onSave={(updates) => auth.updatePreferences(updates as Partial<TeamMember>)}
                 />
               </div>
               {companyId && (
@@ -182,41 +166,24 @@ function SettingsContent({ auth }: {
             </section>
           )}
 
-          {activeTab === 'notifications' && (
-            <section>
-              <SectionHeader
-                title="Notifications"
-                description="Email alerts for events across your workspace."
-              />
-              <div className="max-w-lg space-y-6">
-                <NotificationSection
-                  title="Proposals"
-                  options={NOTIFICATION_OPTIONS}
-                  teamMember={teamMember}
-                  saving={savingPref}
-                  onToggle={handleToggle}
+          {activeTab === 'members' && companyId && teamMember && (
+            <section className="space-y-8">
+              <div>
+                <SectionHeader
+                  title="Members & Notifications"
+                  description="Manage who has access to this workspace. Notification defaults apply to new Markup project assignees and guests."
                 />
+                <MembersTab
+                  companyId={companyId}
+                  currentMemberId={teamMember.id}
+                  currentRole={teamMember.role}
+                  isSuperAdmin={isSuperAdmin}
+                  accountType={accountType}
+                />
+              </div>
+              <div>
                 <MarkupDefaultsSection canEdit={isAdminOrOwner || isSuperAdmin} />
               </div>
-              <p className="mt-4 max-w-lg text-xs text-faint">
-                Markup defaults apply to new project assignees and new guest reviewers. Each project can override per person under its Settings tab.
-              </p>
-            </section>
-          )}
-
-          {activeTab === 'members' && companyId && teamMember && (
-            <section>
-              <SectionHeader
-                title="Members"
-                description="Manage who has access to this workspace and what they can do."
-              />
-              <MembersTab
-                companyId={companyId}
-                currentMemberId={teamMember.id}
-                currentRole={teamMember.role}
-                isSuperAdmin={isSuperAdmin}
-                accountType={accountType}
-              />
             </section>
           )}
 

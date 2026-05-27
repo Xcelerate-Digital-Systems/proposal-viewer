@@ -1,6 +1,6 @@
 // app/api/review-widget/[token]/script/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase-server';
 import { iconsJS } from './parts/icons';
 import { stylesJS } from './parts/styles';
 import { coreJS } from './parts/core';
@@ -19,11 +19,6 @@ import { onboardingJS } from './parts/onboarding';
 import { tourJS } from './parts/tour';
 import { initJS } from './parts/init';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 type ItemRef = { id: string; url: string };
 
 function jsResponse(body: string, status = 200) {
@@ -40,8 +35,9 @@ function jsResponse(body: string, status = 200) {
 export async function GET(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   const itemId = req.nextUrl.searchParams.get('item');
+  const supabase = createServiceClient();
 
-  const { data: project } = await supabaseAdmin
+  const { data: project } = await supabase
     .from('review_projects')
     .select('id, status, widget_enabled, company_id')
     .eq('share_token', params.token)
@@ -57,7 +53,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
   // colour is set, matching the rest of the public viewer.
   let accentColor = '#017C87';
   if (project.company_id) {
-    const { data: company } = await supabaseAdmin
+    const { data: company } = await supabase
       .from('companies')
       .select('accent_color')
       .eq('id', project.company_id)
@@ -83,7 +79,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 
   if (itemId) {
     // Legacy / explicit per-page install
-    const { data: item } = await supabaseAdmin
+    const { data: item } = await supabase
       .from('review_items')
       .select('id')
       .eq('id', itemId)
@@ -98,7 +94,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
   } else {
     // Project-wide install — emit the full list of webpage items and
     // resolve which one matches the current URL at runtime.
-    const { data: rows } = await supabaseAdmin
+    const { data: rows } = await supabase
       .from('review_items')
       .select('id, url')
       .eq('review_project_id', project.id)

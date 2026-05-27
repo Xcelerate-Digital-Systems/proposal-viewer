@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { sendInviteEmail } from '@/lib/auth-emails';
+import { rateLimit } from '@/lib/rate-limit';
 
 // DELETE - Revoke a pending invite
 export async function DELETE(
@@ -67,6 +68,12 @@ export async function POST(
       return NextResponse.json({ error: 'Only owners and admins can resend invites' }, { status: 403 });
     }
 
+    // Rate limit: 5 resends per minute per company
+    const rl = await rateLimit({ key: `invite:resend:${companyId}`, limit: 5, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const { id } = await params;
     const supabase = createServiceClient();
 
@@ -101,7 +108,8 @@ export async function POST(
       .eq('id', companyId)
       .single();
 
-    const baseUrl = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || '';
+    // Never trust Origin header for email links (phishing risk)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
     const inviteUrl = `${baseUrl}/login?invite=${invite.token}`;
 
     try {

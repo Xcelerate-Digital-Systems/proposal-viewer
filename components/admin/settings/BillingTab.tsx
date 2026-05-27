@@ -2,7 +2,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CreditCard, Loader2, Sparkles, RefreshCcw, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  CreditCard, Loader2, Sparkles, RefreshCcw, Trash2, AlertTriangle,
+  Check, Zap, Users, FileText, Palette, BarChart3, Globe, Webhook,
+  Calendar, Receipt, ArrowUpRight, Shield,
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { authFetch } from '@/lib/auth-fetch';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -40,6 +44,17 @@ interface BillingTabProps {
   role: 'owner' | 'admin' | 'member';
 }
 
+const PLAN_FEATURES = [
+  { icon: FileText, label: 'Unlimited proposals & documents' },
+  { icon: Users,    label: 'Unlimited team members' },
+  { icon: Palette,  label: 'Custom branding & fonts' },
+  { icon: Globe,    label: 'Custom domain support' },
+  { icon: Zap,      label: 'AI content generation' },
+  { icon: BarChart3, label: 'Analytics & insights' },
+  { icon: Webhook,  label: 'Webhooks & API access' },
+  { icon: Shield,   label: 'Creative review & approvals' },
+];
+
 export default function BillingTab({ companyId, role }: BillingTabProps) {
   const [data, setData] = useState<SubscriptionResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,9 +89,6 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
-  // Fetch company name for the delete-confirm phrase. Cheap; only owners
-  // see the Danger Zone but we fetch unconditionally so the modal can
-  // mount instantly.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -138,7 +150,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
 
   if (loading) {
     return (
-      <div className="max-w-2xl border border-edge rounded-2xl p-10 flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <Loader2 size={20} className="animate-spin text-faint" />
       </div>
     );
@@ -149,79 +161,121 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
   const hasActiveBillingRelationship =
     !!sub?.stripe_customer_id && sub.status !== 'incomplete';
 
+  const monthlyPrice = plan ? formatMoney(plan.monthly_price_cents) : '$0';
+  const yearlyPrice = plan ? formatMoney(plan.yearly_price_cents) : '$0';
+  const yearlyMonthly = plan ? formatMoney(Math.round(plan.yearly_price_cents / 12)) : '$0';
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       {error && (
-        <div className="border border-red-200 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+        <div className="border border-red-200 bg-red-50 text-red-700 text-sm rounded-xl p-3">
           {error}
         </div>
       )}
 
-      {/* Plan card */}
-      <div className="border border-edge rounded-2xl p-6 bg-white">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles size={16} className="text-teal" />
-              <span className="text-xs uppercase tracking-wide text-faint font-semibold">
-                Current plan
-              </span>
-            </div>
-            <div className="text-lg font-semibold text-ink">
-              {plan?.name ?? 'No plan'}
+      {/* Hero plan card */}
+      <div className="bg-white border border-edge rounded-2xl overflow-hidden">
+        <div className="bg-gradient-to-br from-teal/5 via-white to-teal/3 px-6 py-6">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-teal/10 flex items-center justify-center">
+                  <Sparkles size={16} className="text-teal" />
+                </div>
+                <StatusBadge status={sub?.status ?? 'incomplete'} />
+              </div>
+              <h3 className="text-xl font-bold text-ink">{plan?.name ?? 'No plan'}</h3>
+              {sub?.billing_cycle && (
+                <p className="text-sm text-muted mt-0.5">
+                  Billed {sub.billing_cycle === 'yearly' ? 'annually' : 'monthly'}
+                </p>
+              )}
             </div>
             {plan && (
-              <div className="text-sm text-muted mt-1">
-                {formatMoney(plan.monthly_price_cents)} / month
-                {' · '}
-                {formatMoney(plan.yearly_price_cents)} / year
+              <div className="text-right">
+                <div className="text-2xl font-bold text-ink">
+                  {sub?.billing_cycle === 'yearly' ? yearlyMonthly : monthlyPrice}
+                </div>
+                <div className="text-xs text-muted">per month</div>
+                {sub?.billing_cycle === 'yearly' && (
+                  <div className="text-xs text-teal font-medium mt-0.5">
+                    {yearlyPrice} billed annually
+                  </div>
+                )}
               </div>
             )}
           </div>
-          <StatusBadge status={sub?.status ?? 'incomplete'} />
+
+          {/* Trial alert */}
+          {sub?.status === 'trialing' && data && data.trial_days_remaining !== null && (
+            <div className="bg-teal/5 border border-teal/15 rounded-xl p-3.5 flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center shrink-0">
+                <Calendar size={16} className="text-teal" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-ink">
+                  {data.trial_days_remaining === 0
+                    ? 'Your trial ends today'
+                    : `${data.trial_days_remaining} day${data.trial_days_remaining === 1 ? '' : 's'} left in your trial`}
+                </p>
+                {sub.trial_ends_at && (
+                  <p className="text-xs text-muted mt-0.5">
+                    Your subscription will begin on {formatDate(sub.trial_ends_at)}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Cancellation notice */}
+          {sub?.cancel_at_period_end && sub.current_period_end && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertTriangle size={16} className="text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-amber-900">Subscription ending</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Access continues until {formatDate(sub.current_period_end)}. Reactivate to keep your workspace.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Next billing / period info */}
+          {hasActiveBillingRelationship && sub?.current_period_end && !sub.cancel_at_period_end && sub.status !== 'trialing' && (
+            <div className="flex items-center gap-2 text-xs text-muted mt-3 pt-3 border-t border-edge">
+              <Receipt size={13} className="text-faint" />
+              Next billing date: <span className="text-ink font-medium">{formatDate(sub.current_period_end)}</span>
+            </div>
+          )}
         </div>
-
-        {sub?.status === 'trialing' && data?.trial_days_remaining !== null && (
-          <div className="mt-4 bg-teal/5 border border-teal/20 rounded-lg p-3 text-sm text-ink">
-            {data?.trial_days_remaining === 0
-              ? 'Your trial ends today.'
-              : `${data?.trial_days_remaining} day${data?.trial_days_remaining === 1 ? '' : 's'} left in your trial.`}
-            {sub?.trial_ends_at && (
-              <span className="text-muted ml-1">
-                Auto-renews on {formatDate(sub.trial_ends_at)}.
-              </span>
-            )}
-          </div>
-        )}
-
-        {sub?.cancel_at_period_end && sub.current_period_end && (
-          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">
-            Subscription is set to cancel on {formatDate(sub.current_period_end)}.
-          </div>
-        )}
       </div>
 
-      {/* Action card */}
+      {/* Checkout (no subscription) or Management (active sub) */}
       {!hasActiveBillingRelationship ? (
-        <div className="border border-edge rounded-2xl p-6 bg-white">
+        <div className="bg-white border border-edge rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-ink mb-1">Start your subscription</h3>
-          <p className="text-xs text-faint mb-4">
-            Card is required to start the 7-day trial. You won&apos;t be charged until day 7
+          <p className="text-xs text-muted mb-5">
+            Card is required to start the 7-day free trial. You won&apos;t be charged until day 7
             and can cancel any time.
           </p>
 
-          <div className="flex gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-5">
             <CycleOption
               active={cycle === 'monthly'}
               label="Monthly"
-              sub={plan ? `${formatMoney(plan.monthly_price_cents)} / mo` : ''}
+              price={monthlyPrice}
+              sub="per month"
               onClick={() => setCycle('monthly')}
             />
             <CycleOption
               active={cycle === 'yearly'}
               label="Yearly"
-              sub={plan ? `${formatMoney(plan.yearly_price_cents)} / yr` : ''}
-              badge="Save 2 months"
+              price={yearlyMonthly}
+              sub="per month"
+              badge="Save 17%"
+              detail={`${yearlyPrice} billed annually`}
               onClick={() => setCycle('yearly')}
             />
           </div>
@@ -236,30 +290,72 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
           </Button>
         </div>
       ) : (
-        <div className="border border-edge rounded-2xl p-6 bg-white">
-          <h3 className="text-sm font-semibold text-ink mb-1">Manage subscription</h3>
-          <p className="text-xs text-faint mb-4">
-            Update your card, switch monthly ↔ yearly, view invoices, or cancel — all
-            in your Stripe billing portal.
-          </p>
-          <div className="flex gap-3">
-            <Button
-              variant="primary"
-              loading={actioning === 'portal'}
-              onClick={openPortal}
-              leftIcon={CreditCard}
-            >
-              Manage subscription
-            </Button>
-            <Button variant="ghost" leftIcon={RefreshCcw} onClick={load}>
-              Refresh
-            </Button>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <button
+            onClick={openPortal}
+            disabled={actioning === 'portal'}
+            className="bg-white border border-edge rounded-2xl p-5 text-left hover:border-teal/30 hover:shadow-sm transition-all group"
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="w-9 h-9 rounded-xl bg-teal/10 flex items-center justify-center">
+                <CreditCard size={16} className="text-teal" />
+              </div>
+              <ArrowUpRight size={14} className="text-faint group-hover:text-teal transition-colors" />
+            </div>
+            <h4 className="text-sm font-semibold text-ink mb-0.5">Manage subscription</h4>
+            <p className="text-xs text-muted">
+              Update card, switch plans, or cancel
+            </p>
+          </button>
+
+          <button
+            onClick={openPortal}
+            disabled={actioning === 'portal'}
+            className="bg-white border border-edge rounded-2xl p-5 text-left hover:border-teal/30 hover:shadow-sm transition-all group"
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="w-9 h-9 rounded-xl bg-surface flex items-center justify-center">
+                <Receipt size={16} className="text-muted" />
+              </div>
+              <ArrowUpRight size={14} className="text-faint group-hover:text-teal transition-colors" />
+            </div>
+            <h4 className="text-sm font-semibold text-ink mb-0.5">Invoices & receipts</h4>
+            <p className="text-xs text-muted">
+              Download past invoices and update billing info
+            </p>
+          </button>
         </div>
       )}
 
-      {/* Danger Zone — owner only. Admins can manage the subscription but
-          deleting the workspace is reserved for the owner. */}
+      {/* Plan features */}
+      <div className="bg-white border border-edge rounded-2xl p-6">
+        <h3 className="text-sm font-semibold text-ink mb-1">What&apos;s included</h3>
+        <p className="text-xs text-muted mb-4">Everything you need to run your agency.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {PLAN_FEATURES.map((f) => {
+            const Icon = f.icon;
+            return (
+              <div key={f.label} className="flex items-center gap-3 py-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                  <Icon size={14} className="text-emerald-600" />
+                </div>
+                <span className="text-sm text-ink">{f.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Refresh row */}
+      {hasActiveBillingRelationship && (
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" leftIcon={RefreshCcw} onClick={load}>
+            Refresh billing data
+          </Button>
+        </div>
+      )}
+
+      {/* Danger Zone — owner only */}
       {role === 'owner' && (
         <div className="border border-red-200 rounded-2xl p-6 bg-white">
           <div className="flex items-start gap-3">
@@ -267,14 +363,14 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
               <AlertTriangle size={16} className="text-red-600" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-ink mb-1">Delete this workspace</h3>
-              <p className="text-xs text-faint mb-4">
-                Permanently delete the workspace, cancel the subscription, and remove
-                access for every teammate. This can&apos;t be undone after the 30-day
-                recovery window.
+              <h3 className="text-sm font-semibold text-ink mb-1">Danger zone</h3>
+              <p className="text-xs text-muted mb-4">
+                Permanently delete this workspace and cancel the subscription. All team
+                members lose access. Data is retained for 30 days for recovery.
               </p>
               <Button
                 variant="danger"
+                size="sm"
                 leftIcon={Trash2}
                 onClick={() => setDeleteOpen(true)}
               >
@@ -329,8 +425,6 @@ function DeleteWorkspaceModal({
         return;
       }
       track('workspace_deleted');
-      // Force a full reload so AuthGuard re-runs and lands on the
-      // "Workspace deleted" screen → sign out → /login.
       window.location.href = '/login';
     } catch {
       setError('Network error');
@@ -402,36 +496,49 @@ function DeleteWorkspaceModal({
 function CycleOption({
   active,
   label,
+  price,
   sub,
   badge,
+  detail,
   onClick,
 }: {
   active: boolean;
   label: string;
+  price: string;
   sub: string;
   badge?: string;
+  detail?: string;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 text-left rounded-lg border px-3 py-3 transition-colors ${
+      className={`relative text-left rounded-xl border-2 px-4 py-4 transition-all ${
         active
-          ? 'border-teal bg-teal/5'
+          ? 'border-teal bg-teal/5 shadow-sm'
           : 'border-edge hover:border-edge-hover bg-white'
       }`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-sm font-medium ${active ? 'text-teal' : 'text-ink'}`}>
+      {badge && (
+        <span className="absolute -top-2.5 right-3 text-[10px] uppercase tracking-wide text-white bg-teal px-2 py-0.5 rounded-full font-bold">
+          {badge}
+        </span>
+      )}
+      <div className="flex items-center gap-2 mb-2">
+        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+          active ? 'border-teal' : 'border-edge'
+        }`}>
+          {active && <div className="w-2 h-2 rounded-full bg-teal" />}
+        </div>
+        <span className={`text-sm font-semibold ${active ? 'text-teal' : 'text-ink'}`}>
           {label}
         </span>
-        {badge && (
-          <span className="text-2xs uppercase tracking-wide text-teal bg-teal/10 px-2 py-0.5 rounded-full font-semibold">
-            {badge}
-          </span>
-        )}
       </div>
-      <div className="text-xs text-muted mt-1">{sub}</div>
+      <div className="pl-6">
+        <span className="text-xl font-bold text-ink">{price}</span>
+        <span className="text-xs text-muted ml-1">{sub}</span>
+        {detail && <div className="text-xs text-muted mt-0.5">{detail}</div>}
+      </div>
     </button>
   );
 }
@@ -457,7 +564,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   return (
     <span
-      className={`text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded-full ${
+      className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${
         styles[status] ?? 'bg-gray-100 text-gray-600'
       }`}
     >

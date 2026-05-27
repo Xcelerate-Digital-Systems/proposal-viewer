@@ -15,6 +15,21 @@ const nextConfig = {
     return config;
   },
 
+  // Security headers for all routes. CSP is omitted for now — TipTap, React
+  // Flow, and the embed widget script require careful CSP configuration.
+  async headers() {
+    return [{
+      source: '/(.*)',
+      headers: [
+        { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+        { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+      ],
+    }];
+  },
+
   // Legacy redirects for renamed surfaces. Old bookmarks and email links keep
   // resolving. /feedback → /markup tracks the 2026-05-27 rename of the
   // creative review tool's public URL (DB tables stay `review_*`).

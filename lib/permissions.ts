@@ -12,20 +12,35 @@
 // can't shape the team or the company.
 
 export type TeamRole = 'owner' | 'admin' | 'member';
+export type ExternalRole = 'client' | 'guest';
+export type AnyRole = TeamRole | ExternalRole;
 
 export const TEAM_ROLES: TeamRole[] = ['owner', 'admin', 'member'];
+export const EXTERNAL_ROLES: ExternalRole[] = ['client', 'guest'];
+export const ALL_ROLES: AnyRole[] = ['owner', 'admin', 'member', 'client', 'guest'];
 
-export const ROLE_LABELS: Record<TeamRole, string> = {
+export const ROLE_LABELS: Record<AnyRole, string> = {
   owner: 'Owner',
   admin: 'Admin',
   member: 'Member',
+  client: 'Client',
+  guest: 'Guest',
 };
 
-export const ROLE_DESCRIPTIONS: Record<TeamRole, string> = {
+export const ROLE_DESCRIPTIONS: Record<AnyRole, string> = {
   owner: 'Founder-level account control. Manages billing, the team, and every project.',
   admin: 'Day-to-day operator. Manages team and projects, but not billing.',
   member: 'Hands-on collaborator. Edits content but can\'t reshape the team or company.',
+  client: 'External client. Views and responds to proposals & quotes shared with them.',
+  guest: 'External reviewer. Leaves feedback on creative review items they\'re invited to.',
 };
+
+export type RoleCategory = 'agency' | 'external';
+
+export const ROLE_CATEGORIES: { key: RoleCategory; label: string; roles: AnyRole[] }[] = [
+  { key: 'agency',   label: 'Agency',   roles: ['owner', 'admin', 'member'] },
+  { key: 'external', label: 'External', roles: ['client', 'guest'] },
+];
 
 /** A single permission key. Lowercase snake_case so identifiers stay grep-able. */
 export type PermissionKey =
@@ -35,6 +50,9 @@ export type PermissionKey =
   | 'manage_project_templates'
   | 'upload_new_files'
   | 'manage_automations'
+  | 'view_proposals'
+  | 'leave_review_feedback'
+  | 'approve_review_stages'
   // Team-scope
   | 'invite_members'
   | 'invite_owners'
@@ -55,8 +73,7 @@ export interface PermissionDef {
   group: PermissionGroupKey;
   label: string;
   description?: string;
-  /** true | false | 'partial' (with a label override for the partial cell). */
-  grants: Record<TeamRole, true | false | { partial: string }>;
+  grants: Record<AnyRole, true | false | { partial: string }>;
 }
 
 export const PERMISSION_GROUPS: { key: PermissionGroupKey; label: string }[] = [
@@ -79,6 +96,8 @@ export const PERMISSION_MATRIX: PermissionDef[] = [
       owner:  true,
       admin:  true,
       member: { partial: 'Only projects they\'re invited to' },
+      client: { partial: 'Only proposals & quotes shared with them' },
+      guest:  { partial: 'Only review items they\'re invited to' },
     },
   },
   {
@@ -86,35 +105,35 @@ export const PERMISSION_MATRIX: PermissionDef[] = [
     group: 'projects',
     label: 'Manage projects',
     description: 'Create, rename, archive, and delete feedback / proposal projects.',
-    grants: { owner: true, admin: true, member: true },
+    grants: { owner: true, admin: true, member: true, client: false, guest: false },
   },
   {
     key: 'upload_new_files',
     group: 'projects',
     label: 'Upload new files',
     description: 'Add items and new versions inside a project.',
-    grants: { owner: true, admin: true, member: true },
+    grants: { owner: true, admin: true, member: true, client: false, guest: false },
   },
   {
     key: 'manage_project_templates',
     group: 'projects',
     label: 'Manage project templates',
     description: 'Edit the templates new proposals start from.',
-    grants: { owner: true, admin: true, member: false },
+    grants: { owner: true, admin: true, member: false, client: false, guest: false },
   },
   {
     key: 'manage_automations',
     group: 'projects',
     label: 'Manage automations',
     description: 'Webhooks and integration triggers that fire on review events.',
-    grants: { owner: true, admin: true, member: true },
+    grants: { owner: true, admin: true, member: true, client: false, guest: false },
   },
   {
     key: 'view_insights',
     group: 'projects',
     label: 'View insights',
     description: 'Cross-project analytics — view counts, acceptance rate, etc.',
-    grants: { owner: true, admin: true, member: false },
+    grants: { owner: true, admin: true, member: false, client: false, guest: false },
   },
 
   {
@@ -122,28 +141,28 @@ export const PERMISSION_MATRIX: PermissionDef[] = [
     group: 'team',
     label: 'Invite members',
     description: 'Send invites to add new teammates as Members.',
-    grants: { owner: true, admin: true, member: false },
+    grants: { owner: true, admin: true, member: false, client: false, guest: false },
   },
   {
     key: 'invite_owners',
     group: 'team',
     label: 'Invite owners',
     description: 'Promote teammates to the Owner role.',
-    grants: { owner: true, admin: false, member: false },
+    grants: { owner: true, admin: false, member: false, client: false, guest: false },
   },
   {
     key: 'remove_members',
     group: 'team',
     label: 'Remove members',
     description: 'Revoke seats and remove access to the workspace.',
-    grants: { owner: true, admin: true, member: false },
+    grants: { owner: true, admin: true, member: false, client: false, guest: false },
   },
   {
     key: 'change_roles',
     group: 'team',
     label: 'Change roles',
     description: 'Move teammates between Owner / Admin / Member.',
-    grants: { owner: true, admin: true, member: false },
+    grants: { owner: true, admin: true, member: false, client: false, guest: false },
   },
 
   {
@@ -151,35 +170,58 @@ export const PERMISSION_MATRIX: PermissionDef[] = [
     group: 'company',
     label: 'Manage billing',
     description: 'Change plan, payment method, view invoices.',
-    grants: { owner: true, admin: false, member: false },
+    grants: { owner: true, admin: false, member: false, client: false, guest: false },
   },
   {
     key: 'manage_branding',
     group: 'company',
     label: 'Manage branding',
     description: 'Logos, colours, and templates used by client-facing pages.',
-    grants: { owner: true, admin: true, member: false },
+    grants: { owner: true, admin: true, member: false, client: false, guest: false },
   },
   {
     key: 'manage_integrations',
     group: 'company',
     label: 'Manage integrations',
     description: 'Connect Meta, Looker Studio, and other external services.',
-    grants: { owner: true, admin: true, member: false },
+    grants: { owner: true, admin: true, member: false, client: false, guest: false },
   },
   {
     key: 'manage_custom_domain',
     group: 'company',
     label: 'Manage custom domain',
     description: 'Add and verify a domain for client-facing share links.',
-    grants: { owner: true, admin: false, member: false },
+    grants: { owner: true, admin: false, member: false, client: false, guest: false },
   },
   {
     key: 'manage_api_keys',
     group: 'company',
     label: 'Manage API keys',
     description: 'Mint and revoke API keys used by the connector ecosystem.',
-    grants: { owner: true, admin: true, member: false },
+    grants: { owner: true, admin: true, member: false, client: false, guest: false },
+  },
+
+  // External-facing permissions — what Clients and Guests can do.
+  {
+    key: 'view_proposals',
+    group: 'projects',
+    label: 'View proposals & quotes',
+    description: 'Read shared proposals, accept, decline, or request revisions.',
+    grants: { owner: true, admin: true, member: true, client: true, guest: false },
+  },
+  {
+    key: 'leave_review_feedback',
+    group: 'projects',
+    label: 'Leave review feedback',
+    description: 'Add comments, pins, and annotations on creative review items.',
+    grants: { owner: true, admin: true, member: true, client: false, guest: true },
+  },
+  {
+    key: 'approve_review_stages',
+    group: 'projects',
+    label: 'Approve review stages',
+    description: 'Mark a review stage as approved or request changes.',
+    grants: { owner: true, admin: true, member: true, client: false, guest: true },
   },
 ];
 
@@ -191,11 +233,11 @@ export const PERMISSION_MATRIX: PermissionDef[] = [
  * sub-scope (e.g. members can `access_all_projects` *for projects they're
  * invited to* — that scoping is enforced separately at the row level).
  */
-export function canRole(role: TeamRole | string | null | undefined, key: PermissionKey): boolean {
+export function canRole(role: AnyRole | string | null | undefined, key: PermissionKey): boolean {
   if (!role) return false;
   const def = PERMISSION_MATRIX.find((p) => p.key === key);
   if (!def) return false;
-  const grant = def.grants[role as TeamRole];
+  const grant = def.grants[role as AnyRole];
   if (grant === true) return true;
   if (grant === false || grant === undefined) return false;
   return true; // partial → permitted, with scope handled by the caller

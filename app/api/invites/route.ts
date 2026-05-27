@@ -5,6 +5,7 @@ import { getAuthContext } from '@/lib/api-auth';
 import { isValidEmail } from '@/lib/sanitize';
 import { sendInviteEmail } from '@/lib/auth-emails';
 import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
+import { rateLimit } from '@/lib/rate-limit';
 
 // POST - Create a new invite
 export async function POST(req: NextRequest) {
@@ -19,6 +20,12 @@ export async function POST(req: NextRequest) {
     // Only owners and admins can invite (or super admins viewing any company)
     if (!member.is_super_admin && member.role !== 'owner' && member.role !== 'admin') {
       return NextResponse.json({ error: 'Only owners and admins can send invites' }, { status: 403 });
+    }
+
+    // Rate limit: 10 invites per minute per company
+    const rl = await rateLimit({ key: `invite:create:${companyId}`, limit: 10, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { email, role = 'member' } = await req.json();
@@ -99,8 +106,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Build invite URL
-    const baseUrl = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || '';
+    // Build invite URL — never trust the Origin header for email links (phishing risk)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
     const inviteUrl = `${baseUrl}/login?invite=${invite.token}`;
     const companyName = company?.name || 'AgencyViz';
 

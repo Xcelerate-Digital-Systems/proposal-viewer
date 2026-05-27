@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getOAuthClient, hashSecret, constantTimeEquals } from '@/lib/oauth-clients/server';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +50,9 @@ async function readForm(req: NextRequest): Promise<Record<string, string>> {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit({ key: `oauth:token:${ipFromRequest(req)}`, limit: 10, windowSeconds: 60 });
+  if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   const form = await readForm(req);
 
   const grant_type = form.grant_type;

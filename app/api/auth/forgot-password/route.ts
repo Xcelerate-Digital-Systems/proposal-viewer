@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
       key: `auth:forgot:${ipFromRequest(req)}`,
       limit: FORGOT_LIMIT,
       windowSeconds: FORGOT_WINDOW_SECONDS,
+      failClosed: true,
     });
     if (!rl.success) {
       return NextResponse.json(
