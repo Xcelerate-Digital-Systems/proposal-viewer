@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Crown, Shield, User, MoreVertical, Loader2, Trash2,
-  Camera, Check, ChevronDown, ChevronUp,
+  Camera, Check,
   MessageSquare, CornerDownRight, CheckCheck, Layers, Package,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -367,7 +367,6 @@ function MemberRowItem({
   const [name, setName] = useState(member.name);
   const [savingName, setSavingName] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setName(member.name); }, [member.name]);
@@ -472,17 +471,9 @@ function MemberRowItem({
           <p className="text-xs text-faint truncate mt-0.5">{member.email}</p>
         </div>
 
-        {/* Role + expand + actions */}
+        {/* Role + actions */}
         <div className="flex items-center gap-2 shrink-0">
           <RoleBadge role={member.role} accountType={accountType} />
-
-          <button
-            onClick={() => setExpanded(v => !v)}
-            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface text-faint hover:text-muted transition-colors"
-            title={expanded ? 'Collapse notifications' : 'Expand notifications'}
-          >
-            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
 
           {actionLoading ? (
             <div className="w-8 h-8 flex items-center justify-center">
@@ -550,41 +541,33 @@ function MemberRowItem({
         </div>
       </div>
 
-      {/* Expandable notification prefs */}
-      {expanded && (
-        <div className="mt-3 pt-3 border-t border-edge">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-faint">Markup notifications</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {MARKUP_PREF_DEFS.map((p) => {
-              const Icon = p.icon;
-              const val = member[p.key];
-              const on = val === null ? true : val;
-              return (
-                <button
-                  key={p.key}
-                  type="button"
-                  onClick={() => canEditNotifs && onToggleMarkupPref(p.key)}
-                  disabled={!canEditNotifs}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                    on
-                      ? 'bg-teal/10 text-teal'
-                      : 'bg-gray-50 text-gray-400 hover:text-gray-600'
-                  } ${!canEditNotifs ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  title={`${on ? 'On' : 'Off'} — ${p.label}${val === null ? ' (default)' : ''}`}
-                >
-                  <Icon size={11} />
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[10px] text-faint mt-1.5">
-            These defaults apply when this member is added to new Markup projects. Per-project overrides still work.
-          </p>
+      {/* Notification prefs */}
+      <div className="mt-3 pt-3 border-t border-edge">
+        <div className="flex flex-wrap gap-1.5">
+          {MARKUP_PREF_DEFS.map((p) => {
+            const Icon = p.icon;
+            const val = member[p.key];
+            const on = val === null ? true : val;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => canEditNotifs && onToggleMarkupPref(p.key)}
+                disabled={!canEditNotifs}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                  on
+                    ? 'bg-teal/10 text-teal'
+                    : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                } ${!canEditNotifs ? 'opacity-60 cursor-not-allowed' : ''}`}
+                title={`${on ? 'On' : 'Off'} — ${p.label}${val === null ? ' (default)' : ''}`}
+              >
+                <Icon size={11} />
+                {p.label}
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
     </div>
   );
 }

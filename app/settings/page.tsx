@@ -4,10 +4,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
-  Settings, UserCircle2, Users, Code2, CreditCard, KeyRound,
+  Settings, Building2, Users, Code2, CreditCard, KeyRound,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import BusinessDetailsCard from '@/components/admin/company/BusinessDetailsCard';
 import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
@@ -23,12 +22,12 @@ type TabKey = 'profile' | 'members' | 'roles' | 'billing' | 'developer';
 interface TabDef {
   key: TabKey;
   label: string;
-  icon: typeof UserCircle2;
+  icon: typeof Building2;
   description: string;
 }
 
 const TABS: TabDef[] = [
-  { key: 'profile',   label: 'Profile',   icon: UserCircle2, description: 'Your name and photo' },
+  { key: 'profile',   label: 'Company',   icon: Building2,   description: 'Company profile and business details' },
   { key: 'members',   label: 'Members',   icon: Users,       description: 'Team, notifications, and invites' },
   { key: 'roles',     label: 'Roles',     icon: KeyRound,    description: 'What each role can do' },
   { key: 'billing',   label: 'Billing',   icon: CreditCard,  description: 'Plan, payment, invoices' },
@@ -131,37 +130,20 @@ function SettingsContent({ auth }: {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {activeTab === 'profile' && teamMember && (
+          {activeTab === 'profile' && companyId && (
             <section className="space-y-8">
               <div>
-                <SectionHeader
-                  title="Profile"
-                  description="How your teammates see you in the app."
-                />
-                <ProfileEditor
-                  memberId={teamMember.id}
-                  companyId={companyId || ''}
-                  name={teamMember.name || ''}
-                  avatarPath={(teamMember as Record<string, unknown>).avatar_path as string || ''}
-                  onSave={(updates) => auth.updatePreferences(updates as Partial<TeamMember>)}
+                <CompanyProfileCard
+                  companyId={companyId}
+                  isOwner={isAdminOrOwner || isSuperAdmin}
                 />
               </div>
-              {companyId && (
-                <div>
-                  <CompanyProfileCard
-                    companyId={companyId}
-                    isOwner={isAdminOrOwner || isSuperAdmin}
-                  />
-                </div>
-              )}
-              {companyId && (
-                <div>
-                  <BusinessDetailsCard
-                    companyId={companyId}
-                    isOwner={isAdminOrOwner || isSuperAdmin}
-                  />
-                </div>
-              )}
+              <div>
+                <BusinessDetailsCard
+                  companyId={companyId}
+                  isOwner={isAdminOrOwner || isSuperAdmin}
+                />
+              </div>
             </section>
           )}
 

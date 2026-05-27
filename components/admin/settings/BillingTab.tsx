@@ -4,8 +4,8 @@
 import { useEffect, useState } from 'react';
 import {
   CreditCard, Loader2, Sparkles, RefreshCcw, Trash2, AlertTriangle,
-  Check, Zap, Users, FileText, Palette, BarChart3, Globe, Webhook,
-  Calendar, Receipt, ArrowUpRight, Shield,
+  Check, FileText, DollarSign, FolderOpen, Bookmark, BarChart3, GitFork, MessageSquareMore,
+  Calendar, Receipt, ArrowUpRight, Users, Zap, Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { authFetch } from '@/lib/auth-fetch';
@@ -45,14 +45,16 @@ interface BillingTabProps {
 }
 
 const PLAN_FEATURES = [
-  { icon: FileText, label: 'Unlimited proposals & documents' },
-  { icon: Users,    label: 'Unlimited team members' },
-  { icon: Palette,  label: 'Custom branding & fonts' },
-  { icon: Globe,    label: 'Custom domain support' },
-  { icon: Zap,      label: 'AI content generation' },
-  { icon: BarChart3, label: 'Analytics & insights' },
-  { icon: Webhook,  label: 'Webhooks & API access' },
-  { icon: Shield,   label: 'Creative review & approvals' },
+  { icon: FileText,           label: 'Proposals — branded, trackable client proposals' },
+  { icon: DollarSign,         label: 'Quotes — interactive pricing with payment schedules' },
+  { icon: FolderOpen,         label: 'Documents — rich-text pages with full design control' },
+  { icon: Bookmark,           label: 'Swipe File — save and organise creative inspiration' },
+  { icon: BarChart3,          label: 'Looker Studio Connector — live ad reporting dashboards' },
+  { icon: GitFork,            label: 'Funnel Planner — map and visualise client funnels' },
+  { icon: MessageSquareMore,  label: 'Creative Review — annotate, comment and approve assets' },
+  { icon: Users,              label: 'Unlimited team members and client guests' },
+  { icon: Zap,                label: 'AI-powered content generation' },
+  { icon: Palette,            label: 'Custom branding, fonts and cover images' },
 ];
 
 export default function BillingTab({ companyId, role }: BillingTabProps) {
