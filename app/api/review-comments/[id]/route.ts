@@ -74,6 +74,22 @@ export async function PATCH(req: NextRequest, props: RouteContext) {
       return NextResponse.json({ error: 'Failed to update comment' }, { status: 500 });
     }
 
+    // Resync @mentions for the edited content. No notification fires on
+    // edit — Filestage parity — but the join table needs to track the new
+    // mention set so future reads / cron-batched notifications are honest.
+    try {
+      const { syncCommentMentions } = await import('@/lib/feedback/persist-mentions');
+      const memberEmail = (ctx.auth.member as { email?: string | null })?.email ?? null;
+      await syncCommentMentions(supabase, {
+        commentId: params.id,
+        content,
+        projectId: null,
+        actorEmail: memberEmail,
+      });
+    } catch (err) {
+      console.error('Failed to resync mentions on edit:', err);
+    }
+
     return NextResponse.json(updated);
   } catch (err) {
     console.error('Comment PATCH error:', err);

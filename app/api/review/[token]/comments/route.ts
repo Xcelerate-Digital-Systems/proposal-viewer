@@ -304,9 +304,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
     const owned = await loadOwnedComment(supabase, params.token, comment_id, { author_email, author_name });
     if ('error' in owned) return owned.error;
 
+    const trimmed = content.trim();
     const { data: updated, error: updateErr } = await supabase
       .from('review_comments')
-      .update({ content: content.trim() })
+      .update({ content: trimmed })
       .eq('id', comment_id)
       .select()
       .single();
@@ -314,6 +315,20 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
     if (updateErr) {
       console.error('Edit error:', updateErr);
       return NextResponse.json({ error: 'Failed to edit comment' }, { status: 500 });
+    }
+
+    // Resync @mentions for the new content (guests can mention too). No
+    // additional notification fires on edit — matches Filestage parity.
+    try {
+      const { syncCommentMentions } = await import('@/lib/feedback/persist-mentions');
+      await syncCommentMentions(supabase, {
+        commentId: comment_id,
+        content: trimmed,
+        projectId: null,
+        actorEmail: typeof author_email === 'string' ? author_email : null,
+      });
+    } catch (err) {
+      console.error('Failed to resync mentions on edit:', err);
     }
 
     return NextResponse.json(updated);

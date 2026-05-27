@@ -57,7 +57,7 @@ function renderFooter(){
   }
   footerEl.innerHTML='<form class="aviz-footer-form" id="aviz-footer-form">'
     +(guestName?'':'<input class="aviz-footer-name" id="aviz-name" placeholder="Your name" value="'+esc(guestName)+'"/>')
-    +'<textarea class="aviz-footer-text" id="aviz-text" placeholder="Your comment\\u2026" rows="2"></textarea>'
+    +'<div class="aviz-footer-text aviz-editor" id="aviz-text" data-placeholder="Your comment\\u2026"></div>'
     +'<div class="aviz-footer-actions">'
     +'<button type="button" class="aviz-footer-cancel" id="aviz-cancel-general">Cancel</button>'
     +'<button type="submit" class="aviz-footer-post" id="aviz-send" disabled>'+SVG.send+' Post</button>'
@@ -67,11 +67,13 @@ function renderFooter(){
   var nameInp=footerEl.querySelector("#aviz-name");
   var textInp=footerEl.querySelector("#aviz-text");
   var sendBtn=footerEl.querySelector("#aviz-send");
+  AVZ.mention.attach(textInp);
   textInp.focus();
+  if(typeof loadParticipants==="function")loadParticipants();
 
   function updateSend(){
     var n=nameInp?nameInp.value.trim():guestName;
-    sendBtn.disabled=!n||!textInp.value.trim();
+    sendBtn.disabled=!n||!AVZ.mention.getPlainText(textInp);
   }
   if(nameInp)nameInp.addEventListener("input",function(){guestName=nameInp.value;saveGuest();updateSend();});
   textInp.addEventListener("input",updateSend);
@@ -79,7 +81,8 @@ function renderFooter(){
   form.addEventListener("submit",function(e){
     e.preventDefault();
     var n=nameInp?nameInp.value.trim():guestName;
-    var t=textInp.value.trim();if(!n||!t)return;
+    var t=AVZ.mention.getHTML(textInp);
+    if(!n||!AVZ.mention.getPlainText(textInp))return;
     guestName=n;saveGuest();
     sendBtn.disabled=true;sendBtn.innerHTML=SVG.send+' Posting\\u2026';
     postComment({author_name:n,content:t,comment_type:"general"},function(){
@@ -210,13 +213,13 @@ function threadHTML(c){
   /* Content / edit */
   if(isEditing){
     h+='<div class="aviz-card-edit">'
-      +'<textarea class="aviz-card-edit-ta" rows="2">'+esc(c.content)+'</textarea>'
+      +'<div class="aviz-card-edit-ta aviz-editor" data-orig="'+esc(c.content)+'"></div>'
       +'<div class="aviz-card-edit-bar">'
       +'<button class="aviz-card-edit-save" data-id="'+c.id+'">Save</button>'
       +'<button class="aviz-card-edit-cancel" data-id="'+c.id+'">Cancel</button>'
       +'</div></div>';
   } else {
-    h+='<div class="aviz-card-content">'+esc(c.content)+'</div>';
+    h+='<div class="aviz-card-content">'+AVZ.mention.renderContent(c.content)+'</div>';
   }
 
   /* Inline video */
@@ -259,7 +262,7 @@ function threadHTML(c){
       h+='<button class="aviz-menu-item aviz-delete-btn danger" data-id="'+r.id+'" data-kind="reply">Delete</button>';
       h+='</div></div>';
       h+='</div>';
-      h+='<div class="aviz-card-reply-text">'+esc(r.content)+'</div>';
+      h+='<div class="aviz-card-reply-text">'+AVZ.mention.renderContent(r.content)+'</div>';
       h+='</div></div></div>';
     });
     h+='</div>';
@@ -292,7 +295,7 @@ function threadHTML(c){
       h+='<input class="aviz-footer-name aviz-reply-name" placeholder="Your name"/>';
     }
     h+='<div class="aviz-card-replyform-row">';
-    h+='<div class="aviz-card-replyform-input"><input class="aviz-reply-text" type="text" placeholder="Write a reply\\u2026" autofocus/></div>';
+    h+='<div class="aviz-card-replyform-input"><div class="aviz-reply-text aviz-editor" data-placeholder="Write a reply\\u2026"></div></div>';
     h+='<button type="submit" class="aviz-card-replyform-send" disabled>'+SVG.send+'</button>';
     h+='</div></form>';
   }
@@ -315,7 +318,7 @@ function resolvedHTML(c){
   }
   h+='<div style="min-width:0;flex:1">';
   h+='<span class="aviz-resolved-author">'+esc(c.author_name)+'</span>';
-  h+='<p class="aviz-resolved-text">'+esc(c.content)+'</p>';
+  h+='<div class="aviz-resolved-text">'+AVZ.mention.renderContent(c.content)+'</div>';
   h+='<div class="aviz-resolved-foot">';
   h+='<span class="aviz-resolved-tag">'+SVG.resolvedTag+' Resolved'+(c.resolved_by?' by '+esc(c.resolved_by):'')+'</span>';
   h+='<button class="aviz-resolved-reopen aviz-resolve-btn" data-id="'+c.id+'" data-resolved="true">'+SVG.smallReopen+' Reopen</button>';
@@ -423,10 +426,13 @@ function bindThreadEvents(){
     var nameInp=form.querySelector(".aviz-reply-name");
     var textInp=form.querySelector(".aviz-reply-text");
     var sendBtn=form.querySelector(".aviz-card-replyform-send");
+    AVZ.mention.attach(textInp);
+    if(typeof loadParticipants==="function")loadParticipants();
+    textInp.focus();
 
     function updateBtn(){
       var n=nameInp?nameInp.value.trim():guestName;
-      sendBtn.disabled=!n||!textInp.value.trim();
+      sendBtn.disabled=!n||!AVZ.mention.getPlainText(textInp);
     }
     if(nameInp)nameInp.addEventListener("input",function(){guestName=nameInp.value;saveGuest();updateBtn();});
     textInp.addEventListener("input",updateBtn);
@@ -434,7 +440,8 @@ function bindThreadEvents(){
     form.addEventListener("submit",function(e){
       e.preventDefault();
       var n=nameInp?nameInp.value.trim():guestName;
-      var t=textInp.value.trim();if(!n||!t)return;
+      var t=AVZ.mention.getHTML(textInp);
+      if(!n||!AVZ.mention.getPlainText(textInp))return;
       if(!guestName){guestName=n;saveGuest();}
       sendBtn.disabled=true;
       postComment({author_name:n,content:t,comment_type:"general",parent_comment_id:pid},function(){
@@ -442,9 +449,28 @@ function bindThreadEvents(){
       });
     });
     textInp.addEventListener("keydown",function(ev){
-      if(ev.key==="Enter"&&!ev.shiftKey){ev.preventDefault();form.dispatchEvent(new Event("submit",{cancelable:true}));}
+      if(ev.key==="Enter"&&!ev.shiftKey){
+        /* Don't steal Enter while the mention dropdown is open — it
+           handles its own keys to pick a suggestion. */
+        var dd=document.querySelector(".aviz-mention-dropdown");
+        if(dd&&dd.style.display!=="none")return;
+        ev.preventDefault();form.dispatchEvent(new Event("submit",{cancelable:true}));
+      }
       if(ev.key==="Escape"){replyOpenId=null;renderThreads();}
     });
+  });
+
+  /* Comment edit-in-place editor setup */
+  bodyEl.querySelectorAll(".aviz-card-edit > .aviz-card-edit-ta.aviz-editor").forEach(function(ed){
+    AVZ.mention.attach(ed);
+    var orig=ed.getAttribute("data-orig")||"";
+    AVZ.mention.setHTML(ed,orig);
+    if(typeof loadParticipants==="function")loadParticipants();
+    ed.focus();
+    /* Place caret at end. */
+    var sel=window.getSelection();var r=document.createRange();
+    r.selectNodeContents(ed);r.collapse(false);
+    sel.removeAllRanges();sel.addRange(r);
   });
 
   /* ⋯ menu toggle */
@@ -476,28 +502,34 @@ function bindThreadEvents(){
       var replyEl=bodyEl.querySelector('.aviz-card-reply[data-id="'+cid+'"] .aviz-card-reply-text');
       if(!replyEl)return;
       var orig=c.content;
-      replyEl.innerHTML='<textarea class="aviz-card-edit-ta" rows="2" style="width:100%">'+esc(orig)+'</textarea>'
+      function renderOriginal(){replyEl.innerHTML=AVZ.mention.renderContent(orig);}
+      replyEl.innerHTML='<div class="aviz-card-edit-ta aviz-editor" style="width:100%"></div>'
         +'<div class="aviz-card-edit-bar" style="margin-top:6px">'
         +'<button class="aviz-card-edit-save">Save</button>'
         +'<button class="aviz-card-edit-cancel">Cancel</button></div>';
-      var ta=replyEl.querySelector("textarea");
+      var ed=replyEl.querySelector(".aviz-card-edit-ta");
       var saveB=replyEl.querySelector(".aviz-card-edit-save");
       var cancelB=replyEl.querySelector(".aviz-card-edit-cancel");
-      ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);
-      cancelB.addEventListener("click",function(ev){ev.stopPropagation();replyEl.textContent=orig;});
+      AVZ.mention.attach(ed);
+      AVZ.mention.setHTML(ed,orig);
+      if(typeof loadParticipants==="function")loadParticipants();
+      ed.focus();
+      var sel0=window.getSelection();var r0=document.createRange();
+      r0.selectNodeContents(ed);r0.collapse(false);sel0.removeAllRanges();sel0.addRange(r0);
+      cancelB.addEventListener("click",function(ev){ev.stopPropagation();renderOriginal();});
       saveB.addEventListener("click",function(ev){
         ev.stopPropagation();
-        var nt=ta.value.trim();
-        if(!nt||nt===orig){replyEl.textContent=orig;return;}
+        var nt=AVZ.mention.getHTML(ed);
+        if(!AVZ.mention.getPlainText(ed)||nt===orig){renderOriginal();return;}
         saveB.disabled=true;saveB.textContent="Saving\\u2026";
         fetch(C.api+"?item="+C.item+"&comment_id="+cid,
           {method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:nt})})
           .then(function(r){return r.json();}).then(function(d){
-            if(d&&d.error){replyEl.textContent=orig;return;}
+            if(d&&d.error){renderOriginal();return;}
             c.content=nt;refresh();
-          }).catch(function(){replyEl.textContent=orig;});
+          }).catch(function(){renderOriginal();});
       });
-      ta.addEventListener("keydown",function(ev){
+      ed.addEventListener("keydown",function(ev){
         if(ev.key==="Enter"&&(ev.metaKey||ev.ctrlKey)){ev.preventDefault();saveB.click();}
         if(ev.key==="Escape"){ev.stopPropagation();cancelB.click();}
       });
@@ -510,10 +542,10 @@ function bindThreadEvents(){
     btn.addEventListener("click",function(e){
       e.stopPropagation();
       var card=bodyEl.querySelector("#aviz-t-"+cid);if(!card)return;
-      var ta=card.querySelector(".aviz-card-edit-ta");if(!ta)return;
+      var ed=card.querySelector(".aviz-card-edit-ta");if(!ed)return;
       var c=comments.find(function(x){return x.id===cid;});if(!c)return;
-      var nt=ta.value.trim();
-      if(!nt||nt===c.content){editingId=null;renderThreads();return;}
+      var nt=AVZ.mention.getHTML(ed);
+      if(!AVZ.mention.getPlainText(ed)||nt===c.content){editingId=null;renderThreads();return;}
       btn.disabled=true;btn.textContent="Saving\\u2026";
       fetch(C.api+"?item="+C.item+"&comment_id="+cid,
         {method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:nt})})

@@ -35,6 +35,8 @@ interface PendingPinPopoverProps {
   /** When present, surfaces a drawing menu inside the composer; activating a tool
    *  dismisses the popover (parent closes via onCancel) and enters that mode. */
   onOpenDrawing?: (mode: FeedbackMode) => void;
+  /** API endpoint returning mentionable participants for the composer. */
+  participantsUrl?: string | null;
 }
 
 export default function PendingPinPopover({
@@ -49,6 +51,7 @@ export default function PendingPinPopover({
   onNameChange,
   quotedText,
   onOpenDrawing,
+  participantsUrl,
 }: PendingPinPopoverProps) {
   const style = usePopoverPosition(pinX, pinY);
 
@@ -94,6 +97,7 @@ export default function PendingPinPopover({
           onNameChange={onNameChange}
           quotedText={quotedText}
           onOpenDrawing={onOpenDrawing}
+          participantsUrl={participantsUrl}
         />
       </div>
     </>

@@ -597,6 +597,39 @@ html.aviz-tour-on .aviz-tool.aviz-tour-target{background:${ACCENT}18;color:${ACC
 .aviz-anno-text{position:absolute;z-index:2147483638;cursor:pointer;transition:opacity .3s;}
 .aviz-anno-text:hover{opacity:.8;}
 .aviz-anno-resolved{opacity:.35;pointer-events:none;}
+
+/* ── Contenteditable mention editor ────────────────────── */
+.aviz-editor{position:relative;min-height:36px;padding:8px 10px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;
+  outline:none;font:inherit;color:#1f2937;line-height:1.45;white-space:pre-wrap;word-break:break-word;cursor:text;}
+.aviz-editor:focus{border-color:${ACCENT};box-shadow:0 0 0 3px ${ACCENT}22;}
+.aviz-editor p{margin:0;}
+.aviz-editor:empty::before{content:attr(data-placeholder);color:#9CA3AF;pointer-events:none;}
+.aviz-footer-text.aviz-editor{min-height:48px;}
+.aviz-card-edit-ta.aviz-editor{min-height:40px;}
+.aviz-reply-text.aviz-editor{border:none;padding:6px 8px;background:transparent;min-height:30px;}
+
+.aviz-mention-pill{display:inline-block;padding:1px 6px;border-radius:4px;background:${ACCENT}22;color:${ACCENT};
+  font-weight:600;font-size:.92em;line-height:1.2;white-space:nowrap;cursor:default;}
+.aviz-card-content .aviz-mention-pill,
+.aviz-card-reply-text .aviz-mention-pill,
+.aviz-resolved-text .aviz-mention-pill{user-select:text;}
+
+/* Mention autocomplete dropdown — appended to body so it floats free of
+   any clipping ancestors (host site scroll containers, etc.). */
+.aviz-mention-dropdown{position:absolute;z-index:2147483646;min-width:220px;max-width:300px;max-height:240px;
+  overflow-y:auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);font-family:${FONT};padding:4px;}
+.aviz-mention-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:none;background:none;
+  cursor:pointer;border-radius:5px;font-size:12px;color:#1f2937;text-align:left;}
+.aviz-mention-item.active,.aviz-mention-item:hover{background:${ACCENT}14;}
+.aviz-mention-avatar{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:#e5e7eb;color:#4b5563;
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;}
+.aviz-mention-name{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.aviz-mention-email{margin-left:6px;color:#9ca3af;font-weight:400;}
+.aviz-mention-kind{flex-shrink:0;font-size:9px;letter-spacing:.04em;text-transform:uppercase;padding:1px 5px;border-radius:3px;}
+.aviz-mention-kind-team{background:${ACCENT}18;color:${ACCENT};}
+.aviz-mention-kind-guest{background:#fef3c7;color:#b45309;}
+.aviz-mention-empty{padding:8px 10px;font-size:12px;color:#9ca3af;}
 \`;
 document.head.appendChild(sty);
 `;

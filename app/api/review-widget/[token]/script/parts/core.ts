@@ -9,6 +9,7 @@ var C={
   api:"${c.apiBase}/api/review-widget/${c.token}/comments",
   ssApi:"${c.apiBase}/api/review-widget/${c.token}/screenshot",
   reactionsApi:"${c.apiBase}/api/review-widget/${c.token}/reactions",
+  participantsApi:"${c.apiBase}/api/review/${c.token}/participants",
   accent:"#017C87"
 };
 
@@ -25,6 +26,7 @@ var guestName="";
 var guestEmail="";
 var loading=true;
 var pollTimer=null;
+var participants=[];
 var boxStart=null;var boxEl=null;var boxDrawing=false;
 
 try{var g=JSON.parse(localStorage.getItem(SK)||"{}");guestName=g.name||"";guestEmail=g.email||"";}catch(e){}
@@ -121,6 +123,17 @@ function api(path,opts){
 }
 function loadComments(cb){
   api("?item="+C.item).then(function(d){comments=d.comments||[];loading=false;loadReactions(cb);}).catch(function(){loading=false;if(cb)cb();});
+}
+/* Fetch the project's mentionable participants (team members + invited
+   guest recipients). Cached for the session; called once after the panel
+   first opens. Failure is silent — the editor still works without the
+   autocomplete dropdown. */
+function loadParticipants(){
+  if(participants.length)return;
+  var url=C.participantsApi+(guestEmail?"?exclude_email="+encodeURIComponent(guestEmail):"");
+  fetch(url).then(function(r){return r.ok?r.json():null;}).then(function(d){
+    if(d&&d.participants)participants=d.participants;
+  }).catch(function(){});
 }
 function loadReactions(cb){
   fetch(C.reactionsApi+"?item="+C.item).then(function(r){return r.json();})

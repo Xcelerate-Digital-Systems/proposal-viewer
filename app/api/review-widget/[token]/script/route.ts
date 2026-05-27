@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { iconsJS } from './parts/icons';
 import { stylesJS } from './parts/styles';
 import { coreJS } from './parts/core';
+import { mentionsJS } from './parts/mentions';
 import { toolbarJS } from './parts/toolbar';
 import { panelJS } from './parts/panel';
 import { annotationFormJS } from './parts/annotation-form';
@@ -167,6 +168,7 @@ if(!__aviz_resolvedItem)return;
     iconsJS(),
     stylesJS(c.apiBase, c.accentColor),
     coreJS({ token: c.token, apiBase: c.apiBase }),
+    mentionsJS(),
     toolbarJS(),
     panelJS(),
     priorityMenuJS(),

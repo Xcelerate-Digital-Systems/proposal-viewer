@@ -11,6 +11,8 @@ import {
   buildNewVersionEmail as buildBrandedNewVersionEmail,
   type EmailBranding,
 } from '@/lib/review-notification-emails';
+import { syncCommentMentions, type PersistedMention } from '@/lib/feedback/persist-mentions';
+import { htmlToPlainText } from '@/lib/feedback/mention-html';
 
 type ReviewEventType =
   | 'review_comment_added'
@@ -106,6 +108,32 @@ export async function POST(req: NextRequest) {
       itemStage = (itemRow?.status as string | undefined) ?? null;
     }
 
+    // For comment-added events, persist @mentions found in the comment HTML
+    // into review_comment_mentions. The result drives a separate "X mentioned
+    // you" email below and ensures mentioned recipients are part of the
+    // notification set even when their per-assignee toggles are off.
+    let mentionRecipients: PersistedMention[] = [];
+    if (isComment && review_comment_id) {
+      try {
+        // Pull the canonical content from the DB (don't trust the client's
+        // comment_content arg — it could lie about who was @-mentioned).
+        const { data: stored } = await supabase
+          .from('review_comments')
+          .select('content')
+          .eq('id', review_comment_id)
+          .maybeSingle();
+        const content = (stored?.content as string | undefined) ?? '';
+        mentionRecipients = await syncCommentMentions(supabase, {
+          commentId: review_comment_id,
+          content,
+          projectId: project.id,
+          actorEmail,
+        });
+      } catch (err) {
+        console.error('Failed to sync comment mentions:', err);
+      }
+    }
+
     // Resolve recipient emails per the project's assignment + thread rules.
     const recipientEmails = await collectRecipients({
       supabase,
@@ -121,6 +149,37 @@ export async function POST(req: NextRequest) {
       projectClientEmail: project.client_email,
       excludeEmail: actorEmail,
     });
+
+    // Send immediate "X mentioned you" emails (separate from the batched
+    // comment digest) and remove those recipients from the batched set so
+    // mentioned users don't get two emails for the same comment. We still
+    // apply the internal-stage backstop: guests stay silent unless the
+    // item is in a guest-visible stage.
+    let mentioned = 0;
+    if (mentionRecipients.length > 0) {
+      const stageSafe = !itemStage || !isInternalStage(itemStage);
+      for (const m of mentionRecipients) {
+        if (m.targetEmail === actorEmail) continue;
+        if (m.targetKind === 'guest' && !stageSafe) continue;
+        try {
+          const { subject, html } = buildMentionEmail({
+            branding,
+            projectTitle: project.title,
+            reviewUrl,
+            itemTitle: item_title ?? null,
+            actorName: comment_author ?? null,
+            commentContent: comment_content ?? null,
+            mentionedName: m.displayName,
+          });
+          await getResend().emails.send({ from: FROM_EMAIL, to: m.targetEmail, subject, html });
+          mentioned++;
+          // Don't double-email this person via the digest queue.
+          recipientEmails.delete(m.targetEmail);
+        } catch (err) {
+          console.error(`Failed to notify @mention ${m.targetEmail}:`, err);
+        }
+      }
+    }
 
     let sent = 0;
     let enqueued = 0;
@@ -151,6 +210,13 @@ export async function POST(req: NextRequest) {
           parentContent = parent?.content ?? null;
         }
 
+        // The batched-digest email escapes its content (no rich rendering),
+        // so we flatten any TipTap HTML to plain text before stashing it on
+        // the queue row. New comments are HTML; legacy / widget-source
+        // comments are already plain text and pass through unchanged.
+        const plainContent = htmlToPlainText(comment_content ?? '');
+        const plainParentContent = htmlToPlainText(parentContent ?? '');
+
         const rows = Array.from(recipientEmails).map((email) => ({
           recipient_email: email,
           company_id: project.company_id,
@@ -161,11 +227,11 @@ export async function POST(req: NextRequest) {
           payload: {
             item_title: item_title ?? null,
             comment_author: comment_author ?? null,
-            comment_content: comment_content ?? null,
+            comment_content: plainContent,
             screenshot_url: screenshotUrl,
             is_reply: isReply,
             parent_author: parentAuthor,
-            parent_content: parentContent,
+            parent_content: plainParentContent || null,
           },
         }));
 
@@ -238,7 +304,7 @@ export async function POST(req: NextRequest) {
       console.error('Review webhook dispatch error:', err);
     }
 
-    return NextResponse.json({ sent, enqueued, recipients: recipientEmails.size });
+    return NextResponse.json({ sent, enqueued, mentioned, recipients: recipientEmails.size });
   } catch (err) {
     console.error('Review notification error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -513,3 +579,45 @@ async function applyGuestPrefs(params: {
   }
 }
 
+
+// Lightweight branded template for "@X mentioned you on <item>" emails.
+// Kept inline because it's a single-purpose message that doesn't compose
+// with the other branded templates in lib/review-notification-emails.ts.
+function buildMentionEmail(args: {
+  branding: EmailBranding;
+  projectTitle: string;
+  reviewUrl: string;
+  itemTitle: string | null;
+  actorName: string | null;
+  commentContent: string | null;
+  mentionedName: string;
+}): { subject: string; html: string } {
+  const actor = (args.actorName || 'Someone').trim();
+  const item = args.itemTitle ? ` on ${args.itemTitle}` : '';
+  const subject = `${actor} mentioned you${item}`;
+  const preview = htmlToPlainText(args.commentContent ?? '').slice(0, 400);
+  const accent = args.branding.accentColor;
+  const logo = args.branding.logoUrl
+    ? `<img src="${args.branding.logoUrl}" alt="${args.branding.companyName}" style="max-height:32px;margin-bottom:12px;" />`
+    : '';
+  const safePreview = preview
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br />');
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#f8f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1f2937;">
+    <div style="max-width:540px;margin:0 auto;background:#ffffff;border-radius:16px;padding:24px;">
+      ${logo}
+      <p style="margin:0 0 12px;font-size:14px;color:#6b7280;">${escapeHtml(args.branding.companyName)} · ${escapeHtml(args.projectTitle)}</p>
+      <h1 style="margin:0 0 16px;font-size:20px;font-weight:600;color:#111827;">${escapeHtml(actor)} mentioned you${item ? ` <span style="color:#6b7280;font-weight:400;">on ${escapeHtml(args.itemTitle ?? '')}</span>` : ''}</h1>
+      ${safePreview ? `<blockquote style="margin:0 0 20px;padding:12px 14px;border-left:3px solid ${accent};background:#f9fafb;border-radius:0 8px 8px 0;font-size:14px;line-height:1.6;color:#374151;">${safePreview}</blockquote>` : ''}
+      <a href="${args.reviewUrl}" style="display:inline-block;padding:10px 18px;background:${accent};color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:600;">Open the review</a>
+      <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;">You're receiving this because ${escapeHtml(actor)} @-mentioned ${escapeHtml(args.mentionedName)}.</p>
+    </div>
+  </body></html>`;
+  return { subject, html };
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}

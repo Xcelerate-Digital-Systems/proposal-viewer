@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, CheckCircle2, RotateCcw } from 'lucide-react';
 import type { FeedbackComment } from '@/lib/supabase';
 import CommentAvatar from './CommentAvatar';
+import CommentContent from '@/components/feedback/mentions/CommentContent';
 import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 
 interface ResolvedSectionProps {
@@ -56,7 +57,7 @@ export default function ResolvedSection({
                 />
                 <div className="min-w-0 flex-1">
                   <span className="text-[11px] font-medium text-gray-500">{c.author_name}</span>
-                  <p className="text-[11px] text-gray-400 mt-0.5">{c.content}</p>
+                  <CommentContent content={c.content} className="text-[11px] text-gray-400 mt-0.5" />
                   <div className="flex items-center gap-2 mt-1.5">
                     <div className="flex items-center gap-1">
                       <CheckCircle2 size={10} className="text-emerald-500" />

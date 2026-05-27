@@ -177,6 +177,16 @@ export default function FeedbackDetailView({
   const isAdmin = mode === 'admin';
   const isClient = mode === 'client';
 
+  // Mention-autocomplete data source. Admin reaches the authenticated route;
+  // client reaches the share-token route. Excluding the viewer's own email
+  // keeps "@yourself" out of the dropdown.
+  const participantsUrl =
+    isAdmin && project?.id
+      ? `/api/markup-projects/${project.id}/participants`
+      : isClient && shareToken
+      ? `/api/review/${shareToken}/participants${reviewerEmail ? `?exclude_email=${encodeURIComponent(reviewerEmail)}` : ''}`
+      : null;
+
   // ── Selection state ──
   const [selectedItemId, setSelectedItemId] = useState<string | null>(
     initialItemId || items[0]?.id || null
@@ -624,6 +634,7 @@ export default function FeedbackDetailView({
               isAdmin={isAdmin}
               currentUserEmail={isClient ? reviewerEmail : undefined}
               currentUserName={isClient ? guestName : authorName}
+              participantsUrl={participantsUrl}
               shareToken={shareToken}
               className="w-[360px] shrink-0 bg-[#FBF8F5] flex flex-col"
               commentPlaceholder={(() => {
@@ -705,6 +716,7 @@ export default function FeedbackDetailView({
                 isAdmin={isAdmin}
                 currentUserEmail={isClient ? reviewerEmail : undefined}
                 currentUserName={isClient ? guestName : authorName}
+                participantsUrl={participantsUrl}
                 authorName={isAdmin ? authorName : undefined}
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
@@ -729,6 +741,7 @@ export default function FeedbackDetailView({
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
                 onOpenDrawing={(mode) => { handleCancelPin(); changeFeedbackMode(mode); }}
+                participantsUrl={participantsUrl}
               />
             )}
 
@@ -750,6 +763,7 @@ export default function FeedbackDetailView({
                 authorName={isAdmin ? authorName : undefined}
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
+                participantsUrl={participantsUrl}
               />
             )}
 

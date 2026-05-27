@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import AttachmentPicker, { type PendingAttachment } from './AttachmentPicker';
 import EmojiPicker from './EmojiPicker';
 import type { FeedbackCommentAttachment } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
+import MentionEditor, { type MentionEditorHandle } from '@/components/feedback/mentions/MentionEditor';
 
 interface GeneralCommentFormProps {
   onSubmit: (content: string, attachments?: FeedbackCommentAttachment[]) => Promise<void>;
@@ -28,6 +29,8 @@ interface GeneralCommentFormProps {
    *  used for content types (e.g. Google Search ads) where the comment box is
    *  the primary feedback surface. */
   alwaysExpanded?: boolean;
+  /** API endpoint returning mentionable participants for this surface. */
+  participantsUrl?: string | null;
 }
 
 async function uploadAttachments(
@@ -62,17 +65,21 @@ export default function GeneralCommentForm({
   onNameChange,
   placeholder = 'Leave feedback…',
   alwaysExpanded = false,
+  participantsUrl,
 }: GeneralCommentFormProps) {
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(alwaysExpanded);
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const editorApiRef = useRef<MentionEditorHandle | null>(null);
 
   const isGuest = !authorName;
+  // text holds the editor HTML — strip tags for the "is empty?" check.
+  const plain = text.replace(/<[^>]+>/g, '').trim();
   const isDisabled = isGuest
-    ? !text.trim() || !(guestName?.trim()) || submitting
-    : !text.trim() || submitting;
+    ? !plain || !(guestName?.trim()) || submitting
+    : !plain || submitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,16 +131,17 @@ export default function GeneralCommentForm({
           )}
 
           <div className="relative">
-            <textarea
+            <MentionEditor
               value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={2}
-              autoFocus={!alwaysExpanded}
+              onChange={setText}
               placeholder={placeholder}
-              className="w-full px-0 py-1 pr-8 text-[13px] text-ink placeholder:text-gray-400 bg-transparent resize-none focus:outline-none leading-relaxed"
+              autoFocus={!alwaysExpanded}
+              participantsUrl={participantsUrl ?? null}
+              apiRef={editorApiRef}
+              className="w-full px-0 py-1 pr-8 text-[13px] text-ink leading-relaxed min-h-[2.5rem]"
             />
             <div className="absolute bottom-1 right-0">
-              <EmojiPicker onSelect={(emoji) => setText((prev) => prev + emoji)} />
+              <EmojiPicker onSelect={(emoji) => editorApiRef.current?.insertText(emoji)} />
             </div>
           </div>
 

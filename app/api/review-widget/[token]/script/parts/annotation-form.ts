@@ -41,7 +41,7 @@ function showAnnotationForm(type,px,py,extra){
   f.innerHTML='<div class="aviz-pf-body">'
       +'<h4>Posting as <strong>'+esc(guestName)+'</strong></h4>'
       +quoteHtml
-      +'<textarea class="aviz-pf-text" placeholder="Add a comment\\u2026"></textarea>'
+      +'<div class="aviz-pf-text aviz-editor" data-placeholder="Add a comment\\u2026"></div>'
     +'</div>'
     +'<div class="aviz-pf-footer">'
       +'<div class="aviz-pf-priority-slot"></div>'
@@ -57,12 +57,14 @@ function showAnnotationForm(type,px,py,extra){
 
   var pfText=f.querySelector(".aviz-pf-text");
   var pfSend=f.querySelector(".aviz-pf-send");
+  AVZ.mention.attach(pfText);
+  if(typeof loadParticipants==="function")loadParticipants();
   pfText.focus();
 
   pfSend.addEventListener("click",function(){
     var n=guestName;
-    var t=pfText.value.trim();
-    if(!n||!t)return;
+    var t=AVZ.mention.getHTML(pfText);
+    if(!n||!AVZ.mention.getPlainText(pfText))return;
 
     /* Text highlight: no screenshot, post directly with highlight offsets */
     if(type==="text_highlight"&&extra){

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check, Loader2, Type, AlignLeft } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
@@ -16,6 +16,8 @@ import { useCommentReactions } from '@/hooks/useCommentReactions';
 import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 import CommentAvatar from './CommentAvatar';
 import { Button } from '@/components/ui/Button';
+import MentionEditor, { type MentionEditorHandle } from '@/components/feedback/mentions/MentionEditor';
+import CommentContent from '@/components/feedback/mentions/CommentContent';
 
 interface CommentThreadProps {
   comment: FeedbackComment;
@@ -49,6 +51,8 @@ interface CommentThreadProps {
   currentUserEmail?: string;
   /** Override for the display name used to detect authorship when email is absent. */
   currentUserNameOverride?: string;
+  /** API endpoint that returns mentionable participants for this surface. */
+  participantsUrl?: string | null;
 
   /** When true, show a temporary highlight ring (e.g. when scrolled to via pin click) */
   highlighted?: boolean;
@@ -75,6 +79,7 @@ export default function CommentThread({
   isAdmin = false,
   currentUserEmail,
   currentUserNameOverride,
+  participantsUrl,
   highlighted = false,
   memberLookup,
 }: CommentThreadProps) {
@@ -87,6 +92,9 @@ export default function CommentThread({
   const [savingEdit, setSavingEdit] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const replyEditorRef = useRef<MentionEditorHandle | null>(null);
+
+  const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim();
 
   const handleResolve = async () => {
     if (!onResolve || resolving) return;
@@ -100,9 +108,10 @@ export default function CommentThread({
   };
 
   const isGuest = !authorName;
+  const replyPlain = stripHtml(replyText);
   const replyDisabled = isGuest
-    ? !replyText.trim() || !(guestName?.trim()) || submitting
-    : !replyText.trim() || submitting;
+    ? !replyPlain || !(guestName?.trim()) || submitting
+    : !replyPlain || submitting;
 
   const handleReply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,14 +124,14 @@ export default function CommentThread({
   };
 
   const handleSaveEdit = async () => {
-    const trimmed = editText.trim();
-    if (!trimmed || trimmed === comment.content || !onEdit) {
+    const value = editText.trim();
+    if (!value || value === comment.content || !stripHtml(value) || !onEdit) {
       setEditing(false);
       setEditText(comment.content);
       return;
     }
     setSavingEdit(true);
-    await onEdit(trimmed);
+    await onEdit(value);
     setSavingEdit(false);
     setEditing(false);
   };
@@ -236,19 +245,21 @@ export default function CommentThread({
           )}
           {editing ? (
             <div className="mt-1 space-y-1.5">
-              <textarea
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                rows={2}
-                className="w-full px-3 py-2 rounded-xl bg-[#F5F1EE] text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none"
-                autoFocus
-              />
+              <div className="px-3 py-2 rounded-xl bg-[#F5F1EE] focus-within:ring-2 focus-within:ring-teal/20">
+                <MentionEditor
+                  value={editText}
+                  onChange={setEditText}
+                  participantsUrl={participantsUrl ?? null}
+                  autoFocus
+                  className="w-full text-[13px] text-ink"
+                />
+              </div>
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="primary"
                   size="sm"
                   onClick={handleSaveEdit}
-                  disabled={savingEdit || !editText.trim()}
+                  disabled={savingEdit || !stripHtml(editText)}
                   loading={savingEdit}
                   leftIcon={Check}
                 >
@@ -266,7 +277,10 @@ export default function CommentThread({
               </div>
             </div>
           ) : (
-            <p className="text-[13px] text-gray-700 leading-relaxed mt-1 whitespace-pre-wrap">{comment.content}</p>
+            <CommentContent
+              content={comment.content}
+              className="text-[13px] text-gray-700 leading-relaxed mt-1"
+            />
           )}
           {comment.video_url && (
             <video
@@ -301,6 +315,7 @@ export default function CommentThread({
               onEdit={onEditReply && ownsComment(r) ? (content) => onEditReply(r.id, content) : undefined}
               onDelete={onDeleteReply && ownsComment(r) ? () => onDeleteReply(r.id) : undefined}
               memberLookup={memberLookup}
+              participantsUrl={participantsUrl}
             />
           ))}
         </div>
@@ -373,16 +388,24 @@ export default function CommentThread({
             />
           )}
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-1 rounded-xl bg-[#F5F1EE] focus-within:ring-2 focus-within:ring-teal/20">
-              <input
-                type="text"
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Write a reply…"
-                autoFocus
-                className="flex-1 px-3 py-2 text-[13px] text-ink bg-transparent focus:outline-none"
-              />
-              <EmojiPicker onSelect={(emoji) => setReplyText((prev) => prev + emoji)} />
+            <div className="flex-1 flex items-center gap-1 rounded-xl bg-[#F5F1EE] focus-within:ring-2 focus-within:ring-teal/20 px-3 py-2">
+              <div className="flex-1">
+                <MentionEditor
+                  value={replyText}
+                  onChange={setReplyText}
+                  placeholder="Write a reply…"
+                  autoFocus
+                  submitOnEnter
+                  onSubmit={() => {
+                    if (replyDisabled) return;
+                    handleReply({ preventDefault: () => {} } as unknown as React.FormEvent);
+                  }}
+                  participantsUrl={participantsUrl ?? null}
+                  apiRef={replyEditorRef}
+                  className="w-full text-[13px] text-ink"
+                />
+              </div>
+              <EmojiPicker onSelect={(emoji) => replyEditorRef.current?.insertText(emoji)} />
             </div>
             <Button
               type="submit"

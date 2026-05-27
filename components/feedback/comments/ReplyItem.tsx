@@ -11,6 +11,8 @@ import ReactionBar from './ReactionBar';
 import ThreadMenu from './ThreadMenu';
 import CommentAvatar from './CommentAvatar';
 import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
+import MentionEditor from '@/components/feedback/mentions/MentionEditor';
+import CommentContent from '@/components/feedback/mentions/CommentContent';
 
 interface Props {
   reply: FeedbackComment;
@@ -19,10 +21,12 @@ interface Props {
   onDelete?: () => Promise<void>;
   /** Map of user_id → {name, avatarUrl} so team replies render the user's photo. */
   memberLookup?: TeamMemberLookup;
+  /** API endpoint returning mentionable participants for the edit-in-place editor. */
+  participantsUrl?: string | null;
 }
 
 /** A single threaded reply rendered under its parent comment. */
-export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, memberLookup }: Props) {
+export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, memberLookup, participantsUrl }: Props) {
   const confirm = useConfirm();
   const rIsTeam = reply.author_type === 'team';
   const { reactions, toggle } = useCommentReactions(reply.id, { currentUserName });
@@ -31,15 +35,17 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim();
+
   const handleSave = async () => {
-    const trimmed = editText.trim();
-    if (!trimmed || trimmed === reply.content || !onEdit) {
+    const value = editText.trim();
+    if (!value || value === reply.content || !stripHtml(value) || !onEdit) {
       setEditing(false);
       setEditText(reply.content);
       return;
     }
     setSaving(true);
-    await onEdit(trimmed);
+    await onEdit(value);
     setSaving(false);
     setEditing(false);
   };
@@ -93,17 +99,19 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
         </div>
         {editing ? (
           <div className="mt-1 space-y-1.5">
-            <textarea
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 rounded-xl bg-[#F5F1EE] text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none"
-              autoFocus
-            />
+            <div className="px-3 py-2 rounded-xl bg-[#F5F1EE] focus-within:ring-2 focus-within:ring-teal/20">
+              <MentionEditor
+                value={editText}
+                onChange={setEditText}
+                participantsUrl={participantsUrl ?? null}
+                autoFocus
+                className="w-full text-[13px] text-ink"
+              />
+            </div>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleSave}
-                disabled={saving || !editText.trim()}
+                disabled={saving || !stripHtml(editText)}
                 className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal text-white text-2xs font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
               >
                 {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
@@ -120,9 +128,10 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
             </div>
           </div>
         ) : (
-          <p className="text-[13px] text-gray-700 leading-relaxed mt-0.5 whitespace-pre-wrap">
-            {reply.content}
-          </p>
+          <CommentContent
+            content={reply.content}
+            className="text-[13px] text-gray-700 leading-relaxed mt-0.5"
+          />
         )}
         {reply.video_url && (
           <video

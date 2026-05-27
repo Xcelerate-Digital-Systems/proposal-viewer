@@ -63,6 +63,8 @@ interface CommentsPanelProps {
   /** Render the comment form expanded by default — used when the comment box
    *  is the primary feedback surface (e.g. Google Search ad assets). */
   commentFormAlwaysExpanded?: boolean;
+  /** API endpoint returning mentionable participants for the comment editors. */
+  participantsUrl?: string | null;
 }
 
 export default function CommentsPanel({
@@ -88,6 +90,7 @@ export default function CommentsPanel({
   closable = true,
   commentPlaceholder,
   commentFormAlwaysExpanded,
+  participantsUrl,
 }: CommentsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   // Avatars are looked up by share_token so guests on the public review
@@ -149,6 +152,7 @@ export default function CommentsPanel({
             isAdmin={isAdmin}
             currentUserEmail={currentUserEmail}
             currentUserNameOverride={currentUserNameProp}
+            participantsUrl={participantsUrl}
             highlighted={highlightCommentId === c.id}
             memberLookup={memberLookup}
           />
@@ -181,6 +185,7 @@ export default function CommentsPanel({
         shareToken={shareToken}
         placeholder={commentPlaceholder}
         alwaysExpanded={commentFormAlwaysExpanded}
+        participantsUrl={participantsUrl}
         // Reset internal state when the placeholder changes so switching
         // assets (Headline 1 → Headline 2) re-renders the form fresh.
         key={commentPlaceholder ?? 'default'}

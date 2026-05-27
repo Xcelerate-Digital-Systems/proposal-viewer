@@ -12,6 +12,8 @@ import { usePopoverPosition } from '@/hooks/usePopoverPosition';
 import { useCommentReactions } from '@/hooks/useCommentReactions';
 import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 import { Button } from '@/components/ui/Button';
+import MentionEditor from '@/components/feedback/mentions/MentionEditor';
+import CommentContent from '@/components/feedback/mentions/CommentContent';
 
 interface PinCommentPopoverProps {
   /** The parent comment for this pin */
@@ -45,6 +47,8 @@ interface PinCommentPopoverProps {
   guestName?: string;
   /** Guest name change handler */
   onNameChange?: (name: string) => void;
+  /** API endpoint returning mentionable participants for the reply editor. */
+  participantsUrl?: string | null;
   /** Map of user_id → {name, avatarUrl} for team members. When the comment's
    *  author_user_id is in the map we render their photo instead of the
    *  initial bubble — mirrors CommentThread / ReplyItem. */
@@ -68,6 +72,7 @@ export default function PinCommentPopover({
   guestName,
   onNameChange,
   memberLookup,
+  participantsUrl,
 }: PinCommentPopoverProps) {
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -75,9 +80,10 @@ export default function PinCommentPopover({
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const isGuest = !authorName;
+  const replyPlain = replyText.replace(/<[^>]+>/g, '').trim();
   const replyDisabled = isGuest
-    ? !replyText.trim() || !(guestName?.trim()) || submitting
-    : !replyText.trim() || submitting;
+    ? !replyPlain || !(guestName?.trim()) || submitting
+    : !replyPlain || submitting;
 
   const currentUserName = (authorName ?? guestName ?? '').trim() || null;
   const identityName = (currentUserNameProp ?? currentUserName ?? '').trim() || null;
@@ -166,7 +172,10 @@ export default function PinCommentPopover({
                   <p className="text-2xs text-yellow-700 italic line-clamp-2">&ldquo;{comment.highlight_text}&rdquo;</p>
                 </div>
               )}
-              <p className="text-xs text-gray-600 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
+              <CommentContent
+                content={comment.content}
+                className="text-xs text-gray-600 mt-0.5"
+              />
               <AttachmentList attachments={comment.attachments} size="sm" />
 
               {/* Screenshot thumbnail */}
@@ -259,9 +268,21 @@ export default function PinCommentPopover({
                   className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
               )}
               <div className="flex gap-1.5">
-                <input type="text" value={replyText} onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Write a reply…" autoFocus
-                  className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-[11px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
+                <div className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal">
+                  <MentionEditor
+                    value={replyText}
+                    onChange={setReplyText}
+                    placeholder="Write a reply…"
+                    autoFocus
+                    submitOnEnter
+                    onSubmit={() => {
+                      if (replyDisabled) return;
+                      handleReply({ preventDefault: () => {} } as unknown as React.FormEvent);
+                    }}
+                    participantsUrl={participantsUrl ?? null}
+                    className="w-full text-[11px] text-gray-900"
+                  />
+                </div>
                 <Button
                   type="submit"
                   variant="primary"
@@ -310,7 +331,10 @@ function PopoverReplyItem({
           )}
           <span className="text-2xs text-gray-400">{timeAgo(reply.created_at)}</span>
         </div>
-        <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">{reply.content}</p>
+        <CommentContent
+          content={reply.content}
+          className="text-[11px] text-gray-600 mt-0.5"
+        />
         <AttachmentList attachments={reply.attachments} size="sm" />
         {currentUserName && (
           <div className="mt-1.5">

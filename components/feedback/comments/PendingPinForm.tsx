@@ -11,6 +11,7 @@ import type { FeedbackCommentAttachment } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 import type { FeedbackMode } from '@/components/feedback/tools';
 import { Button } from '@/components/ui/Button';
+import MentionEditor, { type MentionEditorHandle } from '@/components/feedback/mentions/MentionEditor';
 
 interface PendingPinFormProps {
   onSubmit: (content: string, attachments?: FeedbackCommentAttachment[], priority?: FeedbackCommentPriority, videoUrl?: string | null) => Promise<void>;
@@ -32,6 +33,8 @@ interface PendingPinFormProps {
   quotedText?: string;
   /** When present, shows a pencil icon that opens a drawing tool submenu. */
   onOpenDrawing?: (mode: FeedbackMode) => void;
+  /** API endpoint returning mentionable participants for this surface. */
+  participantsUrl?: string | null;
 }
 
 const MAX_FILES = 5;
@@ -72,6 +75,7 @@ export default function PendingPinForm({
   onNameChange,
   quotedText,
   onOpenDrawing,
+  participantsUrl,
 }: PendingPinFormProps) {
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -83,6 +87,7 @@ export default function PendingPinForm({
   const [showDrawMenu, setShowDrawMenu] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const drawMenuRef = useRef<HTMLDivElement>(null);
+  const editorApiRef = useRef<MentionEditorHandle | null>(null);
 
   useEffect(() => {
     if (!showDrawMenu) return;
@@ -96,9 +101,11 @@ export default function PendingPinForm({
   }, [showDrawMenu]);
 
   const isGuest = !authorName;
+  // text holds the editor HTML — strip tags for the empty check.
+  const plain = text.replace(/<[^>]+>/g, '').trim();
   const isDisabled = isGuest
-    ? !text.trim() || !(guestName?.trim()) || submitting
-    : !text.trim() || submitting;
+    ? !plain || !(guestName?.trim()) || submitting
+    : !plain || submitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,19 +161,14 @@ export default function PendingPinForm({
           />
         )}
 
-        <textarea
-          autoFocus
+        <MentionEditor
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              handleSubmit(e as unknown as React.FormEvent);
-            }
-          }}
-          rows={3}
+          onChange={setText}
           placeholder="Add a comment…"
-          className="w-full text-sm text-gray-900 placeholder-gray-400 resize-none outline-none border-0 p-0 min-h-[72px] bg-transparent"
+          autoFocus
+          participantsUrl={participantsUrl ?? null}
+          apiRef={editorApiRef}
+          className="w-full text-sm text-gray-900 outline-none border-0 p-0 min-h-[72px]"
         />
 
         {pendingFiles.length > 0 && (
@@ -212,7 +214,7 @@ export default function PendingPinForm({
             </span>
           )}
         </button>
-        <EmojiPicker onSelect={(emoji) => setText((prev) => prev + emoji)} />
+        <EmojiPicker onSelect={(emoji) => editorApiRef.current?.insertText(emoji)} />
 
         {onOpenDrawing && (
           <div ref={drawMenuRef} className="relative">

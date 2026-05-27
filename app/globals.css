@@ -160,3 +160,34 @@ body {
     size: A4;
   }
 }
+
+/* TipTap mention editor — placeholder + tippy popover styling. The
+   placeholder works via the Placeholder extension, which sets
+   data-placeholder on empty paragraphs; the rule below makes that text
+   visible. Tippy default styling is kept invisible because the suggestion
+   list ships its own card chrome. */
+.tiptap-mention-input p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9CA3AF;
+  pointer-events: none;
+  height: 0;
+  float: left;
+}
+.tiptap-mention-input p {
+  margin: 0;
+}
+.tiptap-comment-display p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tiptap-comment-display p + p {
+  margin-top: 0.5rem;
+}
+.tippy-box[data-theme~='light-border'] {
+  background: transparent;
+  box-shadow: none;
+}
+.tippy-box[data-theme~='light-border'] > .tippy-content {
+  padding: 0;
+}
