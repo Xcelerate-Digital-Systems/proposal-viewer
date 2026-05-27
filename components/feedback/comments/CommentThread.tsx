@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check, Loader2, Type, AlignLeft } from 'lucide-react';
+import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check, Loader2, Type, AlignLeft, UserPlus } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
 import { getCommentView, parseGoogleAdAssetView } from '@/lib/types/feedback';
@@ -18,6 +18,8 @@ import CommentAvatar from './CommentAvatar';
 import { Button } from '@/components/ui/Button';
 import MentionEditor, { type MentionEditorHandle } from '@/components/feedback/mentions/MentionEditor';
 import CommentContent from '@/components/feedback/mentions/CommentContent';
+import AssignmentPicker from './AssignmentPicker';
+import AssignmentBadge from './AssignmentBadge';
 
 interface CommentThreadProps {
   comment: FeedbackComment;
@@ -61,6 +63,18 @@ interface CommentThreadProps {
    *  comment's author_user_id is in the map we render their photo
    *  instead of the initial bubble. */
   memberLookup?: TeamMemberLookup;
+
+  // ── Assignment (admin-only, internal) ──
+  /** Assign this comment to a team member */
+  onAssign?: (memberId: string, note: string) => Promise<void>;
+  /** Mark assignment complete / reopen */
+  onToggleAssignmentComplete?: (completed: boolean) => Promise<void>;
+  /** Remove assignment entirely */
+  onRemoveAssignment?: () => Promise<void>;
+  /** Current user's team_member_id — needed to show "Mark Complete" to the assignee */
+  currentMemberId?: string | null;
+  /** team_member_id → {name, avatarUrl} for assignment badge display */
+  assigneeLookup?: TeamMemberLookup;
 }
 
 export default function CommentThread({
@@ -82,6 +96,11 @@ export default function CommentThread({
   participantsUrl,
   highlighted = false,
   memberLookup,
+  onAssign,
+  onToggleAssignmentComplete,
+  onRemoveAssignment,
+  currentMemberId,
+  assigneeLookup,
 }: CommentThreadProps) {
   const confirm = useConfirm();
   const [showReply, setShowReply] = useState(false);
@@ -92,6 +111,7 @@ export default function CommentThread({
   const [savingEdit, setSavingEdit] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showAssignPicker, setShowAssignPicker] = useState(false);
   const replyEditorRef = useRef<MentionEditorHandle | null>(null);
 
   const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim();
@@ -301,6 +321,27 @@ export default function CommentThread({
               />
             </div>
           )}
+          {comment.assigned_to && (
+            <AssignmentBadge
+              assignedTo={comment.assigned_to}
+              assignmentNote={comment.assignment_note}
+              completedAt={comment.assignment_completed_at}
+              memberLookup={assigneeLookup}
+              currentMemberId={currentMemberId}
+              isAdmin={isAdmin}
+              onComplete={
+                onToggleAssignmentComplete
+                  ? () => onToggleAssignmentComplete(true)
+                  : undefined
+              }
+              onReopen={
+                onToggleAssignmentComplete
+                  ? () => onToggleAssignmentComplete(false)
+                  : undefined
+              }
+              onRemove={onRemoveAssignment}
+            />
+          )}
         </div>
       </div>
 
@@ -357,6 +398,28 @@ export default function CommentThread({
             >
               {resolving ? 'Reopening…' : 'Reopen'}
             </Button>
+          )}
+          {isAdmin && onAssign && !comment.assigned_to && (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAssignPicker((v) => !v)}
+                leftIcon={UserPlus}
+              >
+                Assign
+              </Button>
+              {showAssignPicker && (
+                <AssignmentPicker
+                  participantsUrl={participantsUrl ?? null}
+                  onAssign={async (memberId, note) => {
+                    await onAssign(memberId, note);
+                    setShowAssignPicker(false);
+                  }}
+                  onClose={() => setShowAssignPicker(false)}
+                />
+              )}
+            </div>
           )}
           {deleting && (
             <span className="flex items-center gap-1 text-xs text-faint">

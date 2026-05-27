@@ -41,7 +41,7 @@ function ItemViewerGate(props: {
   itemId: string;
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
-  teamMember: { name?: string; email?: string } | null;
+  teamMember: { id?: string; name?: string; email?: string } | null;
 }) {
   const router = useRouter();
   const allowed = props.accountType === 'agency';
@@ -71,7 +71,7 @@ function ItemViewerContent({
   itemId: string;
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
-  teamMember: { name?: string; email?: string } | null;
+  teamMember: { id?: string; name?: string; email?: string } | null;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -405,6 +405,53 @@ function ItemViewerContent({
     }
   };
 
+  // ── Assignment callbacks (internal-only) ──
+  const assignComment = async (commentId: string, memberId: string, note: string) => {
+    const { authFetch } = await import('@/lib/auth-fetch');
+    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assigned_to: memberId, note }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body?.error || 'Failed to assign comment');
+    }
+  };
+
+  const toggleAssignmentComplete = async (commentId: string, completed: boolean) => {
+    const { authFetch } = await import('@/lib/auth-fetch');
+    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body?.error || 'Failed to update assignment');
+    }
+  };
+
+  const removeAssignment = async (commentId: string) => {
+    const { authFetch } = await import('@/lib/auth-fetch');
+    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body?.error || 'Failed to remove assignment');
+    }
+  };
+
   // ── Navigation callbacks for FeedbackDetailView ──
   const handleItemChange = useCallback((newItemId: string, type: string | null) => {
     const typeParam = type ? `?type=${type}` : '';
@@ -466,6 +513,10 @@ function ItemViewerContent({
         onUnresolveComment={unresolveComment}
         onEditComment={editComment}
         onDeleteComment={deleteComment}
+        onAssignComment={assignComment}
+        onToggleAssignmentComplete={toggleAssignmentComplete}
+        onRemoveAssignment={removeAssignment}
+        currentMemberId={teamMember?.id ?? null}
         onItemChange={handleItemChange}
         onFilterChange={handleFilterChange}
         shareToken={project.share_token || ''}

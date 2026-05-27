@@ -75,6 +75,14 @@ interface ReviewDetailViewProps {
   onEditComment?: (commentId: string, content: string) => Promise<void>;
   /** Delete a comment and its replies (admin only) */
   onDeleteComment?: (commentId: string) => Promise<void>;
+  /** Assign a comment to a team member (admin only, internal) */
+  onAssignComment?: (commentId: string, memberId: string, note: string) => Promise<void>;
+  /** Toggle assignment completion (admin only, internal) */
+  onToggleAssignmentComplete?: (commentId: string, completed: boolean) => Promise<void>;
+  /** Remove assignment from a comment (admin only, internal) */
+  onRemoveAssignment?: (commentId: string) => Promise<void>;
+  /** Current user's team_member_id (for "Mark Complete" gate) */
+  currentMemberId?: string | null;
   /** Called when selected item changes — admin uses this for router.push */
   onItemChange?: (itemId: string, typeFilter: string | null) => void;
   /** Called when type filter changes — admin uses this for URL sync */
@@ -155,6 +163,10 @@ export default function FeedbackDetailView({
   onUnresolveComment,
   onEditComment,
   onDeleteComment,
+  onAssignComment,
+  onToggleAssignmentComplete,
+  onRemoveAssignment,
+  currentMemberId,
   onItemChange,
   onFilterChange,
   backAction,
@@ -637,6 +649,10 @@ export default function FeedbackDetailView({
               currentUserName={isClient ? guestName : authorName}
               participantsUrl={participantsUrl}
               shareToken={shareToken}
+              onAssign={isAdmin ? onAssignComment : undefined}
+              onToggleAssignmentComplete={isAdmin ? onToggleAssignmentComplete : undefined}
+              onRemoveAssignment={isAdmin ? onRemoveAssignment : undefined}
+              currentMemberId={isAdmin ? currentMemberId : undefined}
               className="w-[360px] shrink-0 bg-warm flex flex-col"
               commentPlaceholder={(() => {
                 if (selectedItem?.type !== 'google_search_ad') return undefined;

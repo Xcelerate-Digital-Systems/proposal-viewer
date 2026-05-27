@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, X } from 'lucide-react';
 import type { FeedbackComment } from '@/lib/supabase';
 import GeneralCommentForm from './GeneralCommentForm';
@@ -65,6 +65,16 @@ interface CommentsPanelProps {
   commentFormAlwaysExpanded?: boolean;
   /** API endpoint returning mentionable participants for the comment editors. */
   participantsUrl?: string | null;
+
+  // ── Assignment (admin-only, internal) ──
+  /** Assign a comment to a team member */
+  onAssign?: (commentId: string, memberId: string, note: string) => Promise<void>;
+  /** Toggle assignment completion */
+  onToggleAssignmentComplete?: (commentId: string, completed: boolean) => Promise<void>;
+  /** Remove assignment from a comment */
+  onRemoveAssignment?: (commentId: string) => Promise<void>;
+  /** Current user's team_member_id */
+  currentMemberId?: string | null;
 }
 
 export default function CommentsPanel({
@@ -91,11 +101,48 @@ export default function CommentsPanel({
   commentPlaceholder,
   commentFormAlwaysExpanded,
   participantsUrl,
+  onAssign,
+  onToggleAssignmentComplete,
+  onRemoveAssignment,
+  currentMemberId,
 }: CommentsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   // Avatars are looked up by share_token so guests on the public review
   // page still see real team photos (and not just initials) on team comments.
   const memberLookup = useTeamMemberLookup(shareToken);
+
+  // Build team_member_id → name map for assignment badges (participants API
+  // keys team members by team_member_id, unlike memberLookup which keys by
+  // user_id). Only fetched when assignments are wired up.
+  const [tmNameMap, setTmNameMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!onAssign || !participantsUrl) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { authFetch } = await import('@/lib/auth-fetch');
+        const res = await authFetch(participantsUrl);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const map: Record<string, string> = {};
+        for (const p of data.participants ?? []) {
+          if (p.kind === 'team') map[p.id] = p.name;
+        }
+        if (!cancelled) setTmNameMap(map);
+      } catch { /* swallow */ }
+    })();
+    return () => { cancelled = true; };
+  }, [onAssign, participantsUrl]);
+
+  // Merge team_member_id names into a lookup shape compatible with AssignmentBadge's
+  // memberLookup prop (it reads .name from the lookup keyed by assigned_to).
+  const assigneeLookup = useMemo(() => {
+    const merged: Record<string, { name: string; avatarUrl: string | null }> = { ...memberLookup };
+    for (const [tmId, name] of Object.entries(tmNameMap)) {
+      if (!merged[tmId]) merged[tmId] = { name, avatarUrl: null };
+    }
+    return merged;
+  }, [memberLookup, tmNameMap]);
 
   // Auto-scroll to highlighted comment when a pin marker is clicked
   useEffect(() => {
@@ -155,6 +202,11 @@ export default function CommentsPanel({
             participantsUrl={participantsUrl}
             highlighted={highlightCommentId === c.id}
             memberLookup={memberLookup}
+            onAssign={onAssign ? (memberId, note) => onAssign(c.id, memberId, note) : undefined}
+            onToggleAssignmentComplete={onToggleAssignmentComplete ? (completed) => onToggleAssignmentComplete(c.id, completed) : undefined}
+            onRemoveAssignment={onRemoveAssignment ? () => onRemoveAssignment(c.id) : undefined}
+            currentMemberId={currentMemberId}
+            assigneeLookup={assigneeLookup}
           />
         ))}
 
