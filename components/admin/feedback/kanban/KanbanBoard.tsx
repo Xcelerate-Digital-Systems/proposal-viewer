@@ -16,7 +16,7 @@ import {
 } from '@/lib/feedback/status';
 import KanbanCard, { type ItemDecisionTally } from './KanbanCard';
 import KanbanColumnAssignees, {
-  type StageMember, type StageGuest, type CompanyMember,
+  type StageMember, type StageGuest, type CompanyMember, type ProjectGuest,
 } from './KanbanColumnAssignees';
 
 interface KanbanBoardProps {
@@ -49,22 +49,43 @@ export default function KanbanBoard({
   const [stageMembers, setStageMembers] = useState<StageMember[]>([]);
   const [stageGuests, setStageGuests] = useState<StageGuest[]>([]);
   const [companyMembers, setCompanyMembers] = useState<CompanyMember[]>([]);
+  const [projectGuests, setProjectGuests] = useState<ProjectGuest[]>([]);
   // Per-item decision tallies (approved / changes_requested) for the current
   // stage, indexed by item id. Refreshed alongside items.
   const [decisionTallies, setDecisionTallies] = useState<Record<string, ItemDecisionTally>>({});
 
   const refetchAssignees = useCallback(async () => {
-    if (!projectId) return;
+    if (!projectId || !companyId) return;
     try {
-      const res = await authFetch(`/api/markup-projects/${projectId}/stage-assignees`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setStageMembers(data.members ?? []);
-      setStageGuests(data.guests ?? []);
+      // Two fetches in parallel: stage-scoped assignees (members + guests
+      // already on a column) and the project-level guest pool (everyone who
+      // could be invited to a stage). Pool comes from /guests so the picker
+      // can offer existing contacts without retyping emails.
+      const [stageRes, poolRes] = await Promise.all([
+        authFetch(`/api/markup-projects/${projectId}/stage-assignees?company_id=${companyId}`),
+        authFetch(`/api/markup-projects/${projectId}/guests?company_id=${companyId}`),
+      ]);
+      if (stageRes.ok) {
+        const data = await stageRes.json();
+        // Hydrate avatar URLs for stage members from companyMembers (which
+        // already has signed avatar URLs loaded in the effect below). We do
+        // the join client-side to avoid double-signing the same paths.
+        const memberRows = (data.members ?? []) as StageMember[];
+        setStageMembers(memberRows);
+        setStageGuests(data.guests ?? []);
+      }
+      if (poolRes.ok) {
+        const data = await poolRes.json();
+        type Raw = { email: string; name: string; removed?: boolean };
+        const pool: ProjectGuest[] = (data.guests ?? [])
+          .filter((g: Raw) => !g.removed)
+          .map((g: Raw) => ({ email: g.email, name: g.name ?? '' }));
+        setProjectGuests(pool);
+      }
     } catch {
       // Non-fatal; the board still functions without the assignee chips.
     }
-  }, [projectId]);
+  }, [projectId, companyId]);
 
   useEffect(() => { refetchAssignees(); }, [refetchAssignees]);
 
@@ -109,26 +130,50 @@ export default function KanbanBoard({
     (async () => {
       const { data } = await supabase
         .from('team_members')
-        .select('id, name, email')
+        .select('id, name, email, avatar_path')
         .eq('company_id', companyId)
         .order('name');
-      if (!cancelled) setCompanyMembers(data ?? []);
+      if (cancelled || !data) return;
+      // Sign avatar_paths so the picker can render real images. Members
+      // without an avatar fall back to coloured initials via <Avatar>.
+      const hydrated: CompanyMember[] = await Promise.all(
+        (data as { id: string; name: string | null; email: string; avatar_path: string | null }[]).map(
+          async (r) => {
+            let avatar_url: string | null = null;
+            if (r.avatar_path) {
+              const { data: signed } = await supabase.storage
+                .from('proposals')
+                .createSignedUrl(r.avatar_path, 3600);
+              avatar_url = signed?.signedUrl ?? null;
+            }
+            return { id: r.id, name: r.name, email: r.email, avatar_url };
+          },
+        ),
+      );
+      if (!cancelled) setCompanyMembers(hydrated);
     })();
     return () => { cancelled = true; };
   }, [companyId]);
 
   // Index members/guests by stage so each column receives only its own slice.
+  // Stage members are joined client-side against `companyMembers` so their
+  // avatar URLs flow through to the column avatar stack without a second
+  // fetch / re-sign of the same storage paths.
   const assigneesByStage = useMemo(() => {
+    const avatarByMemberId = new Map<string, string | null>();
+    for (const cm of companyMembers) avatarByMemberId.set(cm.id, cm.avatar_url ?? null);
+
     const out: Record<FeedbackStatus, { members: StageMember[]; guests: StageGuest[] }> =
       REVIEW_STATUS_ORDER.reduce((acc, s) => {
         acc[s] = { members: [], guests: [] };
         return acc;
       }, {} as Record<FeedbackStatus, { members: StageMember[]; guests: StageGuest[] }>);
     for (const m of stageMembers) {
+      const enriched: StageMember = { ...m, avatar_url: avatarByMemberId.get(m.team_member_id) ?? null };
       // Empty stages array means "all stages" (back-compat); don't auto-broadcast
       // those into every column — they're project-wide assignees managed elsewhere.
       for (const s of m.stages) {
-        if (s in out) out[s as FeedbackStatus].members.push(m);
+        if (s in out) out[s as FeedbackStatus].members.push(enriched);
       }
     }
     for (const g of stageGuests) {
@@ -137,7 +182,7 @@ export default function KanbanBoard({
       }
     }
     return out;
-  }, [stageMembers, stageGuests]);
+  }, [stageMembers, stageGuests, companyMembers]);
 
   // Group items by status, preserving sort_order within each column.
   const columns = useMemo(() => {
@@ -209,6 +254,7 @@ export default function KanbanBoard({
             stageMembers={assigneesByStage[status].members}
             stageGuests={assigneesByStage[status].guests}
             companyMembers={companyMembers}
+            projectGuests={projectGuests}
             onAssigneesChanged={refetchAssignees}
           />
         ))}
@@ -235,7 +281,7 @@ export default function KanbanBoard({
 
 function KanbanColumn({
   status, items, commentCounts, decisionTallies, onOpen,
-  projectId, stageMembers, stageGuests, companyMembers, onAssigneesChanged,
+  projectId, stageMembers, stageGuests, companyMembers, projectGuests, onAssigneesChanged,
 }: {
   status: FeedbackStatus;
   items: FeedbackItem[];
@@ -246,6 +292,7 @@ function KanbanColumn({
   stageMembers: StageMember[];
   stageGuests: StageGuest[];
   companyMembers: CompanyMember[];
+  projectGuests: ProjectGuest[];
   onAssigneesChanged: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `column-${status}` });
@@ -266,6 +313,7 @@ function KanbanColumn({
               members={stageMembers}
               guests={stageGuests}
               companyMembers={companyMembers}
+              projectGuests={projectGuests}
               onChanged={onAssigneesChanged}
             />
           </div>

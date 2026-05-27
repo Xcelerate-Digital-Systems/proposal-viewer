@@ -16,13 +16,25 @@ export type StageMember = {
   name: string;
   email: string;
   stages: string[];
+  /** Signed URL for the member's avatar image, if uploaded. Falls back to
+   *  the coloured-initials avatar when null/undefined. */
+  avatar_url?: string | null;
 };
 export type StageGuest = {
   email: string;
   name: string;
   stages: string[];
 };
-export type CompanyMember = { id: string; name: string | null; email: string };
+export type CompanyMember = {
+  id: string;
+  name: string | null;
+  email: string;
+  avatar_url?: string | null;
+};
+export type ProjectGuest = {
+  email: string;
+  name: string;
+};
 
 const GUEST_ELIGIBLE_STAGES: FeedbackStatus[] = ['client_review', 'approved', 'rejected'];
 
@@ -45,6 +57,43 @@ function avatarColor(seed: string): string {
   return colors[h % colors.length];
 }
 
+/** Tiny avatar: renders the uploaded image when available, falls back to
+ *  initials on a deterministic colour. Used in the column avatar stack and
+ *  inside the picker rows so member rows and their assigned-circle stay in
+ *  sync visually. */
+function Avatar({
+  imageUrl, name, email, seed, size = 24, ring = false,
+}: {
+  imageUrl?: string | null;
+  name: string;
+  email: string;
+  seed: string;
+  size?: number;
+  ring?: boolean;
+}) {
+  const sizeClass = `w-[${size}px] h-[${size}px]`;
+  const ringClass = ring ? 'ring-2 ring-white' : '';
+  if (imageUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={imageUrl}
+        alt={name || email}
+        className={`${sizeClass} rounded-full object-cover ${ringClass}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <div
+      className={`rounded-full text-[10px] font-semibold text-white flex items-center justify-center ${avatarColor(seed)} ${ringClass}`}
+      style={{ width: size, height: size }}
+    >
+      {initials(name, email)}
+    </div>
+  );
+}
+
 interface KanbanColumnAssigneesProps {
   projectId: string;
   stage: FeedbackStatus;
@@ -54,12 +103,17 @@ interface KanbanColumnAssigneesProps {
   guests: StageGuest[];
   /** All team members of the company — picker source. */
   companyMembers: CompanyMember[];
+  /** Project-level guest pool (everyone who's commented on the project + the
+   *  project's client_email + any manually-added recipients). Sourced from
+   *  /api/markup-projects/[id]/guests so the picker can offer existing
+   *  contacts before falling back to free-form email entry. */
+  projectGuests: ProjectGuest[];
   /** Called after any successful add/remove so the parent can re-fetch. */
   onChanged: () => void;
 }
 
 export default function KanbanColumnAssignees({
-  projectId, stage, members, guests, companyMembers, onChanged,
+  projectId, stage, members, guests, companyMembers, projectGuests, onChanged,
 }: KanbanColumnAssigneesProps) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -113,8 +167,8 @@ export default function KanbanColumnAssignees({
     }
   }, [busy, assignedMemberIds, projectId, stage, onChanged, toast]);
 
-  const addGuest = useCallback(async () => {
-    const email = guestEmail.trim().toLowerCase();
+  const addGuestByEmail = useCallback(async (rawEmail: string, name?: string) => {
+    const email = rawEmail.trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       toast.error('Enter a valid email');
       return;
@@ -125,7 +179,7 @@ export default function KanbanColumnAssignees({
       const res = await authFetch(`/api/markup-projects/${projectId}/stage-assignees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'guest', stage, email }),
+        body: JSON.stringify({ kind: 'guest', stage, email, name: name || undefined }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed');
       setGuestEmail('');
@@ -135,7 +189,9 @@ export default function KanbanColumnAssignees({
     } finally {
       setBusy(false);
     }
-  }, [busy, guestEmail, projectId, stage, onChanged, toast]);
+  }, [busy, projectId, stage, onChanged, toast]);
+
+  const addGuest = useCallback(() => addGuestByEmail(guestEmail), [addGuestByEmail, guestEmail]);
 
   const removeGuest = useCallback(async (email: string) => {
     if (busy) return;
@@ -168,13 +224,17 @@ export default function KanbanColumnAssignees({
             const label = isGuest
               ? (entry.name || entry.email)
               : ((entry as StageMember).name || (entry as StageMember).email);
+            const imageUrl = !isGuest ? (entry as StageMember).avatar_url ?? null : null;
             return (
-              <div
-                key={`${isGuest ? 'g' : 'm'}-${seed}-${i}`}
-                title={`${label}${isGuest ? ' (guest)' : ''}`}
-                className={`w-6 h-6 rounded-full text-[10px] font-semibold text-white flex items-center justify-center ring-2 ring-white ${avatarColor(seed)}`}
-              >
-                {initials(label, isGuest ? entry.email : (entry as StageMember).email)}
+              <div key={`${isGuest ? 'g' : 'm'}-${seed}-${i}`} title={`${label}${isGuest ? ' (guest)' : ''}`}>
+                <Avatar
+                  imageUrl={imageUrl}
+                  name={label}
+                  email={isGuest ? entry.email : (entry as StageMember).email}
+                  seed={seed}
+                  size={24}
+                  ring
+                />
               </div>
             );
           })}
@@ -220,9 +280,13 @@ export default function KanbanColumnAssignees({
                     disabled={busy}
                     className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-gray-50 disabled:opacity-50"
                   >
-                    <div className={`w-6 h-6 rounded-full text-[10px] font-semibold text-white flex items-center justify-center ${avatarColor(m.id)}`}>
-                      {initials(m.name ?? '', m.email)}
-                    </div>
+                    <Avatar
+                      imageUrl={m.avatar_url}
+                      name={m.name ?? ''}
+                      email={m.email}
+                      seed={m.id}
+                      size={24}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] text-gray-800 truncate">{m.name || m.email}</div>
                       {m.name && <div className="text-[11px] text-gray-400 truncate">{m.email}</div>}
@@ -239,42 +303,51 @@ export default function KanbanColumnAssignees({
               <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 px-2 pb-1 pt-2">
                 Guests
               </div>
-              {guests.length > 0 && (
-                <div className="mb-1">
-                  {guests.map((g) => (
-                    <div
-                      key={`g-${g.email}`}
-                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left"
-                    >
-                      <div className={`w-6 h-6 rounded-full text-[10px] font-semibold text-white flex items-center justify-center ${avatarColor(g.email)}`}>
-                        {initials(g.name, g.email)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] text-gray-800 truncate">{g.name || g.email}</div>
-                        {g.name && <div className="text-[11px] text-gray-400 truncate">{g.email}</div>}
-                      </div>
+
+              {/* Project guest pool — emails attached to this project (client
+                  contacts, prior commenters). Pick to scope to this stage
+                  without retyping. Already-assigned guests render with a
+                  green check and toggle off on click. */}
+              {projectGuests.length > 0 && (
+                <div className="max-h-40 overflow-y-auto -mx-1 px-1 mb-1">
+                  {projectGuests.map((g) => {
+                    const email = g.email.trim().toLowerCase();
+                    const assigned = guests.some((sg) => sg.email.trim().toLowerCase() === email);
+                    return (
                       <button
+                        key={`pg-${email}`}
                         type="button"
-                        onClick={() => removeGuest(g.email)}
+                        onClick={() => assigned ? removeGuest(email) : addGuestByEmail(email, g.name)}
                         disabled={busy}
-                        className="text-gray-400 hover:text-gray-700 disabled:opacity-50"
-                        aria-label={`Remove ${g.email}`}
+                        className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-gray-50 disabled:opacity-50"
                       >
-                        <X size={13} />
+                        <Avatar
+                          imageUrl={null}
+                          name={g.name}
+                          email={g.email}
+                          seed={g.email}
+                          size={24}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] text-gray-800 truncate">{g.name || g.email}</div>
+                          {g.name && <div className="text-[11px] text-gray-400 truncate">{g.email}</div>}
+                        </div>
+                        {assigned && <Check size={14} className="text-emerald-500 shrink-0" />}
                       </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
-              <div className="flex items-center gap-1.5 px-2 pb-1 pt-0.5">
+
+              <div className="flex items-center gap-1.5 px-2 pb-1 pt-0.5 border-t border-gray-100 mt-1">
                 <Mail size={13} className="text-gray-400 shrink-0" />
                 <input
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGuest(); } }}
-                  placeholder="client@email.com"
+                  placeholder="Invite a new email..."
                   type="email"
-                  className="flex-1 min-w-0 text-[13px] outline-none placeholder:text-gray-300"
+                  className="flex-1 min-w-0 text-[13px] outline-none placeholder:text-gray-300 py-1.5"
                 />
                 <button
                   type="button"

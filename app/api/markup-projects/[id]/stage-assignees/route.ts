@@ -27,17 +27,40 @@ function isValidStage(value: unknown): value is FeedbackStatus {
   return typeof value === 'string' && (VALID_STAGES as string[]).includes(value);
 }
 
-async function ensureProjectOwned(
+// Verify the auth user can act on this project. We don't require the project
+// to belong to the user's *active* workspace (auth.companyId) because users
+// with multiple memberships often default to a different workspace than the
+// one they're viewing the project in — that mismatch surfaces here as a 404
+// from the Kanban `+` picker even though the user is a legit member.
+// Instead, we accept the request if:
+//   (a) the project belongs to the user's active workspace, OR
+//   (b) the user has a real membership in the project's company, OR
+//   (c) the user is a super-admin.
+async function ensureProjectAccessible(
   supabase: ReturnType<typeof createServiceClient>,
   projectId: string,
-  companyId: string,
-): Promise<boolean> {
+  auth: { companyId: string; member: { user_id: string; is_super_admin: boolean } },
+): Promise<{ ok: boolean; companyId: string | null }> {
   const { data: project } = await supabase
     .from('review_projects')
     .select('id, company_id')
     .eq('id', projectId)
     .single();
-  return !!project && project.company_id === companyId;
+  if (!project) return { ok: false, companyId: null };
+
+  if (project.company_id === auth.companyId) {
+    return { ok: true, companyId: project.company_id as string };
+  }
+  if (auth.member.is_super_admin) {
+    return { ok: true, companyId: project.company_id as string };
+  }
+  const { data: membership } = await supabase
+    .from('team_members')
+    .select('id')
+    .eq('user_id', auth.member.user_id)
+    .eq('company_id', project.company_id)
+    .maybeSingle();
+  return { ok: !!membership, companyId: project.company_id as string };
 }
 
 // ─── GET ────────────────────────────────────────────────────────────────────
@@ -49,7 +72,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = createServiceClient();
-  if (!(await ensureProjectOwned(supabase, params.id, auth.companyId))) {
+  const access = await ensureProjectAccessible(supabase, params.id, auth);
+  if (!access.ok) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -116,7 +140,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   }
 
   const supabase = createServiceClient();
-  if (!(await ensureProjectOwned(supabase, params.id, auth.companyId))) {
+  const access = await ensureProjectAccessible(supabase, params.id, auth);
+  if (!access.ok) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -125,13 +150,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     if (!team_member_id) {
       return NextResponse.json({ error: 'team_member_id required' }, { status: 400 });
     }
-    // Verify candidate belongs to the same company.
+    // Verify candidate belongs to the project's company. (Not auth.companyId —
+    // that's the caller's active workspace which may differ when a user has
+    // multiple memberships; the project's company is the source of truth.)
     const { data: candidate } = await supabase
       .from('team_members')
       .select('id, company_id')
       .eq('id', team_member_id)
       .single();
-    if (!candidate || candidate.company_id !== auth.companyId) {
+    if (!candidate || candidate.company_id !== access.companyId) {
       return NextResponse.json({ error: 'Invalid team member' }, { status: 400 });
     }
 
@@ -218,7 +245,8 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   }
 
   const supabase = createServiceClient();
-  if (!(await ensureProjectOwned(supabase, params.id, auth.companyId))) {
+  const access = await ensureProjectAccessible(supabase, params.id, auth);
+  if (!access.ok) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
