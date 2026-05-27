@@ -92,7 +92,7 @@ function ItemsContent({
       .single();
 
     if (error || !data) {
-      router.push('/markup');
+      router.push('/campaigns');
       return;
     }
     setProject(data);
@@ -140,7 +140,7 @@ function ItemsContent({
     // navigation cycles through items of the same kind.
     const type = typeFilter || item?.type;
     const typeParam = type ? `?type=${type}` : '';
-    router.push(`/markup/${projectId}/items/${itemId}${typeParam}`);
+    router.push(`/campaigns/${projectId}/assets/${itemId}${typeParam}`);
   };
 
   if (!project && !loading) return null;
@@ -154,7 +154,7 @@ function ItemsContent({
           setProject={setProject}
           customDomain={customDomain}
           hasWebpages={items.some((i) => i.type === 'webpage')}
-          activeTab="items"
+          activeTab="assets"
           onAddItem={() => setShowAddItem(true)}
         />
       )}

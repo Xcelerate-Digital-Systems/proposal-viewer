@@ -115,7 +115,7 @@ export function FeedbackBoardProvider({
       .eq('company_id', companyId)
       .single();
     if (error || !data) {
-      router.push('/markup');
+      router.push('/campaigns');
       return;
     }
 

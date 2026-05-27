@@ -57,7 +57,7 @@ export default function WebpageItemForm({
       .single();
 
     if (error || !data) {
-      toast.error('Failed to load project');
+      toast.error('Failed to load campaign');
       return null;
     }
     setProject(data);
@@ -74,7 +74,7 @@ export default function WebpageItemForm({
         // Domain already set but script not yet detected — send them to the
         // setup page which shows the snippet and polls for install.
         onCancel();
-        router.push(`/markup/${reviewProjectId}/setup`);
+        router.push(`/campaigns/${reviewProjectId}/setup`);
       } else {
         setStage('domain');
       }
@@ -108,7 +108,7 @@ export default function WebpageItemForm({
       setSavingDomain(false);
     } else {
       onCancel();
-      router.push(`/markup/${reviewProjectId}/setup`);
+      router.push(`/campaigns/${reviewProjectId}/setup`);
     }
   };
 

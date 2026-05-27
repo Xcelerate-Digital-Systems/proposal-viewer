@@ -105,7 +105,7 @@ interface KanbanColumnAssigneesProps {
   companyMembers: CompanyMember[];
   /** Project-level guest pool (everyone who's commented on the project + the
    *  project's client_email + any manually-added recipients). Sourced from
-   *  /api/markup-projects/[id]/guests so the picker can offer existing
+   *  /api/campaigns/[id]/guests so the picker can offer existing
    *  contacts before falling back to free-form email entry. */
   projectGuests: ProjectGuest[];
   /** Called after any successful add/remove so the parent can re-fetch. */
@@ -147,7 +147,7 @@ export default function KanbanColumnAssignees({
     setBusy(true);
     const isAdding = !assignedMemberIds.has(memberId);
     try {
-      const url = `/api/markup-projects/${projectId}/stage-assignees`;
+      const url = `/api/campaigns/${projectId}/stage-assignees`;
       const res = isAdding
         ? await authFetch(url, {
             method: 'POST',
@@ -176,7 +176,7 @@ export default function KanbanColumnAssignees({
     if (busy) return;
     setBusy(true);
     try {
-      const res = await authFetch(`/api/markup-projects/${projectId}/stage-assignees`, {
+      const res = await authFetch(`/api/campaigns/${projectId}/stage-assignees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kind: 'guest', stage, email, name: name || undefined }),
@@ -198,7 +198,7 @@ export default function KanbanColumnAssignees({
     setBusy(true);
     try {
       const res = await authFetch(
-        `/api/markup-projects/${projectId}/stage-assignees?kind=guest&stage=${stage}&email=${encodeURIComponent(email)}`,
+        `/api/campaigns/${projectId}/stage-assignees?kind=guest&stage=${stage}&email=${encodeURIComponent(email)}`,
         { method: 'DELETE' },
       );
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed');

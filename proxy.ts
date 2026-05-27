@@ -13,9 +13,18 @@ export function proxy(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
+  // Redirect legacy /markup routes to /campaigns (items → assets).
+  if (pathname === '/markup' || pathname.startsWith('/markup/')) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname
+      .replace(/^\/markup/, '/campaigns')
+      .replace(/\/items(\/|$)/, '/assets$1');
+    return NextResponse.redirect(url, 308);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/'],
+  matcher: ['/', '/markup/:path*'],
 };

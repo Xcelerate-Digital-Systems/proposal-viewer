@@ -562,7 +562,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
                 </div>
                 <p className="text-base font-semibold text-ink mb-1">Build your funnel board</p>
                 <p className="text-xs text-muted">
-                  Click &ldquo;Place on Board&rdquo; in the sidebar to add items, then drag to arrange and connect them to show the funnel flow.
+                  Click &ldquo;Place on Board&rdquo; in the sidebar to add assets, then drag to arrange and connect them to show the funnel flow.
                 </p>
               </div>
             </Panel>

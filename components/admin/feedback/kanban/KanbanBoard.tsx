@@ -62,8 +62,8 @@ export default function KanbanBoard({
       // could be invited to a stage). Pool comes from /guests so the picker
       // can offer existing contacts without retyping emails.
       const [stageRes, poolRes] = await Promise.all([
-        authFetch(`/api/markup-projects/${projectId}/stage-assignees?company_id=${companyId}`),
-        authFetch(`/api/markup-projects/${projectId}/guests?company_id=${companyId}`),
+        authFetch(`/api/campaigns/${projectId}/stage-assignees?company_id=${companyId}`),
+        authFetch(`/api/campaigns/${projectId}/guests?company_id=${companyId}`),
       ]);
       if (stageRes.ok) {
         const data = await stageRes.json();

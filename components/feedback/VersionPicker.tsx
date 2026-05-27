@@ -72,17 +72,8 @@ export default function VersionPicker({
 
       {open && (
         <div className="absolute top-full right-0 mt-1 z-30 w-72 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto">
-          {ordered.map((v, i) => {
+          {ordered.map((v) => {
             const isActive = (v.id ?? null) === (active.id ?? null);
-            // Per-row status. Active version shows live item.status; older
-            // versions show the NEXT version's priorStatus (where this
-            // version was when it got superseded). If no per-row status is
-            // resolvable, render no badge for that row.
-            const newerVersion = ordered[i - 1];
-            const rowStatus: FeedbackStatus | null = isActive
-              ? (itemStatus ?? null)
-              : (newerVersion?.priorStatus ?? null);
-            const rowStatusDef = rowStatus ? getFeedbackStatusDef(rowStatus) : null;
             return (
               <div
                 key={v.id ?? 'v1'}
@@ -102,20 +93,9 @@ export default function VersionPicker({
                     v{v.versionNumber}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs text-dim truncate flex-1 min-w-0">
-                        {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
-                      </p>
-                      {rowStatusDef && (
-                        <span
-                          className={`inline-flex items-center gap-0.5 px-1.5 py-0 rounded-full text-[9px] font-medium border shrink-0 ${rowStatusDef.bg} ${rowStatusDef.text} ${rowStatusDef.border}`}
-                          title={isActive ? 'Current status' : 'Status when superseded'}
-                        >
-                          <span className={`w-1 h-1 rounded-full ${rowStatusDef.dot}`} />
-                          {rowStatusDef.label}
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-xs text-dim truncate">
+                      {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
+                    </p>
                     <p className="text-2xs text-faint mt-0.5">
                       {formatTimestamp(v.createdAt)}
                     </p>

@@ -14,7 +14,7 @@ interface FormActionsProps {
     enabled: boolean;
     onToggle: () => void;
   };
-  /** Override primary button label (defaults to "Add Item"). */
+  /** Override primary button label (defaults to "Add Asset"). */
   submitLabel?: string;
 }
 
@@ -55,7 +55,7 @@ export default function FormActions({
           Cancel
         </Button>
         <Button type="submit" size="sm" loading={uploading} disabled={disabled}>
-          {submitLabel || 'Add Item'}
+          {submitLabel || 'Add Asset'}
         </Button>
       </div>
     </div>

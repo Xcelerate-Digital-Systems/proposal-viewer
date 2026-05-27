@@ -169,7 +169,7 @@ function WidgetCard({
             return (
               <li key={item.id}>
                 <Link
-                  href={`/markup/${project.id}/items/${item.id}`}
+                  href={`/campaigns/${project.id}/assets/${item.id}`}
                   className="flex items-center gap-3 px-5 py-3 hover:bg-surface transition-colors"
                 >
                   <div className="min-w-0 flex-1">
@@ -191,7 +191,7 @@ function WidgetCard({
           })}
           {overflow > 0 && (
             <li className="px-5 py-3 text-center text-detail text-muted">
-              Plus {overflow} more — open them from their markup project.
+              Plus {overflow} more — open them from their campaign project.
             </li>
           )}
         </ul>

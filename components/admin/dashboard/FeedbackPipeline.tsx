@@ -107,7 +107,7 @@ function FeedbackProjectCard({
             {project.title}
           </h4>
           <p className="text-detail text-faint mt-0.5 truncate">
-            {project.client_company || project.client_name || 'Markup project'}
+            {project.client_company || project.client_name || 'Campaign'}
           </p>
         </div>
 
@@ -155,7 +155,7 @@ function FeedbackProjectCard({
           </span>
         </div>
         <Link
-          href={`/markup/${project.id}/comments`}
+          href={`/campaigns/${project.id}/comments`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"

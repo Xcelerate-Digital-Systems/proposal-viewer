@@ -75,7 +75,7 @@ export default function AdminSidebar({
   }, [memberAvatarPath]);
 
   const visibleSections = ALL_SECTIONS.filter(
-    (s) => s.key !== 'markup' || accountType === 'agency'
+    (s) => s.key !== 'campaigns' || accountType === 'agency'
   );
 
   const activeSection = getActiveSection(pathname, visibleSections);
@@ -87,7 +87,7 @@ export default function AdminSidebar({
       !activeSection ||
       pathname === '/dashboard' ||
       pathname === '/clients' ||
-      (accountType !== 'agency' && activeSection.key === 'markup')
+      (accountType !== 'agency' && activeSection.key === 'campaigns')
     );
 
   const isActive = (href: string) => {

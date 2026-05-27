@@ -1,4 +1,4 @@
-// app/api/markup-projects/[id]/guests/route.ts
+// app/api/campaigns/[id]/guests/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     );
 
   if (error) {
-    console.error('[api/markup-projects/[id]/guests]', error.message);
+    console.error('[api/campaigns/[id]/guests]', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
   return NextResponse.json({ success: true });
@@ -263,7 +263,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     .upsert(update, { onConflict: 'review_project_id,email' });
 
   if (error) {
-    console.error('[api/markup-projects/[id]/guests]', error.message);
+    console.error('[api/campaigns/[id]/guests]', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
   return NextResponse.json({ success: true });

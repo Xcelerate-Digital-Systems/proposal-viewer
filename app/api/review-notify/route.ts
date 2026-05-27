@@ -254,7 +254,7 @@ export async function POST(req: NextRequest) {
               category: 'mention',
               title: `${comment_author || 'Someone'} mentioned you${item_title ? ` on ${item_title}` : ''}`,
               body: comment_content ? htmlToPlainText(comment_content).slice(0, 200) : null,
-              link: `/feedback/${project.id}/board`,
+              link: `/campaigns/${project.id}/board`,
             });
           }
         }
@@ -339,7 +339,7 @@ export async function POST(req: NextRequest) {
               category: inAppCategory,
               title: `${comment_author || 'Someone'} commented${item_title ? ` on ${item_title}` : ''}`,
               body: comment_content ? htmlToPlainText(comment_content).slice(0, 200) : null,
-              link: `/feedback/${project.id}/board`,
+              link: `/campaigns/${project.id}/board`,
             });
           }
         } catch { /* Non-critical */ }
@@ -398,7 +398,7 @@ export async function POST(req: NextRequest) {
               category: inAppCat,
               title: subject,
               body: comment_content ? htmlToPlainText(comment_content).slice(0, 200) : null,
-              link: `/feedback/${project.id}/board`,
+              link: `/campaigns/${project.id}/board`,
             });
           }
         } catch { /* Non-critical */ }

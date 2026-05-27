@@ -70,7 +70,7 @@ export default function MarkupDefaultsSection({ canEdit }: { canEdit: boolean })
   return (
     <div className="bg-white border border-edge rounded-[14px] overflow-hidden">
       <div className="px-4 py-3 border-b border-edge flex items-center gap-2">
-        <span className="text-sm font-semibold text-ink">Markup defaults</span>
+        <span className="text-sm font-semibold text-ink">Campaign defaults</span>
         <span className="text-2xs font-semibold uppercase tracking-wider bg-teal/10 text-teal px-1.5 py-0.5 rounded">
           Agency
         </span>

@@ -18,7 +18,7 @@ interface Props {
   setProject: (updater: (prev: FeedbackProject | null) => FeedbackProject | null) => void;
   customDomain: string | null;
   hasWebpages: boolean;
-  activeTab: 'board' | 'kanban' | 'items' | 'comments';
+  activeTab: 'board' | 'kanban' | 'assets' | 'comments';
   onAddItem?: () => void;
 }
 
@@ -59,9 +59,9 @@ export default function FeedbackProjectHeader({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex items-center gap-3">
           <Link
-            href="/markup"
+            href="/campaigns"
             className="text-faint hover:text-prose transition-colors shrink-0"
-            title="All Projects"
+            title="All Campaigns"
           >
             <ArrowLeft size={16} />
           </Link>
@@ -119,7 +119,7 @@ export default function FeedbackProjectHeader({
 
           {onAddItem && (
             <Button size="sm" leftIcon={Plus} onClick={onAddItem}>
-              Add Item
+              Add Asset
             </Button>
           )}
         </div>

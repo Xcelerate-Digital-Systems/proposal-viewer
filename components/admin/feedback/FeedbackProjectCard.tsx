@@ -118,8 +118,8 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
 
   const handleDelete = async () => {
     const ok = await confirm({
-      title: 'Delete Markup Project',
-      message: `Delete "${project.title}"? This will remove all items, comments, and versions permanently.`,
+      title: 'Delete Campaign',
+      message: `Delete "${project.title}"? This will remove all assets, comments, and versions permanently.`,
       confirmLabel: 'Delete',
       destructive: true,
     });
@@ -191,7 +191,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
       <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow flex flex-col">
         {/* ─── Visual header — click to open ──────────────────── */}
         <button
-          onClick={() => router.push(`/markup/${project.id}`)}
+          onClick={() => router.push(`/campaigns/${project.id}`)}
           className="w-full aspect-[4/3] rounded-t-2xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-surface flex flex-col items-center justify-center p-3"
         >
           {itemStats.total > 0 ? (
@@ -261,7 +261,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           {/* Title */}
           <h3
             className="text-base font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
-            onClick={() => router.push(`/markup/${project.id}`)}
+            onClick={() => router.push(`/campaigns/${project.id}`)}
           >
             {project.title}
           </h3>
@@ -291,7 +291,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3 px-3">
             <div className="flex items-center gap-0.5">
               <button
-                onClick={() => router.push(`/markup/${project.id}`)}
+                onClick={() => router.push(`/campaigns/${project.id}`)}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal-tint transition-colors"
               >
                 <Eye size={12} />

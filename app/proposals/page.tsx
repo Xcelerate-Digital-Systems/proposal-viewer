@@ -148,8 +148,8 @@ function ProposalsContent({ companyId }: { companyId: string }) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <PageHeader
-        title="Pitch Studio"
-        description={`${proposals.length} pitch${proposals.length !== 1 ? 'es' : ''}`}
+        title="Proposal Builder"
+        description={`${proposals.length} proposal${proposals.length !== 1 ? 's' : ''}`}
         actions={<>
           {/* View toggle */}
           <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">

@@ -99,7 +99,7 @@ export default function AddFeedbackItemModal({
     <Modal
       open
       onClose={onClose}
-      title={step === 'type' ? 'Add Item' : (TITLES[itemType] || 'New Item')}
+      title={step === 'type' ? 'Add Asset' : (TITLES[itemType] || 'New Asset')}
       size={isWide ? 'xl' : 'lg'}
     >
         {/* Step 1: Choose type */}

@@ -272,7 +272,7 @@ function ItemsTabContent() {
         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-caption font-semibold text-white bg-teal hover:bg-teal-hover transition-colors shadow-sm"
       >
         <Plus size={14} />
-        New item
+        New asset
       </button>
 
       <div>
@@ -293,7 +293,7 @@ function ItemsTabContent() {
             </div>
           ) : (
             <p className="text-xs text-faint px-1 py-2">
-              No items yet. Use the “New item” button to add one.
+              No assets yet. Use the “New asset” button to add one.
             </p>
           )
         ) : (

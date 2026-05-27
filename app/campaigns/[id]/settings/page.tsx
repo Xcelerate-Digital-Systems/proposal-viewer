@@ -59,7 +59,7 @@ function SettingsContent({
     ]);
 
     if (!p) {
-      router.push('/markup');
+      router.push('/campaigns');
       return;
     }
     setProject(p);
@@ -79,7 +79,7 @@ function SettingsContent({
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex items-center gap-3">
                 <Link
-                  href="/markup"
+                  href="/campaigns"
                   className="text-faint hover:text-prose transition-colors shrink-0"
                   title="All Projects"
                 >

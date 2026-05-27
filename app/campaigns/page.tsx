@@ -112,8 +112,8 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
         setCustomDomain(null);
       }
     } catch (err) {
-      console.error('Failed to fetch projects:', err);
-      setFetchError(err instanceof Error ? err.message : 'Failed to load projects');
+      console.error('Failed to fetch campaigns:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load campaigns');
     } finally {
       setLoading(false);
     }
@@ -136,8 +136,8 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
     <div className="flex flex-col h-full">
       {/* Header */}
       <PageHeader
-        title="Markup"
-        description={`${projects.length} project${projects.length !== 1 ? 's' : ''}`}
+        title="Campaigns"
+        description={`${projects.length} campaign${projects.length !== 1 ? 's' : ''}`}
         actions={<>
           {/* View toggle */}
             <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
@@ -181,7 +181,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               <Search size={15} className="text-faint shrink-0" />
               <input
                 type="text"
-                placeholder="Search projects..."
+                placeholder="Search campaigns..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
@@ -194,7 +194,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               leftIcon={Plus}
               onClick={() => setShowCreate(true)}
             >
-              New Project
+              New Campaign
             </Button>
         </>}
       />
@@ -220,15 +220,15 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             onRetry={() => { setLoading(true); fetchProjects(); }}
           />
         ) : filtered.length === 0 && searchQuery ? (
-          <NoResults message={`No projects matching “${searchQuery}”`} />
+          <NoResults message={`No campaigns matching “${searchQuery}”`} />
         ) : projects.length === 0 ? (
           <EmptyState
             icon={MessageSquareText}
-            title="No markup projects yet"
-            description="Create a project to start collecting markup on your creative work."
+            title="No campaigns yet"
+            description="Create a campaign to start collecting feedback on your creative work."
             action={
               <Button size="sm" leftIcon={Plus} onClick={() => setShowCreate(true)}>
-                New Project
+                New Campaign
               </Button>
             }
           />
@@ -266,7 +266,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             }
             renderCard={(project) => <FeedbackBoardCard project={project} />}
             onMove={(projectId, _from, to) => updateProjectStatus(projectId, to as FeedbackStatus)}
-            emptyMessage="Drag a project here."
+            emptyMessage="Drag a campaign here."
           />
         )}
       </div>
@@ -292,7 +292,7 @@ function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
             {project.title}
           </h4>
           <p className="text-detail text-faint mt-0.5 truncate">
-            {project.client_name || 'Markup project'}
+            {project.client_name || 'Campaign'}
           </p>
         </div>
       </div>
@@ -303,7 +303,7 @@ function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
           <span>{relativeShort(updated)}</span>
         </div>
         <Link
-          href={`/markup/${project.id}/comments`}
+          href={`/campaigns/${project.id}/comments`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"

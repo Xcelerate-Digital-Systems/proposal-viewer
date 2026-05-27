@@ -439,6 +439,10 @@ export type FeedbackComment = {
   resolved: boolean;
   resolved_by: string | null;
   resolved_at: string | null;
+  assigned_to: string | null;
+  assigned_by: string | null;
+  assignment_note: string | null;
+  assignment_completed_at: string | null;
   created_at: string;
   updated_at: string;
 };

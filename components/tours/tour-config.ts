@@ -37,7 +37,7 @@ const REGISTRY: Record<TourId, TourEntry> = {
   reviews: {
     id: 'reviews',
     steps: [],
-    matchesPath: (p) => p === '/markup' || p.startsWith('/markup/'),
+    matchesPath: (p) => p === '/campaigns' || p.startsWith('/campaigns/'),
     label: 'Reviews tour',
   },
   integrations: {

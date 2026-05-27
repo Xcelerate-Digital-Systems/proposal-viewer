@@ -61,7 +61,7 @@ function KanbanContent({
       .eq('id', projectId)
       .eq('company_id', companyId)
       .single();
-    if (!data) { router.push('/markup'); return; }
+    if (!data) { router.push('/campaigns'); return; }
     setProject(data);
   }, [projectId, companyId, router]);
 
@@ -118,7 +118,7 @@ function KanbanContent({
       window.open(item.url, '_blank');
       return;
     }
-    router.push(`/markup/${projectId}/items/${itemId}`);
+    router.push(`/campaigns/${projectId}/assets/${itemId}`);
   }, [items, projectId, router]);
 
   const hasWebpages = useMemo(() => items.some((i) => i.type === 'webpage'), [items]);
@@ -159,9 +159,9 @@ function KanbanContent({
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-20">
-            <h3 className="text-lg font-semibold text-dim mb-1">No items yet</h3>
+            <h3 className="text-lg font-semibold text-dim mb-1">No assets yet</h3>
             <p className="text-sm text-faint mb-4">
-              Add items to organise them across the pipeline.
+              Add assets to organise them across the pipeline.
             </p>
             <Button
               leftIcon={Plus}

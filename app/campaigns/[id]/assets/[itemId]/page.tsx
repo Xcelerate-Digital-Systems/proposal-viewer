@@ -107,7 +107,7 @@ function ItemViewerContent({
       .eq('company_id', companyId)
       .single();
 
-    if (!data) { router.push('/markup'); return; }
+    if (!data) { router.push('/campaigns'); return; }
     setProject(data);
   }, [projectId, companyId, router]);
 
@@ -125,7 +125,7 @@ function ItemViewerContent({
     const all = data || [];
     const currentIsWebpage = all.find((i) => i.id === itemId)?.type === 'webpage';
     if (currentIsWebpage) {
-      router.replace(`/markup/${projectId}/items`);
+      router.replace(`/campaigns/${projectId}/assets`);
       return;
     }
     setItems(all.filter((i) => i.type !== 'webpage'));
@@ -408,13 +408,13 @@ function ItemViewerContent({
   // ── Navigation callbacks for FeedbackDetailView ──
   const handleItemChange = useCallback((newItemId: string, type: string | null) => {
     const typeParam = type ? `?type=${type}` : '';
-    router.push(`/markup/${projectId}/items/${newItemId}${typeParam}`);
+    router.push(`/campaigns/${projectId}/assets/${newItemId}${typeParam}`);
   }, [projectId, router]);
 
   const handleFilterChange = useCallback((type: string | null, firstItemId: string | null) => {
     if (firstItemId) {
       const typeParam = type ? `?type=${type}` : '';
-      router.push(`/markup/${projectId}/items/${firstItemId}${typeParam}`);
+      router.push(`/campaigns/${projectId}/assets/${firstItemId}${typeParam}`);
     }
   }, [projectId, router]);
 
@@ -481,7 +481,7 @@ function ItemViewerContent({
         }
         backAction={{
           label: project.title || 'Back',
-          onClick: () => router.push(`/markup/${projectId}/items${typeFilter ? `?type=${typeFilter}` : ''}`),
+          onClick: () => router.push(`/campaigns/${projectId}/assets${typeFilter ? `?type=${typeFilter}` : ''}`),
         }}
         onUpdateItemStatus={updateItemStatus}
         browseMode={reviewMode === 'browse'}

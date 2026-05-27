@@ -1,4 +1,4 @@
-// app/api/markup-projects/[id]/assignees/route.ts
+// app/api/campaigns/[id]/assignees/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     );
 
   if (error) {
-    console.error('[api/markup-projects/[id]/assignees] POST:', error.message);
+    console.error('[api/campaigns/[id]/assignees] POST:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
@@ -154,7 +154,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     .eq('team_member_id', team_member_id);
 
   if (error) {
-    console.error('[api/markup-projects/[id]/assignees] PATCH:', error.message);
+    console.error('[api/campaigns/[id]/assignees] PATCH:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
   return NextResponse.json({ success: true });
@@ -190,7 +190,7 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     .eq('team_member_id', team_member_id);
 
   if (error) {
-    console.error('[api/markup-projects/[id]/assignees] DELETE:', error.message);
+    console.error('[api/campaigns/[id]/assignees] DELETE:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 

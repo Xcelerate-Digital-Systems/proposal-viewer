@@ -113,9 +113,9 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
         return {
           commentId: c.id,
           projectId,
-          projectName: projectNames[projectId] ?? 'Markup project',
+          projectName: projectNames[projectId] ?? 'Campaign',
           itemId: rel?.id ?? c.review_item_id,
-          itemTitle: rel?.title ?? 'Review item',
+          itemTitle: rel?.title ?? 'Asset',
           clientName: c.author_name || 'Client',
           content: c.content,
           createdAt: c.created_at,
@@ -249,7 +249,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
             ? 'Loading…'
             : inbox.length === 0
               ? 'Inbox zero — your pipelines are below.'
-              : `${inbox.length} markup ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`
+              : `${inbox.length} campaign ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`
         }
         actions={<ReplayButton tourId="dashboard" />}
       />
@@ -270,13 +270,13 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                 <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
                   <MessageSquareText size={14} className="text-muted" />
                 </div>
-                <h2 className="text-base font-semibold text-ink">Markup</h2>
+                <h2 className="text-base font-semibold text-ink">Campaigns</h2>
                 <span className="text-detail text-muted">
                   {feedbackProjects.length} {feedbackProjects.length === 1 ? 'project' : 'projects'}
                   {inbox.length > 0 && ` · ${inbox.length} awaiting reply`}
                 </span>
               </div>
-              <Link href="/markup" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
+              <Link href="/campaigns" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
                 All projects <ArrowRight size={12} />
               </Link>
             </header>
@@ -317,7 +317,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                   {inbox.length > 8 && (
                     <div className="px-5 py-3 border-t border-edge text-center">
                       <span className="text-xs text-muted">
-                        Plus {inbox.length - 8} more — open them from their markup project.
+                        Plus {inbox.length - 8} more — open them from their campaign project.
                       </span>
                     </div>
                   )}
@@ -340,9 +340,9 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
               ) : feedbackProjects.length === 0 ? (
                 <div className="px-5 py-12 flex flex-col items-center text-center">
                   <MessageSquareText size={24} className="text-faint mb-2" />
-                  <p className="text-sm font-medium text-ink">No markup projects yet</p>
+                  <p className="text-sm font-medium text-ink">No campaign projects yet</p>
                   <p className="text-xs text-muted mt-1">Spin one up to start collecting client comments on creative.</p>
-                  <Link href="/markup" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-xs font-semibold rounded-full px-3.5 py-1.5 mt-4">
+                  <Link href="/campaigns" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-xs font-semibold rounded-full px-3.5 py-1.5 mt-4">
                     New project
                   </Link>
                 </div>

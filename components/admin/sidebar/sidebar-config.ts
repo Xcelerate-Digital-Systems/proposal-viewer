@@ -29,31 +29,31 @@ export interface SectionDef {
 
 export const ALL_SECTIONS: SectionDef[] = [
   {
-    key: 'studio',
-    label: 'Studio',
+    key: 'pitch',
+    label: 'Pitch',
     icon: FileText,
     defaultHref: '/proposals',
     matchPaths: ['/proposals', '/quotes', '/documents', '/templates', '/template-preview'],
     items: [
-      { href: '/proposals', label: 'Pitch Studio',     icon: FileText },
+      { href: '/proposals', label: 'Proposal Builder', icon: FileText },
       { href: '/quotes',    label: 'Quote Builder',    icon: ReceiptText },
-      { href: '/documents', label: 'Docs',             icon: Files },
+      { href: '/documents', label: 'Doc Builder',      icon: Files },
       { href: '/templates', label: 'Template Library', icon: LayoutTemplate },
     ],
   },
   {
-    key: 'markup',
-    label: 'Markup',
+    key: 'campaigns',
+    label: 'Campaigns',
     icon: MessageSquareText,
-    defaultHref: '/markup',
-    matchPaths: ['/markup'],
+    defaultHref: '/campaigns',
+    matchPaths: ['/campaigns'],
     items: [
-      { href: '/markup', label: 'Markup', icon: MessageSquareText },
+      { href: '/campaigns', label: 'Campaigns', icon: MessageSquareText },
     ],
   },
   {
     key: 'funnels',
-    label: 'Funnels',
+    label: 'Funnel Planner',
     icon: Workflow,
     defaultHref: '/funnels',
     matchPaths: ['/funnels'],

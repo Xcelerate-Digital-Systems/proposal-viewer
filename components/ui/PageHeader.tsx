@@ -9,12 +9,12 @@
 //
 // Common case — title + description + a primary CTA on the right:
 //
-//   <PageHeader title="Pitch Studio" description="6 active pitches"
-//               actions={<Button leftIcon={Plus}>+ New Pitch</Button>} />
+//   <PageHeader title="Proposal Builder" description="6 proposals"
+//               actions={<Button leftIcon={Plus}>+ New Proposal</Button>} />
 //
 // With a filter strip / tabs below:
 //
-//   <PageHeader title="Markup" description="..." actions={...}>
+//   <PageHeader title="Campaigns" description="..." actions={...}>
 //     <ProjectFilterTabs ... />
 //   </PageHeader>
 //

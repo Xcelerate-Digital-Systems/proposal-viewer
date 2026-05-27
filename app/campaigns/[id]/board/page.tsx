@@ -45,7 +45,7 @@ function BoardContent({ projectId }: { projectId: string }) {
       return;
     }
     const typeParam = item ? `?type=${item.type}` : '';
-    router.push(`/markup/${projectId}/items/${itemId}${typeParam}`);
+    router.push(`/campaigns/${projectId}/assets/${itemId}${typeParam}`);
   };
 
   if (!project && !loading) return null;

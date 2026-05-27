@@ -151,7 +151,7 @@ function SettingsContent({ auth }: {
             <section>
               <SectionHeader
                 title="Members & Notifications"
-                description="Manage team access and per-member Markup notification defaults. Expand a member to configure their notifications."
+                description="Manage team access and per-member campaign notification defaults. Expand a member to configure their notifications."
               />
               <MembersTab
                 companyId={companyId}

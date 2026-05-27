@@ -51,17 +51,17 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
   return (
     <>
       <Link
-        href="/markup"
+        href="/campaigns"
         onClick={onNavigate}
         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors mb-1"
       >
         <ArrowLeft size={14} />
-        <span>All Projects</span>
+        <span>All Campaigns</span>
       </Link>
 
       <div className="px-3 pt-1 pb-2">
         <div className="text-2xs font-semibold uppercase tracking-wider text-white/30">
-          Feedback Project
+          Campaign
         </div>
         <div className="text-sm font-semibold text-white mt-0.5 truncate">
           {project?.title || '…'}
@@ -88,10 +88,10 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
         placedItems.length > 0 ? (
           <div className="px-3 py-3 flex items-center gap-2 text-xs text-white/50">
             <CheckCircle2 size={14} className="text-[#8AD9D1]" />
-            All items on the board
+            All assets on the board
           </div>
         ) : (
-          <p className="text-xs text-white/40 px-3 py-2">No items yet</p>
+          <p className="text-xs text-white/40 px-3 py-2">No assets yet</p>
         )
       ) : (
         <div className="space-y-0.5">
@@ -125,7 +125,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-[#8AD9D1] hover:bg-[#013036] transition-colors mt-2"
       >
         <Plus size={15} />
-        New Item
+        New Asset
       </button>
 
       {placedItems.length > 0 && (

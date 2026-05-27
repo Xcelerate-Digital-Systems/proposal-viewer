@@ -47,7 +47,7 @@ export default function CreateFeedbackProjectModal({
       .single();
 
     if (error || !created) {
-      toast.error('Failed to create project');
+      toast.error('Failed to create campaign');
       setSaving(false);
       return;
     }
@@ -71,19 +71,19 @@ export default function CreateFeedbackProjectModal({
       }
     }
 
-    toast.success('Markup project created');
+    toast.success('Campaign created');
     onSuccess();
     onClose();
   };
 
   return (
-    <Modal open onClose={onClose} title="New Markup Project" size="lg">
+    <Modal open onClose={onClose} title="New Campaign" size="lg">
       <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
         <Modal.Body className="space-y-5">
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-prose mb-1.5">
-              Project Title <span className="text-red-400">*</span>
+              Campaign Title <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
@@ -159,7 +159,7 @@ export default function CreateFeedbackProjectModal({
             Cancel
           </Button>
           <Button type="submit" size="sm" loading={saving} disabled={!title.trim()}>
-            Create Project
+            Create Campaign
           </Button>
         </Modal.Footer>
       </form>

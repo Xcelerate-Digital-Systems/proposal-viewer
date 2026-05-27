@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ExternalLink, Monitor, Pause } from 'lucide-react';
 import CompleteFeedbackModal from './CompleteFeedbackModal';
 import FeedbackHeaderBar from './FeedbackHeaderBar';
@@ -182,7 +183,7 @@ export default function FeedbackDetailView({
   // keeps "@yourself" out of the dropdown.
   const participantsUrl =
     isAdmin && project?.id
-      ? `/api/markup-projects/${project.id}/participants`
+      ? `/api/campaigns/${project.id}/participants`
       : isClient && shareToken
       ? `/api/review/${shareToken}/participants${reviewerEmail ? `?exclude_email=${encodeURIComponent(reviewerEmail)}` : ''}`
       : null;
@@ -700,8 +701,10 @@ export default function FeedbackDetailView({
               onAnnotationClick={handlePinClick}
             />
 
-            {/* Pin comment popover (existing pins) */}
-            {popoverComment && popoverComment.pin_x != null && popoverComment.pin_y != null && (
+            {/* Pin comment popover (existing pins) — portaled into the content
+                container so percentage-based positioning resolves against the
+                same element that PinOverlay uses. */}
+            {popoverComment && popoverComment.pin_x != null && popoverComment.pin_y != null && imageContainerRef.current && createPortal(
               <PinCommentPopover
                 comment={popoverComment}
                 replies={getReplies(popoverComment.id)}
@@ -721,11 +724,12 @@ export default function FeedbackDetailView({
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
                 memberLookup={memberLookup}
-              />
+              />,
+              imageContainerRef.current,
             )}
 
             {/* New-pin popover (anchored at click) */}
-            {pendingPin && !pendingHighlight && selectedItemId && (
+            {pendingPin && !pendingHighlight && selectedItemId && imageContainerRef.current && createPortal(
               <PendingPinPopover
                 pinX={pendingPin.x}
                 pinY={pendingPin.y}
@@ -742,11 +746,12 @@ export default function FeedbackDetailView({
                 onNameChange={isClient ? onGuestNameChange : undefined}
                 onOpenDrawing={(mode) => { handleCancelPin(); changeFeedbackMode(mode); }}
                 participantsUrl={participantsUrl}
-              />
+              />,
+              imageContainerRef.current,
             )}
 
             {/* New-highlight popover (anchored at selection) — same composer as pin, with quoted text */}
-            {pendingHighlight && selectedItemId && (
+            {pendingHighlight && selectedItemId && imageContainerRef.current && createPortal(
               <PendingPinPopover
                 pinX={pendingHighlight.rectPct.x}
                 pinY={pendingHighlight.rectPct.y}
@@ -764,7 +769,8 @@ export default function FeedbackDetailView({
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
                 participantsUrl={participantsUrl}
-              />
+              />,
+              imageContainerRef.current,
             )}
 
             <FeedbackToolbar

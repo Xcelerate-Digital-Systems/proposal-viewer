@@ -76,7 +76,7 @@ export default function ProjectAssigneesPanel({
 
   const buildUrl = useCallback(
     (suffix = '') =>
-      `/api/markup-projects/${projectId}/assignees${suffix}?company_id=${companyId}`,
+      `/api/campaigns/${projectId}/assignees${suffix}?company_id=${companyId}`,
     [projectId, companyId]
   );
 
@@ -92,7 +92,7 @@ export default function ProjectAssigneesPanel({
     });
   }, []);
 
-  const guestsUrl = `/api/markup-projects/${projectId}/guests?company_id=${companyId}`;
+  const guestsUrl = `/api/campaigns/${projectId}/guests?company_id=${companyId}`;
 
   const refresh = useCallback(async () => {
     const [a, g] = await Promise.all([
@@ -137,7 +137,7 @@ export default function ProjectAssigneesPanel({
   const remove = async (memberId: string) => {
     setSavingFor(memberId);
     await authedFetch(
-      `/api/markup-projects/${projectId}/assignees?team_member_id=${memberId}&company_id=${companyId}`,
+      `/api/campaigns/${projectId}/assignees?team_member_id=${memberId}&company_id=${companyId}`,
       { method: 'DELETE' }
     );
     setSavingFor(null);
@@ -186,7 +186,7 @@ export default function ProjectAssigneesPanel({
     if (!res.ok) refresh();
   };
 
-  const stageRoute = `/api/markup-projects/${projectId}/stage-assignees`;
+  const stageRoute = `/api/campaigns/${projectId}/stage-assignees`;
 
   const toggleMemberStage = async (memberId: string, stage: FeedbackStatus) => {
     const current = assignedById.get(memberId);

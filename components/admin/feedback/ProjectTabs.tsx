@@ -7,14 +7,14 @@ import {
 
 interface ProjectTabsProps {
   projectId: string;
-  activeTab: 'items' | 'board' | 'kanban' | 'comments' | 'setup' | 'settings';
+  activeTab: 'assets' | 'board' | 'kanban' | 'comments' | 'setup' | 'settings';
   hasWebpages?: boolean;
 }
 
 const tabs: { key: string; label: string; icon: typeof LayoutGrid; path: string; webpageOnly?: boolean }[] = [
   { key: 'kanban', label: 'Kanban', icon: Columns3, path: 'kanban' },
   { key: 'board', label: 'Board', icon: GitBranch, path: 'board' },
-  { key: 'items', label: 'Items', icon: LayoutGrid, path: 'items' },
+  { key: 'assets', label: 'Assets', icon: LayoutGrid, path: 'assets' },
   { key: 'comments', label: 'Comments', icon: MessageSquare, path: 'comments' },
   { key: 'setup', label: 'Setup', icon: Settings, path: 'setup' },
   { key: 'settings', label: 'Members', icon: Bell, path: 'settings' },
@@ -32,7 +32,7 @@ export default function ProjectTabs({ projectId, activeTab, hasWebpages = false 
         return (
           <Link
             key={tab.key}
-            href={`/markup/${projectId}/${tab.path}`}
+            href={`/campaigns/${projectId}/${tab.path}`}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-caption font-medium border-b-2 transition-colors ${
               isActive
                 ? 'border-teal text-teal'
