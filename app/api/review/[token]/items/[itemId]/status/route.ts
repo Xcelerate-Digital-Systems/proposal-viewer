@@ -224,10 +224,53 @@ export async function POST(
       }
     }
 
+    // Fire notification when the status actually changed to a notifiable state.
+    const statusChanged = effectiveTargetStatus !== currentStage;
+    const notifyEvent =
+      effectiveTargetStatus === 'approved'
+        ? 'review_item_approved'
+        : effectiveTargetStatus === 'revision_needed' || effectiveTargetStatus === 'rejected'
+          ? 'review_item_revision_needed'
+          : null;
+
+    if (statusChanged && notifyEvent) {
+      try {
+        const { data: proj } = await supabase
+          .from('review_projects')
+          .select('share_token')
+          .eq('id', projectId)
+          .maybeSingle();
+
+        const { data: itemData } = await supabase
+          .from('review_items')
+          .select('title')
+          .eq('id', params.itemId)
+          .maybeSingle();
+
+        if (proj?.share_token) {
+          const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+          fetch(`${appUrl}/api/review-notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_type: notifyEvent,
+              share_token: proj.share_token,
+              review_item_id: params.itemId,
+              item_title: itemData?.title ?? null,
+              comment_author: reviewerName || null,
+              comment_author_email: reviewerEmail || null,
+            }),
+          }).catch(() => {});
+        }
+      } catch {
+        // Non-critical
+      }
+    }
+
     return NextResponse.json({
       success: true,
       item: updated,
-      gate: gateInfo, // { applied, assignees, approvers } when threshold gating ran
+      gate: gateInfo,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unexpected error';

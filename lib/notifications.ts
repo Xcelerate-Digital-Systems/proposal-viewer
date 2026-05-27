@@ -8,6 +8,11 @@ import type { EventType, NotifyPayload } from './notification-types';
 import { PREF_MAP } from './notification-types';
 import { buildTeamEmail, buildClientEmail } from './notification-emails';
 import { fireWebhooks } from './notification-webhooks';
+import {
+  insertInAppNotifications,
+  resolveUserIdsForTeamMembers,
+  type NotificationCategory,
+} from './in-app-notifications';
 
 // Re-export so existing consumers keep working
 export type { WebhookPayload } from './notification-types';
@@ -177,6 +182,34 @@ async function notifyTeamMembers(params: TeamNotifyParams): Promise<number> {
     }
   }
 
+  // In-app notifications for notified team members.
+  try {
+    const userIds = await resolveUserIdsForTeamMembers(
+      supabase,
+      toNotify.map((m) => m.id),
+    );
+    if (userIds.length > 0) {
+      const inAppCategory: NotificationCategory =
+        event_type === 'proposal_viewed'   ? 'proposal_viewed'
+        : event_type === 'proposal_accepted' ? 'proposal_accepted'
+        : event_type === 'proposal_declined' ? 'proposal_declined'
+        : event_type === 'proposal_revision_requested' ? 'proposal_revision_requested'
+        : event_type === 'comment_added'    ? 'comment_added'
+        : 'comment_resolved';
+      await insertInAppNotifications({
+        supabase,
+        companyId: proposal.company_id,
+        userIds,
+        category: inAppCategory,
+        title: subject,
+        body: comment_content || feedback_text || null,
+        link: `/proposals/${proposal.id}`,
+      });
+    }
+  } catch {
+    // Non-critical
+  }
+
   return sent;
 }
 
@@ -203,6 +236,23 @@ async function notifyClient(params: ClientNotifyParams): Promise<number> {
     commentAuthor: comment_author, commentContent: comment_content, resolvedBy: resolved_by,
   });
 
+  // Dedup client emails using a stable event_ref so retries don't double-send.
+  const clientEventRef = event_type === 'comment_added'
+    ? `client_comment_${comment_author || ''}_${(comment_content || '').slice(0, 50)}`
+    : event_type === 'comment_resolved'
+      ? `client_resolved_${resolved_by || ''}`
+      : `client_${event_type}`;
+
+  const { data: existingClientLog } = await supabase
+    .from('notification_log')
+    .select('id')
+    .eq('proposal_id', proposal.id)
+    .eq('event_type', `client_${event_type}`)
+    .eq('event_ref', clientEventRef)
+    .limit(1);
+
+  if (existingClientLog && existingClientLog.length > 0) return 0;
+
   try {
     await getResend().emails.send({ from: FROM_EMAIL, to: proposal.client_email, subject, html });
 
@@ -211,7 +261,7 @@ async function notifyClient(params: ClientNotifyParams): Promise<number> {
         proposal_id:    proposal.id,
         team_member_id: null as unknown as string,
         event_type:     `client_${event_type}`,
-        event_ref:      `${event_type}_${Date.now()}`,
+        event_ref:      clientEventRef,
         company_id:     proposal.company_id,
       });
     } catch { /* Non-critical */ }

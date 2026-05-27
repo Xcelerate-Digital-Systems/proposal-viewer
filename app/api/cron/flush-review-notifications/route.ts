@@ -196,7 +196,22 @@ async function handle(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ digests: digestsSent, rows: rowsDispatched });
+  // Purge old dispatched rows (> 7 days) to prevent unbounded table growth.
+  let purged = 0;
+  try {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: stale } = await supabase
+      .from('pending_review_notifications')
+      .delete()
+      .not('dispatched_at', 'is', null)
+      .lt('dispatched_at', cutoff)
+      .select('id');
+    purged = stale?.length ?? 0;
+  } catch (purgeErr) {
+    console.error('flush-review-notifications: purge failed', purgeErr);
+  }
+
+  return NextResponse.json({ digests: digestsSent, rows: rowsDispatched, purged });
 }
 
 export async function POST(req: NextRequest) {

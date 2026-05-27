@@ -6,6 +6,7 @@ import { buildReviewUrl } from '@/lib/proposal-url';
 import crypto from 'crypto';
 import { isValidWebhookUrl } from '@/lib/sanitize';
 import { isInternalStage } from '@/lib/feedback/visibility';
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 import {
   buildStatusEmail,
   buildNewVersionEmail as buildBrandedNewVersionEmail,
@@ -13,6 +14,14 @@ import {
 } from '@/lib/review-notification-emails';
 import { syncCommentMentions, type PersistedMention } from '@/lib/feedback/persist-mentions';
 import { htmlToPlainText } from '@/lib/feedback/mention-html';
+import {
+  insertInAppNotifications,
+  resolveUserIdsForCompanyEmails,
+  type NotificationCategory,
+} from '@/lib/in-app-notifications';
+
+const REVIEW_NOTIFY_LIMIT = 20;
+const REVIEW_NOTIFY_WINDOW_SECONDS = 60;
 
 type ReviewEventType =
   | 'review_comment_added'
@@ -62,6 +71,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid event_type' }, { status: 400 });
     }
 
+    const rl = await rateLimit({
+      key: `review-notify:${share_token}`,
+      limit: REVIEW_NOTIFY_LIMIT,
+      windowSeconds: REVIEW_NOTIFY_WINDOW_SECONDS,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many notification triggers for this review project' },
+        { status: 429, headers: rateLimitHeaders(rl, REVIEW_NOTIFY_LIMIT) },
+      );
+    }
+
     const supabase = createServiceClient();
 
     const { data: project, error: projErr } = await supabase
@@ -72,6 +93,24 @@ export async function POST(req: NextRequest) {
 
     if (projErr || !project) {
       return NextResponse.json({ error: 'Feedback project not found' }, { status: 404 });
+    }
+
+    // Validate that the review_comment_id belongs to an item in this project.
+    if (review_comment_id) {
+      const { data: commentRow } = await supabase
+        .from('review_comments')
+        .select('id, review_item_id, review_items:review_item_id(review_project_id)')
+        .eq('id', review_comment_id)
+        .maybeSingle();
+      const rel = (commentRow as { review_items?: { review_project_id?: string } | { review_project_id?: string }[] } | null)?.review_items;
+      const arr = Array.isArray(rel) ? rel : rel ? [rel] : [];
+      const commentProjectId = arr[0]?.review_project_id ?? null;
+      if (!commentRow || commentProjectId !== project.id) {
+        return NextResponse.json(
+          { error: 'review_comment_id does not belong to this project' },
+          { status: 403 },
+        );
+      }
     }
 
     const { data: company } = await supabase
@@ -93,7 +132,7 @@ export async function POST(req: NextRequest) {
     const isComment = event_type === 'review_comment_added';
     const isReply = isComment && !!parent_comment_id;
     const isNewVersion = event_type === 'review_item_new_version';
-    const actorEmail = (comment_author_email || resolved_by || '').trim().toLowerCase() || null;
+    const actorEmail = (comment_author_email || '').trim().toLowerCase() || null;
 
     // Resolve the item's current stage (when scoped to one). Stage is used to
     // filter assignees by their `stages` array and to keep internal-stage
@@ -158,9 +197,29 @@ export async function POST(req: NextRequest) {
     let mentioned = 0;
     if (mentionRecipients.length > 0) {
       const stageSafe = !itemStage || !isInternalStage(itemStage);
+
+      // Pre-load guest prefs so @mention emails respect notify_comment toggles.
+      const guestMentionEmails = mentionRecipients
+        .filter((m) => m.targetKind === 'guest')
+        .map((m) => m.targetEmail);
+      const guestMentionPrefs = new Map<string, boolean>();
+      if (guestMentionEmails.length > 0) {
+        const { data: gRows } = await supabase
+          .from('review_project_guest_recipients')
+          .select('email, notify_comment, removed_at')
+          .eq('review_project_id', project.id)
+          .in('email', guestMentionEmails);
+        for (const g of (gRows ?? []) as { email: string; notify_comment: boolean; removed_at: string | null }[]) {
+          if (g.removed_at || g.notify_comment === false) {
+            guestMentionPrefs.set(g.email.trim().toLowerCase(), false);
+          }
+        }
+      }
+
       for (const m of mentionRecipients) {
         if (m.targetEmail === actorEmail) continue;
         if (m.targetKind === 'guest' && !stageSafe) continue;
+        if (m.targetKind === 'guest' && guestMentionPrefs.get(m.targetEmail) === false) continue;
         try {
           const { subject, html } = buildMentionEmail({
             branding,
@@ -179,6 +238,27 @@ export async function POST(req: NextRequest) {
           console.error(`Failed to notify @mention ${m.targetEmail}:`, err);
         }
       }
+
+      // In-app notifications for mentioned users (immediate, regardless of email outcome).
+      try {
+        const mentionEmails = mentionRecipients
+          .filter((m) => m.targetEmail !== actorEmail)
+          .map((m) => m.targetEmail);
+        if (mentionEmails.length > 0) {
+          const userIds = await resolveUserIdsForCompanyEmails(supabase, project.company_id, mentionEmails);
+          if (userIds.length > 0) {
+            await insertInAppNotifications({
+              supabase,
+              companyId: project.company_id,
+              userIds,
+              category: 'mention',
+              title: `${comment_author || 'Someone'} mentioned you${item_title ? ` on ${item_title}` : ''}`,
+              body: comment_content ? htmlToPlainText(comment_content).slice(0, 200) : null,
+              link: `/feedback/${project.id}/board`,
+            });
+          }
+        }
+      } catch { /* Non-critical */ }
     }
 
     let sent = 0;
@@ -243,6 +323,26 @@ export async function POST(req: NextRequest) {
         } else {
           enqueued = rows.length;
         }
+
+        // In-app notifications for comments appear immediately even though
+        // the email is batched into a 5-min digest window.
+        try {
+          const commentUserIds = await resolveUserIdsForCompanyEmails(
+            supabase, project.company_id, Array.from(recipientEmails),
+          );
+          if (commentUserIds.length > 0) {
+            const inAppCategory: NotificationCategory = isReply ? 'comment_added' : 'comment_added';
+            await insertInAppNotifications({
+              supabase,
+              companyId: project.company_id,
+              userIds: commentUserIds,
+              category: inAppCategory,
+              title: `${comment_author || 'Someone'} commented${item_title ? ` on ${item_title}` : ''}`,
+              body: comment_content ? htmlToPlainText(comment_content).slice(0, 200) : null,
+              link: `/feedback/${project.id}/board`,
+            });
+          }
+        } catch { /* Non-critical */ }
       } else {
         // Status / version events still send immediately — they're rarer and
         // don't benefit from batching.
@@ -278,6 +378,30 @@ export async function POST(req: NextRequest) {
             console.error(`Failed to notify ${email}:`, err);
           }
         }
+
+        // In-app notifications for status / version events.
+        try {
+          const statusUserIds = await resolveUserIdsForCompanyEmails(
+            supabase, project.company_id, Array.from(recipientEmails),
+          );
+          if (statusUserIds.length > 0) {
+            const inAppCat: NotificationCategory =
+              event_type === 'review_comment_resolved' ? 'comment_resolved'
+              : event_type === 'review_item_approved' ? 'review_status'
+              : event_type === 'review_item_revision_needed' ? 'review_status'
+              : event_type === 'review_item_new_version' ? 'review_new_version'
+              : 'review_complete';
+            await insertInAppNotifications({
+              supabase,
+              companyId: project.company_id,
+              userIds: statusUserIds,
+              category: inAppCat,
+              title: subject,
+              body: comment_content ? htmlToPlainText(comment_content).slice(0, 200) : null,
+              link: `/feedback/${project.id}/board`,
+            });
+          }
+        } catch { /* Non-critical */ }
 
         try {
           await supabase.from('notification_log').insert({

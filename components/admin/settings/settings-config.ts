@@ -2,7 +2,7 @@
 
 import {
   Eye, CheckCircle2, MessageSquare, CheckCheck,
-  Send, XCircle, PenLine, AlertCircle,
+  Send, XCircle, PenLine, AlertCircle, Package, PartyPopper,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -33,8 +33,8 @@ export const NOTIFICATION_OPTIONS: NotificationOption[] = [
   },
   {
     key: 'notify_proposal_accepted',
-    label: 'Proposal Accepted',
-    description: 'When a client accepts a proposal',
+    label: 'Proposal Decisions',
+    description: 'When a client accepts, declines, or requests revisions on a proposal',
     icon: CheckCircle2,
   },
   {
@@ -48,18 +48,6 @@ export const NOTIFICATION_OPTIONS: NotificationOption[] = [
     label: 'Comment Resolved',
     description: 'When a comment is marked as resolved',
     icon: CheckCheck,
-  },
-  {
-    key: 'notify_proposal_accepted',
-    label: 'Proposal Declined',
-    description: 'When a client declines a proposal',
-    icon: XCircle,
-  },
-  {
-    key: 'notify_proposal_accepted',
-    label: 'Changes Requested',
-    description: 'When a client requests revisions on a proposal',
-    icon: PenLine,
   },
 ];
 
@@ -136,5 +124,17 @@ export const REVIEW_WEBHOOK_EVENTS: WebhookEvent[] = [
     label: 'Feedback Revision Needed',
     description: 'Fires when a feedback item is marked as needing revision',
     icon: AlertCircle,
+  },
+  {
+    key: 'review_item_new_version',
+    label: 'New Version Uploaded',
+    description: 'Fires when a new version is uploaded for a feedback item',
+    icon: Package,
+  },
+  {
+    key: 'review_feedback_marked_complete',
+    label: 'Review Completed',
+    description: 'Fires when a reviewer marks their review as complete',
+    icon: PartyPopper,
   },
 ];
