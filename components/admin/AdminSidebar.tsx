@@ -8,6 +8,7 @@ import {
   LogOut, Menu, X, ChevronRight, Building2, ArrowLeft, UserSquare2, Shield,
 } from 'lucide-react';
 
+import NotificationBell from '@/components/admin/NotificationBell';
 import WorkspaceSwitcher from './sidebar/WorkspaceSwitcher';
 import SwipeTypesSidebarNav from './sidebar/SwipeTypesSidebarNav';
 import FeedbackItemsSidebarNav from './sidebar/FeedbackItemsSidebarNav';
@@ -24,6 +25,7 @@ interface AdminSidebarProps {
   memberEmail?: string;
   memberRole?: string;
   companyId?: string;
+  userId?: string | null;
   isSuperAdmin?: boolean;
   isAgencyAdmin?: boolean;
   accountType?: 'agency' | 'client';
@@ -45,6 +47,7 @@ export default function AdminSidebar({
   memberName,
   memberEmail,
   companyId,
+  userId = null,
   isSuperAdmin = false,
   isAgencyAdmin = false,
   accountType = 'agency',
@@ -261,6 +264,11 @@ export default function AdminSidebar({
             </p>
             <p className="text-xs text-white/40 truncate">{memberEmail}</p>
           </div>
+          <NotificationBell
+            userId={userId ?? null}
+            companyId={companyId ?? null}
+            variant="sidebar"
+          />
         </div>
         <button
           onClick={onSignOut}

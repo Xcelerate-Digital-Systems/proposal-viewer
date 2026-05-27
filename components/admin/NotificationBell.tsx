@@ -37,9 +37,11 @@ function timeAgo(dateStr: string): string {
 export default function NotificationBell({
   userId,
   companyId,
+  variant = 'header',
 }: {
   userId: string | null;
   companyId: string | null;
+  variant?: 'header' | 'sidebar';
 }) {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications(userId, companyId);
   const [open, setOpen] = useState(false);
@@ -66,7 +68,11 @@ export default function NotificationBell({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative p-1.5 rounded-full text-gray-500 hover:text-ink hover:bg-gray-100 transition-colors"
+        className={`relative p-1.5 rounded-full transition-colors ${
+          variant === 'sidebar'
+            ? 'text-white/50 hover:text-white hover:bg-[#013036]'
+            : 'text-gray-500 hover:text-ink hover:bg-gray-100'
+        }`}
         title="Notifications"
       >
         <Bell size={18} />
@@ -78,7 +84,11 @@ export default function NotificationBell({
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-[340px] max-h-[420px] bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 flex flex-col">
+        <div className={`absolute w-[340px] max-h-[420px] bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 flex flex-col ${
+          variant === 'sidebar'
+            ? 'bottom-full left-0 mb-2'
+            : 'top-full right-0 mt-2'
+        }`}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <span className="text-sm font-semibold text-ink">Notifications</span>
             {unreadCount > 0 && (

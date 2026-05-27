@@ -13,7 +13,6 @@ import { TourProvider } from '@/components/tours/TourProvider';
 import { BillingGuard } from '@/components/auth/BillingGuard';
 import { AnalyticsIdentifier } from '@/components/analytics/AnalyticsIdentifier';
 import { CrispWidget } from '@/components/support/CrispWidget';
-import NotificationBell from '@/components/admin/NotificationBell';
 import { supabase } from '@/lib/supabase';
 import { setBrandingColors } from '@/components/ui/ColorPickerField';
 
@@ -83,6 +82,7 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
                 memberEmail={auth.teamMember?.email}
                 memberRole={auth.teamMember?.role}
                 companyId={auth.companyId ?? undefined}
+                userId={auth.session?.user?.id ?? null}
                 isSuperAdmin={auth.isSuperAdmin}
                 isAgencyAdmin={auth.isAgencyAdmin}
                 accountType={auth.accountType}
@@ -95,17 +95,9 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
                 onSignOut={auth.signOut}
               />
             )}
-            <div className="flex-1 min-w-0 h-full flex flex-col">
-              <header className="shrink-0 flex items-center justify-end px-6 py-3 border-b border-gray-100 bg-ivory">
-                <NotificationBell
-                  userId={auth.session?.user?.id ?? null}
-                  companyId={auth.companyId ?? null}
-                />
-              </header>
-              <main className="flex-1 min-w-0 overflow-y-auto">
-                {children(auth)}
-              </main>
-            </div>
+            <main className="flex-1 min-w-0 h-full overflow-y-auto">
+              {children(auth)}
+            </main>
           </div>
         );
 
