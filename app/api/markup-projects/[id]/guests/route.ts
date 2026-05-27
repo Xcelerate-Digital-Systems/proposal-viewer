@@ -148,6 +148,47 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   return NextResponse.json({ guests });
 }
 
+// POST — manually add a guest by email + name.
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const auth = await getAuthContext(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const body = await req.json();
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
+
+  const supabase = createServiceClient();
+
+  const { data: project } = await supabase
+    .from('review_projects')
+    .select('id, company_id')
+    .eq('id', params.id)
+    .single();
+  if (!project || project.company_id !== auth.companyId) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  const defaults = await getCompanyMarkupDefaults(supabase, auth.companyId);
+
+  const { error } = await supabase
+    .from('review_project_guest_recipients')
+    .upsert(
+      {
+        review_project_id: params.id,
+        email,
+        name: name || null,
+        ...defaults,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'review_project_id,email' }
+    );
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
+
 // PATCH — upsert prefs (or removed flag) for a single guest email.
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;

@@ -106,13 +106,11 @@ function SettingsContent({
             <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="max-w-2xl">
-            <ProjectAssigneesPanel
-              projectId={projectId}
-              companyId={companyId}
-              currentUserId={userId}
-            />
-          </div>
+          <ProjectAssigneesPanel
+            projectId={projectId}
+            companyId={companyId}
+            currentUserId={userId}
+          />
         )}
       </div>
     </div>

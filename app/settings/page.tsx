@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProfileEditor from '@/components/admin/settings/ProfileEditor';
+import BusinessDetailsCard from '@/components/admin/company/BusinessDetailsCard';
+import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
 import NotificationSection from '@/components/admin/settings/NotificationSection';
 import MarkupDefaultsSection from '@/components/admin/settings/MarkupDefaultsSection';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
@@ -147,18 +149,36 @@ function SettingsContent({ auth }: {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {activeTab === 'profile' && teamMember && (
-            <section>
-              <SectionHeader
-                title="Profile"
-                description="How your teammates see you in the app."
-              />
-              <ProfileEditor
-                memberId={teamMember.id}
-                companyId={companyId || ''}
-                name={teamMember.name || ''}
-                avatarPath={(teamMember as Record<string, unknown>).avatar_path as string || ''}
-                onSave={(updates) => updatePreferences(updates as Partial<TeamMember>)}
-              />
+            <section className="space-y-8">
+              <div>
+                <SectionHeader
+                  title="Profile"
+                  description="How your teammates see you in the app."
+                />
+                <ProfileEditor
+                  memberId={teamMember.id}
+                  companyId={companyId || ''}
+                  name={teamMember.name || ''}
+                  avatarPath={(teamMember as Record<string, unknown>).avatar_path as string || ''}
+                  onSave={(updates) => updatePreferences(updates as Partial<TeamMember>)}
+                />
+              </div>
+              {companyId && (
+                <div>
+                  <CompanyProfileCard
+                    companyId={companyId}
+                    isOwner={isAdminOrOwner || isSuperAdmin}
+                  />
+                </div>
+              )}
+              {companyId && (
+                <div>
+                  <BusinessDetailsCard
+                    companyId={companyId}
+                    isOwner={isAdminOrOwner || isSuperAdmin}
+                  />
+                </div>
+              )}
             </section>
           )}
 

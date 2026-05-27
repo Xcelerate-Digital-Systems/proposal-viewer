@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Check, ChevronDown, X, MessageSquare, CornerDownRight,
-  CheckCheck, Layers, Package, RotateCcw,
+  CheckCheck, Layers, Package, RotateCcw, UserPlus, Users, Bell,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
@@ -67,6 +67,12 @@ export default function ProjectAssigneesPanel({
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [savingFor, setSavingFor] = useState<string | null>(null);
+
+  const [guestFormOpen, setGuestFormOpen] = useState(false);
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [guestSaving, setGuestSaving] = useState(false);
+  const guestEmailRef = useRef<HTMLInputElement>(null);
 
   const buildUrl = useCallback(
     (suffix = '') =>
@@ -138,6 +144,21 @@ export default function ProjectAssigneesPanel({
     refresh();
   };
 
+  const addGuest = async () => {
+    const email = guestEmail.trim().toLowerCase();
+    if (!email) return;
+    setGuestSaving(true);
+    await authedFetch(guestsUrl, {
+      method: 'POST',
+      body: JSON.stringify({ email, name: guestName.trim() }),
+    });
+    setGuestSaving(false);
+    setGuestEmail('');
+    setGuestName('');
+    setGuestFormOpen(false);
+    refresh();
+  };
+
   const toggleGuestPref = async (email: string, key: PrefKey) => {
     const guest = guests.find((g) => g.email === email);
     if (!guest) return;
@@ -165,9 +186,6 @@ export default function ProjectAssigneesPanel({
     if (!res.ok) refresh();
   };
 
-  // Stage scoping — empty stages array means "all stages" (back-compat). The
-  // chip editor lets the admin pin an assignee to a subset of pipeline stages,
-  // mirroring the Kanban column `+` flow but accessible from project settings.
   const stageRoute = `/api/markup-projects/${projectId}/stage-assignees`;
 
   const toggleMemberStage = async (memberId: string, stage: FeedbackStatus) => {
@@ -177,7 +195,6 @@ export default function ProjectAssigneesPanel({
     const nextStages = isOn
       ? current.stages.filter((s) => s !== stage)
       : [...current.stages, stage];
-    // Optimistic.
     setAssignees((prev) =>
       prev.map((a) => (a.team_member_id === memberId ? { ...a, stages: nextStages } : a)),
     );
@@ -219,7 +236,6 @@ export default function ProjectAssigneesPanel({
     const current = assignedById.get(memberId);
     if (!current) return;
     const next = !current[key];
-    // Optimistic update.
     setAssignees((prev) =>
       prev.map((a) => (a.team_member_id === memberId ? { ...a, [key]: next } : a))
     );
@@ -238,207 +254,320 @@ export default function ProjectAssigneesPanel({
     );
   }
 
+  const activeGuests = guests.filter((g) => !g.removed);
+  const removedGuests = guests.filter((g) => g.removed);
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-sm font-semibold text-ink mb-1">Notifications</h3>
-        <p className="text-[13px] text-gray-500">
-          Assigned team members get email alerts for activity on this project. Each person can toggle
-          which event types they want individually.
-        </p>
-      </div>
-
-      <div className="border border-gray-100 rounded-xl bg-white divide-y divide-gray-100">
-        {assignedMembers.length === 0 ? (
-          <div className="px-4 py-6 text-[13px] text-gray-400 text-center">
-            No one is assigned. Notifications won&apos;t be sent until someone is added.
-          </div>
-        ) : (
-          assignedMembers.map((m) => {
-            const isSelf = ownTeamMember?.id === m.id;
-            const a = assignedById.get(m.id)!;
-            return (
-              <div key={m.id} className="px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-ink truncate">
-                      {m.name || m.email}
-                      {isSelf && <span className="ml-2 text-xs text-gray-400">(you)</span>}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">{m.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => remove(m.id)}
-                    disabled={savingFor === m.id}
-                    className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 disabled:opacity-50 shrink-0"
-                  >
-                    <X size={14} />
-                    Remove
-                  </button>
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {PREF_DEFS.map((p) => {
-                    const Icon = p.icon;
-                    const on = a[p.key];
-                    return (
-                      <button
-                        key={p.key}
-                        type="button"
-                        onClick={() => togglePref(m.id, p.key)}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                          on
-                            ? 'bg-teal/10 text-teal'
-                            : 'bg-gray-50 text-gray-400 hover:text-gray-600'
-                        }`}
-                        title={`${on ? 'On' : 'Off'} — ${p.label}`}
-                      >
-                        <Icon size={11} />
-                        {p.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <StagesChipRow
-                  selected={a.stages}
-                  onToggle={(stage) => toggleMemberStage(m.id, stage)}
-                />
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setPickerOpen((v) => !v)}
-          disabled={unassignedMembers.length === 0}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-full hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Add team member
-          <ChevronDown size={14} />
-        </button>
-
-        {pickerOpen && unassignedMembers.length > 0 && (
-          <div className="absolute z-10 mt-1 w-64 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-72 overflow-y-auto">
-            {unassignedMembers.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => add(m.id)}
-                disabled={savingFor === m.id}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between gap-2"
-              >
-                <div className="min-w-0">
-                  <p className="text-[13px] text-ink truncate">{m.name || m.email}</p>
-                  <p className="text-xs text-gray-400 truncate">{m.email}</p>
-                </div>
-                {savingFor === m.id && (
-                  <Check size={14} className="text-teal shrink-0" />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Guests — auto-listed once they comment with an email or are the
-          project's primary client_email. */}
-      <div className="pt-4 border-t border-gray-100">
-        <div className="mb-2">
-          <h3 className="text-sm font-semibold text-ink mb-1">Guests</h3>
-          <p className="text-[13px] text-gray-500">
-            Clients and outside reviewers who&apos;ve commented on this project. Toggle which event
-            types they get emails about, or remove them entirely.
-          </p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* ── Team Members column ─────────────────────────────────── */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <Users size={15} className="text-gray-400" />
+          <h3 className="text-sm font-semibold text-ink">Team Members</h3>
         </div>
+        <p className="text-[13px] text-gray-500 mb-4">
+          Assigned team members receive email alerts for activity on this project.
+          Toggle which events each person is notified about.
+        </p>
 
         <div className="border border-gray-100 rounded-xl bg-white divide-y divide-gray-100">
-          {guests.length === 0 ? (
+          {assignedMembers.length === 0 ? (
             <div className="px-4 py-6 text-[13px] text-gray-400 text-center">
-              No guests yet. They&apos;ll appear here once they leave a comment with their email.
+              No one is assigned yet. Add a team member below.
             </div>
           ) : (
-            guests.map((g) => (
-              <div key={g.email} className={`px-4 py-3 ${g.removed ? 'opacity-50' : ''}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-ink truncate">
-                      {g.name || g.email}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">{g.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setGuestRemoved(g.email, !g.removed)}
-                    className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 shrink-0"
-                  >
-                    {g.removed ? (
-                      <>
-                        <RotateCcw size={14} />
-                        Restore
-                      </>
-                    ) : (
-                      <>
-                        <X size={14} />
-                        Remove
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {!g.removed && (
-                  <>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {PREF_DEFS.map((p) => {
-                        const Icon = p.icon;
-                        const on = g.prefs[p.key];
-                        return (
-                          <button
-                            key={p.key}
-                            type="button"
-                            onClick={() => toggleGuestPref(g.email, p.key)}
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                              on
-                                ? 'bg-teal/10 text-teal'
-                                : 'bg-gray-50 text-gray-400 hover:text-gray-600'
-                            }`}
-                            title={`${on ? 'On' : 'Off'} — ${p.label}`}
-                          >
-                            <Icon size={11} />
-                            {p.label}
-                          </button>
-                        );
-                      })}
+            assignedMembers.map((m) => {
+              const isSelf = ownTeamMember?.id === m.id;
+              const a = assignedById.get(m.id)!;
+              return (
+                <div key={m.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium text-ink truncate">
+                        {m.name || m.email}
+                        {isSelf && <span className="ml-2 text-xs text-gray-400">(you)</span>}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">{m.email}</p>
                     </div>
-                    <StagesChipRow
-                      selected={g.stages}
-                      onToggle={(stage) => toggleGuestStage(g.email, stage)}
-                      audience="guest"
-                    />
-                  </>
-                )}
-              </div>
-            ))
+                    <button
+                      type="button"
+                      onClick={() => remove(m.id)}
+                      disabled={savingFor === m.id}
+                      className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 disabled:opacity-50 shrink-0"
+                    >
+                      <X size={14} />
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {PREF_DEFS.map((p) => {
+                      const Icon = p.icon;
+                      const on = a[p.key];
+                      return (
+                        <button
+                          key={p.key}
+                          type="button"
+                          onClick={() => togglePref(m.id, p.key)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                            on
+                              ? 'bg-teal/10 text-teal'
+                              : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                          }`}
+                          title={`${on ? 'On' : 'Off'} — ${p.label}`}
+                        >
+                          <Icon size={11} />
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <StagesChipRow
+                    selected={a.stages}
+                    onToggle={(stage) => toggleMemberStage(m.id, stage)}
+                  />
+                </div>
+              );
+            })
           )}
         </div>
-      </div>
+
+        <div className="relative mt-3">
+          <button
+            type="button"
+            onClick={() => setPickerOpen((v) => !v)}
+            disabled={unassignedMembers.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-full hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Add team member
+            <ChevronDown size={14} />
+          </button>
+
+          {pickerOpen && unassignedMembers.length > 0 && (
+            <div className="absolute z-10 mt-1 w-64 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-72 overflow-y-auto">
+              {unassignedMembers.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => add(m.id)}
+                  disabled={savingFor === m.id}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between gap-2"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[13px] text-ink truncate">{m.name || m.email}</p>
+                    <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                  </div>
+                  {savingFor === m.id && (
+                    <Check size={14} className="text-teal shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── Guests column ───────────────────────────────────────── */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <Bell size={15} className="text-gray-400" />
+          <h3 className="text-sm font-semibold text-ink">Guests</h3>
+        </div>
+        <p className="text-[13px] text-gray-500 mb-4">
+          Clients and outside reviewers. They appear automatically when they comment,
+          or you can add them manually below.
+        </p>
+
+        <div className="border border-gray-100 rounded-xl bg-white divide-y divide-gray-100">
+          {activeGuests.length === 0 && removedGuests.length === 0 ? (
+            <div className="px-4 py-6 text-[13px] text-gray-400 text-center">
+              No guests yet. Add one manually or they&apos;ll appear when they leave a comment.
+            </div>
+          ) : (
+            <>
+              {activeGuests.map((g) => (
+                <GuestRow
+                  key={g.email}
+                  guest={g}
+                  onTogglePref={toggleGuestPref}
+                  onToggleStage={toggleGuestStage}
+                  onSetRemoved={setGuestRemoved}
+                />
+              ))}
+              {removedGuests.map((g) => (
+                <GuestRow
+                  key={g.email}
+                  guest={g}
+                  onTogglePref={toggleGuestPref}
+                  onToggleStage={toggleGuestStage}
+                  onSetRemoved={setGuestRemoved}
+                />
+              ))}
+            </>
+          )}
+        </div>
+
+        <div className="mt-3">
+          {guestFormOpen ? (
+            <div className="border border-gray-200 rounded-xl bg-white p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                    Email <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    ref={guestEmailRef}
+                    type="email"
+                    value={guestEmail}
+                    onChange={(e) => setGuestEmail(e.target.value)}
+                    placeholder="guest@example.com"
+                    className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') addGuest();
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="Optional"
+                    className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') addGuest();
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={addGuest}
+                  disabled={guestSaving || !guestEmail.trim()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium bg-teal text-white rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-50"
+                >
+                  {guestSaving ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <UserPlus size={14} />
+                  )}
+                  Add Guest
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuestFormOpen(false);
+                    setGuestEmail('');
+                    setGuestName('');
+                  }}
+                  className="px-3 py-1.5 text-[13px] font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setGuestFormOpen(true);
+                setTimeout(() => guestEmailRef.current?.focus(), 50);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-full hover:border-gray-300 transition-colors"
+            >
+              <UserPlus size={14} />
+              Add guest
+            </button>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
 
-/* ── Stages chip row ─────────────────────────────────────────────────────────
- * Renders all 8 pipeline stages as toggle chips. Empty selection is
- * deliberately allowed and rendered as a subtle hint ("Notifies on all
- * stages") so admins know that's the back-compat default — clicking any chip
- * scopes them down.
- *
- * Guests only see notifications, so `audience="guest"` hides internal-only
- * stages from the chip set (those notifications would never fire for them
- * anyway thanks to the visibility filter — showing the chip is misleading). */
+/* ── Guest row ──────────────────────────────────────────────────────────── */
+
+function GuestRow({
+  guest: g,
+  onTogglePref,
+  onToggleStage,
+  onSetRemoved,
+}: {
+  guest: Guest;
+  onTogglePref: (email: string, key: PrefKey) => void;
+  onToggleStage: (email: string, stage: FeedbackStatus) => void;
+  onSetRemoved: (email: string, removed: boolean) => void;
+}) {
+  return (
+    <div className={`px-4 py-3 ${g.removed ? 'opacity-50' : ''}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium text-ink truncate">
+            {g.name || g.email}
+          </p>
+          <p className="text-xs text-gray-400 truncate">{g.email}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onSetRemoved(g.email, !g.removed)}
+          className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 shrink-0"
+        >
+          {g.removed ? (
+            <>
+              <RotateCcw size={14} />
+              Restore
+            </>
+          ) : (
+            <>
+              <X size={14} />
+              Remove
+            </>
+          )}
+        </button>
+      </div>
+
+      {!g.removed && (
+        <>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {PREF_DEFS.map((p) => {
+              const Icon = p.icon;
+              const on = g.prefs[p.key];
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => onTogglePref(g.email, p.key)}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                    on
+                      ? 'bg-teal/10 text-teal'
+                      : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                  }`}
+                  title={`${on ? 'On' : 'Off'} — ${p.label}`}
+                >
+                  <Icon size={11} />
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+          <StagesChipRow
+            selected={g.stages}
+            onToggle={(stage) => onToggleStage(g.email, stage)}
+            audience="guest"
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── Stages chip row ────────────────────────────────────────────────────── */
+
 function StagesChipRow({
   selected, onToggle, audience = 'member',
 }: {
