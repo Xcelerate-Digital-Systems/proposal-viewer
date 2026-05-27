@@ -99,8 +99,8 @@ function FeedbackProjectCard({
       }`}
     >
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-accent-feedback-tint">
-          <MessageSquareText size={15} className="text-accent-feedback" />
+        <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-surface">
+          <MessageSquareText size={15} className="text-muted" />
         </div>
         <div className="min-w-0 flex-1">
           <h4 className="text-[13px] font-medium text-ink truncate leading-tight">

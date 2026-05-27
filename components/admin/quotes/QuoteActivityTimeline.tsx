@@ -27,12 +27,12 @@ interface Event {
 }
 
 const TONE_CLASS: Record<Event['tone'], string> = {
-  neutral:  'bg-gray-100 text-gray-500',
-  sent:     'bg-blue-50 text-blue-600',
-  viewed:   'bg-amber-50 text-amber-600',
+  neutral:  'bg-surface text-muted',
+  sent:     'bg-surface text-muted',
+  viewed:   'bg-surface text-muted',
   accepted: 'bg-emerald-50 text-emerald-600',
   declined: 'bg-red-50 text-red-500',
-  revision: 'bg-amber-50 text-amber-600',
+  revision: 'bg-surface text-muted',
 };
 
 function formatStamp(iso: string): string {

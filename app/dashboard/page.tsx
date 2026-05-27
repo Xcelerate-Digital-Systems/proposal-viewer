@@ -210,13 +210,13 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
             <div className="bg-white rounded-2xl shadow-card p-6">
               <div className="flex items-center gap-2">
-                <FileText size={14} className="text-teal" />
+                <FileText size={14} className="text-muted" />
                 <span className="text-[13px] font-medium text-muted">Active Proposals</span>
               </div>
               <p className="text-[32px] font-bold text-ink leading-none mt-3">{totalCount}</p>
               <div className="flex items-center gap-1 mt-3">
-                <Timer size={14} className="text-teal" />
-                <span className="text-xs font-medium text-teal">{totalCount - acceptedCount} awaiting your review</span>
+                <Timer size={14} className="text-muted" />
+                <span className="text-xs font-medium text-muted">{totalCount - acceptedCount} awaiting your review</span>
               </div>
             </div>
             <div className="bg-white rounded-2xl shadow-card p-6">
@@ -266,8 +266,8 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           >
             <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-accent-feedback-tint flex items-center justify-center">
-                  <MessageSquareText size={14} className="text-accent-feedback" />
+                <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
+                  <MessageSquareText size={14} className="text-muted" />
                 </div>
                 <h2 className="text-[15px] font-semibold text-ink">Markup</h2>
                 <span className="text-[11px] text-muted">
@@ -327,7 +327,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
             {/* Kanban sub-area */}
             <div className="border-t border-gray-100">
               <div className="flex items-center gap-2 px-5 pt-4 pb-2">
-                <MessageSquareText size={13} className="text-accent-feedback" />
+                <MessageSquareText size={13} className="text-muted" />
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
                   Projects
                 </h3>
@@ -365,8 +365,8 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           >
             <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-primary-tint flex items-center justify-center">
-                  <FileText size={14} className="text-primary" />
+                <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
+                  <FileText size={14} className="text-muted" />
                 </div>
                 <h2 className="text-[15px] font-semibold text-ink">Proposals &amp; Quotes</h2>
                 <span className="text-[11px] text-muted">

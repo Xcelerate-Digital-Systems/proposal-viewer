@@ -33,12 +33,12 @@ interface ProposalDetailHeaderProps {
 /* ------------------------------------------------------------------ */
 
 const statusOptions: StatusOption<ProposalStatus>[] = [
-  { value: 'draft',    label: 'Draft',    bg: 'bg-gray-100',   text: 'text-gray-500',  border: 'border-gray-200',   icon: <FileText size={13} /> },
-  { value: 'sent',     label: 'Sent',     bg: 'bg-blue-50',    text: 'text-blue-600',  border: 'border-blue-200',   icon: <Clock size={13} /> },
-  { value: 'viewed',   label: 'Viewed',   bg: 'bg-amber-50',   text: 'text-amber-600', border: 'border-amber-200',  icon: <Eye size={13} /> },
-  { value: 'revision_requested', label: 'Changes Requested', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', icon: <PenLine size={13} /> },
-  { value: 'accepted', label: 'Accepted', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', icon: <CheckCircle2 size={13} /> },
-  { value: 'declined', label: 'Declined', bg: 'bg-red-50',     text: 'text-red-500',   border: 'border-red-200',    icon: <X size={13} /> },
+  { value: 'draft',    label: 'Draft',    bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <FileText size={13} /> },
+  { value: 'sent',     label: 'Sent',     bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <Clock size={13} /> },
+  { value: 'viewed',   label: 'Viewed',   bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <Eye size={13} /> },
+  { value: 'revision_requested', label: 'Changes Requested', bg: 'bg-surface', text: 'text-muted', border: 'border-edge', icon: <PenLine size={13} /> },
+  { value: 'accepted', label: 'Accepted', bg: 'bg-emerald-50',  text: 'text-emerald-600',  border: 'border-emerald-200',   icon: <CheckCircle2 size={13} /> },
+  { value: 'declined', label: 'Declined', bg: 'bg-red-50',      text: 'text-red-500',      border: 'border-red-200',       icon: <X size={13} /> },
 ];
 
 /* ------------------------------------------------------------------ */

@@ -23,10 +23,10 @@ interface ProposalCardProps {
 type ActiveTab = 'details' | 'pages' | 'pricing' | 'cover' | null;
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  draft: { icon: <FileText size={14} />, color: 'bg-gray-100 text-gray-500', label: 'Draft' },
-  sent: { icon: <Clock size={14} />, color: 'bg-blue-50 text-blue-600', label: 'Sent' },
-  viewed: { icon: <Eye size={14} />, color: 'bg-amber-50 text-amber-600', label: 'Viewed' },
-  revision_requested: { icon:  <PenLine size={14} />, color: 'bg-amber-50 text-amber-600', label: 'Changes Requested',},
+  draft: { icon: <FileText size={14} />, color: 'bg-surface text-muted', label: 'Draft' },
+  sent: { icon: <Clock size={14} />, color: 'bg-surface text-muted', label: 'Sent' },
+  viewed: { icon: <Eye size={14} />, color: 'bg-surface text-muted', label: 'Viewed' },
+  revision_requested: { icon: <PenLine size={14} />, color: 'bg-surface text-muted', label: 'Changes Requested' },
   accepted: { icon: <CheckCircle2 size={14} />, color: 'bg-emerald-50 text-emerald-600', label: 'Accepted' },
   declined: { icon: <X size={14} />, color: 'bg-red-50 text-red-500', label: 'Declined' },
 };

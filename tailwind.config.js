@@ -7,8 +7,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-sans)'],
-        display: ['var(--font-sans)'],
+        sans: ['var(--font-geist-sans)'],
+        display: ['var(--font-geist-sans)'],
         hand: ['var(--font-hand)', 'cursive'],
       },
       // Extends Tailwind's default fontSize scale with `2xs` (10px) for

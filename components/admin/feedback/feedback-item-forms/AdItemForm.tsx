@@ -318,7 +318,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                           <div key={ad.id} className="border-b border-gray-100 last:border-b-0">
                             {/* Ad header: title + "Import all" */}
                             <div className="flex items-center gap-2.5 px-3 pt-2 pb-1">
-                              <span className="w-6 h-6 shrink-0 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                              <span className="w-6 h-6 shrink-0 rounded-lg bg-surface flex items-center justify-center text-muted">
                                 <Megaphone size={12} />
                               </span>
                               <span className="flex-1 min-w-0">

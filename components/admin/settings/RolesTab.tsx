@@ -19,8 +19,8 @@ const ROLE_ICON_CLASS: Record<AnyRole, string> = {
   owner: 'text-teal',
   admin: 'text-teal/70',
   member: 'text-faint',
-  client: 'text-blue-500',
-  guest: 'text-violet-500',
+  client: 'text-muted',
+  guest: 'text-muted',
 };
 
 interface RolesTabProps {

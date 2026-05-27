@@ -26,6 +26,7 @@
     "@tiptap/starter-kit": "^3.21.0",
     "@xyflow/react": "^12.10.1",
     "emoji-picker-react": "^4.19.1",
+    "geist": "^1.7.1",
     "html2canvas": "^1.4.1",
     "isomorphic-dompurify": "^3.14.0",
     "lucide-react": "^0.400.0",

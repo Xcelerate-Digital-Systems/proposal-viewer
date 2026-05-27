@@ -338,8 +338,8 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
             const Icon = f.icon;
             return (
               <div key={f.label} className="flex items-center gap-3 py-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-                  <Icon size={14} className="text-emerald-600" />
+                <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center shrink-0">
+                  <Icon size={14} className="text-muted" />
                 </div>
                 <span className="text-sm text-ink">{f.label}</span>
               </div>

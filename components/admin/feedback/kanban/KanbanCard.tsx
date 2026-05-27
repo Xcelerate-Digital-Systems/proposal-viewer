@@ -23,16 +23,16 @@ interface KanbanCardProps {
 }
 
 const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; iconBg: string; iconColor: string }> = {
-  webpage:   { label: 'Webpage',   Icon: Globe,      iconBg: 'bg-sky-50',     iconColor: 'text-sky-600' },
-  email:     { label: 'Email',     Icon: Mail,       iconBg: 'bg-violet-50',  iconColor: 'text-violet-600' },
-  sms:       { label: 'SMS',       Icon: Smartphone, iconBg: 'bg-green-50',   iconColor: 'text-green-600' },
-  image:     { label: 'Image',     Icon: ImageIcon,  iconBg: 'bg-amber-50',   iconColor: 'text-amber-600' },
-  video:     { label: 'Video',     Icon: Video,      iconBg: 'bg-rose-50',    iconColor: 'text-rose-600' },
-  pdf:       { label: 'PDF',       Icon: FileText,   iconBg: 'bg-red-50',     iconColor: 'text-red-600' },
-  ad:        { label: 'Meta Ad',   Icon: Megaphone,  iconBg: 'bg-blue-50',    iconColor: 'text-blue-600' },
-  google_search_ad: { label: 'Google Search Ad', Icon: Search,              iconBg: 'bg-indigo-50',  iconColor: 'text-indigo-600' },
-  google_banner_ad: { label: 'Google Banner Ad', Icon: RectangleHorizontal, iconBg: 'bg-indigo-50',  iconColor: 'text-indigo-600' },
-  meta_lead_form: { label: 'Lead Form', Icon: ClipboardList, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
+  webpage:   { label: 'Webpage',   Icon: Globe,      iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  email:     { label: 'Email',     Icon: Mail,       iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  sms:       { label: 'SMS',       Icon: Smartphone, iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  image:     { label: 'Image',     Icon: ImageIcon,  iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  video:     { label: 'Video',     Icon: Video,      iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  pdf:       { label: 'PDF',       Icon: FileText,   iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  ad:        { label: 'Meta Ad',   Icon: Megaphone,  iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  google_search_ad: { label: 'Google Search Ad', Icon: Search,              iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  google_banner_ad: { label: 'Google Banner Ad', Icon: RectangleHorizontal, iconBg: 'bg-surface',    iconColor: 'text-muted' },
+  meta_lead_form: { label: 'Lead Form', Icon: ClipboardList, iconBg: 'bg-surface', iconColor: 'text-muted' },
 };
 
 export default function KanbanCard({

@@ -25,8 +25,8 @@ function formatShort(iso: string): string {
 export default function ProposalBoardCard({ proposal, kind = 'proposal' }: Props) {
   const href = kind === 'quote' ? `/quotes/${proposal.id}` : `/proposals/${proposal.id}/pages`;
   const Icon = kind === 'quote' ? ReceiptText : FileText;
-  const iconBg = kind === 'quote' ? 'bg-amber-50' : 'bg-sky-50';
-  const iconColor = kind === 'quote' ? 'text-amber-600' : 'text-sky-600';
+  const iconBg = 'bg-surface';
+  const iconColor = 'text-muted';
   const typeLabel = kind === 'quote' ? 'Quote' : 'Pitch';
 
   // Pick the most relevant timestamp + matching icon for the footer meta.
@@ -34,11 +34,11 @@ export default function ProposalBoardCard({ proposal, kind = 'proposal' }: Props
     if (proposal.accepted_at)
       return { Icon: CheckCircle2, label: 'Accepted', when: proposal.accepted_at, tone: 'text-emerald-600' };
     if (proposal.declined_at)
-      return { Icon: XCircle, label: 'Declined', when: proposal.declined_at, tone: 'text-red-600' };
+      return { Icon: XCircle, label: 'Declined', when: proposal.declined_at, tone: 'text-red-500' };
     if (proposal.last_viewed_at)
-      return { Icon: Eye, label: 'Viewed', when: proposal.last_viewed_at, tone: 'text-amber-600' };
+      return { Icon: Eye, label: 'Viewed', when: proposal.last_viewed_at, tone: 'text-muted' };
     if (proposal.sent_at)
-      return { Icon: Send, label: 'Sent', when: proposal.sent_at, tone: 'text-blue-600' };
+      return { Icon: Send, label: 'Sent', when: proposal.sent_at, tone: 'text-muted' };
     return null;
   })();
   const MetaIcon = meta?.Icon;

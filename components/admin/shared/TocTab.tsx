@@ -300,13 +300,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
             section
           </span>
         ) : (
-          <span className={`ml-auto text-2xs px-1.5 py-0.5 rounded-full shrink-0 ${
-            item.type === 'pdf'      ? 'bg-content-type-pdf-tint text-content-type-pdf'           :
-            item.type === 'text'     ? 'bg-content-type-text-tint text-content-type-text'         :
-            item.type === 'pricing'  ? 'bg-content-type-pricing-tint text-content-type-pricing'   :
-            item.type === 'packages' ? 'bg-content-type-packages-tint text-content-type-packages' :
-            'hidden'
-          }`}>
+          <span className="ml-auto text-2xs px-1.5 py-0.5 rounded-full shrink-0 bg-surface text-muted">
             {item.type}
           </span>
         )}
