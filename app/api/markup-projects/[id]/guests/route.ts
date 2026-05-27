@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getCompanyMarkupDefaults } from '@/lib/markup-notification-defaults';
 
 type GuestPrefs = {
   notify_comment: boolean;
@@ -182,6 +183,23 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     .single();
   if (!project || project.company_id !== auth.companyId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  // First-touch upsert needs to seed any prefs the admin didn't explicitly
+  // toggle from the agency defaults; otherwise we'd silently fall back to
+  // the column DEFAULTs and ignore the workspace-level setting.
+  const { data: existingGuest } = await supabase
+    .from('review_project_guest_recipients')
+    .select('email')
+    .eq('review_project_id', params.id)
+    .eq('email', email)
+    .maybeSingle();
+
+  if (!existingGuest) {
+    const defaults = await getCompanyMarkupDefaults(supabase, auth.companyId);
+    for (const key of PREF_KEYS) {
+      if (!(key in update)) update[key] = defaults[key];
+    }
   }
 
   const { error } = await supabase

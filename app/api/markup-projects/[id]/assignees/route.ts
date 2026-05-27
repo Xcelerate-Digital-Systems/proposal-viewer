@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getCompanyMarkupDefaults } from '@/lib/markup-notification-defaults';
 
 // GET — list current assignees for a project, plus all assignable team members.
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -71,10 +72,25 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     return NextResponse.json({ error: 'Invalid team member' }, { status: 400 });
   }
 
+  // Seed the new row from the agency's markup notification defaults. We only
+  // include these on INSERT — if a row already exists for this member (which
+  // upsert turns into an UPDATE) we don't want to clobber whatever toggles
+  // they previously chose, so check first.
+  const { data: existingAssignee } = await supabase
+    .from('review_project_assignees')
+    .select('team_member_id')
+    .eq('review_project_id', params.id)
+    .eq('team_member_id', team_member_id)
+    .maybeSingle();
+
+  const seedPrefs = existingAssignee
+    ? {}
+    : await getCompanyMarkupDefaults(supabase, auth.companyId);
+
   const { error } = await supabase
     .from('review_project_assignees')
     .upsert(
-      { review_project_id: params.id, team_member_id },
+      { review_project_id: params.id, team_member_id, ...seedPrefs },
       { onConflict: 'review_project_id,team_member_id' }
     );
 

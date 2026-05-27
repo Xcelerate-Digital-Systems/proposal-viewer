@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getCompanyMarkupDefaults } from '@/lib/markup-notification-defaults';
 import type { FeedbackStatus } from '@/lib/types/feedback';
 
 const VALID_STAGES: FeedbackStatus[] = [
@@ -176,10 +177,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       new Set([...((existing?.stages as string[] | undefined) ?? []), stage]),
     );
 
+    // First-time add for this member → seed notification toggles from the
+    // agency-level defaults. Subsequent adds just touch `stages` so per-user
+    // toggles aren't clobbered.
+    const seedPrefs = existing
+      ? {}
+      : await getCompanyMarkupDefaults(supabase, access.companyId as string);
+
     const { error } = await supabase
       .from('review_project_assignees')
       .upsert(
-        { review_project_id: params.id, team_member_id, stages: nextStages },
+        { review_project_id: params.id, team_member_id, stages: nextStages, ...seedPrefs },
         { onConflict: 'review_project_id,team_member_id' },
       );
 
@@ -205,6 +213,12 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       new Set([...((existing?.stages as string[] | undefined) ?? []), stage]),
     );
 
+    // Seed notification toggles from agency defaults only when this is a
+    // brand-new guest row, so previously-toggled prefs survive.
+    const seedPrefs = existing
+      ? {}
+      : await getCompanyMarkupDefaults(supabase, access.companyId as string);
+
     const { error } = await supabase
       .from('review_project_guest_recipients')
       .upsert(
@@ -214,6 +228,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
           name: name ?? existing?.name ?? '',
           stages: nextStages,
           removed_at: null,
+          ...seedPrefs,
         },
         { onConflict: 'review_project_id,email' },
       );

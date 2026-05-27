@@ -9,6 +9,7 @@ import {
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import NotificationSection from '@/components/admin/settings/NotificationSection';
+import MarkupDefaultsSection from '@/components/admin/settings/MarkupDefaultsSection';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
@@ -167,7 +168,7 @@ function SettingsContent({ auth }: {
                 title="Notifications"
                 description="Email alerts for events across your workspace."
               />
-              <div className="max-w-lg">
+              <div className="max-w-lg space-y-6">
                 <NotificationSection
                   title="Proposals"
                   options={NOTIFICATION_OPTIONS}
@@ -175,9 +176,10 @@ function SettingsContent({ auth }: {
                   saving={savingPref}
                   onToggle={handleToggle}
                 />
+                <MarkupDefaultsSection canEdit={isAdminOrOwner || isSuperAdmin} />
               </div>
               <p className="mt-4 max-w-lg text-xs text-faint">
-                Feedback project notifications are now controlled per-project. Open a project &rarr; Settings tab to manage who&apos;s assigned.
+                Markup defaults apply to new project assignees and new guest reviewers. Each project can override per person under its Settings tab.
               </p>
             </section>
           )}
