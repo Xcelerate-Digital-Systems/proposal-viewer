@@ -33,6 +33,44 @@ import { useAuth } from '@/hooks/useAuth';
 import { authFetch } from '@/lib/auth-fetch';
 import { getTour, resolveTourForPath, type TourId } from './tour-config';
 
+/* ── Per-tab dismissed-set persistence ──────────────────────────────────
+ * AdminLayout (and TourProvider with it) unmounts on every page
+ * navigation, so any in-memory ref resets and the auto-launch effect
+ * re-fires the tour on return to /dashboard until the DB-persisted
+ * tours_completed value has finished propagating through useAuth's
+ * fetchMemberships. sessionStorage gives us a synchronous per-tab cache
+ * that survives navigation, clears on tab close, and (because we key by
+ * user id) doesn't leak between users who log in/out in the same tab. */
+
+const STORAGE_KEY_PREFIX = 'agencyviz_tours_dismissed:';
+
+function storageKey(userId: string | null | undefined): string | null {
+  if (!userId) return null;
+  return STORAGE_KEY_PREFIX + userId;
+}
+
+function readDismissed(userId: string | null | undefined): Set<string> {
+  const key = storageKey(userId);
+  if (!key || typeof window === 'undefined') return new Set();
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeDismissed(userId: string | null | undefined, ids: Set<string>): void {
+  const key = storageKey(userId);
+  if (!key || typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(Array.from(ids)));
+  } catch {
+    /* quota / privacy mode — harmless, just means we fall back to the DB-persisted gate */
+  }
+}
+
 type Ctx = {
   replay: (id: TourId) => void;
   isActive: boolean;
@@ -50,16 +88,16 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const [activeId, setActiveId] = useState<TourId | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
-  // Tours the user has already seen + dismissed in *this* React session.
-  // Stored in a ref (not state) so it doesn't trigger re-renders, and so
-  // the auto-launch effect can read it synchronously alongside the async
-  // PATCH that persists tours_completed to the DB. Without this we race:
-  // setActiveId(null) on TOUR_END schedules a re-render that re-runs the
-  // launch effect *before* refreshMemberships finishes, and since the
-  // persisted `completed` map is still stale the tour re-fires → infinite
-  // loop. The ref breaks the loop within the page load; the persisted
-  // value handles future loads.
-  const dismissedThisSession = useRef<Set<TourId>>(new Set());
+  // In-memory mirror of the sessionStorage dismissed set. Used so the
+  // auto-launch effect can check synchronously without touching
+  // sessionStorage on every render. Re-hydrated on mount.
+  const dismissedRef = useRef<Set<string>>(new Set());
+
+  const userId = auth.session?.user?.id ?? null;
+
+  useEffect(() => {
+    dismissedRef.current = readDismissed(userId);
+  }, [userId]);
 
   const completed =
     (auth.teamMember?.tours_completed as Record<string, string> | undefined) ?? {};
@@ -75,7 +113,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     const candidate = resolveTourForPath(pathname);
     if (!candidate) return;
     if (completed[candidate]) return;
-    if (dismissedThisSession.current.has(candidate)) return;
+    if (dismissedRef.current.has(candidate)) return;
     const tour = getTour(candidate);
     if (!tour || tour.steps.length === 0) return;
     setActiveId(candidate);
@@ -106,11 +144,14 @@ export function TourProvider({ children }: { children: ReactNode }) {
       if (data.type !== EVENTS.TOUR_END) return;
 
       const finishedId = activeId;
-      // Add to session-level dismissed set BEFORE clearing activeId so the
+      // Add to per-tab dismissed set BEFORE clearing activeId so the
       // auto-launch effect (which runs synchronously on the next render)
-      // doesn't re-fire while the async PATCH is in flight.
+      // doesn't re-fire while the async PATCH is in flight. sessionStorage
+      // backs the ref so a return-navigation to /dashboard (which unmounts
+      // and remounts TourProvider) still respects the dismissal.
       if (finishedId) {
-        dismissedThisSession.current.add(finishedId);
+        dismissedRef.current.add(finishedId);
+        writeDismissed(userId, dismissedRef.current);
       }
       setActiveId(null);
       setSteps([]);
@@ -121,7 +162,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
         void markComplete(finishedId);
       }
     },
-    [activeId, markComplete],
+    [activeId, markComplete, userId],
   );
 
   const replay = useCallback((id: TourId) => {
