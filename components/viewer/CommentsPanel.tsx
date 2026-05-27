@@ -259,11 +259,11 @@ export default function CommentsPanel({
 
           <form onSubmit={handleSubmit} className="p-3 space-y-2 border-t pb-safe" style={{ borderColor: border }}>
             <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none border"
+              className="w-full px-3 py-2 rounded-lg text-base focus:outline-none border"
               style={{ backgroundColor: border, color: textColor, borderColor: border }} />
             <div className="flex gap-2">
               <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none border"
+                className="flex-1 px-3 py-2 rounded-lg text-base focus:outline-none border"
                 style={{ backgroundColor: border, color: textColor, borderColor: border }} />
               <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
                 className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
