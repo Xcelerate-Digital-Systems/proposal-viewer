@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
   const companyIds = companies.map((c: { id: string }) => c.id);
 
-  const [proposalCounts, memberCounts, recentActivity] = await Promise.all([
+  const [proposalCounts, memberCounts, recentActivity, subscriptions] = await Promise.all([
     companyIds.length
       ? supabaseAdmin.from('proposals').select('company_id').in('company_id', companyIds)
       : Promise.resolve({ data: [] }),
@@ -61,11 +61,27 @@ export async function GET(req: NextRequest) {
           .in('company_id', companyIds)
           .order('updated_at', { ascending: false })
       : Promise.resolve({ data: [] }),
+    companyIds.length
+      ? supabaseAdmin
+          .from('subscriptions')
+          .select('company_id, status, plan_id, plans(slug, name)')
+          .in('company_id', companyIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const stats: Record<string, { proposals: number; members: number; lastActivity: string | null }> = {};
+  const subMap: Record<string, { status: string; plan_slug: string; plan_name: string } | null> = {};
   for (const id of companyIds) {
     stats[id] = { proposals: 0, members: 0, lastActivity: null };
+    subMap[id] = null;
+  }
+
+  for (const row of (subscriptions.data ?? []) as unknown as { company_id: string; status: string; plans: { slug: string; name: string } | null }[]) {
+    subMap[row.company_id] = {
+      status: row.status,
+      plan_slug: row.plans?.slug ?? 'unknown',
+      plan_name: row.plans?.name ?? 'Unknown',
+    };
   }
 
   for (const row of (proposalCounts.data ?? [])) {
@@ -86,6 +102,7 @@ export async function GET(req: NextRequest) {
   const result = companies.map((c: Record<string, unknown>) => ({
     ...c,
     stats: stats[c.id as string] ?? { proposals: 0, members: 0, lastActivity: null },
+    subscription: subMap[c.id as string] ?? null,
   }));
 
   return NextResponse.json(result);

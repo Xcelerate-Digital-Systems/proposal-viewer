@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Building2, Plus, LogIn, Users, FileText, Clock,
-  X, Loader2, ExternalLink, UserPlus, Check,
+  X, Loader2, ExternalLink, UserPlus, Check, Crown, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import ErrorState from '@/components/ui/ErrorState';
@@ -27,6 +27,11 @@ interface CompanyWithStats {
     members: number;
     lastActivity: string | null;
   };
+  subscription: {
+    status: string;
+    plan_slug: string;
+    plan_name: string;
+  } | null;
 }
 
 export default function AccountsPage() {
@@ -54,6 +59,7 @@ function AccountsContent() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [joining, setJoining] = useState<string | null>(null);
+  const [granting, setGranting] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   // Lookup: company_id → membership_id, so "Join" turns into "Switch" once
@@ -140,6 +146,30 @@ function AccountsContent() {
     }
   };
 
+  const handleToggleLifetime = async (company: CompanyWithStats) => {
+    const isLifetime = company.subscription?.plan_slug === 'lifetime';
+    setGranting(company.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setGranting(null); return; }
+      const res = await fetch(`/api/admin/accounts/${company.id}/subscription`, {
+        method: isLifetime ? 'DELETE' : 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || 'Failed to update subscription');
+      } else {
+        toast.success(isLifetime ? `Revoked lifetime access for ${company.name}` : `Granted lifetime access to ${company.name}`);
+        fetchCompanies();
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update subscription');
+    } finally {
+      setGranting(null);
+    }
+  };
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'No activity';
     const d = new Date(dateStr);
@@ -218,7 +248,21 @@ function AccountsContent() {
                     {company.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-ink truncate">{company.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-ink truncate">{company.name}</h3>
+                      {company.subscription?.plan_slug === 'lifetime' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-detail font-semibold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                          <Crown size={10} />
+                          Lifetime
+                        </span>
+                      )}
+                      {company.subscription && company.subscription.plan_slug !== 'lifetime' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-detail font-semibold bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+                          <ShieldCheck size={10} />
+                          {company.subscription.status}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-faint truncate mt-0.5">{company.slug}</p>
                   </div>
                 </div>
@@ -243,7 +287,7 @@ function AccountsContent() {
               {/* Card footer — Enter Account always available; "Join" is
                   only offered when not already a member, otherwise we show
                   a small "Member" pill to make the state obvious. */}
-              <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-2">
+              <div className="px-5 py-3 border-t border-edge flex items-center gap-2">
                 <button
                   onClick={() => handleEnter(company)}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
@@ -256,7 +300,7 @@ function AccountsContent() {
                 </button>
                 {membershipByCompanyId.has(company.id) ? (
                   <span
-                    className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-detail font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
                     title="You're a member of this workspace"
                   >
                     <Check size={12} />
@@ -273,6 +317,16 @@ function AccountsContent() {
                     Join
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant={company.subscription?.plan_slug === 'lifetime' ? 'ghost' : 'secondary'}
+                  leftIcon={Crown}
+                  loading={granting === company.id}
+                  onClick={() => handleToggleLifetime(company)}
+                  title={company.subscription?.plan_slug === 'lifetime' ? 'Revoke lifetime access' : 'Grant lifetime access'}
+                >
+                  {company.subscription?.plan_slug === 'lifetime' ? 'Revoke' : 'Lifetime'}
+                </Button>
               </div>
             </div>
           ))}
@@ -351,7 +405,7 @@ function CreateAccountModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="bg-white border border-edge rounded-2xl shadow-lg w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
           <h2 className="text-base font-semibold text-ink">New Account</h2>
           <button onClick={onClose} className="text-faint hover:text-muted transition-colors">
             <X size={18} />
@@ -392,7 +446,7 @@ function CreateAccountModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-edge">
           <Button
             variant="ghost"
             size="sm"
