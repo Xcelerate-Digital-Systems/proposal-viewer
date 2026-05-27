@@ -81,10 +81,10 @@ export default function TierEditor({
             <button
               onClick={onSaveAsTemplate}
               title="Save as template"
-              className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-teal/10 text-gray-300 hover:text-teal transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-500 hover:border-teal/40 hover:text-teal hover:bg-teal/5 transition-colors"
             >
-              <Bookmark size={12} />
-              <span className="text-[10px] font-medium">Save</span>
+              <Bookmark size={11} />
+              Save Template
             </button>
           )}
           <button onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors">
