@@ -38,10 +38,16 @@ interface CommentsPanelProps {
   /** Unresolve callback — if provided, reopen button appears on resolved threads */
   onUnresolve?: (commentId: string) => Promise<void>;
 
-  /** Edit callback — if provided, edit button appears on threads (admin only) */
+  /** Edit callback — wired for admin always; for guests, only their own comments expose the action. */
   onEdit?: (commentId: string, content: string) => Promise<void>;
-  /** Delete callback — if provided, delete button appears on threads (admin only) */
+  /** Delete callback — wired for admin always; for guests, only their own comments expose the action. */
   onDelete?: (commentId: string) => Promise<void>;
+  /** When true, every comment shows edit/delete regardless of authorship. */
+  isAdmin?: boolean;
+  /** Email of the current viewer — used to gate edit/delete to a guest's own comments. */
+  currentUserEmail?: string;
+  /** Display name of the current viewer — fallback identity when no email is present. */
+  currentUserName?: string;
 
   // Attachments
   /** Public review share_token — required so uploads can prove access. */
@@ -72,6 +78,9 @@ export default function CommentsPanel({
   onUnresolve,
   onEdit,
   onDelete,
+  isAdmin = false,
+  currentUserEmail,
+  currentUserName: currentUserNameProp,
   guestName,
   onNameChange,
   shareToken,
@@ -137,6 +146,9 @@ export default function CommentsPanel({
             onDelete={onDelete ? () => onDelete(c.id) : undefined}
             onEditReply={onEdit}
             onDeleteReply={onDelete}
+            isAdmin={isAdmin}
+            currentUserEmail={currentUserEmail}
+            currentUserNameOverride={currentUserNameProp}
             highlighted={highlightCommentId === c.id}
             memberLookup={memberLookup}
           />

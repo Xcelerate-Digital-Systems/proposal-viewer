@@ -619,8 +619,11 @@ export default function FeedbackDetailView({
               onNameChange={isClient ? onGuestNameChange : undefined}
               onResolve={onResolveComment}
               onUnresolve={onUnresolveComment}
-              onEdit={isAdmin ? onEditComment : undefined}
-              onDelete={isAdmin ? onDeleteComment : undefined}
+              onEdit={onEditComment}
+              onDelete={onDeleteComment}
+              isAdmin={isAdmin}
+              currentUserEmail={isClient ? reviewerEmail : undefined}
+              currentUserName={isClient ? guestName : authorName}
               shareToken={shareToken}
               className="w-[360px] shrink-0 bg-[#FBF8F5] flex flex-col"
               commentPlaceholder={(() => {
@@ -698,7 +701,10 @@ export default function FeedbackDetailView({
                 onReply={handlePopoverReply}
                 onResolve={onResolveComment}
                 onUnresolve={onUnresolveComment}
-                onDelete={isAdmin ? onDeleteComment : undefined}
+                onDelete={onDeleteComment}
+                isAdmin={isAdmin}
+                currentUserEmail={isClient ? reviewerEmail : undefined}
+                currentUserName={isClient ? guestName : authorName}
                 authorName={isAdmin ? authorName : undefined}
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}

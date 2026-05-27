@@ -34,7 +34,7 @@ interface CommentThreadProps {
   onResolve?: () => Promise<void>;
   onUnresolve?: () => Promise<void>;
 
-  // Edit / delete (team-only)
+  // Edit / delete
   /** Edit the top-level comment */
   onEdit?: (content: string) => Promise<void>;
   /** Delete the top-level comment (also removes replies) */
@@ -43,6 +43,12 @@ interface CommentThreadProps {
   onEditReply?: (replyId: string, content: string) => Promise<void>;
   /** Delete a reply */
   onDeleteReply?: (replyId: string) => Promise<void>;
+  /** When true, every comment exposes edit/delete regardless of authorship. */
+  isAdmin?: boolean;
+  /** Email of the current viewer — used to detect guest-authored comments. */
+  currentUserEmail?: string;
+  /** Override for the display name used to detect authorship when email is absent. */
+  currentUserNameOverride?: string;
 
   /** When true, show a temporary highlight ring (e.g. when scrolled to via pin click) */
   highlighted?: boolean;
@@ -66,6 +72,9 @@ export default function CommentThread({
   onDelete,
   onEditReply,
   onDeleteReply,
+  isAdmin = false,
+  currentUserEmail,
+  currentUserNameOverride,
   highlighted = false,
   memberLookup,
 }: CommentThreadProps) {
@@ -135,6 +144,20 @@ export default function CommentThread({
 
   const isTeam = comment.author_type === 'team';
   const currentUserName = (authorName ?? guestName ?? '').trim() || null;
+  const identityName = (currentUserNameOverride ?? currentUserName ?? '').trim() || null;
+  const identityEmail = (currentUserEmail ?? '').trim().toLowerCase() || null;
+
+  // Admin can always modify. Guests can modify their own client comments only.
+  // Match by email when present; fall back to display name.
+  const ownsComment = (c: FeedbackComment) => {
+    if (isAdmin) return true;
+    if (c.author_type !== 'client') return false;
+    const cEmail = (c.author_email ?? '').trim().toLowerCase() || null;
+    if (cEmail) return !!identityEmail && cEmail === identityEmail;
+    const cName = (c.author_name ?? '').trim() || null;
+    return !!identityName && cName === identityName;
+  };
+  const canModify = ownsComment(comment);
   const { reactions, toggle: toggleReaction } = useCommentReactions(comment.id, {
     currentUserName,
   });
@@ -275,8 +298,8 @@ export default function CommentThread({
               key={r.id}
               reply={r}
               currentUserName={currentUserName}
-              onEdit={onEditReply ? (content) => onEditReply(r.id, content) : undefined}
-              onDelete={onDeleteReply ? () => onDeleteReply(r.id) : undefined}
+              onEdit={onEditReply && ownsComment(r) ? (content) => onEditReply(r.id, content) : undefined}
+              onDelete={onDeleteReply && ownsComment(r) ? () => onDeleteReply(r.id) : undefined}
               memberLookup={memberLookup}
             />
           ))}
@@ -326,7 +349,7 @@ export default function CommentThread({
               Deleting…
             </span>
           )}
-          {(onEdit || onDelete) && (
+          {canModify && (onEdit || onDelete) && (
             <ThreadMenu
               align="start"
               className="ml-auto"

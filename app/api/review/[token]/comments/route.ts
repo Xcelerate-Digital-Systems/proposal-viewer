@@ -210,3 +210,159 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+/**
+ * Verify the share token authorizes access to the item, then verify the
+ * caller's identity (email when the comment has one, name otherwise) matches
+ * the comment's author. Returns the comment row when authorized, or a
+ * NextResponse with the error otherwise.
+ *
+ * Guest identity is honor-system (anyone with the share token who knows the
+ * email/name can pose as the author). That matches the existing trust model
+ * for the public reviewer.
+ */
+async function loadOwnedComment(
+  supabase: ReturnType<typeof createServiceClient>,
+  token: string,
+  commentId: string,
+  identity: { author_email?: string | null; author_name?: string | null }
+) {
+  const { data: comment, error: cErr } = await supabase
+    .from('review_comments')
+    .select('id, review_item_id, author_name, author_email, author_type, parent_comment_id')
+    .eq('id', commentId)
+    .single();
+  if (cErr || !comment) {
+    return { error: NextResponse.json({ error: 'Comment not found' }, { status: 404 }) };
+  }
+
+  const { data: item } = await supabase
+    .from('review_items')
+    .select('id, review_project_id, share_token')
+    .eq('id', comment.review_item_id)
+    .single();
+  if (!item) {
+    return { error: NextResponse.json({ error: 'Item not found' }, { status: 404 }) };
+  }
+
+  let authorized = item.share_token === token;
+  if (!authorized) {
+    const { data: project } = await supabase
+      .from('review_projects')
+      .select('id')
+      .eq('id', item.review_project_id)
+      .eq('share_token', token)
+      .single();
+    authorized = !!project;
+  }
+  if (!authorized) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 403 }) };
+  }
+
+  // Guests can only modify comments they authored. Team-authored comments
+  // are admin-only (admin path uses /api/review-comments/[id]).
+  if (comment.author_type !== 'client') {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+
+  const callerEmail = identity.author_email?.trim().toLowerCase() || null;
+  const callerName = identity.author_name?.trim() || null;
+  const commentEmail = comment.author_email?.trim().toLowerCase() || null;
+  const commentName = comment.author_name?.trim() || null;
+
+  const matches = commentEmail
+    ? !!callerEmail && callerEmail === commentEmail
+    : !!callerName && callerName === commentName;
+
+  if (!matches) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+
+  return { comment };
+}
+
+/**
+ * PATCH /api/review/[token]/comments
+ *
+ * Body: { comment_id, content, author_email?, author_name? }
+ * Guests can edit their own comments only.
+ */
+export async function PATCH(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
+  try {
+    const supabase = createServiceClient();
+    const body = await req.json();
+    const { comment_id, content, author_email, author_name } = body ?? {};
+
+    if (!comment_id || typeof content !== 'string' || !content.trim()) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const owned = await loadOwnedComment(supabase, params.token, comment_id, { author_email, author_name });
+    if ('error' in owned) return owned.error;
+
+    const { data: updated, error: updateErr } = await supabase
+      .from('review_comments')
+      .update({ content: content.trim() })
+      .eq('id', comment_id)
+      .select()
+      .single();
+
+    if (updateErr) {
+      console.error('Edit error:', updateErr);
+      return NextResponse.json({ error: 'Failed to edit comment' }, { status: 500 });
+    }
+
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error('Comment PATCH error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/review/[token]/comments?comment_id=...&author_email=...&author_name=...
+ *
+ * Guests can delete their own comments only. Cascades to replies when the
+ * target is a top-level comment.
+ */
+export async function DELETE(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
+  try {
+    const supabase = createServiceClient();
+    const url = req.nextUrl;
+    const comment_id = url.searchParams.get('comment_id');
+    const author_email = url.searchParams.get('author_email');
+    const author_name = url.searchParams.get('author_name');
+
+    if (!comment_id) {
+      return NextResponse.json({ error: 'Missing comment_id' }, { status: 400 });
+    }
+
+    const owned = await loadOwnedComment(supabase, params.token, comment_id, { author_email, author_name });
+    if ('error' in owned) return owned.error;
+
+    // Top-level → cascade replies first.
+    if (!owned.comment.parent_comment_id) {
+      await supabase
+        .from('review_comments')
+        .delete()
+        .eq('parent_comment_id', comment_id);
+    }
+
+    const { error: deleteErr } = await supabase
+      .from('review_comments')
+      .delete()
+      .eq('id', comment_id);
+
+    if (deleteErr) {
+      console.error('Delete error:', deleteErr);
+      return NextResponse.json({ error: 'Failed to delete comment' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, deleted: comment_id });
+  } catch (err) {
+    console.error('Comment DELETE error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

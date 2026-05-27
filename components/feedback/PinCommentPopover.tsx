@@ -31,8 +31,14 @@ interface PinCommentPopoverProps {
   onResolve?: (commentId: string) => Promise<void>;
   /** Unresolve callback */
   onUnresolve?: (commentId: string) => Promise<void>;
-  /** Delete callback (admin only — deletes the pin and all replies) */
+  /** Delete callback — deletes the pin and all replies. Gated by authorship below. */
   onDelete?: (commentId: string) => Promise<void>;
+  /** When true, the delete button is always shown. */
+  isAdmin?: boolean;
+  /** Email of the current viewer — used to detect guest-authored pins. */
+  currentUserEmail?: string;
+  /** Display name of the current viewer — fallback identity when no email is present. */
+  currentUserName?: string;
   /** Team author name (if admin) */
   authorName?: string;
   /** Guest name (if client) */
@@ -55,6 +61,9 @@ export default function PinCommentPopover({
   onResolve,
   onUnresolve,
   onDelete,
+  isAdmin = false,
+  currentUserEmail,
+  currentUserName: currentUserNameProp,
   authorName,
   guestName,
   onNameChange,
@@ -71,6 +80,17 @@ export default function PinCommentPopover({
     : !replyText.trim() || submitting;
 
   const currentUserName = (authorName ?? guestName ?? '').trim() || null;
+  const identityName = (currentUserNameProp ?? currentUserName ?? '').trim() || null;
+  const identityEmail = (currentUserEmail ?? '').trim().toLowerCase() || null;
+  const commentEmail = (comment.author_email ?? '').trim().toLowerCase() || null;
+  const commentName = (comment.author_name ?? '').trim() || null;
+  const canDelete =
+    !!onDelete &&
+    (isAdmin ||
+      (comment.author_type === 'client' &&
+        (commentEmail
+          ? !!identityEmail && identityEmail === commentEmail
+          : !!identityName && identityName === commentName)));
   const {
     reactions: mainReactions,
     toggle: toggleMainReaction,
@@ -217,10 +237,10 @@ export default function PinCommentPopover({
                 Reopen
               </button>
             )}
-            {onDelete && (
+            {canDelete && (
               <button
                 onClick={async () => {
-                  await onDelete(comment.id);
+                  await onDelete!(comment.id);
                   onClose();
                 }}
                 className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-red-600 transition-colors ml-auto">
