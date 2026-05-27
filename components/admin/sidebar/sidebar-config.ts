@@ -3,7 +3,7 @@
 
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
-  Palette, Settings as SettingsIcon, Bookmark, Plug, BarChart3, ReceiptText,
+  Palette, Settings as SettingsIcon, Bookmark, Plug, ReceiptText,
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
@@ -71,20 +71,16 @@ export const ALL_SECTIONS: SectionDef[] = [
       { href: '/ads/swipe', label: 'Swipe Vault', icon: Bookmark },
     ],
   },
-  {
-    key: 'integrations',
-    label: 'Integration Hub',
-    icon: Plug,
-    defaultHref: '/integrations/looker-studio',
-    matchPaths: ['/integrations'],
-    items: [
-      { href: '/integrations/looker-studio', label: 'Looker Studio', icon: BarChart3 },
-    ],
-  },
+];
+
+/** Workspace-level top-nav entries that aren't sections (no sub-nav, no
+ *  children). Rendered alongside the section entries in renderTopLevelNav. */
+export const WORKSPACE_ITEMS: NavItem[] = [
+  { href: '/integrations/looker-studio', label: 'Integrations', icon: Plug },
 ];
 
 export const STANDALONE_ITEMS: NavItem[] = [
-  { href: '/company', label: 'Brand Kit', icon: Palette },
+  { href: '/company',  label: 'Brand Kit', icon: Palette },
   { href: '/settings', label: 'Settings',  icon: SettingsIcon },
 ];
 

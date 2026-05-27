@@ -12,7 +12,7 @@ import WorkspaceSwitcher from './sidebar/WorkspaceSwitcher';
 import SwipeTypesSidebarNav from './sidebar/SwipeTypesSidebarNav';
 import FeedbackItemsSidebarNav from './sidebar/FeedbackItemsSidebarNav';
 import {
-  ALL_SECTIONS, STANDALONE_ITEMS, getActiveSection, LayoutDashboard,
+  ALL_SECTIONS, STANDALONE_ITEMS, WORKSPACE_ITEMS, getActiveSection, LayoutDashboard,
   type NavItem, type SectionDef,
 } from './sidebar/sidebar-config';
 import type { TeamMember } from '@/lib/supabase';
@@ -146,6 +146,7 @@ export default function AdminSidebar({
       <div className="space-y-0.5">
         {renderNavLink({ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard })}
         {visibleSections.map(renderSectionEntry)}
+        {WORKSPACE_ITEMS.map((item) => renderNavLink(item))}
       </div>
 
       {/* Spacer */}
@@ -196,7 +197,7 @@ export default function AdminSidebar({
   /* ── Sidebar content ───────────────────────────────────────── */
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" data-tour="sidebar">
       {companyOverride && (
         <div className="px-3 py-2.5 bg-[#8AD9D1]/15 border-b border-[#01434A]">
           <div className="flex items-center gap-2 mb-1.5">

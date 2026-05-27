@@ -1,18 +1,19 @@
 // app/integrations/looker-studio/page.tsx
 //
-// Hub for data-source connectors that feed the AgencyViz Looker Studio
-// connector. Each card is a single integration; no per-account detail is
-// shown here (keep the page scannable).
+// Integration hub. Each integration is rendered as a self-contained two-step
+// card (Step 1: connect the source platform, Step 2: wire it into Looker
+// Studio via the Apps Script deployment ID). The page is intentionally just a
+// vertical stack of these cards — no cross-card chrome — so adding a new
+// integration is one more card below.
 
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AlertTriangle, CheckCircle2, ExternalLink, BarChart3, Workflow } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Workflow } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import PageHeader from '@/components/ui/PageHeader';
 import MetaConnectorCard from '@/components/admin/connectors/MetaConnectorCard';
-import MetaConnectionsManager from '@/components/admin/connectors/MetaConnectionsManager';
-import ConnectorCard from '@/components/admin/connectors/ConnectorCard';
 
 function Banners() {
   const search = useSearchParams();
@@ -56,66 +57,68 @@ function Banners() {
   );
 }
 
+function ComingSoonCard({
+  icon,
+  iconBg,
+  name,
+  description,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  name: string;
+  description: string;
+}) {
+  return (
+    <div className="bg-white border border-line rounded-2xl p-5 opacity-75">
+      <div className="flex items-start gap-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-[15px] font-semibold text-ink">{name}</h3>
+            <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 text-faint">
+              Coming soon
+            </span>
+          </div>
+          <p className="text-xs text-faint mt-1 leading-relaxed">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LookerStudioConnectorsPage() {
-  // Bumping this re-keys both MetaConnectorCard and MetaConnectionsManager so
-  // they re-fetch after any mutation (toggle, disconnect) in the manager.
+  // Bumping this re-keys MetaConnectorCard so it re-fetches after OAuth or
+  // disconnect actions complete elsewhere on the page.
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
 
   return (
     <AdminLayout>
       {() => (
-        <div className="px-6 lg:px-10 py-8 max-w-5xl">
-          <div className="flex items-start gap-4 mb-8">
-            <div className="w-11 h-11 bg-teal-tint rounded-[14px] flex items-center justify-center shrink-0">
-              <BarChart3 size={22} className="text-teal" />
+        <div className="flex flex-col h-full">
+          <PageHeader
+            title="Integrations"
+            description="Connect your ad and CRM platforms once, then pull live data into any Looker Studio report using the AgencyViz connector."
+          />
+
+          <div className="px-6 lg:px-10 py-8 max-w-3xl">
+            <Suspense fallback={null}>
+              <Banners />
+            </Suspense>
+
+            <div className="space-y-5">
+              <MetaConnectorCard refreshKey={refreshKey} onChange={refresh} />
+
+              <ComingSoonCard
+                icon={<Workflow size={22} className="text-white" />}
+                iconBg="bg-[#0F766E]"
+                name="GoHighLevel → Looker Studio"
+                description="Pull leads, opportunities, pipeline stages, and contact activity from GHL sub-accounts into Looker Studio."
+              />
             </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-semibold text-ink">Looker Studio</h1>
-              <p className="text-sm text-faint mt-1">
-                Connect your ad and CRM platforms once, then pull live data into any Looker Studio
-                report using the AgencyViz connector.
-              </p>
-            </div>
-            <a
-              href="https://lookerstudio.google.com"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-faint hover:text-ink border border-line rounded-lg hover:bg-surface transition-colors"
-            >
-              Open Looker Studio
-              <ExternalLink size={12} />
-            </a>
           </div>
-
-          <Suspense fallback={null}>
-            <Banners />
-          </Suspense>
-
-          <div className="mb-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-              Data sources
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <MetaConnectorCard refreshKey={refreshKey} />
-
-            <ConnectorCard
-              icon={<Workflow size={22} className="text-white" />}
-              iconBg="bg-[#0F766E]"
-              name="GoHighLevel"
-              description="Pull leads, opportunities, pipeline stages, and contact activity from GHL sub-accounts into Looker Studio."
-              status="coming_soon"
-              primaryAction={{
-                label: 'Coming soon',
-                onClick: () => {},
-                disabled: true,
-              }}
-            />
-          </div>
-
-          <MetaConnectionsManager refreshKey={refreshKey} onChange={refresh} />
         </div>
       )}
     </AdminLayout>
