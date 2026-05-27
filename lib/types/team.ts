@@ -13,6 +13,9 @@ export type TeamMember = {
   notify_proposal_accepted: boolean;
   notify_comment_added: boolean;
   notify_comment_resolved: boolean;
+  /** Map of tour id → ISO completion timestamp. Drives Joyride auto-launch
+   *  in components/tours/. Empty by default; written via PATCH /api/team-members/me. */
+  tours_completed: Record<string, string>;
   created_at: string;
   updated_at: string;
 };

@@ -16,6 +16,9 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
           <nav className="flex items-center gap-5 text-sm">
+            <Link href="/pricing" className="text-muted hover:text-teal transition-colors">
+              Pricing
+            </Link>
             <Link href="/privacy-policy" className="text-muted hover:text-teal transition-colors">
               Privacy
             </Link>
@@ -42,13 +45,21 @@ export default function HomePage() {
           Proposals, feedback, ad tracking, and reporting integrations &mdash; in one place for agencies
           and their clients.
         </p>
-        <a
-          href="https://app.agencyviz.io/login"
-          className={buttonClasses({ variant: 'primary', size: 'lg' })}
-        >
-          Open AgencyViz
-          <ArrowRight size={16} />
-        </a>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <Link
+            href="/pricing"
+            className={buttonClasses({ variant: 'primary', size: 'lg' })}
+          >
+            See pricing
+            <ArrowRight size={16} />
+          </Link>
+          <a
+            href="https://app.agencyviz.io/login"
+            className={buttonClasses({ variant: 'secondary', size: 'lg' })}
+          >
+            Sign in
+          </a>
+        </div>
       </main>
 
       <footer className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-faint border-t border-gray-100 mt-8">

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
+import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,11 @@ export async function POST(req: NextRequest) {
         { error: 'Missing required fields: title, file_path' },
         { status: 400 },
       );
+    }
+
+    const limitCheck = await checkResourceLimit(auth.companyId, 'documents');
+    if (!limitCheck.allowed) {
+      return NextResponse.json(buildLimitErrorBody(limitCheck, 'documents'), { status: 402 });
     }
 
     const safeRest = stripProtected(rest);

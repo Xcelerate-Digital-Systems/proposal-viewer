@@ -128,27 +128,52 @@ export default function KanbanBoard({
     if (!companyId) return;
     let cancelled = false;
     (async () => {
+      type MemberRow = { id: string; name: string | null; email: string; avatar_path: string | null; user_id: string | null };
       const { data } = await supabase
         .from('team_members')
-        .select('id, name, email, avatar_path')
+        .select('id, name, email, avatar_path, user_id')
         .eq('company_id', companyId)
         .order('name');
       if (cancelled || !data) return;
-      // Sign avatar_paths so the picker can render real images. Members
-      // without an avatar fall back to coloured initials via <Avatar>.
+      const rows = data as MemberRow[];
+
+      // Avatars are stored per (user, company) — i.e. per membership — so a
+      // user who has uploaded a picture in workspace A but not in workspace
+      // B will look unphotographed when viewed from B. Backfill from any
+      // OTHER membership of the same user_id that does have an avatar set;
+      // RLS quietly drops rows the viewer can't see (so this really only
+      // helps the current user's own avatar, which is the user-visible case
+      // that triggered this fix). Long-term fix: lift avatar_path out of
+      // team_members onto a per-user table.
+      const missingUserIds = rows
+        .filter((r) => !r.avatar_path && r.user_id)
+        .map((r) => r.user_id as string);
+      const fallbackByUserId = new Map<string, string>();
+      if (missingUserIds.length > 0) {
+        const { data: extras } = await supabase
+          .from('team_members')
+          .select('user_id, avatar_path')
+          .in('user_id', missingUserIds)
+          .not('avatar_path', 'is', null);
+        for (const ex of (extras ?? []) as { user_id: string | null; avatar_path: string | null }[]) {
+          if (ex.user_id && ex.avatar_path && !fallbackByUserId.has(ex.user_id)) {
+            fallbackByUserId.set(ex.user_id, ex.avatar_path);
+          }
+        }
+      }
+
       const hydrated: CompanyMember[] = await Promise.all(
-        (data as { id: string; name: string | null; email: string; avatar_path: string | null }[]).map(
-          async (r) => {
-            let avatar_url: string | null = null;
-            if (r.avatar_path) {
-              const { data: signed } = await supabase.storage
-                .from('proposals')
-                .createSignedUrl(r.avatar_path, 3600);
-              avatar_url = signed?.signedUrl ?? null;
-            }
-            return { id: r.id, name: r.name, email: r.email, avatar_url };
-          },
-        ),
+        rows.map(async (r) => {
+          const path = r.avatar_path ?? (r.user_id ? fallbackByUserId.get(r.user_id) ?? null : null);
+          let avatar_url: string | null = null;
+          if (path) {
+            const { data: signed } = await supabase.storage
+              .from('proposals')
+              .createSignedUrl(path, 3600);
+            avatar_url = signed?.signedUrl ?? null;
+          }
+          return { id: r.id, name: r.name, email: r.email, avatar_url };
+        }),
       );
       if (!cancelled) setCompanyMembers(hydrated);
     })();

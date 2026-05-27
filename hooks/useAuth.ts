@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, TeamMember } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
+import { resetAnalyticsUser } from '@/components/analytics/PostHogProvider';
 
 const COMPANY_OVERRIDE_KEY = 'company_override';
 const ACTIVE_MEMBERSHIP_KEY = 'active_membership_id';
@@ -116,7 +117,24 @@ export function useAuth() {
       }
     }
 
-    const all = rows ?? [];
+    // Filter out memberships pointing at a soft-deleted company. Without
+    // this a user with a deleted workspace as their active membership
+    // would land on AuthGuard's "Workspace deleted" screen on every
+    // sign-in and never reach their other workspaces.
+    let all = rows ?? [];
+    if (all.length > 0) {
+      const companyIds = Array.from(new Set(all.map((r) => r.company_id)));
+      const { data: companyRows } = await supabase
+        .from('companies')
+        .select('id, deleted_at')
+        .in('id', companyIds);
+      const deleted = new Set(
+        (companyRows ?? [])
+          .filter((c) => c.deleted_at !== null)
+          .map((c) => c.id),
+      );
+      all = all.filter((r) => !deleted.has(r.company_id));
+    }
     setMemberships(all);
 
     const active = pickActiveMembership(all);
@@ -245,6 +263,23 @@ export function useAuth() {
     return { error: null };
   };
 
+  /**
+   * Start a Supabase OAuth flow. Supabase redirects the browser to the
+   * provider, the provider redirects back to /auth/callback?code=... where
+   * the client SDK picks up the PKCE handshake. The callback page is then
+   * responsible for calling /api/auth/register if the user has no
+   * team_members row yet (self-serve signup).
+   */
+  const signInWithOAuth = async (provider: 'google') => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    return { error };
+  };
+
   const resetPasswordForEmail = async (email: string) => {
     try {
       const res = await fetch('/api/auth/forgot-password', {
@@ -279,6 +314,7 @@ export function useAuth() {
     setActiveMembershipId(null);
     await supabase.auth.signOut();
     setSession(null);
+    resetAnalyticsUser();
   };
 
   // Derive the active membership object from the id (so React batches
@@ -384,10 +420,12 @@ export function useAuth() {
     loading,
     signInWithPassword,
     signInWithMagicLink,
+    signInWithOAuth,
     signUp,
     signOut,
     updatePreferences,
     resetPasswordForEmail,
     updatePassword,
+    refreshMemberships: fetchMemberships,
   };
 }

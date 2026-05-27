@@ -13,11 +13,7 @@ import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
 import MembersTab from '@/components/admin/settings/MembersTab';
-// import BillingTab from '@/components/admin/settings/BillingTab';
-// Disabled until BillingTab + its dependencies (lib/billing/, app/api/billing/,
-// hooks/useEntitlements.ts, etc.) land on origin. The file exists locally as
-// WIP but isn't committed yet, so Vercel's Turbopack build can't resolve it.
-// Re-enable in the commit that lands the billing surface.
+import BillingTab from '@/components/admin/settings/BillingTab';
 import RolesTab from '@/components/admin/settings/RolesTab';
 import { type TeamMember } from '@/lib/supabase';
 import { NOTIFICATION_OPTIONS } from '@/components/admin/settings/settings-config';
@@ -125,9 +121,7 @@ function SettingsContent({ auth }: {
           <ul className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible">
             {TABS.map(tab => {
               if (tab.key === 'developer' && !canSeeDeveloper) return null;
-              // Billing tab hidden entirely while BillingTab component is
-              // disabled (see commented import). Restore once BillingTab lands.
-              if (tab.key === 'billing') return null;
+              if (tab.key === 'billing' && !canSeeBilling) return null;
               const Icon = tab.icon;
               const active = activeTab === tab.key;
               return (
@@ -210,9 +204,7 @@ function SettingsContent({ auth }: {
             </section>
           )}
 
-          {/* Billing tab disabled until BillingTab lands on origin — see the
-              commented-out import at the top of this file. */}
-          {/* {activeTab === 'billing' && canSeeBilling && companyId && (
+          {activeTab === 'billing' && canSeeBilling && companyId && (
             <section>
               <SectionHeader
                 title="Billing"
@@ -223,7 +215,7 @@ function SettingsContent({ auth }: {
                 role={teamMember?.role ?? 'member'}
               />
             </section>
-          )} */}
+          )}
 
           {activeTab === 'developer' && canSeeDeveloper && companyId && (
             <section className="space-y-10">

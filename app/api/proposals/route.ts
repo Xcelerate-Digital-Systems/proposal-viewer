@@ -5,6 +5,7 @@ import { getAuthContext } from '@/lib/api-auth';
 import { splitProposalPages } from '@/lib/split-proposal-pages';
 import { addPage } from '@/lib/page-operations';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
+import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,15 @@ export async function POST(req: NextRequest) {
     }
 
     const companyId = auth.companyId;
+
+    // ── Plan / subscription enforcement ────────────────────────────────────
+    // Counts both proposals and quotes (same table). Founders plan limits are
+    // currently NULL = unlimited, so this is a no-op until a capped plan
+    // ships. Still runs to enforce subscription-status block (canceled etc).
+    const limitCheck = await checkResourceLimit(companyId, 'proposals');
+    if (!limitCheck.allowed) {
+      return NextResponse.json(buildLimitErrorBody(limitCheck, 'proposals'), { status: 402 });
+    }
 
     // ── Look up company branding defaults ──────────────────────────────────
     const brandingDefaults = await getCompanyEntityDefaults(supabase, companyId, {

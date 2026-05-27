@@ -1,9 +1,11 @@
 // app/layout.tsx
 import './globals.css';
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { Outfit, Caveat } from 'next/font/google';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
+import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -31,11 +33,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${outfit.variable} ${caveat.variable}`}>
       <body className="bg-ivory text-slate-900 min-h-screen overflow-hidden">
-        <ToastProvider>
-          <ConfirmProvider>
-            {children}
-          </ConfirmProvider>
-        </ToastProvider>
+        <Suspense fallback={null}>
+          <PostHogProvider>
+            <ToastProvider>
+              <ConfirmProvider>
+                {children}
+              </ConfirmProvider>
+            </ToastProvider>
+          </PostHogProvider>
+        </Suspense>
       </body>
     </html>
   );

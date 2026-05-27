@@ -45,6 +45,25 @@ export async function sendPasswordResetEmail(params: ResetEmailParams) {
   return resend.emails.send({ from: FROM_EMAIL, to, subject, html });
 }
 
+interface WelcomeEmailParams {
+  to: string;
+  firstName: string;
+  companyName: string;
+  appUrl: string;
+}
+
+export async function sendWelcomeEmail(params: WelcomeEmailParams) {
+  const { to, firstName, companyName, appUrl } = params;
+  const subject = `Welcome to AgencyViz, ${firstName}`;
+  const html = welcomeEmailTemplate({
+    firstName: escapeHtml(firstName),
+    companyName: escapeHtml(companyName),
+    appUrl,
+  });
+  const resend = getResend();
+  return resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+}
+
 function resetEmailTemplate(opts: { resetUrl: string }) {
   const { resetUrl } = opts;
   return `
@@ -84,6 +103,58 @@ function resetEmailTemplate(opts: { resetUrl: string }) {
           <tr>
             <td style="padding:16px 32px;border-top:1px solid #f3f4f6;">
               <p style="margin:0;color:#9ca3af;font-size:12px;">If you didn't request a password reset, you can safely ignore this email — your password won't change.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function welcomeEmailTemplate(opts: {
+  firstName: string;
+  companyName: string;
+  appUrl: string;
+}) {
+  const { firstName, companyName, appUrl } = opts;
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background:#043946;padding:20px 32px;">
+              <span style="color:#ffffff;font-weight:700;font-size:16px;">AgencyViz</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">Welcome aboard, ${firstName}</h1>
+              <div style="color:#6b7280;font-size:15px;line-height:1.6;">
+                <p style="margin:0 0 12px;">Your workspace <strong>${companyName}</strong> is live. Three things most agencies do in the first hour:</p>
+                <ol style="margin:0 0 16px;padding-left:18px;">
+                  <li style="margin-bottom:8px;">Drop your branding into <strong>Settings → Branding</strong> so every proposal, document, and review goes out in your colours.</li>
+                  <li style="margin-bottom:8px;">Invite your team from <strong>Settings → Members</strong>.</li>
+                  <li>Spin up your first proposal or feedback project from the dashboard.</li>
+                </ol>
+                <p style="margin:0;">Hit reply if you get stuck — a real human reads it.</p>
+              </div>
+              <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                <tr>
+                  <td>
+                    <a href="${appUrl}" style="display:inline-block;padding:12px 24px;background:#017C87;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">Open AgencyViz</a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
         </table>

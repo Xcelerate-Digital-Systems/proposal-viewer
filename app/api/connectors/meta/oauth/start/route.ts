@@ -13,6 +13,7 @@ import { randomBytes, createHash } from 'crypto';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { buildAuthorizeUrl } from '@/lib/connectors/meta/api-client';
+import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,14 @@ const REQUIRED_SCOPES = ['ads_read', 'business_management'];
 export async function POST(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Gate before the redirect — otherwise the user does the whole Facebook
+  // OAuth dance only to be denied on callback. Done first so a denied
+  // request never even mints a CSRF state row.
+  const limitCheck = await checkResourceLimit(auth.companyId, 'meta_connections');
+  if (!limitCheck.allowed) {
+    return NextResponse.json(buildLimitErrorBody(limitCheck, 'meta_connections'), { status: 402 });
+  }
 
   const appId = process.env.META_APP_ID;
   // Strip trailing slash — Meta's OAuth exchange compares redirect_uri strings

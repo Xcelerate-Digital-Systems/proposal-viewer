@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 
 type Method = 'password' | 'magic';
+type Mode = 'signin' | 'signup';
 
 type InviteInfo = {
   email: string;
@@ -17,21 +18,42 @@ type InviteInfo = {
   expires_at: string;
 };
 
+const PUBLIC_SIGNUP_ON = process.env.NEXT_PUBLIC_PUBLIC_SIGNUP_ENABLED === 'true';
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite');
   const nextUrl = searchParams.get('next');
   const postLoginTarget = nextUrl && nextUrl.startsWith('/') ? nextUrl : '/';
-  const { signInWithPassword, signInWithMagicLink, signUp, session, loading: authLoading } = useAuth();
+  const {
+    signInWithPassword,
+    signInWithMagicLink,
+    signInWithOAuth,
+    signUp,
+    session,
+    loading: authLoading,
+  } = useAuth();
 
-  // Open signup is disabled — users only get accounts via invite link.
-  const showSignup = !!inviteToken;
+  // The signup form appears when (a) an invite is being claimed, or
+  // (b) public signup is enabled and the user is creating an account.
+  // While the gate is closed there's no path to mode === 'signup' without
+  // an invite, matching today's invite-only behaviour exactly.
+  const signupRequested = searchParams.get('signup') === '1';
+  const initialMode: Mode = inviteToken
+    ? 'signup'
+    : signupRequested && PUBLIC_SIGNUP_ON
+      ? 'signup'
+      : 'signin';
+  const [mode, setMode] = useState<Mode>(initialMode);
+
   const [method, setMethod] = useState<Method>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState('');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
@@ -39,6 +61,16 @@ function LoginContent() {
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
   const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
   const [inviteError, setInviteError] = useState('');
+
+  // Surface an error coming back from /auth/callback (e.g. signup_disabled).
+  useEffect(() => {
+    const e = searchParams.get('error');
+    if (e === 'signup_disabled') {
+      setError('Public sign-up isn’t open yet. Ask your team owner for an invite.');
+    } else if (e) {
+      setError(e);
+    }
+  }, [searchParams]);
 
   // Validate invite token on mount
   useEffect(() => {
@@ -104,12 +136,30 @@ function LoginContent() {
     setError('');
     if (!name.trim()) { setError('Name is required'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!inviteToken && !companyName.trim()) {
+      setError('Agency name is required');
+      return;
+    }
 
     setLoading(true);
-    const { error } = await signUp(email, password, name, inviteToken ? { inviteToken } : undefined);
-    if (error) setError((error as any).message || 'Signup failed');
-    else router.replace(postLoginTarget);
+    const { error } = await signUp(email, password, name, {
+      inviteToken: inviteToken || undefined,
+      companyName: inviteToken ? undefined : companyName.trim(),
+    });
+    if (error) setError((error as { message?: string }).message || 'Signup failed');
+    else router.replace(inviteToken ? postLoginTarget : '/onboarding');
     setLoading(false);
+  };
+
+  const handleGoogle = async () => {
+    setError('');
+    setOauthLoading(true);
+    const { error } = await signInWithOAuth('google');
+    if (error) {
+      setError(error.message);
+      setOauthLoading(false);
+    }
+    // On success the browser is redirected to Google, so no further state to set.
   };
 
   // Loading state for invite validation
@@ -170,18 +220,29 @@ function LoginContent() {
     );
   }
 
+  const showSignup = mode === 'signup';
+  const canSelfServeSignup = PUBLIC_SIGNUP_ON && !inviteToken;
+  const headerTitle = inviteInfo
+    ? 'Join your team'
+    : showSignup
+      ? 'Create your agency'
+      : 'Sign in to your account';
+  const headerSubtitle = inviteInfo
+    ? 'Complete your account setup'
+    : showSignup
+      ? 'Start your 7-day trial'
+      : PUBLIC_SIGNUP_ON
+        ? 'Welcome back'
+        : 'Team members only';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-teal px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8">
         {/* Logo */}
         <div className="text-center mb-6">
           <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-8 mx-auto mb-6" />
-          <h1 className="text-xl font-semibold text-ink">
-            {inviteInfo ? 'Join your team' : 'Sign in to your account'}
-          </h1>
-          <p className="text-sm text-faint mt-1">
-            {inviteInfo ? 'Complete your account setup' : 'Team members only'}
-          </p>
+          <h1 className="text-xl font-semibold text-ink">{headerTitle}</h1>
+          <p className="text-sm text-faint mt-1">{headerSubtitle}</p>
         </div>
 
         {/* Invite Banner */}
@@ -202,6 +263,27 @@ function LoginContent() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Google OAuth — self-serve only. Invite signups stay on email/password
+            because the OAuth callback can't reliably attach the right invite. */}
+        {canSelfServeSignup && (
+          <>
+            <Button
+              variant="secondary"
+              fullWidth
+              loading={oauthLoading}
+              onClick={handleGoogle}
+            >
+              <GoogleGlyph />
+              Continue with Google
+            </Button>
+            <div className="flex items-center gap-3 my-4">
+              <div className="h-px flex-1 bg-edge" />
+              <span className="text-xs text-faint">or</span>
+              <div className="h-px flex-1 bg-edge" />
+            </div>
+          </>
         )}
 
         {!showSignup ? (
@@ -280,6 +362,18 @@ function LoginContent() {
                 {method === 'magic' ? 'Send Magic Link' : 'Sign In'}
               </Button>
             </form>
+
+            {canSelfServeSignup && (
+              <p className="text-xs text-faint text-center mt-4">
+                New to AgencyViz?{' '}
+                <Button
+                  variant="link"
+                  onClick={() => { setMode('signup'); setError(''); }}
+                >
+                  Create an account
+                </Button>
+              </p>
+            )}
           </>
         ) : (
           <form onSubmit={handleSignUp} className="space-y-3">
@@ -294,6 +388,19 @@ function LoginContent() {
                 className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
               />
             </div>
+            {!inviteToken && (
+              <div className="relative">
+                <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+                <input
+                  type="text"
+                  placeholder="Agency name"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                />
+              </div>
+            )}
             <div className="relative">
               <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
               <input
@@ -331,12 +438,25 @@ function LoginContent() {
               loading={loading}
               rightIcon={ArrowRight}
             >
-              {inviteInfo ? `Join ${inviteInfo.company_name}` : 'Create Account'}
+              {inviteInfo
+                ? `Join ${inviteInfo.company_name}`
+                : 'Start 7-day free trial'}
             </Button>
+
+            {!inviteToken && (
+              <p className="text-xs text-faint text-center mt-4">
+                Already have an account?{' '}
+                <Button
+                  variant="link"
+                  onClick={() => { setMode('signin'); setError(''); }}
+                >
+                  Sign in instead
+                </Button>
+              </p>
+            )}
           </form>
         )}
 
-        {/* Link between sign in and invited signup */}
         {inviteInfo && (
           <p className="text-xs text-faint text-center mt-4">
             Already have an account?{' '}
@@ -351,6 +471,29 @@ function LoginContent() {
       </div>
       <LegalFooter />
     </div>
+  );
+}
+
+function GoogleGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.997 8.997 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"
+      />
+    </svg>
   );
 }
 

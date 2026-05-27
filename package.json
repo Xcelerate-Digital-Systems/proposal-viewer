@@ -16,6 +16,7 @@
     "@tiptap/extension-color": "^3.21.0",
     "@tiptap/extension-highlight": "^3.21.0",
     "@tiptap/extension-link": "^3.21.0",
+    "@tiptap/extension-mention": "^3.23.6",
     "@tiptap/extension-placeholder": "^3.21.0",
     "@tiptap/extension-text-align": "^3.21.0",
     "@tiptap/extension-text-style": "^3.21.0",
@@ -30,11 +31,15 @@
     "next": "16.2.6",
     "openai": "^6.34.0",
     "pdf-lib": "^1.17.1",
+    "posthog-js": "^1.376.2",
     "react": "19.2.6",
     "react-dom": "19.2.6",
+    "react-joyride": "^3.1.0",
     "react-pdf": "^9.1.0",
     "resend": "^4.8.0",
-    "roughjs": "^4.6.6"
+    "roughjs": "^4.6.6",
+    "stripe": "^22.1.1",
+    "tippy.js": "^6.3.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

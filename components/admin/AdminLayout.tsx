@@ -9,6 +9,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { SwipeFileProvider } from '@/components/admin/ads/swipe/SwipeFileContext';
 import { FeedbackBoardProvider } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import { FunnelBoardProvider } from '@/components/admin/funnels/board/FunnelBoardContext';
+import { TourProvider } from '@/components/tours/TourProvider';
+import { BillingGuard } from '@/components/auth/BillingGuard';
+import { AnalyticsIdentifier } from '@/components/analytics/AnalyticsIdentifier';
+import { CrispWidget } from '@/components/support/CrispWidget';
 import { supabase } from '@/lib/supabase';
 import { setBrandingColors } from '@/components/ui/ColorPickerField';
 
@@ -54,7 +58,23 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
     <AuthGuard>
       {(auth) => {
         const content = (
-          <div className="flex h-dvh bg-ivory overflow-hidden">
+          <div className="flex h-dvh bg-ivory overflow-hidden" data-tour="admin-layout">
+            {auth.session?.user && auth.teamMember && auth.companyId && (
+              <>
+                <AnalyticsIdentifier
+                  userId={auth.session.user.id}
+                  email={auth.session.user.email}
+                  name={auth.teamMember.name}
+                  companyId={auth.companyId}
+                  role={auth.teamMember.role}
+                  accountType={auth.accountType}
+                />
+                <CrispWidget
+                  userEmail={auth.session.user.email}
+                  userName={auth.teamMember.name}
+                />
+              </>
+            )}
             {auth.companyId && <BrandPaletteLoader companyId={auth.companyId} />}
             {!collapseSidebar && (
               <AdminSidebar
@@ -80,36 +100,49 @@ export default function AdminLayout({ children, collapseSidebar }: AdminLayoutPr
           </div>
         );
 
-        // Only wrap in SwipeFileProvider when we're in the swipe section + have a companyId
-        if (inSwipeSection && auth.companyId) {
-          return <SwipeFileProvider companyId={auth.companyId}>{content}</SwipeFileProvider>;
-        }
+        // Wrap once with TourProvider so every layout branch picks it up.
+        let wrapped: React.ReactNode = content;
 
-        if (feedbackBoardProjectId && auth.companyId) {
-          return (
+        if (inSwipeSection && auth.companyId) {
+          wrapped = <SwipeFileProvider companyId={auth.companyId}>{wrapped}</SwipeFileProvider>;
+        } else if (feedbackBoardProjectId && auth.companyId) {
+          wrapped = (
             <FeedbackBoardProvider
               projectId={feedbackBoardProjectId}
               companyId={auth.companyId}
               userId={auth.session?.user?.id ?? null}
             >
-              {content}
+              {wrapped}
             </FeedbackBoardProvider>
           );
-        }
-
-        if (funnelBoardId && auth.companyId) {
-          return (
+        } else if (funnelBoardId && auth.companyId) {
+          wrapped = (
             <FunnelBoardProvider
               funnelId={funnelBoardId}
               companyId={auth.companyId}
               userId={auth.session?.user?.id ?? null}
             >
-              {content}
+              {wrapped}
             </FunnelBoardProvider>
           );
         }
 
-        return content;
+        // BillingGuard fronts everything — it shows the trial countdown banner
+        // and the inactive-subscription lockout. Clients (account_type='client')
+        // pass through unchanged; same for grandfathered legacy companies.
+        const guarded = auth.companyId && auth.teamMember ? (
+          <BillingGuard
+            companyId={auth.companyId}
+            accountType={auth.accountType}
+            role={auth.teamMember.role}
+          >
+            {wrapped}
+          </BillingGuard>
+        ) : (
+          wrapped
+        );
+
+        return <TourProvider>{guarded}</TourProvider>;
       }}
     </AuthGuard>
   );

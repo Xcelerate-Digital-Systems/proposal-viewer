@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { getStripe } from '@/lib/billing/stripe';
+import { getSubscriptionForCompany } from '@/lib/billing/plan';
+import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 
 // GET - Get company details
 export async function GET(req: NextRequest) {
@@ -275,6 +278,105 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ...data, logo_url, bg_image_url, cover_image_url });
   } catch (err) {
     console.error('Update company error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE - Soft-delete the workspace.
+//
+// Owner-only. Requires `confirm_phrase: "DELETE <company_name>"` in the
+// body so an accidental click can't nuke an agency. Cancels the active
+// Stripe subscription immediately (don't wait for period end — they asked
+// to leave) then sets companies.deleted_at. AuthGuard refuses entry from
+// that point and useAuth filters this membership out of the workspace
+// switcher on next sign-in. The row is kept around for ~30 days for
+// accidental-recovery + Stripe reconciliation; a separate purge job (not
+// in this commit) hard-deletes after that.
+const DELETE_LIMIT = 3;
+const DELETE_WINDOW_SECONDS = 300;
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = await getAuthContext(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Owner only — admins can't delete the whole workspace they're in.
+    // Super admins can delete via /api/admin/* surfaces, not here.
+    if (auth.member.role !== 'owner') {
+      return NextResponse.json(
+        { error: 'Only the workspace owner can delete it.' },
+        { status: 403 },
+      );
+    }
+
+    // Defense against a runaway script trying to delete in a loop.
+    const rl = await rateLimit({
+      key: `company:delete:${ipFromRequest(req)}`,
+      limit: DELETE_LIMIT,
+      windowSeconds: DELETE_WINDOW_SECONDS,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many delete attempts' },
+        { status: 429, headers: rateLimitHeaders(rl, DELETE_LIMIT) },
+      );
+    }
+
+    const supabase = createServiceClient();
+    const { data: company } = await supabase
+      .from('companies')
+      .select('id, name, deleted_at')
+      .eq('id', auth.companyId)
+      .single();
+    if (!company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    }
+    if (company.deleted_at) {
+      return NextResponse.json({ ok: true, already_deleted: true });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const confirmPhrase = typeof body.confirm_phrase === 'string' ? body.confirm_phrase : '';
+    const expected = `DELETE ${company.name}`;
+    if (confirmPhrase !== expected) {
+      return NextResponse.json(
+        {
+          error: `To confirm deletion, type exactly: ${expected}`,
+          code: 'confirm_phrase_mismatch',
+        },
+        { status: 400 },
+      );
+    }
+
+    // Cancel Stripe subscription if there is one. Best-effort — if the
+    // call fails (network, unknown subscription), keep going with the
+    // local delete. The user is asking to leave; we shouldn't trap them
+    // because Stripe is down.
+    const sub = await getSubscriptionForCompany(company.id);
+    if (sub?.stripe_subscription_id) {
+      try {
+        await getStripe().subscriptions.cancel(sub.stripe_subscription_id);
+      } catch (err) {
+        console.error('Stripe cancel during company delete failed:', err);
+      }
+    }
+
+    const { error: deleteError } = await supabase
+      .from('companies')
+      .update({
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', company.id);
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE company error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -10,6 +10,7 @@ import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { isValidWebhookUrl } from '@/lib/sanitize';
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
+import { getAiDailyQuota } from '@/lib/billing/entitlements';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -17,12 +18,9 @@ export const maxDuration = 30;
 const MODEL = 'claude-sonnet-4-6';
 const ANTHROPIC_VERSION = '2023-06-01';
 
-// Per-company daily request cap. Generous for normal trade-quote use
-// (a busy day might be ~10-15 generations across all sparkle buttons);
-// the cap exists to bound damage from a compromised account or runaway
-// client loop, not to limit legitimate usage. Bump per-tier later by
-// reading from a companies.ai_daily_quota column.
-const AI_DAILY_QUOTA = 50;
+// Per-company daily request cap is now plan-driven via
+// lib/billing/entitlements.ts → getAiDailyQuota(). Founders plan = 100/day,
+// grandfathered legacy companies = 50/day (historical default).
 
 // Short-window burst cap (per company). Even under the daily quota a
 // runaway client could fire 50 calls in 10 seconds and hammer Anthropic.
@@ -201,11 +199,12 @@ export async function POST(req: NextRequest) {
     // Fail closed — better to surface a transient error than to skip the cap.
     return NextResponse.json({ error: 'Usage tracking unavailable' }, { status: 503 });
   }
-  if (typeof usageCount === 'number' && usageCount > AI_DAILY_QUOTA) {
+  const aiQuota = await getAiDailyQuota(auth.companyId);
+  if (typeof usageCount === 'number' && usageCount > aiQuota) {
     return NextResponse.json(
       {
-        error: 'Daily AI generation limit reached for your company. Contact support to raise the cap.',
-        limit: AI_DAILY_QUOTA,
+        error: 'Daily AI generation limit reached for your company. Upgrade your plan to raise the cap.',
+        limit: aiQuota,
         used: usageCount,
       },
       { status: 429 },

@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { isValidEmail } from '@/lib/sanitize';
 import { sendInviteEmail } from '@/lib/auth-emails';
+import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
 
 // POST - Create a new invite
 export async function POST(req: NextRequest) {
@@ -65,6 +66,14 @@ export async function POST(req: NextRequest) {
 
     if (existingInvite) {
       return NextResponse.json({ error: 'A pending invite already exists for this email' }, { status: 400 });
+    }
+
+    // Seat-limit check counts current team members + pending invites. Runs
+    // after the dup checks above so retrying with the same email never gets
+    // a confusing "limit reached" message when the real issue is the dup.
+    const limitCheck = await checkResourceLimit(companyId, 'seats');
+    if (!limitCheck.allowed) {
+      return NextResponse.json(buildLimitErrorBody(limitCheck, 'seats'), { status: 402 });
     }
 
     // Get company name for the response
