@@ -2,13 +2,16 @@
 //
 // Self-contained Facebook Ads → Looker Studio integration card. Owns the full
 // two-step setup: (1) Connect Facebook accounts, (2) Add to Looker Studio via
-// the deployment ID. Replaces the previous split between MetaConnectorCard +
-// MetaConnectionsManager.
+// the deployment ID. Visual language follows the dashboard section pattern
+// (shadow-card top-level + crisp header band + uppercase eyebrows for
+// sub-sections).
 
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Copy, ExternalLink, Plus, Trash2, Users } from 'lucide-react';
+import {
+  Check, Copy, ExternalLink, Loader2, Plus, Trash2, Users,
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
@@ -45,7 +48,7 @@ interface AccountsResponse {
 
 function FacebookGlyph() {
   return (
-    <svg viewBox="0 0 24 24" width={22} height={22} aria-hidden="true">
+    <svg viewBox="0 0 24 24" width={20} height={20} aria-hidden="true">
       <path
         fill="#ffffff"
         d="M14.5 21v-7.6h2.55l.38-2.96H14.5V8.55c0-.86.24-1.44 1.47-1.44h1.57V4.46c-.27-.04-1.2-.12-2.28-.12-2.25 0-3.79 1.37-3.79 3.9v2.2H8.9v2.96h2.58V21h3.02Z"
@@ -75,7 +78,7 @@ function StatusPill({
   const config = {
     connected:    { label: 'Connected',     cls: 'bg-teal-tint text-teal' },
     needs_reauth: { label: 'Needs reauth',  cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
-    disconnected: { label: 'Not connected', cls: 'bg-gray-100 text-faint' },
+    disconnected: { label: 'Not connected', cls: 'bg-surface text-faint' },
   }[state];
   return (
     <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full ${config.cls}`}>
@@ -84,13 +87,14 @@ function StatusPill({
   );
 }
 
-function StepLabel({ index, title }: { index: number; title: string }) {
+function StepEyebrow({ step, title, hint }: { step: string; title: string; hint?: string }) {
   return (
-    <div className="flex items-center gap-2.5 mb-3">
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-teal-tint text-teal text-[11px] font-semibold">
-        {index}
+    <div className="flex items-baseline gap-2 px-6 pt-5 pb-3">
+      <span className="text-2xs font-semibold uppercase tracking-wider text-faint">
+        {step}
       </span>
-      <h4 className="text-[13px] font-semibold text-ink">{title}</h4>
+      <span className="text-[13px] font-semibold text-ink">{title}</span>
+      {hint && <span className="text-[11px] text-faint">{hint}</span>}
     </div>
   );
 }
@@ -214,49 +218,59 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
         : 'disconnected';
 
   return (
-    <div className="bg-white border border-line rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="flex items-start gap-4 p-5">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-[#1877F2]">
-          <FacebookGlyph />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[15px] font-semibold text-ink">Facebook Ads → Looker Studio</h3>
-            <StatusPill state={headerState} />
+    <section className="bg-white rounded-2xl shadow-card overflow-hidden">
+      {/* Header band — matches dashboard section header */}
+      <header className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#1877F2]">
+            <FacebookGlyph />
           </div>
-          <p className="text-xs text-faint mt-1 leading-relaxed">
-            Pull campaign, ad set, ad, and creative performance from Meta into Looker Studio.
-            Supports daily, weekly, and custom date ranges.
-          </p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-[15px] font-semibold text-ink">Facebook Ads</h2>
+              <span className="text-faint text-xs">→</span>
+              <span className="text-[13px] font-medium text-muted">Looker Studio</span>
+              <StatusPill state={headerState} />
+            </div>
+            <p className="text-xs text-faint mt-1 leading-relaxed max-w-[58ch]">
+              Pull campaign, ad set, ad, and creative performance from Meta into Looker Studio.
+              Supports daily, weekly, and custom date ranges.
+            </p>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Step 1 — Connect Facebook */}
-      <div className="px-5 pb-5 pt-1 border-t border-line">
-        <div className="pt-5">
-          <StepLabel index={1} title="Connect a Facebook account" />
-
-          {loading ? (
-            <div className="h-[60px] rounded-xl bg-surface animate-pulse" />
-          ) : hasConnection ? (
-            <div className="space-y-2">
-              {activeConnections.map((connection) => {
-                const accountCount = accounts.filter(
-                  (a) => a.connection_id === connection.id,
-                ).length;
-                const isDisconnecting = pendingDisconnect === connection.id;
-                return (
-                  <div
-                    key={connection.id}
-                    className="flex items-start gap-3 bg-surface border border-line rounded-xl p-3.5"
-                  >
-                    <div className="w-9 h-9 bg-teal-tint rounded-lg flex items-center justify-center shrink-0">
-                      <Users size={16} className="text-teal" />
+      <StepEyebrow
+        step="Step 1"
+        title="Connect a Facebook account"
+        hint={hasConnection ? `${activeConnections.length} connected` : undefined}
+      />
+      <div className="px-6 pb-5">
+        {loading ? (
+          <div className="flex items-center gap-2 text-xs text-faint py-3">
+            <Loader2 size={13} className="animate-spin" />
+            Loading connections…
+          </div>
+        ) : hasConnection ? (
+          <div className="space-y-2">
+            {activeConnections.map((connection) => {
+              const accountCount = accounts.filter(
+                (a) => a.connection_id === connection.id,
+              ).length;
+              const isDisconnecting = pendingDisconnect === connection.id;
+              return (
+                <div
+                  key={connection.id}
+                  className="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white border border-gray-100 rounded-xl"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 bg-teal-tint rounded-lg flex items-center justify-center shrink-0">
+                      <Users size={15} className="text-teal" />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-ink truncate">
+                        <p className="text-sm font-medium text-ink truncate">
                           {connection.meta_user_name || connection.meta_user_id}
                         </p>
                         {connection.status === 'needs_reauth' && (
@@ -265,103 +279,128 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-faint mt-0.5">
+                      <p className="text-xs text-faint truncate">
                         {accountCount} ad account{accountCount === 1 ? '' : 's'} · last used{' '}
                         {formatRelativeTime(connection.last_used_at)}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => disconnect(connection)}
-                      disabled={isDisconnecting}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                    >
-                      <Trash2 size={12} />
-                      {isDisconnecting ? 'Disconnecting…' : 'Disconnect'}
-                    </button>
                   </div>
-                );
-              })}
-              <div className="pt-1">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  leftIcon={Plus}
-                  onClick={connect}
-                  loading={starting}
-                >
-                  Add another Facebook account
-                </Button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => disconnect(connection)}
+                    disabled={isDisconnecting}
+                    className="px-2.5 py-1.5 text-xs font-medium text-faint hover:text-red-500 rounded-md flex items-center gap-1.5 disabled:opacity-50 transition-colors shrink-0"
+                    title="Disconnect"
+                  >
+                    {isDisconnecting ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={13} />
+                    )}
+                    {isDisconnecting ? 'Disconnecting…' : 'Disconnect'}
+                  </button>
+                </div>
+              );
+            })}
+            <div className="pt-1.5">
+              <button
+                type="button"
+                onClick={connect}
+                disabled={starting}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-teal hover:text-teal-hover disabled:opacity-50 transition-colors"
+              >
+                {starting ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+                Add another Facebook account
+              </button>
             </div>
-          ) : (
-            <div className="flex items-start gap-3">
-              <div className="flex-1">
-                <p className="text-xs text-faint leading-relaxed mb-3">
-                  Sign in with Facebook to authorize AgencyViz to read your ad account
-                  performance. Each team member can connect their own Facebook account.
-                </p>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={connect}
-                  loading={starting}
-                >
-                  Connect Facebook
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-4 px-4 py-3.5 bg-surface rounded-xl">
+            <p className="text-xs text-muted leading-relaxed">
+              Sign in with Facebook to authorize AgencyViz to read your ad account performance.
+              Each team member can connect their own Facebook account.
+            </p>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={connect}
+              loading={starting}
+              className="shrink-0"
+            >
+              Connect Facebook
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Step 2 — Add to Looker Studio */}
-      <div className="px-5 pb-5 border-t border-line bg-surface/40">
-        <div className="pt-5">
-          <StepLabel index={2} title="Add the connector to Looker Studio" />
-
+      <div className="border-t border-gray-100 bg-surface/50">
+        <StepEyebrow
+          step="Step 2"
+          title="Add the connector to Looker Studio"
+        />
+        <div className="px-6 pb-6">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <Button
-              size="sm"
-              variant="secondary"
+            <button
+              type="button"
               onClick={copyDeploymentId}
-              leftIcon={copied ? Check : Copy}
               disabled={!META_DEPLOYMENT_ID}
               title={META_DEPLOYMENT_ID ? `Deployment ID: ${META_DEPLOYMENT_ID}` : undefined}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal text-white hover:bg-teal-hover disabled:opacity-50 transition-colors"
             >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
               {copied ? 'Deployment ID copied' : 'Copy deployment ID'}
-            </Button>
+            </button>
             <a
               href="https://lookerstudio.google.com"
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-faint hover:text-ink border border-line rounded-lg hover:bg-white transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted hover:text-ink border border-gray-100 rounded-lg hover:bg-white transition-colors"
             >
               Open Looker Studio
               <ExternalLink size={12} />
             </a>
           </div>
 
-          <ol className="space-y-2 text-xs text-ink leading-relaxed list-decimal pl-5 marker:text-muted marker:font-semibold">
-            <li>
-              In Looker Studio, click <span className="font-semibold">Create → Data source</span>.
+          <ol className="space-y-2.5 text-xs text-muted leading-relaxed">
+            <li className="flex gap-3">
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-gray-200 text-faint text-[10px] font-semibold">
+                1
+              </span>
+              <span className="pt-0.5">
+                In Looker Studio, click <span className="font-medium text-ink">Create → Data source</span>.
+              </span>
             </li>
-            <li>
-              Scroll to <span className="font-semibold">Build your own</span> and choose{' '}
-              <span className="font-semibold">Build with Apps Script</span>.
+            <li className="flex gap-3">
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-gray-200 text-faint text-[10px] font-semibold">
+                2
+              </span>
+              <span className="pt-0.5">
+                Scroll to <span className="font-medium text-ink">Build your own</span> and choose{' '}
+                <span className="font-medium text-ink">Build with Apps Script</span>.
+              </span>
             </li>
-            <li>
-              Paste the deployment ID into the{' '}
-              <span className="font-semibold">Deployment ID</span> field, click{' '}
-              <span className="font-semibold">Validate</span>, then{' '}
-              <span className="font-semibold">Next</span>.
+            <li className="flex gap-3">
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-gray-200 text-faint text-[10px] font-semibold">
+                3
+              </span>
+              <span className="pt-0.5">
+                Paste the deployment ID into the <span className="font-medium text-ink">Deployment ID</span> field,
+                click <span className="font-medium text-ink">Validate</span>, then{' '}
+                <span className="font-medium text-ink">Next</span>.
+              </span>
             </li>
-            <li>
-              Sign in with AgencyViz when prompted, then pick the ad account to pull data from.
+            <li className="flex gap-3">
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-gray-200 text-faint text-[10px] font-semibold">
+                4
+              </span>
+              <span className="pt-0.5">
+                Sign in with AgencyViz when prompted, then pick the ad account to pull data from.
+              </span>
             </li>
           </ol>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

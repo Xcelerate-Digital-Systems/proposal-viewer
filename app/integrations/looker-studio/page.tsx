@@ -1,10 +1,9 @@
 // app/integrations/looker-studio/page.tsx
 //
-// Integration hub. Each integration is rendered as a self-contained two-step
-// card (Step 1: connect the source platform, Step 2: wire it into Looker
-// Studio via the Apps Script deployment ID). The page is intentionally just a
-// vertical stack of these cards — no cross-card chrome — so adding a new
-// integration is one more card below.
+// Integration hub. Each integration is rendered as a self-contained card with
+// the dashboard's two-tier section pattern: shadow-card surface, header band
+// with brand tile, then Step 1 / Step 2 sub-sections inside. The page is just
+// a vertical stack of these cards.
 
 'use client';
 
@@ -61,30 +60,36 @@ function ComingSoonCard({
   icon,
   iconBg,
   name,
+  destination,
   description,
 }: {
   icon: React.ReactNode;
   iconBg: string;
   name: string;
+  destination: string;
   description: string;
 }) {
   return (
-    <div className="bg-white border border-line rounded-2xl p-5 opacity-75">
-      <div className="flex items-start gap-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+    <section className="bg-white rounded-2xl shadow-card overflow-hidden opacity-80">
+      <header className="flex items-start gap-3 px-6 py-5">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
           {icon}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[15px] font-semibold text-ink">{name}</h3>
-            <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 text-faint">
+            <h2 className="text-[15px] font-semibold text-ink">{name}</h2>
+            <span className="text-faint text-xs">→</span>
+            <span className="text-[13px] font-medium text-muted">{destination}</span>
+            <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-surface text-faint">
               Coming soon
             </span>
           </div>
-          <p className="text-xs text-faint mt-1 leading-relaxed">{description}</p>
+          <p className="text-xs text-faint mt-1 leading-relaxed max-w-[58ch]">
+            {description}
+          </p>
         </div>
-      </div>
-    </div>
+      </header>
+    </section>
   );
 }
 
@@ -103,18 +108,29 @@ export default function LookerStudioConnectorsPage() {
             description="Connect your ad and CRM platforms once, then pull live data into any Looker Studio report using the AgencyViz connector."
           />
 
-          <div className="px-6 lg:px-10 py-8 max-w-3xl">
-            <Suspense fallback={null}>
-              <Banners />
-            </Suspense>
+          <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+            <div className="max-w-3xl">
+              <Suspense fallback={null}>
+                <Banners />
+              </Suspense>
 
-            <div className="space-y-5">
+              <div className="mb-3">
+                <span className="text-2xs font-semibold uppercase tracking-wider text-faint">
+                  Available
+                </span>
+              </div>
               <MetaConnectorCard refreshKey={refreshKey} onChange={refresh} />
 
+              <div className="mt-8 mb-3">
+                <span className="text-2xs font-semibold uppercase tracking-wider text-faint">
+                  Coming soon
+                </span>
+              </div>
               <ComingSoonCard
-                icon={<Workflow size={22} className="text-white" />}
+                icon={<Workflow size={20} className="text-white" />}
                 iconBg="bg-[#0F766E]"
-                name="GoHighLevel → Looker Studio"
+                name="GoHighLevel"
+                destination="Looker Studio"
                 description="Pull leads, opportunities, pipeline stages, and contact activity from GHL sub-accounts into Looker Studio."
               />
             </div>
