@@ -16,10 +16,7 @@ import FeedbackActionWidgets from '@/components/admin/dashboard/FeedbackActionWi
 import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
 import { buildStatusPatch, type ProposalStatus } from '@/lib/proposals/status';
-// import { ReplayButton } from '@/components/tours/ReplayButton';
-// Disabled until the parallel-AI tour scaffolding (components/tours/*) lands
-// on origin -- the file exists locally but isn't committed yet, so Vercel
-// can't resolve the import. Re-enable in the commit that lands the tours.
+import { ReplayButton } from '@/components/tours/ReplayButton';
 
 export default function DashboardPage() {
   return (
@@ -254,6 +251,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
               ? 'Inbox zero — your pipelines are below.'
               : `${inbox.length} markup ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`
         }
+        actions={<ReplayButton tourId="dashboard" />}
       />
 
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
