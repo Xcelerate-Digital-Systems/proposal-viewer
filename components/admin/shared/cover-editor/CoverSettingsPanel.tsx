@@ -254,19 +254,19 @@ export default function CoverSettingsPanel({
           Keep the cover_show_client_logo flag here is no longer toggled from the
           Cover tab; it's set alongside the upload on the Design tab. */}
 
-      {/* ── Accept Button Text (proposals only) ──────────── */}
+      {/* ── Cover Button Text (proposals only) ──────────── */}
       {cfg.fields.acceptButtonText && (
         <>
           <div className="space-y-2">
-            <SectionHeader icon={<Type size={14} className="text-gray-400" />} label="Accept Button Text" />
+            <SectionHeader icon={<Type size={14} className="text-gray-400" />} label="Cover Button Text" />
             <input
               type="text"
               value={acceptButtonText}
               onChange={(e) => setAcceptButtonText(e.target.value)}
-              placeholder="ACCEPT PROPOSAL"
+              placeholder="START READING PROPOSAL"
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400"
             />
-            <p className="text-xs text-gray-400">Leave blank for default.</p>
+            <p className="text-xs text-gray-400">Text shown on the cover page CTA button. Leave blank for default.</p>
           </div>
           <div className="border-t border-gray-100" />
         </>

@@ -235,6 +235,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
           proposal={p}
           onSave={() => { setActiveTab(null); onRefresh(); }}
           onCancel={() => setActiveTab(null)}
+          contentOnly
         />
       )}
     </div>

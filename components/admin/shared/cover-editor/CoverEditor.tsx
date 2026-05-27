@@ -56,7 +56,6 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   const [coverEnabled, setCoverEnabled] = useState(entity.cover_enabled);
   const [subtitle, setSubtitle] = useState(entity.cover_subtitle || '');
   const [buttonText, setButtonText] = useState(entity.cover_button_text || cfg.defaultButtonText);
-  const [acceptButtonText, setAcceptButtonText] = useState(entity.accept_button_text || '');
   const [imagePath, setImagePath] = useState(entity.cover_image_path || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -268,9 +267,6 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
       payload.cover_show_prepared_by = showPreparedBy;
       payload.cover_show_avatar = showAvatar;
     }
-    if (cfg.fields.acceptButtonText) {
-      payload.accept_button_text = acceptButtonText.trim() || null;
-    }
     // Client-logo fields are owned by the Design tab now (cover_client_logo_path,
     // cover_show_client_logo, cover_client_logo_tint_color). The Cover tab only
     // reads them to render the preview, so they're intentionally not in this payload.
@@ -281,7 +277,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     onSave?.();
   }, [
     cfg, entity.id, coverEnabled, imagePath, subtitle, buttonText,
-    acceptButtonText, colors, coverDate, showDate, preparedByMemberId,
+    colors, coverDate, showDate, preparedByMemberId,
     showPreparedBy, showAvatar, onSave,
   ]);
 
@@ -302,7 +298,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     scheduleSave(800);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    coverEnabled, subtitle, buttonText, acceptButtonText, imagePath,
+    coverEnabled, subtitle, buttonText, imagePath,
     colors, coverDate, showDate, preparedByMemberId, showPreparedBy,
     showAvatar,
   ]);
@@ -400,8 +396,8 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
         uploadingClientLogo={uploadingClientLogo}
         onClientLogoUpload={handleClientLogoUpload}
         onClientLogoRemove={removeClientLogo}
-        acceptButtonText={acceptButtonText}
-        setAcceptButtonText={setAcceptButtonText}
+        acceptButtonText={buttonText}
+        setAcceptButtonText={setButtonText}
         imageUrl={imageUrl}
         imagePath={imagePath}
         uploading={uploading}
@@ -452,8 +448,8 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
           uploadingClientLogo={uploadingClientLogo}
           onClientLogoUpload={handleClientLogoUpload}
           onClientLogoRemove={removeClientLogo}
-          acceptButtonText={acceptButtonText}
-          setAcceptButtonText={setAcceptButtonText}
+          acceptButtonText={buttonText}
+          setAcceptButtonText={setButtonText}
           imageUrl={imageUrl}
           imagePath={imagePath}
           uploading={uploading}

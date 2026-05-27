@@ -144,6 +144,12 @@ export function PricingDesignPreview({
     ...(live?.pricing_payment_schedule_price_color !== undefined
       ? { pricing_payment_schedule_price_color: live.pricing_payment_schedule_price_color }
       : {}),
+    ...(live?.pricing_accent_bar_color !== undefined
+      ? { pricing_accent_bar_color: live.pricing_accent_bar_color }
+      : {}),
+    ...(live?.pricing_dot_color !== undefined
+      ? { pricing_dot_color: live.pricing_dot_color }
+      : {}),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
