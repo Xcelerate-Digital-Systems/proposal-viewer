@@ -4,12 +4,28 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Crown, Shield, User, MoreVertical, Loader2, Trash2,
-  Camera, Check,
+  Camera, Check, ChevronDown, ChevronUp,
+  MessageSquare, CornerDownRight, CheckCheck, Layers, Package,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { InviteManager } from '@/components/admin/InviteManager';
 
 type Role = 'owner' | 'admin' | 'member';
+
+type MarkupPrefKey =
+  | 'markup_notify_comment'
+  | 'markup_notify_reply'
+  | 'markup_notify_resolve'
+  | 'markup_notify_status'
+  | 'markup_notify_new_version';
+
+const MARKUP_PREF_DEFS: { key: MarkupPrefKey; label: string; icon: typeof MessageSquare }[] = [
+  { key: 'markup_notify_comment', label: 'Comments', icon: MessageSquare },
+  { key: 'markup_notify_reply', label: 'Replies', icon: CornerDownRight },
+  { key: 'markup_notify_resolve', label: 'Resolved', icon: CheckCheck },
+  { key: 'markup_notify_status', label: 'Status', icon: Layers },
+  { key: 'markup_notify_new_version', label: 'New versions', icon: Package },
+];
 
 type MemberRow = {
   id: string;
@@ -19,6 +35,11 @@ type MemberRow = {
   avatar_path: string | null;
   avatar_url: string | null;
   created_at: string;
+  markup_notify_comment: boolean | null;
+  markup_notify_reply: boolean | null;
+  markup_notify_resolve: boolean | null;
+  markup_notify_status: boolean | null;
+  markup_notify_new_version: boolean | null;
 };
 
 interface MembersTabProps {
@@ -100,16 +121,15 @@ export default function MembersTab({
       setLoading(false);
       return;
     }
-    // Hydrate avatar URLs via storage. The /api/team list doesn't include
-    // avatar_path today, so fetch the full rows via service-role-flavoured
-    // signed URLs in a second pass.
     const raw = (data.members || []) as Array<{
       id: string; name: string; email: string; role: Role; created_at: string;
+      markup_notify_comment: boolean | null;
+      markup_notify_reply: boolean | null;
+      markup_notify_resolve: boolean | null;
+      markup_notify_status: boolean | null;
+      markup_notify_new_version: boolean | null;
     }>;
 
-    // Fetch avatar_paths in one go via the anon client — we have read access
-    // to team_members rows we belong to, but for super-admin override the
-    // anon client is blocked. Fall back to empty avatars in that case.
     let pathsById = new Map<string, string | null>();
     if (raw.length > 0) {
       const { data: rows } = await supabase
@@ -129,7 +149,11 @@ export default function MembersTab({
             .createSignedUrl(path, 3600);
           url = signed?.signedUrl ?? null;
         }
-        return { ...r, avatar_path: path, avatar_url: url };
+        return {
+          ...r,
+          avatar_path: path,
+          avatar_url: url,
+        };
       })
     );
     setMembers(hydrated);
@@ -211,17 +235,17 @@ export default function MembersTab({
       : m));
   };
 
-  const roleLegend = accountType === 'client'
-    ? {
-        owner:  'Full access to this client account. Can manage team, change roles, and manage all proposals and documents.',
-        admin:  'Can invite members, remove members, and manage all proposals and documents.',
-        member: 'Can view and manage proposals and documents. Cannot manage team or invites.',
-      }
-    : {
-        owner:  'Full access. Can manage team, change roles, and manage all proposals, templates, and Feedback projects.',
-        admin:  'Can invite members, remove members, and manage all proposals, templates, and Feedback projects.',
-        member: 'Can view and manage proposals. Cannot manage team or invites.',
-      };
+  const handleToggleMarkupPref = async (memberId: string, key: MarkupPrefKey) => {
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+    const current = member[key];
+    const next = current === null ? false : !current;
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, [key]: next } : m));
+    const res = await patchMember(memberId, { [key]: next });
+    if (!res.ok) {
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, [key]: current } : m));
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -249,6 +273,9 @@ export default function MembersTab({
                 canManage &&
                 !isCurrentUser &&
                 (isOwner || isSuperAdmin || (isAdmin && m.role === 'member'));
+
+              const canEditNotifs = isSuperAdmin || isCurrentUser || canEditRoleOrRemove;
+
               const showMenu = actionMenuId === m.id;
 
               return (
@@ -258,6 +285,7 @@ export default function MembersTab({
                   isCurrentUser={isCurrentUser}
                   canEditProfile={canEditProfile}
                   canEditRoleOrRemove={canEditRoleOrRemove}
+                  canEditNotifs={canEditNotifs}
                   actionLoading={actionLoading === m.id}
                   showMenu={showMenu}
                   isOwner={isOwner}
@@ -270,6 +298,7 @@ export default function MembersTab({
                   onNameSave={(name) => handleNameSave(m.id, name)}
                   onAvatarUpload={(file) => handleAvatarUpload(m, file)}
                   onAvatarRemove={() => handleAvatarRemove(m)}
+                  onToggleMarkupPref={(key) => handleToggleMarkupPref(m.id, key)}
                 />
               );
             })}
@@ -288,25 +317,6 @@ export default function MembersTab({
           />
         </section>
       )}
-
-      {/* Role legend */}
-      <section className="bg-white border border-edge rounded-[14px] p-5">
-        <h3 className="text-sm font-medium text-muted mb-3">Role Permissions</h3>
-        <div className="space-y-3 text-xs">
-          <div className="flex items-start gap-3">
-            <div className="shrink-0 mt-0.5"><RoleBadge role="owner" accountType={accountType} /></div>
-            <p className="text-faint">{roleLegend.owner}</p>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="shrink-0 mt-0.5"><RoleBadge role="admin" accountType={accountType} /></div>
-            <p className="text-faint">{roleLegend.admin}</p>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="shrink-0 mt-0.5"><RoleBadge role="member" accountType={accountType} /></div>
-            <p className="text-faint">{roleLegend.member}</p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
@@ -320,6 +330,7 @@ function MemberRowItem({
   isCurrentUser,
   canEditProfile,
   canEditRoleOrRemove,
+  canEditNotifs,
   actionLoading,
   showMenu,
   isOwner,
@@ -332,11 +343,13 @@ function MemberRowItem({
   onNameSave,
   onAvatarUpload,
   onAvatarRemove,
+  onToggleMarkupPref,
 }: {
   member: MemberRow;
   isCurrentUser: boolean;
   canEditProfile: boolean;
   canEditRoleOrRemove: boolean;
+  canEditNotifs: boolean;
   actionLoading: boolean;
   showMenu: boolean;
   isOwner: boolean;
@@ -349,10 +362,12 @@ function MemberRowItem({
   onNameSave: (name: string) => void;
   onAvatarUpload: (file: File) => void;
   onAvatarRemove: () => void;
+  onToggleMarkupPref: (key: MarkupPrefKey) => void;
 }) {
   const [name, setName] = useState(member.name);
   const [savingName, setSavingName] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setName(member.name); }, [member.name]);
@@ -375,154 +390,201 @@ function MemberRowItem({
   };
 
   return (
-    <div className="flex items-center gap-4 px-5 py-4 relative">
-      {/* Avatar */}
-      <div className="relative group shrink-0">
-        {member.avatar_url ? (
-          <img
-            src={member.avatar_url}
-            alt={member.name}
-            className="w-10 h-10 rounded-full object-cover border border-edge"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-surface border border-edge flex items-center justify-center">
-            <span className="text-sm font-medium text-muted">
-              {member.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        )}
-        {canEditProfile && (
-          <>
-            <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="p-1 text-white hover:text-white/70"
-                title="Change photo"
-              >
-                {uploading ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
-              </button>
-              {member.avatar_url && (
+    <div className="px-5 py-4">
+      <div className="flex items-center gap-4">
+        {/* Avatar */}
+        <div className="relative group shrink-0">
+          {member.avatar_url ? (
+            <img
+              src={member.avatar_url}
+              alt={member.name}
+              className="w-10 h-10 rounded-full object-cover border border-edge"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-surface border border-edge flex items-center justify-center">
+              <span className="text-sm font-medium text-muted">
+                {member.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          {canEditProfile && (
+            <>
+              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                 <button
-                  onClick={onAvatarRemove}
-                  className="p-1 text-white hover:text-red-300"
-                  title="Remove photo"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="p-1 text-white hover:text-white/70"
+                  title="Change photo"
                 >
-                  <Trash2 size={12} />
+                  {uploading ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                </button>
+                {member.avatar_url && (
+                  <button
+                    onClick={onAvatarRemove}
+                    className="p-1 text-white hover:text-red-300"
+                    title="Remove photo"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Name + email */}
+        <div className="flex-1 min-w-0">
+          {canEditProfile ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
+              />
+              {nameChanged && (
+                <button
+                  onClick={handleSaveName}
+                  disabled={savingName}
+                  className="shrink-0 px-3 py-1.5 bg-teal text-white text-xs rounded-md hover:bg-teal-hover disabled:opacity-50 flex items-center gap-1"
+                >
+                  {savingName ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                  Save
                 </button>
               )}
+              {isCurrentUser && (
+                <span className="text-2xs text-faint font-medium shrink-0">(you)</span>
+              )}
             </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </>
-        )}
-      </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-ink truncate">{member.name}</p>
+              {isCurrentUser && <span className="text-xs text-faint">(you)</span>}
+            </div>
+          )}
+          <p className="text-xs text-faint truncate mt-0.5">{member.email}</p>
+        </div>
 
-      {/* Name + email */}
-      <div className="flex-1 min-w-0">
-        {canEditProfile ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
-            />
-            {nameChanged && (
+        {/* Role + expand + actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <RoleBadge role={member.role} accountType={accountType} />
+
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface text-faint hover:text-muted transition-colors"
+            title={expanded ? 'Collapse notifications' : 'Expand notifications'}
+          >
+            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {actionLoading ? (
+            <div className="w-8 h-8 flex items-center justify-center">
+              <Loader2 size={14} className="animate-spin text-faint" />
+            </div>
+          ) : canEditRoleOrRemove ? (
+            <div className="relative">
               <button
-                onClick={handleSaveName}
-                disabled={savingName}
-                className="shrink-0 px-3 py-1.5 bg-teal text-white text-xs rounded-md hover:bg-teal-hover disabled:opacity-50 flex items-center gap-1"
+                onClick={onToggleMenu}
+                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface text-faint hover:text-muted transition-colors"
               >
-                {savingName ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                Save
+                <MoreVertical size={14} />
               </button>
-            )}
-            {isCurrentUser && (
-              <span className="text-2xs text-faint font-medium shrink-0">(you)</span>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-ink truncate">{member.name}</p>
-            {isCurrentUser && <span className="text-xs text-faint">(you)</span>}
-          </div>
-        )}
-        <p className="text-xs text-faint truncate mt-0.5">{member.email}</p>
+
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={onCloseMenu} />
+                  <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-edge rounded-lg shadow-lg py-1 min-w-[160px]">
+                    {(isOwner || isSuperAdmin) && (
+                      <>
+                        {member.role !== 'owner' && (
+                          <button
+                            onClick={() => onChangeRole('owner')}
+                            className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
+                          >
+                            <Crown size={14} />
+                            Make Owner
+                          </button>
+                        )}
+                        {member.role !== 'admin' && (
+                          <button
+                            onClick={() => onChangeRole('admin')}
+                            className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
+                          >
+                            <Shield size={14} />
+                            Make Admin
+                          </button>
+                        )}
+                        {member.role !== 'member' && (
+                          <button
+                            onClick={() => onChangeRole('member')}
+                            className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
+                          >
+                            <User size={14} />
+                            Make Member
+                          </button>
+                        )}
+                        <div className="border-t border-gray-100 my-1" />
+                      </>
+                    )}
+                    <button
+                      onClick={onRemove}
+                      className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <Trash2 size={14} />
+                      Remove
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="w-8" />
+          )}
+        </div>
       </div>
 
-      {/* Role + actions */}
-      <div className="flex items-center gap-2 shrink-0">
-        <RoleBadge role={member.role} accountType={accountType} />
-        {actionLoading ? (
-          <div className="w-8 h-8 flex items-center justify-center">
-            <Loader2 size={14} className="animate-spin text-faint" />
+      {/* Expandable notification prefs */}
+      {expanded && (
+        <div className="mt-3 pt-3 border-t border-edge">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-faint">Markup notifications</span>
           </div>
-        ) : canEditRoleOrRemove ? (
-          <div className="relative">
-            <button
-              onClick={onToggleMenu}
-              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface text-faint hover:text-muted transition-colors"
-            >
-              <MoreVertical size={14} />
-            </button>
-
-            {showMenu && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={onCloseMenu} />
-                <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-edge rounded-lg shadow-lg py-1 min-w-[160px]">
-                  {(isOwner || isSuperAdmin) && (
-                    <>
-                      {member.role !== 'owner' && (
-                        <button
-                          onClick={() => onChangeRole('owner')}
-                          className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
-                        >
-                          <Crown size={14} />
-                          Make Owner
-                        </button>
-                      )}
-                      {member.role !== 'admin' && (
-                        <button
-                          onClick={() => onChangeRole('admin')}
-                          className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
-                        >
-                          <Shield size={14} />
-                          Make Admin
-                        </button>
-                      )}
-                      {member.role !== 'member' && (
-                        <button
-                          onClick={() => onChangeRole('member')}
-                          className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface hover:text-ink flex items-center gap-2"
-                        >
-                          <User size={14} />
-                          Make Member
-                        </button>
-                      )}
-                      <div className="border-t border-gray-100 my-1" />
-                    </>
-                  )}
-                  <button
-                    onClick={onRemove}
-                    className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"
-                  >
-                    <Trash2 size={14} />
-                    Remove
-                  </button>
-                </div>
-              </>
-            )}
+          <div className="flex flex-wrap gap-1.5">
+            {MARKUP_PREF_DEFS.map((p) => {
+              const Icon = p.icon;
+              const val = member[p.key];
+              const on = val === null ? true : val;
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => canEditNotifs && onToggleMarkupPref(p.key)}
+                  disabled={!canEditNotifs}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                    on
+                      ? 'bg-teal/10 text-teal'
+                      : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                  } ${!canEditNotifs ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  title={`${on ? 'On' : 'Off'} — ${p.label}${val === null ? ' (default)' : ''}`}
+                >
+                  <Icon size={11} />
+                  {p.label}
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          <div className="w-8" />
-        )}
-      </div>
+          <p className="text-[10px] text-faint mt-1.5">
+            These defaults apply when this member is added to new Markup projects. Per-project overrides still work.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/ads/swipe/files/upload
@@ -26,6 +27,11 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const rl = await rateLimit({ key: `upload:${auth.companyId}`, limit: 20, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
 
     const body = await req.json();
     const { filename, content_type, swipe_id } = body as {

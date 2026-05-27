@@ -103,7 +103,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/invites] POST insert:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     // Build invite URL — never trust the Origin header for email links (phishing risk)
@@ -170,7 +171,8 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/invites] GET:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json({ invites });

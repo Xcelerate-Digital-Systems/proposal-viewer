@@ -1,11 +1,17 @@
 // app/api/invites/validate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 // GET - Validate an invite token (public endpoint)
 export async function GET(req: NextRequest) {
+  const rl = await rateLimit({ key: `invite:validate:${ipFromRequest(req)}`, limit: 10, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const token = req.nextUrl.searchParams.get('token');
 

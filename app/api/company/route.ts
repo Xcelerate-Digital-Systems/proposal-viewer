@@ -248,7 +248,8 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/company] PATCH:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     let logo_url = null;
@@ -371,7 +372,8 @@ export async function DELETE(req: NextRequest) {
       })
       .eq('id', company.id);
     if (deleteError) {
-      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+      console.error('[api/company] DELETE:', deleteError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });

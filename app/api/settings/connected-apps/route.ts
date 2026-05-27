@@ -39,7 +39,10 @@ export async function GET(req: NextRequest) {
     .in('source', OAUTH_SOURCES)
     .is('revoked_at', null);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/settings/connected-apps] GET:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 
   // Group by (source, label, user_id) so each connected integration shows up
   // once. token_count > 1 surfaces stale rows worth investigating.
@@ -134,6 +137,9 @@ export async function DELETE(req: NextRequest) {
     .eq('label', label)
     .is('revoked_at', null);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/settings/connected-apps] DELETE:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }

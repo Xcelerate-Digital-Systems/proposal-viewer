@@ -172,6 +172,9 @@ interface PackageCardProps {
 
 function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, border, surface, styling, branding }: PackageCardProps) {
   const tierAccent = tier.highlight_color || accent;
+  const iconColor = styling.feature_icon_color || tierAccent;
+  const barColor = styling.accent_bar_color || tierAccent;
+  const priceColor = styling.price_color || tierAccent;
   const bodyFont = fontFamily(branding.font_body, 'system-ui, sans-serif');
 
   const cardBg = styling.card_bg_independent && tier.card_bg_color
@@ -220,7 +223,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
 
       {/* Accent bar for non-recommended tiers */}
       {!tier.is_recommended && (
-        <div className="h-1" style={{ backgroundColor: tierAccent }} />
+        <div className="h-1" style={{ backgroundColor: barColor }} />
       )}
 
       {/* Card content */}
@@ -251,7 +254,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
             <span
               className="agv-pkg-price text-2xl sm:text-3xl tracking-tight"
               style={{
-                color: tierAccent,
+                color: priceColor,
                 fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
                 fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
               }}
@@ -261,7 +264,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
             {tier.price_suffix && (
               <span
                 className="agv-pkg-body text-sm sm:text-base font-semibold"
-                style={{ color: tierAccent }}
+                style={{ color: priceColor }}
               >
                 {tier.price_suffix}
               </span>
@@ -296,7 +299,7 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
               textColor={cardText}
               muted={cardMuted}
               faint={cardFaint}
-              accent={tierAccent}
+              accent={iconColor}
               surface={surface}
               featureIcon={styling.feature_icon}
               boldFontWeight={Number(branding.title_font_weight || branding.font_heading_weight || '700')}

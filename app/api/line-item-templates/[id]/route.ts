@@ -18,7 +18,8 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     .eq('company_id', auth.companyId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[api/line-item-templates/[id]] DELETE:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

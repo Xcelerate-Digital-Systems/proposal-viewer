@@ -23,7 +23,8 @@ export async function GET(req: NextRequest) {
     .eq('status', 'active');
 
   if (connErr) {
-    return NextResponse.json({ error: connErr.message }, { status: 500 });
+    console.error('[api/connectors/meta/accounts] GET connections:', connErr.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   if (!connections || connections.length === 0) {
@@ -37,7 +38,8 @@ export async function GET(req: NextRequest) {
     .in('connection_id', connectionIds);
 
   if (accErr) {
-    return NextResponse.json({ error: accErr.message }, { status: 500 });
+    console.error('[api/connectors/meta/accounts] GET accounts:', accErr.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({

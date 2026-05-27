@@ -62,3 +62,37 @@ export async function getCompanyMarkupDefaults(
     notify_new_version: pick('markup_notify_new_version', true),
   };
 }
+
+/**
+ * Per-member markup defaults. Member columns override the company default
+ * when non-null. Falls back to company defaults for any null member column.
+ */
+export async function getMemberMarkupDefaults(
+  supabase: SupabaseClient,
+  companyId: string,
+  teamMemberId: string,
+): Promise<MarkupNotifyPrefs> {
+  const companyDefaults = await getCompanyMarkupDefaults(supabase, companyId);
+
+  const { data: member } = await supabase
+    .from('team_members')
+    .select(
+      'markup_notify_comment, markup_notify_reply, markup_notify_resolve, markup_notify_status, markup_notify_new_version',
+    )
+    .eq('id', teamMemberId)
+    .single();
+
+  if (!member) return companyDefaults;
+
+  const row = member as Record<string, unknown>;
+  const merge = (key: keyof MarkupNotifyPrefs, dbKey: string) =>
+    typeof row[dbKey] === 'boolean' ? (row[dbKey] as boolean) : companyDefaults[key];
+
+  return {
+    notify_comment: merge('notify_comment', 'markup_notify_comment'),
+    notify_reply: merge('notify_reply', 'markup_notify_reply'),
+    notify_resolve: merge('notify_resolve', 'markup_notify_resolve'),
+    notify_status: merge('notify_status', 'markup_notify_status'),
+    notify_new_version: merge('notify_new_version', 'markup_notify_new_version'),
+  };
+}

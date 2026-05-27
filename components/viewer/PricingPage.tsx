@@ -77,6 +77,8 @@ export default function PricingPage({ pricing, branding, clientName, orientation
   const pricingPriceColor = branding.pricing_price_color || textColor;
   const pricingPaymentScheduleNameColor = branding.pricing_payment_schedule_name_color || accent;
   const pricingPaymentSchedulePriceColor = branding.pricing_payment_schedule_price_color || accent;
+  const pricingAccentBarColor = branding.pricing_accent_bar_color || accent;
+  const pricingDotColor = branding.pricing_dot_color || accent;
 
   const brandFont = fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif');
   const brandWeight = Number(branding.title_font_weight || branding.font_heading_weight || '700');
@@ -113,7 +115,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
         style={{ backgroundColor: bgSecondary, border: `1px solid ${border}` }}
       >
         {/* Header accent bar */}
-        <div className="h-1" style={{ backgroundColor: accent }} />
+        <div className="h-1" style={{ backgroundColor: pricingAccentBarColor }} />
 
         <div className="p-6 sm:p-8 lg:p-10" style={{ fontFamily: bodyFont }}>
           {/* Title */}
@@ -337,7 +339,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: accent }}
+                        style={{ backgroundColor: pricingDotColor }}
                       />
                       <div className="min-w-0">
                         <span className="agv-pricing-body text-sm" style={{ color: pricingPaymentScheduleNameColor, fontFamily: brandFont, fontWeight: brandWeight }}>
@@ -375,7 +377,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           <div className="flex items-center gap-3 min-w-0">
                             <div
                               className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: accent, opacity }}
+                              style={{ backgroundColor: pricingDotColor, opacity }}
                             />
                             <div className="min-w-0">
                               <span className="agv-pricing-body text-sm" style={{ color: pricingPaymentScheduleNameColor, fontFamily: brandFont, fontWeight: brandWeight }}>
@@ -415,7 +417,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                                 className="transition-all duration-300"
                                 style={{
                                   width: `${pct}%`,
-                                  backgroundColor: accent,
+                                  backgroundColor: pricingDotColor,
                                   opacity,
                                   borderRight: idx < ps.milestones.payments.length - 1
                                     ? '1px solid rgba(0,0,0,0.15)'
@@ -444,7 +446,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                 {ps.recurring?.enabled && ps.recurring.amount > 0 && (
                   <div className="flex items-center justify-between px-4 py-4">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: pricingDotColor }} />
                       <div className="min-w-0">
                         <span className="agv-pricing-body text-sm" style={{ color: pricingPaymentScheduleNameColor, fontFamily: brandFont, fontWeight: brandWeight }}>
                           {ps.recurring.label}

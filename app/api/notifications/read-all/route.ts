@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
     .eq('company_id', auth.companyId)
     .is('read_at', null);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/notifications/read-all] POST:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }

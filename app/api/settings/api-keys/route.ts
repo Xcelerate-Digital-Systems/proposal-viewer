@@ -28,7 +28,10 @@ export async function GET(req: NextRequest) {
     .eq('source', 'manual')
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/settings/api-keys] GET:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
   return NextResponse.json({ success: true, data });
 }
 
@@ -59,7 +62,10 @@ export async function POST(req: NextRequest) {
     .select('id, label, key_prefix, created_at')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/settings/api-keys] POST:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 
   // plaintext returned ONCE — never persisted in plaintext form
   return NextResponse.json({ success: true, data: { ...data, plaintext } }, { status: 201 });
@@ -82,6 +88,9 @@ export async function DELETE(req: NextRequest) {
     .eq('company_id', auth.companyId)
     .eq('source', 'manual');
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/settings/api-keys] DELETE:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }

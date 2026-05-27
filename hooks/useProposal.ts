@@ -133,6 +133,8 @@ export function useProposal(token: string) {
         if (data.pricing_price_color != null) brandingData.pricing_price_color = data.pricing_price_color;
         if (data.pricing_payment_schedule_name_color != null) brandingData.pricing_payment_schedule_name_color = data.pricing_payment_schedule_name_color;
         if (data.pricing_payment_schedule_price_color != null) brandingData.pricing_payment_schedule_price_color = data.pricing_payment_schedule_price_color;
+        if (data.pricing_accent_bar_color != null) brandingData.pricing_accent_bar_color = data.pricing_accent_bar_color;
+        if (data.pricing_dot_color != null) brandingData.pricing_dot_color = data.pricing_dot_color;
 
         setBranding(brandingData);
       }

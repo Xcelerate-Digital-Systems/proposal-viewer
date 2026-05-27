@@ -65,9 +65,9 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError || !doc) {
-      console.error('Document insert error:', insertError?.message);
+      console.error('[api/documents] POST insert:', insertError?.message);
       return NextResponse.json(
-        { error: insertError?.message ?? 'Failed to create document' },
+        { error: 'Failed to create document' },
         { status: 500 },
       );
     }
@@ -100,7 +100,8 @@ export async function PATCH(req: NextRequest) {
       .eq('company_id', auth.companyId);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/documents] PATCH:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

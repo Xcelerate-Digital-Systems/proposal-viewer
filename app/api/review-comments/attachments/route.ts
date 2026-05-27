@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +86,12 @@ export async function POST(req: NextRequest) {
         { error: 'A valid share_token or Authorization header is required' },
         { status: 401 },
       );
+    }
+
+    const rlKey = shareToken ? `upload:${shareToken}` : `upload:${companyId}`;
+    const rl = await rateLimit({ key: rlKey, limit: 20, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const path = `review-attachments/${companyId}/${crypto.randomUUID()}.${incomingExt}`;

@@ -323,6 +323,9 @@ export type PackageStyling = {
   recommended_text_color: string | null;
   recommended_bg_color: string | null;
   feature_icon: PackageFeatureIcon;
+  feature_icon_color: string | null;
+  accent_bar_color: string | null;
+  price_color: string | null;
   border_radius: number;
   border_width: number;
 };
@@ -336,6 +339,9 @@ export const DEFAULT_PACKAGE_STYLING: PackageStyling = {
   recommended_text_color: null,
   recommended_bg_color: null,
   feature_icon: 'dot',
+  feature_icon_color: null,
+  accent_bar_color: null,
+  price_color: null,
   border_radius: 12,
   border_width: 1,
 };
@@ -368,6 +374,9 @@ export function normalizePackageStyling(raw: unknown): PackageStyling {
     feature_icon: (['dot', 'check', 'checkCircle', 'arrow', 'star', 'dash'].includes(r.feature_icon as string)
       ? r.feature_icon as PackageFeatureIcon
       : 'dot'),
+    feature_icon_color: (r.feature_icon_color as string) ?? null,
+    accent_bar_color: (r.accent_bar_color as string) ?? null,
+    price_color: (r.price_color as string) ?? null,
     border_radius: typeof r.border_radius === 'number' ? r.border_radius : 12,
     border_width: typeof r.border_width === 'number' ? r.border_width : 1,
   };

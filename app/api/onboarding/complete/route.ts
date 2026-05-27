@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (error) {
-      console.error('onboarding/complete error:', error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/onboarding/complete] POST:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     // If the row was already completed previously, the WHERE clause matches

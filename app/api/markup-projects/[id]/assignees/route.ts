@@ -102,7 +102,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[api/markup-projects/[id]/assignees] POST:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
@@ -153,7 +154,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     .eq('team_member_id', team_member_id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[api/markup-projects/[id]/assignees] PATCH:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
   return NextResponse.json({ success: true });
 }
@@ -188,7 +190,8 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     .eq('team_member_id', team_member_id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[api/markup-projects/[id]/assignees] DELETE:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

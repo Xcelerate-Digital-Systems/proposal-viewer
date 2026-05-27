@@ -31,7 +31,10 @@ export async function GET(req: NextRequest) {
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/ads/swipe/types] GET:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 
     const typeIds = (types || []).map((t) => t.id);
     // File counts cover every visible type — a partner viewing a shared folder
@@ -130,7 +133,10 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/ads/swipe/types] POST:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (err) {
     console.error('Swipe types POST error:', err);

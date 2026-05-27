@@ -10,7 +10,6 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import ProfileEditor from '@/components/admin/settings/ProfileEditor';
 import BusinessDetailsCard from '@/components/admin/company/BusinessDetailsCard';
 import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
-import MarkupDefaultsSection from '@/components/admin/settings/MarkupDefaultsSection';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
@@ -88,7 +87,7 @@ function SettingsContent({ auth }: {
   const canSeeBilling = isAdminOrOwner && accountType === 'agency';
 
   return (
-    <div className="px-6 lg:px-10 py-8 max-w-6xl">
+    <div className="px-6 lg:px-10 py-8">
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 bg-teal-tint rounded-[14px] flex items-center justify-center">
@@ -167,23 +166,18 @@ function SettingsContent({ auth }: {
           )}
 
           {activeTab === 'members' && companyId && teamMember && (
-            <section className="space-y-8">
-              <div>
-                <SectionHeader
-                  title="Members & Notifications"
-                  description="Manage who has access to this workspace. Notification defaults apply to new Markup project assignees and guests."
-                />
-                <MembersTab
-                  companyId={companyId}
-                  currentMemberId={teamMember.id}
-                  currentRole={teamMember.role}
-                  isSuperAdmin={isSuperAdmin}
-                  accountType={accountType}
-                />
-              </div>
-              <div>
-                <MarkupDefaultsSection canEdit={isAdminOrOwner || isSuperAdmin} />
-              </div>
+            <section>
+              <SectionHeader
+                title="Members & Notifications"
+                description="Manage team access and per-member Markup notification defaults. Expand a member to configure their notifications."
+              />
+              <MembersTab
+                companyId={companyId}
+                currentMemberId={teamMember.id}
+                currentRole={teamMember.role}
+                isSuperAdmin={isSuperAdmin}
+                accountType={accountType}
+              />
             </section>
           )}
 

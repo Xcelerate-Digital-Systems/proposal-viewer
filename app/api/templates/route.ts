@@ -39,9 +39,9 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error || !data) {
-      console.error('Template insert error:', error?.message);
+      console.error('[api/templates] POST insert:', error?.message);
       return NextResponse.json(
-        { error: error?.message ?? 'Failed to create template' },
+        { error: 'Failed to create template' },
         { status: 500 },
       );
     }
@@ -86,7 +86,8 @@ export async function PATCH(req: NextRequest) {
       .eq('company_id', auth.companyId);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/templates] PATCH:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

@@ -58,7 +58,8 @@ export async function PATCH(req: NextRequest) {
     .eq('id', auth.companyId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[api/company/markup-notification-defaults] PATCH:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   const next = await getCompanyMarkupDefaults(supabase, auth.companyId);

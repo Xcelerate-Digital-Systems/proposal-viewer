@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (keyErr || !key) {
-    return NextResponse.json({ error: keyErr?.message || 'Failed to create key' }, { status: 500 });
+    console.error('[api/oauth/extension/authorize] POST key insert:', keyErr?.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   // Mint the short-lived one-time code. The plaintext token is stashed on the
@@ -75,7 +76,8 @@ export async function POST(req: NextRequest) {
   if (codeErr) {
     // Roll back the half-provisioned key so it can't be used silently.
     await supabase.from('api_keys').delete().eq('id', key.id);
-    return NextResponse.json({ error: codeErr.message }, { status: 500 });
+    console.error('[api/oauth/extension/authorize] POST code insert:', codeErr.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, code, expires_in: CODE_TTL_SECONDS });

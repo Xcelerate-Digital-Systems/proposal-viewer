@@ -91,8 +91,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('claim-invite insert failed:', insertError.message);
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      console.error('[api/auth/claim-invite] POST insert:', insertError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     await supabase

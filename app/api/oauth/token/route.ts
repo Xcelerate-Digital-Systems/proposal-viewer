@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 // Gate verbose flow logs on an env flag — they're useful for debugging the
 // Looker Studio OAuth integration but leak client_id / redirect_uri / partial
 // code hashes into production logs when always on.
-const DEBUG_OAUTH = process.env.DEBUG_OAUTH === '1';
+const DEBUG_OAUTH = process.env.DEBUG_OAUTH === '1' && process.env.NODE_ENV !== 'production';
 const debugLog = (...args: unknown[]) => {
   if (DEBUG_OAUTH) console.log(...args);
 };

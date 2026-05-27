@@ -71,7 +71,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     .select('id, share_token')
     .single();
   if (insErr || !copy) {
-    return NextResponse.json({ error: insErr?.message ?? 'Insert failed' }, { status: 500 });
+    console.error('[api/proposals/[id]/duplicate] POST insert:', insErr?.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   // Copy pricing/text/packages pages over from the unified proposal_pages_v2

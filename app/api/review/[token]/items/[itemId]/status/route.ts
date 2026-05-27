@@ -194,7 +194,8 @@ export async function POST(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/review/[token]/items/[itemId]/status] POST:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     // Record the per-reviewer decision after the status is written so the
@@ -273,7 +274,7 @@ export async function POST(
       gate: gateInfo,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unexpected error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[api/review/[token]/items/[itemId]/status]', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -41,7 +41,8 @@ export async function DELETE(
       .eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/invites/[id]] DELETE:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
@@ -99,7 +100,8 @@ export async function POST(
       .eq('id', id);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      console.error('[api/invites/[id]] POST resend update:', updateError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     const { data: company } = await supabase

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 // POST - Upload company logo
 export async function POST(req: NextRequest) {
@@ -15,6 +16,11 @@ export async function POST(req: NextRequest) {
 
     if (!member.is_super_admin && member.role !== 'owner') {
       return NextResponse.json({ error: 'Only owners can update the logo' }, { status: 403 });
+    }
+
+    const rl = await rateLimit({ key: `upload:${companyId}`, limit: 10, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const formData = await req.formData();
@@ -52,7 +58,8 @@ export async function POST(req: NextRequest) {
       });
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+      console.error('[api/company/logo] POST upload:', uploadError.message);
+      return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
 
     // Update company record
@@ -62,7 +69,8 @@ export async function POST(req: NextRequest) {
       .eq('id', companyId);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      console.error('[api/company/logo] POST update:', updateError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     // Get public URL

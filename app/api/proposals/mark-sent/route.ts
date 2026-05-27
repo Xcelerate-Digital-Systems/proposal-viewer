@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
       .eq('id', proposal_id);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      console.error('[api/proposals/mark-sent] POST:', updateError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     // Look up company for custom domain (used to build viewer_url in webhook payload)

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/review-comments/video-upload
@@ -69,6 +70,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid share token' }, { status: 403 });
       }
       scope = `project/${project.id}`;
+    }
+
+    const rlKey = shareToken ? `upload:${shareToken}` : `upload:${companyIdRaw}`;
+    const rl = await rateLimit({ key: rlKey, limit: 10, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const ext = (file.type === 'video/mp4' ? 'mp4'

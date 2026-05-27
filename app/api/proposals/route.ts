@@ -124,9 +124,9 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError || !proposal) {
-      console.error('Proposal insert error:', insertError?.message);
+      console.error('[api/proposals] POST insert:', insertError?.message);
       return NextResponse.json(
-        { error: insertError?.message ?? 'Failed to create proposal' },
+        { error: 'Failed to create proposal' },
         { status: 500 },
       );
     }
@@ -222,7 +222,8 @@ export async function PATCH(req: NextRequest) {
       .eq('company_id', auth.companyId);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/proposals] PATCH:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

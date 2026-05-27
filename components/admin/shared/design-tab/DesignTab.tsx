@@ -64,6 +64,8 @@ interface DesignTabProps {
   initialPricingPriceColor?: string | null;
   initialPricingPaymentScheduleNameColor?: string | null;
   initialPricingPaymentSchedulePriceColor?: string | null;
+  initialPricingAccentBarColor?: string | null;
+  initialPricingDotColor?: string | null;
   /** Cover entity for the Cover Page design section. Pass the proposal /
    *  template row directly so CoverDesignPanel can read/write design fields. */
   coverEntity?: import('@/components/admin/shared/cover-editor/CoverEditorTypes').CoverEditorEntity;
@@ -112,6 +114,8 @@ export default function DesignTab({
   initialPricingPriceColor,
   initialPricingPaymentScheduleNameColor,
   initialPricingPaymentSchedulePriceColor,
+  initialPricingAccentBarColor,
+  initialPricingDotColor,
   coverEntity,
 }: DesignTabProps) {
   const table = tableByType[type];
@@ -196,6 +200,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   const [pricingPriceColor, setPricingPriceColor] = useState<string | null>(initialPricingPriceColor ?? null);
   const [pricingPaymentScheduleNameColor, setPricingPaymentScheduleNameColor] = useState<string | null>(initialPricingPaymentScheduleNameColor ?? null);
   const [pricingPaymentSchedulePriceColor, setPricingPaymentSchedulePriceColor] = useState<string | null>(initialPricingPaymentSchedulePriceColor ?? null);
+  const [pricingAccentBarColor, setPricingAccentBarColor] = useState<string | null>(initialPricingAccentBarColor ?? null);
+  const [pricingDotColor, setPricingDotColor] = useState<string | null>(initialPricingDotColor ?? null);
 
   /* ================================================================ */
   /*  SAVE STATUS + REFS                                               */
@@ -329,6 +335,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       payload.pricing_price_color = pricingPriceColor;
       payload.pricing_payment_schedule_name_color = pricingPaymentScheduleNameColor;
       payload.pricing_payment_schedule_price_color = pricingPaymentSchedulePriceColor;
+      payload.pricing_accent_bar_color = pricingAccentBarColor;
+      payload.pricing_dot_color = pricingDotColor;
     }
 
     await supabase.from(table).update(payload).eq('id', entityId);
@@ -343,7 +351,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     fontBodyFamily, fontBodyWeight, fontBodySize, fontButtonFamily, fontButtonWeight,
     titleFontTransform, fontHeadingTransform, fontBodyTransform,
     pageNumCircleColor, pageNumTextColor,
-    pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor,
+    pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor, pricingAccentBarColor, pricingDotColor,
     type, table, entityId, onSave,
   ]);
 
@@ -389,7 +397,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   useEffect(() => {
     if (!pricingInitializedRef.current) { pricingInitializedRef.current = true; return; }
     scheduleSave(800);
-  }, [pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor, pricingAccentBarColor, pricingDotColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ================================================================ */
   /*  BACKGROUND IMAGE HANDLERS                                        */
@@ -518,6 +526,10 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setPricingPaymentScheduleNameColor={setPricingPaymentScheduleNameColor}
       pricingPaymentSchedulePriceColor={pricingPaymentSchedulePriceColor}
       setPricingPaymentSchedulePriceColor={setPricingPaymentSchedulePriceColor}
+      pricingAccentBarColor={pricingAccentBarColor}
+      setPricingAccentBarColor={setPricingAccentBarColor}
+      pricingDotColor={pricingDotColor}
+      setPricingDotColor={setPricingDotColor}
       entityId={entityId}
       entityTitle={entityTitle}
       coverEntity={coverEntity}

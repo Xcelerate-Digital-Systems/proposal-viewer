@@ -151,6 +151,37 @@ export default function PackagesAppearanceSection({
             </button>
           ))}
         </div>
+        <ColorPickerField
+          label="Icon colour"
+          value={styling.feature_icon_color}
+          fallback="#01434A"
+          onChange={(v) => update({ feature_icon_color: v })}
+          onReset={() => update({ feature_icon_color: null })}
+        />
+      </div>
+
+      {/* ── Accent Bar ───────────────────────────────────── */}
+      <div className="space-y-2">
+        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Accent Bar</label>
+        <ColorPickerField
+          label="Top border bar"
+          value={styling.accent_bar_color}
+          fallback="#01434A"
+          onChange={(v) => update({ accent_bar_color: v })}
+          onReset={() => update({ accent_bar_color: null })}
+        />
+      </div>
+
+      {/* ── Price ─────────────────────────────────────────── */}
+      <div className="space-y-2">
+        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Price</label>
+        <ColorPickerField
+          label="Price text"
+          value={styling.price_color}
+          fallback="#01434A"
+          onChange={(v) => update({ price_color: v })}
+          onReset={() => update({ price_color: null })}
+        />
       </div>
 
       {/* ── Card Shape ────────────────────────────────────── */}
@@ -186,6 +217,9 @@ export function isDefaultPackageStyling(s: PackageStyling): boolean {
     !s.recommended_text_color &&
     !s.recommended_bg_color &&
     s.feature_icon === 'dot' &&
+    !s.feature_icon_color &&
+    !s.accent_bar_color &&
+    !s.price_color &&
     s.border_radius === 12 &&
     s.border_width === 1
   );

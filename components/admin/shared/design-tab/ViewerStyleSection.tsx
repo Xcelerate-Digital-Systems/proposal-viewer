@@ -193,6 +193,10 @@ interface ViewerStyleSectionProps {
   setPricingPaymentScheduleNameColor: (v: string | null) => void;
   pricingPaymentSchedulePriceColor: string | null;
   setPricingPaymentSchedulePriceColor: (v: string | null) => void;
+  pricingAccentBarColor: string | null;
+  setPricingAccentBarColor: (v: string | null) => void;
+  pricingDotColor: string | null;
+  setPricingDotColor: (v: string | null) => void;
   /* ── Defaults & actions ─────────────────────────────────── */
   companyDefaults: TextPageDefaults;
   onTpResetToCompany: () => void;
@@ -276,6 +280,10 @@ export default function ViewerStyleSection({
   setPricingPaymentScheduleNameColor,
   pricingPaymentSchedulePriceColor,
   setPricingPaymentSchedulePriceColor,
+  pricingAccentBarColor,
+  setPricingAccentBarColor,
+  pricingDotColor,
+  setPricingDotColor,
   companyDefaults,
   onTpResetToCompany,
   entityId,
@@ -713,6 +721,8 @@ export default function ViewerStyleSection({
                       setPricingPriceColor(null);
                       setPricingPaymentScheduleNameColor(null);
                       setPricingPaymentSchedulePriceColor(null);
+                      setPricingAccentBarColor(null);
+                      setPricingDotColor(null);
                     }}
                     className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
                   >
@@ -764,6 +774,20 @@ export default function ViewerStyleSection({
                     onChange={setPricingPaymentSchedulePriceColor}
                     onReset={() => setPricingPaymentSchedulePriceColor(null)}
                   />
+                  <ColorPickerField
+                    label="Top Border Bar"
+                    value={pricingAccentBarColor}
+                    fallback={companyDefaults.accent_color}
+                    onChange={setPricingAccentBarColor}
+                    onReset={() => setPricingAccentBarColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Dot / Bullet Colour"
+                    value={pricingDotColor}
+                    fallback={companyDefaults.accent_color}
+                    onChange={setPricingDotColor}
+                    onReset={() => setPricingDotColor(null)}
+                  />
                 </div>
               </SectionCard>
             </div>
@@ -778,6 +802,8 @@ export default function ViewerStyleSection({
                   pricing_price_color: pricingPriceColor,
                   pricing_payment_schedule_name_color: pricingPaymentScheduleNameColor,
                   pricing_payment_schedule_price_color: pricingPaymentSchedulePriceColor,
+                  pricing_accent_bar_color: pricingAccentBarColor,
+                  pricing_dot_color: pricingDotColor,
                 }}
               />
             </StickyPreviewAside>

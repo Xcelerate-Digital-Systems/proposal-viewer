@@ -59,21 +59,25 @@ export async function PATCH(
         .eq('id', id);
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[api/team/[id]] PATCH role:', error.message);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }
 
       return NextResponse.json({ success: true });
     }
 
-    // ── Profile update (name / avatar_path) ──────────────────
-    const hasProfileUpdate = 'name' in body || 'avatar_path' in body;
+    // ── Profile update (name / avatar_path / markup_notify_*) ─
+    const MARKUP_PREF_KEYS = [
+      'markup_notify_comment', 'markup_notify_reply', 'markup_notify_resolve',
+      'markup_notify_status', 'markup_notify_new_version',
+    ] as const;
+    const hasMarkupPrefs = MARKUP_PREF_KEYS.some((k) => k in body);
+    const hasProfileUpdate = 'name' in body || 'avatar_path' in body || hasMarkupPrefs;
 
     if (hasProfileUpdate) {
-      // Self-update: any authenticated user can update their own profile
       const isSelfUpdate = id === member.id;
 
       if (!isSelfUpdate) {
-        // Other-member update: only super admins, owners, or admins
         const canEditOthers =
           member.is_super_admin ||
           member.role === 'owner' ||
@@ -86,7 +90,6 @@ export async function PATCH(
           );
         }
 
-        // Admins can only edit members, not owners or other admins
         if (
           member.role === 'admin' &&
           !member.is_super_admin &&
@@ -112,8 +115,13 @@ export async function PATCH(
       }
 
       if ('avatar_path' in body) {
-        // avatar_path can be null (to remove) or a string path
         updates.avatar_path = body.avatar_path;
+      }
+
+      for (const key of MARKUP_PREF_KEYS) {
+        if (key in body) {
+          updates[key] = typeof body[key] === 'boolean' ? body[key] : null;
+        }
       }
 
       const { error } = await supabase
@@ -122,7 +130,8 @@ export async function PATCH(
         .eq('id', id);
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[api/team/[id]] PATCH profile:', error.message);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }
 
       return NextResponse.json({ success: true });
@@ -189,7 +198,8 @@ export async function DELETE(
       .eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/team/[id]] DELETE:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

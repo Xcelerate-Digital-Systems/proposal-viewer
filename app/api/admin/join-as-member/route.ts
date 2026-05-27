@@ -84,6 +84,9 @@ export async function POST(req: NextRequest) {
     .select()
     .single();
 
-  if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
+  if (insertErr) {
+    console.error('[api/admin/join-as-member] POST insert:', insertErr.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
   return NextResponse.json({ membership: inserted, already_member: false });
 }

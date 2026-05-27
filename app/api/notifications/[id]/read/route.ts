@@ -17,6 +17,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     .eq('id', params.id)
     .eq('user_id', auth.member.user_id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/notifications/[id]/read] PATCH:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }

@@ -146,7 +146,10 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error) return withCors(NextResponse.json({ error: error.message }, { status: 500 }));
+    if (error) {
+      console.error('[api/ads/swipe/files/import-from-url] POST:', error.message);
+      return withCors(NextResponse.json({ error: 'Internal server error' }, { status: 500 }));
+    }
     return withCors(NextResponse.json({ success: true, data }, { status: 201 }));
   } catch (err) {
     console.error('Swipe import-from-url error:', err);

@@ -16,12 +16,13 @@ export async function GET(req: NextRequest) {
 
     const { data: members, error } = await supabase
       .from('team_members')
-      .select('id, name, email, role, created_at')
+      .select('id, name, email, role, created_at, markup_notify_comment, markup_notify_reply, markup_notify_resolve, markup_notify_status, markup_notify_new_version')
       .eq('company_id', companyId)
       .order('created_at', { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[api/team] GET:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     // Get company info

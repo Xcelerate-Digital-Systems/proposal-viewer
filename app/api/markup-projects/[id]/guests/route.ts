@@ -191,7 +191,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       { onConflict: 'review_project_id,email' }
     );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/markup-projects/[id]/guests]', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }
 
@@ -259,6 +262,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     .from('review_project_guest_recipients')
     .upsert(update, { onConflict: 'review_project_id,email' });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/markup-projects/[id]/guests]', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }

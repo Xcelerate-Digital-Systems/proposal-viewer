@@ -28,7 +28,10 @@ export async function GET(req: NextRequest) {
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error('[api/ads/swipe/files] GET:', error.message);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      }
       return NextResponse.json({ success: true, data });
     }
 
@@ -48,7 +51,10 @@ export async function GET(req: NextRequest) {
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/ads/swipe/files] GET:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true, data });
   } catch (err) {
     console.error('Swipe files GET error:', err);
@@ -104,7 +110,10 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/ads/swipe/files] POST:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (err) {
     console.error('Swipe files POST error:', err);

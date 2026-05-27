@@ -77,7 +77,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       .from('proposals')
       .update({ status: 'accepted', accepted_at: now, accepted_by_name: name })
       .eq('id', proposal.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/proposals/share/[token]/action] accept:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   }
 
@@ -94,7 +97,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
         decline_reason: reason,
       })
       .eq('id', proposal.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/proposals/share/[token]/action] decline:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   }
 
@@ -111,7 +117,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
         revision_notes: notes,
       })
       .eq('id', proposal.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/proposals/share/[token]/action] request_revision:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   }
 

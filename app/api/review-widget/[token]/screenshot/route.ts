@@ -1,6 +1,7 @@
 // app/api/review-widget/[token]/screenshot/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit } from '@/lib/rate-limit';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,6 +17,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
   const params = await props.params;
   const supabase = createServiceClient();
   try {
+    const rl = await rateLimit({ key: `upload:${params.token}`, limit: 20, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: CORS_HEADERS });
+    }
+
     const body = await req.json();
     const { item: itemId, image } = body as { item?: string; image?: string };
 

@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
       .order('position', { ascending: true });
 
     if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
+      console.error('[api/templates/copy-data] POST fetch:', fetchError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     if (!templatePages || templatePages.length === 0) {
@@ -82,7 +83,8 @@ export async function POST(req: NextRequest) {
       .select('id, type');
 
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      console.error('[api/templates/copy-data] POST insert:', insertError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     // ── 3. Build ID map: old template _v2 row ID → new proposal _v2 row ID ──

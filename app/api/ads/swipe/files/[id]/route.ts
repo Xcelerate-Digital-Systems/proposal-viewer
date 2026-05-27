@@ -83,7 +83,10 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
       .delete()
       .eq('id', params.id);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/ads/swipe/files/[id]] DELETE:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Swipe file DELETE error:', err);

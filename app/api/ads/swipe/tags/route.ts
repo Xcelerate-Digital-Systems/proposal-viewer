@@ -38,7 +38,10 @@ export async function GET(req: NextRequest) {
       error = res.error;
     }
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/ads/swipe/tags] GET:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 
     const dynamicSet = new Set<string>();
     (data || []).forEach((row: { tags: string[] | null }) => {

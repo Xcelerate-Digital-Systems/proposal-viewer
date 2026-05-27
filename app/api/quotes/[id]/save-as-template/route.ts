@@ -100,8 +100,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       .select('id, name')
       .single();
     if (insErr || !tpl) {
-      console.error('Template insert failed:', insErr?.message);
-      return NextResponse.json({ error: insErr?.message ?? 'Insert failed' }, { status: 500 });
+      console.error('[api/quotes/[id]/save-as-template] POST insert:', insErr?.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     // Copy pricing pages (line items live in proposal_pages_v2.payload).

@@ -191,7 +191,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         { onConflict: 'review_project_id,team_member_id' },
       );
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/markup-projects/[id]/stage-assignees]', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   }
 
@@ -233,7 +236,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         { onConflict: 'review_project_id,email' },
       );
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/markup-projects/[id]/stage-assignees]', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   }
 
@@ -286,7 +292,10 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
       .update({ stages: nextStages })
       .eq('review_project_id', params.id)
       .eq('team_member_id', team_member_id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/markup-projects/[id]/stage-assignees]', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   }
 
@@ -311,7 +320,10 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
       .update({ stages: nextStages })
       .eq('review_project_id', params.id)
       .eq('email', normalizedEmail);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/markup-projects/[id]/stage-assignees]', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   }
 

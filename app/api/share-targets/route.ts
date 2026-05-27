@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
       .select('company_id')
       .eq('user_id', auth.member.user_id);
 
-    if (memErr) return NextResponse.json({ error: memErr.message }, { status: 500 });
+    if (memErr) {
+      console.error('[api/share-targets] GET memberships:', memErr.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 
     const otherIds = Array.from(
       new Set(
@@ -43,7 +46,10 @@ export async function GET(req: NextRequest) {
       .in('id', otherIds)
       .order('name', { ascending: true });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/share-targets] GET companies:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true, data: companies || [] });
   } catch (err) {
     console.error('Share targets GET error:', err);

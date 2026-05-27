@@ -48,6 +48,8 @@ export default function ProposalDesignPage() {
         initialPricingPriceColor={proposal.pricing_price_color ?? null}
         initialPricingPaymentScheduleNameColor={proposal.pricing_payment_schedule_name_color ?? null}
         initialPricingPaymentSchedulePriceColor={proposal.pricing_payment_schedule_price_color ?? null}
+        initialPricingAccentBarColor={(proposal as { pricing_accent_bar_color?: string | null }).pricing_accent_bar_color ?? null}
+        initialPricingDotColor={(proposal as { pricing_dot_color?: string | null }).pricing_dot_color ?? null}
         coverEntity={proposal}
       />
     </div>

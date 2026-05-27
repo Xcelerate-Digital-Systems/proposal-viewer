@@ -30,6 +30,8 @@ export interface PricingPreviewLive {
   pricing_price_color: string | null;
   pricing_payment_schedule_name_color: string | null;
   pricing_payment_schedule_price_color: string | null;
+  pricing_accent_bar_color: string | null;
+  pricing_dot_color: string | null;
 }
 
 /* ── Helper: fetch branding for an entity ───────────────────────── */

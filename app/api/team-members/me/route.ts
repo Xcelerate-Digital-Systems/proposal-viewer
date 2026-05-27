@@ -66,7 +66,8 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      console.error('[api/team-members/me] PATCH:', updateError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     return NextResponse.json(updated);

@@ -67,7 +67,8 @@ export async function POST(req: NextRequest) {
     expires_at: expiresAt,
   });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[api/connectors/meta/oauth/start] POST:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   const redirectUri = `${appUrl}/api/connectors/meta/oauth/callback`;

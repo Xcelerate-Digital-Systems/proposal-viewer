@@ -48,6 +48,8 @@ export default function TemplateDesignPage() {
         initialPricingPriceColor={template.pricing_price_color ?? null}
         initialPricingPaymentScheduleNameColor={template.pricing_payment_schedule_name_color ?? null}
         initialPricingPaymentSchedulePriceColor={template.pricing_payment_schedule_price_color ?? null}
+        initialPricingAccentBarColor={(template as { pricing_accent_bar_color?: string | null }).pricing_accent_bar_color ?? null}
+        initialPricingDotColor={(template as { pricing_dot_color?: string | null }).pricing_dot_color ?? null}
         coverEntity={template}
       />
     </div>

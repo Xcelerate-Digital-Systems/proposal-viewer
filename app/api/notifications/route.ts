@@ -29,7 +29,10 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[api/notifications] GET:', error.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 
   // Unread count (always returned so the badge can update).
   const { count } = await supabase

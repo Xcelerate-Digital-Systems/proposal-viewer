@@ -1,9 +1,15 @@
 // app/api/company/branding/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
 // GET - Public endpoint to fetch company branding for proposal viewer
 export async function GET(req: NextRequest) {
+  const rl = await rateLimit({ key: `branding:${ipFromRequest(req)}`, limit: 30, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const companyId = req.nextUrl.searchParams.get('company_id');
 

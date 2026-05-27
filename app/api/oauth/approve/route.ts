@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (keyErr || !key) {
-    return NextResponse.json({ error: keyErr?.message || 'Failed to create key' }, { status: 500 });
+    console.error('[api/oauth/approve] POST key insert:', keyErr?.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   const code = randomBytes(32).toString('base64url');
@@ -91,7 +92,8 @@ export async function POST(req: NextRequest) {
 
   if (codeErr) {
     await supabase.from('api_keys').delete().eq('id', key.id);
-    return NextResponse.json({ error: codeErr.message }, { status: 500 });
+    console.error('[api/oauth/approve] POST code insert:', codeErr.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   const redirect = new URL(redirect_uri);

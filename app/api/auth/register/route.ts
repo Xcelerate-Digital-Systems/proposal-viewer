@@ -107,7 +107,8 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[api/auth/register] invite member insert:', error.message);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }
 
       await supabase
@@ -152,9 +153,9 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (companyError || !company) {
-      console.error('Self-serve company insert error:', companyError?.message);
+      console.error('[api/auth/register] self-serve company insert:', companyError?.message);
       return NextResponse.json(
-        { error: companyError?.message ?? 'Failed to create workspace' },
+        { error: 'Failed to create workspace' },
         { status: 500 },
       );
     }
@@ -175,9 +176,9 @@ export async function POST(req: NextRequest) {
       // Roll back the company row so a half-created workspace doesn't linger
       // and block a retry. Service role bypasses the FK cascade restriction.
       await supabase.from('companies').delete().eq('id', company.id);
-      console.error('Self-serve member insert error:', memberError?.message);
+      console.error('[api/auth/register] self-serve member insert:', memberError?.message);
       return NextResponse.json(
-        { error: memberError?.message ?? 'Failed to create membership' },
+        { error: 'Failed to create membership' },
         { status: 500 },
       );
     }
