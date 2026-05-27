@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
 import ErrorState from '@/components/ui/ErrorState';
+import PageHeader from '@/components/ui/PageHeader';
 import { supabase, type Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
@@ -130,15 +131,10 @@ function QuotesContent({ companyId }: { companyId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6 flex items-center gap-4">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-semibold text-ink">Quote Builder</h1>
-          <p className="text-sm text-muted mt-1">
-            {quotes.length} quote{quotes.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Quote Builder"
+        description={`${quotes.length} quote${quotes.length !== 1 ? 's' : ''}`}
+        actions={<>
           <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
             <button
               onClick={() => toggleViewMode('grid')}
@@ -215,8 +211,8 @@ function QuotesContent({ companyId }: { companyId: string }) {
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Content — board needs overflow-hidden so columns fill the viewport,
           horizontal scroll stays inside the board, etc. */}

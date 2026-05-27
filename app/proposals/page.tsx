@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
 import ErrorState from '@/components/ui/ErrorState';
+import PageHeader from '@/components/ui/PageHeader';
 import { supabase, Proposal } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/proposals/UploadModal';
@@ -146,17 +147,10 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-ivory shadow-divider px-6 lg:px-10 py-6 flex items-center gap-4">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-semibold text-ink">
-            Pitch Studio
-          </h1>
-          <p className="text-sm text-muted mt-1">
-            {proposals.length} pitch{proposals.length !== 1 ? 'es' : ''}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Pitch Studio"
+        description={`${proposals.length} pitch${proposals.length !== 1 ? 'es' : ''}`}
+        actions={<>
           {/* View toggle */}
           <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
             <button
@@ -242,8 +236,8 @@ function ProposalsContent({ companyId }: { companyId: string }) {
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Content — board uses overflow-hidden + tight padding so it can fill
           the available height; list/grid keep the standard vertical scroll. */}
