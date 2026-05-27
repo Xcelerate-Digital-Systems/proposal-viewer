@@ -132,7 +132,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
               placeholder="Search docs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+              className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
             />
           </div>
 
@@ -192,7 +192,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
                   Recently edited
                 </h2>
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 stagger-children">
                     {recent.map((doc) => (
                       <DocumentListCard
                         key={`recent-${doc.id}`}
@@ -220,7 +220,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
               </section>
             )}
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 stagger-children">
                 {filtered.map((doc) => (
                   <DocumentListCard
                     key={doc.id}

@@ -86,7 +86,7 @@ export default function CommentsPanel({
   guestName,
   onNameChange,
   shareToken,
-  className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col bg-[#FBF8F5]',
+  className = 'fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto lg:w-[340px] shrink-0 flex flex-col bg-warm',
   closable = true,
   commentPlaceholder,
   commentFormAlwaysExpanded,
@@ -115,7 +115,7 @@ export default function CommentsPanel({
         <div>
           <h2 className="text-base font-semibold text-ink tracking-tight">Comments</h2>
           {(unresolvedComments.length > 0 || resolvedComments.length > 0) && (
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <p className="text-detail text-faint mt-0.5">
               {unresolvedComments.length} open
               {resolvedComments.length > 0 && ` · ${resolvedComments.length} resolved`}
             </p>
@@ -123,7 +123,7 @@ export default function CommentsPanel({
         </div>
         <button
           onClick={onClose}
-          className={`p-1 rounded text-gray-400 hover:text-gray-600 transition-colors ${closable ? '' : 'lg:hidden'}`}
+          className={`p-1 rounded text-faint hover:text-prose transition-colors ${closable ? '' : 'lg:hidden'}`}
         >
           <X size={14} />
         </button>
@@ -170,7 +170,7 @@ export default function CommentsPanel({
         {!hasComments && (
           <div className="text-center py-12">
             <MapPin size={28} className="mx-auto mb-3 text-gray-300" />
-            <p className="text-[13px] text-gray-400">
+            <p className="text-caption text-faint">
               Click anywhere on the content to leave a comment.
             </p>
           </div>

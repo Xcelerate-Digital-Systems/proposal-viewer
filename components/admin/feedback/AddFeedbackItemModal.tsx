@@ -113,20 +113,20 @@ export default function AddFeedbackItemModal({
                   onClick={() => handleTypeSelect(opt.value, opt.enabled)}
                   className={`w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-colors ${
                     opt.enabled
-                      ? 'bg-gray-50 hover:bg-teal/5 cursor-pointer'
-                      : 'bg-gray-50/50 opacity-50 cursor-not-allowed'
+                      ? 'bg-surface hover:bg-teal/5 cursor-pointer'
+                      : 'bg-surface/50 opacity-50 cursor-not-allowed'
                   }`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
                       opt.enabled ? 'bg-teal/10' : 'bg-gray-100'
                     }`}
                   >
-                    <Icon size={20} className={opt.enabled ? 'text-teal' : 'text-gray-400'} />
+                    <Icon size={20} className={opt.enabled ? 'text-teal' : 'text-faint'} />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-ink">{opt.label}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-faint">
                       {opt.description}
                       {!opt.enabled && ' (coming soon)'}
                     </p>

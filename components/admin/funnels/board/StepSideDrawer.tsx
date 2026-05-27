@@ -109,7 +109,7 @@ export default function StepSideDrawer({
         </div>
         <button
           onClick={onClose}
-          className="w-7 h-7 rounded-md text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors shrink-0"
+          className="w-7 h-7 rounded-lg text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors shrink-0"
         >
           <X size={14} />
         </button>
@@ -131,7 +131,7 @@ export default function StepSideDrawer({
             onChange={(e) => setLabel(e.target.value)}
             onBlur={commitLabel}
             onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-            className="w-full px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
           />
         </Field>
 
@@ -145,14 +145,14 @@ export default function StepSideDrawer({
               onBlur={commitUrl}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               placeholder="https://example.com/page"
-              className="flex-1 px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal"
+              className="flex-1 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
             />
             {step.url && (
               <a
                 href={step.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-md border border-edge text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-lg border border-edge text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors"
                 title="Open URL"
               >
                 <ExternalLink size={13} />
@@ -234,7 +234,7 @@ export default function StepSideDrawer({
                         key={slug}
                         type="button"
                         onClick={() => setIcon(slug)}
-                        className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
                           active
                             ? 'bg-teal text-white ring-2 ring-teal/30'
                             : 'bg-surface text-ink/70 hover:bg-white hover:ring-1 hover:ring-edge'
@@ -295,7 +295,7 @@ export default function StepSideDrawer({
             }}
             rows={3}
             placeholder="Internal context for this step…"
-            className="w-full px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal resize-none"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-none"
           />
         </Field>
       </div>
@@ -305,7 +305,7 @@ export default function StepSideDrawer({
         <button
           type="button"
           onClick={onDelete}
-          className="w-full flex items-center justify-center gap-1.5 text-xs text-rose-600 hover:text-white hover:bg-rose-500 border border-rose-200 hover:border-rose-500 rounded-md py-1.5 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 text-xs text-rose-600 hover:text-white hover:bg-rose-500 border border-rose-200 hover:border-rose-500 rounded-lg py-1.5 transition-colors"
         >
           <Trash2 size={12} />
           Delete step
@@ -350,8 +350,8 @@ function MetricInput({
 
   return (
     <div className="flex items-center gap-2">
-      <label className="text-[11px] text-muted w-[110px] shrink-0">{label}</label>
-      <div className="flex-1 flex items-center bg-white border border-edge rounded-md focus-within:border-teal transition-colors">
+      <label className="text-detail text-muted w-[110px] shrink-0">{label}</label>
+      <div className="flex-1 flex items-center bg-white border border-edge rounded-lg focus-within:border-teal transition-colors">
         {prefix && <span className="text-xs text-muted pl-2">{prefix}</span>}
         <input
           type="number"
@@ -364,7 +364,7 @@ function MetricInput({
           onChange={(e) => setLocal(e.target.value)}
           onBlur={() => onChange(local)}
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-          className="flex-1 px-2 py-1.5 text-[13px] bg-transparent outline-none w-full"
+          className="flex-1 px-2 py-1.5 text-caption bg-transparent outline-none w-full"
         />
         {suffix && <span className="text-xs text-muted pr-2">{suffix}</span>}
       </div>

@@ -23,28 +23,28 @@ export default function PricingPaymentSchedule({
   const h = usePricingSchedule(schedule, items, taxEnabled, taxRate, onChange);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg border border-edge-strong overflow-hidden">
       {/* Collapsible header */}
       <button
         type="button"
         onClick={() => h.setExpanded(!h.expanded)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <Wallet size={16} className={h.hasAny ? TEAL_TEXT : 'text-gray-400'} />
-          <span className="text-sm font-semibold text-gray-900">Payment Schedule</span>
+          <Wallet size={16} className={h.hasAny ? TEAL_TEXT : 'text-faint'} />
+          <span className="text-sm font-semibold text-ink">Payment Schedule</span>
           {h.hasAny && (
             <span className="text-2xs px-2 py-0.5 rounded-full bg-teal/10 text-teal font-medium">
               Active
             </span>
           )}
         </div>
-        {h.expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        {h.expanded ? <ChevronUp size={16} className="text-faint" /> : <ChevronDown size={16} className="text-faint" />}
       </button>
 
       {h.expanded && (
-        <div className="border-t border-gray-100 p-4 space-y-4">
-          <p className="text-xs text-gray-400">
+        <div className="border-t border-edge p-4 space-y-4">
+          <p className="text-xs text-faint">
             Define how your client pays. Enable any combination — or leave all off for just line items and a total.
           </p>
 

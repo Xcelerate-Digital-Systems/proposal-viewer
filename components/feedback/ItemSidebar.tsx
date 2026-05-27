@@ -160,14 +160,14 @@ export default function ItemSidebar({
     <aside
       className={
         isAdmin
-          ? 'flex flex-col w-[220px] shrink-0 border-r border-gray-200 bg-white overflow-hidden'
+          ? 'flex flex-col w-[220px] shrink-0 border-r border-edge-strong bg-white overflow-hidden'
           : 'flex flex-col w-[220px] shrink-0 border-r overflow-hidden'
       }
       style={!isAdmin ? { backgroundColor: bg, borderColor: border } : undefined}
     >
       {/* Header */}
       <div
-        className={isAdmin ? 'px-4 py-4 border-b border-gray-200' : 'px-4 py-4 border-b'}
+        className={isAdmin ? 'px-4 py-4 border-b border-edge-strong' : 'px-4 py-4 border-b'}
         style={!isAdmin ? { borderColor: border } : undefined}
       >
         {!isAdmin && logoUrl ? (
@@ -183,7 +183,7 @@ export default function ItemSidebar({
 
         {projectTitle && (
           <p
-            className={isAdmin ? 'text-sm font-semibold text-gray-900 truncate' : 'text-xs mt-1.5 truncate'}
+            className={isAdmin ? 'text-sm font-semibold text-ink truncate' : 'text-xs mt-1.5 truncate'}
             style={!isAdmin ? { color: `${text}88` } : undefined}
           >
             {projectTitle}
@@ -219,7 +219,7 @@ export default function ItemSidebar({
                 className={
                   isAdmin
                     ? `w-full text-left rounded-lg p-2 transition-colors ${
-                        isActive ? 'bg-teal/8 ring-1 ring-teal/20' : 'hover:bg-gray-50'
+                        isActive ? 'bg-teal/8 ring-1 ring-teal/20' : 'hover:bg-surface'
                       }`
                     : 'w-full text-left rounded-lg p-2 transition-colors'
                 }

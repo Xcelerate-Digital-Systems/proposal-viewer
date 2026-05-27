@@ -179,7 +179,7 @@ function ModalRoot({
         // tabIndex={-1} so the card itself can receive focus as a fallback
         // when the modal has no focusable children (rare, e.g. a "loading…" splash).
         tabIndex={-1}
-        className={`relative w-full ${sizeWidth[size]} max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-modal overflow-hidden outline-none`}
+        className={`relative w-full ${sizeWidth[size]} max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-modal overflow-hidden outline-none animate-[scaleUp_150ms_ease-out]`}
         onClick={(e) => e.stopPropagation()}
       >
         {title && <DefaultHeader title={title} onClose={onClose} />}

@@ -21,7 +21,7 @@ export default function FeedbackModeBar({ mode, onCancel, accentColor }: Feedbac
 
   return (
     <div
-      className="flex items-center justify-center gap-3 px-4 py-2.5 text-white text-[13px] font-medium z-40 shrink-0 animate-in slide-in-from-top duration-200 shadow-[0_1px_0_rgba(0,0,0,0.06)]"
+      className="flex items-center justify-center gap-3 px-4 py-2.5 text-white text-caption font-medium z-40 shrink-0 animate-in slide-in-from-top duration-200 shadow-[0_1px_0_rgba(0,0,0,0.06)]"
       style={{ backgroundColor: accentColor || '#017C87' }}
     >
       <span>{message}</span>

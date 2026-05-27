@@ -55,7 +55,7 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
     : primary;
 
   return (
-    <div className="w-full rounded-xl overflow-hidden border border-[#e4e6e9] bg-white">
+    <div className="w-full rounded-2xl overflow-hidden border border-[#e4e6e9] bg-white">
       {/* Page header */}
       <div className="flex items-center gap-2.5 px-4 pt-3 pb-2">
         <div
@@ -70,12 +70,12 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
           {pageName.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <div className={`font-semibold text-[#050505] ${compact ? 'text-xs' : 'text-[13px]'} truncate`}>
+          <div className={`font-semibold text-[#050505] ${compact ? 'text-xs' : 'text-caption'} truncate`}>
             {pageName}
           </div>
           <div className="flex items-center gap-1">
-            <span className={`${compact ? 'text-2xs' : 'text-[11px]'} text-[#65676b]`}>Sponsored</span>
-            <span className="text-[11px] text-[#65676b]">·</span>
+            <span className={`${compact ? 'text-2xs' : 'text-detail'} text-[#65676b]`}>Sponsored</span>
+            <span className="text-detail text-[#65676b]">·</span>
             <Globe size={10} className="text-[#65676b]" />
           </div>
         </div>
@@ -155,19 +155,19 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
               </p>
             )}
             {file.headline && (
-              <p className={`${compact ? 'text-[13px]' : 'text-[15px]'} font-semibold leading-tight text-[#050505] truncate`}>
+              <p className={`${compact ? 'text-caption' : 'text-[15px]'} font-semibold leading-tight text-[#050505] truncate`}>
                 {file.headline}
               </p>
             )}
             {file.description && (
-              <p className={`${compact ? 'text-[11px]' : 'text-[13px]'} text-[#65676b] truncate`}>
+              <p className={`${compact ? 'text-detail' : 'text-caption'} text-[#65676b] truncate`}>
                 {file.description}
               </p>
             )}
           </div>
           {file.cta && (
             <span
-              className={`shrink-0 ${compact ? 'px-3 py-1.5 text-[11px]' : 'px-4 py-2 text-[13px]'} rounded-md font-semibold bg-[#e4e6e9] text-[#050505]`}
+              className={`shrink-0 ${compact ? 'px-3 py-1.5 text-detail' : 'px-4 py-2 text-caption'} rounded-lg font-semibold bg-[#e4e6e9] text-[#050505]`}
             >
               {file.cta}
             </span>
@@ -185,7 +185,7 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
           ].map(({ icon: Icon, label }) => (
             <div
               key={label}
-              className={`flex items-center gap-1.5 ${compact ? 'px-2 py-1 text-[11px]' : 'px-4 py-2 text-[13px]'} rounded-md font-semibold text-[#65676b]`}
+              className={`flex items-center gap-1.5 ${compact ? 'px-2 py-1 text-detail' : 'px-4 py-2 text-caption'} rounded-lg font-semibold text-[#65676b]`}
             >
               <Icon size={compact ? 14 : 18} />
               {label}

@@ -172,7 +172,7 @@ export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, o
         <button
           type="button"
           onClick={() => setCollapsed(false)}
-          className="w-7 h-7 rounded-md flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface transition-colors"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface transition-colors"
           title="Open palette"
         >
           <PanelLeftOpen size={16} />
@@ -194,12 +194,12 @@ export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, o
       <div className="px-4 py-3 border-b border-edge flex items-start justify-between gap-2 shrink-0">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-ink">Add to canvas</h3>
-          <p className="text-[11px] text-muted mt-0.5">Click or drag any tile to the canvas</p>
+          <p className="text-detail text-muted mt-0.5">Click or drag any tile to the canvas</p>
         </div>
         <button
           type="button"
           onClick={() => setCollapsed(true)}
-          className="w-6 h-6 rounded-md flex items-center justify-center text-ink/60 hover:text-ink hover:bg-surface transition-colors shrink-0"
+          className="w-6 h-6 rounded-lg flex items-center justify-center text-ink/60 hover:text-ink hover:bg-surface transition-colors shrink-0"
           title="Collapse palette"
         >
           <ChevronLeft size={14} />
@@ -269,7 +269,7 @@ function ItemsTabContent() {
       <button
         type="button"
         onClick={openAddItem}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-semibold text-white bg-teal hover:bg-teal-hover transition-colors shadow-sm"
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-caption font-semibold text-white bg-teal hover:bg-teal-hover transition-colors shadow-sm"
       >
         <Plus size={14} />
         New item
@@ -312,7 +312,7 @@ function ItemsTabContent() {
                     <Icon size={13} />
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[13px] truncate leading-tight">{item.title}</span>
+                    <span className="block text-caption truncate leading-tight">{item.title}</span>
                     <span className="block text-2xs text-faint leading-tight">
                       {ITEM_TYPE_LABELS[item.type]}
                     </span>

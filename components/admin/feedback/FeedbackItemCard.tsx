@@ -192,7 +192,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
       {/* Thumbnail — click to open viewer */}
       <button
         onClick={() => onOpenViewer(item.id)}
-        className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative rounded-t-2xl"
+        className="w-full aspect-[4/3] bg-surface flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative rounded-t-2xl"
       >
         <FeedbackItemThumb item={item} />
       </button>
@@ -211,7 +211,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                   if (e.key === 'Enter') handleSaveTitle();
                   if (e.key === 'Escape') { setEditing(false); setEditTitle(item.title); }
                 }}
-                className="flex-1 px-2.5 py-1.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 min-w-0"
+                className="flex-1 px-2.5 py-1.5 bg-surface rounded-2xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 min-w-0"
                 autoFocus
               />
               <button
@@ -225,14 +225,14 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
           ) : (
             <div className="flex items-center gap-1 min-w-0">
               <h4
-                className="text-sm font-semibold text-gray-900 truncate cursor-pointer hover:text-teal transition-colors"
+                className="text-sm font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors"
                 onClick={() => onOpenViewer(item.id)}
               >
                 {item.title}
               </h4>
               <button
                 onClick={() => setEditing(true)}
-                className="p-0.5 rounded text-gray-300 hover:text-gray-500 transition-colors shrink-0"
+                className="p-0.5 rounded text-gray-300 hover:text-dim transition-colors shrink-0"
               >
                 <Pencil size={11} />
               </button>
@@ -252,7 +252,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                 if (e.key === 'Escape') { setEditingUrl(false); setEditUrl(item.url || ''); }
               }}
               placeholder="https://example.com/page"
-              className="flex-1 px-2.5 py-1.5 bg-gray-50 rounded-xl text-xs text-ink font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 min-w-0"
+              className="flex-1 px-2.5 py-1.5 bg-surface rounded-2xl text-xs text-ink font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 min-w-0"
               autoFocus
             />
             <button
@@ -275,7 +275,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
         </div>
 
         {/* Comments stat */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
+        <div className="flex items-center gap-1.5 text-xs text-faint mb-2">
           <MessageSquareText size={12} />
           <span>
             {commentCount} comment{commentCount !== 1 ? 's' : ''}
@@ -289,7 +289,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
         <div className="flex-1" />
 
         {/* Actions */}
-        <div className="flex items-center justify-between border-t border-gray-100 pt-2 -mx-3 px-3">
+        <div className="flex items-center justify-between border-t border-edge pt-2 -mx-3 px-3">
           <Button
             variant="outline"
             size="sm"
@@ -302,7 +302,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors"
             >
               <MoreHorizontal size={14} />
             </button>
@@ -310,11 +310,11 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-xl border border-gray-100 shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
+                <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
                   <button
                     onClick={handleShare}
                     disabled={sharing}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface"
                   >
                     {sharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
                     Copy Share Link
@@ -324,7 +324,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setShowMenu(false)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface"
                     >
                       <ExternalLink size={14} />
                       Open Page
@@ -337,13 +337,13 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                         setEditUrl(item.url || '');
                         setEditingUrl(true);
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface"
                     >
                       <LinkIcon size={14} />
                       Edit URL
                     </button>
                   )}
-                  <div className="border-t border-gray-100 my-1" />
+                  <div className="border-t border-edge my-1" />
                   <button
                     onClick={() => { setShowMenu(false); handleDelete(); }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"

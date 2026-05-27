@@ -67,7 +67,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
           {project?.title || '…'}
         </div>
         {project?.client_name && (
-          <div className="text-[11px] text-white/50 truncate">{project.client_name}</div>
+          <div className="text-detail text-white/50 truncate">{project.client_name}</div>
         )}
       </div>
 

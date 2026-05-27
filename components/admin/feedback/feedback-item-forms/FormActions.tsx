@@ -32,7 +32,7 @@ export default function FormActions({
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="flex items-center gap-1 text-sm text-dim hover:text-prose transition-colors"
         >
           <ChevronLeft size={14} /> Change type
         </button>
@@ -43,7 +43,7 @@ export default function FormActions({
             className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
               previewToggle.visible
                 ? 'bg-teal/10 text-teal'
-                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                : 'bg-surface text-dim hover:bg-gray-100'
             }`}
           >
             {previewToggle.visible ? 'Hide Preview' : 'Show Preview'}

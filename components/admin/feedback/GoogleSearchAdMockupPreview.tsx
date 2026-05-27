@@ -59,7 +59,7 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
   return (
     <div className="w-full flex gap-4 items-start">
       {/* Asset sidebar */}
-      <aside className="w-80 shrink-0 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <aside className="w-80 shrink-0 rounded-2xl border border-edge-strong bg-white shadow-sm overflow-hidden">
         <AssetSection
           icon={Type}
           label="Headlines"
@@ -88,15 +88,15 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
           assetType="description"
           commentCounts={commentCountsByView}
         />
-        <p className="px-3.5 py-3 text-[11px] text-gray-400 border-t border-gray-100 leading-snug">
+        <p className="px-3.5 py-3 text-detail text-faint border-t border-edge leading-snug">
           Click any headline or description to preview it on the right and leave feedback on that asset.
         </p>
       </aside>
 
       {/* SERP mockup card */}
-      <div className="flex-1 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex-1 rounded-2xl border border-edge-strong bg-white shadow-sm overflow-hidden">
         {/* Google header bar */}
-        <div className="px-6 py-4 flex items-center gap-6 border-b border-gray-100">
+        <div className="px-6 py-4 flex items-center gap-6 border-b border-edge">
           <svg width="92" height="30" viewBox="0 0 92 30" className="shrink-0">
             <text x="0" y="22" fontFamily="Arial, sans-serif" fontSize="22" fontWeight="500">
               <tspan fill="#4285F4">G</tspan>
@@ -107,7 +107,7 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
               <tspan fill="#EA4335">e</tspan>
             </text>
           </svg>
-          <div className="flex-1 max-w-2xl h-11 rounded-full border border-gray-200 hover:shadow-md transition-shadow flex items-center gap-3 px-5">
+          <div className="flex-1 max-w-2xl h-11 rounded-full border border-edge-strong hover:shadow-md transition-shadow flex items-center gap-3 px-5">
             <div className="flex-1 h-3 rounded bg-gray-100" />
             <Search size={18} className="text-[#4285F4]" />
           </div>
@@ -115,35 +115,35 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
         </div>
 
         {/* Tabs row */}
-        <div className="px-6 pt-3 border-b border-gray-100">
-          <div className="flex items-center gap-6 text-[13px] text-gray-600">
+        <div className="px-6 pt-3 border-b border-edge">
+          <div className="flex items-center gap-6 text-caption text-prose">
             <span className="pb-2 border-b-2 border-[#1a73e8] text-[#1a73e8] font-medium">All</span>
             <span className="pb-2">Images</span>
             <span className="pb-2">Videos</span>
             <span className="pb-2">News</span>
             <span className="pb-2">Maps</span>
             <span className="pb-2">Shopping</span>
-            <MoreVertical size={14} className="text-gray-500 pb-1" />
+            <MoreVertical size={14} className="text-dim pb-1" />
           </div>
         </div>
 
         {/* Results body */}
         <div className="px-6 py-4 max-w-[680px]">
-          <p className="text-xs text-gray-500 mb-4">About 1,540,000,000 results (0.42 seconds)</p>
+          <p className="text-xs text-dim mb-4">About 1,540,000,000 results (0.42 seconds)</p>
 
           {/* Ad card */}
           <div className="mb-6">
-            <p className="text-xs font-medium text-gray-900 mb-1.5">Sponsored</p>
+            <p className="text-xs font-medium text-ink mb-1.5">Sponsored</p>
 
             <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-2xs font-semibold text-gray-500 shrink-0">
+              <div className="w-7 h-7 rounded-full bg-gray-100 border border-edge-strong flex items-center justify-center text-2xs font-semibold text-dim shrink-0">
                 {(data.business_name || data.display_url || 'A').slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-sm text-gray-900 truncate font-medium leading-tight">
+                <p className="text-sm text-ink truncate font-medium leading-tight">
                   {data.business_name || data.display_url || 'example.com'}
                 </p>
-                <p className="text-xs text-gray-500 truncate leading-tight">{displayPath}</p>
+                <p className="text-xs text-dim truncate leading-tight">{displayPath}</p>
               </div>
             </div>
 
@@ -159,7 +159,7 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
                   <div key={s.id} className="min-w-0">
                     <p className="text-sm text-[#1a0dab] truncate cursor-pointer hover:underline">{s.text}</p>
                     {(s.description1 || s.description2) && (
-                      <p className="text-xs text-gray-500 line-clamp-2">
+                      <p className="text-xs text-dim line-clamp-2">
                         {s.description1}{s.description2 ? ` ${s.description2}` : ''}
                       </p>
                     )}
@@ -171,7 +171,7 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
             {data.call_phone && (
               <button
                 type="button"
-                className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-gray-200 text-[13px] text-[#1a0dab] hover:bg-gray-50 transition-colors"
+                className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-edge-strong text-caption text-[#1a0dab] hover:bg-surface transition-colors"
               >
                 <Phone size={13} className="-rotate-90" />
                 Call {data.call_phone}
@@ -184,16 +184,16 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
               <div className="w-6 h-6 rounded-full bg-gray-100" />
               <div>
                 <div className="h-2.5 bg-gray-100 rounded w-32 mb-1" />
-                <div className="h-2 bg-gray-50 rounded w-40" />
+                <div className="h-2 bg-surface rounded w-40" />
               </div>
             </div>
             <div className="h-4 bg-gray-100 rounded w-3/5 mt-1.5" />
-            <div className="h-2.5 bg-gray-50 rounded w-full" />
-            <div className="h-2.5 bg-gray-50 rounded w-5/6" />
+            <div className="h-2.5 bg-surface rounded w-full" />
+            <div className="h-2.5 bg-surface rounded w-5/6" />
           </div>
         </div>
 
-        <p className="text-2xs text-gray-400 text-center pb-3">
+        <p className="text-2xs text-faint text-center pb-3">
           Previews are examples and don&apos;t include all possible formats.
         </p>
       </div>
@@ -223,16 +223,16 @@ function AssetSection({
   icon: Icon, label, count, max, items, activeIdx, previewIdx, onSelect, charLimit, emptyHint, assetType, commentCounts,
 }: AssetSectionProps) {
   return (
-    <div className="border-b border-gray-100 last:border-b-0">
-      <div className="px-3.5 py-2.5 flex items-center gap-2 bg-gray-50/60">
-        <Icon size={15} className="text-gray-500" />
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 flex-1">
+    <div className="border-b border-edge last:border-b-0">
+      <div className="px-3.5 py-2.5 flex items-center gap-2 bg-surface/60">
+        <Icon size={15} className="text-dim" />
+        <p className="text-xs font-semibold uppercase tracking-wide text-prose flex-1">
           {label}
         </p>
-        <span className="text-[11px] tabular-nums text-gray-400">{count}/{max}</span>
+        <span className="text-detail tabular-nums text-faint">{count}/{max}</span>
       </div>
       {items.length === 0 ? (
-        <p className="px-3.5 py-3 text-xs text-gray-400 italic">{emptyHint}</p>
+        <p className="px-3.5 py-3 text-xs text-faint italic">{emptyHint}</p>
       ) : (
         <ul className="py-1.5">
           {items.map((text, i) => {
@@ -245,28 +245,28 @@ function AssetSection({
                 <button
                   type="button"
                   onClick={() => onSelect(i)}
-                  className={`w-full text-left px-3.5 py-2 flex items-start gap-2.5 text-[13px] leading-snug transition-colors ${
+                  className={`w-full text-left px-3.5 py-2 flex items-start gap-2.5 text-caption leading-snug transition-colors ${
                     active
                       ? 'bg-blue-50 text-[#1a0dab]'
                       : previewing
-                        ? 'bg-gray-50 text-gray-800'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-surface text-gray-800'
+                        : 'text-prose hover:bg-surface'
                   }`}
                   title={text}
                 >
-                  <span className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-medium shrink-0 ${
+                  <span className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded text-detail font-medium shrink-0 ${
                     active
                       ? 'bg-[#1a0dab] text-white'
                       : previewing
-                        ? 'bg-gray-200 text-gray-700'
-                        : 'bg-gray-100 text-gray-500'
+                        ? 'bg-gray-200 text-prose'
+                        : 'bg-gray-100 text-dim'
                   }`}>
                     {i + 1}
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block truncate">{text}</span>
                     {over && (
-                      <span className="block text-[11px] text-amber-600 mt-0.5">
+                      <span className="block text-detail text-amber-600 mt-0.5">
                         {text.length}/{charLimit} chars
                       </span>
                     )}

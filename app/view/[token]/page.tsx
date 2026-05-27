@@ -163,7 +163,7 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
         <button
           type="button"
           onClick={() => window.print()}
-          className="fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/95 backdrop-blur border border-gray-200 shadow-md text-xs font-medium text-gray-700 hover:text-gray-900 hover:shadow-lg transition-all print:hidden"
+          className="fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/95 backdrop-blur border border-edge-strong shadow-md text-xs font-medium text-prose hover:text-ink hover:shadow-lg transition-all print:hidden"
         >
           <Download size={13} />
           Download PDF

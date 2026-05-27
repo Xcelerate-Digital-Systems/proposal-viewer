@@ -111,7 +111,7 @@ export function BillingGuard({ companyId, accountType, role, children }: Billing
   // the lockout kicks in, which is jarring.
   if (!loaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <Loader2 className="w-6 h-6 text-teal animate-spin" />
       </div>
     );

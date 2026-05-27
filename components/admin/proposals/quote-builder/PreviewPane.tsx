@@ -104,9 +104,9 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
   }, [refetch, proposal.updated_at]);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col sticky top-6 max-h-[calc(100vh-140px)]">
-      <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+    <div className="bg-white rounded-2xl border border-edge-strong overflow-hidden flex flex-col sticky top-6 max-h-[calc(100vh-140px)]">
+      <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-edge bg-surface">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-dim">
           <Eye size={12} />
           Live Preview
         </div>
@@ -114,7 +114,7 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
           type="button"
           onClick={refetch}
           disabled={refreshing}
-          className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+          className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors disabled:opacity-50"
           title="Refresh preview"
         >
           <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />

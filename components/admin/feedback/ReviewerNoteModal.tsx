@@ -76,7 +76,7 @@ export default function ReviewerNoteModal({
           onChange={(e) => setNote(e.target.value)}
           rows={6}
           placeholder="Type here"
-          className="w-full px-3.5 py-2.5 rounded-xl bg-surface text-sm text-ink placeholder-faint resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="w-full px-3.5 py-2.5 rounded-2xl bg-surface text-sm text-ink placeholder-faint resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
         />
         <label className="flex items-center gap-2 mt-3 text-sm text-ink cursor-pointer select-none">
           <input

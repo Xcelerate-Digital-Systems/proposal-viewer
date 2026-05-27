@@ -157,7 +157,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
       <div className="flex-1 min-h-0 p-2">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
           </div>
         ) : (
           <FunnelBoard />

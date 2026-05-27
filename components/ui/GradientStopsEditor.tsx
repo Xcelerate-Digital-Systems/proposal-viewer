@@ -120,7 +120,7 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-xs text-gray-500">Gradient stops</label>
+        <label className="text-xs text-dim">Gradient stops</label>
         <button
           type="button"
           onClick={addAtMidpoint}
@@ -136,7 +136,7 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
         onPointerMove={onTrackPointerMove}
         onPointerUp={onTrackPointerUp}
         onPointerCancel={onTrackPointerUp}
-        className="relative h-8 rounded-md border border-gray-200"
+        className="relative h-8 rounded-lg border border-edge-strong"
         style={{ background: trackCss }}
       >
         {stops.map((s, i) => (
@@ -161,9 +161,9 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
 
       {/* Selected stop controls */}
       {sel && (
-        <div className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 space-y-3">
+        <div className="rounded-lg border border-edge bg-surface/60 p-3 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">Selected stop</span>
+            <span className="text-xs text-dim">Selected stop</span>
             <button
               type="button"
               onClick={() => removeStop(selected)}
@@ -181,8 +181,8 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
           />
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-gray-500">Position</label>
-              <span className="text-xs text-gray-700 tabular-nums">{sel.position}%</span>
+              <label className="text-xs text-dim">Position</label>
+              <span className="text-xs text-prose tabular-nums">{sel.position}%</span>
             </div>
             <input
               type="range"
@@ -198,7 +198,7 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
         </div>
       )}
 
-      <p className="text-[11px] text-gray-400">
+      <p className="text-detail text-faint">
         Drag a stop to reposition, click to recolour. Use &ldquo;Add stop&rdquo; to insert a new one.
       </p>
     </div>

@@ -115,34 +115,34 @@ export default function WorkspaceSwitcher({
         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors group ${
           open
             ? 'bg-white/10 text-white'
-            : 'text-white/70 hover:text-white hover:bg-[#013036]'
+            : 'text-white/70 hover:text-white hover:bg-surface-dark-hover'
         }`}
       >
         <Building2
           size={15}
-          className={open ? 'text-[#8AD9D1] shrink-0' : 'text-white/40 group-hover:text-white/60 shrink-0'}
+          className={open ? 'text-surface-dark-accent shrink-0' : 'text-white/40 group-hover:text-white/60 shrink-0'}
         />
         <span className="flex-1 truncate text-left text-xs font-medium">{buttonLabel}</span>
         {showDropdownChevron && (
           <ChevronDown
             size={13}
-            className={`shrink-0 transition-transform ${open ? 'rotate-180 text-[#8AD9D1]' : 'text-white/30'}`}
+            className={`shrink-0 transition-transform ${open ? 'rotate-180 text-surface-dark-accent' : 'text-white/30'}`}
           />
         )}
       </button>
 
       {open && showDropdownChevron && (
-        <div className="absolute left-2 right-2 top-full mt-1 bg-[#01282e] border border-[#01434A] rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute left-2 right-2 top-full mt-1 bg-surface-dark-deep border border-surface-dark-border rounded-2xl shadow-xl z-50 overflow-hidden">
           {companyOverride && (
             <>
               <button
                 onClick={handleReturnFromOverride}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-[#8AD9D1]/80 hover:text-[#8AD9D1] hover:bg-white/5 transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-surface-dark-accent/80 hover:text-surface-dark-accent hover:bg-white/5 transition-colors"
               >
                 <ArrowLeft size={12} />
                 <span>Stop viewing {companyOverride.companyName}</span>
               </button>
-              <div className="mx-3 border-t border-[#01434A]" />
+              <div className="mx-3 border-t border-surface-dark-border" />
             </>
           )}
 
@@ -161,7 +161,7 @@ export default function WorkspaceSwitcher({
                       onClick={() => handleSelect(m.id)}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
                         isActive
-                          ? 'text-[#8AD9D1] bg-white/5'
+                          ? 'text-surface-dark-accent bg-white/5'
                           : 'text-white/60 hover:text-white hover:bg-white/5'
                       }`}
                     >
@@ -187,13 +187,13 @@ export default function WorkspaceSwitcher({
 
           {isSuperAdmin && (
             <>
-              <div className="border-t border-[#01434A]" />
+              <div className="border-t border-surface-dark-border" />
               <Link
                 href="/accounts"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-white/70 hover:text-[#8AD9D1] hover:bg-white/5 transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-white/70 hover:text-surface-dark-accent hover:bg-white/5 transition-colors"
               >
-                <Shield size={13} className="text-[#8AD9D1]/80" />
+                <Shield size={13} className="text-surface-dark-accent/80" />
                 <span className="flex-1">Platform Admin</span>
               </Link>
             </>

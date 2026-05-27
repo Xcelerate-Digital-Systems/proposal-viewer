@@ -80,7 +80,7 @@ export default function ScopeOfWorksSection({ proposal, onSaved }: Props) {
           type="button"
           onClick={generate}
           disabled={generating}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
         >
           {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
           Generate with AI
@@ -98,9 +98,9 @@ export default function ScopeOfWorksSection({ proposal, onSaved }: Props) {
           'Floor and wall tiling (client to supply tiles)\n' +
           'Removal and disposal of existing fixtures'
         }
-        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
+        className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
       />
-      <div className="flex items-center justify-end pt-3 mt-3 border-t border-gray-100">
+      <div className="flex items-center justify-end pt-3 mt-3 border-t border-edge">
         <Button
           type="button"
           size="sm"

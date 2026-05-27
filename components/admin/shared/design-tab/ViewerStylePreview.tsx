@@ -259,7 +259,7 @@ function PricingMock(props: ViewerStylePreviewProps) {
             <p className="text-xs mt-1" style={{ color: muted }}>Prepared for Client Name</p>
           </div>
 
-          <p className="text-[11px] leading-relaxed mb-4" style={{ color: muted }}>
+          <p className="text-detail leading-relaxed mb-4" style={{ color: muted }}>
             The following costs are based on the agreed scope of works outlined within this proposal.
           </p>
 
@@ -336,7 +336,7 @@ function PackagesMock(props: ViewerStylePreviewProps) {
           <h3 className="font-bold tracking-tight" style={titleStyle(props, text)}>
             Choose Your Package
           </h3>
-          <p className="text-[11px] mt-1.5" style={{ color: muted }}>
+          <p className="text-detail mt-1.5" style={{ color: muted }}>
             Select the option that best suits your needs.
           </p>
         </div>
@@ -410,10 +410,10 @@ export function ViewerStylePreviewTabs({
           <button
             key={tab.key}
             onClick={() => onTabChange(tab.key)}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-2xs font-medium transition-colors ${
               isActive
                 ? 'bg-teal/10 text-teal'
-                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                : 'text-faint hover:text-prose hover:bg-surface'
             }`}
           >
             <Icon size={10} />

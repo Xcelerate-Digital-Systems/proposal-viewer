@@ -159,7 +159,7 @@ export default function SwipeFileDetailModal({
           <button
             onClick={() => canPrev && onNavigate(currentIndex - 1)}
             disabled={!canPrev}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge text-[13px] text-ink hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge text-caption text-ink hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={16} /> Previous
           </button>
@@ -175,7 +175,7 @@ export default function SwipeFileDetailModal({
             <button
               onClick={handleShare}
               disabled={sharing}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-[13px] font-medium ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-caption font-medium ${
                 copied ? 'border-teal text-teal' : 'border-edge text-ink hover:bg-surface'
               }`}
             >
@@ -191,7 +191,7 @@ export default function SwipeFileDetailModal({
               <button
                 onClick={() => canNext && onNavigate(currentIndex + 1)}
                 disabled={!canNext}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge text-[13px] text-ink hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge text-caption text-ink hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next <ChevronRight size={16} />
               </button>
@@ -255,7 +255,7 @@ export default function SwipeFileDetailModal({
                   <div className="flex items-start gap-3">
                     <FolderInput size={14} className="text-faint mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] text-faint mb-1">Folder</p>
+                      <p className="text-detail text-faint mb-1">Folder</p>
                       <select
                         value={file.type_id}
                         disabled={moving}
@@ -269,7 +269,7 @@ export default function SwipeFileDetailModal({
                             setMoving(false);
                           }
                         }}
-                        className="w-full text-[13px] text-ink bg-white border border-edge rounded-lg px-2 py-1.5 hover:border-teal/50 focus:outline-none focus:border-teal disabled:opacity-50"
+                        className="w-full text-caption text-ink bg-white border border-edge rounded-lg px-2 py-1.5 hover:border-teal/50 focus:outline-none focus:border-teal disabled:opacity-50"
                       >
                         {types.map((t) => (
                           <option key={t.id} value={t.id}>{t.name}</option>
@@ -282,12 +282,12 @@ export default function SwipeFileDetailModal({
                   <div className="flex items-start gap-3">
                     <ExternalLink size={14} className="text-faint mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] text-faint">Landing page</p>
+                      <p className="text-detail text-faint">Landing page</p>
                       <a
                         href={file.source_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[13px] text-teal hover:underline truncate block"
+                        className="text-caption text-teal hover:underline truncate block"
                         title={file.source_url}
                       >
                         {landingHost || file.source_url}
@@ -299,10 +299,10 @@ export default function SwipeFileDetailModal({
                   <div className="flex items-start gap-3">
                     <Tag size={14} className="text-faint mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] text-faint mb-1">Tags</p>
+                      <p className="text-detail text-faint mb-1">Tags</p>
                       <div className="flex flex-wrap gap-1">
                         {file.tags.map((t) => (
-                          <span key={t} className="text-[11px] bg-teal/10 text-teal px-2 py-0.5 rounded-full">
+                          <span key={t} className="text-detail bg-teal/10 text-teal px-2 py-0.5 rounded-full">
                             {t}
                           </span>
                         ))}
@@ -312,8 +312,8 @@ export default function SwipeFileDetailModal({
                 )}
                 {file.notes && (
                   <div className="pt-2 border-t border-edge">
-                    <p className="text-[11px] text-faint mb-1">Notes</p>
-                    <p className="text-[13px] text-ink whitespace-pre-wrap">{file.notes}</p>
+                    <p className="text-detail text-faint mb-1">Notes</p>
+                    <p className="text-caption text-ink whitespace-pre-wrap">{file.notes}</p>
                   </div>
                 )}
               </div>
@@ -330,7 +330,7 @@ export default function SwipeFileDetailModal({
               >
                 {readOnly ? (
                   file.transcription ? (
-                    <p className="text-[13px] text-ink whitespace-pre-wrap">{file.transcription}</p>
+                    <p className="text-caption text-ink whitespace-pre-wrap">{file.transcription}</p>
                   ) : (
                     <p className="text-xs text-faint italic">No transcript available.</p>
                   )
@@ -342,10 +342,10 @@ export default function SwipeFileDetailModal({
                       onBlur={() => saveField('transcription', transcriptDraft)}
                       rows={12}
                       placeholder="Paste or auto-generate a transcript…"
-                      className="w-full text-[13px] text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-y focus:ring-2 focus:ring-teal/20 outline-none"
+                      className="w-full text-caption text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-y focus:ring-2 focus:ring-teal/20 outline-none"
                     />
                     {savingField === 'transcription' && (
-                      <p className="text-[11px] text-faint">Saving…</p>
+                      <p className="text-detail text-faint">Saving…</p>
                     )}
                     <button
                       type="button"
@@ -374,7 +374,7 @@ export default function SwipeFileDetailModal({
                 badge={!file.ai_prompt && !readOnly ? 'Optional' : undefined}
               >
                 {readOnly ? (
-                  <p className="text-[13px] text-ink whitespace-pre-wrap">{file.ai_prompt}</p>
+                  <p className="text-caption text-ink whitespace-pre-wrap">{file.ai_prompt}</p>
                 ) : (
                   <div className="space-y-1">
                     <textarea
@@ -383,10 +383,10 @@ export default function SwipeFileDetailModal({
                       onBlur={() => saveField('ai_prompt', promptDraft)}
                       rows={10}
                       placeholder="Paste the prompt you used to generate this creative…"
-                      className="w-full text-[13px] text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-y focus:ring-2 focus:ring-teal/20 outline-none"
+                      className="w-full text-caption text-ink bg-surface border border-edge rounded-lg px-3 py-2 resize-y focus:ring-2 focus:ring-teal/20 outline-none"
                     />
                     {savingField === 'ai_prompt' && (
-                      <p className="text-[11px] text-faint">Saving…</p>
+                      <p className="text-detail text-faint">Saving…</p>
                     )}
                   </div>
                 )}
@@ -400,7 +400,7 @@ export default function SwipeFileDetailModal({
               {confirmingDelete ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-xs text-red-700 font-medium mb-2">Delete this swipe?</p>
-                  <p className="text-[11px] text-red-600 mb-3">This can&apos;t be undone.</p>
+                  <p className="text-detail text-red-600 mb-3">This can&apos;t be undone.</p>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleDelete}
@@ -422,13 +422,13 @@ export default function SwipeFileDetailModal({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => onEdit(file)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-[13px] font-medium text-ink hover:bg-surface"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-caption font-medium text-ink hover:bg-surface"
                   >
                     <Pencil size={13} /> Edit
                   </button>
                   {file.has_been_shared ? (
                     <div
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-[11px] text-faint cursor-not-allowed"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-detail text-faint cursor-not-allowed"
                       title="This swipe has been shared — delete disabled to avoid breaking the link"
                     >
                       <Trash2 size={13} />
@@ -437,7 +437,7 @@ export default function SwipeFileDetailModal({
                   ) : (
                     <button
                       onClick={() => setConfirmingDelete(true)}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-[13px] font-medium text-red-600 hover:bg-red-50 hover:border-red-200"
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-caption font-medium text-red-600 hover:bg-red-50 hover:border-red-200"
                       title="Delete"
                     >
                       <Trash2 size={13} />
@@ -458,8 +458,8 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-3">
       <span className="mt-0.5 shrink-0">{icon}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] text-faint">{label}</p>
-        <p className="text-[13px] text-ink truncate">{value}</p>
+        <p className="text-detail text-faint">{label}</p>
+        <p className="text-caption text-ink truncate">{value}</p>
       </div>
     </div>
   );

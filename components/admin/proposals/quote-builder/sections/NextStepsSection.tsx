@@ -77,7 +77,7 @@ export default function NextStepsSection({ proposal, onSaved }: Props) {
   return (
     <SectionCard
       title="Next Steps"
-      icon={<ListOrdered size={14} className="text-gray-400" />}
+      icon={<ListOrdered size={14} className="text-faint" />}
       description="Numbered list shown above the accept form. Up to four steps."
       action={
         <div className="flex items-center gap-2">
@@ -85,7 +85,7 @@ export default function NextStepsSection({ proposal, onSaved }: Props) {
             type="button"
             onClick={generate}
             disabled={generating}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
           >
             {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             Generate with AI
@@ -93,7 +93,7 @@ export default function NextStepsSection({ proposal, onSaved }: Props) {
           <button
             type="button"
             onClick={() => setSteps([...DEFAULT_QUOTE_NEXT_STEPS])}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-surface transition-colors"
           >
             <RotateCcw size={12} />
             Reset
@@ -104,7 +104,7 @@ export default function NextStepsSection({ proposal, onSaved }: Props) {
       <div className="space-y-2">
         {steps.map((step, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-400 w-6 shrink-0 tabular-nums">
+            <span className="text-xs font-medium text-faint w-6 shrink-0 tabular-nums">
               0{i + 1}
             </span>
             <input
@@ -114,13 +114,13 @@ export default function NextStepsSection({ proposal, onSaved }: Props) {
                 setSteps((prev) => prev.map((s, idx) => (idx === i ? e.target.value : s)))
               }
               placeholder={DEFAULT_QUOTE_NEXT_STEPS[i] ?? 'Add a step…'}
-              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="flex-1 px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
             <button
               type="button"
               onClick={() => setSteps((prev) => prev.filter((_, idx) => idx !== i))}
               disabled={steps.length <= 1}
-              className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
+              className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
               title="Remove step"
             >
               <X size={12} />
@@ -132,13 +132,13 @@ export default function NextStepsSection({ proposal, onSaved }: Props) {
         <button
           type="button"
           onClick={() => setSteps((prev) => [...prev, ''])}
-          className="flex items-center gap-1.5 mt-3 px-2.5 py-1.5 rounded-md text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
+          className="flex items-center gap-1.5 mt-3 px-2.5 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
         >
           <Plus size={12} />
           Add step
         </button>
       )}
-      <div className="flex items-center justify-end mt-3 pt-3 border-t border-gray-100">
+      <div className="flex items-center justify-end mt-3 pt-3 border-t border-edge">
         <Button
           type="button"
           size="sm"

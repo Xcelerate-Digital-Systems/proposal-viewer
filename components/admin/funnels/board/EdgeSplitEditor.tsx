@@ -34,8 +34,8 @@ export default function EdgeSplitEditor({ edge, siblings, flowThrough, onUpdate 
   return (
     <div className="flex items-center gap-2 bg-white rounded-lg border border-edge shadow-lg px-3 py-2">
       <Split size={14} className="text-muted shrink-0" />
-      <label className="text-[11px] text-muted whitespace-nowrap">Split %</label>
-      <div className="flex items-center bg-surface border border-edge rounded-md focus-within:border-teal transition-colors">
+      <label className="text-detail text-muted whitespace-nowrap">Split %</label>
+      <div className="flex items-center bg-surface border border-edge rounded-lg focus-within:border-teal transition-colors">
         <input
           type="number"
           inputMode="decimal"
@@ -49,10 +49,10 @@ export default function EdgeSplitEditor({ edge, siblings, flowThrough, onUpdate 
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
           className="w-16 px-2 py-1 text-xs bg-transparent outline-none"
         />
-        <span className="text-[11px] text-muted pr-2">%</span>
+        <span className="text-detail text-muted pr-2">%</span>
       </div>
       {flowThrough > 0 && (
-        <span className="text-[11px] text-muted">
+        <span className="text-detail text-muted">
           → <span className="font-semibold text-ink">{formatCount(flowThrough)}</span>
         </span>
       )}

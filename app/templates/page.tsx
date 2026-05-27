@@ -282,7 +282,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
               }...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+              className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
             />
           </div>
 
@@ -302,7 +302,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
       />
 
       {/* Tabs */}
-      <div className="bg-ivory border-b border-gray-200 px-6 lg:px-10">
+      <div className="bg-ivory border-b border-edge-strong px-6 lg:px-10">
         <div className="flex items-center gap-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -390,7 +390,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
                   Recently edited
                 </h2>
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
                     {recent.map((t) => (
                       <TemplateListCard
                         key={`recent-${t.id}`}
@@ -416,7 +416,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
               </section>
             )}
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
                 {filteredProposalTemplates.map((t) => (
                   <TemplateListCard
                     key={t.id}
@@ -470,11 +470,11 @@ function LineItemTemplatesView({
     );
   }
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
       {templates.map((t) => (
         <div
           key={t.id}
-          className="group relative bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+          className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md transition-shadow"
         >
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
@@ -489,7 +489,7 @@ function LineItemTemplatesView({
           {t.description && (
             <p className="text-xs text-muted line-clamp-2 mb-3">{t.description}</p>
           )}
-          <div className="flex items-center justify-between text-[11px] text-faint">
+          <div className="flex items-center justify-between text-detail text-faint">
             <span>
               {Array.isArray(t.items) ? t.items.length : 0} item
               {Array.isArray(t.items) && t.items.length === 1 ? '' : 's'}
@@ -536,13 +536,13 @@ function PackageTemplatesView({
     );
   }
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
       {templates.map((t) => {
         const featureCount = Array.isArray(t.tier?.features) ? t.tier!.features!.length : 0;
         return (
           <div
             key={t.id}
-            className="group relative bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+            className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md transition-shadow"
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
@@ -557,7 +557,7 @@ function PackageTemplatesView({
             {t.description && (
               <p className="text-xs text-muted line-clamp-2 mb-3">{t.description}</p>
             )}
-            <div className="flex items-center justify-between text-[11px] text-faint">
+            <div className="flex items-center justify-between text-detail text-faint">
               <span>
                 {featureCount} feature{featureCount === 1 ? '' : 's'}
               </span>

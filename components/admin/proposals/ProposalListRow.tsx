@@ -94,14 +94,14 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
       className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group"
     >
       {/* Status badge */}
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium shrink-0 ${sc.bg} ${sc.text}`}>
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium shrink-0 ${sc.bg} ${sc.text}`}>
         {sc.icon}
         {sc.label}
       </span>
 
       {/* Quote badge */}
       {p.entity_type === 'quote' && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-detail font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
           Quote
         </span>
       )}

@@ -35,7 +35,7 @@ function Banners() {
   return (
     <div className="mb-6 space-y-3">
       {connected && !dismissed && (
-        <div className="flex items-start gap-3 p-4 bg-teal-tint border border-teal/30 rounded-xl">
+        <div className="flex items-start gap-3 p-4 bg-teal-tint border border-teal/30 rounded-2xl">
           <CheckCircle2 size={18} className="text-teal mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-ink">Facebook connected</p>
@@ -44,7 +44,7 @@ function Banners() {
         </div>
       )}
       {error && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
           <AlertTriangle size={18} className="text-red-500 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-ink">Couldn't complete the connection</p>
@@ -72,15 +72,15 @@ function ComingSoonCard({
   return (
     <section className="bg-white rounded-2xl shadow-card overflow-hidden opacity-80">
       <header className="flex items-start gap-3 px-6 py-5">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${iconBg}`}>
           {icon}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-[15px] font-semibold text-ink">{name}</h2>
+            <h2 className="text-base font-semibold text-ink">{name}</h2>
             <span className="text-faint text-xs">→</span>
-            <span className="text-[13px] font-medium text-muted">{destination}</span>
-            <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-surface text-faint">
+            <span className="text-caption font-medium text-muted">{destination}</span>
+            <span className="inline-flex items-center px-2 py-0.5 text-detail font-medium rounded-full bg-surface text-faint">
               Coming soon
             </span>
           </div>

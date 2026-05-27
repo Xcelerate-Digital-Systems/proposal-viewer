@@ -288,11 +288,11 @@ function FacebookFeedAd({
         <PageAvatar name={pageName} imageUrl={pageImageUrl} size={40} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            <span className="text-[13px] font-semibold" style={{ color: text }}>{pageName}</span>
+            <span className="text-caption font-semibold" style={{ color: text }}>{pageName}</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-[11px]" style={{ color: textSecondary }}>Sponsored</span>
-            <span className="text-[11px]" style={{ color: textSecondary }}>·</span>
+            <span className="text-detail" style={{ color: textSecondary }}>Sponsored</span>
+            <span className="text-detail" style={{ color: textSecondary }}>·</span>
             <Globe size={10} style={{ color: textSecondary }} />
           </div>
         </div>
@@ -337,7 +337,7 @@ function FacebookFeedAd({
           </p>
         </div>
         <button
-          className="shrink-0 px-4 py-2 rounded-md text-[13px] font-semibold"
+          className="shrink-0 px-4 py-2 rounded-lg text-caption font-semibold"
           style={{ backgroundColor: dark ? '#4e4f50' : '#e4e6e9', color: text }}
         >
           {ctaText || 'Learn More'}
@@ -354,7 +354,7 @@ function FacebookFeedAd({
           ].map(({ icon: Icon, label }) => (
             <button
               key={label}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md text-[13px] font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-caption font-semibold transition-colors"
               style={{ color: textSecondary }}
             >
               <Icon size={18} />
@@ -402,9 +402,9 @@ function InstagramFeedAd({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            <span className="text-[13px] font-semibold" style={{ color: text }}>{pageName.toLowerCase().replace(/\s+/g, '')}</span>
+            <span className="text-caption font-semibold" style={{ color: text }}>{pageName.toLowerCase().replace(/\s+/g, '')}</span>
           </div>
-          <span className="text-[11px]" style={{ color: textSecondary }}>Sponsored</span>
+          <span className="text-detail" style={{ color: textSecondary }}>Sponsored</span>
         </div>
         <button style={{ color: text }}><MoreHorizontal size={20} /></button>
       </div>
@@ -423,7 +423,7 @@ function InstagramFeedAd({
       {ctaText && (
         <div className="flex items-center justify-between px-4 py-2.5 border-b"
           style={{ borderColor, backgroundColor: dark ? '#1a1a1a' : '#fafafa' }}>
-          <span className="text-[13px] font-semibold" style={{ color: text }}>
+          <span className="text-caption font-semibold" style={{ color: text }}>
             {ctaText}
           </span>
           <ChevronRight size={18} style={{ color: text }} />
@@ -443,13 +443,13 @@ function InstagramFeedAd({
       {/* Caption */}
       <div className="px-4 pb-3">
         {headline && (
-          <p className="text-[13px] leading-[18px]" style={{ color: text }}>
+          <p className="text-caption leading-[18px]" style={{ color: text }}>
             <span className="font-semibold">{pageName.toLowerCase().replace(/\s+/g, '')}</span>{' '}
             {headline}
           </p>
         )}
         {primaryText && primaryText !== headline && (
-          <p className="text-[13px] leading-[18px] mt-0.5 whitespace-pre-wrap" style={{ color: text }}>
+          <p className="text-caption leading-[18px] mt-0.5 whitespace-pre-wrap" style={{ color: text }}>
             {primaryText}
           </p>
         )}

@@ -172,7 +172,7 @@ function QuotesContent({ companyId }: { companyId: string }) {
               placeholder="Search quotes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+              className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
             />
           </div>
 
@@ -187,25 +187,25 @@ function QuotesContent({ companyId }: { companyId: string }) {
             </Button>
 
             {showNewDropdown && (
-              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
+              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-30">
                 <button
                   onClick={() => openModal('quote')}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-prose hover:bg-surface transition-colors text-left"
                 >
-                  <ReceiptText size={15} className="text-gray-400 shrink-0" />
+                  <ReceiptText size={15} className="text-faint shrink-0" />
                   <div>
                     <div className="font-medium">New Quote</div>
-                    <div className="text-xs text-gray-400">Start blank</div>
+                    <div className="text-xs text-faint">Start blank</div>
                   </div>
                 </button>
                 <button
                   onClick={() => openModal('quote-template')}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-t border-gray-100"
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-prose hover:bg-surface transition-colors text-left border-t border-edge"
                 >
-                  <LayoutTemplate size={15} className="text-gray-400 shrink-0" />
+                  <LayoutTemplate size={15} className="text-faint shrink-0" />
                   <div>
                     <div className="font-medium">From Template</div>
-                    <div className="text-xs text-gray-400">Use a saved quote template</div>
+                    <div className="text-xs text-faint">Use a saved quote template</div>
                   </div>
                 </button>
               </div>
@@ -261,7 +261,7 @@ function QuotesContent({ companyId }: { companyId: string }) {
             emptyMessage="Drag a quote here."
           />
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
             {filtered.map((q) => (
               <ProposalListCard
                 key={q.id}

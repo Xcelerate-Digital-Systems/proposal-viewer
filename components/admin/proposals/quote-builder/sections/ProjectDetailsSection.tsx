@@ -79,7 +79,7 @@ export default function ProjectDetailsSection({
     <SectionCard title="Project Details">
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+          <label className="block text-xs font-medium text-prose mb-1.5">
             Quote Title <span className="text-red-400">*</span>
           </label>
           <input
@@ -88,23 +88,23 @@ export default function ProjectDetailsSection({
             onChange={(e) => setTitle(e.target.value)}
             onBlur={() => dirty && save()}
             placeholder="e.g. Full Bathroom Renovation"
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-faint mt-1">
             The main heading shown on the customer&apos;s quote.
           </p>
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-medium text-gray-600">
+            <label className="block text-xs font-medium text-prose">
               Scope of Works
             </label>
             <button
               type="button"
               onClick={generateScope}
               disabled={generating}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
             >
               {generating ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -120,11 +120,11 @@ export default function ProjectDetailsSection({
             onBlur={() => dirty && save()}
             rows={6}
             placeholder="Describe what's included in this quote. This appears prominently on the customer's quote."
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
           />
         </div>
 
-        <div className="flex items-center justify-end pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-end pt-2 border-t border-edge">
           <Button
             type="button"
             size="sm"

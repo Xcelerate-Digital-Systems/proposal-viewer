@@ -90,7 +90,7 @@ export default function ProfileEditor({
   };
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[14px] p-5 ">
+    <div className="bg-white border border-edge rounded-[14px] p-5 ">
       <div className="flex items-start gap-5">
         {/* Avatar */}
         <div className="shrink-0">
@@ -159,7 +159,7 @@ export default function ProfileEditor({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg bg-surface border border-gray-100 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 /40"
+              className="flex-1 px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 /40"
             />
             {nameChanged && (
               <button

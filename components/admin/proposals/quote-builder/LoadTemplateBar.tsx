@@ -119,26 +119,26 @@ export default function LoadTemplateBar({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:border-gray-300 transition-colors"
+        className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-prose bg-white border border-edge-strong hover:border-gray-300 transition-colors"
       >
-        <Files size={14} className="text-gray-400" />
+        <Files size={14} className="text-faint" />
         Load Template
-        <ChevronDown size={12} className="text-gray-400" />
+        <ChevronDown size={12} className="text-faint" />
       </button>
       {open && (
-        <div className="absolute z-30 mt-1 w-80 bg-white rounded-lg border border-gray-200 shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-30 mt-1 w-80 bg-white rounded-lg border border-edge-strong shadow-lg max-h-96 overflow-y-auto">
           {loading ? (
-            <div className="px-3 py-6 text-center text-xs text-gray-400">
+            <div className="px-3 py-6 text-center text-xs text-faint">
               <Loader2 size={14} className="inline animate-spin" /> Loading…
             </div>
           ) : templates.length === 0 ? (
-            <div className="px-4 py-6 text-center text-xs text-gray-400 leading-relaxed">
+            <div className="px-4 py-6 text-center text-xs text-faint leading-relaxed">
               No quote templates yet. Save a quote as a template from the Templates page.
             </div>
           ) : (
             <>
-              <div className="px-4 py-2.5 border-b border-gray-100 bg-amber-50/40">
-                <div className="flex items-start gap-1.5 text-[11px] text-amber-700">
+              <div className="px-4 py-2.5 border-b border-edge bg-amber-50/40">
+                <div className="flex items-start gap-1.5 text-detail text-amber-700">
                   <AlertTriangle size={11} className="mt-0.5 shrink-0" />
                   <span>
                     Applying a template overwrites cover &amp; design. Line items stay as they are.
@@ -151,11 +151,11 @@ export default function LoadTemplateBar({
                   type="button"
                   onClick={() => apply(t)}
                   disabled={applyingId === t.id}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface transition-colors disabled:opacity-50"
                 >
-                  <div className="font-medium text-gray-900 truncate">{t.name}</div>
+                  <div className="font-medium text-ink truncate">{t.name}</div>
                   {t.description && (
-                    <div className="text-xs text-gray-400 truncate mt-0.5">{t.description}</div>
+                    <div className="text-xs text-faint truncate mt-0.5">{t.description}</div>
                   )}
                 </button>
               ))}

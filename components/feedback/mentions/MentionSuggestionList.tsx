@@ -50,14 +50,14 @@ const MentionSuggestionList = forwardRef<MentionSuggestionListHandle, Props>(fun
 
   if (items.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 px-3 py-2 text-xs text-gray-400 min-w-[180px]">
+      <div className="bg-white rounded-lg shadow-lg border border-edge-strong px-3 py-2 text-xs text-faint min-w-[180px]">
         No matches
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[200px] max-h-[240px] overflow-y-auto">
+    <div className="bg-white rounded-lg shadow-lg border border-edge-strong py-1 min-w-[200px] max-h-[240px] overflow-y-auto">
       {items.map((item, index) => (
         <button
           key={item.id}
@@ -65,16 +65,16 @@ const MentionSuggestionList = forwardRef<MentionSuggestionListHandle, Props>(fun
           onClick={() => pick(index)}
           onMouseEnter={() => setSelectedIndex(index)}
           className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors ${
-            index === selectedIndex ? 'bg-teal/10 text-ink' : 'text-gray-700 hover:bg-gray-50'
+            index === selectedIndex ? 'bg-teal/10 text-ink' : 'text-prose hover:bg-surface'
           }`}
         >
-          <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 text-[10px] flex items-center justify-center font-medium shrink-0">
+          <span className="w-5 h-5 rounded-full bg-gray-100 text-dim text-2xs flex items-center justify-center font-medium shrink-0">
             {(item.name || item.email).charAt(0).toUpperCase()}
           </span>
           <span className="min-w-0 flex-1 truncate">
             <span className="font-medium">{item.name}</span>
             {item.name.toLowerCase() !== item.email.toLowerCase() && (
-              <span className="ml-1 text-gray-400">{item.email}</span>
+              <span className="ml-1 text-faint">{item.email}</span>
             )}
           </span>
           <span className={`text-[9px] uppercase tracking-wide ${item.kind === 'team' ? 'text-teal' : 'text-amber-600'}`}>

@@ -80,7 +80,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
             <button
               onClick={() => setBulkOpen(true)}
               disabled={!currentType}
-              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-[13px] font-semibold rounded-[10px] px-4 py-2.5 disabled:opacity-40"
+              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-caption font-semibold rounded-[10px] px-4 py-2.5 disabled:opacity-40"
             >
               <Upload size={16} />
               Bulk Upload
@@ -88,7 +88,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
             <button
               onClick={() => setFileForm({ open: true })}
               disabled={!currentType}
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-[13px] font-semibold rounded-[10px] px-4 py-2.5 disabled:opacity-40"
+              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-caption font-semibold rounded-[10px] px-4 py-2.5 disabled:opacity-40"
             >
               <Plus size={16} />
               Add Swipe
@@ -108,14 +108,14 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
             {/* Tag filter chips */}
             {availableTags.length > 0 && (
               <div className="flex items-center flex-wrap gap-1.5 mb-6">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-faint mr-1">Tags:</span>
+                <span className="text-detail font-semibold uppercase tracking-wider text-faint mr-1">Tags:</span>
                 {availableTags.map((t) => {
                   const on = activeTags.includes(t);
                   return (
                     <button
                       key={t}
                       onClick={() => toggleTag(t)}
-                      className={`text-[11px] px-2.5 py-1 rounded-full border ${
+                      className={`text-detail px-2.5 py-1 rounded-full border ${
                         on ? 'bg-teal text-white border-teal' : 'bg-white text-muted border-edge hover:border-teal/50'
                       }`}
                     >
@@ -126,7 +126,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
                 {activeTags.length > 0 && (
                   <button
                     onClick={() => setActiveTags([])}
-                    className="text-[11px] text-faint hover:text-ink flex items-center gap-1 ml-1"
+                    className="text-detail text-faint hover:text-ink flex items-center gap-1 ml-1"
                   >
                     <X size={11} /> Clear
                   </button>

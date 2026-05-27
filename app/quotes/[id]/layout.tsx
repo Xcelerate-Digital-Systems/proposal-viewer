@@ -112,7 +112,7 @@ function DetailShell({
   if (loading || !proposal) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
       </div>
     );
   }

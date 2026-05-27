@@ -89,7 +89,7 @@ export default function AttachmentPicker({
           {attachments.map((a, i) => (
             <div
               key={i}
-              className="relative group w-12 h-12 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center"
+              className="relative group w-12 h-12 rounded-lg border border-edge-strong overflow-hidden bg-surface flex items-center justify-center"
             >
               {a.preview ? (
                 <img src={a.preview} alt={a.file.name} className="w-full h-full object-cover" />
@@ -118,7 +118,7 @@ export default function AttachmentPicker({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-prose transition-colors"
         >
           <Paperclip size={10} />
           Attach file

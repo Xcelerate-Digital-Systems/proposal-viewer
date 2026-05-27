@@ -303,7 +303,7 @@ function AgencyStep({
   return (
     <form onSubmit={handleContinue} className="space-y-4">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 bg-teal-tint rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-teal-tint rounded-2xl flex items-center justify-center">
           <Building2 size={20} className="text-teal" />
         </div>
         <div>
@@ -434,7 +434,7 @@ function InviteStep({ companyId, onNext }: { companyId: string; onNext: () => vo
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 bg-teal-tint rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-teal-tint rounded-2xl flex items-center justify-center">
           <Users size={20} className="text-teal" />
         </div>
         <div>
@@ -559,7 +559,7 @@ function PlanStep({ companyId, onSkip }: { companyId: string; onSkip: () => void
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 bg-teal-tint rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-teal-tint rounded-2xl flex items-center justify-center">
           <Sparkles size={20} className="text-teal" />
         </div>
         <div>
@@ -580,7 +580,7 @@ function PlanStep({ companyId, onSkip }: { companyId: string; onSkip: () => void
         </div>
       ) : (
         <>
-          <div className="border border-edge rounded-xl p-4 bg-surface">
+          <div className="border border-edge rounded-2xl p-4 bg-surface">
             <div className="flex items-baseline justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wide text-faint font-semibold">

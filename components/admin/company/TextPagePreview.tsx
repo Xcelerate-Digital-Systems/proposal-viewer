@@ -24,7 +24,7 @@ export default function TextPagePreview({
   const fs = parseInt(fontSize || '14', 10);
 
   return (
-    <div className="rounded-xl overflow-hidden border border-gray-200 shadow-2xl shadow-black/40">
+    <div className="rounded-2xl overflow-hidden border border-edge-strong shadow-2xl shadow-black/40">
       <div
         className="p-6"
         style={{ backgroundColor: bgColor, minHeight: 280 }}

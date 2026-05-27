@@ -95,7 +95,7 @@ export default function BrandColorsSection({
             {isOwner && (
               <button
                 onClick={() => handleRemove(i)}
-                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-gray-200 rounded-full text-gray-400 hover:text-red-500 hover:border-red-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm z-10"
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-edge-strong rounded-full text-faint hover:text-red-500 hover:border-red-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm z-10"
                 title="Remove"
               >
                 <span className="text-2xs font-bold leading-none">×</span>
@@ -108,7 +108,7 @@ export default function BrandColorsSection({
         {isOwner && brandColors.length < MAX_BRAND_COLORS && (
           <button
             onClick={handleAdd}
-            className="w-9 h-9 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-teal/40 hover:text-teal transition-colors"
+            className="w-9 h-9 rounded-2xl border-2 border-dashed border-edge-strong flex items-center justify-center text-gray-300 hover:border-teal/40 hover:text-teal transition-colors"
             title="Add colour"
           >
             <Plus size={14} />

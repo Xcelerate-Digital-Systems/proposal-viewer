@@ -296,21 +296,21 @@ export default function PdfViewer({
         >
           <button
             onClick={zoomIn}
-            className="p-1.5 rounded-md transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
             style={{ color: accentColor }}
           >
             <ZoomIn size={16} />
           </button>
           <button
             onClick={resetZoom}
-            className="px-2 py-1 text-xs font-medium rounded-md transition-colors"
+            className="px-2 py-1 text-xs font-medium rounded-lg transition-colors"
             style={{ color: accentColor }}
           >
             {Math.round(scale * 100)}%
           </button>
           <button
             onClick={zoomOut}
-            className="p-1.5 rounded-md transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
             style={{ color: accentColor }}
           >
             <ZoomOut size={16} />

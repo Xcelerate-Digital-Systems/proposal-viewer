@@ -249,7 +249,7 @@ export default function ProjectAssigneesPanel({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <div className="w-5 h-5 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
       </div>
     );
   }
@@ -262,17 +262,17 @@ export default function ProjectAssigneesPanel({
       {/* ── Team Members column ─────────────────────────────────── */}
       <section>
         <div className="flex items-center gap-2 mb-1">
-          <Users size={15} className="text-gray-400" />
+          <Users size={15} className="text-faint" />
           <h3 className="text-sm font-semibold text-ink">Team Members</h3>
         </div>
-        <p className="text-[13px] text-gray-500 mb-4">
+        <p className="text-caption text-dim mb-4">
           Assigned team members receive email alerts for activity on this project.
           Toggle which events each person is notified about.
         </p>
 
-        <div className="border border-gray-100 rounded-xl bg-white divide-y divide-gray-100">
+        <div className="border border-edge rounded-2xl bg-white divide-y divide-gray-100">
           {assignedMembers.length === 0 ? (
-            <div className="px-4 py-6 text-[13px] text-gray-400 text-center">
+            <div className="px-4 py-6 text-caption text-faint text-center">
               No one is assigned yet. Add a team member below.
             </div>
           ) : (
@@ -283,17 +283,17 @@ export default function ProjectAssigneesPanel({
                 <div key={m.id} className="px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-ink truncate">
+                      <p className="text-caption font-medium text-ink truncate">
                         {m.name || m.email}
-                        {isSelf && <span className="ml-2 text-xs text-gray-400">(you)</span>}
+                        {isSelf && <span className="ml-2 text-xs text-faint">(you)</span>}
                       </p>
-                      <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                      <p className="text-xs text-faint truncate">{m.email}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => remove(m.id)}
                       disabled={savingFor === m.id}
-                      className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 disabled:opacity-50 shrink-0"
+                      className="text-xs text-faint hover:text-red-500 transition-colors flex items-center gap-1 disabled:opacity-50 shrink-0"
                     >
                       <X size={14} />
                       Remove
@@ -309,10 +309,10 @@ export default function ProjectAssigneesPanel({
                           key={p.key}
                           type="button"
                           onClick={() => togglePref(m.id, p.key)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-detail font-medium transition-colors ${
                             on
                               ? 'bg-teal/10 text-teal'
-                              : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                              : 'bg-surface text-faint hover:text-prose'
                           }`}
                           title={`${on ? 'On' : 'Off'} — ${p.label}`}
                         >
@@ -338,25 +338,25 @@ export default function ProjectAssigneesPanel({
             type="button"
             onClick={() => setPickerOpen((v) => !v)}
             disabled={unassignedMembers.length === 0}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-full hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium border border-edge-strong rounded-full hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add team member
             <ChevronDown size={14} />
           </button>
 
           {pickerOpen && unassignedMembers.length > 0 && (
-            <div className="absolute z-10 mt-1 w-64 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-72 overflow-y-auto">
+            <div className="absolute z-10 mt-1 w-64 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto">
               {unassignedMembers.map((m) => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => add(m.id)}
                   disabled={savingFor === m.id}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between gap-2"
+                  className="w-full text-left px-3 py-2 hover:bg-surface flex items-center justify-between gap-2"
                 >
                   <div className="min-w-0">
-                    <p className="text-[13px] text-ink truncate">{m.name || m.email}</p>
-                    <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                    <p className="text-caption text-ink truncate">{m.name || m.email}</p>
+                    <p className="text-xs text-faint truncate">{m.email}</p>
                   </div>
                   {savingFor === m.id && (
                     <Check size={14} className="text-teal shrink-0" />
@@ -371,17 +371,17 @@ export default function ProjectAssigneesPanel({
       {/* ── Guests column ───────────────────────────────────────── */}
       <section>
         <div className="flex items-center gap-2 mb-1">
-          <Bell size={15} className="text-gray-400" />
+          <Bell size={15} className="text-faint" />
           <h3 className="text-sm font-semibold text-ink">Guests</h3>
         </div>
-        <p className="text-[13px] text-gray-500 mb-4">
+        <p className="text-caption text-dim mb-4">
           Clients and outside reviewers. They appear automatically when they comment,
           or you can add them manually below.
         </p>
 
-        <div className="border border-gray-100 rounded-xl bg-white divide-y divide-gray-100">
+        <div className="border border-edge rounded-2xl bg-white divide-y divide-gray-100">
           {activeGuests.length === 0 && removedGuests.length === 0 ? (
-            <div className="px-4 py-6 text-[13px] text-gray-400 text-center">
+            <div className="px-4 py-6 text-caption text-faint text-center">
               No guests yet. Add one manually or they&apos;ll appear when they leave a comment.
             </div>
           ) : (
@@ -410,10 +410,10 @@ export default function ProjectAssigneesPanel({
 
         <div className="mt-3">
           {guestFormOpen ? (
-            <div className="border border-gray-200 rounded-xl bg-white p-4 space-y-3">
+            <div className="border border-edge-strong rounded-2xl bg-white p-4 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                  <label className="block text-detail font-medium text-dim mb-1">
                     Email <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -422,14 +422,14 @@ export default function ProjectAssigneesPanel({
                     value={guestEmail}
                     onChange={(e) => setGuestEmail(e.target.value)}
                     placeholder="guest@example.com"
-                    className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    className="w-full px-3 py-1.5 text-caption border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') addGuest();
                     }}
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                  <label className="block text-detail font-medium text-dim mb-1">
                     Name
                   </label>
                   <input
@@ -437,7 +437,7 @@ export default function ProjectAssigneesPanel({
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
                     placeholder="Optional"
-                    className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    className="w-full px-3 py-1.5 text-caption border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') addGuest();
                     }}
@@ -449,7 +449,7 @@ export default function ProjectAssigneesPanel({
                   type="button"
                   onClick={addGuest}
                   disabled={guestSaving || !guestEmail.trim()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium bg-teal text-white rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium bg-teal text-white rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-50"
                 >
                   {guestSaving ? (
                     <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -465,7 +465,7 @@ export default function ProjectAssigneesPanel({
                     setGuestEmail('');
                     setGuestName('');
                   }}
-                  className="px-3 py-1.5 text-[13px] font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                  className="px-3 py-1.5 text-caption font-medium text-dim hover:text-prose transition-colors"
                 >
                   Cancel
                 </button>
@@ -478,7 +478,7 @@ export default function ProjectAssigneesPanel({
                 setGuestFormOpen(true);
                 setTimeout(() => guestEmailRef.current?.focus(), 50);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-full hover:border-gray-300 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium border border-edge-strong rounded-full hover:border-gray-300 transition-colors"
             >
               <UserPlus size={14} />
               Add guest
@@ -507,15 +507,15 @@ function GuestRow({
     <div className={`px-4 py-3 ${g.removed ? 'opacity-50' : ''}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-ink truncate">
+          <p className="text-caption font-medium text-ink truncate">
             {g.name || g.email}
           </p>
-          <p className="text-xs text-gray-400 truncate">{g.email}</p>
+          <p className="text-xs text-faint truncate">{g.email}</p>
         </div>
         <button
           type="button"
           onClick={() => onSetRemoved(g.email, !g.removed)}
-          className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 shrink-0"
+          className="text-xs text-faint hover:text-red-500 transition-colors flex items-center gap-1 shrink-0"
         >
           {g.removed ? (
             <>
@@ -542,10 +542,10 @@ function GuestRow({
                   key={p.key}
                   type="button"
                   onClick={() => onTogglePref(g.email, p.key)}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-detail font-medium transition-colors ${
                     on
                       ? 'bg-teal/10 text-teal'
-                      : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                      : 'bg-surface text-faint hover:text-prose'
                   }`}
                   title={`${on ? 'On' : 'Off'} — ${p.label}`}
                 >
@@ -582,10 +582,10 @@ function StagesChipRow({
   const allSelected = selected.length === 0;
 
   return (
-    <div className="mt-2.5 pt-2.5 border-t border-dashed border-gray-100">
+    <div className="mt-2.5 pt-2.5 border-t border-dashed border-edge">
       <div className="flex items-center gap-1.5 mb-1.5">
-        <Layers size={11} className="text-gray-400" />
-        <span className="text-[11px] font-medium text-gray-500">
+        <Layers size={11} className="text-faint" />
+        <span className="text-detail font-medium text-dim">
           Stages {allSelected ? '— all (default)' : ''}
         </span>
       </div>
@@ -598,10 +598,10 @@ function StagesChipRow({
               key={s}
               type="button"
               onClick={() => onToggle(s)}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors border ${
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium transition-colors border ${
                 on
                   ? `${def.bg} ${def.text} ${def.border}`
-                  : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300'
+                  : 'bg-white text-faint border-edge-strong hover:text-prose hover:border-gray-300'
               }`}
               title={on ? `Notifies on ${def.label}` : `Click to scope to ${def.label}`}
             >

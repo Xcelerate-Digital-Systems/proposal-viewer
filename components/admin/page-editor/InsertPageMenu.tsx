@@ -96,7 +96,7 @@ export default function InsertPageMenu({
             ? 'text-gray-300 cursor-not-allowed'
             : open
             ? 'text-teal bg-teal/10'
-            : 'text-gray-400 hover:text-teal hover:bg-teal/5 cursor-pointer'
+            : 'text-faint hover:text-teal hover:bg-teal/5 cursor-pointer'
         }`}
         title={isStart ? 'Insert page at start' : 'Insert page here'}
       >
@@ -115,33 +115,33 @@ export default function InsertPageMenu({
 
       {/* Popover menu */}
       {open && (
-        <div className="absolute z-30 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute z-30 top-full mt-1 bg-white rounded-lg shadow-lg border border-edge-strong py-1 min-w-[180px] animate-in fade-in slide-in-from-top-1 duration-150">
           {/* PDF upload option */}
           <button
             type="button"
             onClick={handlePdfSelect}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors text-left"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-prose hover:bg-surface hover:text-ink transition-colors text-left"
           >
-            <FileUp size={14} className="text-gray-400 shrink-0" />
+            <FileUp size={14} className="text-faint shrink-0" />
             <div>
               <div className="font-medium">PDF Page</div>
-              <div className="text-2xs text-gray-400 mt-0.5">Upload a PDF file</div>
+              <div className="text-2xs text-faint mt-0.5">Upload a PDF file</div>
             </div>
           </button>
 
           {/* Divider */}
-          <div className="border-t border-gray-100 my-1" />
+          <div className="border-t border-edge my-1" />
 
           {/* Text page option */}
           <button
             type="button"
             onClick={handleTextPage}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors text-left"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-prose hover:bg-surface hover:text-ink transition-colors text-left"
           >
             <FileText size={14} className="text-teal/60 shrink-0" />
             <div>
               <div className="font-medium">Text Page</div>
-              <div className="text-2xs text-gray-400 mt-0.5">Rich text content page</div>
+              <div className="text-2xs text-faint mt-0.5">Rich text content page</div>
             </div>
           </button>
 
@@ -150,12 +150,12 @@ export default function InsertPageMenu({
             <button
               type="button"
               onClick={handlePricingPage}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-prose hover:bg-surface hover:text-ink transition-colors text-left"
             >
               <DollarSign size={14} className="text-teal/60 shrink-0" />
               <div>
                 <div className="font-medium">Quote Page</div>
-                <div className="text-2xs text-gray-400 mt-0.5">Add investment breakdown</div>
+                <div className="text-2xs text-faint mt-0.5">Add investment breakdown</div>
               </div>
             </button>
           )}

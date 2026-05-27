@@ -116,7 +116,7 @@ export default function ConnectedAppsManager() {
             <button
               onClick={() => disconnect(app)}
               disabled={isDisconnecting}
-              className="px-2.5 py-1.5 text-xs font-medium text-faint hover:text-red-500 rounded-md flex items-center gap-1.5 disabled:opacity-50"
+              className="px-2.5 py-1.5 text-xs font-medium text-faint hover:text-red-500 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
               title="Disconnect"
             >
               {isDisconnecting ? (

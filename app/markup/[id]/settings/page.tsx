@@ -80,7 +80,7 @@ function SettingsContent({
               <div className="min-w-0 flex items-center gap-3">
                 <Link
                   href="/markup"
-                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+                  className="text-faint hover:text-prose transition-colors shrink-0"
                   title="All Projects"
                 >
                   <ArrowLeft size={16} />
@@ -90,7 +90,7 @@ function SettingsContent({
                     {project.title}
                   </h1>
                   {project.client_name && (
-                    <p className="text-xs text-gray-400 truncate">{project.client_name}</p>
+                    <p className="text-xs text-faint truncate">{project.client_name}</p>
                   )}
                 </div>
               </div>
@@ -103,7 +103,7 @@ function SettingsContent({
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
         {loading || !project ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
           </div>
         ) : (
           <ProjectAssigneesPanel

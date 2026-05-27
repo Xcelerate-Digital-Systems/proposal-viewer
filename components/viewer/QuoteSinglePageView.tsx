@@ -183,7 +183,7 @@ function AttachmentLink({
       style={{ color: 'inherit' }}
     >
       <span>{name}</span>
-      <span className="text-[11px] uppercase tracking-wider" style={{ color: muted }}>
+      <span className="text-detail uppercase tracking-wider" style={{ color: muted }}>
         {mime.split('/').pop()?.slice(0, 6) ?? 'file'}
       </span>
     </a>
@@ -369,7 +369,7 @@ export default function QuoteSinglePageView({
         style={{ background: headerBg, color: headerText }}
       >
         <div
-          className="flex flex-wrap items-center justify-between gap-2 text-[11px] tracking-[0.12em] uppercase mb-8 sm:mb-12 opacity-80"
+          className="flex flex-wrap items-center justify-between gap-2 text-detail tracking-[0.12em] uppercase mb-8 sm:mb-12 opacity-80"
           style={{ fontFamily: headingFontFamily }}
         >
           <span style={{ color: headerText }}>{displayCompanyName}</span>
@@ -469,7 +469,7 @@ export default function QuoteSinglePageView({
       {/* ── Trust line ────────────────────────────────────────── */}
       {extras.badges.length > 0 && (
         <div
-          className="px-8 sm:px-14 py-5 text-[11px] tracking-[0.16em] uppercase text-center"
+          className="px-8 sm:px-14 py-5 text-detail tracking-[0.16em] uppercase text-center"
           style={{
             color: muted,
             fontFamily: headingFontFamily,
@@ -649,7 +649,7 @@ export default function QuoteSinglePageView({
       <Section>
         <SectionLabel style={labelStyle}>Investment</SectionLabel>
         <div
-          className="rounded-xl px-6 py-7 sm:px-8 sm:py-8"
+          className="rounded-2xl px-6 py-7 sm:px-8 sm:py-8"
           style={{
             background: headerBg,
             color: headerText,
@@ -708,7 +708,7 @@ export default function QuoteSinglePageView({
                   Deposit Required
                 </div>
                 <div
-                  className="text-[11px] tabular-nums"
+                  className="text-detail tabular-nums"
                   style={{ color: withAlpha(headerText, 0.6) }}
                 >
                   {deposit.pct}% upfront
@@ -821,7 +821,7 @@ export default function QuoteSinglePageView({
 
       {/* ── Footer ────────────────────────────────────────────── */}
       <footer
-        className="px-8 sm:px-14 py-6 flex flex-wrap items-center justify-between gap-3 text-[11px] tracking-[0.12em] uppercase"
+        className="px-8 sm:px-14 py-6 flex flex-wrap items-center justify-between gap-3 text-detail tracking-[0.12em] uppercase"
         style={{
           color: muted,
           fontFamily: headingFontFamily,

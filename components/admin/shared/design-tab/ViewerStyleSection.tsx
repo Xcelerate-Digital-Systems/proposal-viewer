@@ -54,7 +54,7 @@ function FontSizeInput({
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-xs font-medium text-gray-600">{label}</label>
+      <label className="block text-xs font-medium text-prose">{label}</label>
       <div className="relative">
         <input
           type="number"
@@ -64,11 +64,11 @@ function FontSizeInput({
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full pl-3 pr-9 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
+          className="w-full pl-3 pr-9 py-2 text-sm border border-edge-strong rounded-lg bg-white text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 pointer-events-none">px</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-detail text-faint pointer-events-none">px</span>
       </div>
-      <p className="text-[11px] text-gray-400">Leave blank to use the workspace default.</p>
+      <p className="text-detail text-faint">Leave blank to use the workspace default.</p>
     </div>
   );
 }
@@ -104,8 +104,8 @@ function GroupHeading({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="pt-4">
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
-        {hint && <span className="text-xs text-gray-400">{hint}</span>}
+        <h3 className="text-xl font-semibold text-ink">{title}</h3>
+        {hint && <span className="text-xs text-faint">{hint}</span>}
       </div>
       <div className="mt-2 h-px bg-gray-200" />
     </div>
@@ -328,7 +328,7 @@ export default function ViewerStyleSection({
             className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
               bgMode === mode
                 ? 'bg-teal/10 border-teal/40 text-teal font-medium'
-                : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                : 'bg-white border-edge-strong text-dim hover:bg-surface'
             }`}
           >
             {mode === 'company' ? 'Use company default' : 'Custom'}
@@ -341,14 +341,14 @@ export default function ViewerStyleSection({
           {bgImageUrl ? (
             <div className="flex items-start gap-3">
               <div
-                className="w-20 h-14 rounded-lg border border-gray-200 bg-cover bg-center shrink-0"
+                className="w-20 h-14 rounded-lg border border-edge-strong bg-cover bg-center shrink-0"
                 style={{ backgroundImage: `url(${bgImageUrl})` }}
               />
               <div className="space-y-1.5">
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
                 >
                   {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                   Replace
@@ -366,7 +366,7 @@ export default function ViewerStyleSection({
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-edge-strong text-faint hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
             >
               {uploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
               <span className="text-xs font-medium">Upload background image</span>
@@ -402,7 +402,7 @@ export default function ViewerStyleSection({
 
           <button
             onClick={onBgResetToCompany}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+            className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
           >
             <RotateCcw size={12} />
             Reset to company default
@@ -427,12 +427,12 @@ export default function ViewerStyleSection({
           <SectionCard
             title="Global Page Defaults"
             description="Orientation, typography, and a shared background image — applied behind text, pricing, and packages pages."
-            icon={<LayoutPanelTop size={14} className="text-gray-400" />}
+            icon={<LayoutPanelTop size={14} className="text-faint" />}
           >
             <div className="space-y-5">
               {/* Orientation — compact chip row */}
               <div>
-                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Orientation</p>
+                <p className="text-detail font-semibold text-dim uppercase tracking-wider mb-2">Orientation</p>
                 <div className="flex gap-2">
                   {orientationOptions.map((opt) => (
                     <button
@@ -441,7 +441,7 @@ export default function ViewerStyleSection({
                       className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
                         pageOrientation === opt.key
                           ? 'bg-teal/10 border-teal/40 text-teal font-medium'
-                          : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                          : 'bg-white border-edge-strong text-dim hover:bg-surface'
                       }`}
                     >
                       <span className={`rounded-sm border-2 flex-shrink-0 ${
@@ -455,8 +455,8 @@ export default function ViewerStyleSection({
 
               {/* Typography — 3 fonts grouped together. hidePreview drops the
                   per-font inline preview tile (the sticky aside shows them now). */}
-              <div className="pt-4 border-t border-gray-100">
-                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Typography</p>
+              <div className="pt-4 border-t border-edge">
+                <p className="text-detail font-semibold text-dim uppercase tracking-wider mb-3">Typography</p>
                 <div className="space-y-4">
                   <FontSelect
                     label="Page title font"
@@ -530,8 +530,8 @@ export default function ViewerStyleSection({
               </div>
 
               {/* Background image */}
-              <div className="pt-4 border-t border-gray-100">
-                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Background Image</p>
+              <div className="pt-4 border-t border-edge">
+                <p className="text-detail font-semibold text-dim uppercase tracking-wider mb-2">Background Image</p>
                 {backgroundImageBlock}
               </div>
             </div>
@@ -544,11 +544,11 @@ export default function ViewerStyleSection({
           <SectionCard
             title="Page Colours"
             description="Background, body text and headings. Applies to text, pricing and packages pages."
-            icon={<Paintbrush size={14} className="text-gray-400" />}
+            icon={<Paintbrush size={14} className="text-faint" />}
             action={
               <button
                 onClick={onTpResetToCompany}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+                className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
               >
                 <RotateCcw size={12} />
                 Reset
@@ -582,14 +582,14 @@ export default function ViewerStyleSection({
           <SectionCard
             title="Page Number Badge"
             description="Leave blank to use your accent colour (circle) and white (text)."
-            icon={<Hash size={14} className="text-gray-400" />}
+            icon={<Hash size={14} className="text-faint" />}
             action={
               <button
                 onClick={() => {
                   setPageNumCircleColor(null);
                   setPageNumTextColor(null);
                 }}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+                className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
               >
                 <RotateCcw size={12} />
                 Reset
@@ -617,7 +617,7 @@ export default function ViewerStyleSection({
 
         <StickyPreviewAside>
           <div
-            className="rounded-lg overflow-hidden border border-gray-200 bg-gray-100 p-8 space-y-4"
+            className="rounded-lg overflow-hidden border border-edge-strong bg-gray-100 p-8 space-y-4"
             style={{ backgroundColor: tpBgColor || companyDefaults.bg_color }}
           >
             <p
@@ -683,7 +683,7 @@ export default function ViewerStyleSection({
         <SectionCard
           title="Cover Design"
           description="Cover-specific colours, background image, and gradient."
-          icon={<Paintbrush size={14} className="text-gray-400" />}
+          icon={<Paintbrush size={14} className="text-faint" />}
           action={
             <Link
               href={`${basePath}/cover`}
@@ -693,7 +693,7 @@ export default function ViewerStyleSection({
             </Link>
           }
         >
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-faint">
             Cover design controls appear here when the page passes a cover entity.
           </p>
         </SectionCard>
@@ -711,7 +711,7 @@ export default function ViewerStyleSection({
               <SectionCard
                 title="Pricing Design"
                 description="Colour the pricing page that appears inside the proposal. Body background, card chrome and headings still inherit from Globals."
-                icon={<DollarSign size={14} className="text-gray-400" />}
+                icon={<DollarSign size={14} className="text-faint" />}
                 action={
                   <button
                     onClick={() => {
@@ -724,7 +724,7 @@ export default function ViewerStyleSection({
                       setPricingAccentBarColor(null);
                       setPricingDotColor(null);
                     }}
-                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
                   >
                     <RotateCcw size={12} />
                     Reset
@@ -820,9 +820,9 @@ export default function ViewerStyleSection({
         <SectionCard
           title="Packages Design"
           description="Documents don't have packages pages."
-          icon={<Package size={14} className="text-gray-400" />}
+          icon={<Package size={14} className="text-faint" />}
         >
-          <p className="text-xs text-gray-400">Not applicable to documents.</p>
+          <p className="text-xs text-faint">Not applicable to documents.</p>
         </SectionCard>
       ) : (
         <PackagesDesignPanel

@@ -210,7 +210,7 @@ function FontSelect({
                       key={cat.key}
                       type="button"
                       onClick={() => setCategory(cat.key)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                         category === cat.key
                           ? 'bg-teal text-white'
                           : 'text-faint hover:bg-surface'

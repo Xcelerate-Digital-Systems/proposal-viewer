@@ -22,9 +22,9 @@ export default function PricingPanel({
   onRemove,
 }: PricingPanelProps) {
   return (
-    <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-white min-h-0">
-      <div className="shrink-0 px-3 py-2.5 bg-white border-b border-gray-200 flex items-center justify-between">
-        <span className="text-xs text-gray-500 font-medium flex items-center gap-1.5">
+    <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-edge-strong bg-white min-h-0">
+      <div className="shrink-0 px-3 py-2.5 bg-white border-b border-edge-strong flex items-center justify-between">
+        <span className="text-xs text-dim font-medium flex items-center gap-1.5">
           <DollarSign size={12} className="text-teal" />
           Quote Page
         </span>

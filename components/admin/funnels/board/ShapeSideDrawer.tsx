@@ -90,7 +90,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
       <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 text-white text-2xs font-semibold"
+            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white text-2xs font-semibold"
             style={{ backgroundColor: shape.color || '#2B2B2B' }}
           >
             {typeLabel.charAt(0)}
@@ -99,7 +99,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
         </div>
         <button
           onClick={onClose}
-          className="w-7 h-7 rounded-md text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors shrink-0"
+          className="w-7 h-7 rounded-lg text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors shrink-0"
         >
           <X size={14} />
         </button>
@@ -114,7 +114,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
               onBlur={commitContent}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               placeholder={shape.shape_type === 'decision' ? 'Decision?' : typeLabel}
-              className="w-full px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal"
+              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
             />
           ) : (
             <textarea
@@ -123,7 +123,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
               onBlur={commitContent}
               rows={3}
               placeholder="Type any text…"
-              className="w-full px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal resize-y"
+              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-y"
             />
           )}
         </Field>
@@ -138,7 +138,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
                   key={hex}
                   type="button"
                   onClick={() => onUpdate({ color: hex })}
-                  className={`w-6 h-6 rounded-md border transition-transform ${active ? 'border-ink scale-110' : 'border-edge'}`}
+                  className={`w-6 h-6 rounded-lg border transition-transform ${active ? 'border-ink scale-110' : 'border-edge'}`}
                   style={{ backgroundColor: hex }}
                   title={hex}
                 />
@@ -148,7 +148,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
               type="color"
               value={shape.color || '#2B2B2B'}
               onChange={(e) => onUpdate({ color: e.target.value })}
-              className="w-6 h-6 rounded-md border border-edge cursor-pointer"
+              className="w-6 h-6 rounded-lg border border-edge cursor-pointer"
               title="Custom color"
             />
           </div>
@@ -165,7 +165,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
                   key={w}
                   type="button"
                   onClick={() => onUpdate({ stroke_width: w })}
-                  className={`h-8 px-2.5 rounded-md border text-[11px] flex items-center justify-center transition-colors ${
+                  className={`h-8 px-2.5 rounded-lg border text-detail flex items-center justify-center transition-colors ${
                     active ? 'border-teal bg-teal/10 text-teal' : 'border-edge text-ink/70 hover:bg-surface'
                   }`}
                   title={`${w}px`}
@@ -177,7 +177,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
             <button
               type="button"
               onClick={() => onUpdate({ dashed: !shape.dashed })}
-              className={`ml-auto h-8 px-2.5 rounded-md border text-[11px] flex items-center gap-1 transition-colors ${
+              className={`ml-auto h-8 px-2.5 rounded-lg border text-detail flex items-center gap-1 transition-colors ${
                 shape.dashed ? 'border-teal bg-teal/10 text-teal' : 'border-edge text-ink/70 hover:bg-surface'
               }`}
             >
@@ -198,7 +198,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
                 const n = Number(e.target.value);
                 onUpdate({ font_size: Number.isFinite(n) ? n : null });
               }}
-              className="w-full px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal"
+              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
             />
           </Field>
         )}
@@ -207,7 +207,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
       <div className="px-4 py-3 border-t border-edge">
         <button
           onClick={onDelete}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
         >
           <Trash2 size={13} /> Delete {typeLabel.toLowerCase()}
         </button>

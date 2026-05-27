@@ -205,7 +205,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           )}
                           {hasDiscount && (
                             <span
-                              className="mt-1 block text-[11px] font-semibold px-1.5 py-0.5 rounded w-fit"
+                              className="mt-1 block text-detail font-semibold px-1.5 py-0.5 rounded w-fit"
                               style={{ backgroundColor: `${accent}20`, color: accent }}
                             >
                               {item.discount_pct}% off
@@ -502,7 +502,7 @@ export default function PricingPage({ pricing, branding, clientName, orientation
                           )}
                           {hasOptDiscount && (
                             <span
-                              className="ml-2 text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                              className="ml-2 text-detail font-semibold px-1.5 py-0.5 rounded"
                               style={{ backgroundColor: `${accent}20`, color: accent }}
                             >
                               {item.discount_pct}% off

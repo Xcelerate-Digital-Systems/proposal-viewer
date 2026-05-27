@@ -243,7 +243,7 @@ export default function HeaderStyleCard({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          className={`relative w-full h-32 rounded-lg border border-gray-200 overflow-hidden ${
+          className={`relative w-full h-32 rounded-lg border border-edge-strong overflow-hidden ${
             positionable ? 'cursor-crosshair' : ''
           }`}
           style={{ background: buildGradientCss(bgStyle, gradientType, gradientAngle, cx, cy, stops) }}
@@ -262,7 +262,7 @@ export default function HeaderStyleCard({
 
         {/* 4-mode picker */}
         <div>
-          <label className="block text-xs text-gray-500 mb-2">Fill</label>
+          <label className="block text-xs text-dim mb-2">Fill</label>
           <div className="grid grid-cols-4 gap-2">
             {([
               { id: 'solid'  as const, label: 'Solid'  },
@@ -280,11 +280,11 @@ export default function HeaderStyleCard({
                   type="button"
                   onClick={() => setMode(m.id)}
                   className={`p-2 rounded-lg border-2 transition-all text-center ${
-                    active ? 'border-teal bg-teal/5' : 'border-gray-200 hover:border-gray-300'
+                    active ? 'border-teal bg-teal/5' : 'border-edge-strong hover:border-gray-300'
                   }`}
                 >
                   <div className="w-full h-10 rounded mb-1.5" style={{ background: swatch }} />
-                  <span className={`text-xs font-medium ${active ? 'text-teal' : 'text-gray-500'}`}>
+                  <span className={`text-xs font-medium ${active ? 'text-teal' : 'text-dim'}`}>
                     {m.label}
                   </span>
                 </button>
@@ -385,7 +385,7 @@ export default function HeaderStyleCard({
         {/* Text colours — hidden when the consumer renders them in a separate
             SectionCard (CoverDesignPanel uses this for the unified layout). */}
         {!hideTextColors && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-edge">
             <ColorPickerField
               label="Header title text"
               value={coverTextColor}
@@ -409,7 +409,7 @@ export default function HeaderStyleCard({
     <SectionCard
       title={title ?? defaultTitle}
       description={description ?? defaultDescription}
-      icon={<Palette size={14} className="text-gray-400" />}
+      icon={<Palette size={14} className="text-faint" />}
     >
       {body}
     </SectionCard>

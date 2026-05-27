@@ -30,7 +30,7 @@ export default function EmptyState({
   className = '',
 }: EmptyStateProps) {
   return (
-    <div className={`text-center py-20 ${className}`}>
+    <div className={`text-center py-12 ${className}`}>
       <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
         <Icon size={28} className="text-faint" />
       </div>

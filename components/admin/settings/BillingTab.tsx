@@ -170,7 +170,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="border border-red-200 bg-red-50 text-red-700 text-sm rounded-xl p-3">
+        <div className="border border-red-200 bg-red-50 text-red-700 text-sm rounded-2xl p-3">
           {error}
         </div>
       )}
@@ -181,7 +181,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-xl bg-teal/10 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-2xl bg-teal/10 flex items-center justify-center">
                   <Sparkles size={16} className="text-teal" />
                 </div>
                 <StatusBadge status={sub?.status ?? 'incomplete'} />
@@ -210,7 +210,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
 
           {/* Trial alert */}
           {sub?.status === 'trialing' && data && data.trial_days_remaining !== null && (
-            <div className="bg-teal/5 border border-teal/15 rounded-xl p-3.5 flex items-start gap-3">
+            <div className="bg-teal/5 border border-teal/15 rounded-2xl p-3.5 flex items-start gap-3">
               <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center shrink-0">
                 <Calendar size={16} className="text-teal" />
               </div>
@@ -231,7 +231,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
 
           {/* Cancellation notice */}
           {sub?.cancel_at_period_end && sub.current_period_end && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3">
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
                 <AlertTriangle size={16} className="text-amber-600" />
               </div>
@@ -299,7 +299,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
             className="bg-white border border-edge rounded-2xl p-5 text-left hover:border-teal/30 hover:shadow-sm transition-all group"
           >
             <div className="flex items-start justify-between mb-2">
-              <div className="w-9 h-9 rounded-xl bg-teal/10 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-2xl bg-teal/10 flex items-center justify-center">
                 <CreditCard size={16} className="text-teal" />
               </div>
               <ArrowUpRight size={14} className="text-faint group-hover:text-teal transition-colors" />
@@ -316,7 +316,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
             className="bg-white border border-edge rounded-2xl p-5 text-left hover:border-teal/30 hover:shadow-sm transition-all group"
           >
             <div className="flex items-start justify-between mb-2">
-              <div className="w-9 h-9 rounded-xl bg-surface flex items-center justify-center">
+              <div className="w-9 h-9 rounded-2xl bg-surface flex items-center justify-center">
                 <Receipt size={16} className="text-muted" />
               </div>
               <ArrowUpRight size={14} className="text-faint group-hover:text-teal transition-colors" />
@@ -515,14 +515,14 @@ function CycleOption({
   return (
     <button
       onClick={onClick}
-      className={`relative text-left rounded-xl border-2 px-4 py-4 transition-all ${
+      className={`relative text-left rounded-2xl border-2 px-4 py-4 transition-all ${
         active
           ? 'border-teal bg-teal/5 shadow-sm'
           : 'border-edge hover:border-edge-hover bg-white'
       }`}
     >
       {badge && (
-        <span className="absolute -top-2.5 right-3 text-[10px] uppercase tracking-wide text-white bg-teal px-2 py-0.5 rounded-full font-bold">
+        <span className="absolute -top-2.5 right-3 text-2xs uppercase tracking-wide text-white bg-teal px-2 py-0.5 rounded-full font-bold">
           {badge}
         </span>
       )}
@@ -550,10 +550,10 @@ function StatusBadge({ status }: { status: string }) {
     trialing: 'bg-teal/10 text-teal',
     active: 'bg-emerald-50 text-emerald-700',
     past_due: 'bg-amber-50 text-amber-700',
-    canceled: 'bg-gray-100 text-gray-600',
+    canceled: 'bg-gray-100 text-prose',
     unpaid: 'bg-red-50 text-red-700',
-    paused: 'bg-gray-100 text-gray-600',
-    incomplete: 'bg-gray-100 text-gray-600',
+    paused: 'bg-gray-100 text-prose',
+    incomplete: 'bg-gray-100 text-prose',
   };
   const label: Record<string, string> = {
     trialing: 'Trial',
@@ -566,8 +566,8 @@ function StatusBadge({ status }: { status: string }) {
   };
   return (
     <span
-      className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${
-        styles[status] ?? 'bg-gray-100 text-gray-600'
+      className={`text-detail font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${
+        styles[status] ?? 'bg-gray-100 text-prose'
       }`}
     >
       {label[status] ?? status}

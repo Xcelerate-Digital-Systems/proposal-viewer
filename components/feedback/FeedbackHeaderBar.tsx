@@ -119,7 +119,7 @@ export default function FeedbackHeaderBar({
           <button
             onClick={backAction.onClick}
             className={`flex items-center gap-1.5 text-sm transition-colors min-w-0 ${
-              headerBranded ? '' : 'text-gray-500 hover:text-gray-700'
+              headerBranded ? '' : 'text-dim hover:text-prose'
             }`}
             style={headerBranded ? { color: `${sidebarText}99` } : undefined}
           >
@@ -155,7 +155,7 @@ export default function FeedbackHeaderBar({
           style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
         />
         <span
-          className={`text-[15px] font-semibold tracking-tight truncate max-w-[220px] ${
+          className={`text-base font-semibold tracking-tight truncate max-w-[220px] ${
             headerBranded ? '' : 'text-ink'
           }`}
           style={headerBranded ? { color: sidebarText } : undefined}
@@ -164,7 +164,7 @@ export default function FeedbackHeaderBar({
         </span>
         {(project.client_company || project.client_name) && (
           <span
-            className={`text-xs truncate hidden xl:inline ${headerBranded ? '' : 'text-gray-400'}`}
+            className={`text-xs truncate hidden xl:inline ${headerBranded ? '' : 'text-faint'}`}
             style={headerBranded ? { color: `${sidebarText}80` } : undefined}
           >
             · {project.client_company || project.client_name}
@@ -205,7 +205,7 @@ export default function FeedbackHeaderBar({
               onClick={() => onGoToItem(currentIdx - 1)}
               disabled={currentIdx <= 0}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                headerBranded ? '' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                headerBranded ? '' : 'bg-surface text-prose hover:bg-gray-100'
               }`}
               style={
                 headerBranded
@@ -218,7 +218,7 @@ export default function FeedbackHeaderBar({
             </button>
             <span
               className={`text-xs tabular-nums whitespace-nowrap ${
-                headerBranded ? '' : 'text-gray-400'
+                headerBranded ? '' : 'text-faint'
               }`}
               style={headerBranded ? { color: `${sidebarText}80` } : undefined}
             >
@@ -228,7 +228,7 @@ export default function FeedbackHeaderBar({
               onClick={() => onGoToItem(currentIdx + 1)}
               disabled={currentIdx >= filteredItems.length - 1}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                headerBranded ? '' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                headerBranded ? '' : 'bg-surface text-prose hover:bg-gray-100'
               }`}
               style={
                 headerBranded
@@ -263,7 +263,7 @@ export default function FeedbackHeaderBar({
               <button
                 type="button"
                 onClick={() => onEditVersion(activeVersionId)}
-                className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-600 hover:bg-gray-100 hover:text-ink transition-colors"
+                className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-detail font-medium text-prose hover:bg-gray-100 hover:text-ink transition-colors"
                 title="Edit this version's content"
               >
                 <Pencil size={11} />

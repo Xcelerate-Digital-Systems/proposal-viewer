@@ -184,7 +184,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
                 placeholder="Search projects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+                className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
               />
             </div>
 
@@ -284,21 +284,21 @@ function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
   return (
     <div className="group relative bg-white rounded-2xl shadow-card-soft hover:shadow-card-hover p-3.5 transition-all">
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-teal/10">
+        <div className="shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center bg-teal/10">
           <MessageSquareText size={15} className="text-teal" />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-[13px] font-medium text-ink truncate leading-tight">
+          <h4 className="text-caption font-medium text-ink truncate leading-tight">
             {project.title}
           </h4>
-          <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+          <p className="text-detail text-faint mt-0.5 truncate">
             {project.client_name || 'Markup project'}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-[11px] text-gray-500">
+      <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
+        <div className="flex items-center gap-1 text-detail text-dim">
           <Calendar size={11} />
           <span>{relativeShort(updated)}</span>
         </div>
@@ -306,7 +306,7 @@ function FeedbackBoardCard({ project }: { project: FeedbackProject }) {
           href={`/markup/${project.id}/comments`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
-          className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium text-teal hover:text-teal-hover"
+          className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"
         >
           <ExternalLink size={11} />
           Open

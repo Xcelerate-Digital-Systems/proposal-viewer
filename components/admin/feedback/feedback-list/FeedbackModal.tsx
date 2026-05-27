@@ -57,12 +57,12 @@ export default function FeedbackModal({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             {comment.thread_number && (
-              <span className="px-2 py-0.5 rounded-md bg-teal/10 text-xs font-bold text-teal">
+              <span className="px-2 py-0.5 rounded-lg bg-teal/10 text-xs font-bold text-teal">
                 #{comment.thread_number}
               </span>
             )}
-            <span className="text-sm text-gray-500 truncate">
-              Reported by <span className="font-medium text-gray-700">{comment.author_name}</span>
+            <span className="text-sm text-dim truncate">
+              Reported by <span className="font-medium text-prose">{comment.author_name}</span>
             </span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -73,7 +73,7 @@ export default function FeedbackModal({
               leftIcon={Trash2}
               onClick={() => onDelete(comment)}
               aria-label="Delete"
-              className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+              className="text-faint hover:text-red-600 hover:bg-red-50"
             />
             <Button
               variant="ghost"
@@ -92,7 +92,7 @@ export default function FeedbackModal({
             {/* Left — screenshot + comment + replies + composer */}
             <div className="flex-1 p-6 space-y-4 min-w-0">
               {comment.screenshot_url && (
-                <div className="rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
+                <div className="rounded-2xl border border-edge-strong overflow-hidden bg-surface">
                   <img
                     src={comment.screenshot_url}
                     alt="Screenshot"
@@ -102,7 +102,7 @@ export default function FeedbackModal({
               )}
 
               {comment.video_url && (
-                <div className="rounded-xl border border-gray-200 overflow-hidden bg-black">
+                <div className="rounded-2xl border border-edge-strong overflow-hidden bg-black">
                   <video
                     src={comment.video_url}
                     controls
@@ -113,29 +113,29 @@ export default function FeedbackModal({
               )}
 
               <div>
-                <p className="text-gray-900 leading-relaxed">{comment.content}</p>
-                <p className="text-xs text-gray-400 mt-2 italic">No description</p>
+                <p className="text-ink leading-relaxed">{comment.content}</p>
+                <p className="text-xs text-faint mt-2 italic">No description</p>
               </div>
 
               {replies.length > 0 && (
-                <div className="border-t border-gray-100 pt-4">
+                <div className="border-t border-edge pt-4">
                   <button
                     onClick={() => setShowReplies(!showReplies)}
-                    className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors mb-3"
+                    className="flex items-center gap-1.5 text-sm font-medium text-dim hover:text-prose transition-colors mb-3"
                   >
                     {showReplies ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     {replies.length} {replies.length === 1 ? 'Reply' : 'Replies'}
                   </button>
 
                   {showReplies && (
-                    <div className="space-y-3 pl-4 border-l-2 border-gray-100">
+                    <div className="space-y-3 pl-4 border-l-2 border-edge">
                       {replies.map((reply) => (
                         <div key={reply.id} className="text-sm">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-gray-700">{reply.author_name}</span>
-                            <span className="text-xs text-gray-400">{formatTimeAgo(reply.created_at)}</span>
+                            <span className="font-medium text-prose">{reply.author_name}</span>
+                            <span className="text-xs text-faint">{formatTimeAgo(reply.created_at)}</span>
                           </div>
-                          <p className="text-gray-600 leading-relaxed">{reply.content}</p>
+                          <p className="text-prose leading-relaxed">{reply.content}</p>
                         </div>
                       ))}
                     </div>
@@ -144,7 +144,7 @@ export default function FeedbackModal({
               )}
 
               {/* Reply composer */}
-              <div className="border-t border-gray-100 pt-4">
+              <div className="border-t border-edge pt-4">
                 <div className="flex items-end gap-2">
                   <textarea
                     value={replyText}
@@ -157,7 +157,7 @@ export default function FeedbackModal({
                     }}
                     placeholder="Reply to this feedback…"
                     rows={2}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
+                    className="flex-1 px-3 py-2 border border-edge-strong rounded-lg text-sm text-ink placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
                   />
                   <Button
                     size="sm"
@@ -173,8 +173,8 @@ export default function FeedbackModal({
             </div>
 
             {/* Right — metadata sidebar */}
-            <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-gray-100 p-6 bg-gray-50/50 shrink-0 space-y-5">
-              <div className="text-xs text-gray-400">
+            <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-edge p-6 bg-surface/50 shrink-0 space-y-5">
+              <div className="text-xs text-faint">
                 {new Date(comment.created_at).toLocaleDateString('en-AU', {
                   day: 'numeric', month: 'short', year: 'numeric',
                 })}
@@ -185,7 +185,7 @@ export default function FeedbackModal({
               </div>
 
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1.5">Status</p>
+                <p className="text-xs font-medium text-dim mb-1.5">Status</p>
                 <button
                   onClick={() => onToggleResolve(comment, !comment.resolved)}
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
@@ -209,34 +209,34 @@ export default function FeedbackModal({
               </div>
 
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1.5">Item</p>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <TypeIcon size={14} className="text-gray-400 shrink-0" />
+                <p className="text-xs font-medium text-dim mb-1.5">Item</p>
+                <div className="flex items-center gap-2 text-sm text-prose">
+                  <TypeIcon size={14} className="text-faint shrink-0" />
                   <span className="truncate">{comment.item_title}</span>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1.5">Type</p>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 capitalize">
+                <p className="text-xs font-medium text-dim mb-1.5">Type</p>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-prose capitalize">
                   {comment.comment_type?.replace('_', ' ') || 'general'}
                 </span>
               </div>
 
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1.5">Author</p>
-                <p className="text-sm text-gray-700">{comment.author_name}</p>
+                <p className="text-xs font-medium text-dim mb-1.5">Author</p>
+                <p className="text-sm text-prose">{comment.author_name}</p>
                 {comment.author_email && (
-                  <p className="text-xs text-gray-400 mt-0.5">{comment.author_email}</p>
+                  <p className="text-xs text-faint mt-0.5">{comment.author_email}</p>
                 )}
-                <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 capitalize">
+                <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-dim capitalize">
                   {comment.author_type}
                 </span>
               </div>
 
               {comment.item_url && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1.5">Page</p>
+                  <p className="text-xs font-medium text-dim mb-1.5">Page</p>
                   <a
                     href={comment.item_url}
                     target="_blank"
@@ -251,8 +251,8 @@ export default function FeedbackModal({
 
               {comment.resolved && comment.resolved_at && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1.5">Resolved</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs font-medium text-dim mb-1.5">Resolved</p>
+                  <p className="text-xs text-faint">
                     {new Date(comment.resolved_at).toLocaleDateString('en-AU', {
                       day: 'numeric', month: 'short', year: 'numeric',
                     })}

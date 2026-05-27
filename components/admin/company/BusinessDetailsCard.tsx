@@ -127,7 +127,7 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             placeholder="04xx xxx xxx"
             disabled={!isOwner}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-gray-50"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-surface"
           />
         </Field>
 
@@ -138,7 +138,7 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
             onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
             placeholder="hello@yourcompany.com"
             disabled={!isOwner}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-gray-50"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-surface"
           />
         </Field>
 
@@ -149,7 +149,7 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
             onChange={(e) => setForm({ ...form, abn: e.target.value })}
             placeholder="00 000 000 000"
             disabled={!isOwner}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-gray-50"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-surface"
           />
         </Field>
 
@@ -160,12 +160,12 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
             onChange={(e) => setForm({ ...form, address: e.target.value })}
             placeholder="123 Main St, Suburb NSW 2000"
             disabled={!isOwner}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-gray-50"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-surface"
           />
         </Field>
       </div>
 
-      <div className="pt-4 border-t border-gray-100">
+      <div className="pt-4 border-t border-edge">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-faint mb-3">
           Quote number format
         </h3>
@@ -178,7 +178,7 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
               placeholder="Q-"
               disabled={!isOwner}
               maxLength={12}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-gray-50"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-surface"
             />
           </Field>
           <Field label="Pad width" disabled={!isOwner}>
@@ -189,12 +189,12 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
               value={form.quote_number_pad_width}
               onChange={(e) => setForm({ ...form, quote_number_pad_width: Number(e.target.value) || 1 })}
               disabled={!isOwner}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-gray-50 tabular-nums"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-surface tabular-nums"
             />
           </Field>
           <div className="pt-[22px]">
             <div className="text-xs text-faint mb-1">Preview</div>
-            <div className="px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm font-medium tabular-nums">
+            <div className="px-3 py-2 rounded-lg bg-surface border border-edge-strong text-sm font-medium tabular-nums">
               {previewExample}
             </div>
           </div>
@@ -232,7 +232,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className={`block text-xs font-medium mb-1.5 ${disabled ? 'text-gray-300' : 'text-gray-600'}`}>
+      <label className={`block text-xs font-medium mb-1.5 ${disabled ? 'text-gray-300' : 'text-prose'}`}>
         {label}
       </label>
       {children}

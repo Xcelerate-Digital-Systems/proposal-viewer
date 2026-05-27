@@ -86,7 +86,7 @@ function Avatar({
   }
   return (
     <div
-      className={`rounded-full text-[10px] font-semibold text-white flex items-center justify-center ${avatarColor(seed)} ${ringClass}`}
+      className={`rounded-full text-2xs font-semibold text-white flex items-center justify-center ${avatarColor(seed)} ${ringClass}`}
       style={{ width: size, height: size }}
     >
       {initials(name, email)}
@@ -239,7 +239,7 @@ export default function KanbanColumnAssignees({
             );
           })}
           {hiddenCount > 0 && (
-            <div className="w-6 h-6 rounded-full bg-gray-200 text-[10px] font-semibold text-gray-700 flex items-center justify-center ring-2 ring-white">
+            <div className="w-6 h-6 rounded-full bg-gray-200 text-2xs font-semibold text-prose flex items-center justify-center ring-2 ring-white">
               +{hiddenCount}
             </div>
           )}
@@ -251,7 +251,7 @@ export default function KanbanColumnAssignees({
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-6 h-6 rounded-full border border-dashed border-gray-300 text-gray-400 hover:text-gray-700 hover:border-gray-500 transition-colors flex items-center justify-center"
+        className="w-6 h-6 rounded-full border border-dashed border-gray-300 text-faint hover:text-prose hover:border-gray-500 transition-colors flex items-center justify-center"
         aria-label={`Add reviewer to ${stage}`}
       >
         <Plus size={13} />
@@ -261,14 +261,14 @@ export default function KanbanColumnAssignees({
       {open && (
         <div
           ref={popoverRef}
-          className="absolute top-8 left-0 z-30 w-64 rounded-xl border border-gray-200 bg-white shadow-lg p-2"
+          className="absolute top-8 left-0 z-30 w-64 rounded-2xl border border-edge-strong bg-white shadow-lg p-2"
         >
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 px-2 pb-1 pt-0.5">
+          <div className="text-detail font-semibold uppercase tracking-wider text-faint px-2 pb-1 pt-0.5">
             Team
           </div>
           <div className="max-h-56 overflow-y-auto -mx-1 px-1">
             {companyMembers.length === 0 ? (
-              <div className="text-xs text-gray-400 italic px-2 py-1">No team members yet.</div>
+              <div className="text-xs text-faint italic px-2 py-1">No team members yet.</div>
             ) : (
               companyMembers.map((m) => {
                 const assigned = assignedMemberIds.has(m.id);
@@ -278,7 +278,7 @@ export default function KanbanColumnAssignees({
                     type="button"
                     onClick={() => toggleMember(m.id)}
                     disabled={busy}
-                    className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-gray-50 disabled:opacity-50"
+                    className="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-surface disabled:opacity-50"
                   >
                     <Avatar
                       imageUrl={m.avatar_url}
@@ -288,8 +288,8 @@ export default function KanbanColumnAssignees({
                       size={24}
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] text-gray-800 truncate">{m.name || m.email}</div>
-                      {m.name && <div className="text-[11px] text-gray-400 truncate">{m.email}</div>}
+                      <div className="text-caption text-gray-800 truncate">{m.name || m.email}</div>
+                      {m.name && <div className="text-detail text-faint truncate">{m.email}</div>}
                     </div>
                     {assigned && <Check size={14} className="text-emerald-500 shrink-0" />}
                   </button>
@@ -300,7 +300,7 @@ export default function KanbanColumnAssignees({
 
           {guestAllowed && (
             <>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 px-2 pb-1 pt-2">
+              <div className="text-detail font-semibold uppercase tracking-wider text-faint px-2 pb-1 pt-2">
                 Guests
               </div>
 
@@ -319,7 +319,7 @@ export default function KanbanColumnAssignees({
                         type="button"
                         onClick={() => assigned ? removeGuest(email) : addGuestByEmail(email, g.name)}
                         disabled={busy}
-                        className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-gray-50 disabled:opacity-50"
+                        className="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-surface disabled:opacity-50"
                       >
                         <Avatar
                           imageUrl={null}
@@ -329,8 +329,8 @@ export default function KanbanColumnAssignees({
                           size={24}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="text-[13px] text-gray-800 truncate">{g.name || g.email}</div>
-                          {g.name && <div className="text-[11px] text-gray-400 truncate">{g.email}</div>}
+                          <div className="text-caption text-gray-800 truncate">{g.name || g.email}</div>
+                          {g.name && <div className="text-detail text-faint truncate">{g.email}</div>}
                         </div>
                         {assigned && <Check size={14} className="text-emerald-500 shrink-0" />}
                       </button>
@@ -339,21 +339,21 @@ export default function KanbanColumnAssignees({
                 </div>
               )}
 
-              <div className="flex items-center gap-1.5 px-2 pb-1 pt-0.5 border-t border-gray-100 mt-1">
-                <Mail size={13} className="text-gray-400 shrink-0" />
+              <div className="flex items-center gap-1.5 px-2 pb-1 pt-0.5 border-t border-edge mt-1">
+                <Mail size={13} className="text-faint shrink-0" />
                 <input
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGuest(); } }}
                   placeholder="Invite a new email..."
                   type="email"
-                  className="flex-1 min-w-0 text-[13px] outline-none placeholder:text-gray-300 py-1.5"
+                  className="flex-1 min-w-0 text-caption outline-none placeholder:text-gray-300 py-1.5"
                 />
                 <button
                   type="button"
                   onClick={addGuest}
                   disabled={busy || !guestEmail.trim()}
-                  className="text-[11px] font-semibold text-teal hover:text-teal/80 disabled:text-gray-300"
+                  className="text-detail font-semibold text-teal hover:text-teal/80 disabled:text-gray-300"
                 >
                   Add
                 </button>

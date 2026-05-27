@@ -29,7 +29,7 @@ export default function Chip({ enabled, onClick, children, disabled, block }: Ch
       } ${
         enabled
           ? 'bg-teal/10 border-teal/30 text-teal hover:bg-teal/15'
-          : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300'
+          : 'bg-surface border-edge-strong text-faint hover:text-prose hover:border-gray-300'
       }`}
     >
       {enabled ? <Check size={11} className="shrink-0" /> : <X size={11} className="shrink-0" />}

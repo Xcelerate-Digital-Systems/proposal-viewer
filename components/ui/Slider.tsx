@@ -43,8 +43,8 @@ export default function Slider({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-xs text-gray-500">{label}</label>
-        <span className="text-xs text-gray-700 tabular-nums">{display}</span>
+        <label className="text-xs text-dim">{label}</label>
+        <span className="text-xs text-prose tabular-nums">{display}</span>
       </div>
       <input
         type="range"
@@ -59,7 +59,7 @@ export default function Slider({
         onKeyUp={onCommit ? (e) => onCommit(Number((e.target as HTMLInputElement).value)) : undefined}
         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal disabled:opacity-50 disabled:cursor-not-allowed"
       />
-      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-faint mt-1">{hint}</p>}
     </div>
   );
 }

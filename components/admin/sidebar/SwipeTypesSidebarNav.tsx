@@ -87,7 +87,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                     <div className="fixed inset-0 -z-10" onClick={() => setMenuFor(null)} />
                     <button
                       onClick={() => { setModal({ open: true, type }); setMenuFor(null); }}
-                      className="w-full text-left px-3 py-2 text-[13px] text-ink hover:bg-surface flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 text-caption text-ink hover:bg-surface flex items-center gap-2"
                     >
                       <Pencil size={13} />
                       Rename & share
@@ -103,7 +103,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                         }
                         setMenuFor(null);
                       }}
-                      className="w-full text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 text-caption text-red-600 hover:bg-red-50 flex items-center gap-2"
                     >
                       <Trash2 size={13} /> Delete
                     </button>

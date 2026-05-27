@@ -32,7 +32,7 @@ export default function TypeFilterTabs({
       <div className="flex items-center gap-1 flex-wrap">
         <button
           onClick={() => onFilterChange(null)}
-          className="px-2.5 py-1 rounded-md text-2xs font-medium transition-colors"
+          className="px-2.5 py-1 rounded-lg text-2xs font-medium transition-colors"
           style={{
             backgroundColor: !typeFilter ? `${sidebarTextColor}18` : 'transparent',
             color: !typeFilter ? sidebarTextColor : `${sidebarTextColor}55`,
@@ -44,7 +44,7 @@ export default function TypeFilterTabs({
           <button
             key={t}
             onClick={() => onFilterChange(t)}
-            className="px-2.5 py-1 rounded-md text-2xs font-medium transition-colors capitalize"
+            className="px-2.5 py-1 rounded-lg text-2xs font-medium transition-colors capitalize"
             style={{
               backgroundColor: typeFilter === t ? `${sidebarTextColor}18` : 'transparent',
               color: typeFilter === t ? sidebarTextColor : `${sidebarTextColor}55`,
@@ -65,7 +65,7 @@ export default function TypeFilterTabs({
         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
           !typeFilter
             ? 'bg-teal/10 text-teal'
-            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+            : 'text-faint hover:text-prose hover:bg-gray-100'
         }`}
       >
         All{showCounts ? ` (${items.length})` : ''}
@@ -77,7 +77,7 @@ export default function TypeFilterTabs({
           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
             typeFilter === t
               ? 'bg-teal/10 text-teal'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              : 'text-faint hover:text-prose hover:bg-gray-100'
           }`}
         >
           {TYPE_LABELS[t] || t}s{showCounts ? ` (${items.filter((i) => i.type === t).length})` : ''}

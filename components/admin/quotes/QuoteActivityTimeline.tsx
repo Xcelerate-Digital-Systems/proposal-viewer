@@ -142,12 +142,12 @@ export default function QuoteActivityTimeline({ proposal }: Props) {
   return (
     <SectionCard
       title="Activity"
-      icon={<Activity size={14} className="text-gray-400" />}
+      icon={<Activity size={14} className="text-faint" />}
       action={
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          className="flex items-center gap-1 text-xs text-dim hover:text-prose transition-colors"
         >
           {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           {open ? 'Collapse' : `${events.length} event${events.length === 1 ? '' : 's'}`}
@@ -155,21 +155,21 @@ export default function QuoteActivityTimeline({ proposal }: Props) {
       }
     >
       {!open && latest && (
-        <p className="text-xs text-gray-500">
-          Latest: <span className="font-medium text-gray-700">{latest.label}</span>
+        <p className="text-xs text-dim">
+          Latest: <span className="font-medium text-prose">{latest.label}</span>
           {latest.detail && <span> · {latest.detail}</span>}
-          <span className="ml-2 text-gray-400">{formatStamp(latest.ts)}</span>
+          <span className="ml-2 text-faint">{formatStamp(latest.ts)}</span>
         </p>
       )}
 
       {!open && events.length === 0 && (
-        <p className="text-xs text-gray-400">No activity yet — this quote is still a draft.</p>
+        <p className="text-xs text-faint">No activity yet — this quote is still a draft.</p>
       )}
 
       {open && (
         <ol className="space-y-3">
           {events.length === 0 && (
-            <li className="text-xs text-gray-400">No activity yet — this quote is still a draft.</li>
+            <li className="text-xs text-faint">No activity yet — this quote is still a draft.</li>
           )}
           {events.map((e, i) => {
             const Icon = e.icon;
@@ -181,13 +181,13 @@ export default function QuoteActivityTimeline({ proposal }: Props) {
                   <Icon size={12} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm text-gray-900">
+                  <div className="text-sm text-ink">
                     {e.label}
                     {e.detail && (
-                      <span className="text-gray-500 font-normal"> {e.detail}</span>
+                      <span className="text-dim font-normal"> {e.detail}</span>
                     )}
                   </div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">{formatStamp(e.ts)}</div>
+                  <div className="text-detail text-faint mt-0.5">{formatStamp(e.ts)}</div>
                 </div>
               </li>
             );

@@ -68,10 +68,10 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
           {editor.selectedId && editor.selectedPage ? (
             <>
               {/* Show-on-viewer chip (replaces the old slidey Toggle) */}
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-edge">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Show packages page</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
+                  <p className="text-sm font-medium text-prose">Show packages page</p>
+                  <p className="text-xs text-faint mt-0.5">Toggle visibility in the proposal viewer</p>
                 </div>
                 <Chip enabled={editor.form.enabled} onClick={() => editor.toggleEnabled()}>
                   {editor.form.enabled ? 'Visible' : 'Hidden'}
@@ -97,7 +97,7 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
                   {/* Tier editor */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-medium text-gray-600">
+                      <label className="text-xs font-medium text-prose">
                         Packages ({editor.form.packages.length})
                       </label>
                       <div className="flex items-center gap-3">
@@ -112,9 +112,9 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
                     </div>
 
                     {editor.form.packages.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center">
+                      <div className="rounded-lg border border-dashed border-edge-strong py-8 text-center">
                         <Package size={20} className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-xs text-gray-400">No packages yet</p>
+                        <p className="text-xs text-faint">No packages yet</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -193,13 +193,13 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
 
                   {/* Footer text */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Footer Text</label>
+                    <label className="block text-xs font-medium text-prose mb-1">Footer Text</label>
                     <textarea
                       value={editor.form.footer_text ?? ''}
                       onChange={(e) => editor.updateForm({ footer_text: e.target.value || null })}
                       placeholder="Optional footer note below the packages…"
                       rows={2}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
+                      className="w-full px-3 py-2 text-sm border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
                     />
                   </div>
 
@@ -214,9 +214,9 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
                   />
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+                <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-12 text-center">
                   <Package size={24} className="mx-auto text-gray-300 mb-2" />
-                  <p className="text-sm text-gray-400 mb-1">Packages page is currently disabled</p>
+                  <p className="text-sm text-faint mb-1">Packages page is currently disabled</p>
                   <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
                 </div>
               )}
@@ -225,7 +225,7 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
             <div className="flex items-center justify-center py-16">
               <div className="text-center">
                 <Package size={28} className="mx-auto text-gray-200 mb-3" />
-                <p className="text-sm text-gray-400 mb-1">No packages page selected</p>
+                <p className="text-sm text-faint mb-1">No packages page selected</p>
                 <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
               </div>
             </div>

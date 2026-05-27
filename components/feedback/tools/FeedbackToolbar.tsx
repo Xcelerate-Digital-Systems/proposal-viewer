@@ -112,8 +112,8 @@ function ToolButton({
   return (
     <button
       onClick={onClick}
-      className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors group ${
-        active ? 'text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-ink'
+      className={`relative w-9 h-9 rounded-2xl flex items-center justify-center transition-colors group ${
+        active ? 'text-white shadow-sm' : 'text-dim hover:bg-surface hover:text-ink'
       }`}
       style={active ? { backgroundColor: accent } : undefined}
       title={tooltip}
@@ -134,7 +134,7 @@ function ToolButton({
       )}
 
       {/* Tooltip */}
-      <span className="absolute right-full mr-2 z-[60] px-2.5 py-1 rounded-lg bg-ink text-white text-[11px] font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-sm">
+      <span className="absolute right-full mr-2 z-[60] px-2.5 py-1 rounded-lg bg-ink text-white text-detail font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-sm">
         {tooltip}
       </span>
     </button>

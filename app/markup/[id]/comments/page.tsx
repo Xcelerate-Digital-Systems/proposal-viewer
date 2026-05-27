@@ -344,15 +344,15 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
           </div>
         ) : enrichedComments.length === 0 && completions.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <MessageSquare size={28} className="text-gray-300" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-500 mb-1">No feedback yet</h3>
-            <p className="text-sm text-gray-400">
+            <h3 className="text-lg font-semibold text-dim mb-1">No feedback yet</h3>
+            <p className="text-sm text-faint">
               Feedback from clients and team members will appear here.
             </p>
           </div>
@@ -363,39 +363,39 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                 <button
                   type="button"
                   onClick={() => setCompletionsOpen((o) => !o)}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-surface transition-colors"
                 >
                   <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-ink">
                       {completions.length} reviewer{completions.length !== 1 ? 's' : ''} finished reviewing
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-faint">
                       Most recent: {formatTimeAgo(completions[0].completed_at)}
                     </p>
                   </div>
-                  {completionsOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                  {completionsOpen ? <ChevronUp size={16} className="text-faint" /> : <ChevronDown size={16} className="text-faint" />}
                 </button>
 
                 {completionsOpen && (
-                  <div className="divide-y divide-gray-100 border-t border-gray-100">
+                  <div className="divide-y divide-gray-100 border-t border-edge">
                     {completions.map((c) => (
                       <div key={c.id} className="flex items-start gap-3 px-5 py-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 text-[11px] font-semibold text-emerald-700">
+                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 text-detail font-semibold text-emerald-700">
                           {(c.reviewer_name?.trim()[0] ?? '?').toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 text-xs">
-                            <span className="font-medium text-gray-900 truncate">
+                            <span className="font-medium text-ink truncate">
                               {c.reviewer_name || 'Anonymous reviewer'}
                             </span>
                             {c.reviewer_email && (
-                              <span className="text-gray-400 truncate">· {c.reviewer_email}</span>
+                              <span className="text-faint truncate">· {c.reviewer_email}</span>
                             )}
-                            <span className="text-gray-400 shrink-0 ml-auto">{formatTimeAgo(c.completed_at)}</span>
+                            <span className="text-faint shrink-0 ml-auto">{formatTimeAgo(c.completed_at)}</span>
                           </div>
                           {c.message && (
-                            <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">{c.message}</p>
+                            <p className="text-sm text-prose mt-1 whitespace-pre-wrap">{c.message}</p>
                           )}
                         </div>
                       </div>
@@ -408,17 +408,17 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             {/* Open / Resolved toggle */}
             <div className="bg-white rounded-2xl shadow-card overflow-hidden">
               {/* Filter bar */}
-              <div className="flex items-center gap-4 px-5 py-3 border-b border-gray-100 flex-wrap">
+              <div className="flex items-center gap-4 px-5 py-3 border-b border-edge flex-wrap">
                 <button
                   onClick={() => setTab('open')}
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    tab === 'open' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                    tab === 'open' ? 'text-ink' : 'text-faint hover:text-prose'
                   }`}
                 >
                   <Circle size={14} />
                   Open
                   <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
-                    tab === 'open' ? 'bg-gray-100 text-gray-700' : 'bg-gray-50 text-gray-400'
+                    tab === 'open' ? 'bg-gray-100 text-prose' : 'bg-surface text-faint'
                   }`}>
                     {openComments.length}
                   </span>
@@ -426,13 +426,13 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                 <button
                   onClick={() => setTab('resolved')}
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    tab === 'resolved' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                    tab === 'resolved' ? 'text-ink' : 'text-faint hover:text-prose'
                   }`}
                 >
                   <CheckCircle2 size={14} />
                   Resolved
                   <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
-                    tab === 'resolved' ? 'bg-gray-100 text-gray-700' : 'bg-gray-50 text-gray-400'
+                    tab === 'resolved' ? 'bg-gray-100 text-prose' : 'bg-surface text-faint'
                   }`}>
                     {resolvedComments.length}
                   </span>
@@ -443,7 +443,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                 <button
                   onClick={() => setPriorityFilter('all')}
                   className={`text-xs font-medium transition-colors ${
-                    priorityFilter === 'all' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                    priorityFilter === 'all' ? 'text-ink' : 'text-faint hover:text-prose'
                   }`}
                 >
                   All priorities
@@ -456,7 +456,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                       key={p.value}
                       onClick={() => setPriorityFilter(active ? 'all' : p.value)}
                       className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-                        active ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                        active ? 'text-ink' : 'text-faint hover:text-prose'
                       }`}
                     >
                       <Icon size={12} className={p.iconClass} />
@@ -468,7 +468,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
 
               {/* List */}
               {displayed.length === 0 ? (
-                <div className="py-12 text-center text-sm text-gray-400">
+                <div className="py-12 text-center text-sm text-faint">
                   {tab === 'open' ? 'No open feedback' : 'No resolved feedback'}
                 </div>
               ) : (

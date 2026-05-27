@@ -27,7 +27,7 @@ export default function AttachmentList({ attachments, size = 'md' }: AttachmentL
             href={a.url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`block ${imgBox} rounded-lg border border-gray-200 overflow-hidden hover:border-teal/40 transition-colors`}
+            className={`block ${imgBox} rounded-lg border border-edge-strong overflow-hidden hover:border-teal/40 transition-colors`}
           >
             <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
           </a>
@@ -37,10 +37,10 @@ export default function AttachmentList({ attachments, size = 'md' }: AttachmentL
             href={a.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 hover:border-teal/40 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-edge-strong hover:border-teal/40 transition-colors"
           >
-            <FileText size={10} className="text-gray-400 shrink-0" />
-            <span className={`text-2xs text-gray-600 truncate ${fileNameMax}`}>{a.name}</span>
+            <FileText size={10} className="text-faint shrink-0" />
+            <span className={`text-2xs text-prose truncate ${fileNameMax}`}>{a.name}</span>
             <ExternalLink size={8} className="text-gray-300 shrink-0" />
           </a>
         );

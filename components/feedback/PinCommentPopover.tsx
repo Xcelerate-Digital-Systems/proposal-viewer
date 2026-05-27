@@ -133,16 +133,16 @@ export default function PinCommentPopover({
       <div
         ref={popoverRef}
         style={{ ...style, width: POPOVER_STYLE.widthPx, ...POPOVER_INLINE_STYLE }}
-        className="max-h-[440px] overflow-y-auto bg-white rounded-xl border border-gray-200 z-50"
+        className="max-h-[440px] overflow-y-auto bg-white rounded-2xl border border-edge-strong z-50"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-edge">
           <div className="flex items-center gap-1.5">
             <span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-2xs font-bold">
               {comment.thread_number || '•'}
             </span>
-            <span className="text-2xs text-gray-400">
+            <span className="text-2xs text-faint">
               Pin Comment
             </span>
           </div>
@@ -161,11 +161,11 @@ export default function PinCommentPopover({
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-900">{comment.author_name}</span>
+                <span className="text-xs font-medium text-ink">{comment.author_name}</span>
                 {isTeam && (
                   <span className="text-2xs font-medium uppercase bg-teal/10 text-teal px-1.5 py-0.5 rounded">Team</span>
                 )}
-                <span className="text-2xs text-gray-400">{timeAgo(comment.created_at)}</span>
+                <span className="text-2xs text-faint">{timeAgo(comment.created_at)}</span>
               </div>
               {comment.comment_type === 'text_highlight' && comment.highlight_text && (
                 <div className="mt-1 mb-1 px-2 py-1.5 rounded bg-yellow-50 border-l-2 border-yellow-300">
@@ -174,14 +174,14 @@ export default function PinCommentPopover({
               )}
               <CommentContent
                 content={comment.content}
-                className="text-xs text-gray-600 mt-0.5"
+                className="text-xs text-prose mt-0.5"
               />
               <AttachmentList attachments={comment.attachments} size="sm" />
 
               {/* Screenshot thumbnail */}
               {comment.screenshot_url && (
                 <a href={comment.screenshot_url} target="_blank" rel="noopener noreferrer"
-                  className="block mt-1.5 w-full max-w-[200px] rounded-lg border border-gray-200 overflow-hidden hover:border-teal/40 transition-colors">
+                  className="block mt-1.5 w-full max-w-[200px] rounded-lg border border-edge-strong overflow-hidden hover:border-teal/40 transition-colors">
                   <img src={comment.screenshot_url} alt="Screenshot" className="w-full object-cover" />
                 </a>
               )}
@@ -211,7 +211,7 @@ export default function PinCommentPopover({
 
           {/* Replies */}
           {replies.length > 0 && (
-            <div className="ml-4 pl-3 border-l-2 border-gray-100 space-y-2">
+            <div className="ml-4 pl-3 border-l-2 border-edge space-y-2">
               {replies.map((r) => (
                 <PopoverReplyItem
                   key={r.id}
@@ -227,21 +227,21 @@ export default function PinCommentPopover({
           <div className="flex items-center gap-3">
             {!showReply && (
               <button onClick={() => setShowReply(true)}
-                className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-prose transition-colors">
                 <CornerDownRight size={10} />
                 Reply
               </button>
             )}
             {!comment.resolved && onResolve && (
               <button onClick={() => onResolve(comment.id)}
-                className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-emerald-600 transition-colors">
+                className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-emerald-600 transition-colors">
                 <CheckCircle2 size={10} />
                 Resolve
               </button>
             )}
             {comment.resolved && onUnresolve && (
               <button onClick={() => onUnresolve(comment.id)}
-                className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-amber-600 transition-colors">
+                className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-amber-600 transition-colors">
                 <RotateCcw size={10} />
                 Reopen
               </button>
@@ -252,7 +252,7 @@ export default function PinCommentPopover({
                   await onDelete!(comment.id);
                   onClose();
                 }}
-                className="flex items-center gap-1 text-2xs font-medium text-gray-400 hover:text-red-600 transition-colors ml-auto">
+                className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-red-600 transition-colors ml-auto">
                 <Trash2 size={10} />
                 Delete
               </button>
@@ -265,10 +265,10 @@ export default function PinCommentPopover({
               {isGuest && !guestName && (
                 <input type="text" value={guestName || ''} onChange={(e) => onNameChange?.(e.target.value)}
                   placeholder="Your name"
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-edge-strong text-xs text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
               )}
               <div className="flex gap-1.5">
-                <div className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal">
+                <div className="flex-1 px-2.5 py-1.5 rounded-lg border border-edge-strong focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal">
                   <MentionEditor
                     value={replyText}
                     onChange={setReplyText}
@@ -280,7 +280,7 @@ export default function PinCommentPopover({
                       handleReply({ preventDefault: () => {} } as unknown as React.FormEvent);
                     }}
                     participantsUrl={participantsUrl ?? null}
-                    className="w-full text-[11px] text-gray-900"
+                    className="w-full text-detail text-ink"
                   />
                 </div>
                 <Button
@@ -325,15 +325,15 @@ function PopoverReplyItem({
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium text-gray-900">{reply.author_name}</span>
+          <span className="text-detail font-medium text-ink">{reply.author_name}</span>
           {rIsTeam && (
             <span className="text-2xs font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">Team</span>
           )}
-          <span className="text-2xs text-gray-400">{timeAgo(reply.created_at)}</span>
+          <span className="text-2xs text-faint">{timeAgo(reply.created_at)}</span>
         </div>
         <CommentContent
           content={reply.content}
-          className="text-[11px] text-gray-600 mt-0.5"
+          className="text-detail text-prose mt-0.5"
         />
         <AttachmentList attachments={reply.attachments} size="sm" />
         {currentUserName && (

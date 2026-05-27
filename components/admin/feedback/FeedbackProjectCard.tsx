@@ -230,7 +230,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
 
               {/* Comment count */}
               {commentStats.total > 0 && (
-                <div className="flex items-center gap-1.5 text-[11px] text-faint mt-1">
+                <div className="flex items-center gap-1.5 text-detail text-faint mt-1">
                   <MessageSquareText size={11} />
                   <span>
                     {commentStats.total} comment{commentStats.total !== 1 ? 's' : ''}
@@ -243,7 +243,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
             </div>
           ) : (
             <div className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-teal-tint flex items-center justify-center mx-auto mb-2">
+              <div className="w-12 h-12 rounded-2xl bg-teal-tint flex items-center justify-center mx-auto mb-2">
                 <FolderOpen size={22} className="text-teal" />
               </div>
               <p className="text-xs text-faint">No items yet</p>
@@ -260,7 +260,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
         <div className="p-3 flex-1 flex flex-col min-w-0">
           {/* Title */}
           <h3
-            className="text-[15px] font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
+            className="text-base font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
             onClick={() => router.push(`/markup/${project.id}`)}
           >
             {project.title}
@@ -288,7 +288,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           <div className="flex-1" />
 
           {/* ─── Actions ────────────────────────────────────────── */}
-          <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3 px-3">
+          <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3 px-3">
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => router.push(`/markup/${project.id}`)}
@@ -317,7 +317,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-xl border border-gray-100 shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[140px]">
+                  <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[140px]">
                     <button
                       onClick={openEditModal}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-surface"
@@ -358,7 +358,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
               type="text"
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+              className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
             />
           </div>
           <div>
@@ -367,7 +367,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
               rows={2}
-              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors resize-none"
+              className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors resize-none"
             />
           </div>
           <div>
@@ -377,9 +377,9 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
               value={editClientCompany}
               onChange={(e) => setEditClientCompany(e.target.value)}
               placeholder="e.g. Premier Shipping Containers"
-              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+              className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
             />
-            <p className="text-xs text-gray-400 mt-1.5">
+            <p className="text-xs text-faint mt-1.5">
               Used as the page name in Meta ad previews and the sender on email previews.
             </p>
           </div>
@@ -390,7 +390,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
                 type="text"
                 value={editClientName}
                 onChange={(e) => setEditClientName(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+                className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />
             </div>
             <div>
@@ -399,7 +399,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
                 type="email"
                 value={editClientEmail}
                 onChange={(e) => setEditClientEmail(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+                className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />
             </div>
           </div>

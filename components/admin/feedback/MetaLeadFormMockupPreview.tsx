@@ -133,7 +133,7 @@ export default function MetaLeadFormMockupPreview({
             color: dark ? '#f5f5f5' : '#050505',
           }}
         >
-          <div className="flex items-center justify-between px-5 pt-2 pb-1 text-[11px] font-semibold"
+          <div className="flex items-center justify-between px-5 pt-2 pb-1 text-detail font-semibold"
             style={{ color: dark ? '#f5f5f5' : '#050505' }}>
             <span>9:41</span>
             <span className="flex items-center gap-1">
@@ -148,7 +148,7 @@ export default function MetaLeadFormMockupPreview({
             <button className="p-1" style={{ color: dark ? '#f5f5f5' : '#050505' }}>
               <ChevronLeft size={20} />
             </button>
-            <span className="text-[13px] font-semibold truncate max-w-[180px]">
+            <span className="text-caption font-semibold truncate max-w-[180px]">
               {safePage === 'completion' ? 'Thanks!' : safePage === 'review' ? 'Review' : 'Form'}
             </span>
             <button className="p-1" style={{ color: dark ? '#f5f5f5' : '#050505' }}>
@@ -232,7 +232,7 @@ export default function MetaLeadFormMockupPreview({
               <button
                 key={p.key}
                 onClick={(e) => { e.stopPropagation(); setPage(p.key); }}
-                className="px-3 py-1 text-[11px] font-medium rounded-full transition-colors"
+                className="px-3 py-1 text-detail font-medium rounded-full transition-colors"
                 style={{
                   backgroundColor: active ? fbBlue : 'transparent',
                   color: active ? '#ffffff' : (dark ? '#ffffff88' : '#6b7280'),
@@ -271,7 +271,7 @@ function IntroPage({
         ) : (
           <div className="flex flex-col items-center text-center px-4" style={{ color: subtle }}>
             <ImageIcon size={28} />
-            <p className="text-[11px] mt-1">Cover image</p>
+            <p className="text-detail mt-1">Cover image</p>
           </div>
         )}
       </div>
@@ -280,7 +280,7 @@ function IntroPage({
         <h2 className="text-lg font-bold leading-tight">
           {data.intro_headline?.trim() || 'Headline goes here'}
         </h2>
-        <p className="text-[13px] leading-snug whitespace-pre-wrap" style={{ color: subtle }}>
+        <p className="text-caption leading-snug whitespace-pre-wrap" style={{ color: subtle }}>
           {data.intro_description?.trim() || 'A short pitch describing what the user gets when they fill out this form.'}
         </p>
       </div>
@@ -425,7 +425,7 @@ function QuestionField({
           {options.map((opt, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-xs"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
               style={{ backgroundColor: fieldBg, border: `1px solid ${border}`, color: dark ? '#f5f5f5' : '#050505' }}
             >
               <span
@@ -446,7 +446,7 @@ function QuestionField({
         {label}{question.required && <span style={{ color: '#ef4444' }}> *</span>}
       </label>
       <div
-        className="px-3 py-2.5 rounded-md text-xs"
+        className="px-3 py-2.5 rounded-lg text-xs"
         style={{
           backgroundColor: fieldBg,
           border: `1px solid ${border}`,
@@ -507,7 +507,7 @@ function PrivacyPage({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-medium border"
+          className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium border"
           style={{ borderColor: dark ? '#2a2a2a' : '#dadde1' }}
         >
           <span className="truncate">
@@ -521,7 +521,7 @@ function PrivacyPage({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="mt-2 flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-medium border"
+          className="mt-2 flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium border"
           style={{ borderColor: dark ? '#2a2a2a' : '#dadde1' }}
         >
           <span>View Meta Privacy Policy</span>
@@ -585,7 +585,7 @@ function ReviewPage({
         {[...customQuestions, ...prefillQuestions].map((q) => (
           <div
             key={q.id}
-            className="flex items-start justify-between gap-2 px-3 py-2 rounded-md border"
+            className="flex items-start justify-between gap-2 px-3 py-2 rounded-lg border"
             style={{ borderColor: border }}
           >
             <div className="min-w-0 flex-1">
@@ -649,7 +649,7 @@ function CompletionPage({
               value={screen.id}
               onChange={(e) => onPickScreen(e.target.value)}
               onClick={(e) => e.stopPropagation()}
-              className="w-full appearance-none pl-2 pr-6 py-1 rounded-md text-[11px] border focus:outline-none"
+              className="w-full appearance-none pl-2 pr-6 py-1 rounded-lg text-detail border focus:outline-none"
               style={{
                 borderColor: dark ? '#2a2a2a' : '#dadde1',
                 backgroundColor: dark ? '#000' : '#fff',
@@ -677,7 +677,7 @@ function CompletionPage({
         <h2 className="text-lg font-bold leading-tight">
           {screen.headline?.trim() || 'Thanks, you’re all set.'}
         </h2>
-        <p className="text-[13px] leading-snug whitespace-pre-wrap" style={{ color: subtle }}>
+        <p className="text-caption leading-snug whitespace-pre-wrap" style={{ color: subtle }}>
           {screen.description?.trim() || 'You can close this form now.'}
         </p>
       </div>

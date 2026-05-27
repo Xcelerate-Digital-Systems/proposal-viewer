@@ -136,7 +136,7 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
               disabled={uploading}
-              className={`w-full flex flex-col items-center justify-center gap-2 py-12 border-2 border-dashed rounded-xl transition-colors ${
+              className={`w-full flex flex-col items-center justify-center gap-2 py-12 border-2 border-dashed rounded-2xl transition-colors ${
                 dragging
                   ? 'border-teal bg-teal/5'
                   : 'border-edge hover:border-teal/50 hover:bg-surface'
@@ -230,7 +230,7 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
                 <span className="text-sm text-faint">Select or create tags…</span>
               ) : (
                 tags.map((t) => (
-                  <span key={t} className="inline-flex items-center gap-1 text-[11px] bg-teal/10 text-teal px-2 py-0.5 rounded-full">
+                  <span key={t} className="inline-flex items-center gap-1 text-detail bg-teal/10 text-teal px-2 py-0.5 rounded-full">
                     {t}
                     <span
                       role="button"

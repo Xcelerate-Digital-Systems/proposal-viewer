@@ -68,13 +68,13 @@ export default function TextPageEditorModal({
       <Modal.Header>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
               <FileText size={16} className="text-muted" />
               Edit Text Page
             </span>
             {/* Save status */}
             {saveStatus === 'saving' && (
-              <span className="flex items-center gap-1 text-xs text-gray-400">
+              <span className="flex items-center gap-1 text-xs text-faint">
                 <Loader2 size={12} className="animate-spin" />
                 Saving...
               </span>
@@ -95,9 +95,9 @@ export default function TextPageEditorModal({
           {/* Page title */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium text-gray-500">Page Title</label>
+              <label className="text-xs font-medium text-dim">Page Title</label>
               <div className="flex items-center gap-2">
-                <span className="text-2xs text-gray-400">Show on page</span>
+                <span className="text-2xs text-faint">Show on page</span>
                 <button
                   type="button"
                   role="switch"
@@ -120,16 +120,16 @@ export default function TextPageEditorModal({
               value={page.title}
               onChange={handleTitleChange}
               placeholder="e.g. Executive Summary, Welcome, Terms & Conditions"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20"
+              className="w-full px-3 py-2 text-sm border border-edge-strong rounded-lg focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20"
             />
           </div>
 
           {/* Member badge toggle */}
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+          <div className="rounded-lg border border-edge-strong bg-surface p-3 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <User size={14} className="text-gray-400" />
-                <span className="text-xs font-medium text-gray-700">Show Member Badge</span>
+                <User size={14} className="text-faint" />
+                <span className="text-xs font-medium text-prose">Show Member Badge</span>
               </div>
               <button
                 type="button"
@@ -151,7 +151,7 @@ export default function TextPageEditorModal({
             {/* Member selector — visible when badge is enabled */}
             {page.show_member_badge && companyId && (
               <div>
-                <label className="block text-2xs font-medium text-gray-400 mb-1">Team Member</label>
+                <label className="block text-2xs font-medium text-faint mb-1">Team Member</label>
                 <PreparedBySelector
                   companyId={companyId}
                   selectedMemberId={page.prepared_by_member_id || null}
@@ -161,18 +161,18 @@ export default function TextPageEditorModal({
             )}
 
             {page.show_member_badge && !companyId && (
-              <p className="text-2xs text-gray-400">
+              <p className="text-2xs text-faint">
                 Save and reopen this page to select a team member.
               </p>
             )}
           </div>
 
           {/* Client logo toggle */}
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+          <div className="rounded-lg border border-edge-strong bg-surface p-3 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Image size={14} className="text-gray-400" />
-                <span className="text-xs font-medium text-gray-700">Show Client Logo</span>
+                <Image size={14} className="text-faint" />
+                <span className="text-xs font-medium text-prose">Show Client Logo</span>
               </div>
               <button
                 type="button"
@@ -190,14 +190,14 @@ export default function TextPageEditorModal({
                 />
               </button>
             </div>
-            <p className="text-2xs text-gray-400 leading-relaxed">
+            <p className="text-2xs text-faint leading-relaxed">
               Displays the client logo. Appears top-right on portrait pages, side column on landscape pages.
             </p>
           </div>
 
           {/* Rich text editor */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Content</label>
+            <label className="block text-xs font-medium text-dim mb-1">Content</label>
             <RichTextEditor
               content={page.content}
               onUpdate={handleContentChange}
@@ -206,7 +206,7 @@ export default function TextPageEditorModal({
           </div>
 
           {/* Hint */}
-          <p className="text-2xs text-gray-400 leading-relaxed">
+          <p className="text-2xs text-faint leading-relaxed">
             💡 Use the <strong>Fields</strong> button in the toolbar to insert dynamic fields that auto-populate with client/company information in the viewer.
           </p>
       </Modal.Body>

@@ -65,7 +65,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   if (auth.loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <Loader2 className="w-6 h-6 text-teal animate-spin" />
       </div>
     );
@@ -108,7 +108,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   // useEffect above kicks the user out — which is jarring on a slow network.
   if (onboardingState === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <Loader2 className="w-6 h-6 text-teal animate-spin" />
       </div>
     );
@@ -144,7 +144,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   if (onboardingState === null && !pathname.startsWith('/onboarding')) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <Loader2 className="w-6 h-6 text-teal animate-spin" />
       </div>
     );

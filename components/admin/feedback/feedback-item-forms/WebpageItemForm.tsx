@@ -151,8 +151,8 @@ export default function WebpageItemForm({
               <Globe size={16} className="text-teal" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-700">Connect your website</p>
-              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+              <p className="text-xs font-semibold text-prose">Connect your website</p>
+              <p className="text-xs text-dim mt-1 leading-relaxed">
                 One install covers every page in this project — no need to re-paste the script for
                 each page you add.
               </p>
@@ -161,7 +161,7 @@ export default function WebpageItemForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-prose mb-1.5">
             Root domain <span className="text-red-400">*</span>
           </label>
           <input
@@ -169,10 +169,10 @@ export default function WebpageItemForm({
             value={domainInput}
             onChange={(e) => setDomainInput(e.target.value)}
             placeholder="https://example.com"
-            className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  transition-colors"
+            className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20  transition-colors"
             autoFocus
           />
-          <p className="text-xs text-gray-400 mt-1.5">
+          <p className="text-xs text-faint mt-1.5">
             The base URL where the feedback widget will live. Subdomains and paths can be added later.
           </p>
         </div>
@@ -199,7 +199,7 @@ export default function WebpageItemForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-sm font-medium text-prose mb-1.5">
           Page Title <span className="text-red-400">*</span>
         </label>
         <input
@@ -207,17 +207,17 @@ export default function WebpageItemForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Initial Offer Page"
-          className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20  transition-colors"
+          className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20  transition-colors"
           autoFocus
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-sm font-medium text-prose mb-1.5">
           Page Path
         </label>
-        <div className="flex items-stretch rounded-lg border border-gray-200 focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal overflow-hidden">
-          <span className="px-2.5 py-2.5 text-sm font-mono text-gray-400 bg-gray-50 border-r border-gray-200 shrink-0">
+        <div className="flex items-stretch rounded-lg border border-edge-strong focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal overflow-hidden">
+          <span className="px-2.5 py-2.5 text-sm font-mono text-faint bg-surface border-r border-edge-strong shrink-0">
             /
           </span>
           <input
@@ -228,12 +228,12 @@ export default function WebpageItemForm({
               setPagePath(v ? `/${v}` : '/');
             }}
             placeholder="offer"
-            className="flex-1 px-3 py-2.5 text-sm text-gray-900 font-mono placeholder:text-gray-400 focus:outline-none min-w-0"
+            className="flex-1 px-3 py-2.5 text-sm text-ink font-mono placeholder:text-faint focus:outline-none min-w-0"
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1.5 break-all">
-          Full URL: <code className="font-mono text-gray-500">{project?.root_domain}{pagePath || '/'}</code>
-          <span className="text-gray-400"> · Leave blank for the homepage.</span>
+        <p className="text-xs text-faint mt-1.5 break-all">
+          Full URL: <code className="font-mono text-dim">{project?.root_domain}{pagePath || '/'}</code>
+          <span className="text-faint"> · Leave blank for the homepage.</span>
         </p>
       </div>
 

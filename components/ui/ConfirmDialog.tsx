@@ -53,7 +53,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
       {state && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-edge-strong overflow-hidden">
             <div className="p-6">
               <div className="flex items-start gap-4">
                 <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
@@ -64,16 +64,16 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   } />
                 </div>
                 <div>
-                  <h3 className="text-gray-900 font-semibold text-base mb-1">
+                  <h3 className="text-ink font-semibold text-base mb-1">
                     {state.options.title || 'Are you sure?'}
                   </h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">
+                  <p className="text-sm text-dim leading-relaxed">
                     {state.options.message}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-edge-strong bg-surface">
               <Button variant="ghost" size="sm" onClick={handleCancel}>
                 {state.options.cancelLabel || 'Cancel'}
               </Button>

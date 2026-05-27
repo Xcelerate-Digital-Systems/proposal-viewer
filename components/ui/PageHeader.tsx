@@ -42,7 +42,7 @@ export default function PageHeader({
   className = '',
 }: PageHeaderProps) {
   return (
-    <div className={`bg-ivory shadow-divider px-6 lg:px-10 py-6 ${className}`}>
+    <div className={`bg-ivory shadow-divider px-6 lg:px-10 py-4 ${className}`}>
       <div className={`flex items-center gap-4 ${children ? 'mb-4' : ''}`}>
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight text-ink">{title}</h1>

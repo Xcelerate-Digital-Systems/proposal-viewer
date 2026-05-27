@@ -99,7 +99,7 @@ export default function AccountSwitcher({
       </button>
 
       {open && (
-        <div className="absolute left-2 right-2 top-full mt-1 bg-[#01282e] border border-[#01434A] rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute left-2 right-2 top-full mt-1 bg-[#01282e] border border-[#01434A] rounded-2xl shadow-xl z-50 overflow-hidden">
           {companyOverride && (
             <>
               <button

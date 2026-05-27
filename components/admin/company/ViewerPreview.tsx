@@ -37,7 +37,7 @@ export default function ViewerPreview({
 
   return (
     <div
-      className="rounded-xl overflow-hidden border shadow-2xl shadow-black/40"
+      className="rounded-2xl overflow-hidden border shadow-2xl shadow-black/40"
       style={{ borderColor: border }}
     >
       <div className="flex h-[320px]" style={{ backgroundColor: bgPrimary }}>

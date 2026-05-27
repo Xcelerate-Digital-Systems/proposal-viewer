@@ -44,7 +44,7 @@ export type PricingTabEditorProps = UsePricingEditorOptions & {
 
 /* ─── Component ───────────────────────────────────────────────── */
 
-const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400';
+const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint';
 
 export default function PricingTabEditor({ hideProposalDate, proposalId, lineItemsToolbar, hidePreview, ...props }: PricingTabEditorProps) {
   const editor = usePricingEditor(props);
@@ -105,9 +105,9 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 flex-1 min-h-0 flex flex-col">
+    <div className="bg-white rounded-2xl border border-edge-strong p-6 flex-1 min-h-0 flex flex-col">
       {/* Page navigation tabs */}
-      <div className="shrink-0 flex items-end gap-0 border-b border-gray-200 overflow-x-auto mb-5">
+      <div className="shrink-0 flex items-end gap-0 border-b border-edge-strong overflow-x-auto mb-5">
         {editor.allPages.map((page) => (
           <button
             key={page.id}
@@ -115,7 +115,7 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
             className={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
               editor.selectedId === page.id
                 ? 'text-teal border-b-2 border-teal -mb-px bg-teal/5'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-b-2 border-transparent -mb-px'
+                : 'text-dim hover:text-prose hover:bg-surface border-b-2 border-transparent -mb-px'
             }`}
           >
             <DollarSign size={13} className="shrink-0 opacity-70" />
@@ -131,7 +131,7 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
           </button>
         ))}
         {editor.allPages.length === 0 && (
-          <span className="px-4 py-2.5 text-xs text-gray-400">No pages yet — add one to get started</span>
+          <span className="px-4 py-2.5 text-xs text-faint">No pages yet — add one to get started</span>
         )}
         <button
           onClick={editor.addPage}
@@ -148,7 +148,7 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 showPreview
                   ? 'bg-teal/10 text-teal'
-                  : 'bg-gray-100 text-gray-400 hover:text-gray-600'
+                  : 'bg-gray-100 text-faint hover:text-prose'
               }`}
             >
               <Eye size={13} /> Preview
@@ -166,10 +166,10 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
           editor.selectedId && editor.selectedPage ? (
             <>
               {/* Show-on-viewer chip (replaces the old slidey Toggle) */}
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-edge">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Show quote page</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
+                  <p className="text-sm font-medium text-prose">Show quote page</p>
+                  <p className="text-xs text-faint mt-0.5">Toggle visibility in the proposal viewer</p>
                 </div>
                 <Chip enabled={editor.form.enabled} onClick={() => editor.toggleEnabled()}>
                   {editor.form.enabled ? 'Visible' : 'Hidden'}
@@ -251,13 +251,13 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
 
                   {/* Job / Site fields (proposals only) */}
                   {proposalId && (
-                    <div className="border-t border-gray-100 pt-3">
+                    <div className="border-t border-edge pt-3">
                       <div className="flex items-center justify-between py-2">
                         <div className="flex items-center gap-2">
-                          <MapPin size={14} className="text-gray-400" />
+                          <MapPin size={14} className="text-faint" />
                           <div>
-                            <span className="text-sm font-medium text-gray-700">Job / Site Details</span>
-                            <p className="text-xs text-gray-400">Site address, start date, and duration</p>
+                            <span className="text-sm font-medium text-prose">Job / Site Details</span>
+                            <p className="text-xs text-faint">Site address, start date, and duration</p>
                           </div>
                         </div>
                         <Toggle enabled={showJobFields} onChange={toggleJobFields} size="sm" />
@@ -265,33 +265,33 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
                       {showJobFields && (
                         <div className="mt-2 space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Site / Job Address</label>
+                            <label className="block text-xs font-medium text-prose mb-1">Site / Job Address</label>
                             <input
                               type="text"
                               value={jobFields.site_address}
                               onChange={(e) => updateJobField('site_address', e.target.value)}
                               placeholder="123 Main St, Suburb VIC 3000"
-                              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                              className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
                             />
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Start Date</label>
+                              <label className="block text-xs font-medium text-prose mb-1">Estimated Start Date</label>
                               <input
                                 type="date"
                                 value={jobFields.estimated_start_date}
                                 onChange={(e) => updateJobField('estimated_start_date', e.target.value)}
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                                className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Duration</label>
+                              <label className="block text-xs font-medium text-prose mb-1">Estimated Duration</label>
                               <input
                                 type="text"
                                 value={jobFields.estimated_duration}
                                 onChange={(e) => updateJobField('estimated_duration', e.target.value)}
                                 placeholder="e.g. 2-3 weeks"
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                                className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
                               />
                             </div>
                           </div>
@@ -301,9 +301,9 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
                   )}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+                <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-12 text-center">
                   <DollarSign size={24} className="mx-auto text-gray-300 mb-2" />
-                  <p className="text-sm text-gray-400 mb-1">Quote page is currently disabled</p>
+                  <p className="text-sm text-faint mb-1">Quote page is currently disabled</p>
                   <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
                 </div>
               )}
@@ -312,7 +312,7 @@ export default function PricingTabEditor({ hideProposalDate, proposalId, lineIte
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <DollarSign size={28} className="mx-auto text-gray-200 mb-3" />
-                <p className="text-sm text-gray-400 mb-1">No quote page selected</p>
+                <p className="text-sm text-faint mb-1">No quote page selected</p>
                 <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
               </div>
             </div>

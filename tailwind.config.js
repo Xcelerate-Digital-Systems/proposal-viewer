@@ -7,8 +7,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-geist-sans)'],
-        display: ['var(--font-geist-sans)'],
+        sans: ['var(--font-manrope)'],
+        display: ['var(--font-manrope)'],
         hand: ['var(--font-hand)', 'cursive'],
       },
       // Extends Tailwind's default fontSize scale with `2xs` (10px) for
@@ -18,18 +18,29 @@ module.exports = {
       // 266 `text-[10px]` arbitrary-value usages.
       fontSize: {
         '2xs': ['10px', { lineHeight: '14px' }],
+        'detail': ['11px', { lineHeight: '16px' }],
+        'caption': ['13px', { lineHeight: '20px' }],
       },
       colors: {
         ink: '#1E2432',
         muted: '#8A8A8A',
+        dim: '#6B7280',
+        prose: '#4B5563',
         faint: '#ABABAB',
-        edge: '#EFEFEF',
-        'edge-hover': '#D5D5D5',
+        edge: {
+          DEFAULT: '#EFEFEF',
+          hover: '#D5D5D5',
+          strong: '#E5E7EB',
+        },
         surface: '#F5F5F5',
         ivory: '#FFFFFF',
         paper: {
           DEFAULT: '#FAFAFA',
           dark: '#F1F1F1',
+        },
+        warm: {
+          DEFAULT: '#FBF8F5',
+          dark: '#F5F1EE',
         },
         'sketch-ink': '#2B2B2B',
         sticky: {
@@ -58,6 +69,7 @@ module.exports = {
           DEFAULT: '#043946',  // primary dark surface (sidebar bg)
           border: '#01434A',   // dividers/borders on dark surface
           hover: '#013036',    // hover bg on dark surface
+          deep: '#01282e',     // dropdown/popover bg on dark surface
           accent: '#8AD9D1',   // bright text/icon accent on dark surface
         },
         // Section / feature accent palette — small set of complementary

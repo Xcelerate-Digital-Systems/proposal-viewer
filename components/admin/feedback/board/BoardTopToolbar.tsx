@@ -100,7 +100,7 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
           opts?.onAfterSelect?.();
         }}
         disabled={soon}
-        className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+        className={`group relative w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
           active
             ? 'bg-teal text-white shadow-sm'
             : soon
@@ -138,7 +138,7 @@ export default function BoardTopToolbar({ activeTool, onToolSelect }: Props) {
       {/* Funnel nodes flyout trigger */}
       <button
         onClick={() => setFlowOpen((v) => !v)}
-        className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+        className={`group relative w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
           flowGroupActive || flowOpen
             ? 'bg-teal text-white shadow-sm'
             : 'text-ink/80 hover:bg-surface hover:text-ink'
@@ -216,7 +216,7 @@ function PickerSection({
               key={tool.id}
               type="button"
               onClick={() => onPick(tool.id)}
-              className={`group flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border transition-all text-center ${
+              className={`group flex flex-col items-center gap-1.5 px-2 py-3 rounded-2xl border transition-all text-center ${
                 active
                   ? 'bg-teal text-white border-teal shadow-sm'
                   : 'bg-white text-ink border-edge hover:border-teal/50 hover:bg-teal-tint/40'
@@ -224,7 +224,7 @@ function PickerSection({
               title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
             >
               <span className={`${active ? 'text-white' : 'text-teal'}`}>{tool.icon}</span>
-              <span className="text-[11px] leading-tight">{tool.label}</span>
+              <span className="text-detail leading-tight">{tool.label}</span>
             </button>
           );
         })}

@@ -50,7 +50,7 @@ export default function SmsMockupPreview({
             <button
               key={c.key}
               onClick={() => handleClientChange(c.key)}
-              className="flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all"
+              className="flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-all"
               style={{
                 backgroundColor:
                   currentClient === c.key
@@ -93,7 +93,7 @@ function IMessagePreview({
     <div className="rounded-[2rem] border border-gray-300 overflow-hidden bg-white shadow-sm">
       {/* Status bar */}
       <div className="px-6 pt-3 pb-1 flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-900">9:41</span>
+        <span className="text-xs font-semibold text-ink">9:41</span>
         <div className="flex items-center gap-1">
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4].map((i) => (
@@ -101,7 +101,7 @@ function IMessagePreview({
                 style={{ height: 4 + i * 2 }} />
             ))}
           </div>
-          <span className="text-2xs font-medium text-gray-900 ml-1">5G</span>
+          <span className="text-2xs font-medium text-ink ml-1">5G</span>
           <div className="w-6 h-3 rounded-sm border border-gray-900 ml-1 relative">
             <div className="absolute inset-[1px] right-[3px] bg-gray-900 rounded-[1px]" />
             <div className="absolute right-[-2px] top-[3px] w-[1.5px] h-[4px] bg-gray-900 rounded-r-sm" />
@@ -110,13 +110,13 @@ function IMessagePreview({
       </div>
 
       {/* Header */}
-      <div className="px-4 py-2 flex items-center justify-between border-b border-gray-100">
+      <div className="px-4 py-2 flex items-center justify-between border-b border-edge">
         <ChevronLeft size={22} className="text-[#007AFF]" />
         <div className="flex flex-col items-center">
           <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-white mb-1">
             {initial}
           </div>
-          <span className="text-xs font-semibold text-gray-900">{senderName}</span>
+          <span className="text-xs font-semibold text-ink">{senderName}</span>
         </div>
         <div className="flex items-center gap-3">
           <Video size={20} className="text-[#007AFF]" />
@@ -127,17 +127,17 @@ function IMessagePreview({
       {/* Messages area */}
       <div className="px-4 py-6 min-h-[220px] bg-white flex flex-col justify-end gap-2">
         {/* Timestamp */}
-        <p className="text-2xs text-gray-400 text-center mb-1">Today 9:41 AM</p>
+        <p className="text-2xs text-faint text-center mb-1">Today 9:41 AM</p>
 
         {/* The SMS bubble */}
         <div className="flex justify-start">
           <div className="max-w-[85%] relative">
-            <div className="bg-[#e9e9eb] rounded-2xl rounded-bl-md px-4 py-2.5">
-              <p className="text-[15px] leading-relaxed text-gray-900 whitespace-pre-wrap">
+            <div className="bg-[#e9e9eb] rounded-2xl rounded-bl-lg px-4 py-2.5">
+              <p className="text-[15px] leading-relaxed text-ink whitespace-pre-wrap">
                 {body || 'Your SMS message will appear here…'}
               </p>
             </div>
-            <p className="text-2xs text-gray-400 mt-1 ml-1">
+            <p className="text-2xs text-faint mt-1 ml-1">
               Delivered
             </p>
           </div>
@@ -145,10 +145,10 @@ function IMessagePreview({
       </div>
 
       {/* Input bar */}
-      <div className="px-3 py-2 border-t border-gray-100 flex items-center gap-2">
-        <Camera size={24} className="text-gray-400 shrink-0" />
+      <div className="px-3 py-2 border-t border-edge flex items-center gap-2">
+        <Camera size={24} className="text-faint shrink-0" />
         <div className="flex-1 border border-gray-300 rounded-full px-4 py-2 flex items-center justify-between">
-          <span className="text-sm text-gray-400">iMessage</span>
+          <span className="text-sm text-faint">iMessage</span>
         </div>
       </div>
 
@@ -186,7 +186,7 @@ function AndroidPreview({
     <div className="rounded-[2rem] border border-gray-300 overflow-hidden bg-white shadow-sm">
       {/* Status bar */}
       <div className="px-6 pt-3 pb-1 flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-900">9:41</span>
+        <span className="text-xs font-semibold text-ink">9:41</span>
         <div className="flex items-center gap-1">
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4].map((i) => (
@@ -194,7 +194,7 @@ function AndroidPreview({
                 style={{ height: 4 + i * 2 }} />
             ))}
           </div>
-          <span className="text-2xs font-medium text-gray-900 ml-1">5G</span>
+          <span className="text-2xs font-medium text-ink ml-1">5G</span>
           <div className="w-6 h-3 rounded-sm border border-gray-900 ml-1 relative">
             <div className="absolute inset-[1px] right-[3px] bg-gray-900 rounded-[1px]" />
             <div className="absolute right-[-2px] top-[3px] w-[1.5px] h-[4px] bg-gray-900 rounded-r-sm" />
@@ -203,23 +203,23 @@ function AndroidPreview({
       </div>
 
       {/* Header */}
-      <div className="px-3 py-2.5 flex items-center gap-3 border-b border-gray-100">
-        <ChevronLeft size={22} className="text-gray-600" />
+      <div className="px-3 py-2.5 flex items-center gap-3 border-b border-edge">
+        <ChevronLeft size={22} className="text-prose" />
         <div className="w-9 h-9 rounded-full bg-[#1a73e8] flex items-center justify-center text-sm font-bold text-white">
           {initial}
         </div>
         <div className="flex-1 min-w-0">
-          <span className="text-sm font-semibold text-gray-900">{senderName}</span>
-          <p className="text-[11px] text-gray-500">SMS</p>
+          <span className="text-sm font-semibold text-ink">{senderName}</span>
+          <p className="text-detail text-dim">SMS</p>
         </div>
-        <Phone size={18} className="text-gray-600" />
-        <Video size={20} className="text-gray-600" />
+        <Phone size={18} className="text-prose" />
+        <Video size={20} className="text-prose" />
       </div>
 
       {/* Messages area */}
       <div className="px-4 py-6 min-h-[220px] bg-[#f8f9fa] flex flex-col justify-end gap-2">
         {/* Timestamp */}
-        <p className="text-2xs text-gray-400 text-center mb-1">Today 9:41 AM</p>
+        <p className="text-2xs text-faint text-center mb-1">Today 9:41 AM</p>
 
         {/* The SMS bubble */}
         <div className="flex items-end gap-2">
@@ -227,12 +227,12 @@ function AndroidPreview({
             {initial}
           </div>
           <div className="max-w-[80%] relative">
-            <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
-              <p className="text-[15px] leading-relaxed text-gray-900 whitespace-pre-wrap">
+            <div className="bg-white border border-edge-strong rounded-2xl rounded-bl-lg px-4 py-2.5 shadow-sm">
+              <p className="text-[15px] leading-relaxed text-ink whitespace-pre-wrap">
                 {body || 'Your SMS message will appear here…'}
               </p>
             </div>
-            <p className="text-2xs text-gray-400 mt-1 ml-1">
+            <p className="text-2xs text-faint mt-1 ml-1">
               9:41 AM
             </p>
           </div>
@@ -240,9 +240,9 @@ function AndroidPreview({
       </div>
 
       {/* Input bar */}
-      <div className="px-3 py-2.5 border-t border-gray-200 bg-white flex items-center gap-2">
+      <div className="px-3 py-2.5 border-t border-edge-strong bg-white flex items-center gap-2">
         <div className="flex-1 bg-[#f1f3f4] rounded-full px-4 py-2.5 flex items-center">
-          <span className="text-sm text-gray-400">Text message</span>
+          <span className="text-sm text-faint">Text message</span>
         </div>
         <div className="w-10 h-10 rounded-full bg-[#1a73e8] flex items-center justify-center">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

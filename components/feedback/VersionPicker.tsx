@@ -46,7 +46,7 @@ export default function VersionPicker({
   const active = versions.find((v) => (v.id ?? null) === activeVersionId) || versions[0];
   const ordered = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
 
-  const padding = compact ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-xs';
+  const padding = compact ? 'px-2 py-1 text-detail' : 'px-2.5 py-1 text-xs';
   const statusDef = itemStatus ? getFeedbackStatusDef(itemStatus) : null;
 
   return (
@@ -54,10 +54,10 @@ export default function VersionPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1 rounded-full bg-gray-50 ${padding} font-semibold text-ink hover:bg-gray-100 transition-colors`}
+        className={`inline-flex items-center gap-1 rounded-full bg-surface ${padding} font-semibold text-ink hover:bg-gray-100 transition-colors`}
         title="Select version"
       >
-        <History size={compact ? 12 : 13} className="text-gray-400" />
+        <History size={compact ? 12 : 13} className="text-faint" />
         <span className="tabular-nums">v{active.versionNumber}</span>
         {statusDef && (
           <span
@@ -67,11 +67,11 @@ export default function VersionPicker({
             {statusDef.label}
           </span>
         )}
-        <ChevronDown size={compact ? 11 : 12} className="text-gray-400" />
+        <ChevronDown size={compact ? 11 : 12} className="text-faint" />
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-1 z-30 w-72 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-72 overflow-y-auto">
+        <div className="absolute top-full right-0 mt-1 z-30 w-72 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto">
           {ordered.map((v, i) => {
             const isActive = (v.id ?? null) === (active.id ?? null);
             // Per-row status. Active version shows live item.status; older
@@ -86,8 +86,8 @@ export default function VersionPicker({
             return (
               <div
                 key={v.id ?? 'v1'}
-                className={`group flex items-start gap-2 px-3 py-2 hover:bg-gray-50 ${
-                  isActive ? 'bg-gray-50' : ''
+                className={`group flex items-start gap-2 px-3 py-2 hover:bg-surface ${
+                  isActive ? 'bg-surface' : ''
                 }`}
               >
                 <button
@@ -103,7 +103,7 @@ export default function VersionPicker({
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs text-gray-500 truncate flex-1 min-w-0">
+                      <p className="text-xs text-dim truncate flex-1 min-w-0">
                         {v.notes || (v.versionNumber === 1 ? 'Initial version' : 'New version')}
                       </p>
                       {rowStatusDef && (
@@ -116,7 +116,7 @@ export default function VersionPicker({
                         </span>
                       )}
                     </div>
-                    <p className="text-2xs text-gray-400 mt-0.5">
+                    <p className="text-2xs text-faint mt-0.5">
                       {formatTimestamp(v.createdAt)}
                     </p>
                   </div>
@@ -132,7 +132,7 @@ export default function VersionPicker({
                       onEditVersion(v.id);
                       setOpen(false);
                     }}
-                    className="text-gray-400 hover:text-ink transition-colors p-1 -m-1 shrink-0"
+                    className="text-faint hover:text-ink transition-colors p-1 -m-1 shrink-0"
                     title={`Edit v${v.versionNumber} content`}
                   >
                     <Pencil size={12} />
@@ -147,7 +147,7 @@ export default function VersionPicker({
       {onAddVersion && (
         <button
           onClick={onAddVersion}
-          className={`${compact ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'} inline-flex items-center gap-1 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 font-medium transition-colors`}
+          className={`${compact ? 'px-2.5 py-1 text-detail' : 'px-3 py-1.5 text-xs'} inline-flex items-center gap-1 rounded-full bg-surface text-dim hover:bg-gray-100 hover:text-prose font-medium transition-colors`}
           title="Upload a new version"
         >
           <Plus size={compact ? 11 : 12} />

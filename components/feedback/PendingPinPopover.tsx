@@ -74,7 +74,7 @@ export default function PendingPinPopover({
 
       <div
         style={{ ...style, width: POPOVER_STYLE.widthPx, ...POPOVER_INLINE_STYLE }}
-        className="relative bg-white rounded-2xl border border-gray-200 z-50"
+        className="relative bg-white rounded-2xl border border-edge-strong z-50"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Tail — rotated square on the popover's adjacent edge */}
@@ -82,8 +82,8 @@ export default function PendingPinPopover({
           aria-hidden
           className={`absolute top-6 w-3 h-3 bg-white rotate-45 ${
             tailOnLeft
-              ? '-left-[7px] border-l border-b border-gray-200'
-              : '-right-[7px] border-r border-t border-gray-200'
+              ? '-left-[7px] border-l border-b border-edge-strong'
+              : '-right-[7px] border-r border-t border-edge-strong'
           }`}
         />
 

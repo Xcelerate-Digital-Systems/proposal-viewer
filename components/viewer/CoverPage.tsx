@@ -410,7 +410,7 @@ export default function CoverPage({
 
               <button
                 onClick={handleStart}
-                className="px-8 py-3.5 text-sm tracking-wider uppercase rounded-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
+                className="px-8 py-3.5 text-sm tracking-wider uppercase rounded-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 style={{
                   backgroundColor: btnBg,
                   color: btnText,

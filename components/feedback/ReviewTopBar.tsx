@@ -88,7 +88,7 @@ export default function ReviewTopBar({
   return (
     <>
       <div
-        className={`fixed top-0 inset-x-0 z-30 h-12 flex items-center px-4 gap-4 ${branded ? '' : 'bg-white border-b border-gray-100'}`}
+        className={`fixed top-0 inset-x-0 z-30 h-12 flex items-center px-4 gap-4 ${branded ? '' : 'bg-white border-b border-edge'}`}
         style={barStyle}
       >
         {/* Left — brand + project */}
@@ -97,7 +97,7 @@ export default function ReviewTopBar({
             <img src={logoUrl} alt={companyName ?? 'Brand'} className="h-6 w-auto max-w-[120px] object-contain" />
           ) : companyName ? (
             <span
-              className={`text-sm font-semibold truncate ${branded ? '' : 'text-gray-900'}`}
+              className={`text-sm font-semibold truncate ${branded ? '' : 'text-ink'}`}
               style={branded ? { ...titleColor, fontFamily: headingFont } : { fontFamily: headingFont }}
             >
               {companyName}
@@ -108,14 +108,14 @@ export default function ReviewTopBar({
           )}
           <div className="min-w-0 flex items-center gap-2">
             <span
-              className={`text-sm font-medium truncate ${branded ? '' : 'text-gray-900'}`}
+              className={`text-sm font-medium truncate ${branded ? '' : 'text-ink'}`}
               style={titleColor}
             >
               {projectTitle}
             </span>
             {clientName && (
               <span
-                className={`text-xs truncate hidden md:inline ${branded ? '' : 'text-gray-400'}`}
+                className={`text-xs truncate hidden md:inline ${branded ? '' : 'text-faint'}`}
                 style={subtitleColor}
               >
                 · {clientName}
@@ -133,10 +133,10 @@ export default function ReviewTopBar({
                 ? { border: `1px solid ${sidebarText}40`, color: sidebarText, backgroundColor: `${sidebarText}10` }
                 : undefined;
               const colouredClass = clientFacing ? `${statusDef.bg} ${statusDef.text}` : '';
-              const neutralClass = !clientFacing && !branded ? 'border border-gray-200 bg-gray-50 text-gray-700' : '';
+              const neutralClass = !clientFacing && !branded ? 'border border-edge-strong bg-surface text-prose' : '';
               return (
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${colouredClass} ${neutralClass}`}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-detail font-medium ${colouredClass} ${neutralClass}`}
                   style={neutralStyle}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${statusDef.dot}`} />
@@ -149,7 +149,7 @@ export default function ReviewTopBar({
 
         {/* Centre — Comment / Browse toggle */}
         <div
-          className={`flex items-center rounded-full p-0.5 shrink-0 ${branded ? '' : 'bg-[#F5F1EE]'}`}
+          className={`flex items-center rounded-full p-0.5 shrink-0 ${branded ? '' : 'bg-warm-dark'}`}
           style={togglePillBg}
         >
           <button
@@ -159,8 +159,8 @@ export default function ReviewTopBar({
               branded
                 ? ''
                 : mode === 'comment'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-white text-ink shadow-sm'
+                  : 'text-dim hover:text-prose'
             }`}
             style={branded ? (mode === 'comment' ? toggleActive : toggleInactive) : undefined}
           >
@@ -174,8 +174,8 @@ export default function ReviewTopBar({
               branded
                 ? ''
                 : mode === 'browse'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-white text-ink shadow-sm'
+                  : 'text-dim hover:text-prose'
             }`}
             style={branded ? (mode === 'browse' ? toggleActive : toggleInactive) : undefined}
           >

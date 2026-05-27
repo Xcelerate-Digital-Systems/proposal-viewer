@@ -99,7 +99,7 @@ export default function FloatingToolbar({
 
   return (
     <div
-      className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-0.5 sm:gap-1 backdrop-blur-sm rounded-xl px-1.5 sm:px-2 py-1 sm:py-1.5 border shadow-xl shadow-black/30"
+      className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-0.5 sm:gap-1 backdrop-blur-sm rounded-2xl px-1.5 sm:px-2 py-1 sm:py-1.5 border shadow-xl shadow-black/30"
       style={{ backgroundColor: `${bgColor}e6`, borderColor: accentColor }}
     >
       <button onClick={onPrevPage} disabled={currentPage === 1}

@@ -126,7 +126,7 @@ export default function ItemContentView({
     return (
       <div className="text-center">
         <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
-        <p className="text-sm text-gray-400">{emptyText}</p>
+        <p className="text-sm text-faint">{emptyText}</p>
       </div>
     );
   }
@@ -246,7 +246,7 @@ export default function ItemContentView({
             className="w-full max-h-[calc(100dvh-120px)] rounded-lg"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-20 text-faint">
             <FileText size={40} className="mb-3" />
             <p className="text-sm">No video source available</p>
           </div>
@@ -274,12 +274,12 @@ export default function ItemContentView({
         {pdfSrc ? (
           <iframe
             src={pdfSrc}
-            className="w-full rounded-lg border border-gray-200"
+            className="w-full rounded-lg border border-edge-strong"
             style={{ height: 'calc(100dvh - 120px)' }}
             title={item.title}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-20 text-faint">
             <FileText size={40} className="mb-3" />
             <p className="text-sm">No PDF available</p>
           </div>
@@ -300,7 +300,7 @@ export default function ItemContentView({
       return (
         <div className="text-center">
           <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-400">Lead form not configured</p>
+          <p className="text-sm text-faint">Lead form not configured</p>
         </div>
       );
     }
@@ -382,14 +382,14 @@ export default function ItemContentView({
       return (
         <div className="text-center">
           <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-400">No page URL set</p>
+          <p className="text-sm text-faint">No page URL set</p>
         </div>
       );
     }
     return (
       <div
         ref={containerRef}
-        className="relative w-full h-full bg-white rounded-xl border border-gray-200 overflow-hidden"
+        className="relative w-full h-full bg-white rounded-2xl border border-edge-strong overflow-hidden"
       >
         <iframe
           src={item.url}
@@ -502,7 +502,7 @@ export default function ItemContentView({
   return (
     <div className="text-center">
       <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
-      <p className="text-sm text-gray-400">{emptyText}</p>
+      <p className="text-sm text-faint">{emptyText}</p>
     </div>
   );
 }

@@ -83,7 +83,7 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, onCa
     <SectionCard
       title="Details"
       description={`Core information about this ${type}.`}
-      icon={<Info size={14} className="text-gray-400" />}
+      icon={<Info size={14} className="text-faint" />}
     >
       <div className="space-y-4">
         <FormFields

@@ -4,8 +4,8 @@
 import { Check, X } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 
-const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40';
-const LABEL_INPUT_CLS = 'w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30';
+const INPUT_CLS = 'w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40';
+const LABEL_INPUT_CLS = 'w-full px-2.5 py-1.5 text-sm border border-edge-strong rounded-lg focus:outline-none focus:ring-1 focus:ring-teal/30';
 
 interface PricingSettingsProps {
   title: string;
@@ -64,7 +64,7 @@ function Chip({
       className={`flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors disabled:opacity-50 ${
         enabled
           ? 'bg-teal/10 border-teal/30 text-teal hover:bg-teal/15'
-          : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300'
+          : 'bg-surface border-edge-strong text-faint hover:text-prose hover:border-gray-300'
       }`}
     >
       {enabled ? <Check size={11} className="shrink-0" /> : <X size={11} className="shrink-0" />}
@@ -120,33 +120,33 @@ export default function PricingSettings({
     <div className="space-y-5">
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Page Title</label>
+        <label className="block text-sm font-medium text-prose mb-1">Page Title</label>
         <input type="text" value={title} onChange={(e) => onTitleChange(e.target.value)} placeholder="Project Investment" className={INPUT_CLS} />
       </div>
 
       {/* Intro text */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Introduction Text</label>
+        <label className="block text-sm font-medium text-prose mb-1">Introduction Text</label>
         <textarea value={introText} onChange={(e) => onIntroTextChange(e.target.value)} rows={3} className={`${INPUT_CLS} resize-none`} />
       </div>
 
       {/* Date & Validity */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Quote Date</label>
+          <label className="block text-sm font-medium text-prose mb-1">Quote Date</label>
           <input type="date" value={proposalDate ?? ''} onChange={(e) => onProposalDateChange(e.target.value)} className={INPUT_CLS} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Valid For (days)</label>
+          <label className="block text-sm font-medium text-prose mb-1">Valid For (days)</label>
           <input type="number" value={validityDays ?? ''} onChange={(e) => onValidityDaysChange(e.target.value ? parseInt(e.target.value) : null)} placeholder="30" min={1} className={INPUT_CLS} />
         </div>
       </div>
 
       {/* ── Columns ───────────────────────────────────────────────── */}
-      <div className="border-t border-gray-100 pt-4">
+      <div className="border-t border-edge pt-4">
         <div className="flex items-baseline justify-between mb-3">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Columns</p>
-          <p className="text-[11px] text-gray-400">Tap a chip to show / hide</p>
+          <p className="text-xs font-medium text-dim uppercase tracking-wider">Columns</p>
+          <p className="text-detail text-faint">Tap a chip to show / hide</p>
         </div>
 
         <div className="space-y-2">
@@ -206,10 +206,10 @@ export default function PricingSettings({
       </div>
 
       {/* ── Summary Rows ──────────────────────────────────────────── */}
-      <div className="border-t border-gray-100 pt-4">
+      <div className="border-t border-edge pt-4">
         <div className="flex items-baseline justify-between mb-3">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Summary Rows</p>
-          <p className="text-[11px] text-gray-400">Shown below the line items</p>
+          <p className="text-xs font-medium text-dim uppercase tracking-wider">Summary Rows</p>
+          <p className="text-detail text-faint">Shown below the line items</p>
         </div>
 
         <div className="grid grid-cols-3 gap-2">

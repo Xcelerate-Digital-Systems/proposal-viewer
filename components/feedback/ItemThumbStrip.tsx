@@ -114,7 +114,7 @@ export default function ItemThumbStrip({
             data-thumb-id={item.id}
             onClick={() => onSelectItem(item.id)}
             title={item.title}
-            className={`relative shrink-0 ${isVertical ? 'w-[72px] h-[46px]' : 'w-[64px] h-[40px]'} rounded-md overflow-hidden transition-all ${activeClass}`}
+            className={`relative shrink-0 ${isVertical ? 'w-[72px] h-[46px]' : 'w-[64px] h-[40px]'} rounded-lg overflow-hidden transition-all ${activeClass}`}
             style={
               !isAdmin
                 ? {

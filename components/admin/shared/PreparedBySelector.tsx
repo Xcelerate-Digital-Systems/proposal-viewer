@@ -75,10 +75,10 @@ export default function PreparedBySelector({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
       >
         {loading ? (
-          <Loader2 size={14} className="animate-spin text-gray-400" />
+          <Loader2 size={14} className="animate-spin text-faint" />
         ) : selected ? (
           <>
             {selected.avatar_url ? (
@@ -89,28 +89,28 @@ export default function PreparedBySelector({
               />
             ) : (
               <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                <User size={12} className="text-gray-400" />
+                <User size={12} className="text-faint" />
               </div>
             )}
-            <span className="flex-1 text-left text-gray-900 truncate">{selected.name}</span>
+            <span className="flex-1 text-left text-ink truncate">{selected.name}</span>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect(null);
               }}
-              className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-0.5 text-faint hover:text-prose transition-colors"
             >
               <X size={14} />
             </button>
           </>
         ) : (
           <>
-            <User size={14} className="text-gray-400 shrink-0" />
-            <span className="flex-1 text-left text-gray-400">Select team member…</span>
+            <User size={14} className="text-faint shrink-0" />
+            <span className="flex-1 text-left text-faint">Select team member…</span>
           </>
         )}
-        <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-faint shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown */}
@@ -119,9 +119,9 @@ export default function PreparedBySelector({
           {/* Backdrop */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
 
-          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-edge-strong rounded-lg shadow-lg max-h-48 overflow-y-auto">
             {members.length === 0 ? (
-              <div className="px-3 py-3 text-sm text-gray-400 text-center">
+              <div className="px-3 py-3 text-sm text-faint text-center">
                 No team members found
               </div>
             ) : (
@@ -133,7 +133,7 @@ export default function PreparedBySelector({
                     onSelect(m.id);
                     setOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-surface transition-colors ${
                     m.id === selectedMemberId ? 'bg-teal/5' : ''
                   }`}
                 >
@@ -145,12 +145,12 @@ export default function PreparedBySelector({
                     />
                   ) : (
                     <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                      <User size={12} className="text-gray-400" />
+                      <User size={12} className="text-faint" />
                     </div>
                   )}
                   <div className="flex-1 text-left min-w-0">
-                    <div className="text-gray-900 truncate">{m.name}</div>
-                    <div className="text-xs text-gray-400 truncate">{m.email}</div>
+                    <div className="text-ink truncate">{m.name}</div>
+                    <div className="text-xs text-faint truncate">{m.email}</div>
                   </div>
                   {m.id === selectedMemberId && (
                     <div className="w-1.5 h-1.5 rounded-full bg-teal shrink-0" />

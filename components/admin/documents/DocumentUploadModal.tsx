@@ -114,15 +114,15 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-modal w-full max-w-lg border border-gray-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-gray-900">
+      <div className="bg-white rounded-2xl shadow-modal w-full max-w-lg border border-edge-strong">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
+          <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-ink">
             New Document
           </h2>
           <button
             onClick={onClose}
             disabled={uploading}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="text-faint hover:text-prose disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <X size={20} />
           </button>
@@ -137,18 +137,18 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
+            <label className="block text-sm font-medium text-prose mb-1">PDF File</label>
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
               {file ? (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-dim">
                   <FileText size={20} className="text-teal" />
-                  <span className="font-medium text-gray-900">{file.name}</span>
-                  <span className="text-gray-400">({formatSize(file.size)})</span>
+                  <span className="font-medium text-ink">{file.name}</span>
+                  <span className="text-faint">({formatSize(file.size)})</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
                   <Upload size={24} className="text-gray-300" />
-                  <span className="text-sm text-gray-400">Click to upload PDF</span>
+                  <span className="text-sm text-faint">Click to upload PDF</span>
                   <span className="text-xs text-gray-300">Each page becomes individually editable</span>
                 </div>
               )}
@@ -165,7 +165,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
           {uploading && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 flex items-center gap-1.5">
+                <span className="text-dim flex items-center gap-1.5">
                   <Loader2 size={12} className="animate-spin text-teal" />
                   {status}
                 </span>

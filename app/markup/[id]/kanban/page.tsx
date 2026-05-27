@@ -155,12 +155,12 @@ function KanbanContent({
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-20">
-            <h3 className="text-lg font-semibold text-gray-500 mb-1">No items yet</h3>
-            <p className="text-sm text-gray-400 mb-4">
+            <h3 className="text-lg font-semibold text-dim mb-1">No items yet</h3>
+            <p className="text-sm text-faint mb-4">
               Add items to organise them across the pipeline.
             </p>
             <Button

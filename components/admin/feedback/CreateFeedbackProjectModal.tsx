@@ -82,7 +82,7 @@ export default function CreateFeedbackProjectModal({
         <Modal.Body className="space-y-5">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-prose mb-1.5">
               Project Title <span className="text-red-400">*</span>
             </label>
             <input
@@ -90,14 +90,14 @@ export default function CreateFeedbackProjectModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Q1 Campaign Creatives"
-              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+              className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               autoFocus
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-prose mb-1.5">
               Description
             </label>
             <textarea
@@ -105,13 +105,13 @@ export default function CreateFeedbackProjectModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of what's being reviewed..."
               rows={3}
-              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors resize-none"
+              className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors resize-none"
             />
           </div>
 
           {/* Company name — shown as the brand in ad/email previews. */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-prose mb-1.5">
               Company / Brand Name
             </label>
             <input
@@ -119,9 +119,9 @@ export default function CreateFeedbackProjectModal({
               value={clientCompany}
               onChange={(e) => setClientCompany(e.target.value)}
               placeholder="e.g. Premier Shipping Containers"
-              className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+              className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
             />
-            <p className="text-xs text-gray-400 mt-1.5">
+            <p className="text-xs text-faint mt-1.5">
               Used as the page name in Meta ad previews and the sender on email previews.
             </p>
           </div>
@@ -129,7 +129,7 @@ export default function CreateFeedbackProjectModal({
           {/* Contact row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-prose mb-1.5">
                 Contact Name
               </label>
               <input
@@ -137,11 +137,11 @@ export default function CreateFeedbackProjectModal({
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="e.g. Mia Gordon"
-                className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+                className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-prose mb-1.5">
                 Contact Email
               </label>
               <input
@@ -149,7 +149,7 @@ export default function CreateFeedbackProjectModal({
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
                 placeholder="contact@example.com"
-                className="w-full px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
+                className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />
             </div>
           </div>

@@ -131,7 +131,7 @@ export default function AcceptModal({
             </p>
             <button
               onClick={onClose}
-              className="mt-5 w-full py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+              className="mt-5 w-full py-2.5 rounded-2xl text-sm font-semibold transition-opacity hover:opacity-90"
               style={{ backgroundColor: accentColor, color: acceptTextColor }}
             >
               Close
@@ -200,7 +200,7 @@ export default function AcceptModal({
           <button
             type="submit"
             disabled={accepting || !name.trim()}
-            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+            className="w-full py-2.5 rounded-2xl text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
             style={{ backgroundColor: accentColor, color: acceptTextColor }}
           >
             {accepting ? (

@@ -72,11 +72,11 @@ export default function TemplateDetailHeader({ template }: TemplateDetailHeaderP
   };
 
   return (
-    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-100 lg:border-b-0">
+    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-edge lg:border-b-0">
       {/* Back link */}
       <Link
         href="/templates"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors mb-3"
+        className="inline-flex items-center gap-1.5 text-sm text-faint hover:text-prose transition-colors mb-3"
       >
         <ArrowLeft size={14} />
         All Templates
@@ -86,18 +86,18 @@ export default function TemplateDetailHeader({ template }: TemplateDetailHeaderP
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
+            <h1 className="text-xl font-semibold text-ink font-[family-name:var(--font-display)] truncate">
               {template.name}
             </h1>
             {template.entity_type === 'quote' && (
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+              <span className="px-2 py-0.5 rounded-lg text-detail font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
                 Quote Template
               </span>
             )}
             <EditorSaveStatusBadge />
           </div>
           {template.description && (
-            <p className="text-sm text-gray-400 mt-1 truncate max-w-[400px]">
+            <p className="text-sm text-faint mt-1 truncate max-w-[400px]">
               {template.description}
             </p>
           )}
@@ -106,7 +106,7 @@ export default function TemplateDetailHeader({ template }: TemplateDetailHeaderP
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Page count badge */}
-          <span className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 bg-gray-100 border border-gray-200">
+          <span className="px-3 py-1.5 rounded-lg text-sm font-medium text-dim bg-gray-100 border border-edge-strong">
             {template.page_count} page{template.page_count !== 1 ? 's' : ''}
           </span>
 

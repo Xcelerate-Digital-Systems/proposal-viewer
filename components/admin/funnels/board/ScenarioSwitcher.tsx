@@ -105,7 +105,7 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
 
           <div className="max-h-[320px] overflow-y-auto py-1">
             {family.length === 0 && !loadingFamily && (
-              <div className="px-3 py-4 text-[11px] text-muted text-center">
+              <div className="px-3 py-4 text-detail text-muted text-center">
                 No scenarios yet
               </div>
             )}
@@ -143,7 +143,7 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
               type="button"
               onClick={handleNewScenario}
               disabled={creating}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-teal hover:bg-teal/10 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-teal hover:bg-teal/10 transition-colors disabled:opacity-50"
             >
               {creating ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
               New scenario from this

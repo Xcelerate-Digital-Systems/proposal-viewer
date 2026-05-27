@@ -75,7 +75,7 @@ export default function ThreadMenu({ onEdit, onDelete, align = 'end', className 
       <button
         ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
-        className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+        className="p-1 rounded text-faint hover:text-prose hover:bg-gray-100 transition-colors"
         aria-label="More actions"
       >
         <MoreHorizontal size={12} />
@@ -89,21 +89,21 @@ export default function ThreadMenu({ onEdit, onDelete, align = 'end', className 
             left: pos?.left ?? -9999,
             visibility: pos ? 'visible' : 'hidden',
           }}
-          className="z-[70] bg-white rounded-lg border border-gray-200 shadow-lg py-1 min-w-[120px]"
+          className="z-[70] bg-white rounded-lg border border-edge-strong shadow-lg py-1 min-w-[120px]"
         >
           {onEdit && (
             <button
               onClick={() => { setOpen(false); onEdit(); }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-700 hover:bg-gray-50 text-left"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-detail text-prose hover:bg-surface text-left"
             >
-              <Pencil size={12} className="text-gray-400" />
+              <Pencil size={12} className="text-faint" />
               Edit
             </button>
           )}
           {onDelete && (
             <button
               onClick={() => { setOpen(false); onDelete(); }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-red-600 hover:bg-red-50 text-left"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-detail text-red-600 hover:bg-red-50 text-left"
             >
               <Trash2 size={12} />
               Delete

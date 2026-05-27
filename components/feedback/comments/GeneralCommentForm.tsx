@@ -112,21 +112,21 @@ export default function GeneralCommentForm({
       {!expanded ? (
         <button
           onClick={() => setExpanded(true)}
-          className="w-full text-left px-4 py-3 rounded-2xl text-[13px] text-gray-400 bg-white shadow-card hover:text-gray-600 transition-colors"
+          className="w-full text-left px-4 py-3 rounded-2xl text-caption text-faint bg-white shadow-card hover:text-prose transition-colors"
         >
           {placeholder}
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-card px-4 py-3 space-y-2">
           {authorName ? (
-            <p className="text-[11px] text-gray-400">Posting as {authorName}</p>
+            <p className="text-detail text-faint">Posting as {authorName}</p>
           ) : (
             <input
               type="text"
               value={guestName || ''}
               onChange={(e) => onNameChange?.(e.target.value)}
               placeholder="Your name"
-              className="w-full px-3 py-2 rounded-xl bg-[#F5F1EE] text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
+              className="w-full px-3 py-2 rounded-2xl bg-warm-dark text-caption text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
             />
           )}
 
@@ -138,7 +138,7 @@ export default function GeneralCommentForm({
               autoFocus={!alwaysExpanded}
               participantsUrl={participantsUrl ?? null}
               apiRef={editorApiRef}
-              className="w-full px-0 py-1 pr-8 text-[13px] text-ink leading-relaxed min-h-[2.5rem]"
+              className="w-full px-0 py-1 pr-8 text-caption text-ink leading-relaxed min-h-[2.5rem]"
             />
             <div className="absolute bottom-1 right-0">
               <EmojiPicker onSelect={(emoji) => editorApiRef.current?.insertText(emoji)} />

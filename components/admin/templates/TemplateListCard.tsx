@@ -79,7 +79,7 @@ export default function TemplateListCard({ template: t, onRefresh, onCreatePropo
       pageCount={t.page_count}
       createdAt={t.created_at}
       bodyTitleBadge={t.entity_type === 'quote' ? (
-        <span className="px-1.5 py-0.5 rounded-md text-2xs font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+        <span className="px-1.5 py-0.5 rounded-lg text-2xs font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
           Quote
         </span>
       ) : null}

@@ -73,7 +73,7 @@ export default function TermsSection({ proposal, onSaved }: Props) {
             type="button"
             onClick={generate}
             disabled={generating}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
           >
             {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             Generate with AI
@@ -81,7 +81,7 @@ export default function TermsSection({ proposal, onSaved }: Props) {
           <button
             type="button"
             onClick={() => setText(DEFAULT_QUOTE_TERMS)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-surface transition-colors"
           >
             <RotateCcw size={12} />
             Reset
@@ -95,10 +95,10 @@ export default function TermsSection({ proposal, onSaved }: Props) {
         onBlur={() => dirty && save()}
         rows={6}
         placeholder="Payment is due within…"
-        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
+        className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
       />
       <div className="flex items-center justify-between mt-3">
-        <span className="text-xs text-gray-400">{text.length} characters</span>
+        <span className="text-xs text-faint">{text.length} characters</span>
         <Button
           type="button"
           size="sm"

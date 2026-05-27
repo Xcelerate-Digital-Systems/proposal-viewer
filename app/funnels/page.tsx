@@ -141,7 +141,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
               placeholder="Search funnels..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+              className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
             />
           </div>
           <Button
@@ -186,7 +186,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((f) => (
-              <div key={f.id} className="group bg-white rounded-xl border border-edge p-4 hover:shadow-md transition-shadow flex flex-col">
+              <div key={f.id} className="group bg-white rounded-2xl border border-edge p-4 hover:shadow-md transition-shadow flex flex-col">
                 <button
                   onClick={() => router.push(`/funnels/${f.id}/board`)}
                   className="text-left flex-1"
@@ -206,14 +206,14 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                   {f.description && (
                     <p className="text-xs text-muted mt-1 line-clamp-2">{f.description}</p>
                   )}
-                  <p className="text-[11px] text-faint mt-3">
+                  <p className="text-detail text-faint mt-3">
                     Updated {new Date(f.updated_at).toLocaleDateString()}
                   </p>
                 </button>
                 <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-edge">
                   <button
                     onClick={() => copyShareLink(f.share_token)}
-                    className="flex items-center gap-1 text-[11px] text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
+                    className="flex items-center gap-1 text-detail text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
                     title="Copy share link"
                   >
                     <Copy size={11} />
@@ -223,7 +223,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                     href={`/funnel/${f.share_token}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-[11px] text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
+                    className="flex items-center gap-1 text-detail text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
                     title="Open public view"
                   >
                     <ExternalLink size={11} />
@@ -231,7 +231,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                   </a>
                   <button
                     onClick={() => duplicateAsScenario(f)}
-                    className="flex items-center gap-1 text-[11px] text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
+                    className="flex items-center gap-1 text-detail text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
                     title="Duplicate as scenario (compare 'what if' variations)"
                   >
                     <GitBranch size={11} />
@@ -239,7 +239,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                   </button>
                   <button
                     onClick={() => remove(f.id)}
-                    className="ml-auto flex items-center gap-1 text-[11px] text-rose-500 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition-colors"
+                    className="ml-auto flex items-center gap-1 text-detail text-rose-500 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition-colors"
                     title="Delete funnel"
                   >
                     <Trash2 size={11} />
@@ -319,7 +319,7 @@ function CreateFunnelModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-md text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-lg text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors"
             title="Close"
           >
             ×
@@ -355,14 +355,14 @@ function CreateFunnelModal({
                         key={t.id}
                         onClick={() => pickCustomTemplate(t)}
                         disabled={submitting}
-                        className="text-left bg-white rounded-xl border border-edge p-4 hover:border-teal/50 hover:shadow-md transition-all disabled:opacity-50"
+                        className="text-left bg-white rounded-2xl border border-edge p-4 hover:border-teal/50 hover:shadow-md transition-all disabled:opacity-50"
                       >
                         <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center mb-3">
                           <Bookmark size={16} className="text-teal" />
                         </div>
-                        <div className="text-[13px] font-semibold text-ink truncate">{t.name}</div>
+                        <div className="text-caption font-semibold text-ink truncate">{t.name}</div>
                         {t.description && (
-                          <div className="text-[11px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
+                          <div className="text-detail text-muted mt-0.5 line-clamp-2">{t.description}</div>
                         )}
                         <div className="text-2xs text-faint mt-2">
                           Saved {new Date(t.created_at).toLocaleDateString()}
@@ -384,13 +384,13 @@ function CreateFunnelModal({
                   <button
                     onClick={() => setStep('blank')}
                     disabled={submitting}
-                    className="text-left bg-white rounded-xl border-2 border-dashed border-edge p-4 hover:border-teal hover:bg-teal/5 transition-colors disabled:opacity-50"
+                    className="text-left bg-white rounded-2xl border-2 border-dashed border-edge p-4 hover:border-teal hover:bg-teal/5 transition-colors disabled:opacity-50"
                   >
                     <div className="w-9 h-9 rounded-lg bg-surface flex items-center justify-center mb-3">
                       <Plus size={16} className="text-muted" />
                     </div>
-                    <div className="text-[13px] font-semibold text-ink">Blank canvas</div>
-                    <div className="text-[11px] text-muted mt-0.5">Start from an empty board.</div>
+                    <div className="text-caption font-semibold text-ink">Blank canvas</div>
+                    <div className="text-detail text-muted mt-0.5">Start from an empty board.</div>
                   </button>
 
                   {templates.map((t) => (
@@ -398,13 +398,13 @@ function CreateFunnelModal({
                       key={t.slug}
                       onClick={() => pickTemplate(t)}
                       disabled={submitting}
-                      className="text-left bg-white rounded-xl border border-edge p-4 hover:border-teal/50 hover:shadow-md transition-all disabled:opacity-50"
+                      className="text-left bg-white rounded-2xl border border-edge p-4 hover:border-teal/50 hover:shadow-md transition-all disabled:opacity-50"
                     >
                       <div className="w-9 h-9 rounded-lg bg-teal/10 flex items-center justify-center mb-3">
                         <FileText size={16} className="text-teal" />
                       </div>
-                      <div className="text-[13px] font-semibold text-ink">{t.name}</div>
-                      <div className="text-[11px] text-muted mt-0.5 line-clamp-2">{t.description}</div>
+                      <div className="text-caption font-semibold text-ink">{t.name}</div>
+                      <div className="text-detail text-muted mt-0.5 line-clamp-2">{t.description}</div>
                       <div className="text-2xs text-faint mt-2">
                         {t.steps.length} steps · {t.edges.length} connections
                       </div>
@@ -416,7 +416,7 @@ function CreateFunnelModal({
           </>
         ) : (
           <form onSubmit={submitBlank} className="p-5">
-            <label className="block text-[11px] text-muted mb-1">Name</label>
+            <label className="block text-detail text-muted mb-1">Name</label>
             <input
               autoFocus
               value={name}
@@ -424,7 +424,7 @@ function CreateFunnelModal({
               placeholder="e.g. Lead Magnet → Tripwire → Core Offer"
               className="w-full px-3 py-2 rounded-lg border border-edge text-sm outline-none focus:border-teal mb-3"
             />
-            <label className="block text-[11px] text-muted mb-1">Description (optional)</label>
+            <label className="block text-detail text-muted mb-1">Description (optional)</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}

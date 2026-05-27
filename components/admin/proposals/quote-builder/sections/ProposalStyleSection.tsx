@@ -87,7 +87,7 @@ export default function ProposalStyleSection({
               className={`group text-left rounded-lg overflow-hidden border-2 transition-all ${
                 isActive
                   ? 'border-teal ring-2 ring-teal/20'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-edge-strong hover:border-gray-300'
               } ${isSaving ? 'opacity-60' : ''}`}
             >
               <div
@@ -117,7 +117,7 @@ export default function ProposalStyleSection({
                 {/* Sample title + total — gives a real feel for the preset */}
                 <div className="relative z-10" style={{ color: preset.fields.cover_text_color }}>
                   <div
-                    className="text-[11px] font-semibold leading-tight tracking-tight mb-1"
+                    className="text-detail font-semibold leading-tight tracking-tight mb-1"
                     style={{ fontFamily: 'inherit' }}
                   >
                     Bathroom Renovation
@@ -133,12 +133,12 @@ export default function ProposalStyleSection({
               <div className="px-3 py-2 bg-white">
                 <div
                   className={`text-sm font-medium ${
-                    isActive ? 'text-teal' : 'text-gray-900'
+                    isActive ? 'text-teal' : 'text-ink'
                   }`}
                 >
                   {preset.label}
                 </div>
-                <div className="text-xs text-gray-400">{preset.caption}</div>
+                <div className="text-xs text-faint">{preset.caption}</div>
               </div>
             </button>
           );

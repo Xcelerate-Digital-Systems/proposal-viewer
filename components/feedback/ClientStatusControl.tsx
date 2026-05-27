@@ -86,7 +86,7 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
     ? { border: `1px solid ${sidebarText}40`, color: sidebarText, backgroundColor: `${sidebarText}10` }
     : undefined;
   const neutralClass = useNeutralPill && !branded
-    ? 'border border-gray-200 bg-gray-50 text-gray-700'
+    ? 'border border-edge-strong bg-surface text-prose'
     : '';
   const colouredClass = !useNeutralPill
     ? `border ${current.bg} ${current.text} ${current.border}`
@@ -119,11 +119,11 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
       {open && (
         <div
           role="listbox"
-          className="absolute top-full right-0 mt-1.5 z-50 w-[280px] bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-900/5 py-1.5 origin-top-right animate-[fadeIn_120ms_ease-out]"
+          className="absolute top-full right-0 mt-1.5 z-50 w-[280px] bg-white rounded-2xl border border-edge shadow-xl shadow-gray-900/5 py-1.5 origin-top-right animate-[fadeIn_120ms_ease-out]"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="px-3 pt-1.5 pb-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-faint">
               Set status
             </p>
           </div>
@@ -139,7 +139,7 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
                 aria-selected={isCurrent}
                 onClick={() => handlePick(opt)}
                 className={`w-full flex items-start gap-2.5 px-3 py-2 text-left transition-colors ${
-                  isCurrent ? 'bg-gray-50' : 'hover:bg-gray-50/70'
+                  isCurrent ? 'bg-surface' : 'hover:bg-surface/70'
                 }`}
               >
                 <div
@@ -149,13 +149,13 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[13px] font-semibold text-ink">{def.label}</span>
+                    <span className="text-caption font-semibold text-ink">{def.label}</span>
                     {isCurrent && (
                       <Check size={12} className="text-teal" />
                     )}
                   </div>
                   {tagline && (
-                    <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                    <p className="text-detail text-dim leading-snug mt-0.5">
                       {tagline}
                     </p>
                   )}

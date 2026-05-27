@@ -30,7 +30,7 @@ export default function ResolvedSection({
     <div>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 w-full py-2 text-2xs font-semibold uppercase tracking-wider text-gray-400"
+        className="flex items-center gap-1.5 w-full py-2 text-2xs font-semibold uppercase tracking-wider text-faint"
       >
         {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         Resolved ({comments.length})
@@ -38,7 +38,7 @@ export default function ResolvedSection({
       {expanded && (
         <div className="space-y-2">
           {comments.map((c) => (
-            <div key={c.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3 opacity-70">
+            <div key={c.id} className="rounded-lg border border-edge bg-surface p-3 opacity-70">
               {c.comment_type === 'pin' && c.thread_number && (
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <span className="w-4 h-4 rounded-full bg-gray-400 text-white flex items-center justify-center text-2xs font-bold">
@@ -56,19 +56,19 @@ export default function ResolvedSection({
                   muted
                 />
                 <div className="min-w-0 flex-1">
-                  <span className="text-[11px] font-medium text-gray-500">{c.author_name}</span>
-                  <CommentContent content={c.content} className="text-[11px] text-gray-400 mt-0.5" />
+                  <span className="text-detail font-medium text-dim">{c.author_name}</span>
+                  <CommentContent content={c.content} className="text-detail text-faint mt-0.5" />
                   <div className="flex items-center gap-2 mt-1.5">
                     <div className="flex items-center gap-1">
                       <CheckCircle2 size={10} className="text-emerald-500" />
-                      <span className="text-2xs text-gray-400">
+                      <span className="text-2xs text-faint">
                         Resolved{c.resolved_by ? ` by ${c.resolved_by}` : ''}
                       </span>
                     </div>
                     {onUnresolve && (
                       <button
                         onClick={() => onUnresolve(c.id)}
-                        className="flex items-center gap-1 text-2xs text-gray-400 hover:text-amber-600 transition-colors"
+                        className="flex items-center gap-1 text-2xs text-faint hover:text-amber-600 transition-colors"
                       >
                         <RotateCcw size={9} />
                         Reopen

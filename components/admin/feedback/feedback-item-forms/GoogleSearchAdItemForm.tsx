@@ -118,11 +118,11 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
     <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
       <div className="flex-1 min-h-0 p-6 space-y-3 overflow-y-auto">
         <div>
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Item Title <span className="text-red-400">*</span></label>
+          <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1">Item Title <span className="text-red-400">*</span></label>
           <input
             type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
             placeholder="e.g. Brand keywords — search ad"
-            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
+            className="w-full px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20"
           />
         </div>
 
@@ -131,32 +131,32 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
             <input
               type="url" value={finalUrl} onChange={(e) => setFinalUrl(e.target.value)}
               placeholder="https://example.com/landing-page"
-              className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
+              className="w-full px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20"
             />
-            <p className="text-[11px] text-gray-400 mt-1">The URL Google sends visitors to when they click the ad.</p>
+            <p className="text-detail text-faint mt-1">The URL Google sends visitors to when they click the ad.</p>
           </div>
         </Section>
 
         <Section icon={Slash} title="Display path" open={open.path} onToggle={() => toggle('path')}>
           <div className="space-y-2">
-            <p className="text-[11px] text-gray-500 font-mono">{displayUrl || 'example.com'}</p>
+            <p className="text-detail text-dim font-mono">{displayUrl || 'example.com'}</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <div className="flex items-stretch rounded-lg border border-gray-200 focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/20 overflow-hidden">
-                  <span className="px-2 py-2 text-xs text-gray-400 bg-gray-50 border-r border-gray-200">/</span>
+                <div className="flex items-stretch rounded-lg border border-edge-strong focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/20 overflow-hidden">
+                  <span className="px-2 py-2 text-xs text-faint bg-surface border-r border-edge-strong">/</span>
                   <input
                     type="text" value={path1} onChange={(e) => setPath1(e.target.value.slice(0, PATH_LIMIT))}
-                    className="flex-1 px-2 py-2 text-xs text-gray-900 focus:outline-none min-w-0"
+                    className="flex-1 px-2 py-2 text-xs text-ink focus:outline-none min-w-0"
                   />
                 </div>
                 <CharCount value={path1} limit={PATH_LIMIT} />
               </div>
               <div>
-                <div className="flex items-stretch rounded-lg border border-gray-200 focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/20 overflow-hidden">
-                  <span className="px-2 py-2 text-xs text-gray-400 bg-gray-50 border-r border-gray-200">/</span>
+                <div className="flex items-stretch rounded-lg border border-edge-strong focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/20 overflow-hidden">
+                  <span className="px-2 py-2 text-xs text-faint bg-surface border-r border-edge-strong">/</span>
                   <input
                     type="text" value={path2} onChange={(e) => setPath2(e.target.value.slice(0, PATH_LIMIT))}
-                    className="flex-1 px-2 py-2 text-xs text-gray-900 focus:outline-none min-w-0"
+                    className="flex-1 px-2 py-2 text-xs text-ink focus:outline-none min-w-0"
                   />
                 </div>
                 <CharCount value={path2} limit={PATH_LIMIT} />
@@ -173,10 +173,10 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
                   <input
                     type="text" value={h} onChange={(e) => setHeadline(i, e.target.value)}
                     placeholder={`Headline ${i + 1}`}
-                    className="flex-1 px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
+                    className="flex-1 px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20"
                   />
                   {headlines.length > 1 && (
-                    <button type="button" onClick={() => removeHeadline(i)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                    <button type="button" onClick={() => removeHeadline(i)} className="p-2 text-faint hover:text-red-500 transition-colors">
                       <Trash2 size={14} />
                     </button>
                   )}
@@ -185,11 +185,11 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
               </div>
             ))}
             {headlines.length < MAX_HEADLINES && (
-              <button type="button" onClick={addHeadline} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-200 text-xs font-medium text-gray-500 hover:border-teal hover:text-teal transition-colors">
+              <button type="button" onClick={addHeadline} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-2xl border border-dashed border-edge-strong text-xs font-medium text-dim hover:border-teal hover:text-teal transition-colors">
                 <Plus size={14} /> Add headline
               </button>
             )}
-            <p className="text-[11px] text-gray-400">Up to 15 headlines, 30 characters each. Google rotates and combines them.</p>
+            <p className="text-detail text-faint">Up to 15 headlines, 30 characters each. Google rotates and combines them.</p>
           </div>
         </Section>
 
@@ -201,10 +201,10 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
                   <textarea
                     value={d} onChange={(e) => setDescription(i, e.target.value)} rows={2}
                     placeholder={`Description ${i + 1}`}
-                    className="flex-1 px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 resize-y min-h-[56px]"
+                    className="flex-1 px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 resize-y min-h-[56px]"
                   />
                   {descriptions.length > 1 && (
-                    <button type="button" onClick={() => removeDescription(i)} className="p-2 text-gray-400 hover:text-red-500 transition-colors mt-1">
+                    <button type="button" onClick={() => removeDescription(i)} className="p-2 text-faint hover:text-red-500 transition-colors mt-1">
                       <Trash2 size={14} />
                     </button>
                   )}
@@ -213,7 +213,7 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
               </div>
             ))}
             {descriptions.length < MAX_DESCRIPTIONS && (
-              <button type="button" onClick={addDescription} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-200 text-xs font-medium text-gray-500 hover:border-teal hover:text-teal transition-colors">
+              <button type="button" onClick={addDescription} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-2xl border border-dashed border-edge-strong text-xs font-medium text-dim hover:border-teal hover:text-teal transition-colors">
                 <Plus size={14} /> Add description
               </button>
             )}
@@ -223,10 +223,10 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
         <Section icon={Link2} title={`Sitelinks ${trimmedSitelinks.length}/${MAX_SITELINKS}`} open={open.sitelinks} onToggle={() => toggle('sitelinks')}>
           <div className="space-y-3">
             {sitelinks.map((s, i) => (
-              <div key={s.id} className="space-y-2 p-3 rounded-xl border border-gray-200 bg-gray-50/50">
+              <div key={s.id} className="space-y-2 p-3 rounded-2xl border border-edge-strong bg-surface/50">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-600">Sitelink {i + 1}</span>
-                  <button type="button" onClick={() => removeSitelink(s.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                  <span className="text-xs font-semibold text-prose">Sitelink {i + 1}</span>
+                  <button type="button" onClick={() => removeSitelink(s.id)} className="text-faint hover:text-red-500 transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -235,7 +235,7 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
                     type="text" value={s.text} maxLength={SITELINK_TEXT_LIMIT}
                     onChange={(e) => updateSitelink(s.id, { text: e.target.value })}
                     placeholder="Sitelink text (e.g. Pricing & Sizes)"
-                    className="w-full px-3 py-2 bg-white rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 border border-gray-200"
+                    className="w-full px-3 py-2 bg-white rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 border border-edge-strong"
                   />
                   <CharCount value={s.text} limit={SITELINK_TEXT_LIMIT} />
                 </div>
@@ -243,7 +243,7 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
                   type="url" value={s.url}
                   onChange={(e) => updateSitelink(s.id, { url: e.target.value })}
                   placeholder="https://example.com/pricing"
-                  className="w-full px-3 py-2 bg-white rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 border border-gray-200 font-mono"
+                  className="w-full px-3 py-2 bg-white rounded-lg text-xs text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 border border-edge-strong font-mono"
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -251,7 +251,7 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
                       type="text" value={s.description1 || ''} maxLength={SITELINK_DESC_LIMIT}
                       onChange={(e) => updateSitelink(s.id, { description1: e.target.value })}
                       placeholder="Description 1 (optional)"
-                      className="w-full px-3 py-2 bg-white rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 border border-gray-200"
+                      className="w-full px-3 py-2 bg-white rounded-lg text-xs text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 border border-edge-strong"
                     />
                     <CharCount value={s.description1 || ''} limit={SITELINK_DESC_LIMIT} />
                   </div>
@@ -260,7 +260,7 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
                       type="text" value={s.description2 || ''} maxLength={SITELINK_DESC_LIMIT}
                       onChange={(e) => updateSitelink(s.id, { description2: e.target.value })}
                       placeholder="Description 2 (optional)"
-                      className="w-full px-3 py-2 bg-white rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 border border-gray-200"
+                      className="w-full px-3 py-2 bg-white rounded-lg text-xs text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 border border-edge-strong"
                     />
                     <CharCount value={s.description2 || ''} limit={SITELINK_DESC_LIMIT} />
                   </div>
@@ -268,7 +268,7 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
               </div>
             ))}
             {sitelinks.length < MAX_SITELINKS && (
-              <button type="button" onClick={addSitelink} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-200 text-xs font-medium text-gray-500 hover:border-teal hover:text-teal transition-colors">
+              <button type="button" onClick={addSitelink} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-2xl border border-dashed border-edge-strong text-xs font-medium text-dim hover:border-teal hover:text-teal transition-colors">
                 <Plus size={14} /> Add sitelink
               </button>
             )}
@@ -279,22 +279,22 @@ export default function GoogleSearchAdItemForm({ onSubmit, onBack, onCancel, upl
           <input
             type="tel" value={callPhone} onChange={(e) => setCallPhone(e.target.value)}
             placeholder="+61 478 013 893"
-            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
+            className="w-full px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20"
           />
-          <p className="text-[11px] text-gray-400 mt-1">Optional. Shown as a tap-to-call button on mobile previews.</p>
+          <p className="text-detail text-faint mt-1">Optional. Shown as a tap-to-call button on mobile previews.</p>
         </Section>
 
         <Section icon={Building2} title="Business name" open={open.business} onToggle={() => toggle('business')}>
           <input
             type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value.slice(0, 25))}
             placeholder="e.g. SWAT Bins"
-            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20"
+            className="w-full px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20"
           />
           <CharCount value={businessName} limit={25} />
         </Section>
       </div>
 
-      <div className="border-t border-gray-100 px-6 py-3">
+      <div className="border-t border-edge px-6 py-3">
         <FormActions
           onBack={onBack}
           onCancel={onCancel}
@@ -319,17 +319,17 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-2xl border border-edge-strong bg-white overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-2 px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center gap-2 px-4 py-3 hover:bg-surface transition-colors"
       >
-        <Icon size={14} className="text-gray-500 shrink-0" />
+        <Icon size={14} className="text-dim shrink-0" />
         <span className="flex-1 text-left text-sm font-medium text-gray-800">
           {title}{required && <span className="text-red-400 ml-1">*</span>}
         </span>
-        {open ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+        {open ? <ChevronDown size={14} className="text-faint" /> : <ChevronRight size={14} className="text-faint" />}
       </button>
       {open && <div className="px-4 pb-4 pt-1">{children}</div>}
     </div>
@@ -339,7 +339,7 @@ function Section({
 function CharCount({ value, limit, required }: { value: string; limit: number; required?: boolean }) {
   const over = value.length > limit;
   return (
-    <p className={`text-2xs mt-0.5 text-right ${over ? 'text-red-500' : 'text-gray-400'}`}>
+    <p className={`text-2xs mt-0.5 text-right ${over ? 'text-red-500' : 'text-faint'}`}>
       {value.length}/{limit}{required ? ' · required' : ''}
     </p>
   );

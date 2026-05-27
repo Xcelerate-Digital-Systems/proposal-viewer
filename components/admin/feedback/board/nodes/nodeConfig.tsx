@@ -172,7 +172,7 @@ export function CommentBadge({ count, unresolved }: { count: number; unresolved:
   return (
     <div
       className={`absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-2xs font-bold border-2 border-white ${
-        unresolved > 0 ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-600'
+        unresolved > 0 ? 'bg-amber-500 text-white' : 'bg-gray-200 text-prose'
       }`}
     >
       {count}
@@ -386,7 +386,7 @@ export function CardShell({
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-2 border-t border-edge">
-            <div className="flex items-center gap-1 text-[11px] text-ink/60">
+            <div className="flex items-center gap-1 text-detail text-ink/60">
               <MessageSquareText size={11} />
               <span>
                 {commentCount}
@@ -440,7 +440,7 @@ export function IconShell({
         {/* Title above the circle — anchored at the top of the slot so it
            sits level with the flow-node diamond labels above. */}
         <div className="h-14 flex items-start pt-2 max-w-full px-1">
-          <span className="block text-[11px] text-ink/80 text-center truncate max-w-[140px] leading-tight">
+          <span className="block text-detail text-ink/80 text-center truncate max-w-[140px] leading-tight">
             {item.title}
           </span>
         </div>

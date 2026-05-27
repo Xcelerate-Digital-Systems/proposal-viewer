@@ -162,13 +162,13 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
 
   if (notFound || !funnel) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-surface">
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <Workflow size={24} className="text-gray-400" />
+            <Workflow size={24} className="text-faint" />
           </div>
-          <h2 className="text-base font-semibold text-gray-700">Funnel not found</h2>
-          <p className="text-sm text-gray-500 mt-2">This link may have expired or been revoked.</p>
+          <h2 className="text-base font-semibold text-prose">Funnel not found</h2>
+          <p className="text-sm text-dim mt-2">This link may have expired or been revoked.</p>
         </div>
       </div>
     );
@@ -179,20 +179,20 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
       {/* Mobile — desktop required */}
-      <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+      <div className="flex lg:hidden min-h-screen items-center justify-center bg-surface p-6">
         <div className="text-center max-w-sm">
           <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <Monitor size={24} className="text-gray-400" />
+            <Monitor size={24} className="text-faint" />
           </div>
-          <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
-          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+          <h2 className="text-base font-semibold text-prose">Desktop Required</h2>
+          <p className="text-sm text-dim mt-2 leading-relaxed">
             Please open this funnel on a desktop browser to view the full canvas.
           </p>
         </div>
       </div>
 
       {/* Desktop — read-only canvas */}
-      <div className="hidden lg:flex h-dvh flex-col bg-gray-50 overflow-hidden">
+      <div className="hidden lg:flex h-dvh flex-col bg-surface overflow-hidden">
         <div
           className="flex items-center justify-between px-5 py-3 shrink-0"
           style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` }}
@@ -221,7 +221,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
               </h1>
               {funnel.description && (
                 <p
-                  className="text-[11px] mt-0.5 line-clamp-1"
+                  className="text-detail mt-0.5 line-clamp-1"
                   style={{
                     color: `${sidebarText}99`,
                     fontFamily: fontFamily(branding.font_sidebar),

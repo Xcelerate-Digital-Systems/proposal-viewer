@@ -67,7 +67,7 @@ export default function ViewerPagePreview({
     >
       {/* Chromeless frame — matches the Cover preview's clean treatment.
           Single subtle border + rounded corners; no header / footer bars. */}
-      <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
+      <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-edge-strong bg-gray-100 min-h-0">
         <div className="flex-1 min-h-[400px] overflow-hidden relative">
           {emptyState ?? (
             <div

@@ -37,7 +37,7 @@ export default function FeedbackRow({
           onSelect();
         }
       }}
-      className="group w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-gray-50 transition-colors cursor-pointer"
+      className="group w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-surface transition-colors cursor-pointer"
     >
       {/* Thread number badge */}
       <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -51,12 +51,12 @@ export default function FeedbackRow({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2">
-          <p className="text-sm text-gray-900 line-clamp-2 leading-relaxed flex-1">
+          <p className="text-sm text-ink line-clamp-2 leading-relaxed flex-1">
             {comment.content}
           </p>
           {priorityDef && PriorityIcon && (
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0 ${priorityDef.badgeClass}`}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-detail font-medium shrink-0 ${priorityDef.badgeClass}`}
               title={`Priority: ${priorityDef.label}`}
             >
               <PriorityIcon size={10} className={priorityDef.iconClass} />
@@ -64,7 +64,7 @@ export default function FeedbackRow({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-400">
+        <div className="flex items-center gap-2 mt-1.5 text-xs text-faint">
           <TypeIcon size={12} />
           <span className="truncate max-w-[200px]">{comment.item_title}</span>
           <span>·</span>
@@ -90,7 +90,7 @@ export default function FeedbackRow({
             onViewItem();
           }}
           title="Open item"
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-gray-500 hover:text-ink hover:bg-gray-100 transition-colors"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium text-dim hover:text-ink hover:bg-gray-100 transition-colors"
         >
           <ExternalLink size={11} />
           View item
@@ -101,7 +101,7 @@ export default function FeedbackRow({
             onToggleResolve();
           }}
           title={comment.resolved ? 'Reopen' : 'Mark resolved'}
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium transition-colors ${
             comment.resolved
               ? 'text-amber-700 hover:bg-amber-50'
               : 'text-emerald-700 hover:bg-emerald-50'

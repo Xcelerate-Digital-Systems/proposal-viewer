@@ -29,7 +29,7 @@ function ToggleRow({
   label: string;
 }) {
   return (
-    <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+    <div className="flex items-center gap-3 text-sm font-medium text-prose">
       <Toggle enabled={checked} onChange={onChange} size="sm" />
       <span>{label}</span>
     </div>
@@ -113,18 +113,18 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
           />
 
           {/* Summary table */}
-          <div className="mt-3 rounded-lg bg-gray-50 px-4 py-3 text-sm space-y-1.5">
-            <div className="flex items-center justify-between text-gray-500">
+          <div className="mt-3 rounded-lg bg-surface px-4 py-3 text-sm space-y-1.5">
+            <div className="flex items-center justify-between text-dim">
               <span>Subtotal</span>
               <span className="tabular-nums">{formatAUD(subtotal)}</span>
             </div>
             {includeGst && (
-              <div className="flex items-center justify-between text-gray-500">
+              <div className="flex items-center justify-between text-dim">
                 <span>GST ({gstPct}%)</span>
                 <span className="tabular-nums">{formatAUD(gstAmount)}</span>
               </div>
             )}
-            <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-gray-200 font-semibold text-gray-900">
+            <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-edge-strong font-semibold text-ink">
               <span>Total</span>
               <span className="tabular-nums text-teal">{formatAUD(total)}</span>
             </div>
@@ -132,7 +132,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
         </div>
 
         {/* Deposit */}
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-4 border-t border-edge">
           <ToggleRow
             checked={requireDeposit}
             onChange={(v) => {
@@ -145,7 +145,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
           {requireDeposit && (
             <div className="mt-3 flex items-center gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-prose mb-1">
                   Deposit %
                 </label>
                 <input
@@ -155,18 +155,18 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
                   value={depositPercent}
                   onChange={(e) => setDepositPercent(Number(e.target.value) || 0)}
                   onBlur={() => dirty && save()}
-                  className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+                  className="w-24 px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
                 />
               </div>
-              <div className="text-sm text-gray-500 pt-6 tabular-nums">
-                = <span className="font-semibold text-gray-900">{formatAUD(depositAmount)}</span>
+              <div className="text-sm text-dim pt-6 tabular-nums">
+                = <span className="font-semibold text-ink">{formatAUD(depositAmount)}</span>
               </div>
             </div>
           )}
         </div>
 
         {dirty && (
-          <div className="flex items-center justify-end pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-end pt-3 border-t border-edge">
             <button
               type="button"
               onClick={save}

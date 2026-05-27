@@ -135,28 +135,28 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
           From Library
         </Button>
         {showLibrary && (
-          <div className="absolute z-20 mt-1 w-80 bg-white rounded-lg border border-gray-200 shadow-lg max-h-96 overflow-y-auto">
+          <div className="absolute z-20 mt-1 w-80 bg-white rounded-lg border border-edge-strong shadow-lg max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="px-3 py-6 text-center text-xs text-gray-400">
+              <div className="px-3 py-6 text-center text-xs text-faint">
                 <Loader2 size={14} className="inline animate-spin" /> Loading…
               </div>
             ) : templates.length === 0 ? (
-              <div className="px-3 py-6 text-center text-xs text-gray-400">
+              <div className="px-3 py-6 text-center text-xs text-faint">
                 No saved templates yet. Add line items, then click "Save as Template".
               </div>
             ) : (
               templates.map((t) => (
                 <div
                   key={t.id}
-                  className="flex items-start justify-between gap-2 px-3 py-2 hover:bg-gray-50 group"
+                  className="flex items-start justify-between gap-2 px-3 py-2 hover:bg-surface group"
                 >
                   <button
                     type="button"
                     onClick={() => applyTemplate(t)}
                     className="flex-1 text-left min-w-0"
                   >
-                    <div className="text-sm font-medium text-gray-900 truncate">{t.name}</div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-sm font-medium text-ink truncate">{t.name}</div>
+                    <div className="text-xs text-faint">
                       {t.items.length} item{t.items.length === 1 ? '' : 's'}
                     </div>
                   </button>
@@ -190,8 +190,8 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
           Save as Template
         </Button>
         {showSave && (
-          <div className="absolute z-20 mt-1 w-72 bg-white rounded-lg border border-gray-200 shadow-lg p-3">
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+          <div className="absolute z-20 mt-1 w-72 bg-white rounded-lg border border-edge-strong shadow-lg p-3">
+            <label className="block text-xs font-medium text-prose mb-1.5">
               Template name
             </label>
             <input
@@ -199,10 +199,10 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
               value={saveName}
               onChange={(e) => setSaveName(e.target.value)}
               placeholder="e.g. Bathroom Renovation Standard"
-              className="w-full px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-2 py-1.5 rounded border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
               autoFocus
             />
-            <p className="text-xs text-gray-400 mt-1.5">
+            <p className="text-xs text-faint mt-1.5">
               Saving {items.length} line item{items.length === 1 ? '' : 's'}.
             </p>
             <div className="flex items-center justify-end gap-2 mt-3">

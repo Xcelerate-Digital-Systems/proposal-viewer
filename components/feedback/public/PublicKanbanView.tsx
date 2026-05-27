@@ -187,19 +187,19 @@ function KanbanColumn({
     <div className="shrink-0 w-[280px] flex flex-col h-full min-h-0">
       <div className="flex items-center gap-2 mb-3 shrink-0">
         <span className={`w-2 h-2 rounded-full ${def.dot}`} />
-        <h3 className="text-[13px] font-semibold text-gray-800">{def.label}</h3>
-        <span className="text-[11px] font-medium text-gray-400">{items.length}</span>
+        <h3 className="text-caption font-semibold text-gray-800">{def.label}</h3>
+        <span className="text-detail font-medium text-faint">{items.length}</span>
       </div>
 
       <div
         ref={setNodeRef}
         style={ringStyle}
         className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors ${
-          dragActive && !isDropAllowed ? 'bg-gray-50 opacity-60' : 'bg-gray-50'
+          dragActive && !isDropAllowed ? 'bg-surface opacity-60' : 'bg-surface'
         }`}
       >
         {items.length === 0 ? (
-          <div className="text-[11px] text-gray-400 italic text-center py-4">
+          <div className="text-detail text-faint italic text-center py-4">
             {dragActive && !isDropAllowed ? 'Locked' : 'Empty'}
           </div>
         ) : (
@@ -257,24 +257,24 @@ function DraggableKanbanCard({
           className="flex items-start gap-2.5 cursor-grab active:cursor-grabbing -m-3.5 p-3.5 rounded-t-2xl"
           aria-label={`Drag ${item.title}`}
         >
-          <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.iconBg}`}>
+          <div className={`shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center ${meta.iconBg}`}>
             <Icon size={15} className={meta.iconColor} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1.5">
-              <h4 className="text-[13px] font-medium text-ink truncate leading-tight flex-1 min-w-0">
+              <h4 className="text-caption font-medium text-ink truncate leading-tight flex-1 min-w-0">
                 {item.title}
               </h4>
               {item.version > 1 && (
-                <span className="text-2xs font-semibold text-gray-400 shrink-0">v{item.version}</span>
+                <span className="text-2xs font-semibold text-faint shrink-0">v{item.version}</span>
               )}
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5 truncate">{meta.label}</p>
+            <p className="text-detail text-faint mt-0.5 truncate">{meta.label}</p>
           </div>
         </div>
 
-        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-[11px] text-gray-500">
+        <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
+          <div className="flex items-center gap-1 text-detail text-dim">
             <MessageSquareText size={11} />
             <span>
               {counts.total}
@@ -286,7 +286,7 @@ function DraggableKanbanCard({
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onSelectItem(item.id); }}
-            className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium"
+            className="relative z-10 inline-flex items-center gap-1 text-detail font-medium"
             style={{ color: accent }}
           >
             {isWebpage ? <ExternalLink size={11} /> : null}
@@ -316,16 +316,16 @@ function KanbanCardView({
       style={isDragging ? { boxShadow: `0 0 0 2px ${accent}66` } : undefined}
     >
       <div className="flex items-start gap-2.5">
-        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.iconBg}`}>
+        <div className={`shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center ${meta.iconBg}`}>
           <Icon size={15} className={meta.iconColor} />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-[13px] font-medium text-ink truncate leading-tight">{item.title}</h4>
-          <p className="text-[11px] text-gray-400 mt-0.5 truncate">{meta.label}</p>
+          <h4 className="text-caption font-medium text-ink truncate leading-tight">{item.title}</h4>
+          <p className="text-detail text-faint mt-0.5 truncate">{meta.label}</p>
         </div>
       </div>
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-[11px] text-gray-500">
+      <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
+        <div className="flex items-center gap-1 text-detail text-dim">
           <MessageSquareText size={11} />
           <span>
             {counts.total}

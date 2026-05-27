@@ -96,7 +96,7 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
     <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
       <div className="p-6 space-y-4 overflow-y-auto flex-1">
         <div>
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1">
             Item Title <span className="text-red-400">*</span>
           </label>
           <input
@@ -104,13 +104,13 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Brand Video – 30s"
-            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
+            className="w-full px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 "
             autoFocus
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1">
             Video URL
           </label>
           <input
@@ -118,57 +118,57 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
             placeholder="https://youtube.com/watch?v=… or https://vimeo.com/…"
-            className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 "
+            className="w-full px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 "
           />
-          <p className="text-2xs text-gray-400 mt-1">YouTube, Vimeo, or direct video URL</p>
+          <p className="text-2xs text-faint mt-1">YouTube, Vimeo, or direct video URL</p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-gray-200" />
-          <span className="text-2xs text-gray-400 uppercase tracking-wider">or upload</span>
+          <span className="text-2xs text-faint uppercase tracking-wider">or upload</span>
           <div className="h-px flex-1 bg-gray-200" />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1.5">
             Upload Video File
           </label>
           <input ref={fileInputRef} type="file" accept="video/*" onChange={handleFileChange} className="hidden" />
           {file ? (
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-edge-strong bg-surface">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-900 truncate">{file.name}</p>
-                <p className="text-2xs text-gray-400">{(file.size / (1024 * 1024)).toFixed(1)}MB</p>
+                <p className="text-xs font-medium text-ink truncate">{file.name}</p>
+                <p className="text-2xs text-faint">{(file.size / (1024 * 1024)).toFixed(1)}MB</p>
               </div>
               <button type="button" onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
-                <X size={14} className="text-gray-400 hover:text-red-500" />
+                <X size={14} className="text-faint hover:text-red-500" />
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-teal hover:bg-teal/5 transition-colors"
+              className="w-full border-2 border-dashed border-edge-strong rounded-lg p-6 text-center hover:border-teal hover:bg-teal/5 transition-colors"
             >
-              <Upload size={20} className="mx-auto mb-1.5 text-gray-400" />
-              <p className="text-xs font-medium text-gray-600">Upload video</p>
-              <p className="text-2xs text-gray-400 mt-0.5">MP4, MOV, WEBM up to 100MB</p>
+              <Upload size={20} className="mx-auto mb-1.5 text-faint" />
+              <p className="text-xs font-medium text-prose">Upload video</p>
+              <p className="text-2xs text-faint mt-0.5">MP4, MOV, WEBM up to 100MB</p>
             </button>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1.5">
             Thumbnail (optional)
           </label>
           <input ref={thumbnailInputRef} type="file" accept="image/*" onChange={handleThumbnailChange} className="hidden" />
           {thumbnailPreview ? (
             <div className="relative">
-              <img src={thumbnailPreview} alt="Thumbnail" className="w-full max-h-[120px] object-contain rounded-lg border border-gray-200 bg-gray-50" />
+              <img src={thumbnailPreview} alt="Thumbnail" className="w-full max-h-[120px] object-contain rounded-lg border border-edge-strong bg-surface" />
               <button
                 type="button"
                 onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); }}
-                className="absolute top-2 right-2 p-1 bg-white/90 rounded-full border border-gray-200 text-gray-500 hover:text-red-500"
+                className="absolute top-2 right-2 p-1 bg-white/90 rounded-full border border-edge-strong text-dim hover:text-red-500"
               >
                 <X size={12} />
               </button>
@@ -177,10 +177,10 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
             <button
               type="button"
               onClick={() => thumbnailInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:border-teal hover:bg-teal/5 transition-colors"
+              className="w-full border-2 border-dashed border-edge-strong rounded-lg p-4 text-center hover:border-teal hover:bg-teal/5 transition-colors"
             >
-              <Upload size={16} className="mx-auto mb-1 text-gray-400" />
-              <p className="text-2xs text-gray-500">Upload thumbnail image</p>
+              <Upload size={16} className="mx-auto mb-1 text-faint" />
+              <p className="text-2xs text-dim">Upload thumbnail image</p>
             </button>
           )}
         </div>

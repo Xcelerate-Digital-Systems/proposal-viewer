@@ -41,12 +41,12 @@ function ColorField({
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
-        <label className="text-xs font-medium text-gray-600">{label}</label>
+        <label className="text-xs font-medium text-prose">{label}</label>
         {value !== defaultValue && (
           <button
             type="button"
             onClick={() => onChange(defaultValue)}
-            className="flex items-center gap-1 text-2xs text-gray-400 hover:text-gray-600 transition-colors"
+            className="flex items-center gap-1 text-2xs text-faint hover:text-prose transition-colors"
           >
             <RotateCcw size={9} />
             Reset
@@ -58,17 +58,17 @@ function ColorField({
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-10 h-9 rounded border border-gray-200 cursor-pointer shrink-0"
+          className="w-10 h-9 rounded border border-edge-strong cursor-pointer shrink-0"
         />
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={defaultValue}
-          className="flex-1 px-2.5 py-1.5 rounded border border-gray-200 text-xs font-mono uppercase focus:outline-none focus:ring-1 focus:ring-teal/30"
+          className="flex-1 px-2.5 py-1.5 rounded border border-edge-strong text-xs font-mono uppercase focus:outline-none focus:ring-1 focus:ring-teal/30"
         />
       </div>
-      {hint && <p className="text-[11px] text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="text-detail text-faint mt-1">{hint}</p>}
     </div>
   );
 }
@@ -103,7 +103,7 @@ export default function BackgroundsSection({ proposal, onSaved }: Props) {
   return (
     <SectionCard
       title="Backgrounds"
-      icon={<Palette size={14} className="text-gray-400" />}
+      icon={<Palette size={14} className="text-faint" />}
       description="Quick colour swaps for the page surround and quote body. Cover header lives on the Cover tab."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -122,10 +122,10 @@ export default function BackgroundsSection({ proposal, onSaved }: Props) {
           onChange={setBodyBg}
         />
       </div>
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-4 pt-3 border-t border-edge">
         <Link
           href={`/quotes/${proposal.id}/cover`}
-          className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          className="text-xs text-dim hover:text-prose transition-colors"
         >
           Edit cover header →
         </Link>

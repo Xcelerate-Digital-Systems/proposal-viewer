@@ -115,9 +115,9 @@ export default function TextPagesSection({
     return (
       <div className="flex flex-col gap-5">
         {pageStrip}
-        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-16 text-center">
+        <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-16 text-center">
           <FileText size={28} className="mx-auto text-gray-200 mb-3" />
-          <p className="text-sm text-gray-400 mb-1">No text page selected</p>
+          <p className="text-sm text-faint mb-1">No text page selected</p>
           <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
         </div>
       </div>
@@ -133,10 +133,10 @@ export default function TextPagesSection({
       <div className="flex gap-6 items-start">
         <div className="flex-1 min-w-0">
           {/* Show-on-viewer chip (replaces the old slidey Toggle) */}
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-edge">
             <div>
-              <p className="text-sm font-medium text-gray-700">Show this page</p>
-              <p className="text-xs text-gray-400 mt-0.5">Toggle visibility in the proposal viewer</p>
+              <p className="text-sm font-medium text-prose">Show this page</p>
+              <p className="text-xs text-faint mt-0.5">Toggle visibility in the proposal viewer</p>
             </div>
             <Chip enabled={form.enabled} onClick={() => updateForm({ enabled: !form.enabled })}>
               {form.enabled ? 'Visible' : 'Hidden'}
@@ -151,10 +151,10 @@ export default function TextPagesSection({
                 onUpdate={updateForm}
               />
 
-              <div className="rounded-xl border border-gray-200 bg-white">
-                <div className="px-4 py-3 border-b border-gray-100">
+              <div className="rounded-2xl border border-edge-strong bg-white">
+                <div className="px-4 py-3 border-b border-edge">
                   <h3 className="text-sm font-semibold text-gray-800">Content</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Write the body of this page</p>
+                  <p className="text-xs text-faint mt-0.5">Write the body of this page</p>
                 </div>
                 <div className="p-4">
                   <RichTextEditor
@@ -166,9 +166,9 @@ export default function TextPagesSection({
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+            <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-12 text-center">
               <FileText size={24} className="mx-auto text-gray-300 mb-2" />
-              <p className="text-sm text-gray-400 mb-1">Text page is currently disabled</p>
+              <p className="text-sm text-faint mb-1">Text page is currently disabled</p>
               <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
             </div>
           )}

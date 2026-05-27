@@ -75,7 +75,7 @@ function RoleBadge({ role, accountType }: { role: string; accountType: 'agency' 
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border ${styles[role] || styles.member}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-detail font-medium border ${styles[role] || styles.member}`}
     >
       {roleIcon(role)}
       <span>{roleLabel(role, accountType)}</span>
@@ -446,13 +446,13 @@ function MemberRowItem({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
+                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
               />
               {nameChanged && (
                 <button
                   onClick={handleSaveName}
                   disabled={savingName}
-                  className="shrink-0 px-3 py-1.5 bg-teal text-white text-xs rounded-md hover:bg-teal-hover disabled:opacity-50 flex items-center gap-1"
+                  className="shrink-0 px-3 py-1.5 bg-teal text-white text-xs rounded-lg hover:bg-teal-hover disabled:opacity-50 flex items-center gap-1"
                 >
                   {savingName ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                   Save
@@ -483,7 +483,7 @@ function MemberRowItem({
             <div className="relative">
               <button
                 onClick={onToggleMenu}
-                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface text-faint hover:text-muted transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface text-faint hover:text-muted transition-colors"
               >
                 <MoreVertical size={14} />
               </button>
@@ -521,7 +521,7 @@ function MemberRowItem({
                             Make Member
                           </button>
                         )}
-                        <div className="border-t border-gray-100 my-1" />
+                        <div className="border-t border-edge my-1" />
                       </>
                     )}
                     <button
@@ -554,10 +554,10 @@ function MemberRowItem({
                 type="button"
                 onClick={() => canEditNotifs && onToggleMarkupPref(p.key)}
                 disabled={!canEditNotifs}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium transition-colors ${
                   on
                     ? 'bg-teal/10 text-teal'
-                    : 'bg-gray-50 text-gray-400 hover:text-gray-600'
+                    : 'bg-surface text-faint hover:text-prose'
                 } ${!canEditNotifs ? 'opacity-60 cursor-not-allowed' : ''}`}
                 title={`${on ? 'On' : 'Off'} — ${p.label}${val === null ? ' (default)' : ''}`}
               >

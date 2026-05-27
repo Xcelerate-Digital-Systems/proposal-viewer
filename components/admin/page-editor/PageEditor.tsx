@@ -137,7 +137,7 @@ export default function PageEditor({
             {onCancel && (
               <button
                 onClick={onCancel}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 transition-colors"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-dim hover:bg-gray-100 transition-colors"
               >
                 Cancel
               </button>
@@ -160,9 +160,9 @@ export default function PageEditor({
         <div className="flex-1 min-w-0 relative overflow-y-auto pr-2 -mr-2 space-y-5">
           {(processing || isReordering) && (
             <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-gray-200">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-edge-strong">
                 <Loader2 size={14} className="animate-spin text-teal" />
-                <span className="text-xs font-medium text-gray-600">Processing…</span>
+                <span className="text-xs font-medium text-prose">Processing…</span>
               </div>
             </div>
           )}
@@ -316,7 +316,7 @@ export default function PageEditor({
               </DndContext>
 
               {!pagesLoaded && (
-                <p className="text-sm text-gray-400 py-4 text-center">Loading pages…</p>
+                <p className="text-sm text-faint py-4 text-center">Loading pages…</p>
               )}
             </div>
             {bottomContent}

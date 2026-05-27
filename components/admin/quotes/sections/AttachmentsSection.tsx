@@ -121,7 +121,7 @@ export default function AttachmentsSection({ proposal, onSaved }: Props) {
           type="button"
           onClick={() => fileInput.current?.click()}
           disabled={uploading || items.length >= MAX_FILES}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-teal hover:bg-teal/5 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors disabled:opacity-50"
         >
           {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
           Add file
@@ -141,10 +141,10 @@ export default function AttachmentsSection({ proposal, onSaved }: Props) {
           type="button"
           onClick={() => fileInput.current?.click()}
           disabled={uploading}
-          className="w-full border-2 border-dashed border-gray-200 rounded-lg px-4 py-8 text-center hover:border-gray-300 transition-colors"
+          className="w-full border-2 border-dashed border-edge-strong rounded-lg px-4 py-8 text-center hover:border-gray-300 transition-colors"
         >
           <Paperclip size={20} className="mx-auto text-gray-300 mb-2" />
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-dim">
             PDFs, images, documents — up to 10 MB each, 30 MB total, max 10 files
           </p>
         </button>
@@ -153,17 +153,17 @@ export default function AttachmentsSection({ proposal, onSaved }: Props) {
           {items.map((a, i) => (
             <li
               key={a.path}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 bg-white"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg border border-edge-strong bg-white"
             >
-              <Paperclip size={14} className="text-gray-400 shrink-0" />
+              <Paperclip size={14} className="text-faint shrink-0" />
               <div className="min-w-0 flex-1">
-                <div className="text-sm text-gray-900 truncate">{a.name}</div>
-                <div className="text-xs text-gray-400">{formatSize(a.size)}</div>
+                <div className="text-sm text-ink truncate">{a.name}</div>
+                <div className="text-xs text-faint">{formatSize(a.size)}</div>
               </div>
               <button
                 type="button"
                 onClick={() => removeAt(i)}
-                className="p-1 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="p-1 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
                 title="Remove"
               >
                 <X size={14} />
@@ -173,7 +173,7 @@ export default function AttachmentsSection({ proposal, onSaved }: Props) {
         </ul>
       )}
 
-      <p className="text-[11px] text-gray-400 mt-3 tabular-nums">
+      <p className="text-detail text-faint mt-3 tabular-nums">
         {items.length} / {MAX_FILES} files · {formatSize(totalBytes)} / 30 MB
       </p>
     </SectionCard>

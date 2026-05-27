@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div className="h-screen bg-surface overflow-y-auto">
-      <header className="bg-white border-b border-gray-100">
+      <header className="bg-white border-b border-edge">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
           <nav className="flex items-center gap-5 text-sm">
@@ -62,7 +62,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-faint border-t border-gray-100 mt-8">
+      <footer className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-faint border-t border-edge mt-8">
         <span>&copy; {new Date().getFullYear()} Xcelerate Digital Systems</span>
         <div className="flex items-center gap-4">
           <Link href="/privacy-policy" className="hover:text-teal transition-colors">

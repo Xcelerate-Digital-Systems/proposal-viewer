@@ -104,7 +104,7 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
       }
     >
       {/* Table head */}
-      <div className="grid grid-cols-[1.4fr_1.6fr_72px_120px_88px_28px] gap-2 px-2 pb-2 border-b border-gray-100 text-[11px] font-medium uppercase tracking-wider text-gray-400">
+      <div className="grid grid-cols-[1.4fr_1.6fr_72px_120px_88px_28px] gap-2 px-2 pb-2 border-b border-edge text-detail font-medium uppercase tracking-wider text-faint">
         <div>Item</div>
         <div>Description</div>
         <div className="text-right">Qty</div>
@@ -116,7 +116,7 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
       {/* Rows */}
       <div className="divide-y divide-gray-50">
         {items.length === 0 && (
-          <div className="py-6 text-center text-xs text-gray-400">
+          <div className="py-6 text-center text-xs text-faint">
             No line items yet — click <span className="text-teal font-medium">Add Line Item</span> to start.
           </div>
         )}
@@ -130,14 +130,14 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
               value={item.label}
               onChange={(e) => updateItem(item.id, { label: e.target.value })}
               placeholder="Item name"
-              className="w-full px-2 py-1.5 rounded border border-transparent hover:border-gray-200 focus:border-gray-200 focus:bg-white text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-2 py-1.5 rounded border border-transparent hover:border-edge-strong focus:border-edge-strong focus:bg-white text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
             <input
               type="text"
               value={item.description}
               onChange={(e) => updateItem(item.id, { description: e.target.value })}
               placeholder="Optional"
-              className="w-full px-2 py-1.5 rounded border border-transparent hover:border-gray-200 focus:border-gray-200 focus:bg-white text-sm text-gray-500 focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-2 py-1.5 rounded border border-transparent hover:border-edge-strong focus:border-edge-strong focus:bg-white text-sm text-dim focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
             <input
               type="number"
@@ -145,7 +145,7 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
               step="any"
               value={item.qty ?? 1}
               onChange={(e) => updateItem(item.id, { qty: parseFloat(e.target.value) || 0 })}
-              className="w-full px-2 py-1.5 rounded border border-gray-200 text-sm text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-2 py-1.5 rounded border border-edge-strong text-sm text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
             <CurrencyInput
               value={item.unit_price ?? 0}
@@ -153,7 +153,7 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
               size="sm"
               className="w-full"
             />
-            <div className="text-sm text-right font-medium tabular-nums text-gray-900 px-2">
+            <div className="text-sm text-right font-medium tabular-nums text-ink px-2">
               {formatAUD(item.amount)}
             </div>
             <button
@@ -169,11 +169,11 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
       </div>
 
       {/* Footer: Add Line Item + Load Template (full-quote) + running subtotal */}
-      <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+      <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-edge">
         <button
           type="button"
           onClick={addItem}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
         >
           <Plus size={12} />
           Add Line Item
@@ -181,8 +181,8 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
 
         <LoadTemplateBar proposal={proposal} companyId={companyId} onApplied={onApplied} />
 
-        <div className="ml-auto text-xs text-gray-400 tabular-nums">
-          Subtotal · <span className="text-gray-700 font-medium">{formatAUD(subtotal)}</span>
+        <div className="ml-auto text-xs text-faint tabular-nums">
+          Subtotal · <span className="text-prose font-medium">{formatAUD(subtotal)}</span>
         </div>
       </div>
     </SectionCard>

@@ -70,7 +70,7 @@ function ToolbarButton({
       className={`shrink-0 p-2 rounded transition-colors ${
         isActive
           ? 'bg-teal/15 text-teal'
-          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+          : 'text-dim hover:text-prose hover:bg-gray-100'
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
       {children}
@@ -131,7 +131,7 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
   const currentHighlight = editor.getAttributes('highlight')?.color || '';
 
   return (
-    <div className={`flex flex-wrap items-center gap-1 px-2.5 py-2 bg-gray-50 border-b border-gray-200 z-20 relative ${className ?? ''}`}>
+    <div className={`flex flex-wrap items-center gap-1 px-2.5 py-2 bg-surface border-b border-edge-strong z-20 relative ${className ?? ''}`}>
       {/* Undo/Redo */}
       <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
         <Undo size={16} />
@@ -156,7 +156,7 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
           else editor.chain().focus().unsetFontSize().run();
         }}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editor.commands.focus(); } }}
-        className="shrink-0 h-8 w-16 px-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:border-teal [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="shrink-0 h-8 w-16 px-1.5 text-xs text-prose bg-white border border-edge-strong rounded hover:border-gray-300 focus:outline-none focus:border-teal [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
 
       {/* Font weight */}
@@ -168,7 +168,7 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
           else editor.chain().focus().unsetFontWeight().run();
         }}
         title="Font Weight"
-        className="shrink-0 h-8 px-2 text-xs text-gray-600 bg-white border border-gray-200 rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-teal"
+        className="shrink-0 h-8 px-2 text-xs text-prose bg-white border border-edge-strong rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-teal"
         style={{ fontWeight: currentFontWeight ? Number(currentFontWeight) : undefined }}
       >
         <option value="">Weight</option>
@@ -281,11 +281,11 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
             onChange={(e) => setLinkUrl(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') setLink(); if (e.key === 'Escape') setShowLinkInput(false); }}
             placeholder="https://..."
-            className="text-xs px-2.5 py-1.5 border border-gray-200 rounded w-44 focus:outline-none focus:border-teal"
+            className="text-xs px-2.5 py-1.5 border border-edge-strong rounded w-44 focus:outline-none focus:border-teal"
             autoFocus
           />
           <button onClick={setLink} className="text-xs px-2.5 py-1.5 bg-teal text-white rounded hover:bg-[#01434A]">Set</button>
-          <button onClick={() => setShowLinkInput(false)} className="text-xs px-2.5 py-1.5 text-gray-500 hover:text-gray-700">✕</button>
+          <button onClick={() => setShowLinkInput(false)} className="text-xs px-2.5 py-1.5 text-dim hover:text-prose">✕</button>
         </div>
       ) : (
         <>

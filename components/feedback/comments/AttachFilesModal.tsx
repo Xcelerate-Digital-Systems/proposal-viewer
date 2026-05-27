@@ -97,10 +97,10 @@ export default function AttachFilesModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <h3 className="text-lg font-semibold text-gray-900">Attach Files</h3>
+          <h3 className="text-lg font-semibold text-ink">Attach Files</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors"
           >
             <X size={18} />
           </button>
@@ -122,7 +122,7 @@ export default function AttachFilesModal({
             className={`flex flex-col items-center justify-center w-full min-h-[200px] rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${
               dragOver
                 ? 'border-teal bg-teal/5'
-                : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'
+                : 'border-gray-300 hover:border-gray-400 bg-surface/50'
             }`}
           >
             <div className="flex items-center gap-2 text-gray-300">
@@ -130,7 +130,7 @@ export default function AttachFilesModal({
               <Film size={44} strokeWidth={1.5} />
               <FileImage size={44} strokeWidth={1.5} />
             </div>
-            <p className="mt-3 text-sm text-gray-500">
+            <p className="mt-3 text-sm text-dim">
               Drag files here, or <span className="text-teal font-medium">browse</span>
             </p>
             <input
@@ -144,7 +144,7 @@ export default function AttachFilesModal({
             />
           </label>
 
-          <p className="text-xs text-gray-400 text-center">
+          <p className="text-xs text-faint text-center">
             Supports: {SUPPORTED}
           </p>
 
@@ -157,12 +157,12 @@ export default function AttachFilesModal({
               {files.map((f, i) => (
                 <div
                   key={i}
-                  className="relative group w-16 h-16 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center"
+                  className="relative group w-16 h-16 rounded-lg border border-edge-strong overflow-hidden bg-surface flex items-center justify-center"
                 >
                   {f.preview ? (
                     <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
                   ) : (
-                    <FileTextIcon size={20} className="text-gray-400" />
+                    <FileTextIcon size={20} className="text-faint" />
                   )}
                   <button
                     type="button"
@@ -180,10 +180,10 @@ export default function AttachFilesModal({
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-edge">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-dim hover:text-prose rounded-lg hover:bg-surface transition-colors"
           >
             Cancel
           </button>

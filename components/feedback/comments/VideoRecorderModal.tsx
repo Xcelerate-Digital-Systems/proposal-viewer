@@ -219,10 +219,10 @@ export default function VideoRecorderModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <h3 className="text-lg font-semibold text-gray-900">Record a video</h3>
+          <h3 className="text-lg font-semibold text-ink">Record a video</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors"
           >
             <X size={18} />
           </button>
@@ -231,25 +231,25 @@ export default function VideoRecorderModal({
         <div className="px-6 pb-5 space-y-4">
           {phase === 'idle' && (
             <>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p className="text-sm text-dim leading-relaxed">
                 Share your screen (and your mic, if you want voice) for up to {MAX_SECONDS / 60} minutes.
                 Great for walking through something a static screenshot can&rsquo;t capture.
               </p>
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-sm text-prose cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={micEnabled}
                   onChange={(e) => setMicEnabled(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 text-teal focus:ring-teal/20"
                 />
-                <Mic size={14} className="text-gray-400" />
+                <Mic size={14} className="text-faint" />
                 Include microphone audio
               </label>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <button
                 type="button"
                 onClick={startRecording}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
               >
                 <Circle size={14} fill="currentColor" />
                 Start recording
@@ -259,7 +259,7 @@ export default function VideoRecorderModal({
 
           {phase === 'recording' && (
             <>
-              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+              <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-red-50 border border-red-200">
                 <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
                   <span className="inline-flex w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                   Recording
@@ -276,7 +276,7 @@ export default function VideoRecorderModal({
               <button
                 type="button"
                 onClick={stopRecording}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
               >
                 <Square size={14} fill="currentColor" />
                 Stop recording
@@ -286,7 +286,7 @@ export default function VideoRecorderModal({
 
           {phase === 'preview' && recordedUrl && (
             <>
-              <div className="rounded-xl overflow-hidden bg-black">
+              <div className="rounded-2xl overflow-hidden bg-black">
                 <video
                   ref={previewVideoRef}
                   src={recordedUrl}
@@ -294,7 +294,7 @@ export default function VideoRecorderModal({
                   className="w-full max-h-[380px] block"
                 />
               </div>
-              <div className="text-xs text-gray-500 text-center">
+              <div className="text-xs text-dim text-center">
                 Length: {fmt(elapsed)}
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}
@@ -302,7 +302,7 @@ export default function VideoRecorderModal({
                 <button
                   type="button"
                   onClick={resetToIdle}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl border border-edge-strong text-prose text-sm font-semibold hover:bg-surface transition-colors"
                 >
                   <RefreshCw size={14} />
                   Record again
@@ -310,7 +310,7 @@ export default function VideoRecorderModal({
                 <button
                   type="button"
                   onClick={uploadRecording}
-                  className="flex-[1.4] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal text-white text-sm font-semibold hover:bg-teal-hover transition-colors"
+                  className="flex-[1.4] flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-teal text-white text-sm font-semibold hover:bg-teal-hover transition-colors"
                 >
                   <Upload size={14} />
                   Attach to comment
@@ -321,8 +321,8 @@ export default function VideoRecorderModal({
 
           {phase === 'uploading' && (
             <div className="py-10 flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
-              <p className="text-sm text-gray-500">Uploading your recording…</p>
+              <div className="w-8 h-8 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
+              <p className="text-sm text-dim">Uploading your recording…</p>
             </div>
           )}
         </div>

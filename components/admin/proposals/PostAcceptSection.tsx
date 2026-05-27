@@ -30,7 +30,7 @@ const ACTION_OPTIONS: {
     value: null,
     label: 'No action',
     description: 'Modal simply closes after approval',
-    icon: <X size={15} className="text-gray-400" />,
+    icon: <X size={15} className="text-faint" />,
   },
   {
     value: 'redirect',
@@ -130,7 +130,7 @@ export default function PostAcceptSection({
       description={isTemplate
         ? 'Default action copied to proposals created from this template'
         : 'What happens when a client clicks Approve & Continue'}
-      icon={<ArrowRight size={14} className="text-gray-400" />}
+      icon={<ArrowRight size={14} className="text-faint" />}
     >
       <div className="space-y-4">
       {/* Action selector */}
@@ -144,16 +144,16 @@ export default function PostAcceptSection({
               className={`flex flex-col items-start gap-1.5 p-3 rounded-lg border text-left transition-all ${
                 selected
                   ? 'border-teal/40 bg-teal/5 ring-1 ring-teal/20'
-                  : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
+                  : 'border-edge-strong bg-surface hover:border-gray-300 hover:bg-gray-100'
               }`}
             >
               <div className="flex items-center gap-1.5">
                 {opt.icon}
-                <span className={`text-xs font-medium ${selected ? 'text-gray-900' : 'text-gray-600'}`}>
+                <span className={`text-xs font-medium ${selected ? 'text-ink' : 'text-prose'}`}>
                   {opt.label}
                 </span>
               </div>
-              <p className="text-2xs text-gray-400 leading-tight">{opt.description}</p>
+              <p className="text-2xs text-faint leading-tight">{opt.description}</p>
             </button>
           );
         })}
@@ -162,7 +162,7 @@ export default function PostAcceptSection({
       {/* Redirect URL input */}
       {action === 'redirect' && (
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Redirect URL</label>
+          <label className="block text-sm font-medium text-prose">Redirect URL</label>
           <input
             type="url"
             value={redirectUrl}
@@ -171,11 +171,11 @@ export default function PostAcceptSection({
             className={inputClassName}
           />
           <div className="flex items-center gap-2 pt-0.5">
-            <span className="text-2xs text-gray-400">Common uses:</span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-2xs text-gray-500">
+            <span className="text-2xs text-faint">Common uses:</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-2xs text-dim">
               <CreditCard size={9} /> Payment link
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-2xs text-gray-500">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-2xs text-dim">
               <Calendar size={9} /> Booking page
             </span>
           </div>
@@ -185,7 +185,7 @@ export default function PostAcceptSection({
       {/* Custom message textarea */}
       {action === 'message' && (
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Confirmation Message</label>
+          <label className="block text-sm font-medium text-prose">Confirmation Message</label>
           <textarea
             value={message}
             onChange={(e) => handleMessageChange(e.target.value)}
@@ -193,7 +193,7 @@ export default function PostAcceptSection({
             placeholder="e.g. Thank you for approving! We'll be in touch within 24 hours to kick things off."
             className={`${inputClassName} resize-none`}
           />
-          <p className="text-2xs text-gray-400">
+          <p className="text-2xs text-faint">
             {isTemplate
               ? 'This default message will be pre-filled when creating proposals from this template.'
               : 'This message is shown to the client inside the approval modal after they submit their name.'}

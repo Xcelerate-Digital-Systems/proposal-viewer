@@ -77,7 +77,7 @@ export default function StatusDropdown<T extends string = string>({
           ${current.bg} ${current.text}
           ${disabled ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 cursor-pointer'}
           ${fullWidth ? 'w-full' : ''}
-          ${isCompact ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-[11px]'}
+          ${isCompact ? 'px-2.5 py-0.5 text-detail' : 'px-3 py-1 text-detail'}
         `}
       >
         <span className="flex items-center gap-1.5 min-w-0 truncate">
@@ -92,7 +92,7 @@ export default function StatusDropdown<T extends string = string>({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white rounded-xl border border-gray-100 shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
+        <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -101,8 +101,8 @@ export default function StatusDropdown<T extends string = string>({
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                value === opt.value ? 'text-teal font-medium' : 'text-gray-700'
+              className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-surface transition-colors ${
+                value === opt.value ? 'text-teal font-medium' : 'text-prose'
               }`}
             >
               {opt.icon}

@@ -23,7 +23,7 @@ export const PRIORITY_OPTIONS: PriorityOptionDef[] = [
   { value: 'high', label: 'High', icon: AlertCircle, iconClass: 'text-rose-500', badgeClass: 'bg-rose-100 text-rose-700' },
   { value: 'medium', label: 'Medium', icon: CircleMinus, iconClass: 'text-amber-500', badgeClass: 'bg-amber-100 text-amber-700' },
   { value: 'low', label: 'Low', icon: CircleArrowDown, iconClass: 'text-emerald-500', badgeClass: 'bg-emerald-100 text-emerald-700' },
-  { value: 'none', label: 'None', icon: Check, iconClass: 'text-blue-500', badgeClass: 'bg-gray-100 text-gray-500' },
+  { value: 'none', label: 'None', icon: Check, iconClass: 'text-blue-500', badgeClass: 'bg-gray-100 text-dim' },
 ];
 
 export function getPriorityDef(priority: FeedbackCommentPriority): PriorityOptionDef {
@@ -53,18 +53,18 @@ export default function PrioritySelector({ value, onChange, compact = true }: Pr
         onClick={() => setOpen((o) => !o)}
         className={
           compact
-            ? `inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+            ? `inline-flex items-center gap-1 px-2 py-1 rounded-full text-detail font-medium transition-colors ${
                 value === 'none'
-                  ? 'text-gray-500 hover:text-ink hover:bg-gray-100'
+                  ? 'text-dim hover:text-ink hover:bg-gray-100'
                   : current.badgeClass
               }`
-            : 'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs text-gray-600 bg-gray-50 hover:bg-gray-100'
+            : 'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs text-prose bg-surface hover:bg-gray-100'
         }
         title={`Priority: ${current.label}`}
       >
         {value === 'none' ? (
           <>
-            <Flag size={12} className="text-gray-400" />
+            <Flag size={12} className="text-faint" />
             <span>Priority</span>
           </>
         ) : (
@@ -76,8 +76,8 @@ export default function PrioritySelector({ value, onChange, compact = true }: Pr
       </button>
 
       {open && (
-        <div className="absolute right-0 bottom-full mb-1 w-44 bg-white rounded-xl border border-gray-200 shadow-lg py-1 z-50">
-          <p className="px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-gray-400">
+        <div className="absolute right-0 bottom-full mb-1 w-44 bg-white rounded-2xl border border-edge-strong shadow-lg py-1 z-50">
+          <p className="px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-faint">
             Set priority
           </p>
           {PRIORITY_OPTIONS.map((opt) => {
@@ -92,7 +92,7 @@ export default function PrioritySelector({ value, onChange, compact = true }: Pr
                   setOpen(false);
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
-                  selected ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:bg-gray-50'
+                  selected ? 'text-blue-600 font-semibold' : 'text-prose hover:bg-surface'
                 }`}
               >
                 <Icon size={14} className={selected ? 'text-blue-600' : opt.iconClass} />

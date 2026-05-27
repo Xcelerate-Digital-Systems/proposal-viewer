@@ -25,14 +25,14 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
       <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-md shrink-0"
+            className="w-7 h-7 rounded-lg shrink-0"
             style={{ backgroundColor: note.color || '#FFF4B8' }}
           />
           <span className="text-xs font-semibold text-ink truncate">Sticky note</span>
         </div>
         <button
           onClick={onClose}
-          className="w-7 h-7 rounded-md text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors shrink-0"
+          className="w-7 h-7 rounded-lg text-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-colors shrink-0"
         >
           <X size={14} />
         </button>
@@ -46,7 +46,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
             onBlur={commitContent}
             rows={5}
             placeholder="Type a note…"
-            className="w-full px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal resize-y"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-y"
           />
         </Field>
 
@@ -60,7 +60,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
                   key={c.value}
                   type="button"
                   onClick={() => onUpdate({ color: c.value })}
-                  className={`w-7 h-7 rounded-md border transition-transform ${active ? 'border-ink scale-110' : 'border-edge'}`}
+                  className={`w-7 h-7 rounded-lg border transition-transform ${active ? 'border-ink scale-110' : 'border-edge'}`}
                   style={{ backgroundColor: c.value }}
                   title={c.label}
                 />
@@ -79,7 +79,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
               const n = Number(e.target.value);
               onUpdate({ font_size: Number.isFinite(n) ? n : null });
             }}
-            className="w-full px-2.5 py-1.5 rounded-md border border-edge text-[13px] outline-none focus:border-teal"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
           />
         </Field>
       </div>
@@ -87,7 +87,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
       <div className="px-4 py-3 border-t border-edge">
         <button
           onClick={onDelete}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
         >
           <Trash2 size={13} /> Delete note
         </button>

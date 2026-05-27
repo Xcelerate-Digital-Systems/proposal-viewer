@@ -320,13 +320,13 @@ export default function CreateFromTemplate({
         >
           Back
         </Button>
-        <h3 className="text-gray-900 font-semibold mb-4">Choose a Template</h3>
+        <h3 className="text-ink font-semibold mb-4">Choose a Template</h3>
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 size={20} className="animate-spin text-gray-300" />
           </div>
         ) : templates.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">
+          <p className="text-sm text-faint text-center py-8">
             No templates yet. Create a template first.
           </p>
         ) : (
@@ -335,11 +335,11 @@ export default function CreateFromTemplate({
               <button
                 key={t.id}
                 onClick={() => selectTemplate(t)}
-                className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-teal/40 hover:bg-teal/5 transition-all"
+                className="w-full text-left px-4 py-3 rounded-2xl border border-edge-strong hover:border-teal/40 hover:bg-teal/5 transition-all"
               >
-                <div className="text-sm font-medium text-gray-900">{t.name}</div>
+                <div className="text-sm font-medium text-ink">{t.name}</div>
                 {t.description && (
-                  <div className="text-xs text-gray-400 mt-0.5">{t.description}</div>
+                  <div className="text-xs text-faint mt-0.5">{t.description}</div>
                 )}
                 <div className="text-xs text-gray-300 mt-0.5">
                   {(t as any).page_count ?? pages.length} pages
@@ -370,8 +370,8 @@ export default function CreateFromTemplate({
           <Check size={13} className="text-teal" />
         </div>
         <div>
-          <div className="text-sm font-medium text-gray-900">{selectedTemplate.name}</div>
-          <div className="text-xs text-gray-400">{pages.length} pages</div>
+          <div className="text-sm font-medium text-ink">{selectedTemplate.name}</div>
+          <div className="text-xs text-faint">{pages.length} pages</div>
         </div>
       </div>
 
@@ -403,7 +403,7 @@ export default function CreateFromTemplate({
         />
 
         {status && (
-          <p className={`text-xs ${status.startsWith('Failed') ? 'text-red-500' : 'text-gray-400'}`}>
+          <p className={`text-xs ${status.startsWith('Failed') ? 'text-red-500' : 'text-faint'}`}>
             {status}
           </p>
         )}

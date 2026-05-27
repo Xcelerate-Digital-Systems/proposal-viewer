@@ -173,14 +173,14 @@ export default function ClientDetailsSection({
     <SectionCard
       title="Client Details"
       action={
-        <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+        <div className="inline-flex rounded-lg border border-edge-strong p-0.5 bg-surface">
           <button
             type="button"
             onClick={() => switchMode('real')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
               mode === 'real'
                 ? 'bg-white text-teal shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                : 'text-dim hover:text-prose'
             }`}
           >
             <User size={12} />
@@ -189,10 +189,10 @@ export default function ClientDetailsSection({
           <button
             type="button"
             onClick={() => switchMode('test')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
               mode === 'test'
                 ? 'bg-white text-amber-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                : 'text-dim hover:text-prose'
             }`}
           >
             <FlaskConical size={12} />
@@ -206,26 +206,26 @@ export default function ClientDetailsSection({
           <button
             type="button"
             onClick={() => setShowDropdown((v) => !v)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:border-gray-300 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-edge-strong bg-white text-sm text-prose hover:border-gray-300 transition-colors"
           >
             <span className="truncate">
               {form.client_name
                 ? `${form.client_name}${form.crm_identifier ? ` — ${form.crm_identifier}` : ''}`
                 : 'Pick a saved customer…'}
             </span>
-            <ChevronDown size={14} className="text-gray-400" />
+            <ChevronDown size={14} className="text-faint" />
           </button>
           {showDropdown && (
-            <div className="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg max-h-72 overflow-y-auto">
+            <div className="absolute z-20 mt-1 w-full bg-white rounded-lg border border-edge-strong shadow-lg max-h-72 overflow-y-auto">
               {savedCustomers.map((c, i) => (
                 <button
                   key={`${c.client_name}-${i}`}
                   type="button"
                   onClick={() => pickCustomer(c)}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-surface"
                 >
-                  <div className="font-medium text-gray-900 truncate">{c.client_name}</div>
-                  <div className="text-xs text-gray-400 truncate">
+                  <div className="font-medium text-ink truncate">{c.client_name}</div>
+                  <div className="text-xs text-faint truncate">
                     {[c.crm_identifier, c.client_email].filter(Boolean).join(' · ') || '—'}
                   </div>
                 </button>
@@ -238,7 +238,7 @@ export default function ClientDetailsSection({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {FIELDS.map((f) => (
           <div key={f.key} className={f.key === 'site_address' ? 'sm:col-span-2' : ''}>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            <label className="block text-xs font-medium text-prose mb-1.5">
               {f.label}
               {'required' in f && f.required && <span className="text-red-400 ml-0.5">*</span>}
             </label>
@@ -248,14 +248,14 @@ export default function ClientDetailsSection({
               onChange={(e) => update(f.key, e.target.value)}
               placeholder={f.placeholder}
               disabled={mode === 'test'}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-surface disabled:text-dim"
             />
           </div>
         ))}
       </div>
 
-      <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-gray-100">
-        <p className="text-xs text-gray-400">
+      <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-edge">
+        <p className="text-xs text-faint">
           {mode === 'test'
             ? 'Test mode — these values won\'t be saved until you switch back to Real.'
             : 'Saved as the client on this quote.'}

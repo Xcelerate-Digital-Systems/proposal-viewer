@@ -378,7 +378,7 @@ export default function AddVersionModal({
                 ? `Edit Version ${editingVersion?.versionNumber ?? ''}`
                 : `Upload Version ${nextVersionNumber}`}
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[360px]">{item.title}</p>
+            <p className="text-xs text-dim mt-0.5 truncate max-w-[360px]">{item.title}</p>
           </div>
           <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
@@ -414,7 +414,7 @@ export default function AddVersionModal({
               <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-dim uppercase tracking-wider">
                     Copy Variants
                   </label>
                   <div className="flex items-center gap-2">
@@ -423,7 +423,7 @@ export default function AddVersionModal({
                         <button
                           type="button"
                           onClick={() => setImportPickerOpen((v) => !v)}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal hover:text-teal-hover"
+                          className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover"
                           title="Reuse variants from another ad in this project"
                         >
                           <Copy size={12} />
@@ -431,15 +431,15 @@ export default function AddVersionModal({
                           <ChevronDown size={11} className={`transition-transform ${importPickerOpen ? 'rotate-180' : ''}`} />
                         </button>
                         {importPickerOpen && (
-                          <div className="absolute right-0 top-full mt-1.5 w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
-                            <div className="px-3 py-2 border-b border-gray-100">
-                              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                          <div className="absolute right-0 top-full mt-1.5 w-80 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-30">
+                            <div className="px-3 py-2 border-b border-edge">
+                              <p className="text-detail font-semibold uppercase tracking-wider text-dim">
                                 Existing ads in this project
                               </p>
                             </div>
                             <div className="max-h-80 overflow-y-auto">
                               {importableAds.map((ad) => (
-                                <div key={ad.id} className="border-b border-gray-100 last:border-b-0">
+                                <div key={ad.id} className="border-b border-edge last:border-b-0">
                                   <div className="flex items-center gap-2.5 px-3 pt-2 pb-1">
                                     <span className="w-6 h-6 shrink-0 rounded-lg bg-surface flex items-center justify-center text-muted">
                                       <Megaphone size={12} />
@@ -448,7 +448,7 @@ export default function AddVersionModal({
                                       <span className="block text-xs font-semibold text-ink truncate">
                                         {ad.title}
                                       </span>
-                                      <span className="block text-2xs text-gray-400">
+                                      <span className="block text-2xs text-faint">
                                         {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
                                       </span>
                                     </span>
@@ -456,7 +456,7 @@ export default function AddVersionModal({
                                       <button
                                         type="button"
                                         onClick={() => importAllFromAd(ad)}
-                                        className="text-[11px] font-semibold text-teal hover:text-teal-hover shrink-0"
+                                        className="text-detail font-semibold text-teal hover:text-teal-hover shrink-0"
                                         title="Import all variants from this ad"
                                       >
                                         Import all
@@ -472,9 +472,9 @@ export default function AddVersionModal({
                                           <button
                                             type="button"
                                             onClick={() => importOneVariant(ad, v)}
-                                            className="w-full flex items-center gap-2 pl-10 pr-3 py-1.5 text-left hover:bg-gray-50 transition-colors group"
+                                            className="w-full flex items-center gap-2 pl-10 pr-3 py-1.5 text-left hover:bg-surface transition-colors group"
                                           >
-                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded text-2xs font-semibold bg-gray-100 text-gray-500 shrink-0">
+                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded text-2xs font-semibold bg-gray-100 text-dim shrink-0">
                                               {i + 1}
                                             </span>
                                             <span className="flex-1 min-w-0">
@@ -482,13 +482,13 @@ export default function AddVersionModal({
                                                 {label}
                                               </span>
                                               {preview && (
-                                                <span className="block text-[11px] text-gray-400 truncate">
+                                                <span className="block text-detail text-faint truncate">
                                                   {preview}
                                                 </span>
                                               )}
                                             </span>
                                             <span
-                                              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-400 group-hover:bg-teal/10 group-hover:text-teal shrink-0 transition-colors"
+                                              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-faint group-hover:bg-teal/10 group-hover:text-teal shrink-0 transition-colors"
                                               title="Add this variant"
                                             >
                                               <Plus size={11} />
@@ -508,21 +508,21 @@ export default function AddVersionModal({
                     <button
                       type="button"
                       onClick={addAdVariant}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal hover:text-teal-hover"
+                      className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover"
                     >
                       <Plus size={12} />
                       Add variant
                     </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-gray-400 mb-2">
+                <p className="text-detail text-faint mb-2">
                   Each variant is a (primary text, headline) pair on the same creative. Reviewers switch in the sidebar; pins scope to the active variant.
                 </p>
                 <ol className="space-y-2.5">
                   {adVariants.map((v, i) => (
-                    <li key={v.id} className="rounded-xl border border-gray-200 bg-white">
+                    <li key={v.id} className="rounded-2xl border border-edge-strong bg-white">
                       <div className="flex items-center gap-2 px-3 pt-2.5">
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-semibold bg-gray-100 text-gray-600 shrink-0">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded text-detail font-semibold bg-gray-100 text-prose shrink-0">
                           {i + 1}
                         </span>
                         <input
@@ -530,13 +530,13 @@ export default function AddVersionModal({
                           value={v.label ?? ''}
                           onChange={(e) => patchAdVariant(v.id, { label: e.target.value })}
                           placeholder={`Variant ${i + 1} name (optional)`}
-                          className="flex-1 min-w-0 bg-transparent text-[13px] font-semibold text-ink placeholder:text-gray-400 placeholder:font-normal outline-none"
+                          className="flex-1 min-w-0 bg-transparent text-caption font-semibold text-ink placeholder:text-faint placeholder:font-normal outline-none"
                         />
                         {adVariants.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeAdVariant(v.id)}
-                            className="text-gray-400 hover:text-red-500 p-1 rounded shrink-0"
+                            className="text-faint hover:text-red-500 p-1 rounded shrink-0"
                             title="Remove variant"
                           >
                             <Trash2 size={13} />
@@ -545,7 +545,7 @@ export default function AddVersionModal({
                       </div>
                       <div className="px-3 pb-3 pt-2 space-y-2">
                         <div>
-                          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1">
                             <AlignLeft size={10} /> Primary text
                           </label>
                           <textarea
@@ -556,7 +556,7 @@ export default function AddVersionModal({
                           />
                         </div>
                         <div>
-                          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1">
                             <Type size={10} /> Headline
                           </label>
                           <input
@@ -589,7 +589,7 @@ export default function AddVersionModal({
               <Field label="CTA button">
                 <input className={inputCls} value={lfCta} onChange={(e) => setLfCta(e.target.value)} />
               </Field>
-              <p className="text-[11px] text-gray-500 -mt-1">
+              <p className="text-detail text-dim -mt-1">
                 To edit questions or other pages, edit the item directly.
               </p>
             </>
@@ -597,7 +597,7 @@ export default function AddVersionModal({
 
           {kind === 'google_search_ad' && (
             <>
-              <p className="text-[11px] text-gray-500 -mt-1">
+              <p className="text-detail text-dim -mt-1">
                 Versions iterate on headlines and descriptions. Sitelinks, paths, and call extension stay from the base item.
               </p>
               <AssetListField
@@ -656,14 +656,14 @@ export default function AddVersionModal({
                 </select>
                 {resetTo !== 'keep' && (
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${getFeedbackStatusDef(resetTo).bg} ${getFeedbackStatusDef(resetTo).text} ${getFeedbackStatusDef(resetTo).border}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border ${getFeedbackStatusDef(resetTo).bg} ${getFeedbackStatusDef(resetTo).text} ${getFeedbackStatusDef(resetTo).border}`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${getFeedbackStatusDef(resetTo).dot}`} />
                     {getFeedbackStatusDef(resetTo).label}
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">
+              <p className="text-detail text-faint mt-1">
                 Reviewers assigned to the next stage will be notified automatically.
               </p>
             </Field>
@@ -684,12 +684,12 @@ export default function AddVersionModal({
 
 /* ─── Tiny presentational bits ─────────────────────────────────────── */
 
-const inputCls = 'w-full px-3 py-2 bg-gray-50 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-teal/30';
+const inputCls = 'w-full px-3 py-2 bg-surface rounded-2xl text-caption focus:outline-none focus:ring-2 focus:ring-teal/30';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-[11px] font-medium uppercase tracking-wider text-gray-500 mb-1 block">{label}</span>
+      <span className="text-detail font-medium uppercase tracking-wider text-dim mb-1 block">{label}</span>
       {children}
     </label>
   );
@@ -712,15 +712,15 @@ function AssetListField({
   return (
     <div className="block">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-gray-500">
+        <span className="text-detail font-medium uppercase tracking-wider text-dim">
           {label}
         </span>
-        <span className="text-2xs tabular-nums text-gray-400">{filled}/{max}</span>
+        <span className="text-2xs tabular-nums text-faint">{filled}/{max}</span>
       </div>
       <div className="space-y-1.5">
         {items.map((value, i) => (
           <div key={i} className="flex items-start gap-1.5">
-            <span className="mt-2 text-2xs tabular-nums text-gray-400 w-4 text-right">{i + 1}.</span>
+            <span className="mt-2 text-2xs tabular-nums text-faint w-4 text-right">{i + 1}.</span>
             {multiline ? (
               <textarea
                 className={`${inputCls} min-h-[52px]`}
@@ -740,7 +740,7 @@ function AssetListField({
               <button
                 type="button"
                 onClick={() => onRemove(i)}
-                className="mt-2 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                className="mt-2 p-1 text-faint hover:text-red-500 transition-colors"
                 title="Remove"
               >
                 <Trash2 size={13} />
@@ -772,9 +772,9 @@ function FileInput({
           type="file"
           accept={accept}
           onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-          className="block w-full text-[13px] text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-gray-200 file:text-xs file:font-medium file:bg-gray-50 hover:file:bg-gray-100"
+          className="block w-full text-caption text-prose file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-edge-strong file:text-xs file:font-medium file:bg-surface hover:file:bg-gray-100"
         />
-        {file && <span className="text-[11px] text-gray-500 truncate max-w-[120px]">{file.name}</span>}
+        {file && <span className="text-detail text-dim truncate max-w-[120px]">{file.name}</span>}
       </div>
     </Field>
   );

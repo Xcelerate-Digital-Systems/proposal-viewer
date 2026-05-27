@@ -217,7 +217,7 @@ export default function ProposalDecisionPanel({
                 <button
                   type="button"
                   onClick={() => setActiveAction('accept')}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${activeAction === 'accept' ? 'shadow-sm' : ''}`}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${activeAction === 'accept' ? 'shadow-sm' : ''}`}
                   style={
                     activeAction === 'accept'
                       ? { backgroundColor: bodyBg, color: headingColor, fontWeight: 600 }
@@ -231,7 +231,7 @@ export default function ProposalDecisionPanel({
                 <button
                   type="button"
                   onClick={() => setActiveAction('revision')}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${activeAction === 'revision' ? 'shadow-sm' : ''}`}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${activeAction === 'revision' ? 'shadow-sm' : ''}`}
                   style={
                     activeAction === 'revision'
                       ? { backgroundColor: bodyBg, color: headingColor, fontWeight: 600 }
@@ -245,7 +245,7 @@ export default function ProposalDecisionPanel({
                 <button
                   type="button"
                   onClick={() => setActiveAction('decline')}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${activeAction === 'decline' ? 'shadow-sm' : ''}`}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${activeAction === 'decline' ? 'shadow-sm' : ''}`}
                   style={
                     activeAction === 'decline'
                       ? { backgroundColor: bodyBg, color: headingColor, fontWeight: 600 }
@@ -260,7 +260,7 @@ export default function ProposalDecisionPanel({
 
           {activeAction === 'accept' && (
             <label
-              className="flex items-start gap-3 mb-5 text-left text-[13px] px-4 py-3 rounded-lg"
+              className="flex items-start gap-3 mb-5 text-left text-caption px-4 py-3 rounded-lg"
               style={{
                 border: `1px solid ${hairline}`,
                 backgroundColor: bodyBg,

@@ -328,8 +328,8 @@ function KanbanColumn({
       {/* Column header */}
       <div className="flex items-center gap-2 mb-3 shrink-0">
         <span className={`w-2 h-2 rounded-full ${def.dot}`} />
-        <h3 className="text-[13px] font-semibold text-gray-800">{def.label}</h3>
-        <span className="text-[11px] font-medium text-gray-400">{items.length}</span>
+        <h3 className="text-caption font-semibold text-gray-800">{def.label}</h3>
+        <span className="text-detail font-medium text-faint">{items.length}</span>
         {projectId && (
           <div className="ml-auto">
             <KanbanColumnAssignees
@@ -349,11 +349,11 @@ function KanbanColumn({
       <div
         ref={setNodeRef}
         className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors ${
-          isOver ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-gray-50'
+          isOver ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-surface'
         }`}
       >
         {items.length === 0 ? (
-          <div className="text-[11px] text-gray-400 italic text-center py-4">
+          <div className="text-detail text-faint italic text-center py-4">
             Drop here
           </div>
         ) : (

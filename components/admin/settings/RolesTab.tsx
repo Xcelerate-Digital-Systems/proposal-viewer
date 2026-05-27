@@ -32,7 +32,7 @@ export default function RolesTab({ currentRole }: RolesTabProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-base font-semibold text-ink">Roles &amp; permissions</h2>
-        <p className="text-[13px] text-muted mt-1">
+        <p className="text-caption text-muted mt-1">
           What each role can do across projects, the team, and company settings. Custom roles aren&apos;t
           available yet — contact us if you need finer-grained access.
         </p>
@@ -41,14 +41,14 @@ export default function RolesTab({ currentRole }: RolesTabProps) {
       <div className="flex gap-3 flex-wrap">
         {ROLE_CATEGORIES.map((cat) => (
           <div key={cat.key} className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-faint">{cat.label}</span>
+            <span className="text-detail font-semibold uppercase tracking-wider text-faint">{cat.label}</span>
             <div className="flex gap-1.5">
               {cat.roles.map((role) => {
                 const Icon = ROLE_ICON[role];
                 return (
                   <span
                     key={role}
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-detail font-medium ${
                       role === currentRole
                         ? 'bg-teal/10 text-teal ring-1 ring-teal/20'
                         : 'bg-surface text-muted'
@@ -67,23 +67,23 @@ export default function RolesTab({ currentRole }: RolesTabProps) {
       <div className="bg-white rounded-2xl border border-edge overflow-x-auto">
         <table className="w-full min-w-[700px]">
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-muted px-5 py-3 w-[240px]">
+            <tr className="border-b border-edge">
+              <th className="text-left text-detail font-semibold uppercase tracking-wider text-muted px-5 py-3 w-[240px]">
                 Permission
               </th>
               {ROLE_CATEGORIES.map((cat) => (
                 <th
                   key={cat.key}
                   colSpan={cat.roles.length}
-                  className="text-center px-2 py-1.5 border-l border-gray-100 first:border-l-0"
+                  className="text-center px-2 py-1.5 border-l border-edge first:border-l-0"
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-faint">
                     {cat.label}
                   </span>
                 </th>
               ))}
             </tr>
-            <tr className="border-b border-gray-100">
+            <tr className="border-b border-edge">
               <th />
               {ALL_ROLES.map((role) => {
                 const Icon = ROLE_ICON[role];
@@ -98,7 +98,7 @@ export default function RolesTab({ currentRole }: RolesTabProps) {
                         <Icon size={12} className={ROLE_ICON_CLASS[role]} />
                         <span className="text-[12px] font-semibold text-ink">{ROLE_LABELS[role]}</span>
                       </div>
-                      <span className="text-[10px] text-muted leading-tight max-w-[120px]">
+                      <span className="text-2xs text-muted leading-tight max-w-[120px]">
                         {ROLE_DESCRIPTIONS[role]}
                       </span>
                     </div>
@@ -136,17 +136,17 @@ function PermissionGroup({
 }) {
   return (
     <>
-      <tr className="bg-surface/60 border-t border-gray-100">
-        <td colSpan={ALL_ROLES.length + 1} className="px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+      <tr className="bg-surface/60 border-t border-edge">
+        <td colSpan={ALL_ROLES.length + 1} className="px-5 py-2 text-detail font-semibold uppercase tracking-wider text-muted">
           {label}
         </td>
       </tr>
       {rows.map((row) => (
-        <tr key={row.key} className="border-t border-gray-100 hover:bg-surface/30 transition-colors">
+        <tr key={row.key} className="border-t border-edge hover:bg-surface/30 transition-colors">
           <td className="px-5 py-3 align-top">
-            <div className="text-[13px] font-medium text-ink">{row.label}</div>
+            <div className="text-caption font-medium text-ink">{row.label}</div>
             {row.description && (
-              <div className="text-[11px] text-muted mt-0.5">{row.description}</div>
+              <div className="text-detail text-muted mt-0.5">{row.description}</div>
             )}
           </td>
           {ALL_ROLES.map((role) => {
@@ -175,7 +175,7 @@ function GrantCell({ grant }: { grant: true | false | { partial: string } }) {
     return <X size={16} className="text-gray-300 inline" />;
   }
   return (
-    <span className="text-[10px] text-muted leading-snug inline-block max-w-[120px]">
+    <span className="text-2xs text-muted leading-snug inline-block max-w-[120px]">
       {grant.partial}
     </span>
   );

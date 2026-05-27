@@ -71,25 +71,25 @@ export default function NotificationBell({
         className={`relative p-1.5 rounded-full transition-colors ${
           variant === 'sidebar'
             ? 'text-white/50 hover:text-white hover:bg-[#013036]'
-            : 'text-gray-500 hover:text-ink hover:bg-gray-100'
+            : 'text-dim hover:text-ink hover:bg-gray-100'
         }`}
         title="Notifications"
       >
         <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1 leading-none">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-2xs font-bold text-white px-1 leading-none">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className={`absolute w-[340px] max-h-[420px] bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 flex flex-col ${
+        <div className={`absolute w-[340px] max-h-[420px] bg-white rounded-2xl shadow-xl border border-edge overflow-hidden z-50 flex flex-col ${
           variant === 'sidebar'
             ? 'bottom-full left-0 mb-2'
             : 'top-full right-0 mt-2'
         }`}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
             <span className="text-sm font-semibold text-ink">Notifications</span>
             {unreadCount > 0 && (
               <button
@@ -103,7 +103,7 @@ export default function NotificationBell({
 
           <div className="flex-1 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="px-4 py-10 text-center text-sm text-gray-400">
+              <div className="px-4 py-10 text-center text-sm text-faint">
                 No notifications yet
               </div>
             ) : (
@@ -114,23 +114,23 @@ export default function NotificationBell({
                   <button
                     key={n.id}
                     onClick={() => handleClick(n)}
-                    className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors border-b border-gray-50 ${
+                    className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-surface transition-colors border-b border-gray-50 ${
                       isUnread ? 'bg-teal/[0.03]' : ''
                     }`}
                   >
                     <div className={`mt-0.5 shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
-                      isUnread ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400'
+                      isUnread ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-faint'
                     }`}>
                       <Icon size={14} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[13px] leading-snug ${isUnread ? 'font-medium text-ink' : 'text-gray-600'}`}>
+                      <p className={`text-caption leading-snug ${isUnread ? 'font-medium text-ink' : 'text-prose'}`}>
                         {n.title}
                       </p>
                       {n.body && (
-                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{n.body}</p>
+                        <p className="text-xs text-faint mt-0.5 line-clamp-2">{n.body}</p>
                       )}
-                      <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
+                      <p className="text-detail text-faint mt-1">{timeAgo(n.created_at)}</p>
                     </div>
                     {isUnread && (
                       <div className="mt-2 w-2 h-2 rounded-full bg-teal shrink-0" />

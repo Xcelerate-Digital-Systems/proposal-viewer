@@ -55,7 +55,7 @@ export default function MissingInfoBanner({ companyInfo }: Props) {
     <div className="bg-amber-50 border-y border-amber-200 px-6 lg:px-10 py-2.5">
       <div className="flex items-center gap-3">
         <AlertCircle size={14} className="text-amber-600 shrink-0" />
-        <p className="text-[13px] text-amber-900 flex-1">
+        <p className="text-caption text-amber-900 flex-1">
           <span className="font-medium">
             Your {joinList(labels)} {missing.length === 1 ? 'is' : 'are'} missing.
           </span>{' '}

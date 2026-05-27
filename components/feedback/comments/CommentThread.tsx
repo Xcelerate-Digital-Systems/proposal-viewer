@@ -181,10 +181,10 @@ export default function CommentThread({
       {/* Pin badge */}
       {comment.comment_type === 'pin' && comment.thread_number && (
         <div className="flex items-center gap-2 mb-3">
-          <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[11px] font-semibold">
+          <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-detail font-semibold">
             {comment.thread_number}
           </span>
-          <span className="text-[11px] text-gray-400">Pinned to content</span>
+          <span className="text-detail text-faint">Pinned to content</span>
         </div>
       )}
 
@@ -228,7 +228,7 @@ export default function CommentThread({
               const Icon = def.icon;
               return (
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${def.badgeClass}`}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-detail font-medium ${def.badgeClass}`}
                   title={`Priority: ${def.label}`}
                 >
                   <Icon size={10} className={def.iconClass} />
@@ -236,22 +236,22 @@ export default function CommentThread({
                 </span>
               );
             })()}
-            <span className="text-[11px] text-gray-400">{timeAgo(comment.created_at)}</span>
+            <span className="text-detail text-faint">{timeAgo(comment.created_at)}</span>
           </div>
           {comment.comment_type === 'text_highlight' && comment.highlight_text && (
             <div className="mt-1.5 mb-1 px-2.5 py-1.5 rounded-lg bg-teal/5">
-              <p className="text-[11px] text-teal italic line-clamp-2">&ldquo;{comment.highlight_text}&rdquo;</p>
+              <p className="text-detail text-teal italic line-clamp-2">&ldquo;{comment.highlight_text}&rdquo;</p>
             </div>
           )}
           {editing ? (
             <div className="mt-1 space-y-1.5">
-              <div className="px-3 py-2 rounded-xl bg-[#F5F1EE] focus-within:ring-2 focus-within:ring-teal/20">
+              <div className="px-3 py-2 rounded-2xl bg-warm-dark focus-within:ring-2 focus-within:ring-teal/20">
                 <MentionEditor
                   value={editText}
                   onChange={setEditText}
                   participantsUrl={participantsUrl ?? null}
                   autoFocus
-                  className="w-full text-[13px] text-ink"
+                  className="w-full text-caption text-ink"
                 />
               </div>
               <div className="flex items-center gap-1.5">
@@ -279,7 +279,7 @@ export default function CommentThread({
           ) : (
             <CommentContent
               content={comment.content}
-              className="text-[13px] text-gray-700 leading-relaxed mt-1"
+              className="text-caption text-prose leading-relaxed mt-1"
             />
           )}
           {comment.video_url && (
@@ -359,7 +359,7 @@ export default function CommentThread({
             </Button>
           )}
           {deleting && (
-            <span className="flex items-center gap-1 text-xs text-gray-400">
+            <span className="flex items-center gap-1 text-xs text-faint">
               <Loader2 size={12} className="animate-spin" />
               Deleting…
             </span>
@@ -384,11 +384,11 @@ export default function CommentThread({
               value={guestName || ''}
               onChange={(e) => onNameChange?.(e.target.value)}
               placeholder="Your name"
-              className="w-full px-3 py-2 rounded-xl bg-[#F5F1EE] text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
+              className="w-full px-3 py-2 rounded-2xl bg-warm-dark text-caption text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
             />
           )}
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-1 rounded-xl bg-[#F5F1EE] focus-within:ring-2 focus-within:ring-teal/20 px-3 py-2">
+            <div className="flex-1 flex items-center gap-1 rounded-2xl bg-warm-dark focus-within:ring-2 focus-within:ring-teal/20 px-3 py-2">
               <div className="flex-1">
                 <MentionEditor
                   value={replyText}
@@ -402,7 +402,7 @@ export default function CommentThread({
                   }}
                   participantsUrl={participantsUrl ?? null}
                   apiRef={replyEditorRef}
-                  className="w-full text-[13px] text-ink"
+                  className="w-full text-caption text-ink"
                 />
               </div>
               <EmojiPicker onSelect={(emoji) => replyEditorRef.current?.insertText(emoji)} />

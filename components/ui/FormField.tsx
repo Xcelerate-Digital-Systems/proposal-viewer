@@ -8,7 +8,7 @@ import React from 'react';
 /* ------------------------------------------------------------------ */
 
 export const inputClassName =
-  'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400';
+  'w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint';
 
 /* ------------------------------------------------------------------ */
 /*  Field config type — reusable across all entity forms               */
@@ -55,9 +55,9 @@ export function FormField({ config, value, onChange, disabled, className }: Form
 
   return (
     <div className={className}>
-      <label htmlFor={key} className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={key} className="block text-sm font-medium text-prose mb-1">
         {label}
-        {optional && <span className="text-gray-400 font-normal"> (optional)</span>}
+        {optional && <span className="text-faint font-normal"> (optional)</span>}
       </label>
       {type === 'textarea' ? (
         <textarea

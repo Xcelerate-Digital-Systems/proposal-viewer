@@ -43,7 +43,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Title colour ──────────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Title</label>
+        <label className="text-2xs font-semibold text-faint uppercase tracking-wider">Title</label>
         <ColorPickerField
           label="Title text colour"
           value={styling.title_color}
@@ -55,7 +55,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Card Background ───────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Card Background</label>
+        <label className="text-2xs font-semibold text-faint uppercase tracking-wider">Card Background</label>
         <ColorPickerField
           label="All cards"
           value={styling.card_bg_color}
@@ -64,14 +64,14 @@ export default function PackagesAppearanceSection({
           onReset={() => update({ card_bg_color: null })}
         />
         <div className="flex items-center justify-between pt-1">
-          <label className="text-xs text-gray-600">Independent per card</label>
+          <label className="text-xs text-prose">Independent per card</label>
           <Toggle
             enabled={styling.card_bg_independent}
             onChange={() => update({ card_bg_independent: !styling.card_bg_independent })}
           />
         </div>
         {styling.card_bg_independent && tiers.length > 0 && (
-          <div className="ml-3 pl-3 border-l-2 border-gray-100 space-y-2 pt-1">
+          <div className="ml-3 pl-3 border-l-2 border-edge space-y-2 pt-1">
             {tiers.map((tier) => (
               <ColorPickerField
                 key={tier.id}
@@ -88,7 +88,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Card Text ─────────────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Card Text</label>
+        <label className="text-2xs font-semibold text-faint uppercase tracking-wider">Card Text</label>
         <ColorPickerField
           label="All cards"
           value={styling.card_text_color}
@@ -97,14 +97,14 @@ export default function PackagesAppearanceSection({
           onReset={() => update({ card_text_color: null })}
         />
         <div className="flex items-center justify-between pt-1">
-          <label className="text-xs text-gray-600">Independent per card</label>
+          <label className="text-xs text-prose">Independent per card</label>
           <Toggle
             enabled={styling.card_text_independent}
             onChange={() => update({ card_text_independent: !styling.card_text_independent })}
           />
         </div>
         {styling.card_text_independent && tiers.length > 0 && (
-          <div className="ml-3 pl-3 border-l-2 border-gray-100 space-y-2 pt-1">
+          <div className="ml-3 pl-3 border-l-2 border-edge space-y-2 pt-1">
             {tiers.map((tier) => (
               <ColorPickerField
                 key={tier.id}
@@ -121,7 +121,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Recommended Badge ─────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Recommended Badge</label>
+        <label className="text-2xs font-semibold text-faint uppercase tracking-wider">Recommended Badge</label>
         <ColorPickerField
           label="Badge text"
           value={styling.recommended_text_color}
@@ -133,16 +133,16 @@ export default function PackagesAppearanceSection({
 
       {/* ── Feature Icon ──────────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Feature Icon</label>
+        <label className="text-2xs font-semibold text-faint uppercase tracking-wider">Feature Icon</label>
         <div className="flex flex-wrap gap-1.5">
           {ICON_OPTIONS.map((opt) => (
             <button
               key={opt.key}
               onClick={() => update({ feature_icon: opt.key })}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
                 styling.feature_icon === opt.key
                   ? 'border-teal bg-teal/5 text-teal'
-                  : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                  : 'border-edge-strong text-faint hover:border-gray-300 hover:text-prose'
               }`}
               title={opt.label}
             >
@@ -162,7 +162,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Accent Bar ───────────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Accent Bar</label>
+        <label className="text-2xs font-semibold text-faint uppercase tracking-wider">Accent Bar</label>
         <ColorPickerField
           label="Top border bar"
           value={styling.accent_bar_color}
@@ -174,7 +174,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Price ─────────────────────────────────────────── */}
       <div className="space-y-2">
-        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Price</label>
+        <label className="text-2xs font-semibold text-faint uppercase tracking-wider">Price</label>
         <ColorPickerField
           label="Price text"
           value={styling.price_color}
@@ -186,7 +186,7 @@ export default function PackagesAppearanceSection({
 
       {/* ── Card Shape ────────────────────────────────────── */}
       <div className="space-y-4">
-        <label className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Card Shape</label>
+        <label className="text-2xs font-semibold text-faint uppercase tracking-wider">Card Shape</label>
         <Slider
           label="Border radius"
           value={styling.border_radius}

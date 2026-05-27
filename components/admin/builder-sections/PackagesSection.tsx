@@ -39,7 +39,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
   /* ── Page strip ─────────────────────────────────────────────── */
 
   const pageStrip = (
-    <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto">
+    <div className="flex items-end gap-0 border-b border-edge-strong overflow-x-auto">
       {editor.allPages.map((page) => (
         <button
           key={page.id}
@@ -47,7 +47,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
           className={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
             editor.selectedId === page.id
               ? 'text-teal border-b-2 border-teal -mb-px'
-              : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent -mb-px'
+              : 'text-dim hover:text-prose border-b-2 border-transparent -mb-px'
           }`}
         >
           <Package size={13} className="shrink-0 opacity-70" />
@@ -63,7 +63,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
         </button>
       ))}
       {editor.allPages.length === 0 && (
-        <span className="px-4 py-2.5 text-xs text-gray-400">No pages yet — add one to get started</span>
+        <span className="px-4 py-2.5 text-xs text-faint">No pages yet — add one to get started</span>
       )}
       <button
         onClick={editor.addPage}
@@ -78,7 +78,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
           <button
             onClick={() => setShowPreview(!showPreview)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showPreview ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400 hover:text-gray-600'
+              showPreview ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-faint hover:text-prose'
             }`}
           >
             <Eye size={13} /> Preview
@@ -94,9 +94,9 @@ export default function PackagesSection(props: PackagesSectionProps) {
     return (
       <div className="space-y-5">
         {pageStrip}
-        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
+        <div className="bg-white rounded-2xl border border-edge-strong py-16 text-center">
           <Package size={28} className="mx-auto text-gray-200 mb-3" />
-          <p className="text-sm text-gray-400 mb-1">No packages page selected</p>
+          <p className="text-sm text-faint mb-1">No packages page selected</p>
           <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
           <SectionCard
             title="Packages Page"
             description="Toggle visibility in the proposal viewer"
-            icon={<Package size={14} className="text-gray-400" />}
+            icon={<Package size={14} className="text-faint" />}
             action={
               <Chip enabled={editor.form.enabled} onClick={() => editor.toggleEnabled()}>
                 {editor.form.enabled ? 'Visible' : 'Hidden'}
@@ -125,13 +125,13 @@ export default function PackagesSection(props: PackagesSectionProps) {
             }
           >
             {!editor.form.enabled && (
-              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-8 text-center">
-                <p className="text-sm text-gray-400 mb-1">Packages page is currently disabled</p>
+              <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-8 text-center">
+                <p className="text-sm text-faint mb-1">Packages page is currently disabled</p>
                 <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
               </div>
             )}
             {editor.form.enabled && (
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-faint">
                 Configure the packages page below. Changes save automatically.
               </p>
             )}
@@ -143,37 +143,37 @@ export default function PackagesSection(props: PackagesSectionProps) {
               <SectionCard
                 title="Page Content"
                 description="Headline, intro and footer copy"
-                icon={<FileText size={14} className="text-gray-400" />}
+                icon={<FileText size={14} className="text-faint" />}
               >
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Page Title</label>
+                    <label className="block text-xs font-medium text-prose mb-1">Page Title</label>
                     <input
                       type="text"
                       value={editor.form.title}
                       onChange={(e) => editor.updateForm({ title: e.target.value })}
                       placeholder="Your Investment"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+                      className="w-full px-3 py-2 text-sm border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Intro Text</label>
+                    <label className="block text-xs font-medium text-prose mb-1">Intro Text</label>
                     <textarea
                       value={editor.form.intro_text ?? ''}
                       onChange={(e) => editor.updateForm({ intro_text: e.target.value || null })}
                       placeholder="Optional introductory text above the packages…"
                       rows={2}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
+                      className="w-full px-3 py-2 text-sm border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Footer Text</label>
+                    <label className="block text-xs font-medium text-prose mb-1">Footer Text</label>
                     <textarea
                       value={editor.form.footer_text ?? ''}
                       onChange={(e) => editor.updateForm({ footer_text: e.target.value || null })}
                       placeholder="Optional footer note below the packages…"
                       rows={2}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
+                      className="w-full px-3 py-2 text-sm border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
                     />
                   </div>
                 </div>
@@ -183,7 +183,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
               <SectionCard
                 title={`Packages (${editor.form.packages.length})`}
                 description="Tiers, features, and recommended badges"
-                icon={<LayoutGrid size={14} className="text-gray-400" />}
+                icon={<LayoutGrid size={14} className="text-faint" />}
                 action={
                   <button
                     onClick={editor.addTier}
@@ -194,9 +194,9 @@ export default function PackagesSection(props: PackagesSectionProps) {
                 }
               >
                 {editor.form.packages.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center">
+                  <div className="rounded-lg border border-dashed border-edge-strong py-8 text-center">
                     <Package size={20} className="mx-auto text-gray-300 mb-2" />
-                    <p className="text-xs text-gray-400">No packages yet</p>
+                    <p className="text-xs text-faint">No packages yet</p>
                   </div>
                 ) : (
                   <div className="space-y-2">

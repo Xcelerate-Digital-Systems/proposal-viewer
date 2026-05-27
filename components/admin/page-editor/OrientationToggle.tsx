@@ -60,7 +60,7 @@ export default function OrientationToggle({ value, onChange, variant = 'default'
       <button
         onClick={() => setOpen(!open)}
         title={`Orientation: ${current.label}`}
-        className="p-1.5 rounded-md flex items-center justify-center border transition-colors"
+        className="p-1.5 rounded-lg flex items-center justify-center border transition-colors"
         style={{
           color: value === 'auto' ? '#9ca3af' : baseColor,
           borderColor: value === 'auto' ? '#e5e7eb' : `${baseColor}40`,
@@ -76,7 +76,7 @@ export default function OrientationToggle({ value, onChange, variant = 'default'
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[150px]">
+          <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-lg border border-edge-strong py-1 min-w-[150px]">
             {options.map((opt) => (
               <button
                 key={opt.key}
@@ -86,8 +86,8 @@ export default function OrientationToggle({ value, onChange, variant = 'default'
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors ${
                   value === opt.key
-                    ? 'bg-gray-100 font-medium text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-gray-100 font-medium text-ink'
+                    : 'text-prose hover:bg-surface'
                 }`}
               >
                 <span style={{ color: opt.key === 'auto' ? '#9ca3af' : baseColor }}>

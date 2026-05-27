@@ -157,7 +157,7 @@ function LabeledEdgeComponent({
             onClick={handleClick}
           >
             <div
-              className={`px-2.5 py-1 rounded-md leading-tight border cursor-pointer transition-colors shadow-[0_2px_6px_rgba(20,20,40,0.12)] ${
+              className={`px-2.5 py-1 rounded-lg leading-tight border cursor-pointer transition-colors shadow-[0_2px_6px_rgba(20,20,40,0.12)] ${
                 selected
                   ? 'bg-teal/10 border-teal'
                   : 'bg-white border-edge hover:border-ink/30'

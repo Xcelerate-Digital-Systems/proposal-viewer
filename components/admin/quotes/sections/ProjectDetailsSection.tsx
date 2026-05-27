@@ -62,7 +62,7 @@ export default function QuoteProjectDetailsSection({ proposal, onSaved }: Props)
     <SectionCard title="Project Details">
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+          <label className="block text-xs font-medium text-prose mb-1.5">
             Quote Title <span className="text-red-400">*</span>
           </label>
           <input
@@ -71,40 +71,40 @@ export default function QuoteProjectDetailsSection({ proposal, onSaved }: Props)
             onChange={(e) => setTitle(e.target.value)}
             onBlur={() => dirty && save()}
             placeholder="e.g. Full Bathroom Renovation — 12 Oak St"
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-faint mt-1">
             The main heading shown on the customer&apos;s quote.
           </p>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Category</label>
+          <label className="block text-xs font-medium text-prose mb-1.5">Category</label>
           <input
             type="text"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             onBlur={() => dirty && save()}
             placeholder="e.g. Bathroom, Kitchen, Landscaping"
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-faint mt-1">
             Used internally to filter and group your quotes.
           </p>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Valid Until</label>
+          <label className="block text-xs font-medium text-prose mb-1.5">Valid Until</label>
           <input
             type="date"
             value={validUntil}
             onChange={(e) => setValidUntil(e.target.value)}
             onBlur={() => dirty && save()}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
         </div>
 
-        <div className="flex items-center justify-end pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-end pt-2 border-t border-edge">
           <Button
             type="button"
             size="sm"

@@ -19,7 +19,7 @@ export default function ProposalDetailRedirect() {
 
   return (
     <div className="flex-1 flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
     </div>
   );
 }

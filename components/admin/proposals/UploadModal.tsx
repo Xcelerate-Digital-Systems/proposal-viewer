@@ -195,18 +195,18 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
+              <label className="block text-sm font-medium text-prose mb-1">PDF File</label>
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
                 {file ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="flex items-center gap-2 text-sm text-dim">
                     <FileText size={20} className="text-teal" />
-                    <span className="font-medium text-gray-900">{file.name}</span>
-                    <span className="text-gray-400">({formatSize(file.size)})</span>
+                    <span className="font-medium text-ink">{file.name}</span>
+                    <span className="text-faint">({formatSize(file.size)})</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2">
                     <Upload size={24} className="text-gray-300" />
-                    <span className="text-sm text-gray-400">Click to upload PDF</span>
+                    <span className="text-sm text-faint">Click to upload PDF</span>
                   </div>
                 )}
                 <input
@@ -221,7 +221,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
             {uploading && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">{status || 'Uploading...'}</span>
+                  <span className="text-dim">{status || 'Uploading...'}</span>
                   {status === 'Uploading PDF...' && (
                     <span className="text-teal font-medium">{uploadProgress}%</span>
                   )}
@@ -268,11 +268,11 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
       {mode === 'quote' && (
         <form onSubmit={handleCreateQuote} className="flex flex-col min-h-0 flex-1">
           <Modal.Body className="space-y-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-dim">
               Create a quick quote to send pricing to a client. You can add line items and payment terms after creation.
             </p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-prose mb-1">
                 Quote Title <span className="text-red-400">*</span>
               </label>
               <input
@@ -281,11 +281,11 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 onChange={(e) => setQuoteForm({ ...quoteForm, title: e.target.value })}
                 placeholder="e.g. Website Redesign Quote"
                 required
-                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-prose mb-1">
                 Client Name <span className="text-red-400">*</span>
               </label>
               <input
@@ -294,19 +294,19 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 onChange={(e) => setQuoteForm({ ...quoteForm, client_name: e.target.value })}
                 placeholder="e.g. Acme Corp"
                 required
-                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Client Email <span className="text-gray-400 font-normal">(optional)</span>
+              <label className="block text-sm font-medium text-prose mb-1">
+                Client Email <span className="text-faint font-normal">(optional)</span>
               </label>
               <input
                 type="email"
                 value={quoteForm.client_email}
                 onChange={(e) => setQuoteForm({ ...quoteForm, client_email: e.target.value })}
                 placeholder="client@example.com"
-                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
               />
             </div>
           </Modal.Body>

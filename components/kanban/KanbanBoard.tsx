@@ -165,19 +165,19 @@ function KanbanColumnView<T extends { id: string }>({
           className="w-2 h-2 rounded-full shrink-0"
           style={{ backgroundColor: column.accentHex }}
         />
-        <h3 className="text-[13px] font-semibold text-gray-800 truncate">{column.label}</h3>
-        <span className="text-[11px] font-medium text-gray-400">{column.items.length}</span>
+        <h3 className="text-caption font-semibold text-gray-800 truncate">{column.label}</h3>
+        <span className="text-detail font-medium text-faint">{column.items.length}</span>
       </div>
 
       <div
         ref={setNodeRef}
         title={disabled ? disabledHint : undefined}
         className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors ${
-          isOver && !disabled ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-gray-50'
+          isOver && !disabled ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-surface'
         }`}
       >
         {column.items.length === 0 ? (
-          <div className="text-[11px] text-gray-400 italic text-center py-4">
+          <div className="text-detail text-faint italic text-center py-4">
             {emptyMessage}
           </div>
         ) : (

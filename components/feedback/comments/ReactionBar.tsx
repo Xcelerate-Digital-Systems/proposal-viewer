@@ -63,7 +63,7 @@ export default function ReactionBar({
             className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-2xs border transition-colors ${
               active
                 ? 'bg-teal/10 border-teal/30 text-teal'
-                : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300'
+                : 'bg-surface border-edge-strong text-dim hover:border-gray-300'
             }`}
           >
             <span>{emoji}</span>
@@ -76,7 +76,7 @@ export default function ReactionBar({
       <div className="relative">
         <button
           onClick={() => setShowPicker(!showPicker)}
-          className="w-5 h-5 rounded-full flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+          className="w-5 h-5 rounded-full flex items-center justify-center text-gray-300 hover:text-dim hover:bg-gray-100 transition-colors"
         >
           <SmilePlus size={10} />
         </button>
@@ -86,7 +86,7 @@ export default function ReactionBar({
             {/* Backdrop */}
             <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
             {/* Picker */}
-            <div className="absolute bottom-full left-0 mb-1 z-50 flex gap-0.5 bg-white border border-gray-200 rounded-lg shadow-lg px-1.5 py-1">
+            <div className="absolute bottom-full left-0 mb-1 z-50 flex gap-0.5 bg-white border border-edge-strong rounded-lg shadow-lg px-1.5 py-1">
               {EMOJI_OPTIONS.map((emoji) => (
                 <button
                   key={emoji}

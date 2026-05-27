@@ -140,7 +140,7 @@ export default function WhiteboardSidebar({
                 )}
                 <TypeIcon size={13} />
                 <span
-                  className="text-[11px] font-medium uppercase tracking-wider flex-1 text-left"
+                  className="text-detail font-medium uppercase tracking-wider flex-1 text-left"
                   style={{ fontFamily: fontFamily(branding.font_sidebar) }}
                 >
                   {TYPE_LABELS[type] || type}

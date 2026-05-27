@@ -120,7 +120,7 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
   return (
     <div
       ref={rootRef}
-      className="bg-white rounded-xl border border-edge shadow-lg px-1.5 py-1 flex items-center gap-1"
+      className="bg-white rounded-2xl border border-edge shadow-lg px-1.5 py-1 flex items-center gap-1"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Stroke colour */}
@@ -270,7 +270,7 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
           }
           if (e.key === 'Escape') onClose();
         }}
-        className="w-32 h-7 px-2 rounded-md border border-edge bg-surface text-xs text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+        className="w-32 h-7 px-2 rounded-lg border border-edge bg-surface text-xs text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
       />
 
       {/* Label font size */}
@@ -286,7 +286,7 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
               onUpdate(edge.id, { labelFontSize: v });
             }
           }}
-          className="w-12 h-7 px-1.5 rounded-md border border-edge bg-surface text-xs text-center text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+          className="w-12 h-7 px-1.5 rounded-lg border border-edge bg-surface text-xs text-center text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
           title="Label font size (px)"
         />
         <span className="text-2xs text-ink/50">px</span>
@@ -299,7 +299,7 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
           onClick={() => setOpenPop(openPop === 'label-color' ? null : 'label-color')}
           active={openPop === 'label-color'}
         >
-          <span className="text-ink/70 text-[11px] leading-none font-bold">A</span>
+          <span className="text-ink/70 text-detail leading-none font-bold">A</span>
           <span
             className="w-3 h-3 rounded-full border border-edge"
             style={{ backgroundColor: current.labelColor }}
@@ -327,7 +327,7 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
       {/* Delete */}
       <button
         onClick={onDelete}
-        className="h-7 w-7 rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
+        className="h-7 w-7 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
         title="Delete edge"
         type="button"
       >
@@ -337,7 +337,7 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
       {/* Close */}
       <button
         onClick={onClose}
-        className="h-7 w-7 rounded-md flex items-center justify-center text-ink/50 hover:text-ink hover:bg-surface transition-colors"
+        className="h-7 w-7 rounded-lg flex items-center justify-center text-ink/50 hover:text-ink hover:bg-surface transition-colors"
         title="Close"
         type="button"
       >
@@ -389,7 +389,7 @@ function ToolbarBtn({
       onClick={onClick}
       title={title}
       type="button"
-      className={`h-7 min-w-[28px] px-1.5 rounded-md flex items-center justify-center gap-1 transition-colors ${
+      className={`h-7 min-w-[28px] px-1.5 rounded-lg flex items-center justify-center gap-1 transition-colors ${
         active
           ? 'bg-teal text-white shadow-sm'
           : 'text-ink/80 hover:bg-surface'

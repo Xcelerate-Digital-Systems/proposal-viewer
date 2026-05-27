@@ -93,7 +93,7 @@ export default function ReviewerNoteOverlay({
               />
             ) : (
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base font-semibold shrink-0"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-base font-semibold shrink-0"
                 style={{ backgroundColor: accentColor }}
               >
                 {initial}
@@ -101,7 +101,7 @@ export default function ReviewerNoteOverlay({
             )}
             {companyName && !logoUrl && (
               <span
-                className="text-sm font-semibold text-gray-900 truncate"
+                className="text-sm font-semibold text-ink truncate"
                 style={{ fontFamily: headingFont }}
               >
                 {companyName}
@@ -111,20 +111,20 @@ export default function ReviewerNoteOverlay({
 
           <h2
             id="reviewer-note-title"
-            className="text-xl leading-tight font-semibold text-gray-900"
+            className="text-xl leading-tight font-semibold text-ink"
             style={{ fontFamily: headingFont }}
           >
             Note to reviewers
           </h2>
 
-          <p className="mt-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+          <p className="mt-4 text-sm text-prose leading-relaxed whitespace-pre-wrap">
             {note}
           </p>
 
           <button
             type="button"
             onClick={dismiss}
-            className="mt-6 w-full px-4 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-110 shadow-sm"
+            className="mt-6 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:brightness-110 shadow-sm"
             style={{ backgroundColor: accentColor }}
           >
             Got it

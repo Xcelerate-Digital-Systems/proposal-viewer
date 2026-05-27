@@ -88,7 +88,7 @@ export default function DocumentListRow({ document: doc, onRefresh, customDomain
       className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group"
     >
       {/* Document badge */}
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium shrink-0 bg-surface text-muted">
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium shrink-0 bg-surface text-muted">
         <FileText size={12} />
         Document
       </span>

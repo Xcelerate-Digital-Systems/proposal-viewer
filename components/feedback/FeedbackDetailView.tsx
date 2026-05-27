@@ -527,13 +527,13 @@ export default function FeedbackDetailView({
 
   // ── Mobile gate ──
   const MobileGate = (
-    <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+    <div className="flex lg:hidden min-h-screen items-center justify-center bg-surface p-6">
       <div className="text-center max-w-sm">
         <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4 border-2 border-gray-300">
-          <Monitor size={24} className="text-gray-500" />
+          <Monitor size={24} className="text-dim" />
         </div>
-        <h2 className="text-base font-semibold text-gray-900">Desktop Required</h2>
-        <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+        <h2 className="text-base font-semibold text-ink">Desktop Required</h2>
+        <p className="text-sm text-dim mt-2 leading-relaxed">
           Please open this feedback on a desktop browser for the best experience.
         </p>
       </div>
@@ -636,7 +636,7 @@ export default function FeedbackDetailView({
               currentUserName={isClient ? guestName : authorName}
               participantsUrl={participantsUrl}
               shareToken={shareToken}
-              className="w-[360px] shrink-0 bg-[#FBF8F5] flex flex-col"
+              className="w-[360px] shrink-0 bg-warm flex flex-col"
               commentPlaceholder={(() => {
                 if (selectedItem?.type !== 'google_search_ad') return undefined;
                 const asset = parseGoogleAdAssetView(currentMockupView);

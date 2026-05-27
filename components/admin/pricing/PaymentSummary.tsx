@@ -13,8 +13,8 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
   const { one_off, milestones, recurring } = schedule;
 
   return (
-    <div className="rounded-lg border border-gray-200 p-4">
-      <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+    <div className="rounded-lg border border-edge-strong p-4">
+      <h5 className="text-xs font-semibold text-dim uppercase tracking-wider mb-3">
         Client will see
       </h5>
       <div className="space-y-2 text-sm">
@@ -23,13 +23,13 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-teal" />
               <div>
-                <span className="text-gray-700">{one_off.label}</span>
+                <span className="text-prose">{one_off.label}</span>
                 {one_off.note && (
-                  <span className="text-xs text-gray-400 ml-1.5">— {one_off.note}</span>
+                  <span className="text-xs text-faint ml-1.5">— {one_off.note}</span>
                 )}
               </div>
             </div>
-            <span className="font-semibold text-gray-900">{formatAUD(one_off.amount)}</span>
+            <span className="font-semibold text-ink">{formatAUD(one_off.amount)}</span>
           </div>
         )}
         {milestones.enabled && milestones.payments.map((payment, idx) => {
@@ -43,13 +43,13 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
                   style={{ backgroundColor: TEAL, opacity }}
                 />
                 <div>
-                  <span className="text-gray-700">{payment.label}</span>
+                  <span className="text-prose">{payment.label}</span>
                   {payment.note && (
-                    <span className="text-xs text-gray-400 ml-1.5">— {payment.note}</span>
+                    <span className="text-xs text-faint ml-1.5">— {payment.note}</span>
                   )}
                 </div>
               </div>
-              <span className="font-semibold text-gray-900">{formatAUD(amt)}</span>
+              <span className="font-semibold text-ink">{formatAUD(amt)}</span>
             </div>
           );
         })}
@@ -58,9 +58,9 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-teal" />
               <div>
-                <span className="text-gray-700">{recurring.label}</span>
+                <span className="text-prose">{recurring.label}</span>
                 {recurring.note && (
-                  <span className="text-xs text-gray-400 ml-1.5">— {recurring.note}</span>
+                  <span className="text-xs text-faint ml-1.5">— {recurring.note}</span>
                 )}
               </div>
             </div>

@@ -103,7 +103,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
               <div className="min-w-0 flex items-center gap-3">
                 <Link
                   href="/markup"
-                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+                  className="text-faint hover:text-prose transition-colors shrink-0"
                   title="All Projects"
                 >
                   <ArrowLeft size={16} />
@@ -113,7 +113,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
                     {project.title}
                   </h1>
                   {project.client_name && (
-                    <p className="text-xs text-gray-400 truncate">{project.client_name}</p>
+                    <p className="text-xs text-faint truncate">{project.client_name}</p>
                   )}
                 </div>
               </div>
@@ -127,7 +127,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
         {loading || !project ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
           </div>
         ) : !project.root_domain ? (
           <NotStartedCard projectId={projectId} />
@@ -160,8 +160,8 @@ function NotStartedCard({ projectId }: { projectId: string }) {
       <div className="w-16 h-16 bg-teal/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
         <Globe size={28} className="text-teal" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-700 mb-1">No website connected yet</h3>
-      <p className="text-sm text-gray-500 mb-5 max-w-md mx-auto">
+      <h3 className="text-lg font-semibold text-prose mb-1">No website connected yet</h3>
+      <p className="text-sm text-dim mb-5 max-w-md mx-auto">
         Add a webpage from the Items tab to kick off the install wizard. One script covers every page
         in this project.
       </p>
@@ -233,10 +233,10 @@ function StatusCard({
               : <Clock size={18} className="text-amber-600" />}
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-ink">
               {installed ? 'Script installed' : 'Waiting for install'}
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">
+            <p className="text-xs text-faint mt-0.5 font-mono truncate">
               {project.root_domain}
             </p>
           </div>
@@ -247,14 +247,14 @@ function StatusCard({
             href={project.root_domain || '#'}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-teal hover:bg-teal/5 transition-colors"
           >
             <ExternalLink size={12} />
             Visit
           </a>
           <button
             onClick={() => setShowEmbed((s) => !s)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-teal hover:bg-teal/5 transition-colors"
           >
             <Code2 size={12} />
             {showEmbed ? 'Hide code' : 'Show code'}
@@ -265,13 +265,13 @@ function StatusCard({
       {showEmbed && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-dim">
               <Code2 size={13} />
               Embed Code
             </label>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-teal hover:bg-teal/5 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-teal hover:bg-teal/5 transition-colors"
             >
               {copied ? (
                 <>
@@ -288,23 +288,23 @@ function StatusCard({
           </div>
           <div
             onClick={handleCopy}
-            className="relative bg-gray-900 rounded-xl p-4 cursor-pointer group"
+            className="relative bg-gray-900 rounded-2xl p-4 cursor-pointer group"
           >
             <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
               {scriptTag}
             </pre>
-            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
+            <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
           </div>
-          <p className="text-xs text-gray-400">
-            Paste this into the <code className="font-mono text-gray-500">&lt;head&gt;</code> of{' '}
-            <span className="font-mono text-gray-600">{project.root_domain}</span>. Works across{' '}
+          <p className="text-xs text-faint">
+            Paste this into the <code className="font-mono text-dim">&lt;head&gt;</code> of{' '}
+            <span className="font-mono text-prose">{project.root_domain}</span>. Works across{' '}
             {items.length} page{items.length === 1 ? '' : 's'} in this project.
           </p>
         </div>
       )}
 
       {!installed && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-100">
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-amber-100">
           <span className="relative flex w-2 h-2">
             <span className="absolute inline-flex w-full h-full rounded-full bg-amber-400 opacity-75 animate-ping" />
             <span className="relative inline-flex w-2 h-2 rounded-full bg-amber-500" />
@@ -359,14 +359,14 @@ function WidgetEnabledToggle({
     <div className="bg-white rounded-2xl shadow-card p-5 flex items-center gap-4">
       <div
         className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-          enabled ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-400'
+          enabled ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-faint'
         }`}
       >
         <Power size={18} />
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className="text-sm font-semibold text-gray-900">Widget on website</h3>
-        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+        <h3 className="text-sm font-semibold text-ink">Widget on website</h3>
+        <p className="text-xs text-dim mt-0.5 leading-relaxed">
           {enabled
             ? 'The feedback toolbar is live on every embedded page. Toggle off to hide it without removing the script tag.'
             : 'The script is installed but the toolbar is hidden. Reviewers can’t leave new feedback until you switch it back on.'}
@@ -395,18 +395,18 @@ function WidgetEnabledToggle({
 
 function PagesList({ items }: { items: FeedbackItem[] }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-2xl border border-edge-strong p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">Pages</h3>
-        <span className="text-xs text-gray-400">{items.length} total</span>
+        <h3 className="text-sm font-semibold text-ink">Pages</h3>
+        <span className="text-xs text-faint">{items.length} total</span>
       </div>
       <ul className="space-y-1.5">
         {items.map((it) => (
-          <li key={it.id} className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
+          <li key={it.id} className="flex items-center gap-2 text-xs text-prose min-w-0">
             <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
             <span className="font-medium truncate">{it.title}</span>
             {it.url && (
-              <span className="text-gray-400 truncate font-mono">· {it.url}</span>
+              <span className="text-faint truncate font-mono">· {it.url}</span>
             )}
           </li>
         ))}

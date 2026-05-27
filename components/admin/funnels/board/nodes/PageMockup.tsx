@@ -24,7 +24,7 @@ interface Props {
 export default function PageMockup({ stepType, tint, selected }: Props) {
   return (
     <div
-      className={`relative bg-white rounded-md overflow-hidden transition-shadow ${
+      className={`relative bg-white rounded-lg overflow-hidden transition-shadow ${
         selected
           ? 'ring-2 ring-teal ring-offset-2 ring-offset-white shadow-md'
           : 'border border-edge shadow-[0_3px_8px_rgba(20,20,40,0.12)] hover:shadow-lg'

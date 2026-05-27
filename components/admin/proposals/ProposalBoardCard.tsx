@@ -46,28 +46,28 @@ export default function ProposalBoardCard({ proposal, kind = 'proposal' }: Props
   return (
     <div className="group relative bg-white rounded-2xl shadow-card-soft hover:shadow-card-hover p-3.5 transition-all">
       <div className="flex items-start gap-2.5">
-        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
+        <div className={`shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center ${iconBg}`}>
           <Icon size={15} className={iconColor} />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-[13px] font-medium text-ink truncate leading-tight">
+          <h4 className="text-caption font-medium text-ink truncate leading-tight">
             {proposal.title}
           </h4>
-          <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+          <p className="text-detail text-faint mt-0.5 truncate">
             {proposal.client_name || typeLabel}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
         {meta && MetaIcon ? (
-          <div className={`flex items-center gap-1 text-[11px] ${meta.tone}`}>
+          <div className={`flex items-center gap-1 text-detail ${meta.tone}`}>
             <MetaIcon size={11} />
             <span>{meta.label}</span>
-            <span className="text-gray-400">· {formatShort(meta.when)}</span>
+            <span className="text-faint">· {formatShort(meta.when)}</span>
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-[11px] text-gray-400">
+          <div className="flex items-center gap-1 text-detail text-faint">
             <span>Draft</span>
           </div>
         )}
@@ -75,7 +75,7 @@ export default function ProposalBoardCard({ proposal, kind = 'proposal' }: Props
           href={href}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
-          className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium text-teal hover:text-teal-hover"
+          className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"
         >
           <ExternalLink size={11} />
           Open

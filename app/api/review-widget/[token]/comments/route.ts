@@ -162,16 +162,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     const NUMBERED_TYPES = ['pin', 'box', 'text', 'screenshot', 'text_highlight'];
     let thread_number: number | null = null;
     if (!parent_comment_id && NUMBERED_TYPES.includes(comment_type)) {
-      const { data: existing } = await supabase
-        .from('review_comments')
-        .select('thread_number')
-        .eq('review_item_id', review_item_id)
-        .is('parent_comment_id', null)
-        .not('thread_number', 'is', null)
-        .order('thread_number', { ascending: false })
-        .limit(1);
-
-      thread_number = (existing?.[0]?.thread_number ?? 0) + 1;
+      const { data: nextNum } = await supabase.rpc('claim_next_thread_number', {
+        p_review_item_id: review_item_id,
+      });
+      thread_number = nextNum ?? 1;
     }
 
     const { data: comment, error: insertErr } = await supabase

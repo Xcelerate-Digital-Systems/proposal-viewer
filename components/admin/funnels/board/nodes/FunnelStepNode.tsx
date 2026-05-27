@@ -266,13 +266,13 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             if (e.key === 'Enter') { e.preventDefault(); commit(); }
             if (e.key === 'Escape') { setDraft(step.label || defaults.label); setEditing(false); }
           }}
-          className="text-[11px] text-ink text-center bg-white border border-edge rounded px-1.5 py-0.5 outline-none focus:border-teal max-w-[160px]"
+          className="text-detail text-ink text-center bg-white border border-edge rounded px-1.5 py-0.5 outline-none focus:border-teal max-w-[160px]"
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
         <span
           onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
-          className="block text-[11px] text-ink/80 text-center truncate max-w-[180px] leading-tight"
+          className="block text-detail text-ink/80 text-center truncate max-w-[180px] leading-tight"
           title={readOnly ? undefined : 'Double-click to rename'}
         >
           {step.label || defaults.label}
@@ -285,7 +285,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     <div onClick={handleBodyClick} className="group relative">
       <PageMockup stepType={step.step_type} tint={tint} selected={isSelected} />
       {!readOnly && (
-        <div className="absolute inset-0 rounded-md bg-ink/45 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-0 rounded-lg bg-ink/45 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           {step.url && (
             <button type="button"
               onClick={(e) => { e.stopPropagation(); window.open(step.url!, '_blank'); }}

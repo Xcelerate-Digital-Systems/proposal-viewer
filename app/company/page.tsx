@@ -40,7 +40,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
 
       {/* Page header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-teal-tint rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-teal-tint rounded-2xl flex items-center justify-center">
           <Building2 size={20} className="text-teal" />
         </div>
         <div>
@@ -303,7 +303,7 @@ function CoverImageSection({
         <div>
           <p className="text-xs text-faint mb-2">Preview</p>
           <div
-            className="rounded-xl overflow-hidden border border-edge shadow-lg aspect-[16/10] relative"
+            className="rounded-2xl overflow-hidden border border-edge shadow-lg aspect-[16/10] relative"
             style={{ backgroundColor: bgColor1 }}
           >
             {/* Background layer */}

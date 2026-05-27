@@ -90,11 +90,11 @@ export default function PdfPreviewPanel({
     return (
       <div
         ref={containerRef}
-        className="flex-1 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center"
+        className="flex-1 rounded-lg border border-edge-strong bg-gray-100 flex items-center justify-center"
       >
         <div className="flex flex-col items-center gap-2">
-          <div className="w-5 h-5 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
-          <p className="text-xs text-gray-400">Loading PDF...</p>
+          <div className="w-5 h-5 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
+          <p className="text-xs text-faint">Loading PDF...</p>
         </div>
       </div>
     );
@@ -136,7 +136,7 @@ export default function PdfPreviewPanel({
           </div>
         )}
         {resolvedPageCount > 0 && (
-          <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
+          <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-edge-strong bg-gray-100 min-h-0">
             {/* Page preview */}
             <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center p-2">
               <Page

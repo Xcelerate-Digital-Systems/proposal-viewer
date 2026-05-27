@@ -35,7 +35,7 @@ export const REVIEW_STATUS_ORDER: FeedbackStatus[] = [
 export const REVIEW_STATUS_CONFIG: Record<FeedbackStatus, ReviewStatusDef> = {
   draft: {
     value: 'draft', label: 'Draft', hex: '#9ca3af',
-    dot: 'bg-gray-400', bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200',
+    dot: 'bg-gray-400', bg: 'bg-gray-100', text: 'text-prose', border: 'border-edge-strong',
     symbol: '', icon: <Clock size={13} />,
   },
   in_progress: {
@@ -70,7 +70,7 @@ export const REVIEW_STATUS_CONFIG: Record<FeedbackStatus, ReviewStatusDef> = {
   },
   archived: {
     value: 'archived', label: 'Archived', hex: '#6b7280',
-    dot: 'bg-gray-500', bg: 'bg-gray-100', text: 'text-gray-500', border: 'border-gray-200',
+    dot: 'bg-gray-500', bg: 'bg-gray-100', text: 'text-dim', border: 'border-edge-strong',
     symbol: '·', icon: <Archive size={13} />,
   },
 };

@@ -60,7 +60,7 @@ export default function FeedbackProjectHeader({
         <div className="min-w-0 flex items-center gap-3">
           <Link
             href="/markup"
-            className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+            className="text-faint hover:text-prose transition-colors shrink-0"
             title="All Projects"
           >
             <ArrowLeft size={16} />
@@ -69,7 +69,7 @@ export default function FeedbackProjectHeader({
             <h1 className="text-[17px] font-semibold tracking-tight text-ink font-[family-name:var(--font-display)] truncate">
               {project.title}
             </h1>
-            <p className="text-xs text-gray-400 truncate">
+            <p className="text-xs text-faint truncate">
               {project.client_company || project.client_name}
               {(project.client_company || project.client_name) && project.description && ' · '}
               {project.description}
@@ -81,10 +81,10 @@ export default function FeedbackProjectHeader({
           <button
             onClick={togglePauseComments}
             disabled={togglingPause}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors disabled:opacity-50 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium transition-colors disabled:opacity-50 ${
               project.pause_new_comments
                 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200/70'
-                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                : 'bg-surface text-prose hover:bg-gray-100'
             }`}
             title={project.pause_new_comments ? 'Reopen comments for reviewers' : 'Pause new reviewer comments'}
           >
@@ -94,7 +94,7 @@ export default function FeedbackProjectHeader({
 
           <button
             onClick={() => setShowNoteModal(true)}
-            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors"
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium bg-surface text-prose hover:bg-gray-100 transition-colors"
             title={project.reviewer_note ? 'Edit reviewer note' : 'Add a note for reviewers'}
           >
             <FileText size={14} />

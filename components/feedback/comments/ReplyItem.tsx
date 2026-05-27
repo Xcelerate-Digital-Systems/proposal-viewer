@@ -70,19 +70,19 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
         authorUserId={reply.author_user_id}
         isTeam={rIsTeam}
         memberLookup={memberLookup}
-        className="w-7 h-7 text-[11px]"
+        className="w-7 h-7 text-detail"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium text-ink">{reply.author_name}</span>
+          <span className="text-caption font-medium text-ink">{reply.author_name}</span>
           {rIsTeam && (
             <span className="text-2xs font-medium bg-teal/10 text-teal px-2 py-0.5 rounded-full">
               Team
             </span>
           )}
-          <span className="text-[11px] text-gray-400">{timeAgo(reply.created_at)}</span>
+          <span className="text-detail text-faint">{timeAgo(reply.created_at)}</span>
           {deleting && (
-            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+            <span className="flex items-center gap-1 text-detail text-faint">
               <Loader2 size={10} className="animate-spin" />
               Deleting…
             </span>
@@ -99,20 +99,20 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
         </div>
         {editing ? (
           <div className="mt-1 space-y-1.5">
-            <div className="px-3 py-2 rounded-xl bg-[#F5F1EE] focus-within:ring-2 focus-within:ring-teal/20">
+            <div className="px-3 py-2 rounded-2xl bg-warm-dark focus-within:ring-2 focus-within:ring-teal/20">
               <MentionEditor
                 value={editText}
                 onChange={setEditText}
                 participantsUrl={participantsUrl ?? null}
                 autoFocus
-                className="w-full text-[13px] text-ink"
+                className="w-full text-caption text-ink"
               />
             </div>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleSave}
                 disabled={saving || !stripHtml(editText)}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal text-white text-2xs font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
+                className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-teal text-white text-2xs font-medium hover:bg-teal-hover disabled:opacity-40 transition-colors"
               >
                 {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
                 {saving ? 'Saving…' : 'Save'}
@@ -120,7 +120,7 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
               <button
                 onClick={() => { setEditing(false); setEditText(reply.content); }}
                 disabled={saving}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 text-2xs font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                className="flex items-center gap-1 px-2 py-0.5 rounded-lg border border-edge-strong text-dim text-2xs font-medium hover:bg-surface disabled:opacity-40 transition-colors"
               >
                 <X size={10} />
                 Cancel
@@ -130,7 +130,7 @@ export default function ReplyItem({ reply, currentUserName, onEdit, onDelete, me
         ) : (
           <CommentContent
             content={reply.content}
-            className="text-[13px] text-gray-700 leading-relaxed mt-0.5"
+            className="text-caption text-prose leading-relaxed mt-0.5"
           />
         )}
         {reply.video_url && (

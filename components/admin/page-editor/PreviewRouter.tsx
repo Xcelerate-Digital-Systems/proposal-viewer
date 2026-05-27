@@ -93,7 +93,7 @@ export default function PreviewRouter({
 
   if (selectedPage.type === 'toc') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-2xl border border-dashed border-amber-200">
         <List size={32} className="text-amber-400 mb-3" />
         <p className="text-sm font-medium text-amber-700">Table of Contents</p>
         <p className="text-xs text-amber-500 mt-1 max-w-[240px]">
@@ -105,7 +105,7 @@ export default function PreviewRouter({
 
   if (selectedPage.type === 'section') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-2xl border border-dashed border-amber-200">
         <FolderOpen size={32} className="text-amber-400 mb-3" />
         <p className="text-sm font-medium text-amber-700">Section Header</p>
         <p className="text-xs text-amber-500 mt-1 max-w-[240px]">

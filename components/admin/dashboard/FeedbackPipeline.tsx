@@ -99,14 +99,14 @@ function FeedbackProjectCard({
       }`}
     >
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-surface">
+        <div className="shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center bg-surface">
           <MessageSquareText size={15} className="text-muted" />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-[13px] font-medium text-ink truncate leading-tight">
+          <h4 className="text-caption font-medium text-ink truncate leading-tight">
             {project.title}
           </h4>
-          <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+          <p className="text-detail text-faint mt-0.5 truncate">
             {project.client_company || project.client_name || 'Markup project'}
           </p>
         </div>
@@ -128,7 +128,7 @@ function FeedbackProjectCard({
           {menuOpen && (
             <div
               onPointerDown={(e) => e.stopPropagation()}
-              className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-20"
+              className="absolute right-0 top-full mt-1 w-40 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-20"
             >
               <button
                 onClick={(e) => {
@@ -145,8 +145,8 @@ function FeedbackProjectCard({
         </div>
       </div>
 
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[11px] text-gray-500">
+      <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
+        <div className="flex items-center gap-2 text-detail text-dim">
           <span className="inline-flex items-center gap-1">
             <Layers size={11} /> {itemCount}
           </span>
@@ -158,7 +158,7 @@ function FeedbackProjectCard({
           href={`/markup/${project.id}/comments`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
-          className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium text-teal hover:text-teal-hover"
+          className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"
         >
           <ExternalLink size={11} />
           Open

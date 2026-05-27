@@ -72,7 +72,7 @@ export default function AboutUsSection({ proposal, onSaved }: Props) {
           type="button"
           onClick={generate}
           disabled={generating}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-accent-ai bg-accent-ai-tint hover:bg-accent-ai-tint-hover transition-colors disabled:opacity-50"
         >
           {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
           Generate with AI
@@ -85,7 +85,7 @@ export default function AboutUsSection({ proposal, onSaved }: Props) {
         onBlur={() => dirty && save()}
         rows={5}
         placeholder="We are a fully licensed renovation company with…"
-        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
+        className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
       />
       <div className="flex items-center justify-end mt-3">
         <Button

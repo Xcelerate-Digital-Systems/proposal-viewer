@@ -80,7 +80,7 @@ function StatusPill({
         ref={btnRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${current.bg} ${current.text} ${current.border} hover:brightness-95`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-detail font-medium border transition-colors ${current.bg} ${current.text} ${current.border} hover:brightness-95`}
       >
         <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
         {current.label}
@@ -90,7 +90,7 @@ function StatusPill({
         createPortal(
           <div
             ref={menuRef}
-            className="fixed z-[2147483647] w-44 bg-white rounded-lg border border-gray-200 shadow-lg py-1"
+            className="fixed z-[2147483647] w-44 bg-white rounded-lg border border-edge-strong shadow-lg py-1"
             style={{ top: pos.top, right: pos.right }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -104,12 +104,12 @@ function StatusPill({
                     setOpen(false);
                     onChange(opt);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-50 transition-colors ${
-                    opt === value ? 'bg-gray-50' : ''
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-surface transition-colors ${
+                    opt === value ? 'bg-surface' : ''
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full shrink-0 ${def.dot}`} />
-                  <span className="text-gray-700 truncate">{def.label}</span>
+                  <span className="text-prose truncate">{def.label}</span>
                 </button>
               );
             })}
@@ -253,22 +253,22 @@ export default function CompleteFeedbackModal({
         <div className="h-1.5 w-full shrink-0" style={{ backgroundColor: accentColor }} />
 
         <div className="flex items-start justify-between px-6 pt-5 pb-2 shrink-0">
-          <h3 className="text-lg font-semibold text-gray-900">Complete your feedback</h3>
+          <h3 className="text-lg font-semibold text-ink">Complete your feedback</h3>
           <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
 
         <div className="px-6 pb-5 space-y-4 overflow-y-auto">
           {showStatusList && (
             <div className="space-y-2">
-              <p className="text-[13px] text-gray-600">
+              <p className="text-caption text-prose">
                 {mode === 'item'
                   ? 'Let us know where this item stands before you finish.'
                   : 'These items are waiting on your decision — set a status for each before submitting.'}
               </p>
-              <div className="border border-gray-100 rounded-xl divide-y divide-gray-100">
+              <div className="border border-edge rounded-2xl divide-y divide-gray-100">
                 {showBulkRow && (
-                  <div className="flex items-center gap-3 px-3 py-2 bg-gray-50/60">
-                    <p className="flex-1 min-w-0 text-[13px] font-medium text-gray-700">
+                  <div className="flex items-center gap-3 px-3 py-2 bg-surface/60">
+                    <p className="flex-1 min-w-0 text-caption font-medium text-prose">
                       Set all items to
                     </p>
                     <StatusPill value={bulkChoice} onChange={setAllStatuses} />
@@ -276,7 +276,7 @@ export default function CompleteFeedbackModal({
                 )}
                 {editableItems.map((it) => (
                   <div key={it.id} className="flex items-center gap-3 px-3 py-2">
-                    <p className="flex-1 min-w-0 truncate text-[13px] text-gray-800">{it.title}</p>
+                    <p className="flex-1 min-w-0 truncate text-caption text-gray-800">{it.title}</p>
                     <StatusPill
                       value={statusMap[it.id] ?? it.status}
                       onChange={(next) =>
@@ -295,7 +295,7 @@ export default function CompleteFeedbackModal({
             onChange={(e) => setMessage(e.target.value)}
             rows={4}
             placeholder="Add a message (optional)"
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:border-transparent"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm text-ink placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:border-transparent"
             style={{ ['--tw-ring-color' as string]: `${accentColor}25` }}
           />
 
@@ -303,7 +303,7 @@ export default function CompleteFeedbackModal({
             type="button"
             onClick={handleFinish}
             disabled={submitting}
-            className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: accentColor }}
           >
             {submitting ? 'Sending…' : 'Finish'}

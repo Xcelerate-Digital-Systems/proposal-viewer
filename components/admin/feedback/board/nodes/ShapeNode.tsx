@@ -484,7 +484,7 @@ function DecisionShape({
     return (
       <div className="relative group" style={{ isolation: 'isolate' }}>
         <div
-          className="nodrag px-2 py-0.5 rounded-full border-2 font-semibold text-[11px] leading-tight whitespace-nowrap shadow-sm select-none min-w-[40px] text-center cursor-text"
+          className="nodrag px-2 py-0.5 rounded-full border-2 font-semibold text-detail leading-tight whitespace-nowrap shadow-sm select-none min-w-[40px] text-center cursor-text"
           style={{ background: pal.fill, borderColor: pal.border, color: pal.text }}
           onDoubleClick={(e) => { e.stopPropagation(); startEditBranch(side, b.label); }}
         >
@@ -499,7 +499,7 @@ function DecisionShape({
                 if (e.key === 'Enter') { e.preventDefault(); commitBranch(); }
               }}
               size={Math.max(3, branchDraft.length || 4)}
-              className="bg-transparent outline-none font-semibold text-[11px] text-center"
+              className="bg-transparent outline-none font-semibold text-detail text-center"
               style={{ color: pal.text, minWidth: 32 }}
             />
           ) : (
@@ -560,7 +560,7 @@ function DecisionShape({
   const diamondSize = DECISION_DIAMOND_BOX;
   return (
     <div
-      className={`relative ${selected ? 'ring-2 ring-teal/30 rounded-xl' : ''}`}
+      className={`relative ${selected ? 'ring-2 ring-teal/30 rounded-2xl' : ''}`}
       style={{ width: DECISION_NODE_W, height: DECISION_NODE_H }}
     >
       <div
@@ -633,12 +633,12 @@ function DecisionShape({
               if (e.key === 'Escape') { setQuestionDraft(content.question); setEditingQuestion(false); }
               if (e.key === 'Enter') { e.preventDefault(); commitQuestion(); }
             }}
-            className="px-2 py-0.5 rounded border border-edge bg-white text-[11px] text-ink text-center outline-none focus:border-teal"
+            className="px-2 py-0.5 rounded border border-edge bg-white text-detail text-ink text-center outline-none focus:border-teal"
             style={{ width: 180 }}
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-nowrap truncate" style={{ maxWidth: 200 }}>
+          <span className="block text-detail text-ink/80 text-center leading-tight whitespace-nowrap truncate" style={{ maxWidth: 200 }}>
             {content.question || (!readOnly && <span className="opacity-40">Decision?</span>)}
           </span>
         )}
@@ -790,7 +790,7 @@ function DiamondVisual({
   return (
     <div className="relative" style={{ width: DIAMOND_BOX_SIZE, height: DIAMOND_BOX_SIZE }}>
       <div
-        className="absolute rounded-md shadow-[0_3px_8px_rgba(20,20,40,0.12)]"
+        className="absolute rounded-lg shadow-[0_3px_8px_rgba(20,20,40,0.12)]"
         style={{
           top: DIAMOND_INSET,
           left: DIAMOND_INSET,
@@ -862,12 +862,12 @@ function EventDiamond({
               if (e.key === 'Escape') { setDraft(content.label ?? ''); setEditing(false); }
             }}
             placeholder={config.placeholder}
-            className="px-2.5 py-1.5 rounded-md border border-edge bg-white text-sm text-center text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="px-2.5 py-1.5 rounded-lg border border-edge bg-white text-sm text-center text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             style={{ width: 220 }}
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-nowrap">
+          <span className="block text-detail text-ink/80 text-center leading-tight whitespace-nowrap">
             {labelText}
           </span>
         )}
@@ -980,13 +980,13 @@ function WaitDiamond({
                 if (e.key === 'Enter') { e.preventDefault(); commit(); }
                 if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
               }}
-              className="w-14 text-center px-2 py-1.5 rounded-md border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              className="w-14 text-center px-2 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             />
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
               onBlur={commit}
-              className="px-2 py-1.5 rounded-md border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              className="px-2 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             >
               {WAIT_UNITS.map((u) => (
                 <option key={u.value} value={u.value}>{u.label}</option>
@@ -999,11 +999,11 @@ function WaitDiamond({
               onBlur={commit}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
               placeholder="Label"
-              className="w-32 px-2.5 py-1.5 rounded-md border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              className="w-32 px-2.5 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
             />
           </div>
         ) : (
-          <span className="block text-[11px] text-ink/80 text-center leading-tight whitespace-nowrap">
+          <span className="block text-detail text-ink/80 text-center leading-tight whitespace-nowrap">
             {labelText}
           </span>
         )}

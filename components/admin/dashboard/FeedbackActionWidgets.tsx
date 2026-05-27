@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ClipboardCheck, RefreshCw, ArrowRight } from 'lucide-react';
+import { Eye, RefreshCw, ArrowRight } from 'lucide-react';
 import { supabase, type FeedbackItem, type FeedbackProject } from '@/lib/supabase';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 
@@ -106,7 +106,7 @@ export default function FeedbackActionWidgets({ companyId, teamMemberId }: Feedb
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
       <WidgetCard
-        icon={ClipboardCheck}
+        icon={Eye}
         accentClass="bg-amber-100 text-amber-700"
         title="Awaiting my review"
         emptyHint={teamMemberId
@@ -132,7 +132,7 @@ export default function FeedbackActionWidgets({ companyId, teamMemberId }: Feedb
 function WidgetCard({
   icon: Icon, accentClass, title, emptyHint, loading, rows,
 }: {
-  icon: typeof ClipboardCheck;
+  icon: typeof Eye;
   accentClass: string;
   title: string;
   emptyHint: string;
@@ -144,53 +144,53 @@ function WidgetCard({
 
   return (
     <div className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col">
-      <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
         <div className="flex items-center gap-2.5">
           <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${accentClass}`}>
             <Icon size={14} />
           </div>
-          <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
-          <span className="text-[11px] text-muted">
+          <h2 className="text-base font-semibold text-ink">{title}</h2>
+          <span className="text-detail text-muted">
             {loading ? '' : rows.length === 0 ? '' : `${rows.length}`}
           </span>
         </div>
       </header>
 
       {loading ? (
-        <div className="px-5 py-8 text-center text-[13px] text-muted">Loading…</div>
+        <div className="px-5 py-8 text-center text-caption text-muted">Loading…</div>
       ) : rows.length === 0 ? (
         <div className="px-5 py-8 text-center">
-          <p className="text-[13px] text-muted">{emptyHint}</p>
+          <p className="text-caption text-muted">{emptyHint}</p>
         </div>
       ) : (
-        <ul className="divide-y divide-gray-100">
+        <ul className="divide-y divide-edge">
           {shown.map(({ item, project }) => {
             const def = getFeedbackStatusDef(item.status);
             return (
               <li key={item.id}>
                 <Link
                   href={`/markup/${project.id}/items/${item.id}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-surface transition-colors"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium text-ink truncate">
+                    <p className="text-caption font-medium text-ink truncate">
                       {item.title || 'Untitled item'}
                     </p>
-                    <p className="text-[11px] text-muted truncate">{project.title}</p>
+                    <p className="text-detail text-muted truncate">{project.title}</p>
                   </div>
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0 ${def.bg} ${def.text} ${def.border}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border shrink-0 ${def.bg} ${def.text} ${def.border}`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${def.dot}`} />
+                    <span className="[&>svg]:w-2.5 [&>svg]:h-2.5">{def.icon}</span>
                     {def.label}
                   </span>
-                  <ArrowRight size={14} className="text-gray-300 shrink-0" />
+                  <ArrowRight size={14} className="text-faint shrink-0" />
                 </Link>
               </li>
             );
           })}
           {overflow > 0 && (
-            <li className="px-5 py-3 text-center text-[11px] text-muted">
+            <li className="px-5 py-3 text-center text-detail text-muted">
               Plus {overflow} more — open them from their markup project.
             </li>
           )}

@@ -149,16 +149,16 @@ export default function CommentsPanel({
         {replyingTo === comment.id && (
           <div className="ml-4 mt-2 space-y-2">
             <input type="text" placeholder="Your name" value={replyName} onChange={(e) => setReplyName(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-md text-base md:text-xs focus:outline-none border"
+              className="w-full px-2.5 py-1.5 rounded-lg text-base md:text-xs focus:outline-none border"
               style={{ backgroundColor: border, color: textColor, borderColor: border }} />
             <div className="flex gap-2">
               <input type="text" placeholder="Write a reply..." value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(comment.id); } }}
-                className="flex-1 px-2.5 py-1.5 rounded-md text-base md:text-xs focus:outline-none border"
+                className="flex-1 px-2.5 py-1.5 rounded-lg text-base md:text-xs focus:outline-none border"
                 style={{ backgroundColor: border, color: textColor, borderColor: border }}
                 autoFocus />
               <button onClick={() => handleReply(comment.id)} disabled={replySubmitting || !replyText.trim() || !replyName.trim()}
-                className="px-2 py-1.5 rounded-md disabled:opacity-40 transition-opacity hover:opacity-90"
+                className="px-2 py-1.5 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
                 style={{ backgroundColor: accentColor, color: acceptTextColor }}>
                 <Send size={12} />
               </button>

@@ -107,7 +107,7 @@ function NamingConvention() {
   return (
     <div className="min-h-screen bg-canvas">
       {/* Header */}
-      <div className="border-b border-gray-100 bg-white">
+      <div className="border-b border-edge bg-white">
         <div className="max-w-5xl mx-auto px-8 py-6">
           <button
             type="button"
@@ -118,12 +118,12 @@ function NamingConvention() {
             Back
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-teal/10 flex items-center justify-center">
               <BookOpen size={18} className="text-teal" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-ink">Ad Naming Convention</h1>
-              <p className="text-[13px] text-faint mt-0.5">
+              <p className="text-caption text-faint mt-0.5">
                 Post-Andromeda creative naming for AgencyViz
               </p>
             </div>
@@ -139,7 +139,7 @@ function NamingConvention() {
             <div className="font-mono text-[15px] text-ink tracking-wide">
               [OFFER]_[ANGLE]_[PERSONA]_[FORMAT##]_[HOOK##]
             </div>
-            <div className="mt-3 font-mono text-[13px] text-teal">
+            <div className="mt-3 font-mono text-caption text-teal">
               FREEQUOTE_PROOF_TRADIES_VID01_HOOK02
             </div>
             <p className="text-xs text-faint mt-3">
@@ -156,13 +156,13 @@ function NamingConvention() {
             {SEGMENT_CODES.map((row, i) => (
               <div
                 key={row.code}
-                className={`flex gap-5 px-6 py-4 ${i < SEGMENT_CODES.length - 1 ? 'border-b border-gray-100' : ''}`}
+                className={`flex gap-5 px-6 py-4 ${i < SEGMENT_CODES.length - 1 ? 'border-b border-edge' : ''}`}
               >
                 <span className="font-mono text-xs text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[13px] text-ink leading-relaxed">{row.description}</p>
+                  <p className="text-caption text-ink leading-relaxed">{row.description}</p>
                   <p className="text-xs text-faint mt-1 font-mono">{row.examples}</p>
                 </div>
               </div>
@@ -180,7 +180,7 @@ function NamingConvention() {
             {ANGLES.map((row, i) => (
               <div
                 key={row.code}
-                className={`flex gap-5 px-5 py-3 ${i < ANGLES.length - 1 ? 'border-b border-gray-100' : ''}`}
+                className={`flex gap-5 px-5 py-3 ${i < ANGLES.length - 1 ? 'border-b border-edge' : ''}`}
               >
                 <span className="font-mono text-xs text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
@@ -201,7 +201,7 @@ function NamingConvention() {
 
           <div className="bg-white rounded-2xl border border-edge p-5 mb-4">
             <h3 className="text-xs font-semibold text-ink mb-2 uppercase tracking-wide">How to name a persona</h3>
-            <ul className="space-y-2 text-[13px] text-muted">
+            <ul className="space-y-2 text-caption text-muted">
               <li>
                 <span className="text-teal font-medium">Use the customer, not the business size.</span>{' '}
                 &quot;TRADIES&quot; or &quot;MUMS&quot; tells you who you&apos;re talking to. &quot;SMB&quot; doesn&apos;t.
@@ -227,7 +227,7 @@ function NamingConvention() {
             {PERSONA_EXAMPLES.map((row, i) => (
               <div
                 key={row.code}
-                className={`flex gap-5 px-5 py-3 ${i < PERSONA_EXAMPLES.length - 1 ? 'border-b border-gray-100' : ''}`}
+                className={`flex gap-5 px-5 py-3 ${i < PERSONA_EXAMPLES.length - 1 ? 'border-b border-edge' : ''}`}
               >
                 <span className="font-mono text-xs text-teal shrink-0 w-[110px] pt-0.5">
                   {row.code}
@@ -245,10 +245,10 @@ function NamingConvention() {
             {FORMAT_CODES.map((row, i) => (
               <div
                 key={row.code}
-                className={`flex items-center gap-4 px-5 py-3 ${i < FORMAT_CODES.length - 1 ? 'border-b border-gray-100' : ''}`}
+                className={`flex items-center gap-4 px-5 py-3 ${i < FORMAT_CODES.length - 1 ? 'border-b border-edge' : ''}`}
               >
                 <span className="font-mono text-xs text-teal w-[80px] shrink-0">{row.code}</span>
-                <span className="text-[13px] text-muted">{row.label}</span>
+                <span className="text-caption text-muted">{row.label}</span>
               </div>
             ))}
           </div>
@@ -260,7 +260,7 @@ function NamingConvention() {
           <div className="space-y-2">
             {EXAMPLES.map((ex) => (
               <div key={ex.name} className="bg-white rounded-2xl border border-edge px-5 py-4">
-                <p className="font-mono text-[13px] text-ink">{ex.name}</p>
+                <p className="font-mono text-caption text-ink">{ex.name}</p>
                 <p className="text-xs text-faint mt-1">{ex.note}</p>
               </div>
             ))}
@@ -278,7 +278,7 @@ function NamingConvention() {
               ['New angle?', 'Restart the hook counter under the new angle.'],
               ['Headlines, primary text, descriptions, CTAs', 'Live as DB metadata, never in the filename.'],
             ].map(([q, a]) => (
-              <div key={q} className="flex gap-3 text-[13px]">
+              <div key={q} className="flex gap-3 text-caption">
                 <span className="text-teal shrink-0">→</span>
                 <p className="text-ink">
                   <span className="font-medium">{q}</span>{' '}
@@ -290,7 +290,7 @@ function NamingConvention() {
         </section>
 
         {/* Andromeda explainer */}
-        <section className="pt-4 border-t border-gray-100">
+        <section className="pt-4 border-t border-edge">
           <div className="flex items-center gap-2.5 mb-4">
             <Sparkles size={16} className="text-teal" />
             <h2 className="text-base font-semibold text-ink">Meta Andromeda, explained simply</h2>
@@ -354,7 +354,7 @@ function NamingConvention() {
               heavy lifting. The text fields around it (primary text, headline, description) matter
               far less than they used to.
             </p>
-            <div className="rounded-xl border border-edge overflow-hidden">
+            <div className="rounded-2xl border border-edge overflow-hidden">
               <div className="grid grid-cols-[1fr_140px_140px] bg-surface text-xs text-faint px-4 py-2.5 font-medium uppercase tracking-wide">
                 <div>Element</div>
                 <div className="text-center">Baked into asset</div>
@@ -363,7 +363,7 @@ function NamingConvention() {
               {REMIX_TABLE.map((row, i) => (
                 <div
                   key={row.element}
-                  className={`grid grid-cols-[1fr_140px_140px] px-4 py-3 text-[13px] items-center ${i < REMIX_TABLE.length - 1 ? 'border-b border-gray-100' : ''}`}
+                  className={`grid grid-cols-[1fr_140px_140px] px-4 py-3 text-caption items-center ${i < REMIX_TABLE.length - 1 ? 'border-b border-edge' : ''}`}
                 >
                   <div className="text-ink">{row.element}</div>
                   <div className="text-center text-muted">{row.baked ? 'Yes' : 'No'}</div>
@@ -377,7 +377,7 @@ function NamingConvention() {
                 </div>
               ))}
             </div>
-            <p className="text-[13px] text-faint mt-3 leading-relaxed">
+            <p className="text-caption text-faint mt-3 leading-relaxed">
               The simple version: if you change something inside the image or video file, you have
               made a new ad in Andromeda&apos;s eyes. If you only change the wording around it, you
               basically haven&apos;t.
@@ -423,7 +423,7 @@ function NamingConvention() {
             <p className="text-sm text-muted leading-relaxed mb-4">
               Now look back at the pattern at the top of this page:
             </p>
-            <div className="bg-surface rounded-xl px-4 py-3 mb-4 font-mono text-[13px] text-ink">
+            <div className="bg-surface rounded-2xl px-4 py-3 mb-4 font-mono text-caption text-ink">
               [OFFER]_[ANGLE]_[PERSONA]_[FORMAT##]_[HOOK##]
             </div>
             <p className="text-sm text-muted leading-relaxed mb-3">

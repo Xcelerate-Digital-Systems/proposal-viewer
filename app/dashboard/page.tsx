@@ -186,7 +186,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
     return (
       <div className="flex flex-col h-full">
         <PageHeader title={`${getGreeting()}, ${firstName}`} />
-        <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+        <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
           <ErrorState
             description={fetchError}
             onRetry={() => { setLoading(true); fetchData(); }}
@@ -206,12 +206,12 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           title={`${getGreeting()}, ${firstName}`}
           description={`You have ${totalCount - acceptedCount} proposals waiting for your review.`}
         />
-        <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+        <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
-            <div className="bg-white rounded-2xl shadow-card p-6">
+            <div className="bg-white rounded-2xl shadow-card p-6 animate-enter-up" style={{ animationDelay: '0ms' }}>
               <div className="flex items-center gap-2">
                 <FileText size={14} className="text-muted" />
-                <span className="text-[13px] font-medium text-muted">Active Proposals</span>
+                <span className="text-caption font-medium text-muted">Active Proposals</span>
               </div>
               <p className="text-[32px] font-bold text-ink leading-none mt-3">{totalCount}</p>
               <div className="flex items-center gap-1 mt-3">
@@ -219,10 +219,10 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                 <span className="text-xs font-medium text-muted">{totalCount - acceptedCount} awaiting your review</span>
               </div>
             </div>
-            <div className="bg-white rounded-2xl shadow-card p-6">
+            <div className="bg-white rounded-2xl shadow-card p-6 animate-enter-up" style={{ animationDelay: '50ms' }}>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-emerald-600" />
-                <span className="text-[13px] font-medium text-muted">Reviewed</span>
+                <span className="text-caption font-medium text-muted">Reviewed</span>
               </div>
               <p className="text-[32px] font-bold text-ink leading-none mt-3">{acceptedCount}</p>
               <span className="text-xs font-medium text-faint mt-3 block">
@@ -254,23 +254,24 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
         actions={<ReplayButton tourId="dashboard" />}
       />
 
-      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
-        <div className="flex flex-col gap-8">
+      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
+        <div className="flex flex-col gap-5">
           {/* ── Action widgets: Awaiting my review / Needs new version ─ */}
           <FeedbackActionWidgets companyId={companyId} teamMemberId={teamMemberId} />
 
           {/* ── Section 1: Feedback (inbox + kanban) ───────── */}
           <section
             data-tour="dashboard-feedback"
-            className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col animate-enter-up"
+            style={{ animationDelay: '50ms' }}
           >
-            <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
                   <MessageSquareText size={14} className="text-muted" />
                 </div>
-                <h2 className="text-[15px] font-semibold text-ink">Markup</h2>
-                <span className="text-[11px] text-muted">
+                <h2 className="text-base font-semibold text-ink">Markup</h2>
+                <span className="text-detail text-muted">
                   {feedbackProjects.length} {feedbackProjects.length === 1 ? 'project' : 'projects'}
                   {inbox.length > 0 && ` · ${inbox.length} awaiting reply`}
                 </span>
@@ -295,15 +296,15 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
               </div>
 
               {loading ? (
-                <div className="px-5 py-8 text-center text-[13px] text-muted">Loading…</div>
+                <div className="px-5 py-8 text-center text-caption text-muted">Loading…</div>
               ) : inbox.length === 0 ? (
                 <div className="px-5 py-8 flex flex-col items-center text-center">
                   <CheckCircle2 size={20} className="text-emerald-500/70 mb-1.5" />
-                  <p className="text-[13px] font-medium text-ink">All caught up</p>
-                  <p className="text-[11px] text-muted mt-0.5">No unresolved client comments.</p>
+                  <p className="text-caption font-medium text-ink">All caught up</p>
+                  <p className="text-detail text-muted mt-0.5">No unresolved client comments.</p>
                 </div>
               ) : (
-                <div className="border-t border-gray-100">
+                <div className="border-t border-edge">
                   {inbox.slice(0, 8).map((c, i, arr) => (
                     <InboxItem
                       key={c.commentId}
@@ -314,7 +315,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                     />
                   ))}
                   {inbox.length > 8 && (
-                    <div className="px-5 py-3 border-t border-gray-100 text-center">
+                    <div className="px-5 py-3 border-t border-edge text-center">
                       <span className="text-xs text-muted">
                         Plus {inbox.length - 8} more — open them from their markup project.
                       </span>
@@ -325,17 +326,17 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
             </div>
 
             {/* Kanban sub-area */}
-            <div className="border-t border-gray-100">
+            <div className="border-t border-edge">
               <div className="flex items-center gap-2 px-5 pt-4 pb-2">
                 <MessageSquareText size={13} className="text-muted" />
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
                   Projects
                 </h3>
-                <span className="text-[11px] text-faint">Drag to update status</span>
+                <span className="text-detail text-faint">Drag to update status</span>
               </div>
 
               {loading ? (
-                <div className="px-5 py-12 text-center text-[13px] text-muted">Loading…</div>
+                <div className="px-5 py-12 text-center text-caption text-muted">Loading…</div>
               ) : feedbackProjects.length === 0 ? (
                 <div className="px-5 py-12 flex flex-col items-center text-center">
                   <MessageSquareText size={24} className="text-faint mb-2" />
@@ -361,15 +362,16 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           {/* ── Section 2: Proposals & Quotes pipeline ──────── */}
           <section
             data-tour="dashboard-proposals"
-            className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col animate-enter-up"
+            style={{ animationDelay: '100ms' }}
           >
-            <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
                   <FileText size={14} className="text-muted" />
                 </div>
-                <h2 className="text-[15px] font-semibold text-ink">Proposals &amp; Quotes</h2>
-                <span className="text-[11px] text-muted">
+                <h2 className="text-base font-semibold text-ink">Proposals &amp; Quotes</h2>
+                <span className="text-detail text-muted">
                   {proposalCount} {proposalCount === 1 ? 'proposal' : 'proposals'} · {quoteCount} {quoteCount === 1 ? 'quote' : 'quotes'}
                 </span>
               </div>
@@ -388,7 +390,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
             </div>
 
             {loading ? (
-              <div className="px-5 py-12 text-center text-[13px] text-muted">Loading pipeline…</div>
+              <div className="px-5 py-12 text-center text-caption text-muted">Loading pipeline…</div>
             ) : pipeline.length === 0 ? (
               <div className="px-5 py-12 flex flex-col items-center text-center">
                 <FileText size={24} className="text-faint mb-2" />

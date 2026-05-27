@@ -90,7 +90,7 @@ export default function SwipeBulkUploadModal({ typeId, uploadMedia, createFile, 
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="w-full flex flex-col items-center justify-center gap-2 py-12 border-2 border-dashed border-edge rounded-xl hover:border-teal/50 hover:bg-surface transition-colors"
+            className="w-full flex flex-col items-center justify-center gap-2 py-12 border-2 border-dashed border-edge rounded-2xl hover:border-teal/50 hover:bg-surface transition-colors"
           >
             <Upload size={24} className="text-faint" />
             <span className="text-sm font-medium text-ink">Select files</span>
@@ -122,7 +122,7 @@ export default function SwipeBulkUploadModal({ typeId, uploadMedia, createFile, 
               ))}
             </div>
             {errorCount > 0 && (
-              <p className="text-[11px] text-red-600">
+              <p className="text-detail text-red-600">
                 {rows.filter((r) => r.status === 'error').map((r) => `${r.file.name}: ${r.error}`).join(' · ')}
               </p>
             )}

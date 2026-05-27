@@ -145,7 +145,7 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
       <SectionCard
         title="Page Background"
         description="What sits behind the quote card and what fills the quote body. Image lives here too so you can see them side by side."
-        icon={<Layers size={14} className="text-gray-400" />}
+        icon={<Layers size={14} className="text-faint" />}
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -163,8 +163,8 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
             />
           </div>
 
-          <div className="pt-3 border-t border-gray-100">
-            <label className="block text-xs font-medium text-gray-600 mb-2">Background image (optional)</label>
+          <div className="pt-3 border-t border-edge">
+            <label className="block text-xs font-medium text-prose mb-2">Background image (optional)</label>
             <input
               ref={fileInput}
               type="file"
@@ -175,7 +175,7 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
             {bgImagePath ? (
               <div className="space-y-3">
                 <div
-                  className="w-full h-40 rounded-lg bg-cover bg-center border border-gray-200"
+                  className="w-full h-40 rounded-lg bg-cover bg-center border border-edge-strong"
                   style={{ backgroundImage: bgImageUrl ? `url(${bgImageUrl})` : undefined }}
                 />
                 <div className="flex items-center gap-2">
@@ -222,14 +222,14 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
                 type="button"
                 onClick={() => fileInput.current?.click()}
                 disabled={uploading}
-                className="w-full border-2 border-dashed border-gray-200 rounded-lg px-4 py-6 text-center hover:border-gray-300 transition-colors disabled:opacity-50"
+                className="w-full border-2 border-dashed border-edge-strong rounded-lg px-4 py-6 text-center hover:border-gray-300 transition-colors disabled:opacity-50"
               >
                 {uploading ? (
                   <Loader2 size={18} className="mx-auto text-gray-300 animate-spin" />
                 ) : (
                   <ImageIcon size={18} className="mx-auto text-gray-300 mb-2" />
                 )}
-                <p className="text-sm text-gray-500">Upload image (JPG / PNG, ≤ 8 MB)</p>
+                <p className="text-sm text-dim">Upload image (JPG / PNG, ≤ 8 MB)</p>
               </button>
             )}
           </div>
@@ -240,7 +240,7 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
       <SectionCard
         title="Fonts & Font Colours"
         description="Fine-tune typography and colours inside the quote body. Cover headline font lives here too."
-        icon={<Type size={14} className="text-gray-400" />}
+        icon={<Type size={14} className="text-faint" />}
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -258,8 +258,8 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
             />
           </div>
 
-          <div className="pt-3 border-t border-gray-100 space-y-3">
-            <label className="block text-xs font-medium text-gray-600">Headline font (cover + price figures)</label>
+          <div className="pt-3 border-t border-edge space-y-3">
+            <label className="block text-xs font-medium text-prose">Headline font (cover + price figures)</label>
             <select
               value={titleFontFamily ?? ''}
               onChange={(e) => {
@@ -267,7 +267,7 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
                 setTitleFontFamily(v);
                 persist({ title_font_family: v });
               }}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             >
               <option value="">Inherit from company branding</option>
               {GOOGLE_FONTS.map((f) => (
@@ -275,7 +275,7 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
               ))}
             </select>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Weight</label>
+              <label className="block text-xs text-dim mb-1">Weight</label>
               <select
                 value={titleFontWeight ?? ''}
                 onChange={(e) => {
@@ -283,7 +283,7 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
                   setTitleFontWeight(v);
                   persist({ title_font_weight: v });
                 }}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+                className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
               >
                 <option value="">Inherit</option>
                 <option value="300">Light · 300</option>

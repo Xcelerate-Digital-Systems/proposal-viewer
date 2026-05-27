@@ -116,7 +116,7 @@ export default function ShareMenu({
 
       {menuOpen && (
         <div
-          className="fixed z-[9999] bg-white rounded-xl border border-gray-200 shadow-lg w-[280px] py-2"
+          className="fixed z-[9999] bg-white rounded-2xl border border-edge-strong shadow-lg w-[280px] py-2"
           style={{
             top: (menuRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
             left: Math.min(
@@ -126,10 +126,10 @@ export default function ShareMenu({
           }}
         >
           <div className="px-3 pt-1 pb-2">
-            <p className="text-[11px] uppercase tracking-wide font-semibold text-gray-400">
+            <p className="text-detail uppercase tracking-wide font-semibold text-faint">
               Tabs visible to reviewers
             </p>
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <p className="text-detail text-faint mt-0.5">
               {enabledCount} of 3 enabled
             </p>
           </div>
@@ -142,14 +142,14 @@ export default function ShareMenu({
                 key={key}
                 onClick={() => toggleView(key)}
                 disabled={saving}
-                className="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-prose hover:bg-surface transition-colors"
               >
                 <span className="flex items-center gap-2">
-                  <Icon size={14} className={checked ? 'text-teal' : 'text-gray-400'} />
+                  <Icon size={14} className={checked ? 'text-teal' : 'text-faint'} />
                   {label}
                 </span>
                 {saving ? (
-                  <Loader2 size={14} className="animate-spin text-gray-400" />
+                  <Loader2 size={14} className="animate-spin text-faint" />
                 ) : (
                   <span
                     className={`relative w-8 h-[18px] rounded-full transition-colors ${
@@ -167,21 +167,21 @@ export default function ShareMenu({
             );
           })}
 
-          <div className="border-t border-gray-100 my-1.5" />
+          <div className="border-t border-edge my-1.5" />
 
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface transition-colors"
           >
             <ExternalLink size={14} />
             Open Preview
           </a>
           <button
             onClick={async () => { await copyUrl(); setMenuOpen(false); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface transition-colors"
           >
             <Share2 size={14} />
             Copy share link

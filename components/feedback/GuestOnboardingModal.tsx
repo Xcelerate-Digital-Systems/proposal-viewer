@@ -102,7 +102,7 @@ export default function GuestOnboardingModal({
               />
             ) : (
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base font-semibold shrink-0"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-base font-semibold shrink-0"
                 style={{ backgroundColor: accentColor }}
               >
                 {initial}
@@ -110,7 +110,7 @@ export default function GuestOnboardingModal({
             )}
             {companyName && !logoUrl && (
               <span
-                className="text-sm font-semibold text-gray-900 truncate"
+                className="text-sm font-semibold text-ink truncate"
                 style={{ fontFamily: headingFont }}
               >
                 {companyName}
@@ -121,19 +121,19 @@ export default function GuestOnboardingModal({
           {/* Headline */}
           <h2
             id="guest-onboard-title"
-            className="text-[22px] leading-tight font-semibold text-gray-900"
+            className="text-[22px] leading-tight font-semibold text-ink"
             style={{ fontFamily: headingFont }}
           >
             {projectTitle ? (
               <>
-                Review <span className="text-gray-500 font-medium">·</span>{' '}
+                Review <span className="text-dim font-medium">·</span>{' '}
                 <span className="block mt-0.5 truncate">{projectTitle}</span>
               </>
             ) : (
               'Welcome'
             )}
           </h2>
-          <p className="text-[13px] text-gray-500 leading-relaxed mt-2">
+          <p className="text-caption text-dim leading-relaxed mt-2">
             Add your name so the team knows who&rsquo;s leaving feedback. Email is
             optional — we&rsquo;ll only use it to notify you of replies.
           </p>
@@ -149,12 +149,12 @@ export default function GuestOnboardingModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder=" "
-                className="peer w-full px-3.5 pt-5 pb-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-300 focus:ring-2"
+                className="peer w-full px-3.5 pt-5 pb-2 rounded-2xl bg-surface border border-edge-strong text-sm text-ink outline-none transition-all focus:bg-white focus:border-gray-300 focus:ring-2"
                 style={{ ['--tw-ring-color' as string]: `${accentColor}25` }}
               />
               <label
                 htmlFor="guest-name"
-                className="absolute left-3.5 top-1.5 text-2xs uppercase tracking-wide font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-2xs peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-gray-500"
+                className="absolute left-3.5 top-1.5 text-2xs uppercase tracking-wide font-medium text-faint transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-faint peer-focus:top-1.5 peer-focus:text-2xs peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-dim"
               >
                 Your name
               </label>
@@ -168,14 +168,14 @@ export default function GuestOnboardingModal({
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setEmailError(false); }}
                 placeholder=" "
-                className={`peer w-full px-3.5 pt-5 pb-2 rounded-xl bg-gray-50 border text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-300 focus:ring-2 ${
-                  emailError ? 'border-red-300 focus:border-red-300' : 'border-gray-200'
+                className={`peer w-full px-3.5 pt-5 pb-2 rounded-2xl bg-surface border text-sm text-ink outline-none transition-all focus:bg-white focus:border-gray-300 focus:ring-2 ${
+                  emailError ? 'border-red-300 focus:border-red-300' : 'border-edge-strong'
                 }`}
                 style={{ ['--tw-ring-color' as string]: emailError ? '#fecaca' : `${accentColor}25` }}
               />
               <label
                 htmlFor="guest-email"
-                className="absolute left-3.5 top-1.5 text-2xs uppercase tracking-wide font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-2xs peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-gray-500"
+                className="absolute left-3.5 top-1.5 text-2xs uppercase tracking-wide font-medium text-faint transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-faint peer-focus:top-1.5 peer-focus:text-2xs peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-dim"
               >
                 Email (optional)
               </label>
@@ -186,7 +186,7 @@ export default function GuestOnboardingModal({
           <button
             type="submit"
             disabled={!canSubmit}
-            className="group mt-5 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 shadow-sm"
+            className="group mt-5 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 shadow-sm"
             style={{ backgroundColor: accentColor }}
           >
             Continue
@@ -197,7 +197,7 @@ export default function GuestOnboardingModal({
           </button>
 
           {/* Footer */}
-          <p className="mt-4 text-[11px] text-center text-gray-400">
+          <p className="mt-4 text-detail text-center text-faint">
             {companyName ? `An invitation from ${companyName}` : 'Private feedback space'}
           </p>
         </div>

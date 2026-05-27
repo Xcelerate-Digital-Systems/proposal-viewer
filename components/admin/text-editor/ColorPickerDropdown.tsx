@@ -55,7 +55,7 @@ export default function ColorPickerDropdown({
         className={`p-2 rounded transition-colors flex items-center gap-0.5 ${
           isOpen
             ? 'bg-teal/15 text-teal'
-            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            : 'text-dim hover:text-prose hover:bg-gray-100'
         }`}
       >
         <div className="relative">
@@ -70,10 +70,10 @@ export default function ColorPickerDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-2" style={{ width: columns === 5 ? 170 : 180 }}>
+        <div className="absolute top-full left-0 mt-1 bg-white border border-edge-strong rounded-lg shadow-lg z-50 p-2" style={{ width: columns === 5 ? 170 : 180 }}>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-2xs font-semibold uppercase text-gray-400 tracking-wider">{title}</span>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-0.5">
+            <span className="text-2xs font-semibold uppercase text-faint tracking-wider">{title}</span>
+            <button onClick={onClose} className="text-faint hover:text-prose p-0.5">
               <X size={10} />
             </button>
           </div>
@@ -89,7 +89,7 @@ export default function ColorPickerDropdown({
                 className={`w-6 h-6 rounded border transition-all hover:scale-110 ${
                   currentColor === c.value
                     ? 'ring-2 ring-teal ring-offset-1'
-                    : 'border-gray-200 hover:border-gray-400'
+                    : 'border-edge-strong hover:border-gray-400'
                 }`}
                 style={{
                   backgroundColor: c.value || '#ffffff',
@@ -102,15 +102,15 @@ export default function ColorPickerDropdown({
           </div>
 
           {showCustomInput && (
-            <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-1.5">
+            <div className="mt-2 pt-2 border-t border-edge flex items-center gap-1.5">
               <input
                 type="color"
                 value={currentColor || '#000000'}
                 onChange={(e) => onSelect(e.target.value)}
-                className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0"
+                className="w-6 h-6 rounded border border-edge-strong cursor-pointer p-0"
                 title="Custom color"
               />
-              <span className="text-2xs text-gray-400">Custom</span>
+              <span className="text-2xs text-faint">Custom</span>
             </div>
           )}
         </div>

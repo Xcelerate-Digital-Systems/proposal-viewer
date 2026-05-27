@@ -139,7 +139,7 @@ export default function TemplateUploadModal({
       <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
         <Modal.Body className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Template type</label>
+            <label className="block text-sm font-medium text-prose mb-1.5">Template type</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -148,7 +148,7 @@ export default function TemplateUploadModal({
                 className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   entityType === 'proposal'
                     ? 'bg-teal/10 border-teal text-teal'
-                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                    : 'bg-white border-edge-strong text-dim hover:border-gray-300'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Proposal
@@ -160,7 +160,7 @@ export default function TemplateUploadModal({
                 className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   entityType === 'quote'
                     ? 'bg-teal/10 border-teal text-teal'
-                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                    : 'bg-white border-edge-strong text-dim hover:border-gray-300'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Quote
@@ -179,18 +179,18 @@ export default function TemplateUploadModal({
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">PDF File <span className="text-gray-400 font-normal">(optional)</span></label>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
+            <label className="block text-sm font-medium text-prose mb-1">PDF File <span className="text-faint font-normal">(optional)</span></label>
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
               {file ? (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-dim">
                   <FileText size={20} className="text-teal" />
-                  <span className="font-medium text-gray-900">{file.name}</span>
-                  <span className="text-gray-400">({formatSize(file.size)})</span>
+                  <span className="font-medium text-ink">{file.name}</span>
+                  <span className="text-faint">({formatSize(file.size)})</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
                   <Upload size={24} className="text-gray-300" />
-                  <span className="text-sm text-gray-400">Click to upload PDF</span>
+                  <span className="text-sm text-faint">Click to upload PDF</span>
                   <span className="text-xs text-gray-300">Or skip to create a blank template</span>
                 </div>
               )}
@@ -207,7 +207,7 @@ export default function TemplateUploadModal({
           {uploading && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 flex items-center gap-1.5">
+                <span className="text-dim flex items-center gap-1.5">
                   <Loader2 size={12} className="animate-spin text-teal" />
                   {status}
                 </span>

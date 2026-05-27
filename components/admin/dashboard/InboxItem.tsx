@@ -118,7 +118,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
   };
 
   return (
-    <div className={`px-5 py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}>
+    <div className={`px-5 py-4 ${!isLast ? 'border-b border-edge' : ''}`}>
       <div className="flex gap-3">
         {/* Avatar */}
         <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 bg-surface text-muted">
@@ -128,12 +128,12 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
         <div className="flex-1 min-w-0">
           {/* Top row: author + time */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13px] font-semibold text-ink">{item.clientName}</span>
+            <span className="text-caption font-semibold text-ink">{item.clientName}</span>
             <span className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded-full bg-surface text-muted">
               <MessageSquareText size={10} />
               Feedback
             </span>
-            <span className="text-[11px] text-faint ml-auto shrink-0">
+            <span className="text-detail text-faint ml-auto shrink-0">
               {formatRelative(item.createdAt)}
             </span>
           </div>
@@ -149,7 +149,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
           <div className="flex gap-3 mt-2.5">
             <div className="flex-1 min-w-0">
               <p
-                className={`text-[13px] text-ink/85 whitespace-pre-wrap ${
+                className={`text-caption text-ink/85 whitespace-pre-wrap ${
                   expanded ? '' : 'line-clamp-3'
                 }`}
               >
@@ -158,7 +158,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
               {item.content.length > 220 && (
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  className="text-[11px] text-teal hover:underline mt-1"
+                  className="text-detail text-teal hover:underline mt-1"
                 >
                   {expanded ? 'Show less' : 'Show more'}
                 </button>
@@ -187,17 +187,17 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
 
           {/* Reply composer */}
           {replyOpen && (
-            <div className="mt-3 rounded-xl border border-gray-200 bg-surface/50 p-2.5">
+            <div className="mt-3 rounded-2xl border border-edge-strong bg-surface/50 p-2.5">
               <textarea
                 autoFocus
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder={`Reply to ${item.clientName}...`}
                 rows={3}
-                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 resize-none"
+                className="w-full bg-white border border-edge-strong rounded-lg px-3 py-2 text-caption text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 resize-none"
                 disabled={sending}
               />
-              {error && <p className="text-[11px] text-red-600 mt-1.5">{error}</p>}
+              {error && <p className="text-detail text-red-600 mt-1.5">{error}</p>}
               <div className="flex items-center justify-end gap-2 mt-2">
                 <button
                   onClick={() => {
@@ -250,7 +250,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
             </div>
           )}
           {!replyOpen && error && (
-            <p className="text-[11px] text-red-600 mt-1.5">{error}</p>
+            <p className="text-detail text-red-600 mt-1.5">{error}</p>
           )}
         </div>
       </div>
@@ -273,7 +273,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
             src={item.screenshotUrl}
             alt="Screenshot"
             onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
           />
         </div>
       )}

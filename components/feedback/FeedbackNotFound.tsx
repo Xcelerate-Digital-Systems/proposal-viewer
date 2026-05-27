@@ -22,11 +22,11 @@ export default function FeedbackNotFound({ type = 'not_found' }: ReviewNotFoundP
   const isError = type === 'error';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-surface flex items-center justify-center p-6">
       <div className="max-w-sm w-full text-center">
         {/* Icon */}
         <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-5">
-          <Link2Off size={28} className="text-gray-400" />
+          <Link2Off size={28} className="text-faint" />
         </div>
 
         {/* Heading */}
@@ -35,7 +35,7 @@ export default function FeedbackNotFound({ type = 'not_found' }: ReviewNotFoundP
         </h1>
 
         {/* Description */}
-        <p className="text-sm text-gray-500 leading-relaxed">
+        <p className="text-sm text-dim leading-relaxed">
           {isError
             ? 'We had trouble loading this page. Please try again in a moment.'
             : 'The shared link you followed may have been revoked or the content has been removed. Contact the person who shared it with you for an updated link.'}

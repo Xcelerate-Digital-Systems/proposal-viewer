@@ -113,7 +113,7 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain,
       fileSize={formatSize(p.file_size_bytes)}
       createdAt={p.created_at}
       coverTopLeftBadge={p.entity_type === 'quote' ? (
-        <span className="px-2 py-0.5 rounded-md bg-amber-50/90 backdrop-blur-sm text-2xs font-semibold text-amber-600 border border-amber-200">
+        <span className="px-2 py-0.5 rounded-lg bg-amber-50/90 backdrop-blur-sm text-2xs font-semibold text-amber-600 border border-amber-200">
           Quote
         </span>
       ) : null}

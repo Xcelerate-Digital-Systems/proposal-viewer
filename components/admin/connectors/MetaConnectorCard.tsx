@@ -81,7 +81,7 @@ function StatusPill({
     disconnected: { label: 'Not connected', cls: 'bg-surface text-faint' },
   }[state];
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full ${config.cls}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 text-detail font-medium rounded-full ${config.cls}`}>
       {config.label}
     </span>
   );
@@ -93,8 +93,8 @@ function StepEyebrow({ step, title, hint }: { step: string; title: string; hint?
       <span className="text-2xs font-semibold uppercase tracking-wider text-faint">
         {step}
       </span>
-      <span className="text-[13px] font-semibold text-ink">{title}</span>
-      {hint && <span className="text-[11px] text-faint">{hint}</span>}
+      <span className="text-caption font-semibold text-ink">{title}</span>
+      {hint && <span className="text-detail text-faint">{hint}</span>}
     </div>
   );
 }
@@ -220,16 +220,16 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
   return (
     <section className="bg-white rounded-2xl shadow-card overflow-hidden">
       {/* Header band — matches dashboard section header */}
-      <header className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
+      <header className="flex items-start justify-between gap-4 px-6 py-5 border-b border-edge">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#1877F2]">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-[#1877F2]">
             <FacebookGlyph />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-[15px] font-semibold text-ink">Facebook Ads</h2>
+              <h2 className="text-base font-semibold text-ink">Facebook Ads</h2>
               <span className="text-faint text-xs">→</span>
-              <span className="text-[13px] font-medium text-muted">Looker Studio</span>
+              <span className="text-caption font-medium text-muted">Looker Studio</span>
               <StatusPill state={headerState} />
             </div>
             <p className="text-xs text-faint mt-1 leading-relaxed max-w-[58ch]">
@@ -262,7 +262,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
               return (
                 <div
                   key={connection.id}
-                  className="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white border border-gray-100 rounded-xl"
+                  className="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white border border-edge rounded-2xl"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 bg-teal-tint rounded-lg flex items-center justify-center shrink-0">
@@ -274,7 +274,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
                           {connection.meta_user_name || connection.meta_user_id}
                         </p>
                         {connection.status === 'needs_reauth' && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="inline-flex items-center px-1.5 py-0.5 text-2xs font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                             Needs reauth
                           </span>
                         )}
@@ -289,7 +289,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
                     type="button"
                     onClick={() => disconnect(connection)}
                     disabled={isDisconnecting}
-                    className="px-2.5 py-1.5 text-xs font-medium text-faint hover:text-red-500 rounded-md flex items-center gap-1.5 disabled:opacity-50 transition-colors shrink-0"
+                    className="px-2.5 py-1.5 text-xs font-medium text-faint hover:text-red-500 rounded-lg flex items-center gap-1.5 disabled:opacity-50 transition-colors shrink-0"
                     title="Disconnect"
                   >
                     {isDisconnecting ? (
@@ -315,7 +315,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-4 px-4 py-3.5 bg-surface rounded-xl">
+          <div className="flex items-center justify-between gap-4 px-4 py-3.5 bg-surface rounded-2xl">
             <p className="text-xs text-muted leading-relaxed">
               Sign in with Facebook to authorize AgencyViz to read your ad account performance.
               Each team member can connect their own Facebook account.
@@ -334,7 +334,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
       </div>
 
       {/* Step 2 — Add to Looker Studio */}
-      <div className="border-t border-gray-100 bg-surface/50">
+      <div className="border-t border-edge bg-surface/50">
         <StepEyebrow
           step="Step 2"
           title="Add the connector to Looker Studio"
@@ -355,7 +355,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
               href="https://lookerstudio.google.com"
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted hover:text-ink border border-gray-100 rounded-lg hover:bg-white transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted hover:text-ink border border-edge rounded-lg hover:bg-white transition-colors"
             >
               Open Looker Studio
               <ExternalLink size={12} />
@@ -364,7 +364,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
 
           <ol className="space-y-2.5 text-xs text-muted leading-relaxed">
             <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-gray-200 text-faint text-[10px] font-semibold">
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-edge-strong text-faint text-2xs font-semibold">
                 1
               </span>
               <span className="pt-0.5">
@@ -372,7 +372,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-gray-200 text-faint text-[10px] font-semibold">
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-edge-strong text-faint text-2xs font-semibold">
                 2
               </span>
               <span className="pt-0.5">
@@ -381,7 +381,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-gray-200 text-faint text-[10px] font-semibold">
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-edge-strong text-faint text-2xs font-semibold">
                 3
               </span>
               <span className="pt-0.5">
@@ -391,7 +391,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-gray-200 text-faint text-[10px] font-semibold">
+              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-edge-strong text-faint text-2xs font-semibold">
                 4
               </span>
               <span className="pt-0.5">

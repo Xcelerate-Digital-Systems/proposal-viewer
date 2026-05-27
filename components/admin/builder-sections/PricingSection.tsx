@@ -131,9 +131,9 @@ export default function PricingSection({
     return (
       <div className="space-y-5">
         {pageStrip}
-        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
+        <div className="bg-white rounded-2xl border border-edge-strong py-16 text-center">
           <DollarSign size={28} className="mx-auto text-gray-200 mb-3" />
-          <p className="text-sm text-gray-400 mb-1">No quote page selected</p>
+          <p className="text-sm text-faint mb-1">No quote page selected</p>
           <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
         </div>
       </div>
@@ -154,7 +154,7 @@ export default function PricingSection({
           <SectionCard
             title="Quote Page"
             description="Toggle visibility in the proposal viewer"
-            icon={<DollarSign size={14} className="text-gray-400" />}
+            icon={<DollarSign size={14} className="text-faint" />}
             action={
               <Chip enabled={editor.form.enabled} onClick={() => editor.toggleEnabled()}>
                 {editor.form.enabled ? 'Visible' : 'Hidden'}
@@ -162,13 +162,13 @@ export default function PricingSection({
             }
           >
             {!editor.form.enabled && (
-              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-8 text-center">
-                <p className="text-sm text-gray-400 mb-1">Quote page is currently disabled</p>
+              <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-8 text-center">
+                <p className="text-sm text-faint mb-1">Quote page is currently disabled</p>
                 <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
               </div>
             )}
             {editor.form.enabled && (
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-faint">
                 Configure the quote page below. Changes save automatically.
               </p>
             )}
@@ -179,7 +179,7 @@ export default function PricingSection({
               <SectionCard
                 title="Settings"
                 description="Title, intro, columns, and label customisation"
-                icon={<SettingsIcon size={14} className="text-gray-400" />}
+                icon={<SettingsIcon size={14} className="text-faint" />}
               >
                 <PricingSettings
                   title={editor.form.title}
@@ -224,7 +224,7 @@ export default function PricingSection({
               <SectionCard
                 title="Line Items"
                 description="The main scope of works billed in this quote"
-                icon={<ListChecks size={14} className="text-gray-400" />}
+                icon={<ListChecks size={14} className="text-faint" />}
                 action={lineItemsToolbar?.({
                   items: editor.form.items,
                   replaceItems: (items) => editor.updateForm({ items }),
@@ -246,7 +246,7 @@ export default function PricingSection({
               <SectionCard
                 title="Optional Items"
                 description="Add-ons the client can choose to include"
-                icon={<PlusSquare size={14} className="text-gray-400" />}
+                icon={<PlusSquare size={14} className="text-faint" />}
               >
                 <PricingOptionalItems
                   items={editor.form.optionalItems}
@@ -257,7 +257,7 @@ export default function PricingSection({
               <SectionCard
                 title="Totals"
                 description="Subtotal, tax, and grand total preview"
-                icon={<Calculator size={14} className="text-gray-400" />}
+                icon={<Calculator size={14} className="text-faint" />}
               >
                 <PricingTotals
                   items={editor.form.items}
@@ -270,13 +270,13 @@ export default function PricingSection({
               <SectionCard
                 title="Payment & Tax"
                 description="GST and the deposit / milestone breakdown"
-                icon={<Calendar size={14} className="text-gray-400" />}
+                icon={<Calendar size={14} className="text-faint" />}
               >
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                  <div className="flex items-center justify-between pb-4 border-b border-edge">
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Include GST</p>
-                      <p className="text-xs text-gray-400">10% Goods and Services Tax applied to the total</p>
+                      <p className="text-sm font-medium text-prose">Include GST</p>
+                      <p className="text-xs text-faint">10% Goods and Services Tax applied to the total</p>
                     </div>
                     <Toggle enabled={editor.form.taxEnabled} onChange={(v) => editor.updateForm({ taxEnabled: v })} size="sm" />
                   </div>
@@ -295,45 +295,45 @@ export default function PricingSection({
                 <SectionCard
                   title="Job / Site Details"
                   description="Site address, start date, and duration"
-                  icon={<MapPin size={14} className="text-gray-400" />}
+                  icon={<MapPin size={14} className="text-faint" />}
                   action={<Toggle enabled={showJobFields} onChange={toggleJobFields} size="sm" />}
                 >
                   {showJobFields ? (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Site / Job Address</label>
+                        <label className="block text-xs font-medium text-prose mb-1">Site / Job Address</label>
                         <input
                           type="text"
                           value={jobFields.site_address}
                           onChange={(e) => updateJobField('site_address', e.target.value)}
                           placeholder="123 Main St, Suburb VIC 3000"
-                          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                          className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Start Date</label>
+                          <label className="block text-xs font-medium text-prose mb-1">Estimated Start Date</label>
                           <input
                             type="date"
                             value={jobFields.estimated_start_date}
                             onChange={(e) => updateJobField('estimated_start_date', e.target.value)}
-                            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                            className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Duration</label>
+                          <label className="block text-xs font-medium text-prose mb-1">Estimated Duration</label>
                           <input
                             type="text"
                             value={jobFields.estimated_duration}
                             onChange={(e) => updateJobField('estimated_duration', e.target.value)}
                             placeholder="e.g. 2-3 weeks"
-                            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+                            className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
                           />
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400">Toggle on to surface site / job details on the quote page.</p>
+                    <p className="text-xs text-faint">Toggle on to surface site / job details on the quote page.</p>
                   )}
                 </SectionCard>
               )}

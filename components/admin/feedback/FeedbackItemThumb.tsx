@@ -40,30 +40,30 @@ export default function FeedbackItemThumb({ item }: Props) {
           </div>
         ) : (
           <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-teal/10 flex items-center justify-center mx-auto">
               <Globe size={22} className="text-teal" />
             </div>
-            <p className="text-xs text-gray-400 mt-2.5">No URL set</p>
+            <p className="text-xs text-faint mt-2.5">No URL set</p>
           </div>
         )
       ) : item.type === 'email' ? (
         <div className="w-full h-full flex flex-col text-left overflow-hidden bg-white">
-          <div className="px-3 pt-3 pb-2 border-b border-gray-100 shrink-0">
+          <div className="px-3 pt-3 pb-2 border-b border-edge shrink-0">
             <div className="flex items-center gap-2 mb-1.5">
               <div className="w-5 h-5 rounded-full bg-teal/15 flex items-center justify-center shrink-0">
                 <Mail size={10} className="text-teal" />
               </div>
-              <span className="text-2xs text-gray-400 truncate">Your Brand</span>
+              <span className="text-2xs text-faint truncate">Your Brand</span>
             </div>
             <p className="text-xs font-semibold text-gray-800 truncate leading-snug">
               {item.email_subject || 'No subject'}
             </p>
             {item.email_preheader && (
-              <p className="text-2xs text-gray-400 truncate mt-0.5">{item.email_preheader}</p>
+              <p className="text-2xs text-faint truncate mt-0.5">{item.email_preheader}</p>
             )}
           </div>
           <div className="flex-1 px-3 py-2 overflow-hidden">
-            <p className="text-2xs leading-relaxed text-gray-500 line-clamp-6 whitespace-pre-line">
+            <p className="text-2xs leading-relaxed text-dim line-clamp-6 whitespace-pre-line">
               {item.email_body || item.html_content
                 ? (item.email_body || item.html_content || '').replace(/<[^>]*>/g, '').slice(0, 300)
                 : 'No content'}
@@ -72,10 +72,10 @@ export default function FeedbackItemThumb({ item }: Props) {
         </div>
       ) : item.type === 'sms' ? (
         <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-teal/10 flex items-center justify-center mx-auto">
             <Smartphone size={22} className="text-teal" />
           </div>
-          <p className="text-xs text-gray-500 font-medium mt-2.5 truncate px-4 max-w-full">
+          <p className="text-xs text-dim font-medium mt-2.5 truncate px-4 max-w-full">
             {item.sms_body ? `${item.sms_body.slice(0, 30)}…` : 'SMS'}
           </p>
         </div>
@@ -83,21 +83,21 @@ export default function FeedbackItemThumb({ item }: Props) {
         <img src={thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
       ) : (
         <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto">
             <Eye size={22} className="text-gray-300" />
           </div>
-          <p className="text-xs text-gray-400 mt-2.5">No preview</p>
+          <p className="text-xs text-faint mt-2.5">No preview</p>
         </div>
       )}
 
       {/* Type badge overlay */}
-      <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-gray-500 capitalize shadow-sm">
+      <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-dim capitalize shadow-sm">
         {item.type === 'ad' ? 'Meta Ad' : item.type === 'webpage' ? 'Web Page' : item.type}
       </span>
 
       {/* Version badge */}
       {item.version > 1 && (
-        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-gray-500 shadow-sm">
+        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-dim shadow-sm">
           v{item.version}
         </span>
       )}

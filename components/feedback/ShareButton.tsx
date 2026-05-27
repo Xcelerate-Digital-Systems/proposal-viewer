@@ -153,7 +153,7 @@ export default function ShareButton({
           flex items-center gap-1.5 px-3 py-2 text-sm font-medium border transition-colors
           ${isActive
             ? 'text-teal border-teal/30 bg-teal/5 hover:bg-teal/10'
-            : 'text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}
+            : 'text-dim border-edge-strong hover:text-prose hover:bg-gray-100'}
           ${isActive && !permanent ? 'rounded-l-lg border-r-0' : 'rounded-lg'}
         `}
       >
@@ -181,7 +181,7 @@ export default function ShareButton({
 
       {/* Dropdown menu */}
       {menuOpen && isActive && token && !permanent && (
-        <div className="fixed z-[9999] bg-white rounded-xl border border-gray-200 shadow-lg w-[200px] py-1"
+        <div className="fixed z-[9999] bg-white rounded-2xl border border-edge-strong shadow-lg w-[200px] py-1"
           style={{
             top: (menuRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
             left: Math.min(
@@ -195,13 +195,13 @@ export default function ShareButton({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setMenuOpen(false)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface transition-colors"
           >
             <ExternalLink size={14} />
             Open Preview
           </a>
 
-          <div className="border-t border-gray-100 my-1" />
+          <div className="border-t border-edge my-1" />
 
           <button
             onClick={handleRevoke}

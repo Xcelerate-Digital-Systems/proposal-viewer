@@ -51,7 +51,7 @@ export default function SortablePdfRow({
     <div ref={setNodeRef} style={style}>
       <div
         className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors border border-dashed ${
-          isSelected ? 'bg-teal/10 border-teal/40 ring-1 ring-teal/30' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+          isSelected ? 'bg-teal/10 border-teal/40 ring-1 ring-teal/30' : 'border-edge-strong hover:bg-surface hover:border-gray-300'
         }`}
         onClick={onSelect}
       >
@@ -59,12 +59,12 @@ export default function SortablePdfRow({
         <button
           {...attributes}
           {...listeners}
-          className="shrink-0 p-0.5 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing touch-none"
+          className="shrink-0 p-0.5 text-gray-300 hover:text-dim cursor-grab active:cursor-grabbing touch-none"
         >
           <GripVertical size={14} />
         </button>
 
-        <span className="text-xs text-gray-400 w-5 text-right shrink-0 font-medium">{visualNum}.</span>
+        <span className="text-xs text-faint w-5 text-right shrink-0 font-medium">{visualNum}.</span>
 
         {/* Indent toggle */}
         <button
@@ -76,7 +76,7 @@ export default function SortablePdfRow({
               ? 'text-gray-200 cursor-not-allowed'
               : page.indent
               ? 'text-teal bg-teal/10 hover:bg-teal/20'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              : 'text-faint hover:text-prose hover:bg-gray-100'
           }`}
         >
           {page.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
@@ -93,7 +93,7 @@ export default function SortablePdfRow({
             value={page.title}
             onChange={(e) => onUpdate({ title: e.target.value })}
             onFocus={onSelect}
-            className="w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-teal/40 placeholder:text-gray-400"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:border-teal/40 placeholder:text-faint"
             placeholder={`Page ${visualNum}`}
           />
         </div>
@@ -116,9 +116,9 @@ export default function SortablePdfRow({
             variant="teal"
           />
           <label
-            className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
+            className={`p-1.5 rounded-lg flex items-center justify-center border transition-colors ${
               processing
-                ? 'text-gray-200 border-gray-100 cursor-not-allowed'
+                ? 'text-gray-200 border-edge cursor-not-allowed'
                 : 'text-teal border-teal/25 hover:bg-teal/5 hover:border-teal/40 cursor-pointer'
             }`}
             title="Replace page PDF"
@@ -135,10 +135,10 @@ export default function SortablePdfRow({
           <button
             onClick={onDeletePage}
             disabled={processing || pageCount <= 1}
-            className={`p-1.5 rounded-md flex items-center justify-center border transition-colors ${
+            className={`p-1.5 rounded-lg flex items-center justify-center border transition-colors ${
               processing || pageCount <= 1
-                ? 'text-gray-200 border-gray-100 cursor-not-allowed'
-                : 'text-gray-300 border-gray-100 hover:text-red-500 hover:border-red-200 hover:bg-red-50'
+                ? 'text-gray-200 border-edge cursor-not-allowed'
+                : 'text-gray-300 border-edge hover:text-red-500 hover:border-red-200 hover:bg-red-50'
             }`}
             title={pageCount <= 1 ? 'Cannot delete last page' : 'Delete page'}
           >

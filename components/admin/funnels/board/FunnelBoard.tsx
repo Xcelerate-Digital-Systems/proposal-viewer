@@ -320,7 +320,7 @@ function FunnelBoardInner() {
   const selectionCount = rf.getNodes().filter((n) => n.selected).length;
 
   return (
-    <div className="flex h-full min-h-[400px] bg-white rounded-xl border border-edge overflow-hidden shadow-sm">
+    <div className="flex h-full min-h-[400px] bg-white rounded-2xl border border-edge overflow-hidden shadow-sm">
       <NodePalette
         onPickStep={handlePickStep}
         onPickShape={handlePickShape}
@@ -405,7 +405,7 @@ function FunnelBoardInner() {
                   type="button"
                   onClick={() => void ctx.undo()}
                   disabled={!ctx.canUndo}
-                  className="w-7 h-7 rounded-md flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   title="Undo (⌘Z)"
                 >
                   <Undo2 size={14} />
@@ -414,7 +414,7 @@ function FunnelBoardInner() {
                   type="button"
                   onClick={() => void ctx.redo()}
                   disabled={!ctx.canRedo}
-                  className="w-7 h-7 rounded-md flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   title="Redo (⌘⇧Z)"
                 >
                   <Redo2 size={14} />
@@ -423,7 +423,7 @@ function FunnelBoardInner() {
                 <button
                   type="button"
                   onClick={() => ctx.setShowMetrics(!ctx.showMetrics)}
-                  className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
                     ctx.showMetrics
                       ? 'bg-teal/10 text-teal'
                       : 'text-ink/70 hover:text-ink hover:bg-surface'
@@ -461,7 +461,7 @@ function FunnelBoardInner() {
 
           {boardEmpty && !board.selectedEdge && (
             <Panel position="top-center" className="!top-24">
-              <div className="bg-white rounded-xl border border-edge shadow-lg px-6 py-5 max-w-sm text-center">
+              <div className="bg-white rounded-2xl border border-edge shadow-lg px-6 py-5 max-w-sm text-center">
                 <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center mx-auto mb-3">
                   <MousePointer size={18} className="text-teal" />
                 </div>

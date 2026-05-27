@@ -13,15 +13,15 @@ interface SectionCardProps {
 
 export default function SectionCard({ title, description, action, icon, children }: SectionCardProps) {
   return (
-    <section className="bg-white rounded-xl border border-gray-200">
-      <header className="flex items-start justify-between gap-4 px-5 py-4 border-b border-gray-100">
+    <section className="bg-white rounded-2xl border border-edge-strong">
+      <header className="flex items-start justify-between gap-4 px-5 py-4 border-b border-edge">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {icon}
-            <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+            <h2 className="text-sm font-semibold text-ink">{title}</h2>
           </div>
           {description && (
-            <p className="text-xs text-gray-400 mt-1">{description}</p>
+            <p className="text-xs text-faint mt-1">{description}</p>
           )}
         </div>
         {action && <div className="shrink-0">{action}</div>}

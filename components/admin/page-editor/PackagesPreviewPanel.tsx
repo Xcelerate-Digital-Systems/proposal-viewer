@@ -81,7 +81,7 @@ export default function PackagesPreviewPanel({
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col min-h-0">
-      <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-gray-200 bg-gray-100 min-h-0">
+      <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-edge-strong bg-gray-100 min-h-0">
         <div className="flex-1 min-h-0 overflow-hidden relative">
           <div
             className="absolute inset-0 overflow-y-auto"

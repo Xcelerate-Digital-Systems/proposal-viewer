@@ -126,7 +126,7 @@ export default function ViewerLoader({ branding, loading, label, minDisplayTime 
           {/* Percentage + label */}
           <div className="flex items-center justify-between">
             <span
-              className="text-[11px]"
+              className="text-detail"
               style={{
                 color: `${textColor}40`,
                 fontFamily: fontFamily(branding.font_body),
@@ -136,7 +136,7 @@ export default function ViewerLoader({ branding, loading, label, minDisplayTime 
               {label || 'Loading…'}
             </span>
             <span
-              className="text-[11px] font-medium tabular-nums"
+              className="text-detail font-medium tabular-nums"
               style={{ color: `${textColor}50` }}
             >
               {Math.round(progress)}%

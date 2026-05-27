@@ -339,7 +339,7 @@ export default function CoverDesignPanel({
         <SectionCard
           title="Cover Design"
           description="Fill, image overlay, and call-to-action colours for the cover splash."
-          icon={<Paintbrush size={14} className="text-gray-400" />}
+          icon={<Paintbrush size={14} className="text-faint" />}
         >
           <div className="space-y-6">
             {/* Fill (gradient/solid picker + overlay opacity). Header title
@@ -356,8 +356,8 @@ export default function CoverDesignPanel({
             />
 
             {/* Image upload */}
-            <div className="pt-6 border-t border-gray-100">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Cover Image</p>
+            <div className="pt-6 border-t border-edge">
+              <p className="text-xs font-medium text-dim uppercase tracking-wider mb-2">Cover Image</p>
               <input
                 ref={fileRef}
                 type="file"
@@ -372,14 +372,14 @@ export default function CoverDesignPanel({
               {imagePath ? (
                 <div className="flex items-start gap-3">
                   <div
-                    className="w-24 h-16 rounded-lg border border-gray-200 bg-cover bg-center shrink-0"
+                    className="w-24 h-16 rounded-lg border border-edge-strong bg-cover bg-center shrink-0"
                     style={{ backgroundImage: imageUrl ? `url(${imageUrl})` : undefined }}
                   />
                   <div className="space-y-1.5">
                     <button
                       onClick={() => fileRef.current?.click()}
                       disabled={uploading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
                     >
                       {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                       Replace
@@ -397,22 +397,22 @@ export default function CoverDesignPanel({
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
-                  className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-edge-strong text-faint hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
                 >
                   {uploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
                   <span className="text-xs font-medium">Upload cover image</span>
                 </button>
               )}
-              <p className="text-[11px] text-gray-400 mt-2">
+              <p className="text-detail text-faint mt-2">
                 The fill&apos;s overlay-opacity slider above controls how much fill shows through.
               </p>
             </div>
 
             {/* Client logo */}
             {cfg.fields.clientLogo && (
-              <div className="pt-4 border-t border-gray-100 space-y-3">
+              <div className="pt-4 border-t border-edge space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Client Logo</p>
+                  <p className="text-xs font-medium text-dim uppercase tracking-wider">Client Logo</p>
                   <Chip enabled={showClientLogo} onClick={toggleShowClientLogo}>
                     Show on cover
                   </Chip>
@@ -433,7 +433,7 @@ export default function CoverDesignPanel({
                   <div className="flex items-start gap-3">
                     {/* Live preview of the upload — flips to the silhouette when the
                         Color overlay chip is on so the user sees the rendered result. */}
-                    <div className="w-24 h-16 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-24 h-16 rounded-lg border border-edge-strong bg-surface flex items-center justify-center shrink-0 overflow-hidden">
                       {clientLogoTintColor ? (
                         <div
                           className="w-full h-full"
@@ -457,7 +457,7 @@ export default function CoverDesignPanel({
                       <button
                         onClick={() => clientLogoRef.current?.click()}
                         disabled={uploadingClientLogo}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
                       >
                         {uploadingClientLogo ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                         Replace
@@ -475,7 +475,7 @@ export default function CoverDesignPanel({
                   <button
                     onClick={() => clientLogoRef.current?.click()}
                     disabled={uploadingClientLogo}
-                    className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-edge-strong text-faint hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
                   >
                     {uploadingClientLogo ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
                     <span className="text-xs font-medium">Upload client logo</span>
@@ -485,7 +485,7 @@ export default function CoverDesignPanel({
                 {clientLogoUrl && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-gray-500">
+                      <p className="text-detail text-dim">
                         Flatten the logo to a single colour (good for placing on dark covers).
                       </p>
                       <Chip enabled={!!clientLogoTintColor} onClick={toggleColorOverlay}>
@@ -513,7 +513,7 @@ export default function CoverDesignPanel({
         <SectionCard
           title="Cover Header Text"
           description="Title and subtitle colours on the cover splash."
-          icon={<Type size={14} className="text-gray-400" />}
+          icon={<Type size={14} className="text-faint" />}
           action={
             <button
               onClick={() => {
@@ -521,7 +521,7 @@ export default function CoverDesignPanel({
                 setCoverSubtitleColor(null);
                 persist({ cover_text_color: null, cover_subtitle_color: null });
               }}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+              className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
             >
               <RotateCcw size={12} />
               Reset
@@ -551,7 +551,7 @@ export default function CoverDesignPanel({
         <SectionCard
           title="Call-to-action Button"
           description="Background and text colours for the cover button."
-          icon={<MousePointerClick size={14} className="text-gray-400" />}
+          icon={<MousePointerClick size={14} className="text-faint" />}
           action={
             <button
               onClick={() => {
@@ -559,7 +559,7 @@ export default function CoverDesignPanel({
                 setButtonTextColor('#ffffff');
                 persist({ cover_button_bg: '#01434A', cover_button_text_color: '#ffffff' });
               }}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+              className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
             >
               <RotateCcw size={12} />
               Reset

@@ -37,7 +37,7 @@ export default function EntityListSkeleton({
               <div className="h-4 w-3/4 rounded bg-surface animate-pulse" />
               <div className="h-3 w-1/2 rounded bg-surface animate-pulse" />
               <div className="flex items-center justify-between pt-2">
-                <div className="h-5 w-16 rounded-md bg-surface animate-pulse" />
+                <div className="h-5 w-16 rounded-lg bg-surface animate-pulse" />
                 <div className="h-5 w-20 rounded bg-surface animate-pulse" />
               </div>
             </div>
@@ -59,7 +59,7 @@ export default function EntityListSkeleton({
             <div className="h-4 w-1/3 rounded bg-surface animate-pulse" />
             <div className="h-3 w-1/4 rounded bg-surface animate-pulse" />
           </div>
-          <div className="h-5 w-16 rounded-md bg-surface animate-pulse shrink-0" />
+          <div className="h-5 w-16 rounded-lg bg-surface animate-pulse shrink-0" />
         </div>
       ))}
     </div>

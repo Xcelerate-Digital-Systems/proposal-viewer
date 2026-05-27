@@ -14,7 +14,7 @@ interface TextPageSettingsCardProps {
 }
 
 const INPUT_CLS =
-  'w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400';
+  'w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint';
 
 function Switch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -38,18 +38,18 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: () => void 
 
 export default function TextPageSettingsCard({ form, companyId, onUpdate }: TextPageSettingsCardProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white">
-      <div className="px-4 py-3 border-b border-gray-100">
+    <div className="rounded-2xl border border-edge-strong bg-white">
+      <div className="px-4 py-3 border-b border-edge">
         <h3 className="text-sm font-semibold text-gray-800">Page Settings</h3>
-        <p className="text-xs text-gray-400 mt-0.5">Title, header, and footer options for this page</p>
+        <p className="text-xs text-faint mt-0.5">Title, header, and footer options for this page</p>
       </div>
 
       <div className="p-4 space-y-5">
         {/* Title + show-in-viewer */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-gray-600">Page Title</label>
-            <label className="flex items-center gap-2 text-[11px] text-gray-500 cursor-pointer">
+            <label className="text-xs font-medium text-prose">Page Title</label>
+            <label className="flex items-center gap-2 text-detail text-dim cursor-pointer">
               <span>Show title in viewer</span>
               <Switch
                 checked={form.show_title}
@@ -69,11 +69,11 @@ export default function TextPageSettingsCard({ form, companyId, onUpdate }: Text
         {/* Two-column row: avatar / client logo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Avatar */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50/40 p-3">
+          <div className="rounded-lg border border-edge bg-surface/40 p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <User size={14} className="text-gray-400" />
-                <span className="text-xs font-medium text-gray-700">Show Avatar</span>
+                <User size={14} className="text-faint" />
+                <span className="text-xs font-medium text-prose">Show Avatar</span>
               </div>
               <Switch
                 checked={!!form.show_member_badge}
@@ -92,25 +92,25 @@ export default function TextPageSettingsCard({ form, companyId, onUpdate }: Text
                 onSelect={(id) => onUpdate({ prepared_by_member_id: id })}
               />
             ) : (
-              <p className="text-[11px] text-gray-400 leading-relaxed">
+              <p className="text-detail text-faint leading-relaxed">
                 Adds a signature-style member card at the page footer.
               </p>
             )}
           </div>
 
           {/* Client logo */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50/40 p-3">
+          <div className="rounded-lg border border-edge bg-surface/40 p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <ImageIcon size={14} className="text-gray-400" />
-                <span className="text-xs font-medium text-gray-700">Show Client Logo</span>
+                <ImageIcon size={14} className="text-faint" />
+                <span className="text-xs font-medium text-prose">Show Client Logo</span>
               </div>
               <Switch
                 checked={!!form.show_client_logo}
                 onChange={() => onUpdate({ show_client_logo: !form.show_client_logo })}
               />
             </div>
-            <p className="text-[11px] text-gray-400 leading-relaxed">
+            <p className="text-detail text-faint leading-relaxed">
               Top-right on portrait pages, side column on landscape.
             </p>
           </div>

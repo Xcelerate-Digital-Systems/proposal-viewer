@@ -64,7 +64,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
   if (!editor) return null;
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white flex flex-col max-h-[70vh]">
+    <div className="border border-edge-strong rounded-lg overflow-hidden bg-white flex flex-col max-h-[70vh]">
       <div className="shrink-0">
         <RichTextToolbar editor={editor} />
       </div>

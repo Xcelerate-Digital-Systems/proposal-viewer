@@ -82,7 +82,7 @@ export default function EntityCard({
   const aspectClass = aspectRatio === '4/3' ? 'aspect-[4/3]' : 'aspect-[16/10]';
 
   return (
-    <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow flex flex-col">
+    <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all flex flex-col">
       {/* ── Visual header — link to open ─────────────────────── */}
       <Link
         href={href}
@@ -118,7 +118,7 @@ export default function EntityCard({
               </h4>
               {coverDescription && (
                 <p
-                  className="text-[11px] mt-1 opacity-70 truncate"
+                  className="text-detail mt-1 opacity-70 truncate"
                   style={{ color: cover.subtitleColor || cover.textColor || '#ffffff' }}
                 >
                   {coverDescription}
@@ -138,7 +138,7 @@ export default function EntityCard({
               </div>
             ) : (
               <div className="text-center">
-                <div className="w-12 h-12 rounded-xl bg-teal-tint flex items-center justify-center mx-auto mb-2">
+                <div className="w-12 h-12 rounded-2xl bg-teal-tint flex items-center justify-center mx-auto mb-2">
                   <FolderOpen size={22} className="text-teal" />
                 </div>
                 <p className="text-xs text-faint">No pages yet</p>
@@ -165,7 +165,7 @@ export default function EntityCard({
         <div className="flex items-center gap-2 mb-1 min-w-0">
           <Link
             href={href}
-            className="text-[15px] font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors"
+            className="text-base font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors"
           >
             {title}
           </Link>
@@ -187,7 +187,7 @@ export default function EntityCard({
         <div className="flex-1" />
 
         {/* ── Actions ──────────────────────────────────────── */}
-        <div className="flex items-center justify-between border-t border-gray-100 pt-2.5 -mx-3.5 px-3.5">
+        <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3.5 px-3.5">
           <div className="flex items-center gap-0.5">{actions}</div>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}

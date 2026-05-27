@@ -198,7 +198,7 @@ export default function WhiteboardTour({
       {/* Glow outline around the spotlighted target */}
       {rect && (
         <div
-          className="absolute pointer-events-none rounded-xl"
+          className="absolute pointer-events-none rounded-2xl"
           style={{
             top: rect.top - 8,
             left: rect.left - 8,
@@ -232,18 +232,18 @@ export default function WhiteboardTour({
           </div>
           <h4
             id="wb-tour-title"
-            className="text-[15px] font-semibold text-gray-900 leading-tight mb-1.5"
+            className="text-base font-semibold text-ink leading-tight mb-1.5"
             style={{ fontFamily: headingFont }}
           >
             {step.title}
           </h4>
-          <p className="text-[13px] text-gray-600 leading-[1.55] mb-4">{step.body}</p>
+          <p className="text-caption text-prose leading-[1.55] mb-4">{step.body}</p>
           <div className="flex items-center justify-between gap-2">
             {!isLast ? (
               <button
                 type="button"
                 onClick={end}
-                className="text-xs font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-100 px-2 py-1.5 rounded-md transition-all duration-300"
+                className="text-xs font-medium text-faint hover:text-prose hover:bg-gray-100 px-2 py-1.5 rounded-lg transition-all duration-300"
               >
                 Skip tour
               </button>
@@ -253,7 +253,7 @@ export default function WhiteboardTour({
             <button
               type="button"
               onClick={next}
-              className="text-[13px] font-semibold text-white px-4 py-2 rounded-lg transition-all duration-300 hover:brightness-110"
+              className="text-caption font-semibold text-white px-4 py-2 rounded-lg transition-all duration-300 hover:brightness-110"
               style={{ backgroundColor: accentColor }}
             >
               {isLast ? 'Got it' : 'Next'}

@@ -453,7 +453,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
   const selectionCount = rf.getNodes().filter((n) => n.selected).length;
 
   return (
-    <div className="flex h-full min-h-[400px] bg-white rounded-xl border border-edge overflow-hidden shadow-sm">
+    <div className="flex h-full min-h-[400px] bg-white rounded-2xl border border-edge overflow-hidden shadow-sm">
       <FeedbackPalette
         activeTool={activeTool}
         onPickShape={handlePickShape}
@@ -556,7 +556,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
 
           {boardEmpty && !board.selectedEdge && (
             <Panel position="top-center" className="!top-24">
-              <div className="bg-white rounded-xl border border-edge shadow-lg px-6 py-5 max-w-sm text-center">
+              <div className="bg-white rounded-2xl border border-edge shadow-lg px-6 py-5 max-w-sm text-center">
                 <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center mx-auto mb-3">
                   <MousePointer size={18} className="text-teal" />
                 </div>

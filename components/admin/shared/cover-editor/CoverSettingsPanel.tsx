@@ -25,7 +25,7 @@ function ToggleRow({
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         {icon}
-        <span className="text-sm text-gray-700">{label}</span>
+        <span className="text-sm text-prose">{label}</span>
       </div>
       <Chip enabled={enabled} onClick={onToggle}>
         {enabled ? 'Visible' : 'Hidden'}
@@ -40,7 +40,7 @@ function SectionHeader({ icon, label }: { icon: React.ReactNode; label: string }
   return (
     <div className="flex items-center gap-2 pt-1">
       {icon}
-      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
+      <span className="text-xs font-semibold text-dim uppercase tracking-wider">{label}</span>
     </div>
   );
 }
@@ -157,14 +157,14 @@ export default function CoverSettingsPanel({
         <>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {coverEnabled ? <Eye size={16} className="text-teal" /> : <EyeOff size={16} className="text-gray-400" />}
-              <span className="text-sm text-gray-900 font-medium">Cover Page</span>
+              {coverEnabled ? <Eye size={16} className="text-teal" /> : <EyeOff size={16} className="text-faint" />}
+              <span className="text-sm text-ink font-medium">Cover Page</span>
             </div>
             <Chip enabled={coverEnabled} onClick={() => setCoverEnabled(!coverEnabled)}>
               {coverEnabled ? 'Visible' : 'Hidden'}
             </Chip>
           </div>
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-edge" />
         </>
       )}
 
@@ -172,22 +172,22 @@ export default function CoverSettingsPanel({
       {cfg.fields.subtitle && (
         <>
           <div className="space-y-2">
-            <SectionHeader icon={<Type size={14} className="text-gray-400" />} label={cfg.labels.subtitle} />
+            <SectionHeader icon={<Type size={14} className="text-faint" />} label={cfg.labels.subtitle} />
             <input
               type="text"
               value={subtitle}
               onChange={(e) => setSubtitle(e.target.value)}
               placeholder={subtitlePlaceholder}
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400"
+              className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
             />
             {cfg.labels.subtitleHint && (
-              <p className="text-xs text-gray-400">{cfg.labels.subtitleHint}</p>
+              <p className="text-xs text-faint">{cfg.labels.subtitleHint}</p>
             )}
             {type === 'proposal' && clientName && !cfg.labels.subtitleHint && (
-              <p className="text-xs text-gray-400">Leave blank for &quot;Prepared for {clientName}&quot;</p>
+              <p className="text-xs text-faint">Leave blank for &quot;Prepared for {clientName}&quot;</p>
             )}
           </div>
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-edge" />
         </>
       )}
 
@@ -195,41 +195,41 @@ export default function CoverSettingsPanel({
       {cfg.fields.preparedBy && (
         <>
           <div className="space-y-3">
-            <SectionHeader icon={<User size={14} className="text-gray-400" />} label="Prepared By" />
+            <SectionHeader icon={<User size={14} className="text-faint" />} label="Prepared By" />
             <PreparedBySelector
               companyId={companyId}
               selectedMemberId={preparedByMemberId}
               onSelect={(id) => setPreparedByMemberId(id)}
             />
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-faint">
               {type === 'template'
                 ? 'Default author for proposals created from this template.'
                 : 'Select who prepared this proposal. Their name and photo come from their profile.'}
             </p>
             <ToggleRow
-              icon={<User size={14} className="text-gray-400" />}
+              icon={<User size={14} className="text-faint" />}
               label="Show prepared by"
               enabled={showPreparedBy}
               onToggle={() => setShowPreparedBy(!showPreparedBy)}
             />
             {cfg.fields.avatar && (
               <ToggleRow
-                icon={<User size={14} className="text-gray-400" />}
+                icon={<User size={14} className="text-faint" />}
                 label="Show avatar"
                 enabled={showAvatar}
                 onToggle={() => setShowAvatar(!showAvatar)}
               />
             )}
           </div>
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-edge" />
         </>
       )}
 
       {/* ── Date ─────────────────────────────────────────── */}
       <div className="space-y-3">
-        <SectionHeader icon={<Calendar size={14} className="text-gray-400" />} label="Date" />
+        <SectionHeader icon={<Calendar size={14} className="text-faint" />} label="Date" />
         <ToggleRow
-          icon={<Calendar size={14} className="text-gray-400" />}
+          icon={<Calendar size={14} className="text-faint" />}
           label="Show date"
           enabled={showDate}
           onToggle={() => setShowDate(!showDate)}
@@ -241,14 +241,14 @@ export default function CoverSettingsPanel({
               value={coverDate}
               onChange={(e) => setCoverDate(e.target.value)}
               placeholder="e.g. Feb 2026"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400"
+              className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
             />
-            <p className="text-xs text-gray-400 mt-1">Free-text date shown on the cover page</p>
+            <p className="text-xs text-faint mt-1">Free-text date shown on the cover page</p>
           </div>
         )}
       </div>
 
-      <div className="border-t border-gray-100" />
+      <div className="border-t border-edge" />
 
       {/* Client logo controls moved to the Design tab → Client Logo card.
           Keep the cover_show_client_logo flag here is no longer toggled from the
@@ -258,29 +258,29 @@ export default function CoverSettingsPanel({
       {cfg.fields.acceptButtonText && (
         <>
           <div className="space-y-2">
-            <SectionHeader icon={<Type size={14} className="text-gray-400" />} label="Cover Button Text" />
+            <SectionHeader icon={<Type size={14} className="text-faint" />} label="Cover Button Text" />
             <input
               type="text"
               value={acceptButtonText}
               onChange={(e) => setAcceptButtonText(e.target.value)}
               placeholder="START READING PROPOSAL"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-gray-400"
+              className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
             />
-            <p className="text-xs text-gray-400">Text shown on the cover page CTA button. Leave blank for default.</p>
+            <p className="text-xs text-faint">Text shown on the cover page CTA button. Leave blank for default.</p>
           </div>
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-edge" />
         </>
       )}
 
       {/* ── Background Image ─────────────────────────────── */}
       {!hideImage && (
       <div className="space-y-3">
-        <SectionHeader icon={<Image size={14} className="text-gray-400" />} label="Background Image" />
+        <SectionHeader icon={<Image size={14} className="text-faint" />} label="Background Image" />
         {imageUrl ? (
-          <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
+          <div className="flex items-center gap-3 p-2 rounded-lg bg-surface border border-edge">
             <img src={imageUrl} alt="" className="h-10 w-14 object-cover rounded" />
-            <span className="text-xs text-gray-500 flex-1 truncate">{imagePath.split('/').pop()}</span>
-            <button onClick={onImageRemove} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+            <span className="text-xs text-dim flex-1 truncate">{imagePath.split('/').pop()}</span>
+            <button onClick={onImageRemove} className="p-1.5 text-faint hover:text-red-500 transition-colors">
               <Trash2 size={14} />
             </button>
           </div>
@@ -288,7 +288,7 @@ export default function CoverSettingsPanel({
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-teal/30 hover:text-teal transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-edge-strong text-sm text-faint hover:border-teal/30 hover:text-teal transition-colors disabled:opacity-50"
           >
             <Image size={16} />
             {uploading ? 'Uploading...' : 'Upload background image'}
@@ -310,11 +310,11 @@ export default function CoverSettingsPanel({
 
       {!hideColors && (
         <>
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-edge" />
 
           {/* ── Cover Colors ─────────────────────────────────── */}
           <div className="space-y-3">
-            <SectionHeader icon={<Palette size={14} className="text-gray-400" />} label="Cover Colors" />
+            <SectionHeader icon={<Palette size={14} className="text-faint" />} label="Cover Colors" />
             <CoverColorControls
               {...colors}
               onChange={onColorsChange}

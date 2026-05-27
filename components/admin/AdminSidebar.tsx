@@ -119,15 +119,15 @@ export default function AdminSidebar({
         className={`flex items-center gap-3 px-3 py-2 rounded-full text-sm font-medium transition-colors group ${
           active
             ? 'bg-white/10 text-white'
-            : 'text-white/60 hover:text-white hover:bg-[#013036]'
+            : 'text-white/60 hover:text-white hover:bg-surface-dark-hover'
         }`}
       >
         <Icon
           size={18}
-          className={active ? 'text-[#8AD9D1]' : 'text-white/40 group-hover:text-white/60'}
+          className={active ? 'text-surface-dark-accent' : 'text-white/40 group-hover:text-white/60'}
         />
         <span className="flex-1">{item.label}</span>
-        {active && <ChevronRight size={14} className="text-[#8AD9D1]/50" />}
+        {active && <ChevronRight size={14} className="text-surface-dark-accent/50" />}
       </Link>
     );
   };
@@ -141,7 +141,7 @@ export default function AdminSidebar({
         key={section.key}
         href={section.defaultHref}
         onClick={() => setMobileOpen(false)}
-        className="flex items-center gap-3 px-3 py-2 rounded-full text-sm font-medium transition-colors group text-white/60 hover:text-white hover:bg-[#013036]"
+        className="flex items-center gap-3 px-3 py-2 rounded-full text-sm font-medium transition-colors group text-white/60 hover:text-white hover:bg-surface-dark-hover"
       >
         <Icon size={18} className="text-white/40 group-hover:text-white/60" />
         <span className="flex-1">{section.label}</span>
@@ -153,10 +153,10 @@ export default function AdminSidebar({
   /* ── Top-level navigation ──────────────────────────────────── */
 
   const renderTopLevelNav = () => (
-    <>
+    <div className="animate-nav-fade contents">
       {/* WORKSPACE section */}
       <div className="px-3 pt-1 pb-2">
-        <span className="text-2xs font-semibold uppercase tracking-[3px] text-[#8AD9D1]/50">
+        <span className="text-2xs font-semibold uppercase tracking-[3px] text-surface-dark-accent/50">
           Workspace
         </span>
       </div>
@@ -171,7 +171,7 @@ export default function AdminSidebar({
 
       {/* ACCOUNT section */}
       <div className="px-3 pt-1 pb-2">
-        <span className="text-2xs font-semibold uppercase tracking-[3px] text-[#8AD9D1]/50">
+        <span className="text-2xs font-semibold uppercase tracking-[3px] text-surface-dark-accent/50">
           Account
         </span>
       </div>
@@ -185,17 +185,17 @@ export default function AdminSidebar({
         {isSuperAdmin && renderNavLink({ href: '/accounts', label: 'Accounts', icon: Shield })}
         {STANDALONE_ITEMS.map((item) => renderNavLink(item))}
       </div>
-    </>
+    </div>
   );
 
   /* ── Section sub-navigation ────────────────────────────────── */
 
   const renderSectionNav = (section: SectionDef) => (
-    <>
+    <div className="animate-nav-fade contents">
       <Link
         href="/dashboard"
         onClick={() => setMobileOpen(false)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors mb-1"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-surface-dark-hover transition-colors mb-1"
       >
         <ArrowLeft size={14} />
         <span>Back</span>
@@ -208,7 +208,7 @@ export default function AdminSidebar({
       <div className="space-y-0.5">
         {section.items.map((item) => renderNavLink(item))}
       </div>
-    </>
+    </div>
   );
 
   /* ── Sidebar content ───────────────────────────────────────── */
@@ -216,16 +216,16 @@ export default function AdminSidebar({
   const sidebarContent = (
     <div className="flex flex-col h-full" data-tour="sidebar">
       {companyOverride && (
-        <div className="px-3 py-2.5 bg-[#8AD9D1]/15 border-b border-[#01434A]">
+        <div className="px-3 py-2.5 bg-surface-dark-accent/15 border-b border-surface-dark-border">
           <div className="flex items-center gap-2 mb-1.5">
-            <Building2 size={13} className="text-[#8AD9D1] shrink-0" />
-            <span className="text-xs font-medium text-[#8AD9D1] truncate">
+            <Building2 size={13} className="text-surface-dark-accent shrink-0" />
+            <span className="text-xs font-medium text-surface-dark-accent truncate">
               {companyOverride.companyName}
             </span>
           </div>
           <button
             onClick={handleExitAccount}
-            className="flex items-center gap-1.5 text-xs text-[#8AD9D1]/70 hover:text-[#8AD9D1] transition-colors"
+            className="flex items-center gap-1.5 text-xs text-surface-dark-accent/70 hover:text-surface-dark-accent transition-colors"
           >
             <ArrowLeft size={11} />
             {isSuperAdmin ? 'Back to my account' : 'Back'}
@@ -233,7 +233,7 @@ export default function AdminSidebar({
         </div>
       )}
 
-      <div className="px-4 py-5 border-b border-[#01434A]">
+      <div className="px-4 py-5 border-b border-surface-dark-border">
         <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
       </div>
 
@@ -243,7 +243,7 @@ export default function AdminSidebar({
           another company. Single-membership users with no admin powers
           don't need the switcher at all. */}
       {(memberships.length > 1 || isSuperAdmin || !!companyOverride) && (
-        <div className="border-b border-[#01434A] py-2">
+        <div className="border-b border-surface-dark-border py-2">
           <WorkspaceSwitcher
             memberships={memberships}
             activeMembershipId={activeMembershipId}
@@ -266,13 +266,13 @@ export default function AdminSidebar({
         }
       </nav>
 
-      <div className="border-t border-[#01434A] p-3">
+      <div className="border-t border-surface-dark-border p-3">
         <div className="flex items-center gap-3 px-2 py-2 mb-1">
           {avatarUrl ? (
-            <img src={avatarUrl} alt={memberName || 'Avatar'} className="w-8 h-8 rounded-full object-cover shrink-0 border border-[#01434A]" />
+            <img src={avatarUrl} alt={memberName || 'Avatar'} className="w-8 h-8 rounded-full object-cover shrink-0 border border-surface-dark-border" />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-[#013036] border border-[#01434A] flex items-center justify-center shrink-0">
-              <span className="text-xs font-medium text-[#8AD9D1]">{initials}</span>
+            <div className="w-8 h-8 rounded-full bg-surface-dark-hover border border-surface-dark-border flex items-center justify-center shrink-0">
+              <span className="text-xs font-medium text-surface-dark-accent">{initials}</span>
             </div>
           )}
           <div className="min-w-0 flex-1">
@@ -289,7 +289,7 @@ export default function AdminSidebar({
         </div>
         <button
           onClick={onSignOut}
-          className="flex items-center gap-3 w-full px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-surface-dark-hover transition-colors"
         >
           <LogOut size={16} />
           Sign out
@@ -302,7 +302,7 @@ export default function AdminSidebar({
     <>
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-[#043946] border border-[#01434A] rounded-lg flex items-center justify-center text-white/70 hover:text-white transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-surface-dark border border-surface-dark-border rounded-lg flex items-center justify-center text-white/70 hover:text-white transition-colors"
       >
         <Menu size={18} />
       </button>
@@ -313,7 +313,7 @@ export default function AdminSidebar({
           onClick={() => setMobileOpen(false)}
         >
           <div
-            className="w-[260px] h-full bg-[#043946] border-r border-[#01434A]"
+            className="w-[260px] h-full bg-surface-dark border-r border-surface-dark-border"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -327,7 +327,7 @@ export default function AdminSidebar({
         </div>
       )}
 
-      <aside className="hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 bg-[#043946] border-r border-[#01434A] h-screen sticky top-0">
+      <aside className="hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 bg-surface-dark border-r border-surface-dark-border h-screen sticky top-0">
         {sidebarContent}
       </aside>
     </>

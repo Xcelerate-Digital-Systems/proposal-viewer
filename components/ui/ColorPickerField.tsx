@@ -200,7 +200,7 @@ export default function ColorPickerField({
   const renderPopoverBody = () => (
     <>
       {/* Native colour picker — base RGB only (HTML input[type=color] has no alpha) */}
-      <div className="relative w-full h-32 rounded-lg overflow-hidden border border-gray-100 mb-3">
+      <div className="relative w-full h-32 rounded-lg overflow-hidden border border-edge mb-3">
         <input
           type="color"
           value={displayBase}
@@ -222,10 +222,10 @@ export default function ColorPickerField({
       {/* Alpha slider */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Opacity</span>
-          <span className="text-2xs font-mono text-gray-500">{alphaPct}%</span>
+          <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Opacity</span>
+          <span className="text-2xs font-mono text-dim">{alphaPct}%</span>
         </div>
-        <div className="relative h-5 rounded-md overflow-hidden border border-gray-100" style={CHECKER_BG}>
+        <div className="relative h-5 rounded-lg overflow-hidden border border-edge" style={CHECKER_BG}>
           <div
             className="absolute inset-0"
             style={{ background: `linear-gradient(to right, ${displayBase}00, ${displayBase}ff)` }}
@@ -250,16 +250,16 @@ export default function ColorPickerField({
       {/* Brand colours */}
       {branding.length > 0 && (
         <div className="mb-3">
-          <span className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Brand</span>
+          <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Brand</span>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {branding.map((c) => (
               <button
                 key={c}
                 onClick={() => applyBase(c)}
-                className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${
+                className={`w-6 h-6 rounded-lg border transition-all hover:scale-110 ${
                   displayBase === c
                     ? 'border-teal ring-2 ring-teal/20'
-                    : 'border-gray-200 hover:border-gray-400'
+                    : 'border-edge-strong hover:border-gray-400'
                 }`}
                 style={{ backgroundColor: c }}
                 title={c}
@@ -272,7 +272,7 @@ export default function ColorPickerField({
       {/* Recently used colours */}
       {recent.length > 0 && (
         <div className="mb-3">
-          <span className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Recent</span>
+          <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Recent</span>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {recent.map((c) => {
               const r = parseColor(c);
@@ -281,8 +281,8 @@ export default function ColorPickerField({
                 <button
                   key={c}
                   onClick={() => { applyColor(c); setHexInput(c); }}
-                  className={`relative w-6 h-6 rounded-md border transition-all hover:scale-110 overflow-hidden ${
-                    isSelected ? 'border-teal ring-2 ring-teal/20' : 'border-gray-200 hover:border-gray-400'
+                  className={`relative w-6 h-6 rounded-lg border transition-all hover:scale-110 overflow-hidden ${
+                    isSelected ? 'border-teal ring-2 ring-teal/20' : 'border-edge-strong hover:border-gray-400'
                   }`}
                   title={c}
                 >
@@ -299,8 +299,8 @@ export default function ColorPickerField({
 
       {/* Hex input + preview */}
       <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/10 transition-all">
-          <span className="text-2xs text-gray-400 font-mono">#</span>
+        <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-edge-strong bg-surface focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/10 transition-all">
+          <span className="text-2xs text-faint font-mono">#</span>
           <input
             type="text"
             value={hexInput.replace('#', '')}
@@ -308,11 +308,11 @@ export default function ColorPickerField({
             onBlur={handleHexSubmit}
             onKeyDown={(e) => { if (e.key === 'Enter') handleHexSubmit(); }}
             maxLength={8}
-            className="flex-1 bg-transparent text-xs font-mono text-gray-700 outline-none w-0"
+            className="flex-1 bg-transparent text-xs font-mono text-prose outline-none w-0"
             placeholder="000000"
           />
         </div>
-        <div className="relative w-8 h-8 rounded-lg border border-gray-200 shrink-0 overflow-hidden">
+        <div className="relative w-8 h-8 rounded-lg border border-edge-strong shrink-0 overflow-hidden">
           {hasTransparency && <div className="absolute inset-0" style={CHECKER_BG} />}
           <div className="absolute inset-0" style={{ backgroundColor: displayColor }} />
         </div>
@@ -320,7 +320,7 @@ export default function ColorPickerField({
 
       <button
         onClick={handleClose}
-        className="w-full mt-2.5 py-1.5 text-[11px] font-medium text-teal bg-teal/5 rounded-lg hover:bg-teal/10 transition-colors"
+        className="w-full mt-2.5 py-1.5 text-detail font-medium text-teal bg-teal/5 rounded-lg hover:bg-teal/10 transition-colors"
       >
         Done
       </button>
@@ -333,9 +333,9 @@ export default function ColorPickerField({
         <button
           onClick={() => !disabled && setOpen(!open)}
           disabled={disabled}
-          className={`relative w-9 h-9 rounded-xl border-2 transition-all shadow-sm overflow-hidden ${
+          className={`relative w-9 h-9 rounded-2xl border-2 transition-all shadow-sm overflow-hidden ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-md active:scale-95 cursor-pointer'
-          } border-gray-200`}
+          } border-edge-strong`}
           title={disabled ? displayColor : `${displayColor} — click to change`}
         >
           {hasTransparency && <span className="absolute inset-0" style={CHECKER_BG} />}
@@ -344,7 +344,7 @@ export default function ColorPickerField({
         </button>
 
         {open && (
-          <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-xl border border-gray-200 shadow-xl shadow-black/10 p-3 w-[220px]">
+          <div className="absolute left-0 top-full mt-2 z-50 bg-white rounded-2xl border border-edge-strong shadow-xl shadow-black/10 p-3 w-[220px]">
             {renderPopoverBody()}
           </div>
         )}
@@ -355,8 +355,8 @@ export default function ColorPickerField({
   return (
     <div className="flex items-center justify-between group">
       <div className="flex-1 min-w-0">
-        <span className="text-xs text-gray-600">{label}</span>
-        {hint && <p className="text-2xs text-gray-400 mt-0.5">{hint}</p>}
+        <span className="text-xs text-prose">{label}</span>
+        {hint && <p className="text-2xs text-faint mt-0.5">{hint}</p>}
       </div>
 
       <div className="relative flex items-center gap-1.5" ref={popoverRef}>
@@ -367,7 +367,7 @@ export default function ColorPickerField({
           className={`
             relative w-8 h-8 rounded-lg border-2 transition-all shadow-sm overflow-hidden
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-md active:scale-95 cursor-pointer'}
-            ${isCustom ? 'border-gray-300' : 'border-gray-200 border-dashed'}
+            ${isCustom ? 'border-gray-300' : 'border-edge-strong border-dashed'}
           `}
           title={disabled ? displayColor : `${displayColor} — click to change`}
         >
@@ -377,7 +377,7 @@ export default function ColorPickerField({
         </button>
 
         {/* Hex badge */}
-        <span className="text-2xs text-gray-400 font-mono w-[64px] text-center select-all">
+        <span className="text-2xs text-faint font-mono w-[64px] text-center select-all">
           {displayColor}
         </span>
 
@@ -385,7 +385,7 @@ export default function ColorPickerField({
         {isCustom && onReset && (
           <button
             onClick={(e) => { e.stopPropagation(); onReset(); setOpen(false); }}
-            className="w-5 h-5 flex items-center justify-center rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+            className="w-5 h-5 flex items-center justify-center rounded-full text-gray-300 hover:text-dim hover:bg-gray-100 transition-colors"
             title="Reset to default"
           >
             <X size={10} />
@@ -394,7 +394,7 @@ export default function ColorPickerField({
 
         {/* Popover */}
         {open && (
-          <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-xl border border-gray-200 shadow-xl shadow-black/10 p-3 w-[220px]">
+          <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-2xl border border-edge-strong shadow-xl shadow-black/10 p-3 w-[220px]">
             {renderPopoverBody()}
           </div>
         )}

@@ -44,13 +44,13 @@ export default function BadgesSection({ proposal, onSaved }: Props) {
   return (
     <SectionCard
       title="Trust Badges"
-      icon={<ShieldCheck size={14} className="text-gray-400" />}
+      icon={<ShieldCheck size={14} className="text-faint" />}
       description="Three short reassurances shown under the cover. Leave blank to hide a slot."
       action={
         <button
           type="button"
           onClick={() => setVals([...DEFAULT_QUOTE_BADGES])}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-surface transition-colors"
         >
           <RotateCcw size={12} />
           Reset to defaults
@@ -68,7 +68,7 @@ export default function BadgesSection({ proposal, onSaved }: Props) {
             }
             placeholder={DEFAULT_QUOTE_BADGES[i]}
             maxLength={32}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            className="px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
         ))}
       </div>

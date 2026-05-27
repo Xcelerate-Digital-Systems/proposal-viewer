@@ -89,7 +89,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
       <div
         className={`relative group ${
           !readOnly ? 'cursor-grab active:cursor-grabbing' : ''
-        } rounded-md shadow-md ${selected ? 'ring-2 ring-teal' : ''}`}
+        } rounded-lg shadow-md ${selected ? 'ring-2 ring-teal' : ''}`}
         style={{
           width,
           minHeight: height,
@@ -110,7 +110,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
               {showColors && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowColors(false)} />
-                  <div className="absolute top-full mt-1 right-0 z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 flex gap-1">
+                  <div className="absolute top-full mt-1 right-0 z-20 bg-white rounded-lg shadow-lg border border-edge-strong p-1.5 flex gap-1">
                     {NOTE_COLORS.map((c) => (
                       <button
                         key={c.value}
@@ -130,7 +130,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
             {/* Delete */}
             <button
               onClick={handleDelete}
-              className="w-6 h-6 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+              className="w-6 h-6 rounded-full bg-white shadow-sm border border-edge-strong flex items-center justify-center text-faint hover:text-red-500 transition-colors"
               title="Delete note"
             >
               <Trash2 size={10} />

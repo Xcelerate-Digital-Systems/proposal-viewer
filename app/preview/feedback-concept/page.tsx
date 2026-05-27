@@ -19,7 +19,7 @@ import {
 
 export default function FeedbackConceptPage() {
   return (
-    <div className="min-h-screen bg-[#F5F1EE] flex">
+    <div className="min-h-screen bg-warm-dark flex">
       {/* Fake content backdrop (left) — just a stand-in so the panel sits in context */}
       <div className="flex-1 p-10 hidden md:block">
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04),0_8px_24px_rgba(20,20,40,0.04)] aspect-[4/3] relative overflow-hidden">
@@ -45,16 +45,16 @@ export default function FeedbackConceptPage() {
 
 function CommentsPanel() {
   return (
-    <aside className="w-full md:w-[400px] shrink-0 bg-[#FBF8F5] flex flex-col h-screen">
+    <aside className="w-full md:w-[400px] shrink-0 bg-warm flex flex-col h-screen">
       {/* Header */}
       <header className="px-6 pt-6 pb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-ink tracking-tight">Comments</h2>
-          <button className="text-xs text-gray-400 hover:text-gray-600 inline-flex items-center gap-1">
+          <button className="text-xs text-faint hover:text-prose inline-flex items-center gap-1">
             All <ChevronDown size={12} />
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">3 open · 1 resolved</p>
+        <p className="text-xs text-faint mt-0.5">3 open · 1 resolved</p>
       </header>
 
       {/* Threads */}
@@ -132,10 +132,10 @@ function Thread({ n, general, author, avatarTone, time, priority, body, replies,
       {/* Pin tag (top) */}
       {!general && n && (
         <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-semibold">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-detail font-semibold">
             {n}
           </span>
-          <span className="text-[11px] text-gray-400">Pinned to content</span>
+          <span className="text-detail text-faint">Pinned to content</span>
         </div>
       )}
 
@@ -145,10 +145,10 @@ function Thread({ n, general, author, avatarTone, time, priority, body, replies,
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-sm font-medium text-ink">{author}</span>
-            <span className="text-[11px] text-gray-400">{time}</span>
+            <span className="text-detail text-faint">{time}</span>
             {priority && <PriorityPill {...priority} />}
           </div>
-          <p className="text-[13px] text-gray-700 leading-relaxed mt-1">{body}</p>
+          <p className="text-caption text-prose leading-relaxed mt-1">{body}</p>
         </div>
       </div>
 
@@ -160,13 +160,13 @@ function Thread({ n, general, author, avatarTone, time, priority, body, replies,
               <Avatar tone={r.isTeam ? 'teal' : 'violet'} initial={r.author[0]} small />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-medium text-ink">{r.author}</span>
+                  <span className="text-caption font-medium text-ink">{r.author}</span>
                   {r.isTeam && (
                     <span className="text-2xs text-teal bg-teal/10 px-1.5 py-0.5 rounded-full">Team</span>
                   )}
-                  <span className="text-[11px] text-gray-400">{r.time}</span>
+                  <span className="text-detail text-faint">{r.time}</span>
                 </div>
-                <p className="text-[13px] text-gray-700 leading-relaxed mt-0.5">{r.body}</p>
+                <p className="text-caption text-prose leading-relaxed mt-0.5">{r.body}</p>
               </div>
             </div>
           ))}
@@ -175,13 +175,13 @@ function Thread({ n, general, author, avatarTone, time, priority, body, replies,
 
       {/* Inline reply form (only on the second thread) */}
       {showReplyForm && (
-        <div className="mt-3 ml-11 flex items-center gap-2 bg-[#F5F1EE] rounded-xl px-3 py-2">
+        <div className="mt-3 ml-11 flex items-center gap-2 bg-warm-dark rounded-2xl px-3 py-2">
           <input
             placeholder="Write a reply…"
-            className="flex-1 bg-transparent text-[13px] text-ink placeholder:text-gray-400 focus:outline-none"
+            className="flex-1 bg-transparent text-caption text-ink placeholder:text-faint focus:outline-none"
             autoFocus
           />
-          <button className="text-gray-400 hover:text-gray-600">
+          <button className="text-faint hover:text-prose">
             <Smile size={15} />
           </button>
           <button className="w-7 h-7 rounded-full bg-teal text-white inline-flex items-center justify-center hover:bg-teal-hover">
@@ -191,7 +191,7 @@ function Thread({ n, general, author, avatarTone, time, priority, body, replies,
       )}
 
       {/* Footer actions */}
-      <div className="flex items-center gap-4 mt-3 ml-11 text-xs text-gray-400">
+      <div className="flex items-center gap-4 mt-3 ml-11 text-xs text-faint">
         <button className="inline-flex items-center gap-1 hover:text-ink transition-colors">
           <CornerDownRight size={12} /> Reply
         </button>
@@ -213,20 +213,20 @@ function Thread({ n, general, author, avatarTone, time, priority, body, replies,
 function ResolvedThread({ n, author, time, body }: { n: number; author: string; time: string; body: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <article className="bg-white/60 rounded-2xl px-5 py-3.5 border border-dashed border-gray-200">
+    <article className="bg-white/60 rounded-2xl px-5 py-3.5 border border-dashed border-edge-strong">
       <button
         className="w-full flex items-start gap-3 text-left"
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-400 text-[11px] font-semibold shrink-0">
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-faint text-detail font-semibold shrink-0">
           {n}
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium text-gray-500">{author}</span>
-            <span className="text-[11px] text-gray-400">· resolved {time}</span>
+            <span className="text-caption font-medium text-dim">{author}</span>
+            <span className="text-detail text-faint">· resolved {time}</span>
           </div>
-          <p className={`text-[13px] text-gray-500 leading-relaxed mt-0.5 ${open ? '' : 'line-clamp-1'}`}>
+          <p className={`text-caption text-dim leading-relaxed mt-0.5 ${open ? '' : 'line-clamp-1'}`}>
             {body}
           </p>
         </div>
@@ -246,17 +246,17 @@ function Composer() {
         <textarea
           placeholder="Leave a general comment…"
           rows={2}
-          className="w-full text-[13px] text-ink placeholder:text-gray-400 bg-transparent resize-none focus:outline-none leading-relaxed"
+          className="w-full text-caption text-ink placeholder:text-faint bg-transparent resize-none focus:outline-none leading-relaxed"
         />
         <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-1 text-gray-400">
-            <button className="p-1.5 rounded-lg hover:bg-gray-50">
+          <div className="flex items-center gap-1 text-faint">
+            <button className="p-1.5 rounded-lg hover:bg-surface">
               <Paperclip size={14} />
             </button>
-            <button className="p-1.5 rounded-lg hover:bg-gray-50">
+            <button className="p-1.5 rounded-lg hover:bg-surface">
               <Smile size={14} />
             </button>
-            <button className="p-1.5 rounded-lg hover:bg-gray-50 inline-flex items-center gap-1 text-[11px]">
+            <button className="p-1.5 rounded-lg hover:bg-surface inline-flex items-center gap-1 text-detail">
               <MapPin size={12} /> Pin
             </button>
           </div>
@@ -280,7 +280,7 @@ function Avatar({ tone, initial, small }: { tone: 'teal' | 'amber' | 'violet' | 
     violet: 'bg-violet-100 text-violet-700',
     rose: 'bg-rose-100 text-rose-700',
   };
-  const size = small ? 'w-7 h-7 text-[11px]' : 'w-8 h-8 text-xs';
+  const size = small ? 'w-7 h-7 text-detail' : 'w-8 h-8 text-xs';
   return (
     <div className={`${size} ${tones[tone]} rounded-full inline-flex items-center justify-center font-semibold shrink-0`}>
       {initial}
@@ -296,7 +296,7 @@ function PriorityPill({ label, tone }: { label: string; tone: 'rose' | 'amber' |
     sky: 'bg-sky-100 text-sky-700',
   };
   return (
-    <span className={`text-[11px] ${tones[tone]} px-2 py-0.5 rounded-full font-medium`}>
+    <span className={`text-detail ${tones[tone]} px-2 py-0.5 rounded-full font-medium`}>
       {label}
     </span>
   );
@@ -305,11 +305,11 @@ function PriorityPill({ label, tone }: { label: string; tone: 'rose' | 'amber' |
 function PinMarker({ n, top, left, tone = 'open' }: { n: number; top: string; left: string; tone?: 'open' | 'resolved' }) {
   const colors =
     tone === 'resolved'
-      ? 'bg-gray-100 text-gray-400 ring-gray-200'
+      ? 'bg-gray-100 text-faint ring-gray-200'
       : 'bg-emerald-100 text-emerald-700 ring-emerald-200';
   return (
     <span
-      className={`absolute -translate-x-1/2 -translate-y-1/2 inline-flex items-center justify-center w-7 h-7 rounded-full ring-4 ${colors} text-[11px] font-semibold shadow-sm`}
+      className={`absolute -translate-x-1/2 -translate-y-1/2 inline-flex items-center justify-center w-7 h-7 rounded-full ring-4 ${colors} text-detail font-semibold shadow-sm`}
       style={{ top, left }}
     >
       {n}

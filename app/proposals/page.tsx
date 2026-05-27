@@ -196,7 +196,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
               placeholder="Search pitches..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-[13px] text-ink placeholder-faint outline-none w-full"
+              className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
             />
           </div>
 
@@ -212,25 +212,25 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             </Button>
 
             {showNewDropdown && (
-              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
+              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-30">
                 <button
                   onClick={() => openModal('upload')}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-prose hover:bg-surface transition-colors text-left"
                 >
-                  <Upload size={15} className="text-gray-400 shrink-0" />
+                  <Upload size={15} className="text-faint shrink-0" />
                   <div>
                     <div className="font-medium">New Pitch</div>
-                    <div className="text-xs text-gray-400">Upload a PDF</div>
+                    <div className="text-xs text-faint">Upload a PDF</div>
                   </div>
                 </button>
                 <button
                   onClick={() => openModal('template')}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-t border-gray-100"
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-prose hover:bg-surface transition-colors text-left border-t border-edge"
                 >
-                  <LayoutTemplate size={15} className="text-gray-400 shrink-0" />
+                  <LayoutTemplate size={15} className="text-faint shrink-0" />
                   <div>
                     <div className="font-medium">Pitch from Template</div>
-                    <div className="text-xs text-gray-400">Use a pitch template</div>
+                    <div className="text-xs text-faint">Use a pitch template</div>
                   </div>
                 </button>
               </div>
@@ -293,7 +293,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                   Recently edited
                 </h2>
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
                     {recent.map((p) => (
                       <ProposalListCard
                         key={`recent-${p.id}`}
@@ -321,7 +321,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
               </section>
             )}
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
                 {filtered.map((p) => (
                   <ProposalListCard
                     key={p.id}

@@ -109,15 +109,15 @@ export default function DecisionPageCard({
       description={titleOnly
         ? 'Rename the final accept/decline page. Toggle on/off + Next Steps + Terms live on the Decision tab.'
         : 'The final page where clients accept, decline, or request changes. Synthetic — lives only in the viewer, not as a real page row.'}
-      icon={<CheckCircle2 size={14} className="text-gray-400" />}
+      icon={<CheckCircle2 size={14} className="text-faint" />}
     >
       <div className="space-y-4">
         {/* Enabled toggle — hidden on the Pages tab variant. */}
         {!titleOnly && (
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-700">Show on this proposal</p>
-              <p className="text-[11px] text-gray-400 leading-snug">
+              <p className="text-sm font-medium text-prose">Show on this proposal</p>
+              <p className="text-detail text-faint leading-snug">
                 Off removes the page from the sequence — clients won&apos;t have an in-viewer accept/decline path.
               </p>
             </div>
@@ -141,7 +141,7 @@ export default function DecisionPageCard({
 
         {/* Title input */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700">Title</label>
+          <label className="block text-sm font-medium text-prose">Title</label>
           <input
             type="text"
             value={title}
@@ -150,7 +150,7 @@ export default function DecisionPageCard({
             disabled={!titleOnly && !enabled}
             className={`${inputClassName} ${(!titleOnly && !enabled) ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
-          <p className="text-2xs text-gray-400">
+          <p className="text-2xs text-faint">
             Shown in the sidebar TOC + on the page itself. Leave blank to use &ldquo;Decision&rdquo;.
           </p>
         </div>

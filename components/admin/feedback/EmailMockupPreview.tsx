@@ -68,12 +68,12 @@ export default function EmailMockupPreview({
     <div className="w-full max-w-[600px]">
       {/* Client toggle */}
       {showClientToggle && (
-        <div className="flex items-center gap-1 mb-4 bg-gray-50 rounded-full p-1 max-w-[240px] mx-auto">
+        <div className="flex items-center gap-1 mb-4 bg-surface rounded-full p-1 max-w-[240px] mx-auto">
           {CLIENT_OPTIONS.map((c) => (
             <button
               key={c.key}
               onClick={() => handleClientChange(c.key)}
-              className="flex-1 py-1.5 px-4 text-[13px] font-semibold rounded-full transition-all"
+              className="flex-1 py-1.5 px-4 text-caption font-semibold rounded-full transition-all"
               style={{
                 backgroundColor:
                   currentClient === c.key
@@ -136,7 +136,7 @@ function InboxPreview({
 
   return (
     <div
-      className="rounded-xl border overflow-hidden shadow-sm"
+      className="rounded-2xl border overflow-hidden shadow-sm"
       style={{ backgroundColor: bg, borderColor }}
     >
       {/* Inbox header bar */}
@@ -267,7 +267,7 @@ function EmailOpenPreview({
 
   return (
     <div
-      className="rounded-xl border overflow-hidden shadow-sm"
+      className="rounded-2xl border overflow-hidden shadow-sm"
       style={{ backgroundColor: bg, borderColor }}
     >
       {/* Toolbar */}

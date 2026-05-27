@@ -97,28 +97,28 @@ export function PackageTemplatesLibraryBar({ onPick }: LibraryBarProps) {
         <ChevronDown size={11} className="opacity-60" />
       </button>
       {open && (
-        <div className="absolute z-20 right-0 mt-1 w-80 bg-white rounded-lg border border-gray-200 shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-20 right-0 mt-1 w-80 bg-white rounded-lg border border-edge-strong shadow-lg max-h-96 overflow-y-auto">
           {loading ? (
-            <div className="px-3 py-6 text-center text-xs text-gray-400">
+            <div className="px-3 py-6 text-center text-xs text-faint">
               <Loader2 size={14} className="inline animate-spin" /> Loading…
             </div>
           ) : templates.length === 0 ? (
-            <div className="px-3 py-6 text-center text-xs text-gray-400">
+            <div className="px-3 py-6 text-center text-xs text-faint">
               No saved packages yet. Open a package and click &ldquo;Save as Template&rdquo;.
             </div>
           ) : (
             templates.map((t) => (
               <div
                 key={t.id}
-                className="flex items-start justify-between gap-2 px-3 py-2 hover:bg-gray-50 group"
+                className="flex items-start justify-between gap-2 px-3 py-2 hover:bg-surface group"
               >
                 <button
                   type="button"
                   onClick={() => apply(t)}
                   className="flex-1 text-left min-w-0"
                 >
-                  <div className="text-sm font-medium text-gray-900 truncate">{t.name}</div>
-                  <div className="text-xs text-gray-400 truncate">
+                  <div className="text-sm font-medium text-ink truncate">{t.name}</div>
+                  <div className="text-xs text-faint truncate">
                     {t.tier?.name || 'Package'} · {(t.tier?.features?.length ?? 0)} feature
                     {(t.tier?.features?.length ?? 0) === 1 ? '' : 's'}
                   </div>
@@ -188,7 +188,7 @@ export function SavePackageTemplateModal({ tier, onClose, onSaved }: SaveModalPr
     <Modal open onClose={onClose} title="Save package as template" size="sm">
       <Modal.Body className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+          <label className="block text-xs font-medium text-prose mb-1.5">
             Template name
           </label>
           <input
@@ -196,10 +196,10 @@ export function SavePackageTemplateModal({ tier, onClose, onSaved }: SaveModalPr
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Local SEO Bronze"
-            className="w-full px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            className="w-full px-2 py-1.5 rounded border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             autoFocus
           />
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-faint mt-2">
             Saves &ldquo;{tier.name || 'this package'}&rdquo; with its price, features and conditions. It will appear in
             the &ldquo;From Library&rdquo; menu on any packages page.
           </p>

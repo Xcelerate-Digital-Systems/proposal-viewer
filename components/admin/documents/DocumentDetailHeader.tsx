@@ -68,11 +68,11 @@ export default function DocumentDetailHeader({
   };
 
   return (
-    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-gray-100 lg:border-b-0">
+    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-edge lg:border-b-0">
       {/* Back link */}
       <Link
         href="/documents"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors mb-3"
+        className="inline-flex items-center gap-1.5 text-sm text-faint hover:text-prose transition-colors mb-3"
       >
         <ArrowLeft size={14} />
         All Documents
@@ -82,13 +82,13 @@ export default function DocumentDetailHeader({
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-semibold text-gray-900 font-[family-name:var(--font-display)] truncate">
+            <h1 className="text-xl font-semibold text-ink font-[family-name:var(--font-display)] truncate">
               {doc.title}
             </h1>
             <EditorSaveStatusBadge />
           </div>
           {doc.description && (
-            <p className="text-sm text-gray-400 mt-1 truncate max-w-[400px]">
+            <p className="text-sm text-faint mt-1 truncate max-w-[400px]">
               {doc.description}
             </p>
           )}
@@ -99,7 +99,7 @@ export default function DocumentDetailHeader({
           {/* Copy link */}
           <button
             onClick={copyLink}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-dim hover:text-prose hover:bg-gray-100 border border-edge-strong transition-colors"
           >
             {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Link'}

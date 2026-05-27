@@ -74,7 +74,7 @@ export default function ApiKeyManager() {
   return (
     <div>
       {justCreated && (
-        <div className="mb-4 p-4 bg-teal-tint border border-teal/30 rounded-xl max-w-lg">
+        <div className="mb-4 p-4 bg-teal-tint border border-teal/30 rounded-2xl max-w-lg">
           <p className="text-xs font-semibold text-ink mb-1">Key created — copy it now</p>
           <p className="text-xs text-faint mb-3">
             This is the only time you'll see the full key. Store it somewhere safe.

@@ -18,11 +18,11 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textare
 ) {
   return (
     <div className="space-y-1">
-      {label && <label className="block text-xs font-medium text-gray-600">{label}</label>}
+      {label && <label className="block text-xs font-medium text-prose">{label}</label>}
       <textarea ref={ref} rows={rows} {...rest} className={textareaClasses(className)} />
       {error
-        ? <p className="text-[11px] text-red-500">{error}</p>
-        : hint ? <p className="text-[11px] text-gray-400">{hint}</p> : null}
+        ? <p className="text-detail text-red-500">{error}</p>
+        : hint ? <p className="text-detail text-faint">{hint}</p> : null}
     </div>
   );
 });

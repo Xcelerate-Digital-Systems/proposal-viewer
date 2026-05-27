@@ -98,20 +98,20 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm transition-colors hover:border-gray-300">
+    <div className="bg-white rounded-2xl border border-edge-strong overflow-hidden shadow-sm transition-colors hover:border-gray-300">
       {/* ─── Header ────────────────────────────────────────────────── */}
       <div className="p-5 pb-0">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-1">
-              <h3 className="text-base font-semibold font-[family-name:var(--font-display)] truncate text-gray-900">
+              <h3 className="text-base font-semibold font-[family-name:var(--font-display)] truncate text-ink">
                 {p.title}
               </h3>
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>
                 {sc.icon} {sc.label}
               </span>
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-400">
+            <div className="flex items-center gap-4 text-sm text-faint">
               <span>{p.client_name}</span>
               <span className="text-gray-200">&middot;</span>
               <span>{formatSize(p.file_size_bytes)}</span>
@@ -131,7 +131,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
         </div>
 
         {/* ─── Tab bar + Actions ──────────────────────────────────── */}
-        <div className="flex items-center justify-between border-b border-gray-200 -mx-5 px-5">
+        <div className="flex items-center justify-between border-b border-edge-strong -mx-5 px-5">
           {/* Tabs */}
           <div className="flex items-center gap-0">
             {tabDefs.map((tab) => (
@@ -141,7 +141,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
                 className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                   activeTab === tab.key
                     ? 'border-teal text-teal'
-                    : 'border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200'
+                    : 'border-transparent text-faint hover:text-prose hover:border-edge-strong'
                 }`}
               >
                 {tab.icon}
@@ -154,7 +154,7 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
           <div className="flex items-center gap-1.5 pb-1.5">
             <button
               onClick={copyLink}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-gray-100 transition-colors"
             >
               {copiedId ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
               {copiedId ? 'Copied!' : 'Copy Link'}

@@ -139,7 +139,7 @@ export default function PendingPinForm({
       {quotedText && (
         <div className="px-4 pt-4">
           <div className="pl-2.5 py-1.5 border-l-[3px] border-yellow-300 bg-yellow-50 rounded-r">
-            <p className="text-[11px] text-gray-700 italic line-clamp-3">
+            <p className="text-detail text-prose italic line-clamp-3">
               &ldquo;{quotedText}&rdquo;
             </p>
           </div>
@@ -148,8 +148,8 @@ export default function PendingPinForm({
 
       <div className="px-4 pt-4 pb-2">
         {authorName ? (
-          <p className="text-[11px] text-gray-400 mb-1.5">
-            Posting as <span className="font-medium text-gray-600">{authorName}</span>
+          <p className="text-detail text-faint mb-1.5">
+            Posting as <span className="font-medium text-prose">{authorName}</span>
           </p>
         ) : (
           <input
@@ -157,7 +157,7 @@ export default function PendingPinForm({
             value={guestName || ''}
             onChange={(e) => onNameChange?.(e.target.value)}
             placeholder="Your name"
-            className="w-full mb-2 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            className="w-full mb-2 px-3 py-1.5 rounded-lg border border-edge-strong text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
           />
         )}
 
@@ -168,7 +168,7 @@ export default function PendingPinForm({
           autoFocus
           participantsUrl={participantsUrl ?? null}
           apiRef={editorApiRef}
-          className="w-full text-sm text-gray-900 outline-none border-0 p-0 min-h-[72px]"
+          className="w-full text-sm text-ink outline-none border-0 p-0 min-h-[72px]"
         />
 
         {pendingFiles.length > 0 && (
@@ -180,11 +180,11 @@ export default function PendingPinForm({
         {videoUrl && (
           <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-teal/5 border border-teal/20">
             <Film size={14} className="text-teal" />
-            <span className="text-xs text-gray-700 flex-1">Video recording attached</span>
+            <span className="text-xs text-prose flex-1">Video recording attached</span>
             <button
               type="button"
               onClick={() => setVideoUrl(null)}
-              className="p-0.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="p-0.5 rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
               title="Remove video"
             >
               <X size={12} />
@@ -199,12 +199,12 @@ export default function PendingPinForm({
         </div>
       )}
 
-      <div className="flex items-center gap-1 px-3 py-2 border-t border-gray-100">
+      <div className="flex items-center gap-1 px-3 py-2 border-t border-edge">
         <button
           type="button"
           onClick={() => setShowAttachModal(true)}
           disabled={pendingFiles.length >= MAX_FILES}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed relative"
+          className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed relative"
           title="Attach files"
         >
           <Paperclip size={16} />
@@ -221,14 +221,14 @@ export default function PendingPinForm({
             <button
               type="button"
               onClick={() => setShowDrawMenu((o) => !o)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+              className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors"
               title="Draw on page"
             >
               <Pencil size={16} />
             </button>
             {showDrawMenu && (
-              <div className="absolute left-0 bottom-full mb-1 w-40 bg-white rounded-xl border border-gray-200 shadow-lg py-1 z-50">
-                <p className="px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-gray-400">
+              <div className="absolute left-0 bottom-full mb-1 w-40 bg-white rounded-2xl border border-edge-strong shadow-lg py-1 z-50">
+                <p className="px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-faint">
                   Draw
                 </p>
                 {[
@@ -243,7 +243,7 @@ export default function PendingPinForm({
                       setShowDrawMenu(false);
                       onOpenDrawing(opt.mode);
                     }}
-                    className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full px-3 py-1.5 text-left text-sm text-prose hover:bg-surface"
                   >
                     {opt.label}
                   </button>
@@ -257,7 +257,7 @@ export default function PendingPinForm({
           type="button"
           onClick={() => setShowVideoModal(true)}
           disabled={!!videoUrl}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title={videoUrl ? 'Video already attached' : 'Record a video'}
         >
           <Video size={16} />

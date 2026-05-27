@@ -40,7 +40,7 @@ export default function BuilderPageStrip({
   onTogglePreview,
 }: BuilderPageStripProps) {
   return (
-    <div className="flex items-end gap-0 border-b border-gray-200 overflow-x-auto">
+    <div className="flex items-end gap-0 border-b border-edge-strong overflow-x-auto">
       {pages.map((page) => {
         const active = selectedId === page.id;
         return (
@@ -50,7 +50,7 @@ export default function BuilderPageStrip({
             className={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
               active
                 ? 'text-teal border-b-2 border-teal -mb-px bg-teal/5'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-b-2 border-transparent -mb-px'
+                : 'text-dim hover:text-prose hover:bg-surface border-b-2 border-transparent -mb-px'
             }`}
           >
             <Icon size={13} className="shrink-0 opacity-70" />
@@ -68,7 +68,7 @@ export default function BuilderPageStrip({
       })}
 
       {pages.length === 0 && (
-        <span className="px-4 py-2.5 text-xs text-gray-400">No pages yet — add one to get started</span>
+        <span className="px-4 py-2.5 text-xs text-faint">No pages yet — add one to get started</span>
       )}
 
       <button
@@ -87,7 +87,7 @@ export default function BuilderPageStrip({
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               previewVisible
                 ? 'bg-teal/10 text-teal'
-                : 'bg-gray-100 text-gray-400 hover:text-gray-600'
+                : 'bg-gray-100 text-faint hover:text-prose'
             }`}
           >
             <Eye size={13} /> Preview

@@ -27,10 +27,10 @@ interface PricingLineItemsProps {
 }
 
 const CELL_INPUT =
-  'w-full px-2 py-1.5 rounded border border-transparent hover:border-gray-200 focus:border-gray-200 focus:bg-white text-sm focus:outline-none focus:ring-1 focus:ring-teal/30';
+  'w-full px-2 py-1.5 rounded border border-transparent hover:border-edge-strong focus:border-edge-strong focus:bg-white text-sm focus:outline-none focus:ring-1 focus:ring-teal/30';
 
 const NUM_INPUT =
-  'w-full px-2 py-1.5 rounded border border-gray-200 text-sm text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-teal/30';
+  'w-full px-2 py-1.5 rounded border border-edge-strong text-sm text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-teal/30';
 
 export default function PricingLineItems({
   items, onChange,
@@ -88,7 +88,7 @@ export default function PricingLineItems({
   return (
     <div>
       {/* Header row */}
-      <div className={`grid ${gridCols} gap-2 px-2 pb-2 border-b border-gray-100 text-[11px] font-medium uppercase tracking-wider text-gray-400`}>
+      <div className={`grid ${gridCols} gap-2 px-2 pb-2 border-b border-edge text-detail font-medium uppercase tracking-wider text-faint`}>
         <div>{stageLabel || 'Item'}</div>
         <div>{descriptionLabel || 'Description'}</div>
         {qtyEnabled && <div className="text-right">{qtyLabel || 'Quantity'}</div>}
@@ -101,7 +101,7 @@ export default function PricingLineItems({
       {/* Rows */}
       <div className="divide-y divide-gray-50">
         {items.length === 0 && (
-          <div className="py-6 text-center text-xs text-gray-400">
+          <div className="py-6 text-center text-xs text-faint">
             No line items yet — click <span className="text-teal font-medium">Add Line Item</span> to start.
           </div>
         )}
@@ -128,7 +128,7 @@ export default function PricingLineItems({
                   value={item.label}
                   onChange={(e) => updateItem(item.id, { label: e.target.value })}
                   placeholder={descriptionLabel}
-                  className={`${CELL_INPUT} text-gray-500`}
+                  className={`${CELL_INPUT} text-dim`}
                 />
 
                 {qtyEnabled && (
@@ -153,7 +153,7 @@ export default function PricingLineItems({
                 )}
 
                 {qtyEnabled ? (
-                  <div className="text-sm text-right font-medium tabular-nums text-gray-900 px-2">
+                  <div className="text-sm text-right font-medium tabular-nums text-ink px-2">
                     {formatAUD(item.amount)}
                   </div>
                 ) : (
@@ -166,7 +166,7 @@ export default function PricingLineItems({
                   />
                 )}
 
-                <div className="text-xs text-gray-400 text-right tabular-nums">{pct}</div>
+                <div className="text-xs text-faint text-right tabular-nums">{pct}</div>
 
                 <button
                   type="button"
@@ -183,10 +183,10 @@ export default function PricingLineItems({
                 <button
                   type="button"
                   onClick={() => updateItem(item.id, { discount_pct: hasDiscount ? 0 : 10 })}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-detail font-medium transition-colors ${
                     hasDiscount
                       ? 'bg-teal/10 text-teal border border-teal/20'
-                      : 'text-gray-300 hover:text-gray-600 hover:bg-gray-50 border border-transparent'
+                      : 'text-gray-300 hover:text-prose hover:bg-surface border border-transparent'
                   }`}
                 >
                   <Tag size={10} />
@@ -203,13 +203,13 @@ export default function PricingLineItems({
                         min={0}
                         max={100}
                         step={0.5}
-                        className="w-14 px-1.5 py-0.5 rounded border border-teal/20 text-[11px] text-right focus:outline-none focus:ring-1 focus:ring-teal/30 bg-teal/5"
+                        className="w-14 px-1.5 py-0.5 rounded border border-teal/20 text-detail text-right focus:outline-none focus:ring-1 focus:ring-teal/30 bg-teal/5"
                       />
-                      <span className="text-[11px] text-gray-400">%</span>
+                      <span className="text-detail text-faint">%</span>
                     </div>
-                    <span className="text-[11px] text-gray-400">
+                    <span className="text-detail text-faint">
                       saves <span className="text-teal font-medium">{formatAUD(item.amount - effective)}</span>
-                      {' '}→ <span className="font-medium text-gray-700">{formatAUD(effective)}</span>
+                      {' '}→ <span className="font-medium text-prose">{formatAUD(effective)}</span>
                     </span>
                   </>
                 )}
@@ -220,18 +220,18 @@ export default function PricingLineItems({
       </div>
 
       {/* Footer */}
-      <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+      <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-edge">
         <button
           type="button"
           onClick={addItem}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
         >
           <Plus size={12} />
           Add Line Item
         </button>
 
-        <div className="ml-auto text-xs text-gray-400 tabular-nums">
-          Subtotal · <span className="text-gray-700 font-medium">{formatAUD(subtotal)}</span>
+        <div className="ml-auto text-xs text-faint tabular-nums">
+          Subtotal · <span className="text-prose font-medium">{formatAUD(subtotal)}</span>
         </div>
       </div>
 
@@ -242,7 +242,7 @@ export default function PricingLineItems({
             onChange={(e) => onFooterNoteChange(e.target.value)}
             rows={2}
             placeholder="Footer note — e.g. * Prices exclude travel expenses. All figures in AUD."
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs text-gray-500 placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong bg-white text-xs text-dim placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
           />
         </div>
       )}

@@ -46,7 +46,7 @@ export default async function PricingPage() {
   return (
     <div className="min-h-screen bg-surface">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100">
+      <header className="bg-white border-b border-edge">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/home" className="inline-flex">
             <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
@@ -89,7 +89,7 @@ export default async function PricingPage() {
 
         {/* Plan card */}
         <section className="bg-white border border-edge rounded-3xl shadow-card overflow-hidden">
-          <div className="px-8 pt-8 pb-6 border-b border-gray-100">
+          <div className="px-8 pt-8 pb-6 border-b border-edge">
             <div className="flex items-baseline gap-3">
               <h2 className="text-xl font-semibold text-ink">
                 {plan?.name ?? 'Founders'}
@@ -164,7 +164,7 @@ export default async function PricingPage() {
         </section>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-faint border-t border-gray-100 mt-8">
+      <footer className="max-w-5xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-faint border-t border-edge mt-8">
         <span>&copy; {new Date().getFullYear()} Xcelerate Digital Systems</span>
         <div className="flex items-center gap-4">
           <Link href="/home" className="hover:text-teal transition-colors">

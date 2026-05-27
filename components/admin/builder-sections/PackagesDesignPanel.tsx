@@ -177,12 +177,12 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
         <SectionCard
           title="Packages Design"
           description="Colours, gradients, feature icons, and per-tier overrides — applies to every packages page."
-          icon={<Palette size={14} className="text-gray-400" />}
+          icon={<Palette size={14} className="text-faint" />}
           action={
             !isDefaultPackageStyling(styling) ? (
               <button
                 onClick={() => onStylingChange({ ...DEFAULT_PACKAGE_STYLING })}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal transition-colors"
+                className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
               >
                 <RotateCcw size={12} />
                 Reset

@@ -16,7 +16,7 @@ export default function EditorSaveStatusBadge() {
 
   if (status === 'saving') {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-gray-400">
+      <span className="flex items-center gap-1.5 text-xs text-faint">
         <Loader2 size={12} className="animate-spin" />
         Saving…
       </span>

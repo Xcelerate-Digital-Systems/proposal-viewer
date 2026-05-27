@@ -105,7 +105,7 @@ export default function ProjectPhotosSection({ proposal, onSaved }: Props) {
   return (
     <SectionCard
       title="Project Photos"
-      icon={<ImageIcon size={14} className="text-gray-400" />}
+      icon={<ImageIcon size={14} className="text-faint" />}
       description="Up to two photos of past work. Photo 1 becomes the cover hero; Photo 2 sits before the scope of works."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -115,13 +115,13 @@ export default function ProjectPhotosSection({ proposal, onSaved }: Props) {
           const isUploading = uploadingSlot === slot;
           return (
             <div key={slot} className="space-y-2">
-              <div className="text-xs font-medium text-gray-500">
+              <div className="text-xs font-medium text-dim">
                 Photo {slot + 1}
-                <span className="text-gray-400 font-normal ml-1.5">
+                <span className="text-faint font-normal ml-1.5">
                   · {slot === 0 ? 'cover hero' : 'feature image'}
                 </span>
               </div>
-              <div className="aspect-[16/10] rounded-lg border border-dashed border-gray-200 bg-gray-50 overflow-hidden relative group">
+              <div className="aspect-[16/10] rounded-lg border border-dashed border-edge-strong bg-surface overflow-hidden relative group">
                 {url ? (
                   <>
                     <img
@@ -143,7 +143,7 @@ export default function ProjectPhotosSection({ proposal, onSaved }: Props) {
                     type="button"
                     onClick={() => fileInputs.current[slot]?.click()}
                     disabled={isUploading}
-                    className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    className="w-full h-full flex flex-col items-center justify-center gap-2 text-faint hover:text-prose hover:bg-gray-100 transition-colors"
                   >
                     {isUploading ? (
                       <Loader2 size={20} className="animate-spin" />
@@ -153,7 +153,7 @@ export default function ProjectPhotosSection({ proposal, onSaved }: Props) {
                     <span className="text-xs">
                       {isUploading ? 'Uploading…' : 'Click to upload'}
                     </span>
-                    <span className="text-2xs text-gray-400">JPG/PNG · max 4 MB</span>
+                    <span className="text-2xs text-faint">JPG/PNG · max 4 MB</span>
                   </button>
                 )}
                 <input

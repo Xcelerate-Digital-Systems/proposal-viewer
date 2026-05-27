@@ -272,7 +272,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
     return (
       <div
         key={item.id}
-        className={`flex items-center gap-3 py-2.5 pr-4 ${isChild ? 'pl-8' : 'pl-4'} hover:bg-gray-50 cursor-pointer transition-colors`}
+        className={`flex items-center gap-3 py-2.5 pr-4 ${isChild ? 'pl-8' : 'pl-4'} hover:bg-surface cursor-pointer transition-colors`}
         onClick={() => toggleItem(item.id)}
       >
         {/* Checkbox — all types including section headers */}
@@ -288,15 +288,15 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
 
         <span className={`text-sm truncate ${
           isGroup
-            ? `font-medium text-xs uppercase tracking-wide ${isIncluded ? 'text-gray-500' : 'text-gray-300'}`
-            : isIncluded ? 'text-gray-700' : 'text-gray-300'
+            ? `font-medium text-xs uppercase tracking-wide ${isIncluded ? 'text-dim' : 'text-gray-300'}`
+            : isIncluded ? 'text-prose' : 'text-gray-300'
         }`}>
           {item.label}
         </span>
 
         {/* Section label badge */}
         {isGroup ? (
-          <span className="ml-auto text-2xs px-1.5 py-0.5 rounded-full shrink-0 bg-gray-100 text-gray-400">
+          <span className="ml-auto text-2xs px-1.5 py-0.5 rounded-full shrink-0 bg-gray-100 text-faint">
             section
           </span>
         ) : (
@@ -313,7 +313,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-5 h-5 border-2 border-gray-200 border-t-teal rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
       </div>
     );
   }
@@ -323,9 +323,9 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
       {/* Header toolbar — no outer card, matches Pages/Quote shell */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <List size={14} className="text-gray-400" />
-          <p className="text-sm font-semibold text-gray-900">Table of Contents</p>
-          <span className="text-xs text-gray-400 hidden sm:inline">
+          <List size={14} className="text-faint" />
+          <p className="text-sm font-semibold text-ink">Table of Contents</p>
+          <span className="text-xs text-faint hidden sm:inline">
             Auto-generated contents page for this {entityType === 'template' ? 'template' : entityType}
           </span>
         </div>
@@ -351,14 +351,14 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
               <div>
                 <div className="flex items-center justify-between mb-2.5">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Pages to Include</label>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <label className="text-sm font-medium text-prose">Pages to Include</label>
+                    <p className="text-xs text-faint mt-0.5">
                       {includedCount} of {tocItems.length} items selected
                     </p>
                     {includedCount > 16 && (
                       <div className="flex items-start gap-1.5 mt-1.5">
                         <AlertTriangle size={11} className="text-amber-500 shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-amber-600 leading-tight">
+                        <p className="text-detail text-amber-600 leading-tight">
                           Over 16 items may crowd the PDF. Consider reducing selections.
                         </p>
                       </div>
@@ -372,10 +372,10 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                   </button>
                 </div>
 
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border border-edge-strong rounded-lg overflow-hidden">
                   {tocItems.length === 0 ? (
                     <div className="px-4 py-8 text-center">
-                      <p className="text-sm text-gray-400">No pages found</p>
+                      <p className="text-sm text-faint">No pages found</p>
                       <p className="text-xs text-gray-300 mt-1">Add PDF pages, text pages, or pricing to see them here</p>
                     </div>
                   ) : (
@@ -399,9 +399,9 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+            <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-12 text-center">
               <List size={24} className="mx-auto text-gray-300 mb-2" />
-              <p className="text-sm text-gray-400 mb-1">Table of Contents is currently disabled</p>
+              <p className="text-sm text-faint mb-1">Table of Contents is currently disabled</p>
               <p className="text-xs text-gray-300">Toggle the switch above to add a contents page</p>
             </div>
           )}

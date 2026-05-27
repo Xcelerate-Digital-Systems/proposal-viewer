@@ -166,13 +166,13 @@ export default function DecisionTab({
       {/* Next Steps editor */}
       <SectionCard
         title="Next Steps"
-        icon={<ListOrdered size={14} className="text-gray-400" />}
+        icon={<ListOrdered size={14} className="text-faint" />}
         description="Numbered list shown above the accept form. Up to four steps."
         action={
           <button
             type="button"
             onClick={() => setStepsAndSave([...DEFAULT_DECISION_NEXT_STEPS])}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-surface transition-colors"
           >
             <RotateCcw size={12} />
             Reset
@@ -182,7 +182,7 @@ export default function DecisionTab({
         <div className="space-y-2">
           {steps.map((step, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-400 w-6 shrink-0 tabular-nums">
+              <span className="text-xs font-medium text-faint w-6 shrink-0 tabular-nums">
                 0{i + 1}
               </span>
               <input
@@ -192,13 +192,13 @@ export default function DecisionTab({
                   setStepsAndSave(steps.map((s, idx) => (idx === i ? e.target.value : s)))
                 }
                 placeholder={DEFAULT_DECISION_NEXT_STEPS[i] ?? 'Add a step…'}
-                className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+                className="flex-1 px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
               />
               <button
                 type="button"
                 onClick={() => setStepsAndSave(steps.filter((_, idx) => idx !== i))}
                 disabled={steps.length <= 1}
-                className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
+                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
                 title="Remove step"
               >
                 <X size={12} />
@@ -210,7 +210,7 @@ export default function DecisionTab({
           <button
             type="button"
             onClick={() => setStepsAndSave([...steps, ''])}
-            className="flex items-center gap-1.5 mt-3 px-2.5 py-1.5 rounded-md text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
+            className="flex items-center gap-1.5 mt-3 px-2.5 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
           >
             <Plus size={12} />
             Add step
@@ -221,7 +221,7 @@ export default function DecisionTab({
       {/* Accept-form copy editor — heading, subtitle, agreement label. */}
       <SectionCard
         title="Accept Form Copy"
-        icon={<MessageSquare size={14} className="text-gray-400" />}
+        icon={<MessageSquare size={14} className="text-faint" />}
         description="The headline, subtitle and agreement label shown on the Accept tab of the form. Leave blank to use the defaults."
         action={
           <button
@@ -236,7 +236,7 @@ export default function DecisionTab({
                 agreement_text: DEFAULT_DECISION_AGREEMENT_TEXT,
               }));
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-surface transition-colors"
           >
             <RotateCcw size={12} />
             Reset
@@ -245,33 +245,33 @@ export default function DecisionTab({
       >
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Headline</label>
+            <label className="block text-sm font-medium text-prose">Headline</label>
             <input
               type="text"
               value={acceptHeading}
               onChange={(e) => setAcceptHeadingAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_ACCEPT_HEADING}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Subtitle</label>
+            <label className="block text-sm font-medium text-prose">Subtitle</label>
             <textarea
               value={acceptSubtitle}
               onChange={(e) => setAcceptSubtitleAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_ACCEPT_SUBTITLE}
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Agreement Checkbox Label</label>
+            <label className="block text-sm font-medium text-prose">Agreement Checkbox Label</label>
             <textarea
               value={agreementText}
               onChange={(e) => setAgreementTextAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_AGREEMENT_TEXT}
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
             />
           </div>
         </div>
@@ -280,7 +280,7 @@ export default function DecisionTab({
       {/* Button labels — submit button text per tab. */}
       <SectionCard
         title="Button Labels"
-        icon={<MessageSquare size={14} className="text-gray-400" />}
+        icon={<MessageSquare size={14} className="text-faint" />}
         description="Text on the submit button for each tab (Accept / Decline / Request Changes)."
         action={
           <button
@@ -295,7 +295,7 @@ export default function DecisionTab({
                 revision_button_label: DEFAULT_DECISION_REVISION_BUTTON_LABEL,
               }));
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-surface transition-colors"
           >
             <RotateCcw size={12} />
             Reset
@@ -304,33 +304,33 @@ export default function DecisionTab({
       >
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Accept Button</label>
+            <label className="block text-sm font-medium text-prose">Accept Button</label>
             <input
               type="text"
               value={acceptButtonLabel}
               onChange={(e) => setAcceptButtonLabelAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_ACCEPT_BUTTON_LABEL}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Request Changes Button</label>
+            <label className="block text-sm font-medium text-prose">Request Changes Button</label>
             <input
               type="text"
               value={revisionButtonLabel}
               onChange={(e) => setRevisionButtonLabelAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_REVISION_BUTTON_LABEL}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Decline Button</label>
+            <label className="block text-sm font-medium text-prose">Decline Button</label>
             <input
               type="text"
               value={declineButtonLabel}
               onChange={(e) => setDeclineButtonLabelAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_DECLINE_BUTTON_LABEL}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
             />
           </div>
         </div>
@@ -339,13 +339,13 @@ export default function DecisionTab({
       {/* Terms editor */}
       <SectionCard
         title="Terms & Conditions"
-        icon={<FileText size={14} className="text-gray-400" />}
+        icon={<FileText size={14} className="text-faint" />}
         description="Plain text shown beneath the Next Steps. Use line breaks for paragraphs."
         action={
           <button
             type="button"
             onClick={() => setTermsAndSave(DEFAULT_DECISION_TERMS)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-surface transition-colors"
           >
             <RotateCcw size={12} />
             Reset
@@ -356,7 +356,7 @@ export default function DecisionTab({
           value={terms}
           onChange={(e) => setTermsAndSave(e.target.value)}
           rows={6}
-          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+          className="w-full px-3 py-2.5 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
         />
       </SectionCard>
       </div>

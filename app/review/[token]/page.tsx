@@ -330,13 +330,13 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
 
   if (notFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="text-center">
           <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <ImageIcon size={28} className="text-gray-300" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-500">Feedback not found</h2>
-          <p className="text-sm text-gray-400 mt-1">This link may be expired or invalid</p>
+          <h2 className="text-lg font-semibold text-dim">Feedback not found</h2>
+          <p className="text-sm text-faint mt-1">This link may be expired or invalid</p>
         </div>
       </div>
     );
@@ -351,10 +351,10 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   // ══════════════════════════════════════════════════════════════════
   if (!isSingleItem && enabledTabCount === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-gray-500">Nothing shared yet</h2>
-          <p className="text-sm text-gray-400 mt-1">The project owner hasn&apos;t enabled any shared views.</p>
+          <h2 className="text-lg font-semibold text-dim">Nothing shared yet</h2>
+          <p className="text-sm text-faint mt-1">The project owner hasn&apos;t enabled any shared views.</p>
         </div>
       </div>
     );
@@ -488,13 +488,13 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
       )}
 
       {currentTab !== 'items' && (
-        <div className="flex lg:hidden min-h-screen items-center justify-center bg-gray-50 p-6">
+        <div className="flex lg:hidden min-h-screen items-center justify-center bg-surface p-6">
           <div className="text-center max-w-sm">
             <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <Monitor size={24} className="text-gray-400" />
+              <Monitor size={24} className="text-faint" />
             </div>
-            <h2 className="text-base font-semibold text-gray-700">Desktop Required</h2>
-            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            <h2 className="text-base font-semibold text-prose">Desktop Required</h2>
+            <p className="text-sm text-dim mt-2 leading-relaxed">
               Please open this review on a desktop browser for the best experience.
             </p>
           </div>
@@ -504,7 +504,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
       <div
         className={`${
           currentTab === 'items' ? 'flex' : 'hidden lg:flex'
-        } h-dvh flex-col bg-gray-50 pt-12 overflow-hidden`}
+        } h-dvh flex-col bg-surface pt-12 overflow-hidden`}
       >
         <PublicTabBar
           current={currentTab}

@@ -36,7 +36,7 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-gray-700">Optional Extras</label>
+        <label className="text-sm font-medium text-prose">Optional Extras</label>
         <button
           onClick={addItem}
           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal/5 transition-colors"
@@ -46,7 +46,7 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
       </div>
       <div className="space-y-2">
         {items.length === 0 && (
-          <p className="text-xs text-gray-400 py-3 text-center border border-dashed border-gray-200 rounded-lg">
+          <p className="text-xs text-faint py-3 text-center border border-dashed border-edge-strong rounded-lg">
             Optional extras appear in a separate section below the main quote.
           </p>
         )}
@@ -54,14 +54,14 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
           const effective = effectiveItemAmount(item);
           const hasDiscount = (item.discount_pct ?? 0) > 0;
           return (
-            <div key={item.id} className="flex flex-col gap-2 bg-white rounded-lg border border-gray-200 p-3">
+            <div key={item.id} className="flex flex-col gap-2 bg-white rounded-lg border border-edge-strong p-3">
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={item.label}
                   onChange={(e) => updateItem(item.id, 'label', e.target.value)}
                   placeholder="Extra description"
-                  className="flex-1 px-2 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+                  className="flex-1 px-2 py-1.5 rounded border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
                 />
                 <CurrencyInput
                   value={item.amount}
@@ -84,7 +84,7 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
                   className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                     hasDiscount
                       ? 'bg-teal/10 text-teal border border-teal/20'
-                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50 border border-transparent'
+                      : 'text-faint hover:text-prose hover:bg-surface border border-transparent'
                   }`}
                 >
                   <Tag size={10} />
@@ -102,11 +102,11 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
                         step={0.5}
                         className="w-16 px-2 py-1 rounded border border-teal/20 text-xs text-right focus:outline-none focus:ring-1 focus:ring-teal/30 bg-teal/5"
                       />
-                      <span className="text-xs text-gray-400">%</span>
+                      <span className="text-xs text-faint">%</span>
                     </div>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-faint">
                       saves <span className="text-teal font-medium">{formatAUD(item.amount - effective)}</span>
-                      {' '}→ <span className="font-medium text-gray-700">{formatAUD(effective)}</span>
+                      {' '}→ <span className="font-medium text-prose">{formatAUD(effective)}</span>
                     </span>
                   </>
                 )}
