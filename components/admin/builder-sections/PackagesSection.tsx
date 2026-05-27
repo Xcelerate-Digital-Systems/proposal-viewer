@@ -12,7 +12,9 @@ import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import TierEditor from '@/components/admin/shared/TierEditor';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
+import { SavePackageTemplateModal } from '@/components/admin/shared/PackageTemplatesLibraryBar';
 import { usePackagesEditor, type UsePackagesEditorOptions } from '@/components/admin/shared/usePackagesEditor';
+import { PackageTier } from '@/lib/supabase';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 export type PackagesSectionProps = UsePackagesEditorOptions;
@@ -22,6 +24,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
   useReportSaveStatus(editor.saveStatus);
 
   const [showPreview, setShowPreview] = useState(true);
+  const [tierToSave, setTierToSave] = useState<PackageTier | null>(null);
 
   /* ── Loading ────────────────────────────────────────────────── */
 
@@ -211,6 +214,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
                         }
                         onMove={(dir) => editor.moveTier(tier.id, dir)}
                         onDuplicate={() => editor.duplicateTier(tier.id)}
+                        onSaveAsTemplate={() => setTierToSave(tier)}
                         onRemove={() => editor.deleteTier(tier.id)}
                         onAddFeature={() =>
                           editor.updateTier(tier.id, {
@@ -280,6 +284,10 @@ export default function PackagesSection(props: PackagesSectionProps) {
           </StickyPreviewAside>
         )}
       </div>
+      <SavePackageTemplateModal
+        tier={tierToSave}
+        onClose={() => setTierToSave(null)}
+      />
     </div>
   );
 }
