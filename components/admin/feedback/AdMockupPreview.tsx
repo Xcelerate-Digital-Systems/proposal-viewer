@@ -318,6 +318,7 @@ function FacebookFeedAd({
         <img
           src={creativeUrl}
           alt="Ad creative"
+          crossOrigin="anonymous"
           className="w-full h-full object-cover"
         />
       </div>
@@ -413,6 +414,7 @@ function InstagramFeedAd({
         <img
           src={creativeUrl}
           alt="Ad creative"
+          crossOrigin="anonymous"
           className="w-full h-full object-cover"
         />
       </div>
@@ -466,6 +468,7 @@ function PageAvatar({ name, imageUrl, size = 40 }: { name: string; imageUrl?: st
       <img
         src={imageUrl}
         alt={name}
+        crossOrigin="anonymous"
         className="rounded-full object-cover"
         style={{ width: size, height: size }}
       />

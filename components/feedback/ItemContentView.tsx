@@ -468,11 +468,15 @@ export default function ItemContentView({
             </div>
           );
         })()}
-        {/* Image (non-ad) */}
+        {/* Image (non-ad).
+            crossOrigin="anonymous" lets html2canvas (used by the pin
+            screenshot capture) read the pixels — without it Supabase
+            CDN-hosted images taint the canvas and we capture a blank. */}
         {!isAd && imageUrl && (
           <img
             src={imageUrl}
             alt={item.title}
+            crossOrigin="anonymous"
             className="max-w-full max-h-[calc(100dvh-120px)] object-contain rounded-lg select-none"
             draggable={false}
           />

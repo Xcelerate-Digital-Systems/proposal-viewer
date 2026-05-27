@@ -53,9 +53,11 @@ async function uploadAttachments(
       body: formData,
     });
 
-    if (res.ok) {
-      results.push(await res.json());
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error || `Upload failed for ${pa.file.name}`);
     }
+    results.push(await res.json());
   }
   return results;
 }
@@ -79,6 +81,7 @@ export default function PendingPinForm({
   const [showAttachModal, setShowAttachModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showDrawMenu, setShowDrawMenu] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const drawMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -101,18 +104,27 @@ export default function PendingPinForm({
     e.preventDefault();
     if (isDisabled) return;
     setSubmitting(true);
+    setSubmitError(null);
 
-    let attachments: FeedbackCommentAttachment[] | undefined;
-    if (pendingFiles.length > 0 && shareToken) {
-      attachments = await uploadAttachments(pendingFiles, shareToken);
+    try {
+      let attachments: FeedbackCommentAttachment[] | undefined;
+      if (pendingFiles.length > 0) {
+        if (!shareToken) {
+          throw new Error('Cannot upload attachments without a share token.');
+        }
+        attachments = await uploadAttachments(pendingFiles, shareToken);
+      }
+
+      await onSubmit(text, attachments, priority, videoUrl);
+      setText('');
+      setPendingFiles([]);
+      setPriority('none');
+      setVideoUrl(null);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to post comment.');
+    } finally {
+      setSubmitting(false);
     }
-
-    await onSubmit(text, attachments, priority, videoUrl);
-    setText('');
-    setPendingFiles([]);
-    setPriority('none');
-    setVideoUrl(null);
-    setSubmitting(false);
   };
 
   return (
@@ -178,6 +190,12 @@ export default function PendingPinForm({
           </div>
         )}
       </div>
+
+      {submitError && (
+        <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-2xs text-red-700">
+          {submitError}
+        </div>
+      )}
 
       <div className="flex items-center gap-1 px-3 py-2 border-t border-gray-100">
         <button

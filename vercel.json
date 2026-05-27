@@ -12,5 +12,11 @@
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/flush-review-notifications",
+      "schedule": "* * * * *"
+    }
   ]
 }

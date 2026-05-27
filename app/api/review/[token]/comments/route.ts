@@ -9,6 +9,7 @@ import { isValidHttpUrl } from '@/lib/sanitize';
  */
 async function notifyParticipantsAsync(params: {
   review_item_id: string;
+  review_comment_id: string;
   itemProjectId: string;
   author_name: string;
   author_email?: string | null;
@@ -38,6 +39,7 @@ async function notifyParticipantsAsync(params: {
         event_type: 'review_comment_added',
         share_token: project.share_token,
         review_item_id: params.review_item_id,
+        review_comment_id: params.review_comment_id,
         comment_author: params.author_name,
         comment_author_email: params.author_email ?? null,
         comment_content: params.content,
@@ -197,6 +199,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     // if the public URL was an item-level token.
     void notifyParticipantsAsync({
       review_item_id,
+      review_comment_id: comment.id,
       itemProjectId: item.review_project_id,
       author_name,
       author_email,

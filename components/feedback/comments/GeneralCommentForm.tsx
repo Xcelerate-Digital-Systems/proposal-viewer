@@ -45,9 +45,11 @@ async function uploadAttachments(
       body: formData,
     });
 
-    if (res.ok) {
-      results.push(await res.json());
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error || `Upload failed for ${pa.file.name}`);
     }
+    results.push(await res.json());
   }
   return results;
 }
@@ -65,6 +67,7 @@ export default function GeneralCommentForm({
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(alwaysExpanded);
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isGuest = !authorName;
   const isDisabled = isGuest
@@ -75,17 +78,26 @@ export default function GeneralCommentForm({
     e.preventDefault();
     if (isDisabled) return;
     setSubmitting(true);
+    setSubmitError(null);
 
-    let attachments: FeedbackCommentAttachment[] | undefined;
-    if (pendingFiles.length > 0 && shareToken) {
-      attachments = await uploadAttachments(pendingFiles, shareToken);
+    try {
+      let attachments: FeedbackCommentAttachment[] | undefined;
+      if (pendingFiles.length > 0) {
+        if (!shareToken) {
+          throw new Error('Cannot upload attachments without a share token.');
+        }
+        attachments = await uploadAttachments(pendingFiles, shareToken);
+      }
+
+      await onSubmit(text, attachments);
+      setText('');
+      setPendingFiles([]);
+      if (!alwaysExpanded) setExpanded(false);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to post comment.');
+    } finally {
+      setSubmitting(false);
     }
-
-    await onSubmit(text, attachments);
-    setText('');
-    setPendingFiles([]);
-    setSubmitting(false);
-    if (!alwaysExpanded) setExpanded(false);
   };
 
   return (
@@ -126,6 +138,10 @@ export default function GeneralCommentForm({
           </div>
 
           <AttachmentPicker attachments={pendingFiles} onChange={setPendingFiles} />
+
+          {submitError && (
+            <p className="text-2xs text-red-600">{submitError}</p>
+          )}
 
           <div className="flex items-center justify-end gap-2">
             {!alwaysExpanded && (

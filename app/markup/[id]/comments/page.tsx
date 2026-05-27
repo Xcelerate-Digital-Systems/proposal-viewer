@@ -236,6 +236,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           event_type: 'review_comment_added',
           share_token: project.share_token,
           review_item_id: parent.review_item_id,
+          review_comment_id: data.id,
           comment_author: authorName,
           comment_author_email: teamMember?.email || null,
           comment_content: trimmed,

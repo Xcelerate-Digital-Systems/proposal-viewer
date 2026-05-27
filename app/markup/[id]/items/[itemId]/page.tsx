@@ -305,6 +305,7 @@ function ItemViewerContent({
             event_type: 'review_comment_added',
             share_token: project.share_token,
             review_item_id: reviewItemId,
+            review_comment_id: data.id,
             comment_author: authorName,
             comment_author_email: teamMember?.email || null,
             comment_content: content.trim(),
