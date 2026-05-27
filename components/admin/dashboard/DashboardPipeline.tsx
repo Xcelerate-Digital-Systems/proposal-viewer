@@ -22,11 +22,13 @@ import type { Proposal } from '@/lib/supabase';
 interface Props {
   items: Proposal[];
   onMove: (id: string, next: ProposalStatus) => Promise<void>;
+  contained?: boolean;
 }
 
-export default function DashboardPipeline({ items, onMove }: Props) {
+export default function DashboardPipeline({ items, onMove, contained }: Props) {
   return (
     <KanbanBoard
+      contained={contained}
       columns={PROPOSAL_STATUS_ORDER.map<KanbanColumn<Proposal>>((status) => ({
         id: status,
         label: PROPOSAL_STATUS_CONFIG[status].label,

@@ -347,12 +347,13 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                   </Link>
                 </div>
               ) : (
-                <div className="px-5 pb-5 h-[520px]">
+                <div className="pb-5 h-[520px]">
                   <FeedbackPipeline
                     projects={feedbackProjects}
                     itemCounts={feedbackItemCounts}
                     onMove={moveFeedbackCard}
                     onDeleted={handleFeedbackDeleted}
+                    contained
                   />
                 </div>
               )}
@@ -406,8 +407,8 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                 </div>
               </div>
             ) : (
-              <div className="px-5 pb-5 h-[520px]">
-                <DashboardPipeline items={pipeline} onMove={movePipelineCard} />
+              <div className="pb-5 h-[520px]">
+                <DashboardPipeline items={pipeline} onMove={movePipelineCard} contained />
               </div>
             )}
           </section>

@@ -29,6 +29,7 @@ interface Props {
   itemCounts: Record<string, number>;
   onMove: (id: string, next: FeedbackStatus) => Promise<void>;
   onDeleted: (id: string) => void;
+  contained?: boolean;
 }
 
 function relativeShort(iso: string): string {
@@ -168,9 +169,10 @@ function FeedbackProjectCard({
   );
 }
 
-export default function FeedbackPipeline({ projects, itemCounts, onMove, onDeleted }: Props) {
+export default function FeedbackPipeline({ projects, itemCounts, onMove, onDeleted, contained }: Props) {
   return (
     <KanbanBoard
+      contained={contained}
       columns={REVIEW_STATUS_ORDER.map<KanbanColumn<FeedbackProject>>((status) => ({
         id: status,
         label: REVIEW_STATUS_CONFIG[status].label,

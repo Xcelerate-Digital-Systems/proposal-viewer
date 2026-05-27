@@ -45,6 +45,9 @@ interface Props<T extends { id: string }> {
   /** Tooltip shown on disabled columns (e.g. "Set automatically when the client accepts"). */
   disabledHint?: (columnId: string) => string | undefined;
   emptyMessage?: string;
+  /** When true, the board stays within its parent (no negative margins).
+   *  Use when embedding inside a card or section with overflow-hidden. */
+  contained?: boolean;
 }
 
 export default function KanbanBoard<T extends { id: string }>({
@@ -53,6 +56,7 @@ export default function KanbanBoard<T extends { id: string }>({
   onMove,
   disabledHint,
   emptyMessage = 'Nothing here yet.',
+  contained = false,
 }: Props<T>) {
   // Local mirror of the columns so we can apply optimistic moves before the
   // server roundtrip finishes (and roll back on error). The parent re-fetches
@@ -120,9 +124,9 @@ export default function KanbanBoard<T extends { id: string }>({
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      {/* Negative margins bleed the board to the page edges to match the
-          per-project kanban (see components/admin/feedback/kanban/KanbanBoard.tsx). */}
-      <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 lg:-mx-10 px-6 lg:px-10 h-full">
+      <div className={`flex gap-4 overflow-x-auto pb-4 h-full ${
+        contained ? 'px-5' : '-mx-6 lg:-mx-10 px-6 lg:px-10'
+      }`}>
         {local.map((col) => (
           <KanbanColumnView
             key={col.id}
