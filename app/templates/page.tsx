@@ -7,7 +7,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText, Upload, LayoutGrid, List, Search, Trash2 } from 'lucide-react';
+import { Plus, FileText, Upload, LayoutGrid, List, Search, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
@@ -21,6 +21,8 @@ import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import PackageTemplateEditorModal from '@/components/admin/templates/PackageTemplateEditorModal';
+import type { PackageTier } from '@/lib/types/packages';
 
 async function authHeaders(): Promise<HeadersInit> {
   const { data } = await supabase.auth.getSession();
@@ -89,6 +91,28 @@ function TemplatesContent({ companyId }: { companyId: string }) {
     return 'grid';
   });
   const confirm = useConfirm();
+  const [editingPackage, setEditingPackage] = useState<PackageTemplateRow | null>(null);
+  const [showPackageEditor, setShowPackageEditor] = useState(false);
+
+  const openNewPackage = () => {
+    setEditingPackage(null);
+    setShowPackageEditor(true);
+  };
+
+  const openEditPackage = (t: PackageTemplateRow) => {
+    setEditingPackage(t);
+    setShowPackageEditor(true);
+  };
+
+  const handlePackageSaved = (saved: { id: string; name: string; description: string | null; tier: PackageTier | { name?: string; features?: unknown[] } | null; created_at: string }) => {
+    setPackageTemplates((prev) => {
+      const exists = prev.find((p) => p.id === saved.id);
+      if (exists) {
+        return prev.map((p) => (p.id === saved.id ? { ...p, ...saved } : p));
+      }
+      return [{ ...saved, tier: saved.tier as PackageTemplateRow['tier'] }, ...prev];
+    });
+  };
 
   const switchTab = (tab: TabKey) => {
     setActiveTab(tab);
@@ -286,10 +310,15 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             />
           </div>
 
-          {/* New template (proposals/quotes only — line-item and package
-              templates are created from inside their editors via "Save as
-              Template"). */}
-          {activeTab !== 'line_items' && activeTab !== 'packages' && (
+          {activeTab === 'packages' ? (
+            <Button
+              size="sm"
+              leftIcon={Plus}
+              onClick={openNewPackage}
+            >
+              New Package
+            </Button>
+          ) : activeTab !== 'line_items' && (
             <Button
               size="sm"
               leftIcon={Plus}
@@ -344,6 +373,18 @@ function TemplatesContent({ companyId }: { companyId: string }) {
           />
         )}
 
+        <PackageTemplateEditorModal
+          open={showPackageEditor}
+          onClose={() => setShowPackageEditor(false)}
+          template={editingPackage ? {
+            id: editingPackage.id,
+            name: editingPackage.name,
+            description: editingPackage.description,
+            tier: editingPackage.tier as PackageTier,
+          } : null}
+          onSaved={handlePackageSaved}
+        />
+
         {loading ? (
           <EntityListSkeleton viewMode={viewMode} />
         ) : fetchError ? (
@@ -364,6 +405,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             allCount={packageTemplates.length}
             searchQuery={searchQuery}
             onDelete={deletePackageTemplate}
+            onEdit={openEditPackage}
           />
         ) : filteredProposalTemplates.length === 0 && searchQuery ? (
           <NoResults message={`No templates matching “${searchQuery}”`} />
@@ -507,11 +549,13 @@ function PackageTemplatesView({
   allCount,
   searchQuery,
   onDelete,
+  onEdit,
 }: {
   templates: PackageTemplateRow[];
   allCount: number;
   searchQuery: string;
   onDelete: (t: PackageTemplateRow) => void;
+  onEdit: (t: PackageTemplateRow) => void;
 }) {
   if (templates.length === 0 && searchQuery) {
     return (
@@ -529,8 +573,8 @@ function PackageTemplatesView({
         </div>
         <h3 className="text-lg font-semibold text-muted mb-1">No package templates yet</h3>
         <p className="text-sm text-faint max-w-md mx-auto">
-          Inside any proposal&rsquo;s packages page, click the bookmark icon on a
-          package to save it to your library. It will show up here.
+          Click &ldquo;New Package&rdquo; to create one, or save from any
+          proposal&rsquo;s packages page using the bookmark icon.
         </p>
       </div>
     );
@@ -540,19 +584,32 @@ function PackageTemplatesView({
       {templates.map((t) => {
         const featureCount = Array.isArray(t.tier?.features) ? t.tier!.features!.length : 0;
         return (
-          <div
+          <button
             key={t.id}
-            className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md transition-shadow"
+            type="button"
+            onClick={() => onEdit(t)}
+            className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all text-left"
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
-              <button
-                onClick={() => onDelete(t)}
-                className="opacity-0 group-hover:opacity-100 text-faint hover:text-red-500 transition"
-                title="Delete"
-              >
-                <Trash2 size={14} />
-              </button>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                <span
+                  role="button"
+                  onClick={(e) => { e.stopPropagation(); onEdit(t); }}
+                  className="p-1 text-faint hover:text-teal"
+                  title="Edit"
+                >
+                  <Pencil size={13} />
+                </span>
+                <span
+                  role="button"
+                  onClick={(e) => { e.stopPropagation(); onDelete(t); }}
+                  className="p-1 text-faint hover:text-red-500"
+                  title="Delete"
+                >
+                  <Trash2 size={13} />
+                </span>
+              </div>
             </div>
             {t.description && (
               <p className="text-xs text-muted line-clamp-2 mb-3">{t.description}</p>
@@ -563,7 +620,7 @@ function PackageTemplatesView({
               </span>
               <span>{new Date(t.created_at).toLocaleDateString()}</span>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
