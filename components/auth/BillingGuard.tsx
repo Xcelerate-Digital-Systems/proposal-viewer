@@ -78,30 +78,25 @@ export function BillingGuard({ companyId, accountType, role, children }: Billing
       return;
     }
     let cancelled = false;
-    (async () => {
+    const FAIL_OPEN: SubscriptionState = { is_active: true, is_grandfathered: false, inactive_reason: null, subscription: null };
+    const fetchState = async (attempt: number): Promise<void> => {
       try {
         const res = await authFetch(`/api/billing/entitlements?company_id=${companyId}`);
         if (!res.ok) {
-          // Fail open — better to render the app than to lock everyone out
-          // if /api/billing/entitlements has a transient failure.
-          if (!cancelled) {
-            setState({ is_active: true, is_grandfathered: false, inactive_reason: null, subscription: null });
-            setLoaded(true);
-          }
+          if (attempt === 0) return fetchState(1);
+          console.error('BillingGuard: entitlements check failed after retry, failing open');
+          if (!cancelled) { setState(FAIL_OPEN); setLoaded(true); }
           return;
         }
         const json = (await res.json()) as SubscriptionState;
-        if (!cancelled) {
-          setState(json);
-          setLoaded(true);
-        }
+        if (!cancelled) { setState(json); setLoaded(true); }
       } catch {
-        if (!cancelled) {
-          setState({ is_active: true, is_grandfathered: false, inactive_reason: null, subscription: null });
-          setLoaded(true);
-        }
+        if (attempt === 0) return fetchState(1);
+        console.error('BillingGuard: entitlements check failed after retry, failing open');
+        if (!cancelled) { setState(FAIL_OPEN); setLoaded(true); }
       }
-    })();
+    };
+    fetchState(0);
     return () => {
       cancelled = true;
     };
@@ -123,34 +118,40 @@ export function BillingGuard({ companyId, accountType, role, children }: Billing
   const isLockedOut = !state.is_active;
   const isAdminOrOwner = role === 'owner' || role === 'admin';
 
-  // Inactive subscription + not on a billing-related page → lockout.
+  // Inactive subscription + not on a billing-related page → lockout overlay.
+  // The blurred dashboard behind creates urgency to resubscribe.
   if (isLockedOut && !isPathExempt(pathname)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-teal px-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <AlertTriangle className="text-amber-500" size={24} />
-          </div>
-          <h2 className="text-xl font-semibold text-ink mb-2">
-            {titleForInactive(state.inactive_reason)}
-          </h2>
-          <p className="text-muted text-sm mb-6">
-            {bodyForInactive(state.inactive_reason, isAdminOrOwner)}
-          </p>
-          {isAdminOrOwner ? (
-            <Button
-              onClick={() => router.push('/settings?tab=billing')}
-              leftIcon={CreditCard}
-            >
-              Open billing settings
-            </Button>
-          ) : (
-            <p className="text-xs text-faint">
-              Ask the workspace owner to update billing from Settings → Billing.
-            </p>
-          )}
+      <>
+        <div className="h-dvh overflow-hidden pointer-events-none select-none">
+          <div className="blur-sm opacity-40">{children}</div>
         </div>
-      </div>
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <AlertTriangle className="text-amber-500" size={24} />
+            </div>
+            <h2 className="text-xl font-semibold text-ink mb-2">
+              {titleForInactive(state.inactive_reason)}
+            </h2>
+            <p className="text-muted text-sm mb-6">
+              {bodyForInactive(state.inactive_reason, isAdminOrOwner)}
+            </p>
+            {isAdminOrOwner ? (
+              <Button
+                onClick={() => router.push('/settings?tab=billing')}
+                leftIcon={CreditCard}
+              >
+                Open billing settings
+              </Button>
+            ) : (
+              <p className="text-xs text-faint">
+                Ask the workspace owner to update billing from Settings → Billing.
+              </p>
+            )}
+          </div>
+        </div>
+      </>
     );
   }
 

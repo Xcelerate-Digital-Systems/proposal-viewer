@@ -502,6 +502,7 @@ function InviteStep({ companyId, onNext }: { companyId: string; onNext: () => vo
 
 function PlanStep({ companyId, onSkip }: { companyId: string; onSkip: () => void }) {
   const [plan, setPlan] = useState<PlanShape | null>(null);
+  const [alreadyActive, setAlreadyActive] = useState(false);
   const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
@@ -516,6 +517,9 @@ function PlanStep({ companyId, onSkip }: { companyId: string; onSkip: () => void
         const json = await res.json();
         if (cancelled) return;
         setPlan(json.plan);
+        if (json.subscription?.status === 'active' || json.subscription?.status === 'trialing') {
+          setAlreadyActive(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -574,6 +578,14 @@ function PlanStep({ companyId, onSkip }: { companyId: string; onSkip: () => void
         <div className="py-8 flex justify-center">
           <Loader2 size={20} className="animate-spin text-faint" />
         </div>
+      ) : alreadyActive ? (
+        <div className="border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm rounded-lg p-4 flex items-center gap-3">
+          <Check size={18} className="text-emerald-600 shrink-0" />
+          <div>
+            <p className="font-medium">You&apos;re all set!</p>
+            <p className="text-xs text-emerald-700 mt-0.5">Your workspace already has an active subscription.</p>
+          </div>
+        </div>
       ) : !plan ? (
         <div className="border border-amber-200 bg-amber-50 text-amber-800 text-sm rounded-lg p-3">
           No plan is configured yet. Contact support.
@@ -622,22 +634,30 @@ function PlanStep({ companyId, onSkip }: { companyId: string; onSkip: () => void
       )}
 
       <div className="pt-2 space-y-2">
-        <Button
-          fullWidth
-          loading={redirecting}
-          onClick={startCheckout}
-          leftIcon={CreditCard}
-          disabled={!plan}
-        >
-          Start 7-day free trial
-        </Button>
-        <button
-          type="button"
-          onClick={onSkip}
-          className="w-full text-xs text-faint hover:text-ink"
-        >
-          I&apos;ll set up billing later
-        </button>
+        {alreadyActive ? (
+          <Button fullWidth onClick={onSkip} rightIcon={ArrowRight}>
+            Continue
+          </Button>
+        ) : (
+          <>
+            <Button
+              fullWidth
+              loading={redirecting}
+              onClick={startCheckout}
+              leftIcon={CreditCard}
+              disabled={!plan}
+            >
+              Start 7-day free trial
+            </Button>
+            <button
+              type="button"
+              onClick={onSkip}
+              className="w-full text-xs text-faint hover:text-ink"
+            >
+              I&apos;ll set up billing later
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

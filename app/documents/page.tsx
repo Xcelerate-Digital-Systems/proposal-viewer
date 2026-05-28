@@ -10,6 +10,7 @@ import DocumentUploadModal from '@/components/admin/documents/DocumentUploadModa
 import DocumentListCard from '@/components/admin/documents/DocumentListCard';
 import DocumentListRow from '@/components/admin/documents/DocumentListRow';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
+import { useEntitlements } from '@/hooks/useEntitlements';
 
 export default function DocumentsPage() {
   return (
@@ -25,6 +26,8 @@ function DocumentsContent({ companyId }: { companyId: string }) {
   const [documents, setDocuments] = useState<DocType[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const { check } = useEntitlements(companyId);
+  const documentCheck = check('documents');
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -141,6 +144,8 @@ function DocumentsContent({ companyId }: { companyId: string }) {
             size="sm"
             leftIcon={Plus}
             onClick={() => setShowUpload(true)}
+            disabled={!documentCheck.allowed}
+            title={documentCheck.allowed ? undefined : documentCheck.message}
           >
             New Doc
           </Button>

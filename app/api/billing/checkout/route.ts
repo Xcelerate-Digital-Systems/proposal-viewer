@@ -91,6 +91,13 @@ export async function POST(req: NextRequest) {
     const stripe = getStripe();
     const existing = await getSubscriptionForCompany(auth.companyId);
 
+    if (existing && (existing.status === 'active' || existing.status === 'trialing')) {
+      return NextResponse.json(
+        { error: 'Your workspace already has an active subscription. Manage it from Settings → Billing.' },
+        { status: 400 },
+      );
+    }
+
     // Reuse the existing Stripe customer if we already minted one for
     // this company on a previous attempt — otherwise create a new one
     // tagged with company_id metadata so the webhook can resolve back.

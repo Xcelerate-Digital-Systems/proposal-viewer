@@ -22,6 +22,7 @@ import {
   buildStatusPatch,
   type ProposalStatus,
 } from '@/lib/proposals/status';
+import { useEntitlements } from '@/hooks/useEntitlements';
 
 type ViewMode = 'grid' | 'list' | 'board';
 
@@ -45,6 +46,8 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const [uploadInitialTab, setUploadInitialTab] = useState<'upload' | 'template' | 'blank'>('upload');
   const [showNewDropdown, setShowNewDropdown] = useState(false);
   const newDropdownRef = useRef<HTMLDivElement>(null);
+  const { check } = useEntitlements(companyId);
+  const proposalCheck = check('proposals');
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [searchQuery, setSearchQuery] = useState('');
@@ -207,6 +210,8 @@ function ProposalsContent({ companyId }: { companyId: string }) {
               leftIcon={Plus}
               rightIcon={ChevronDown}
               onClick={() => setShowNewDropdown((v) => !v)}
+              disabled={!proposalCheck.allowed}
+              title={proposalCheck.allowed ? undefined : proposalCheck.message}
             >
               New
             </Button>

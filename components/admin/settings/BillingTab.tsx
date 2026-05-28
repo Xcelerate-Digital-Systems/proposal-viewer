@@ -160,6 +160,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
 
   const sub = data?.subscription;
   const plan = data?.plan;
+  const isLifetime = sub?.status === 'active' && !sub?.stripe_customer_id;
   const hasActiveBillingRelationship =
     !!sub?.stripe_customer_id && sub.status !== 'incomplete';
 
@@ -184,16 +185,22 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
                 <div className="w-8 h-8 rounded-2xl bg-teal/10 flex items-center justify-center">
                   <Sparkles size={16} className="text-teal" />
                 </div>
-                <StatusBadge status={sub?.status ?? 'incomplete'} />
+                {isLifetime ? (
+                  <span className="text-detail font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">Lifetime</span>
+                ) : (
+                  <StatusBadge status={sub?.status ?? 'incomplete'} />
+                )}
               </div>
               <h3 className="text-xl font-bold text-ink">{plan?.name ?? 'No plan'}</h3>
-              {sub?.billing_cycle && (
+              {isLifetime ? (
+                <p className="text-sm text-muted mt-0.5">Permanent access — no billing required</p>
+              ) : sub?.billing_cycle ? (
                 <p className="text-sm text-muted mt-0.5">
                   Billed {sub.billing_cycle === 'yearly' ? 'annually' : 'monthly'}
                 </p>
-              )}
+              ) : null}
             </div>
-            {plan && (
+            {plan && !isLifetime && (
               <div className="text-right">
                 <div className="text-2xl font-bold text-ink">
                   {sub?.billing_cycle === 'yearly' ? yearlyMonthly : monthlyPrice}
@@ -255,7 +262,21 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
       </div>
 
       {/* Checkout (no subscription) or Management (active sub) */}
-      {!hasActiveBillingRelationship ? (
+      {isLifetime ? (
+        <div className="bg-white border border-edge rounded-2xl p-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
+              <Check size={18} className="text-emerald-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Lifetime access granted</h3>
+              <p className="text-xs text-muted">
+                Your workspace has permanent access to all AgencyViz features. No payment or billing management needed.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : !hasActiveBillingRelationship ? (
         <div className="bg-white border border-edge rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-ink mb-1">Start your subscription</h3>
           <p className="text-xs text-muted mb-5">
@@ -349,7 +370,7 @@ export default function BillingTab({ companyId, role }: BillingTabProps) {
       </div>
 
       {/* Refresh row */}
-      {hasActiveBillingRelationship && (
+      {hasActiveBillingRelationship && !isLifetime && (
         <div className="flex justify-end">
           <Button variant="ghost" size="sm" leftIcon={RefreshCcw} onClick={load}>
             Refresh billing data

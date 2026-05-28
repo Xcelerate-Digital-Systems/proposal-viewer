@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { useEntitlements } from '@/hooks/useEntitlements';
 
 interface CreateReviewProjectModalProps {
   companyId: string;
@@ -20,6 +21,8 @@ export default function CreateFeedbackProjectModal({
   onSuccess,
 }: CreateReviewProjectModalProps) {
   const toast = useToast();
+  const { check } = useEntitlements(companyId);
+  const reviewCheck = check('reviews');
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -30,6 +33,11 @@ export default function CreateFeedbackProjectModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    if (!reviewCheck.allowed) {
+      toast.error(reviewCheck.message || 'Plan limit reached');
+      return;
+    }
 
     setSaving(true);
     const { data: created, error } = await supabase
@@ -158,7 +166,13 @@ export default function CreateFeedbackProjectModal({
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" size="sm" loading={saving} disabled={!title.trim()}>
+          <Button
+            type="submit"
+            size="sm"
+            loading={saving}
+            disabled={!title.trim() || !reviewCheck.allowed}
+            title={reviewCheck.allowed ? undefined : reviewCheck.message}
+          >
             Create Campaign
           </Button>
         </Modal.Footer>
