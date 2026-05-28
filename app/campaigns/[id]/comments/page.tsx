@@ -2,15 +2,18 @@
 
 import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  MessageSquare, CheckCircle2, Circle, CircleDashed, ChevronDown, ChevronUp,
+  ListTodo, Paperclip,
+} from 'lucide-react';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
 import FeedbackRow from '@/components/admin/feedback/feedback-list/FeedbackRow';
 import FeedbackModal from '@/components/admin/feedback/feedback-list/FeedbackModal';
-import AssignmentModal from '@/components/admin/feedback/feedback-list/AssignmentModal';
+import TaskModal from '@/components/admin/feedback/feedback-list/TaskModal';
 import type { CommentWithItem } from '@/components/admin/feedback/feedback-list/types';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment } from '@/lib/supabase';
-import type { FeedbackCommentPriority } from '@/lib/types/feedback';
+import type { CommentTask, CommentTaskAttachment, FeedbackCommentPriority } from '@/lib/types/feedback';
 import { PRIORITY_OPTIONS } from '@/components/feedback/comments/PrioritySelector';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -29,6 +32,8 @@ type ReviewCompletion = {
   message: string | null;
   completed_at: string;
 };
+
+type TeamMemberOption = { id: string; name: string; email: string };
 
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
@@ -86,20 +91,23 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [project, setProject] = useState<FeedbackProject | null>(null);
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [allComments, setAllComments] = useState<FeedbackComment[]>([]);
+  const [allTasks, setAllTasks] = useState<CommentTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'open' | 'resolved'>('open');
   const [priorityFilter, setPriorityFilter] = useState<FeedbackCommentPriority | 'all'>('all');
   const [selectedComment, setSelectedComment] = useState<CommentWithItem | null>(null);
+  const [taskingComment, setTaskingComment] = useState<CommentWithItem | null>(null);
   const [completions, setCompletions] = useState<ReviewCompletion[]>([]);
   const [completionsOpen, setCompletionsOpen] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
-  const [assigningComment, setAssigningComment] = useState<CommentWithItem | null>(null);
-  const [tmNameMap, setTmNameMap] = useState<Record<string, { name: string; avatarUrl: string | null }>>({});
+  const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
+  const [memberNameMap, setMemberNameMap] = useState<Record<string, string>>({});
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
   const currentMemberId = teamMember?.id ?? null;
-  // Fetch all company team members for assignment name display
+
+  // Fetch all company team members
   useEffect(() => {
     if (!companyId) return;
     let cancelled = false;
@@ -107,14 +115,19 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
       const { data } = await supabase
         .from('team_members')
         .select('id, name, email')
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .order('name');
       if (cancelled) return;
-      const map: Record<string, { name: string; avatarUrl: string | null }> = {};
+      const members: TeamMemberOption[] = [];
+      const nameMap: Record<string, string> = {};
       for (const m of data ?? []) {
         const tm = m as { id: string; name: string | null; email: string };
-        map[tm.id] = { name: tm.name?.trim() || tm.email, avatarUrl: null };
+        const name = tm.name?.trim() || tm.email;
+        members.push({ id: tm.id, name, email: tm.email });
+        nameMap[tm.id] = name;
       }
-      setTmNameMap(map);
+      setTeamMembers(members);
+      setMemberNameMap(nameMap);
     })();
     return () => { cancelled = true; };
   }, [companyId]);
@@ -149,7 +162,19 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
         .in('review_item_id', itemIds)
         .order('created_at', { ascending: false });
 
-      setAllComments(commentsData || []);
+      const comments = commentsData || [];
+      setAllComments(comments);
+
+      // Fetch tasks for all comments in the project
+      const commentIds = comments.filter((c) => !c.parent_comment_id).map((c) => c.id);
+      if (commentIds.length > 0) {
+        const { data: tasksData } = await supabase
+          .from('comment_tasks')
+          .select('*')
+          .in('comment_id', commentIds)
+          .order('created_at', { ascending: true });
+        setAllTasks((tasksData as CommentTask[]) || []);
+      }
     }
 
     const { data: completionsData } = await supabase
@@ -180,7 +205,18 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     fetchCustomDomain();
   }, [fetchProject, fetchData, fetchCustomDomain]);
 
-  // Build enriched top-level comments with item info + reply counts
+  // Build task map: comment_id → CommentTask[]
+  const tasksByComment = useMemo(() => {
+    const map = new Map<string, CommentTask[]>();
+    for (const t of allTasks) {
+      const arr = map.get(t.comment_id) ?? [];
+      arr.push(t);
+      map.set(t.comment_id, arr);
+    }
+    return map;
+  }, [allTasks]);
+
+  // Build enriched top-level comments
   const enrichedComments: CommentWithItem[] = useMemo(() => {
     const itemMap = new Map(items.map((i) => [i.id, i]));
     const topLevel = allComments.filter((c) => !c.parent_comment_id);
@@ -197,9 +233,10 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
         screenshot_url: (c as Record<string, unknown>).screenshot_url as string | null,
         video_url: (c as Record<string, unknown>).video_url as string | null,
         annotation_data: ((c as Record<string, unknown>).annotation_data as Record<string, unknown> | null) ?? null,
+        tasks: tasksByComment.get(c.id) ?? [],
       };
     });
-  }, [allComments, items]);
+  }, [allComments, items, tasksByComment]);
 
   const openComments = enrichedComments.filter((c) => !c.resolved);
   const resolvedComments = enrichedComments.filter((c) => c.resolved);
@@ -210,7 +247,21 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
 
   const hasWebpages = items.some((i) => i.type === 'webpage');
 
-  // Submit reply to a top-level comment
+  // All tasks for the right-side panel
+  const allProjectTasks = useMemo(() => {
+    const openTasks: (CommentTask & { commentContent: string; commentThreadNum: number | null })[] = [];
+    const doneTasks: (CommentTask & { commentContent: string; commentThreadNum: number | null })[] = [];
+    for (const c of enrichedComments) {
+      for (const t of c.tasks ?? []) {
+        const entry = { ...t, commentContent: c.content || '', commentThreadNum: c.thread_number };
+        if (t.completed_at) doneTasks.push(entry);
+        else openTasks.push(entry);
+      }
+    }
+    return { openTasks, doneTasks, total: openTasks.length + doneTasks.length };
+  }, [enrichedComments]);
+
+  // ── Reply ─────────────────────────────────────────────────────────
   const handleSubmitReply = async (parent: CommentWithItem, content: string) => {
     const trimmed = content.trim();
     if (!trimmed) return false;
@@ -267,7 +318,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     return true;
   };
 
-  // Delete a comment (and its replies)
+  // ── Delete ────────────────────────────────────────────────────────
   const handleDeleteComment = async (comment: CommentWithItem) => {
     const ok = await confirm({
       title: 'Delete comment?',
@@ -297,11 +348,12 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     setAllComments((prev) =>
       prev.filter((c) => c.id !== comment.id && c.parent_comment_id !== comment.id)
     );
+    setAllTasks((prev) => prev.filter((t) => t.comment_id !== comment.id));
     setSelectedComment(null);
     toast.success('Comment deleted');
   };
 
-  // Toggle resolve
+  // ── Resolve ───────────────────────────────────────────────────────
   const handleToggleResolve = async (comment: CommentWithItem, resolved: boolean) => {
     await supabase
       .from('review_comments')
@@ -326,60 +378,70 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     }
   };
 
-  // ── Assignment callbacks ──────────────────────────────────────────
-  const assignComment = async (commentId: string, memberId: string, note: string) => {
+  // ── Task callbacks ────────────────────────────────────────────────
+  const createTask = async (commentId: string, memberId: string, instructions: string, attachments: CommentTaskAttachment[]) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assigned_to: memberId, note: note || undefined }),
+      body: JSON.stringify({ assigned_to: memberId, instructions: instructions || undefined, attachments }),
     });
     if (!res.ok) {
-      toast.error('Failed to assign comment');
+      toast.error('Failed to create task');
       return;
     }
-    const updated = await res.json();
-    setAllComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
-    if (selectedComment?.id === commentId) {
-      setSelectedComment((prev) => prev ? { ...prev, ...updated } : prev);
-    }
-    toast.success('Comment assigned');
+    const task = await res.json() as CommentTask;
+    setAllTasks((prev) => [...prev, task]);
+    toast.success(`Task created for ${memberNameMap[memberId] || 'team member'}`);
   };
 
-  const toggleAssignmentComplete = async (commentId: string, completed: boolean) => {
+  const toggleTaskComplete = async (commentId: string, taskId: string, completed: boolean) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ completed }),
+      body: JSON.stringify({ task_id: taskId, completed }),
     });
     if (!res.ok) {
-      toast.error('Failed to update assignment');
+      toast.error('Failed to update task');
       return;
     }
-    const updated = await res.json();
-    setAllComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
-    if (selectedComment?.id === commentId) {
-      setSelectedComment((prev) => prev ? { ...prev, ...updated } : prev);
-    }
+    const updated = await res.json() as CommentTask;
+    setAllTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
   };
 
-  const removeAssignment = async (commentId: string) => {
+  const removeTask = async (commentId: string, taskId: string) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
       method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_id: taskId }),
     });
     if (!res.ok) {
-      toast.error('Failed to remove assignment');
+      toast.error('Failed to remove task');
       return;
     }
-    const updated = await res.json();
-    setAllComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
-    if (selectedComment?.id === commentId) {
-      setSelectedComment((prev) => prev ? { ...prev, ...updated } : prev);
-    }
-    toast.success('Assignment removed');
+    setAllTasks((prev) => prev.filter((t) => t.id !== taskId));
+    toast.success('Task removed');
   };
+
+  // Keep selectedComment in sync with tasks
+  useEffect(() => {
+    if (!selectedComment) return;
+    const tasks = tasksByComment.get(selectedComment.id) ?? [];
+    if (JSON.stringify(selectedComment.tasks) !== JSON.stringify(tasks)) {
+      setSelectedComment((prev) => prev ? { ...prev, tasks } : prev);
+    }
+  }, [tasksByComment, selectedComment]);
+
+  // Keep taskingComment in sync with tasks
+  useEffect(() => {
+    if (!taskingComment) return;
+    const tasks = tasksByComment.get(taskingComment.id) ?? [];
+    if (JSON.stringify(taskingComment.tasks) !== JSON.stringify(tasks)) {
+      setTaskingComment((prev) => prev ? { ...prev, tasks } : prev);
+    }
+  }, [tasksByComment, taskingComment]);
 
   if (!project && !loading) return null;
 
@@ -404,14 +466,12 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           userId={session.user.id}
           nextSortOrder={items.length}
           onClose={() => setShowAddItem(false)}
-          onSuccess={() => {
-            fetchData();
-          }}
+          onSuccess={() => { fetchData(); }}
         />
       )}
 
-      {/* Scrollable content */}
-      <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
+      {/* Two-column layout */}
+      <div className="flex-1 px-6 lg:px-10 pb-8 pt-6 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
@@ -427,139 +487,193 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             </p>
           </div>
         ) : (
-          <div className="max-w-6xl space-y-4">
-            {completions.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setCompletionsOpen((o) => !o)}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-surface transition-colors"
-                >
-                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-ink">
-                      {completions.length} reviewer{completions.length !== 1 ? 's' : ''} finished reviewing
-                    </p>
-                    <p className="text-xs text-faint">
-                      Most recent: {formatTimeAgo(completions[0].completed_at)}
-                    </p>
-                  </div>
-                  {completionsOpen ? <ChevronUp size={16} className="text-faint" /> : <ChevronDown size={16} className="text-faint" />}
-                </button>
+          <div className="flex gap-6 h-full">
+            {/* Left column — comments */}
+            <div className="flex-1 min-w-0 overflow-y-auto space-y-4">
+              {completions.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setCompletionsOpen((o) => !o)}
+                    className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-surface transition-colors"
+                  >
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-ink">
+                        {completions.length} reviewer{completions.length !== 1 ? 's' : ''} finished reviewing
+                      </p>
+                      <p className="text-xs text-faint">
+                        Most recent: {formatTimeAgo(completions[0].completed_at)}
+                      </p>
+                    </div>
+                    {completionsOpen ? <ChevronUp size={16} className="text-faint" /> : <ChevronDown size={16} className="text-faint" />}
+                  </button>
 
-                {completionsOpen && (
-                  <div className="divide-y divide-gray-100 border-t border-edge">
-                    {completions.map((c) => (
-                      <div key={c.id} className="flex items-start gap-3 px-5 py-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 text-detail font-semibold text-emerald-700">
-                          {(c.reviewer_name?.trim()[0] ?? '?').toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="font-medium text-ink truncate">
-                              {c.reviewer_name || 'Anonymous reviewer'}
-                            </span>
-                            {c.reviewer_email && (
-                              <span className="text-faint truncate">· {c.reviewer_email}</span>
-                            )}
-                            <span className="text-faint shrink-0 ml-auto">{formatTimeAgo(c.completed_at)}</span>
+                  {completionsOpen && (
+                    <div className="divide-y divide-gray-100 border-t border-edge">
+                      {completions.map((c) => (
+                        <div key={c.id} className="flex items-start gap-3 px-5 py-3">
+                          <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 text-detail font-semibold text-emerald-700">
+                            {(c.reviewer_name?.trim()[0] ?? '?').toUpperCase()}
                           </div>
-                          {c.message && (
-                            <p className="text-sm text-prose mt-1 whitespace-pre-wrap">{c.message}</p>
-                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="font-medium text-ink truncate">
+                                {c.reviewer_name || 'Anonymous reviewer'}
+                              </span>
+                              {c.reviewer_email && (
+                                <span className="text-faint truncate">· {c.reviewer_email}</span>
+                              )}
+                              <span className="text-faint shrink-0 ml-auto">{formatTimeAgo(c.completed_at)}</span>
+                            </div>
+                            {c.message && (
+                              <p className="text-sm text-prose mt-1 whitespace-pre-wrap">{c.message}</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Open / Resolved toggle + comment list */}
+              <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+                {/* Filter bar */}
+                <div className="flex items-center gap-4 px-5 py-3 border-b border-edge flex-wrap">
+                  <button
+                    onClick={() => setTab('open')}
+                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                      tab === 'open' ? 'text-ink' : 'text-faint hover:text-prose'
+                    }`}
+                  >
+                    <Circle size={14} />
+                    Open
+                    <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
+                      tab === 'open' ? 'bg-gray-100 text-prose' : 'bg-surface text-faint'
+                    }`}>
+                      {openComments.length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setTab('resolved')}
+                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                      tab === 'resolved' ? 'text-ink' : 'text-faint hover:text-prose'
+                    }`}
+                  >
+                    <CheckCircle2 size={14} />
+                    Resolved
+                    <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
+                      tab === 'resolved' ? 'bg-gray-100 text-prose' : 'bg-surface text-faint'
+                    }`}>
+                      {resolvedComments.length}
+                    </span>
+                  </button>
+
+                  <span className="w-px h-4 bg-gray-200" />
+                  <button
+                    onClick={() => setPriorityFilter('all')}
+                    className={`text-xs font-medium transition-colors ${
+                      priorityFilter === 'all' ? 'text-ink' : 'text-faint hover:text-prose'
+                    }`}
+                  >
+                    All priorities
+                  </button>
+                  {PRIORITY_OPTIONS.filter((p) => p.value !== 'none').map((p) => {
+                    const Icon = p.icon;
+                    const active = priorityFilter === p.value;
+                    return (
+                      <button
+                        key={p.value}
+                        onClick={() => setPriorityFilter(active ? 'all' : p.value)}
+                        className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+                          active ? 'text-ink' : 'text-faint hover:text-prose'
+                        }`}
+                      >
+                        <Icon size={12} className={p.iconClass} />
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* List */}
+                {displayed.length === 0 ? (
+                  <div className="py-12 text-center text-sm text-faint">
+                    {tab === 'open' ? 'No open feedback' : 'No resolved feedback'}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {displayed.map((comment) => (
+                      <FeedbackRow
+                        key={comment.id}
+                        comment={comment}
+                        onSelect={() => setSelectedComment(comment)}
+                        onViewItem={() =>
+                          router.push(
+                            `/campaigns/${projectId}/assets/${comment.review_item_id}?type=${encodeURIComponent(comment.item_type)}`
+                          )
+                        }
+                        onToggleResolve={() => handleToggleResolve(comment, !comment.resolved)}
+                        onOpenTasks={() => setTaskingComment(comment)}
+                        memberNameMap={memberNameMap}
+                      />
                     ))}
                   </div>
                 )}
               </div>
-            )}
+            </div>
 
-            {/* Open / Resolved toggle */}
-            <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-              {/* Filter bar */}
-              <div className="flex items-center gap-4 px-5 py-3 border-b border-edge flex-wrap">
-                <button
-                  onClick={() => setTab('open')}
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    tab === 'open' ? 'text-ink' : 'text-faint hover:text-prose'
-                  }`}
-                >
-                  <Circle size={14} />
-                  Open
-                  <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
-                    tab === 'open' ? 'bg-gray-100 text-prose' : 'bg-surface text-faint'
-                  }`}>
-                    {openComments.length}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setTab('resolved')}
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    tab === 'resolved' ? 'text-ink' : 'text-faint hover:text-prose'
-                  }`}
-                >
-                  <CheckCircle2 size={14} />
-                  Resolved
-                  <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
-                    tab === 'resolved' ? 'bg-gray-100 text-prose' : 'bg-surface text-faint'
-                  }`}>
-                    {resolvedComments.length}
-                  </span>
-                </button>
+            {/* Right column — tasks panel */}
+            <div className="w-80 xl:w-96 shrink-0 overflow-y-auto hidden lg:block">
+              <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+                <div className="px-5 py-3 border-b border-edge">
+                  <div className="flex items-center gap-2">
+                    <ListTodo size={16} className="text-teal" />
+                    <h3 className="text-sm font-semibold text-ink">Tasks</h3>
+                    {allProjectTasks.total > 0 && (
+                      <span className="ml-auto text-xs text-faint">
+                        {allProjectTasks.doneTasks.length}/{allProjectTasks.total} done
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-                {/* Priority filter — appears after a divider */}
-                <span className="w-px h-4 bg-gray-200" />
-                <button
-                  onClick={() => setPriorityFilter('all')}
-                  className={`text-xs font-medium transition-colors ${
-                    priorityFilter === 'all' ? 'text-ink' : 'text-faint hover:text-prose'
-                  }`}
-                >
-                  All priorities
-                </button>
-                {PRIORITY_OPTIONS.filter((p) => p.value !== 'none').map((p) => {
-                  const Icon = p.icon;
-                  const active = priorityFilter === p.value;
-                  return (
-                    <button
-                      key={p.value}
-                      onClick={() => setPriorityFilter(active ? 'all' : p.value)}
-                      className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-                        active ? 'text-ink' : 'text-faint hover:text-prose'
-                      }`}
-                    >
-                      <Icon size={12} className={p.iconClass} />
-                      {p.label}
-                    </button>
-                  );
-                })}
+                {allProjectTasks.total === 0 ? (
+                  <div className="py-12 text-center">
+                    <ListTodo size={24} className="text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-faint">No tasks yet</p>
+                    <p className="text-xs text-faint mt-1">Create tasks from comments</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {allProjectTasks.openTasks.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        memberNameMap={memberNameMap}
+                        onToggleComplete={() => toggleTaskComplete(task.comment_id, task.id, true)}
+                        onViewComment={() => {
+                          const c = enrichedComments.find((ec) => ec.id === task.comment_id);
+                          if (c) setSelectedComment(c);
+                        }}
+                      />
+                    ))}
+                    {allProjectTasks.doneTasks.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        memberNameMap={memberNameMap}
+                        onToggleComplete={() => toggleTaskComplete(task.comment_id, task.id, false)}
+                        onViewComment={() => {
+                          const c = enrichedComments.find((ec) => ec.id === task.comment_id);
+                          if (c) setSelectedComment(c);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-
-              {/* List */}
-              {displayed.length === 0 ? (
-                <div className="py-12 text-center text-sm text-faint">
-                  {tab === 'open' ? 'No open feedback' : 'No resolved feedback'}
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-100">
-                  {displayed.map((comment) => (
-                    <FeedbackRow
-                      key={comment.id}
-                      comment={comment}
-                      onSelect={() => setSelectedComment(comment)}
-                      onViewItem={() =>
-                        router.push(
-                          `/campaigns/${projectId}/assets/${comment.review_item_id}?type=${encodeURIComponent(comment.item_type)}`
-                        )
-                      }
-                      onToggleResolve={() => handleToggleResolve(comment, !comment.resolved)}
-                      onOpenAssignment={() => setAssigningComment(comment)}
-                      assigneeName={comment.assigned_to ? (tmNameMap[comment.assigned_to]?.name ?? null) : null}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -574,26 +688,83 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onToggleResolve={handleToggleResolve}
           onSubmitReply={handleSubmitReply}
           onDelete={handleDeleteComment}
-          assigneeLookup={tmNameMap}
+          memberNameMap={memberNameMap}
           currentMemberId={currentMemberId}
-          onOpenAssignment={() => setAssigningComment(selectedComment)}
-          onToggleAssignmentComplete={toggleAssignmentComplete}
-          onRemoveAssignment={removeAssignment}
+          onOpenTasks={() => { setTaskingComment(selectedComment); }}
+          onToggleTaskComplete={toggleTaskComplete}
+          onRemoveTask={removeTask}
         />
       )}
 
-      {/* Assignment Modal */}
-      {assigningComment && (
-        <AssignmentModal
-          comment={assigningComment}
+      {/* Task Modal */}
+      {taskingComment && (
+        <TaskModal
+          commentId={taskingComment.id}
+          commentContent={taskingComment.content || ''}
           companyId={companyId}
           currentMemberId={currentMemberId}
-          onAssign={assignComment}
-          onToggleComplete={toggleAssignmentComplete}
-          onRemove={removeAssignment}
-          onClose={() => setAssigningComment(null)}
-          assigneeName={assigningComment.assigned_to ? (tmNameMap[assigningComment.assigned_to]?.name ?? null) : null}
+          existingTasks={taskingComment.tasks ?? []}
+          teamMembers={teamMembers}
+          memberNameMap={memberNameMap}
+          onCreateTask={createTask}
+          onToggleComplete={toggleTaskComplete}
+          onRemoveTask={removeTask}
+          onClose={() => setTaskingComment(null)}
         />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Task row for the right panel                                       */
+/* ------------------------------------------------------------------ */
+
+function TaskRow({ task, memberNameMap, onToggleComplete, onViewComment }: {
+  task: CommentTask & { commentContent: string; commentThreadNum: number | null };
+  memberNameMap: Record<string, string>;
+  onToggleComplete: () => void;
+  onViewComment: () => void;
+}) {
+  const name = memberNameMap[task.assigned_to] || 'Team member';
+  const done = !!task.completed_at;
+
+  return (
+    <div
+      className={`px-4 py-3 hover:bg-surface/50 transition-colors cursor-pointer ${done ? 'opacity-60' : ''}`}
+      onClick={onViewComment}
+    >
+      <div className="flex items-center gap-2">
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleComplete(); }}
+          className="shrink-0"
+          title={done ? 'Reopen' : 'Mark complete'}
+        >
+          {done ? (
+            <CheckCircle2 size={16} className="text-emerald-500 hover:text-emerald-600" />
+          ) : (
+            <CircleDashed size={16} className="text-amber-500 hover:text-amber-600" />
+          )}
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className={`text-xs font-medium truncate ${done ? 'text-faint line-through' : 'text-ink'}`}>
+            {name}
+          </p>
+          {task.instructions && (
+            <p className="text-xs text-faint truncate mt-0.5">{task.instructions}</p>
+          )}
+        </div>
+        {task.commentThreadNum && (
+          <span className="px-1.5 py-0.5 rounded bg-teal/10 text-2xs font-bold text-teal shrink-0">
+            #{task.commentThreadNum}
+          </span>
+        )}
+      </div>
+      {task.attachments && task.attachments.length > 0 && (
+        <div className="flex items-center gap-1 mt-1.5 ml-6">
+          <Paperclip size={10} className="text-faint" />
+          <span className="text-2xs text-faint">{task.attachments.length} file{task.attachments.length !== 1 ? 's' : ''}</span>
+        </div>
       )}
     </div>
   );

@@ -2,16 +2,15 @@
 
 import { useState } from 'react';
 import {
-  CheckCircle2, ChevronDown, ChevronUp, Clock, ExternalLink, MessageSquare,
-  Send, Trash2, UserPlus, X,
+  CheckCircle2, ChevronDown, ChevronUp, CircleDashed, Clock, ExternalLink,
+  ListTodo, MessageSquare, Paperclip, Send, Trash2, UserPlus, X,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { formatTimeAgo } from '@/lib/review-utils';
-import type { FeedbackComment } from '@/lib/supabase';
+import { supabase, type FeedbackComment } from '@/lib/supabase';
+import type { CommentTask } from '@/lib/types/feedback';
 import { TYPE_ICONS, type CommentWithItem } from './types';
 import { Button } from '@/components/ui/Button';
-import AssignmentBadge from '@/components/feedback/comments/AssignmentBadge';
-import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 
 interface Props {
   comment: CommentWithItem;
@@ -20,11 +19,11 @@ interface Props {
   onToggleResolve: (comment: CommentWithItem, resolved: boolean) => void;
   onSubmitReply: (parent: CommentWithItem, content: string) => Promise<boolean>;
   onDelete: (comment: CommentWithItem) => void;
-  assigneeLookup?: TeamMemberLookup;
+  memberNameMap?: Record<string, string>;
   currentMemberId?: string | null;
-  onOpenAssignment?: () => void;
-  onToggleAssignmentComplete?: (commentId: string, completed: boolean) => Promise<void>;
-  onRemoveAssignment?: (commentId: string) => Promise<void>;
+  onOpenTasks?: () => void;
+  onToggleTaskComplete?: (commentId: string, taskId: string, completed: boolean) => Promise<void>;
+  onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
 }
 
 export default function FeedbackModal({
@@ -34,11 +33,11 @@ export default function FeedbackModal({
   onToggleResolve,
   onSubmitReply,
   onDelete,
-  assigneeLookup,
+  memberNameMap,
   currentMemberId,
-  onOpenAssignment,
-  onToggleAssignmentComplete,
-  onRemoveAssignment,
+  onOpenTasks,
+  onToggleTaskComplete,
+  onRemoveTask,
 }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const [replyText, setReplyText] = useState('');
@@ -47,6 +46,10 @@ export default function FeedbackModal({
   const replies = allComments
     .filter((c) => c.parent_comment_id === comment.id)
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  const tasks = comment.tasks ?? [];
+  const taskCount = tasks.length;
+  const completedCount = tasks.filter((t) => !!t.completed_at).length;
 
   const handleReplySubmit = async () => {
     if (!replyText.trim() || submittingReply) return;
@@ -99,7 +102,7 @@ export default function FeedbackModal({
 
       <Modal.Body className="p-0">
         <div className="flex flex-col lg:flex-row">
-            {/* Left — screenshot + comment + replies + composer */}
+            {/* Left — screenshot + comment + tasks + replies + composer */}
             <div className="flex-1 p-6 space-y-4 min-w-0">
               {comment.screenshot_url && (
                 <div className="rounded-2xl border border-edge-strong overflow-hidden bg-surface">
@@ -126,31 +129,72 @@ export default function FeedbackModal({
                 <p className="text-ink leading-relaxed">{comment.content}</p>
               </div>
 
-              {/* Assignment badge */}
-              {comment.assigned_to && (
-                <AssignmentBadge
-                  assignedTo={comment.assigned_to}
-                  assignmentNote={comment.assignment_note ?? null}
-                  completedAt={comment.assignment_completed_at ?? null}
-                  memberLookup={assigneeLookup}
-                  currentMemberId={currentMemberId}
-                  isAdmin={!!onOpenAssignment}
-                  onComplete={
-                    onToggleAssignmentComplete
-                      ? () => onToggleAssignmentComplete(comment.id, true)
-                      : undefined
-                  }
-                  onReopen={
-                    onToggleAssignmentComplete
-                      ? () => onToggleAssignmentComplete(comment.id, false)
-                      : undefined
-                  }
-                  onRemove={
-                    onRemoveAssignment
-                      ? () => onRemoveAssignment(comment.id)
-                      : undefined
-                  }
-                />
+              {/* Inline task list */}
+              {tasks.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-dim">Tasks ({completedCount}/{taskCount})</p>
+                  {tasks.map((task) => {
+                    const name = memberNameMap?.[task.assigned_to] || 'Team member';
+                    const done = !!task.completed_at;
+                    const isAssignee = currentMemberId === task.assigned_to;
+                    return (
+                      <div
+                        key={task.id}
+                        className={`rounded-lg border px-3 py-2 text-xs ${done ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {done ? <CheckCircle2 size={13} className="text-emerald-600 shrink-0" /> : <CircleDashed size={13} className="text-amber-600 shrink-0" />}
+                            <span className={`font-medium truncate ${done ? 'text-emerald-800' : 'text-amber-800'}`}>{name}</span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {!done && (isAssignee || !!currentMemberId) && onToggleTaskComplete && (
+                              <button
+                                onClick={() => onToggleTaskComplete(comment.id, task.id, true)}
+                                className="text-2xs font-medium text-emerald-700 hover:text-emerald-900 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded-full transition-colors"
+                              >
+                                Complete
+                              </button>
+                            )}
+                            {done && onToggleTaskComplete && (
+                              <button
+                                onClick={() => onToggleTaskComplete(comment.id, task.id, false)}
+                                className="text-2xs font-medium text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded-full transition-colors"
+                              >
+                                Reopen
+                              </button>
+                            )}
+                            {onRemoveTask && (
+                              <button
+                                onClick={() => onRemoveTask(comment.id, task.id)}
+                                className="p-0.5 rounded text-faint hover:text-red-500 transition-colors"
+                                title="Remove task"
+                              >
+                                <X size={11} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {task.instructions && (
+                          <p className={`mt-1 ${done ? 'text-emerald-700' : 'text-amber-700'}`}>{task.instructions}</p>
+                        )}
+                        {task.attachments && task.attachments.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {task.attachments.map((att, i) => {
+                              const url = supabase.storage.from('company-assets').getPublicUrl(att.path).data.publicUrl;
+                              return (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded ${done ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} hover:opacity-80 transition-opacity`}>
+                                  <Paperclip size={9} />
+                                  {att.name}
+                                </a>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
 
               {replies.length > 0 && (
@@ -231,45 +275,36 @@ export default function FeedbackModal({
                   }`}
                 >
                   {comment.resolved ? (
-                    <>
-                      <CheckCircle2 size={12} />
-                      Resolved
-                    </>
+                    <><CheckCircle2 size={12} /> Resolved</>
                   ) : (
-                    <>
-                      <Clock size={12} />
-                      Open
-                    </>
+                    <><Clock size={12} /> Open</>
                   )}
                 </button>
               </div>
 
-              {/* Assignment section */}
-              {onOpenAssignment && (
+              {/* Tasks section */}
+              {onOpenTasks && (
                 <div>
-                  <p className="text-xs font-medium text-dim mb-1.5">Assignment</p>
-                  {comment.assigned_to ? (
+                  <p className="text-xs font-medium text-dim mb-1.5">Tasks</p>
+                  {taskCount > 0 ? (
                     <button
-                      onClick={onOpenAssignment}
+                      onClick={onOpenTasks}
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80 ${
-                        comment.assignment_completed_at
+                        completedCount === taskCount
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}
                     >
-                      {comment.assignment_completed_at ? (
-                        <><CheckCircle2 size={12} /> Done</>
-                      ) : (
-                        <><UserPlus size={12} /> Assigned</>
-                      )}
+                      <ListTodo size={12} />
+                      {completedCount}/{taskCount} done
                     </button>
                   ) : (
                     <button
-                      onClick={onOpenAssignment}
+                      onClick={onOpenTasks}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-teal hover:bg-teal-hover transition-colors"
                     >
                       <UserPlus size={12} />
-                      Assign
+                      Create task
                     </button>
                   )}
                 </div>

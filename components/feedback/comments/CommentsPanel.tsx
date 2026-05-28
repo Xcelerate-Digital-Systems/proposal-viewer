@@ -66,13 +66,13 @@ interface CommentsPanelProps {
   /** API endpoint returning mentionable participants for the comment editors. */
   participantsUrl?: string | null;
 
-  // ── Assignment (admin-only, internal) ──
-  /** Assign a comment to a team member */
-  onAssign?: (commentId: string, memberId: string, note: string) => Promise<void>;
-  /** Toggle assignment completion */
-  onToggleAssignmentComplete?: (commentId: string, completed: boolean) => Promise<void>;
-  /** Remove assignment from a comment */
-  onRemoveAssignment?: (commentId: string) => Promise<void>;
+  // ── Tasks (admin-only, internal) ──
+  /** Open task creation modal for a comment */
+  onOpenTasks?: (commentId: string) => void;
+  /** Toggle task completion */
+  onToggleTaskComplete?: (commentId: string, taskId: string, completed: boolean) => Promise<void>;
+  /** Remove a task from a comment */
+  onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
   /** Current user's team_member_id */
   currentMemberId?: string | null;
 }
@@ -101,9 +101,9 @@ export default function CommentsPanel({
   commentPlaceholder,
   commentFormAlwaysExpanded,
   participantsUrl,
-  onAssign,
-  onToggleAssignmentComplete,
-  onRemoveAssignment,
+  onOpenTasks,
+  onToggleTaskComplete,
+  onRemoveTask,
   currentMemberId,
 }: CommentsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -111,12 +111,12 @@ export default function CommentsPanel({
   // page still see real team photos (and not just initials) on team comments.
   const memberLookup = useTeamMemberLookup(shareToken);
 
-  // Build team_member_id → name map for assignment badges (participants API
+  // Build team_member_id → name map for task badges (participants API
   // keys team members by team_member_id, unlike memberLookup which keys by
-  // user_id). Only fetched when assignments are wired up.
+  // user_id). Only fetched when tasks are wired up.
   const [tmNameMap, setTmNameMap] = useState<Record<string, string>>({});
   useEffect(() => {
-    if (!onAssign || !participantsUrl) return;
+    if (!onOpenTasks || !participantsUrl) return;
     let cancelled = false;
     (async () => {
       try {
@@ -132,7 +132,7 @@ export default function CommentsPanel({
       } catch { /* swallow */ }
     })();
     return () => { cancelled = true; };
-  }, [onAssign, participantsUrl]);
+  }, [onOpenTasks, participantsUrl]);
 
   // Merge team_member_id names into a lookup shape compatible with AssignmentBadge's
   // memberLookup prop (it reads .name from the lookup keyed by assigned_to).
@@ -202,9 +202,9 @@ export default function CommentsPanel({
             participantsUrl={participantsUrl}
             highlighted={highlightCommentId === c.id}
             memberLookup={memberLookup}
-            onAssign={onAssign ? (memberId, note) => onAssign(c.id, memberId, note) : undefined}
-            onToggleAssignmentComplete={onToggleAssignmentComplete ? (completed) => onToggleAssignmentComplete(c.id, completed) : undefined}
-            onRemoveAssignment={onRemoveAssignment ? () => onRemoveAssignment(c.id) : undefined}
+            onOpenTasks={onOpenTasks ? () => onOpenTasks(c.id) : undefined}
+            onToggleTaskComplete={onToggleTaskComplete ? (taskId, completed) => onToggleTaskComplete(c.id, taskId, completed) : undefined}
+            onRemoveTask={onRemoveTask ? (taskId) => onRemoveTask(c.id, taskId) : undefined}
             currentMemberId={currentMemberId}
             assigneeLookup={assigneeLookup}
           />

@@ -1,9 +1,10 @@
-// app/api/review-comments/[id]/assignment/route.ts
+// app/api/review-comments/[id]/tasks/route.ts
 //
-// Assign a comment to a team member for actioning (internal-only).
-//   POST   — create/update assignment { assigned_to, note? }
-//   PATCH  — mark assignment complete (or reopen)
-//   DELETE — remove assignment
+// CRUD for comment tasks (multi-assignee action items).
+//   GET    — list tasks for a comment
+//   POST   — create a new task { assigned_to, instructions?, attachments? }
+//   PATCH  — update a task   { task_id, completed?: boolean, instructions?, attachments? }
+//   DELETE — remove a task   { task_id }
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
@@ -23,7 +24,7 @@ async function loadAuthorisedComment(req: NextRequest, commentId: string) {
   const supabase = createServiceClient();
   const { data: comment, error } = await supabase
     .from('review_comments')
-    .select('id, company_id, assigned_to, review_item_id, content')
+    .select('id, company_id, review_item_id, content')
     .eq('id', commentId)
     .single();
 
@@ -37,13 +38,13 @@ async function loadAuthorisedComment(req: NextRequest, commentId: string) {
   return { auth, comment, supabase };
 }
 
-async function notifyAssigneeAsync(params: {
+async function notifyTaskAssignee(params: {
   commentId: string;
   reviewItemId: string;
   companyId: string;
   assignedToId: string;
   assignedById: string | null;
-  assignmentNote: string | null;
+  instructions: string | null;
   commentContent: string | null;
 }) {
   try {
@@ -111,11 +112,11 @@ async function notifyAssigneeAsync(params: {
         assignerName,
         assigneeName,
         commentContent: plainComment,
-        instructions: params.assignmentNote,
+        instructions: params.instructions,
       });
       await getResend().emails.send({ from: FROM_EMAIL, to: assignee.email, subject, html });
     } catch (err) {
-      console.error('Assignment email failed:', err);
+      console.error('Task email failed:', err);
     }
 
     // In-app notification
@@ -129,22 +130,51 @@ async function notifyAssigneeAsync(params: {
           userIds,
           category: 'review_comment',
           title: `${assignerName} assigned you a task${item.title ? ` on ${item.title}` : ''}`,
-          body: plainComment?.slice(0, 200) ?? params.assignmentNote?.slice(0, 200) ?? null,
+          body: plainComment?.slice(0, 200) ?? params.instructions?.slice(0, 200) ?? null,
           link: `/campaigns/${project.id}/assets/${params.reviewItemId}`,
         });
       }
     } catch (err) {
-      console.error('Assignment in-app notification failed:', err);
+      console.error('Task in-app notification failed:', err);
     }
   } catch (err) {
-    console.error('Assignment notification dispatch failed:', err);
+    console.error('Task notification dispatch failed:', err);
   }
 }
 
 /**
- * POST /api/review-comments/[id]/assignment
- * Create or update an assignment on this comment.
- * Body: { assigned_to: string (team_member_id), note?: string }
+ * GET /api/review-comments/[id]/tasks
+ * List all tasks for this comment.
+ */
+export async function GET(req: NextRequest, props: RouteContext) {
+  const params = await props.params;
+  try {
+    const ctx = await loadAuthorisedComment(req, params.id);
+    if ('error' in ctx) return ctx.error;
+    const { supabase } = ctx;
+
+    const { data: tasks, error } = await supabase
+      .from('comment_tasks')
+      .select('*')
+      .eq('comment_id', params.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Tasks list error:', error);
+      return NextResponse.json({ error: 'Failed to list tasks' }, { status: 500 });
+    }
+
+    return NextResponse.json({ tasks: tasks ?? [] });
+  } catch (err) {
+    console.error('Tasks GET error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/review-comments/[id]/tasks
+ * Create a new task on this comment.
+ * Body: { assigned_to: string, instructions?: string, attachments?: Array<{path,name,size,type}> }
  */
 export async function POST(req: NextRequest, props: RouteContext) {
   const params = await props.params;
@@ -155,12 +185,14 @@ export async function POST(req: NextRequest, props: RouteContext) {
 
     const body = await req.json();
     const assignedTo = typeof body?.assigned_to === 'string' ? body.assigned_to.trim() : '';
-    const note = typeof body?.note === 'string' ? body.note.trim() : null;
+    const instructions = typeof body?.instructions === 'string' ? body.instructions.trim() : null;
+    const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
 
     if (!assignedTo) {
       return NextResponse.json({ error: 'assigned_to required' }, { status: 400 });
     }
 
+    // Validate team member belongs to same company
     const { data: candidate } = await supabase
       .from('team_members')
       .select('id, company_id')
@@ -172,84 +204,95 @@ export async function POST(req: NextRequest, props: RouteContext) {
 
     const memberId = (auth.member as { id?: string }).id ?? null;
 
-    const { data: updated, error: updateErr } = await supabase
-      .from('review_comments')
-      .update({
+    const { data: task, error: insertErr } = await supabase
+      .from('comment_tasks')
+      .insert({
+        comment_id: params.id,
+        company_id: auth.companyId,
         assigned_to: assignedTo,
         assigned_by: memberId,
-        assignment_note: note || null,
-        assignment_completed_at: null,
+        instructions: instructions || null,
+        attachments: attachments.length > 0 ? attachments : [],
       })
-      .eq('id', params.id)
       .select()
       .single();
 
-    if (updateErr) {
-      console.error('Assignment create error:', updateErr);
-      return NextResponse.json({ error: 'Failed to create assignment' }, { status: 500 });
+    if (insertErr) {
+      console.error('Task create error:', insertErr);
+      return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
     }
 
-    // Fire-and-forget notification to the assignee
-    void notifyAssigneeAsync({
+    // Fire-and-forget notification
+    void notifyTaskAssignee({
       commentId: params.id,
       reviewItemId: comment.review_item_id as string,
       companyId: comment.company_id as string,
       assignedToId: assignedTo,
       assignedById: memberId,
-      assignmentNote: note,
+      instructions,
       commentContent: comment.content as string | null,
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(task);
   } catch (err) {
-    console.error('Assignment POST error:', err);
+    console.error('Tasks POST error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 /**
- * PATCH /api/review-comments/[id]/assignment
- * Toggle assignment completion.
- * Body: { completed: boolean }
+ * PATCH /api/review-comments/[id]/tasks
+ * Update a task (toggle completion, update instructions/attachments).
+ * Body: { task_id: string, completed?: boolean, instructions?: string, attachments?: Array }
  */
 export async function PATCH(req: NextRequest, props: RouteContext) {
   const params = await props.params;
   try {
     const ctx = await loadAuthorisedComment(req, params.id);
     if ('error' in ctx) return ctx.error;
-    const { supabase, comment } = ctx;
-
-    if (!comment.assigned_to) {
-      return NextResponse.json({ error: 'No assignment on this comment' }, { status: 400 });
-    }
+    const { supabase } = ctx;
 
     const body = await req.json();
-    const completed = body?.completed === true;
+    const taskId = typeof body?.task_id === 'string' ? body.task_id.trim() : '';
+    if (!taskId) {
+      return NextResponse.json({ error: 'task_id required' }, { status: 400 });
+    }
 
-    const { data: updated, error: updateErr } = await supabase
-      .from('review_comments')
-      .update({
-        assignment_completed_at: completed ? new Date().toISOString() : null,
-      })
-      .eq('id', params.id)
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (typeof body?.completed === 'boolean') {
+      updates.completed_at = body.completed ? new Date().toISOString() : null;
+    }
+    if (typeof body?.instructions === 'string') {
+      updates.instructions = body.instructions.trim() || null;
+    }
+    if (Array.isArray(body?.attachments)) {
+      updates.attachments = body.attachments;
+    }
+
+    const { data: task, error: updateErr } = await supabase
+      .from('comment_tasks')
+      .update(updates)
+      .eq('id', taskId)
+      .eq('comment_id', params.id)
       .select()
       .single();
 
     if (updateErr) {
-      console.error('Assignment toggle error:', updateErr);
-      return NextResponse.json({ error: 'Failed to update assignment' }, { status: 500 });
+      console.error('Task update error:', updateErr);
+      return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
     }
 
-    return NextResponse.json(updated);
+    return NextResponse.json(task);
   } catch (err) {
-    console.error('Assignment PATCH error:', err);
+    console.error('Tasks PATCH error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 /**
- * DELETE /api/review-comments/[id]/assignment
- * Remove the assignment entirely.
+ * DELETE /api/review-comments/[id]/tasks
+ * Remove a task.
+ * Body: { task_id: string }
  */
 export async function DELETE(req: NextRequest, props: RouteContext) {
   const params = await props.params;
@@ -258,26 +301,26 @@ export async function DELETE(req: NextRequest, props: RouteContext) {
     if ('error' in ctx) return ctx.error;
     const { supabase } = ctx;
 
-    const { data: updated, error: updateErr } = await supabase
-      .from('review_comments')
-      .update({
-        assigned_to: null,
-        assigned_by: null,
-        assignment_note: null,
-        assignment_completed_at: null,
-      })
-      .eq('id', params.id)
-      .select()
-      .single();
-
-    if (updateErr) {
-      console.error('Assignment delete error:', updateErr);
-      return NextResponse.json({ error: 'Failed to remove assignment' }, { status: 500 });
+    const body = await req.json();
+    const taskId = typeof body?.task_id === 'string' ? body.task_id.trim() : '';
+    if (!taskId) {
+      return NextResponse.json({ error: 'task_id required' }, { status: 400 });
     }
 
-    return NextResponse.json(updated);
+    const { error: deleteErr } = await supabase
+      .from('comment_tasks')
+      .delete()
+      .eq('id', taskId)
+      .eq('comment_id', params.id);
+
+    if (deleteErr) {
+      console.error('Task delete error:', deleteErr);
+      return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Assignment DELETE error:', err);
+    console.error('Tasks DELETE error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackStatus } from '@/lib/supabase';
-import type { FeedbackCommentPriority } from '@/lib/types/feedback';
+import type { FeedbackCommentPriority, CommentTask, CommentTaskAttachment } from '@/lib/types/feedback';
+import TaskModal from '@/components/admin/feedback/feedback-list/TaskModal';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
@@ -88,6 +89,9 @@ function ItemViewerContent({
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [reviewMode, setReviewMode] = useState<'comment' | 'browse'>('comment');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [taskingCommentId, setTaskingCommentId] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [memberNameMap, setMemberNameMap] = useState<Record<string, string>>({});
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
 
@@ -222,6 +226,50 @@ function ItemViewerContent({
     fetchReactions();
     fetchBranding();
   }, [fetchProject, fetchItems, fetchComments, fetchAllProjectComments, fetchReactions, fetchBranding]);
+
+  // Fetch team members for task modal
+  useEffect(() => {
+    if (!companyId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('team_members')
+        .select('id, name, email')
+        .eq('company_id', companyId);
+      if (!cancelled && data) {
+        setTeamMembers(data);
+        const map: Record<string, string> = {};
+        for (const m of data) map[m.id] = m.name;
+        setMemberNameMap(map);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [companyId]);
+
+  // Fetch tasks for all loaded comments
+  useEffect(() => {
+    if (comments.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const commentIds = comments.filter((c) => !c.parent_comment_id).map((c) => c.id);
+      const { data } = await supabase
+        .from('comment_tasks')
+        .select('*')
+        .in('comment_id', commentIds);
+      if (!cancelled && data) {
+        const byComment = new Map<string, CommentTask[]>();
+        for (const t of data) {
+          const arr = byComment.get(t.comment_id) || [];
+          arr.push(t as CommentTask);
+          byComment.set(t.comment_id, arr);
+        }
+        setComments((prev) =>
+          prev.map((c) => ({ ...c, tasks: byComment.get(c.id) ?? [] }))
+        );
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [comments.length]);
 
   // ── Current item + its versions ──
   const currentItem = items.find((i) => i.id === itemId) || null;
@@ -405,50 +453,67 @@ function ItemViewerContent({
     }
   };
 
-  // ── Assignment callbacks (internal-only) ──
-  const assignComment = async (commentId: string, memberId: string, note: string) => {
+  // ── Task callbacks (internal-only) ──
+  const createTask = async (commentId: string, memberId: string, instructions: string, attachments: CommentTaskAttachment[]) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assigned_to: memberId, note }),
+      body: JSON.stringify({ assigned_to: memberId, instructions: instructions || undefined, attachments }),
     });
     if (res.ok) {
-      const updated = await res.json();
-      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+      const task: CommentTask = await res.json();
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId ? { ...c, tasks: [...(c.tasks ?? []), task] } : c
+        )
+      );
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to assign comment');
+      toast.error(body?.error || 'Failed to create task');
     }
   };
 
-  const toggleAssignmentComplete = async (commentId: string, completed: boolean) => {
+  const toggleTaskComplete = async (commentId: string, taskId: string, completed: boolean) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ completed }),
+      body: JSON.stringify({ task_id: taskId, completed }),
     });
     if (res.ok) {
-      const updated = await res.json();
-      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+      const updated: CommentTask = await res.json();
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? { ...c, tasks: (c.tasks ?? []).map((t) => (t.id === taskId ? updated : t)) }
+            : c
+        )
+      );
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to update assignment');
+      toast.error(body?.error || 'Failed to update task');
     }
   };
 
-  const removeAssignment = async (commentId: string) => {
+  const removeTask = async (commentId: string, taskId: string) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
       method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_id: taskId }),
     });
     if (res.ok) {
-      const updated = await res.json();
-      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? { ...c, tasks: (c.tasks ?? []).filter((t) => t.id !== taskId) }
+            : c
+        )
+      );
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to remove assignment');
+      toast.error(body?.error || 'Failed to remove task');
     }
   };
 
@@ -513,9 +578,9 @@ function ItemViewerContent({
         onUnresolveComment={unresolveComment}
         onEditComment={editComment}
         onDeleteComment={deleteComment}
-        onAssignComment={assignComment}
-        onToggleAssignmentComplete={toggleAssignmentComplete}
-        onRemoveAssignment={removeAssignment}
+        onOpenTasks={(cId) => setTaskingCommentId(cId)}
+        onToggleTaskComplete={toggleTaskComplete}
+        onRemoveTask={removeTask}
         currentMemberId={teamMember?.id ?? null}
         onItemChange={handleItemChange}
         onFilterChange={handleFilterChange}
@@ -554,6 +619,26 @@ function ItemViewerContent({
           onUploadAsset={uploadAsset}
         />
       )}
+
+      {taskingCommentId && (() => {
+        const c = comments.find((x) => x.id === taskingCommentId);
+        if (!c) return null;
+        return (
+          <TaskModal
+            commentId={c.id}
+            commentContent={c.content}
+            companyId={companyId}
+            currentMemberId={teamMember?.id ?? null}
+            existingTasks={c.tasks ?? []}
+            teamMembers={teamMembers}
+            memberNameMap={memberNameMap}
+            onCreateTask={createTask}
+            onToggleComplete={toggleTaskComplete}
+            onRemoveTask={removeTask}
+            onClose={() => setTaskingCommentId(null)}
+          />
+        );
+      })()}
 
       {editingVersionId !== undefined && currentItem && (() => {
         const editing = versions.find((v) => (v.id ?? null) === editingVersionId);

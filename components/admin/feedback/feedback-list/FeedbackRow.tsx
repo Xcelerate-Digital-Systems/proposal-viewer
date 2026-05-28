@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, CircleDashed, ExternalLink, MessageSquare, RotateCcw, UserPlus } from 'lucide-react';
+import { CheckCircle2, CircleDashed, ExternalLink, ListTodo, MessageSquare, RotateCcw, UserPlus } from 'lucide-react';
 import { getPriorityDef } from '@/components/feedback/comments/PrioritySelector';
 import { formatTimeAgo } from '@/lib/review-utils';
 import { TYPE_ICONS, type CommentWithItem } from './types';
@@ -10,8 +10,8 @@ interface Props {
   onSelect: () => void;
   onViewItem: () => void;
   onToggleResolve: () => void;
-  onOpenAssignment?: () => void;
-  assigneeName?: string | null;
+  onOpenTasks?: () => void;
+  memberNameMap?: Record<string, string>;
 }
 
 export default function FeedbackRow({
@@ -19,16 +19,19 @@ export default function FeedbackRow({
   onSelect,
   onViewItem,
   onToggleResolve,
-  onOpenAssignment,
-  assigneeName,
+  onOpenTasks,
+  memberNameMap,
 }: Props) {
   const TypeIcon = TYPE_ICONS[comment.item_type] || MessageSquare;
   const priorityDef =
     comment.priority && comment.priority !== 'none' ? getPriorityDef(comment.priority) : null;
   const PriorityIcon = priorityDef?.icon;
 
-  const hasAssignment = !!comment.assigned_to;
-  const assignmentDone = !!comment.assignment_completed_at;
+  const tasks = comment.tasks ?? [];
+  const taskCount = tasks.length;
+  const completedCount = tasks.filter((t) => !!t.completed_at).length;
+  const hasTasks = taskCount > 0;
+  const allDone = hasTasks && completedCount === taskCount;
 
   return (
     <div
@@ -76,24 +79,20 @@ export default function FeedbackRow({
                 title={`Priority: ${priorityDef.label}`}
               >
                 <PriorityIcon size={10} className={priorityDef.iconClass} />
-                {priorityDef.label} priority
+                {priorityDef.label}
               </span>
             )}
-            {hasAssignment && (
+            {hasTasks && (
               <span
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-detail font-medium ${
-                  assignmentDone
+                  allDone
                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                     : 'bg-amber-50 text-amber-700 border border-amber-200'
                 }`}
-                title={`${assignmentDone ? 'Completed' : 'Assigned'}${assigneeName ? ` — ${assigneeName}` : ''}`}
+                title={`${completedCount}/${taskCount} tasks complete`}
               >
-                {assignmentDone ? (
-                  <CheckCircle2 size={10} />
-                ) : (
-                  <CircleDashed size={10} />
-                )}
-                {assigneeName || 'Assigned'}
+                {allDone ? <CheckCircle2 size={10} /> : <CircleDashed size={10} />}
+                {completedCount}/{taskCount}
               </span>
             )}
           </div>
@@ -116,19 +115,19 @@ export default function FeedbackRow({
         </div>
       </div>
 
-      {/* Hover actions */}
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-        {onOpenAssignment && (
+      {/* Action buttons — always visible */}
+      <div className="flex items-center gap-1 shrink-0">
+        {onOpenTasks && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onOpenAssignment();
+              onOpenTasks();
             }}
-            title={hasAssignment ? 'View assignment' : 'Assign to team member'}
+            title={hasTasks ? `${completedCount}/${taskCount} tasks` : 'Create task'}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium text-teal hover:bg-teal/8 transition-colors"
           >
-            <UserPlus size={11} />
-            {hasAssignment ? 'Assignment' : 'Assign'}
+            {hasTasks ? <ListTodo size={11} /> : <UserPlus size={11} />}
+            {hasTasks ? 'Tasks' : 'Task'}
           </button>
         )}
         <button
@@ -140,7 +139,7 @@ export default function FeedbackRow({
           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium text-dim hover:text-ink hover:bg-gray-100 transition-colors"
         >
           <ExternalLink size={11} />
-          View item
+          View
         </button>
         <button
           onClick={(e) => {
@@ -159,11 +158,11 @@ export default function FeedbackRow({
         </button>
       </div>
 
-      {/* Resolved indicator (when row is not hovered) */}
+      {/* Resolved indicator */}
       {comment.resolved && (
         <CheckCircle2
           size={16}
-          className="text-emerald-500 shrink-0 mt-1 group-hover:hidden focus-within:hidden"
+          className="text-emerald-500 shrink-0 mt-1"
         />
       )}
     </div>

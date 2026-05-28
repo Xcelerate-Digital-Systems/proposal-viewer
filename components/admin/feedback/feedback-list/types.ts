@@ -1,5 +1,5 @@
 import { Globe, Image as ImageIcon, Mail, Smartphone, Monitor, MessageSquare } from 'lucide-react';
-import type { FeedbackComment } from '@/lib/supabase';
+import type { FeedbackComment, CommentTask } from '@/lib/supabase';
 
 /**
  * Comment row enriched with denormalised item info — used by the project-wide
@@ -14,6 +14,7 @@ export type CommentWithItem = FeedbackComment & {
   screenshot_url?: string | null;
   video_url?: string | null;
   annotation_data?: unknown;
+  tasks?: CommentTask[];
 };
 
 /** Icon used in the row + sidebar to hint at the item's content type. */

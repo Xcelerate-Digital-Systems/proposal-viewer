@@ -439,10 +439,7 @@ export type FeedbackComment = {
   resolved: boolean;
   resolved_by: string | null;
   resolved_at: string | null;
-  assigned_to: string | null;
-  assigned_by: string | null;
-  assignment_note: string | null;
-  assignment_completed_at: string | null;
+  tasks?: CommentTask[];
   created_at: string;
   updated_at: string;
 };
@@ -452,6 +449,26 @@ export type FeedbackCommentAttachment = {
   name: string;
   type: string;
   size: number;
+};
+
+export type CommentTaskAttachment = {
+  path: string;
+  name: string;
+  size: number;
+  type: string;
+};
+
+export type CommentTask = {
+  id: string;
+  comment_id: string;
+  company_id: string;
+  assigned_to: string;
+  assigned_by: string | null;
+  instructions: string | null;
+  attachments: CommentTaskAttachment[];
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type FeedbackCommentReaction = {

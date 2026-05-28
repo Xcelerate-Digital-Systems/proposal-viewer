@@ -246,23 +246,25 @@ export function buildNewVersionEmail(params: {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Comment assignment
+// Comment tasks
 // ──────────────────────────────────────────────────────────────────────────
 
-export function buildAssignmentEmail(params: {
+/** @deprecated Use buildTaskEmail instead */
+export const buildAssignmentEmail = buildTaskEmail;
+
+export function buildTaskEmail(params: {
   branding: EmailBranding;
   projectTitle: string;
-  /** Deep link straight to the item the comment lives on */
   itemUrl: string;
   itemTitle: string | null;
   assignerName: string;
   assigneeName: string;
   commentContent: string | null;
-  assignmentNote: string | null;
+  instructions: string | null;
 }): { subject: string; html: string } {
   const {
     branding, projectTitle, itemUrl, itemTitle,
-    assignerName, assigneeName, commentContent, assignmentNote,
+    assignerName, assigneeName, commentContent, instructions,
   } = params;
 
   const subject = `${assignerName} assigned you a task${itemTitle ? ` on ${itemTitle}` : ''}`;
@@ -273,28 +275,28 @@ export function buildAssignmentEmail(params: {
        </div>`
     : '';
 
-  const noteBlock = assignmentNote
+  const noteBlock = instructions
     ? `<p style="margin:0 0 4px;color:#6b7280;font-size:13px;">Instructions:</p>
        <div style="background:#fffbeb;border-left:3px solid #f59e0b;padding:10px 14px;margin:0 0 16px;border-radius:4px;">
-         <p style="margin:0;color:#92400e;font-size:14px;line-height:1.6;">${escapeHtml(assignmentNote)}</p>
+         <p style="margin:0;color:#92400e;font-size:14px;line-height:1.6;">${escapeHtml(instructions)}</p>
        </div>`
     : '';
 
   const body = `<h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">You've been assigned a task</h1>
     <div style="color:#6b7280;font-size:15px;line-height:1.6;">
-      <p style="margin:0 0 12px;">${escapeHtml(assignerName)} assigned you to fix an issue${itemTitle ? ` on <strong>"${escapeHtml(itemTitle)}"</strong>` : ''} in <strong>"${escapeHtml(projectTitle)}"</strong>.</p>
+      <p style="margin:0 0 12px;">${escapeHtml(assignerName)} assigned you a task${itemTitle ? ` on <strong>"${escapeHtml(itemTitle)}"</strong>` : ''} in <strong>"${escapeHtml(projectTitle)}"</strong>.</p>
       ${commentBlock}
       ${noteBlock}
-      <p style="color:#6b7280;font-size:14px;">Open the item to see the full context and mark the assignment complete when you're done.</p>
+      <p style="color:#6b7280;font-size:14px;">Open the item to see the full context and mark it complete when done.</p>
     </div>
-    <div style="margin-top:28px;">${ctaButton(itemUrl, 'View Assignment', branding.accentColor)}</div>`;
+    <div style="margin-top:28px;">${ctaButton(itemUrl, 'View Task', branding.accentColor)}</div>`;
 
   return {
     subject,
     html: shell(
       branding,
       body,
-      `You're receiving this because ${escapeHtml(assignerName)} assigned you to this task.`,
+      `You're receiving this because ${escapeHtml(assignerName)} assigned you this task.`,
     ),
   };
 }
