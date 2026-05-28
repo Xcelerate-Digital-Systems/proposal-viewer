@@ -12,7 +12,10 @@ import PackagesPreview from '@/components/admin/shared/PackagesPreview';
 import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import TierEditor from '@/components/admin/shared/TierEditor';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
-import { SavePackageTemplateModal } from '@/components/admin/shared/PackageTemplatesLibraryBar';
+import {
+  PackageTemplatesLibraryBar,
+  SavePackageTemplateModal,
+} from '@/components/admin/shared/PackageTemplatesLibraryBar';
 import { usePackagesEditor, type UsePackagesEditorOptions } from '@/components/admin/shared/usePackagesEditor';
 import { PackageTier } from '@/lib/supabase';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
@@ -185,12 +188,15 @@ export default function PackagesSection(props: PackagesSectionProps) {
                 description="Tiers, features, and recommended badges"
                 icon={<LayoutGrid size={14} className="text-faint" />}
                 action={
-                  <button
-                    onClick={editor.addTier}
-                    className="flex items-center gap-1 text-xs font-medium text-teal hover:text-teal/80 transition-colors"
-                  >
-                    <Plus size={11} /> Add Package
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <PackageTemplatesLibraryBar onPick={editor.insertTier} />
+                    <button
+                      onClick={editor.addTier}
+                      className="flex items-center gap-1 text-xs font-medium text-teal hover:text-teal/80 transition-colors"
+                    >
+                      <Plus size={11} /> Add Package
+                    </button>
+                  </div>
                 }
               >
                 {editor.form.packages.length === 0 ? (
