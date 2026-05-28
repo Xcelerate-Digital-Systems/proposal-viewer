@@ -6,13 +6,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, FileText, DollarSign } from 'lucide-react';
+import { Loader2, FileText, DollarSign, CheckSquare } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import PricingPreview from '@/components/admin/shared/PricingPreview';
 import ViewerPagePreview from '@/components/admin/shared/ViewerPagePreview';
+import ProposalDecisionPanel from '@/components/viewer/ProposalDecisionPanel';
+import { DEFAULT_DECISION_NEXT_STEPS } from '@/lib/types/decision-extras';
 
 interface PreviewProps {
   entityId: string;
@@ -237,6 +239,172 @@ export function TextPageDesignPreview({ entityId, entityKey }: PreviewProps) {
           Use the controls on the left to dial in your brand. Changes save automatically and this
           preview refreshes a moment later.
         </p>
+      </div>
+    </ViewerPagePreview>
+  );
+}
+
+/* ============================================================
+   Decision Design Preview
+   ============================================================ */
+
+export interface DecisionPreviewLive {
+  decision_bg_color: string | null;
+  decision_text_color: string | null;
+  decision_heading_color: string | null;
+  decision_accept_button_color: string | null;
+  decision_decline_button_color: string | null;
+  decision_revision_button_color: string | null;
+  decision_checkbox_color: string | null;
+}
+
+function withAlpha(color: string, alpha: number): string {
+  const hex = color.trim();
+  if (hex.startsWith('#')) {
+    const h = hex.slice(1);
+    const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    if (full.length === 6) {
+      const r = parseInt(full.slice(0, 2), 16);
+      const g = parseInt(full.slice(2, 4), 16);
+      const b = parseInt(full.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+  }
+  return color;
+}
+
+function fontStack(name: string | null | undefined, fallback: string): string {
+  if (!name) return fallback;
+  return `'${name}', ${fallback}`;
+}
+
+export function DecisionDesignPreview({
+  entityId,
+  entityKey,
+  live,
+}: PreviewProps & { live?: DecisionPreviewLive }) {
+  const [loaded, setLoaded] = useState(false);
+  const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const b = await loadBranding(entityId, entityKey);
+      if (!cancelled) {
+        setBranding(b);
+        setLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [entityId, entityKey]);
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center py-12 bg-white rounded-2xl border border-edge-strong">
+        <Loader2 size={18} className="animate-spin text-gray-300" />
+      </div>
+    );
+  }
+
+  const bodyBg =
+    live?.decision_bg_color ??
+    branding.decision_action_bg_color ??
+    branding.text_page_bg_color ??
+    '#ffffff';
+  const bodyText =
+    live?.decision_text_color ??
+    branding.decision_action_text_color ??
+    branding.text_page_text_color ??
+    '#1E2432';
+  const headingColor =
+    live?.decision_heading_color ??
+    branding.decision_action_heading_color ??
+    branding.text_page_heading_color ??
+    bodyText;
+  const muted = withAlpha(bodyText, 0.6);
+  const faint = withAlpha(bodyText, 0.45);
+  const hairline = withAlpha(bodyText, 0.1);
+  const headingFontFamily = fontStack(branding.font_heading, 'inherit');
+  const bodyFontFamily = fontStack(branding.font_body, 'inherit');
+  const bodyFontWeight = branding.font_body_weight ? Number(branding.font_body_weight) || undefined : undefined;
+  const titleFontFamily = fontStack(
+    branding.title_font_family || branding.font_heading,
+    'inherit',
+  );
+  const titleFontWeight = branding.title_font_weight || '600';
+  const titleStyle: React.CSSProperties = {
+    fontFamily: titleFontFamily,
+    fontWeight: Number(titleFontWeight) || 600,
+    color: headingColor,
+  };
+
+  const noopAccept = async (_name: string) => { void _name; };
+  const noopDecline = async (_name: string, _reason: string) => { void _name; void _reason; };
+  const noopRevision = async (_name: string, _notes: string) => { void _name; void _notes; };
+
+  return (
+    <ViewerPagePreview
+      branding={branding}
+      label="Decision"
+      icon={<CheckSquare size={11} />}
+      footer="Live preview · decision page colours"
+    >
+      <div className="relative w-full min-h-[100vh] flex items-start justify-center px-6 sm:px-14 py-12">
+        <div
+          className="w-full max-w-2xl rounded-2xl shadow-popover px-6 sm:px-12 py-10"
+          style={{
+            backgroundColor: bodyBg,
+            color: bodyText,
+            fontFamily: bodyFontFamily,
+            fontWeight: bodyFontWeight,
+          }}
+        >
+          <section className="mb-8">
+            <p
+              className="text-2xs tracking-[0.18em] uppercase mb-4"
+              style={{ color: faint, fontFamily: headingFontFamily }}
+            >
+              Next Steps
+            </p>
+            <ol className="space-y-3">
+              {DEFAULT_DECISION_NEXT_STEPS.map((step, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm leading-[1.55]">
+                  <span className="shrink-0 tabular-nums text-xs font-medium mt-0.5" style={{ color: muted }}>
+                    0{i + 1}
+                  </span>
+                  <span style={{ color: bodyText }}>{step}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <div className="mx-auto mb-8 h-px max-w-md" style={{ backgroundColor: hairline }} />
+
+          <ProposalDecisionPanel
+            onAccept={noopAccept}
+            onDecline={noopDecline}
+            onRequestRevision={noopRevision}
+            tokens={{
+              bodyBg,
+              bodyText,
+              headingColor,
+              muted,
+              faint,
+              hairline,
+              headingFontFamily,
+              bodyFontFamily,
+              bodyFontWeight,
+              titleStyle,
+              mutedStyle: { color: muted },
+            }}
+            acceptButtonColor={live?.decision_accept_button_color ?? branding.decision_action_accent_color}
+            declineButtonColor={live?.decision_decline_button_color ?? branding.decision_decline_button_color}
+            revisionButtonColor={live?.decision_revision_button_color ?? branding.decision_revision_button_color}
+            checkboxColor={live?.decision_checkbox_color ?? branding.decision_checkbox_color}
+            buttonFontFamily={branding.font_button || branding.font_heading}
+            buttonFontWeight={branding.font_button_weight || branding.font_heading_weight}
+          />
+        </div>
       </div>
     </ViewerPagePreview>
   );

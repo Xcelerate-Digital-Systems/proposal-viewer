@@ -25,7 +25,7 @@ import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
 import PackagesDesignPanel from '@/components/admin/builder-sections/PackagesDesignPanel';
-import { PricingDesignPreview } from '@/components/admin/builder-sections/DesignPreviews';
+import { PricingDesignPreview, DecisionDesignPreview } from '@/components/admin/builder-sections/DesignPreviews';
 import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import type { CoverEditorEntity } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import {
@@ -867,80 +867,99 @@ export default function ViewerStyleSection({
         <>
           <GroupHeading title="Decision Page" hint="Accept / Decline / Request Changes form" />
 
-          <SectionCard
-            title="Decision Design"
-            description="Colour the accept/decline/revision form shown to clients. Background, text and heading inherit from Text Page if left blank."
-            icon={<CheckSquare size={14} className="text-faint" />}
-            action={
-              <button
-                onClick={() => {
-                  setDecisionBgColor(null);
-                  setDecisionTextColor(null);
-                  setDecisionHeadingColor(null);
-                  setDecisionAcceptButtonColor(null);
-                  setDecisionDeclineButtonColor(null);
-                  setDecisionRevisionButtonColor(null);
-                  setDecisionCheckboxColor(null);
-                }}
-                className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
+          <div className="flex gap-6 items-start">
+            <div className="flex-1 min-w-0">
+              <SectionCard
+                title="Decision Design"
+                description="Colour the accept/decline/revision form shown to clients. Background, text and heading inherit from Text Page if left blank."
+                icon={<CheckSquare size={14} className="text-faint" />}
+                action={
+                  <button
+                    onClick={() => {
+                      setDecisionBgColor(null);
+                      setDecisionTextColor(null);
+                      setDecisionHeadingColor(null);
+                      setDecisionAcceptButtonColor(null);
+                      setDecisionDeclineButtonColor(null);
+                      setDecisionRevisionButtonColor(null);
+                      setDecisionCheckboxColor(null);
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
+                  >
+                    <RotateCcw size={12} />
+                    Reset
+                  </button>
+                }
               >
-                <RotateCcw size={12} />
-                Reset
-              </button>
-            }
-          >
-            <div className="space-y-4">
-              <ColorPickerField
-                label="Background"
-                value={decisionBgColor}
-                fallback={tpBgColor || companyDefaults.bg_color}
-                onChange={setDecisionBgColor}
-                onReset={() => setDecisionBgColor(null)}
-              />
-              <ColorPickerField
-                label="Text"
-                value={decisionTextColor}
-                fallback={tpTextColor || companyDefaults.text_color}
-                onChange={setDecisionTextColor}
-                onReset={() => setDecisionTextColor(null)}
-              />
-              <ColorPickerField
-                label="Headline"
-                value={decisionHeadingColor}
-                fallback={tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
-                onChange={setDecisionHeadingColor}
-                onReset={() => setDecisionHeadingColor(null)}
-              />
-              <ColorPickerField
-                label="Accept Button"
-                value={decisionAcceptButtonColor}
-                fallback={decisionHeadingColor || tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
-                onChange={setDecisionAcceptButtonColor}
-                onReset={() => setDecisionAcceptButtonColor(null)}
-              />
-              <ColorPickerField
-                label="Decline Button"
-                value={decisionDeclineButtonColor}
-                fallback="#dc2626"
-                onChange={setDecisionDeclineButtonColor}
-                onReset={() => setDecisionDeclineButtonColor(null)}
-              />
-              <ColorPickerField
-                label="Request Changes Button"
-                value={decisionRevisionButtonColor}
-                fallback={decisionHeadingColor || tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
-                onChange={setDecisionRevisionButtonColor}
-                onReset={() => setDecisionRevisionButtonColor(null)}
-              />
-              <ColorPickerField
-                label="Checkbox"
-                value={decisionCheckboxColor}
-                fallback={companyDefaults.accent_color}
-                onChange={setDecisionCheckboxColor}
-                onReset={() => setDecisionCheckboxColor(null)}
-              />
+                <div className="space-y-4">
+                  <ColorPickerField
+                    label="Background"
+                    value={decisionBgColor}
+                    fallback={tpBgColor || companyDefaults.bg_color}
+                    onChange={setDecisionBgColor}
+                    onReset={() => setDecisionBgColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Text"
+                    value={decisionTextColor}
+                    fallback={tpTextColor || companyDefaults.text_color}
+                    onChange={setDecisionTextColor}
+                    onReset={() => setDecisionTextColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Headline"
+                    value={decisionHeadingColor}
+                    fallback={tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
+                    onChange={setDecisionHeadingColor}
+                    onReset={() => setDecisionHeadingColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Accept Button"
+                    value={decisionAcceptButtonColor}
+                    fallback={decisionHeadingColor || tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
+                    onChange={setDecisionAcceptButtonColor}
+                    onReset={() => setDecisionAcceptButtonColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Decline Button"
+                    value={decisionDeclineButtonColor}
+                    fallback="#dc2626"
+                    onChange={setDecisionDeclineButtonColor}
+                    onReset={() => setDecisionDeclineButtonColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Request Changes Button"
+                    value={decisionRevisionButtonColor}
+                    fallback={decisionHeadingColor || tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
+                    onChange={setDecisionRevisionButtonColor}
+                    onReset={() => setDecisionRevisionButtonColor(null)}
+                  />
+                  <ColorPickerField
+                    label="Checkbox"
+                    value={decisionCheckboxColor}
+                    fallback={companyDefaults.accent_color}
+                    onChange={setDecisionCheckboxColor}
+                    onReset={() => setDecisionCheckboxColor(null)}
+                  />
+                </div>
+              </SectionCard>
             </div>
-          </SectionCard>
+            <StickyPreviewAside>
+              <DecisionDesignPreview
+                entityId={entityId}
+                entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
+                live={{
+                  decision_bg_color: decisionBgColor,
+                  decision_text_color: decisionTextColor,
+                  decision_heading_color: decisionHeadingColor,
+                  decision_accept_button_color: decisionAcceptButtonColor,
+                  decision_decline_button_color: decisionDeclineButtonColor,
+                  decision_revision_button_color: decisionRevisionButtonColor,
+                  decision_checkbox_color: decisionCheckboxColor,
+                }}
+              />
+            </StickyPreviewAside>
+          </div>
         </>
       )}
 
