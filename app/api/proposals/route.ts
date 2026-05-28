@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       prepared_by,
       entity_type,
       section_headers: _sh,
+      skip_default_pages: skipDefaultPages,
       ...rest
     } = body;
 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const isBlank = !isQuote && !file_path;
+    const isBlank = !isQuote && !file_path && !skipDefaultPages;
 
     const companyId = auth.companyId;
 

@@ -69,12 +69,29 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   /* ── Company logo + branding state (for preview) ───────────── */
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string>('');
-  const [headingFont, setHeadingFont] = useState<string | null>(null);
-  const [headingFontWeight, setHeadingFontWeight] = useState<string | null>(null);
-  const [bodyFont, setBodyFont] = useState<string | null>(null);
-  const [bodyFontWeight, setBodyFontWeight] = useState<string | null>(null);
-  const [buttonFont, setButtonFont] = useState<string | null>(null);
-  const [buttonFontWeight, setButtonFontWeight] = useState<string | null>(null);
+  // Initialize from entity so the preview shows the correct font immediately
+  // (before the company-defaults fetch lands). The useEffect below refines
+  // these with company-level fallbacks once loaded.
+  const entityFonts = entity as {
+    title_font_family?: string | null;
+    title_font_weight?: string | null;
+    font_heading_family?: string | null;
+    font_heading_weight?: string | null;
+    font_body_family?: string | null;
+    font_body_weight?: string | null;
+    font_button_family?: string | null;
+    font_button_weight?: string | null;
+  };
+  const [headingFont, setHeadingFont] = useState<string | null>(
+    entityFonts.title_font_family || entityFonts.font_heading_family || null,
+  );
+  const [headingFontWeight, setHeadingFontWeight] = useState<string | null>(
+    entityFonts.title_font_weight || entityFonts.font_heading_weight || null,
+  );
+  const [bodyFont, setBodyFont] = useState<string | null>(entityFonts.font_body_family || null);
+  const [bodyFontWeight, setBodyFontWeight] = useState<string | null>(entityFonts.font_body_weight || null);
+  const [buttonFont, setButtonFont] = useState<string | null>(entityFonts.font_button_family || null);
+  const [buttonFontWeight, setButtonFontWeight] = useState<string | null>(entityFonts.font_button_weight || null);
 
   /* ── Client logo state ─────────────────────────────────────── */
   const [clientLogoPath, setClientLogoPath] = useState(entity.cover_client_logo_path || '');

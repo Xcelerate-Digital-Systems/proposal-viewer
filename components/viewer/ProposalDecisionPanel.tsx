@@ -53,6 +53,17 @@ interface ProposalDecisionPanelProps {
   acceptButtonLabel?: string;
   declineButtonLabel?: string;
   revisionButtonLabel?: string;
+  /** Customisable Decline/Revision-tab copy. Each falls back to a sensible default. */
+  declineHeading?: string;
+  declineSubtitle?: string;
+  revisionHeading?: string;
+  revisionSubtitle?: string;
+  /** Per-button background colour overrides. */
+  acceptButtonColor?: string | null;
+  declineButtonColor?: string | null;
+  revisionButtonColor?: string | null;
+  /** Checkbox accent colour. Null = browser default. */
+  checkboxColor?: string | null;
   /** CTA button font + weight (mirrors the cover button cascade so the
    *  Accept/Decline/Request Changes submit button uses the same typeface as
    *  the cover CTA, with sensible fallbacks). */
@@ -95,6 +106,14 @@ export default function ProposalDecisionPanel({
   acceptButtonLabel,
   declineButtonLabel,
   revisionButtonLabel,
+  declineHeading,
+  declineSubtitle,
+  revisionHeading,
+  revisionSubtitle,
+  acceptButtonColor,
+  declineButtonColor,
+  revisionButtonColor,
+  checkboxColor,
   buttonFontFamily,
   buttonFontWeight,
 }: ProposalDecisionPanelProps) {
@@ -197,15 +216,15 @@ export default function ProposalDecisionPanel({
             {activeAction === 'accept'
               ? (acceptHeading || 'Ready to lock in your project?')
               : activeAction === 'decline'
-                ? 'Decline this quote?'
-                : 'Request changes to this quote?'}
+                ? (declineHeading || 'Decline this quote?')
+                : (revisionHeading || 'Request changes to this quote?')}
           </h3>
           <p className="text-sm mb-6" style={mutedStyle}>
             {activeAction === 'accept'
               ? (acceptSubtitle || 'Sign below to confirm your project and secure your quoted price.')
               : activeAction === 'decline'
-                ? "Let us know why if you'd like — it helps us improve."
-                : "Tell us what you'd like changed and we'll send a revised quote."}
+                ? (declineSubtitle || "Let us know why if you'd like — it helps us improve.")
+                : (revisionSubtitle || "Tell us what you'd like changed and we'll send a revised quote.")}
           </p>
 
           {showDecisionButtons && (
@@ -272,6 +291,7 @@ export default function ProposalDecisionPanel({
                 checked={agree}
                 onChange={(e) => setAgree(e.target.checked)}
                 className="mt-0.5"
+                style={checkboxColor ? { accentColor: checkboxColor } : undefined}
               />
               <span>{agreementText || 'I have read and agree to the proposal details and terms above.'}</span>
             </label>
@@ -337,9 +357,11 @@ export default function ProposalDecisionPanel({
             className="w-full px-6 py-3 rounded-lg text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 tracking-wider uppercase"
             style={{
               backgroundColor:
-                activeAction === 'decline'
-                  ? withAlpha('#dc2626', 0.85)
-                  : headingColor,
+                activeAction === 'accept'
+                  ? (acceptButtonColor || headingColor)
+                  : activeAction === 'decline'
+                    ? (declineButtonColor || withAlpha('#dc2626', 0.85))
+                    : (revisionButtonColor || headingColor),
               color: bodyBg,
               // Mirror the Cover CTA button styling — Globals "Button font"
               // controls both. Fall back to the heading font if no override.

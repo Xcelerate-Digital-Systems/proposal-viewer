@@ -230,6 +230,26 @@ export default function ViewerPageContent({
                 acceptButtonLabel={extras.accept_button_label}
                 declineButtonLabel={extras.decline_button_label}
                 revisionButtonLabel={extras.revision_button_label}
+                declineHeading={extras.decline_heading}
+                declineSubtitle={extras.decline_subtitle}
+                revisionHeading={extras.revision_heading}
+                revisionSubtitle={extras.revision_subtitle}
+                acceptButtonColor={
+                  (proposal as Record<string, string | null | undefined>)?.decision_action_accent_color ||
+                  branding.decision_action_accent_color
+                }
+                declineButtonColor={
+                  (proposal as Record<string, string | null | undefined>)?.decision_decline_button_color ||
+                  branding.decision_decline_button_color
+                }
+                revisionButtonColor={
+                  (proposal as Record<string, string | null | undefined>)?.decision_revision_button_color ||
+                  branding.decision_revision_button_color
+                }
+                checkboxColor={
+                  (proposal as Record<string, string | null | undefined>)?.decision_checkbox_color ||
+                  branding.decision_checkbox_color
+                }
                 buttonFontFamily={branding.font_button || branding.font_heading}
                 buttonFontWeight={branding.font_button_weight || branding.font_heading_weight}
               />

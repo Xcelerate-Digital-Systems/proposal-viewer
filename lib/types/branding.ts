@@ -55,8 +55,14 @@ export type CompanyBranding = {
   decision_action_bg_color: string | null;
   decision_action_text_color: string | null;
   decision_action_heading_color: string | null;
-  /** Submit-button background. Null = use heading colour. */
+  /** Accept-button background. Null = use heading colour. */
   decision_action_accent_color: string | null;
+  /** Decline-button background. Null = hardcoded red. */
+  decision_decline_button_color: string | null;
+  /** Revision-button background. Null = use heading colour. */
+  decision_revision_button_color: string | null;
+  /** Checkbox accent colour. Null = browser default. */
+  decision_checkbox_color: string | null;
   /** Proposal pricing-page colour overrides — fed from proposals.pricing_*.
    *  Null falls back to the sidebar_text_color / accent / text_page_* cascade
    *  the PricingPage uses today. */

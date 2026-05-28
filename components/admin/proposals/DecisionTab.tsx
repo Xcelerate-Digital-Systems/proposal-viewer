@@ -25,6 +25,10 @@ import {
   DEFAULT_DECISION_ACCEPT_BUTTON_LABEL,
   DEFAULT_DECISION_DECLINE_BUTTON_LABEL,
   DEFAULT_DECISION_REVISION_BUTTON_LABEL,
+  DEFAULT_DECISION_DECLINE_HEADING,
+  DEFAULT_DECISION_DECLINE_SUBTITLE,
+  DEFAULT_DECISION_REVISION_HEADING,
+  DEFAULT_DECISION_REVISION_SUBTITLE,
   type DecisionExtras,
 } from '@/lib/types/decision-extras';
 
@@ -58,6 +62,10 @@ export default function DecisionTab({
   const [acceptButtonLabel, setAcceptButtonLabel] = useState<string>(parsed.accept_button_label);
   const [declineButtonLabel, setDeclineButtonLabel] = useState<string>(parsed.decline_button_label);
   const [revisionButtonLabel, setRevisionButtonLabel] = useState<string>(parsed.revision_button_label);
+  const [declineHeading, setDeclineHeading] = useState<string>(parsed.decline_heading);
+  const [declineSubtitle, setDeclineSubtitle] = useState<string>(parsed.decline_subtitle);
+  const [revisionHeading, setRevisionHeading] = useState<string>(parsed.revision_heading);
+  const [revisionSubtitle, setRevisionSubtitle] = useState<string>(parsed.revision_subtitle);
   // Mirror the DecisionPageCard's title locally so the preview shows the
   // live value while the user is typing (the card owns the debounced save).
   const [previewTitle, setPreviewTitle] = useState<string>(initialTitle ?? '');
@@ -108,6 +116,10 @@ export default function DecisionTab({
     accept_button_label: overrides.accept_button_label ?? acceptButtonLabel,
     decline_button_label: overrides.decline_button_label ?? declineButtonLabel,
     revision_button_label: overrides.revision_button_label ?? revisionButtonLabel,
+    decline_heading: overrides.decline_heading ?? declineHeading,
+    decline_subtitle: overrides.decline_subtitle ?? declineSubtitle,
+    revision_heading: overrides.revision_heading ?? revisionHeading,
+    revision_subtitle: overrides.revision_subtitle ?? revisionSubtitle,
   });
 
   const setStepsAndSave = (next: string[]) => {
@@ -148,6 +160,26 @@ export default function DecisionTab({
   const setRevisionButtonLabelAndSave = (next: string) => {
     setRevisionButtonLabel(next);
     schedule(buildExtras({ revision_button_label: next }));
+  };
+
+  const setDeclineHeadingAndSave = (next: string) => {
+    setDeclineHeading(next);
+    schedule(buildExtras({ decline_heading: next }));
+  };
+
+  const setDeclineSubtitleAndSave = (next: string) => {
+    setDeclineSubtitle(next);
+    schedule(buildExtras({ decline_subtitle: next }));
+  };
+
+  const setRevisionHeadingAndSave = (next: string) => {
+    setRevisionHeading(next);
+    schedule(buildExtras({ revision_heading: next }));
+  };
+
+  const setRevisionSubtitleAndSave = (next: string) => {
+    setRevisionSubtitle(next);
+    schedule(buildExtras({ revision_subtitle: next }));
   };
 
   return (
@@ -277,6 +309,77 @@ export default function DecisionTab({
         </div>
       </SectionCard>
 
+      {/* Decline & Revision copy — heading + subtitle for those tabs. */}
+      <SectionCard
+        title="Decline & Revision Copy"
+        icon={<MessageSquare size={14} className="text-faint" />}
+        description="The headline and subtitle shown when clients switch to the Decline or Request Changes tab."
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setDeclineHeading(DEFAULT_DECISION_DECLINE_HEADING);
+              setDeclineSubtitle(DEFAULT_DECISION_DECLINE_SUBTITLE);
+              setRevisionHeading(DEFAULT_DECISION_REVISION_HEADING);
+              setRevisionSubtitle(DEFAULT_DECISION_REVISION_SUBTITLE);
+              schedule(buildExtras({
+                decline_heading: DEFAULT_DECISION_DECLINE_HEADING,
+                decline_subtitle: DEFAULT_DECISION_DECLINE_SUBTITLE,
+                revision_heading: DEFAULT_DECISION_REVISION_HEADING,
+                revision_subtitle: DEFAULT_DECISION_REVISION_SUBTITLE,
+              }));
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dim hover:text-prose hover:bg-surface transition-colors"
+          >
+            <RotateCcw size={12} />
+            Reset
+          </button>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-prose">Decline Headline</label>
+            <input
+              type="text"
+              value={declineHeading}
+              onChange={(e) => setDeclineHeadingAndSave(e.target.value)}
+              placeholder={DEFAULT_DECISION_DECLINE_HEADING}
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-prose">Decline Subtitle</label>
+            <textarea
+              value={declineSubtitle}
+              onChange={(e) => setDeclineSubtitleAndSave(e.target.value)}
+              placeholder={DEFAULT_DECISION_DECLINE_SUBTITLE}
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-prose">Request Changes Headline</label>
+            <input
+              type="text"
+              value={revisionHeading}
+              onChange={(e) => setRevisionHeadingAndSave(e.target.value)}
+              placeholder={DEFAULT_DECISION_REVISION_HEADING}
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-prose">Request Changes Subtitle</label>
+            <textarea
+              value={revisionSubtitle}
+              onChange={(e) => setRevisionSubtitleAndSave(e.target.value)}
+              placeholder={DEFAULT_DECISION_REVISION_SUBTITLE}
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+            />
+          </div>
+        </div>
+      </SectionCard>
+
       {/* Button labels — submit button text per tab. */}
       <SectionCard
         title="Button Labels"
@@ -374,6 +477,10 @@ export default function DecisionTab({
           acceptButtonLabel={acceptButtonLabel}
           declineButtonLabel={declineButtonLabel}
           revisionButtonLabel={revisionButtonLabel}
+          declineHeading={declineHeading}
+          declineSubtitle={declineSubtitle}
+          revisionHeading={revisionHeading}
+          revisionSubtitle={revisionSubtitle}
         />
       </StickyPreviewAside>
     </div>

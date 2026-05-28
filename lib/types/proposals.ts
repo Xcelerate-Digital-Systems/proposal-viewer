@@ -213,8 +213,14 @@ export type Proposal = {
   decision_action_bg_color: string | null;
   decision_action_text_color: string | null;
   decision_action_heading_color: string | null;
-  /** Submit-button background. NULL = inherit decision_action_heading_color. */
+  /** Accept-button background. NULL = inherit decision_action_heading_color. */
   decision_action_accent_color: string | null;
+  /** Decline-button background. NULL = hardcoded red. */
+  decision_decline_button_color: string | null;
+  /** Revision-button background. NULL = use heading colour. */
+  decision_revision_button_color: string | null;
+  /** Checkbox accent colour. NULL = browser default. */
+  decision_checkbox_color: string | null;
   /** Master toggle for the synthetic Decision page. NULL = treat as true.
    *  When false, the page is removed from pageSequence/numPages/TOC entirely
    *  — clients have no in-viewer accept/decline path. */
@@ -233,6 +239,8 @@ export type Proposal = {
   pricing_price_color: string | null;
   pricing_payment_schedule_name_color: string | null;
   pricing_payment_schedule_price_color: string | null;
+  pricing_accent_bar_color: string | null;
+  pricing_dot_color: string | null;
 };
 
 // ─── Quote Attachment ─────────────────────────────────────────────────────────
@@ -345,6 +353,14 @@ export type ProposalTemplate = {
   /** Entity-level packages styling. Falls back to first packages page's
    *  payload.styling for rows that pre-date the 2026-05 migration. */
   package_styling: unknown | null;
+  /** Decision page surface overrides. NULL = inherit from branding cascade. */
+  decision_action_bg_color: string | null;
+  decision_action_text_color: string | null;
+  decision_action_heading_color: string | null;
+  decision_action_accent_color: string | null;
+  decision_decline_button_color: string | null;
+  decision_revision_button_color: string | null;
+  decision_checkbox_color: string | null;
   /** Decision page defaults copied onto proposals created from this template. */
   decision_page_enabled: boolean | null;
   decision_page_title: string | null;
@@ -356,6 +372,8 @@ export type ProposalTemplate = {
   pricing_price_color: string | null;
   pricing_payment_schedule_name_color: string | null;
   pricing_payment_schedule_price_color: string | null;
+  pricing_accent_bar_color: string | null;
+  pricing_dot_color: string | null;
 };
 
 // ─── Template Page ────────────────────────────────────────────────────────────

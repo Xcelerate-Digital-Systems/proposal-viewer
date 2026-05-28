@@ -30,6 +30,11 @@ interface DecisionPagePreviewProps {
   acceptButtonLabel: string;
   declineButtonLabel: string;
   revisionButtonLabel: string;
+  /** Live Decline/Revision-tab copy. */
+  declineHeading: string;
+  declineSubtitle: string;
+  revisionHeading: string;
+  revisionSubtitle: string;
 }
 
 /* ── Helper duplicated from DesignPreviews to keep the preview self-contained
@@ -42,7 +47,7 @@ async function loadBranding(
   const { data: ent } = await supabase
     .from(table)
     .select(
-      'company_id, text_page_bg_color, text_page_text_color, text_page_heading_color, title_font_family, title_font_weight, decision_action_bg_color, decision_action_text_color, decision_action_heading_color, decision_action_accent_color',
+      'company_id, text_page_bg_color, text_page_text_color, text_page_heading_color, title_font_family, title_font_weight, decision_action_bg_color, decision_action_text_color, decision_action_heading_color, decision_action_accent_color, decision_decline_button_color, decision_revision_button_color, decision_checkbox_color',
     )
     .eq('id', entityId)
     .single();
@@ -62,6 +67,9 @@ async function loadBranding(
     if (ent.decision_action_text_color) merged.decision_action_text_color = ent.decision_action_text_color;
     if (ent.decision_action_heading_color) merged.decision_action_heading_color = ent.decision_action_heading_color;
     if (ent.decision_action_accent_color) merged.decision_action_accent_color = ent.decision_action_accent_color;
+    if (ent.decision_decline_button_color) merged.decision_decline_button_color = ent.decision_decline_button_color;
+    if (ent.decision_revision_button_color) merged.decision_revision_button_color = ent.decision_revision_button_color;
+    if (ent.decision_checkbox_color) merged.decision_checkbox_color = ent.decision_checkbox_color;
   }
   return merged;
 }
@@ -99,6 +107,10 @@ export default function DecisionPagePreview({
   acceptButtonLabel,
   declineButtonLabel,
   revisionButtonLabel,
+  declineHeading,
+  declineSubtitle,
+  revisionHeading,
+  revisionSubtitle,
 }: DecisionPagePreviewProps) {
   const [loaded, setLoaded] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -255,6 +267,14 @@ export default function DecisionPagePreview({
             acceptButtonLabel={acceptButtonLabel}
             declineButtonLabel={declineButtonLabel}
             revisionButtonLabel={revisionButtonLabel}
+            declineHeading={declineHeading}
+            declineSubtitle={declineSubtitle}
+            revisionHeading={revisionHeading}
+            revisionSubtitle={revisionSubtitle}
+            acceptButtonColor={branding.decision_action_accent_color}
+            declineButtonColor={branding.decision_decline_button_color}
+            revisionButtonColor={branding.decision_revision_button_color}
+            checkboxColor={branding.decision_checkbox_color}
             buttonFontFamily={branding.font_button || branding.font_heading}
             buttonFontWeight={branding.font_button_weight || branding.font_heading_weight}
           />

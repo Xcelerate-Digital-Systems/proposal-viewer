@@ -50,6 +50,13 @@ export default function TemplateDesignPage() {
         initialPricingPaymentSchedulePriceColor={template.pricing_payment_schedule_price_color ?? null}
         initialPricingAccentBarColor={(template as { pricing_accent_bar_color?: string | null }).pricing_accent_bar_color ?? null}
         initialPricingDotColor={(template as { pricing_dot_color?: string | null }).pricing_dot_color ?? null}
+        initialDecisionBgColor={template.decision_action_bg_color ?? null}
+        initialDecisionTextColor={template.decision_action_text_color ?? null}
+        initialDecisionHeadingColor={template.decision_action_heading_color ?? null}
+        initialDecisionAcceptButtonColor={template.decision_action_accent_color ?? null}
+        initialDecisionDeclineButtonColor={template.decision_decline_button_color ?? null}
+        initialDecisionRevisionButtonColor={template.decision_revision_button_color ?? null}
+        initialDecisionCheckboxColor={template.decision_checkbox_color ?? null}
         coverEntity={template}
       />
     </div>

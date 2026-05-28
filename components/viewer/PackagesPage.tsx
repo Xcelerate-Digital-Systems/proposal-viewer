@@ -213,8 +213,12 @@ function PackageCard({ tier, accent, textColor, muted, faint, bgSecondary, borde
           style={{ backgroundColor: recBg }}
         >
           <span
-            className="text-xs font-bold uppercase tracking-wider"
-            style={{ color: recText }}
+            className="text-xs uppercase tracking-wider"
+            style={{
+              color: recText,
+              fontFamily: fontFamily(branding.title_font_family || branding.font_heading, 'system-ui, sans-serif'),
+              fontWeight: Number(branding.title_font_weight || branding.font_heading_weight || '700'),
+            }}
           >
             Recommended Package
           </span>

@@ -56,12 +56,11 @@ export default function CreateFromTemplate({
   const selectTemplate = async (t: ProposalTemplate) => {
     setSelectedTemplate(t);
 
-    // _v2 uses position + title (not page_number + label)
     const { data } = await supabase
       .from('template_pages_v2')
       .select('*')
       .eq('template_id', t.id)
-      .eq('type', 'pdf')
+      .eq('enabled', true)
       .order('position', { ascending: true });
 
     setPages(data || []);
@@ -72,9 +71,12 @@ export default function CreateFromTemplate({
     if (!selectedTemplate || !title.trim() || !clientName.trim()) return;
 
     if (pages.length === 0) {
-      setStatus('Template has no pages — please add pages to the template first.');
+      setStatus('Template has no enabled pages — please add pages to the template first.');
       return;
     }
+
+    const pdfPages = pages.filter((p) => p.type === 'pdf');
+    const hasNonPdfPages = pages.some((p) => p.type !== 'pdf');
 
     setCreating(true);
 
@@ -83,22 +85,21 @@ export default function CreateFromTemplate({
       // The merged PDF is rebuilt fire-and-forget after page edits, which
       // can be killed on Vercel before completing. Force a fresh rebuild
       // here so the proposal is created from up-to-date pages.
-      setStatus('Preparing template...');
-      const rebuildRes = await authedFetch('/api/templates/rebuild-merged', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ template_id: selectedTemplate.id }),
-      });
-      if (!rebuildRes.ok) {
-        setStatus('Failed to prepare template. Please try again.');
-        setCreating(false);
-        return;
-      }
-      const { file_path: freshFilePath } = await rebuildRes.json();
-      if (!freshFilePath) {
-        setStatus('Template has no pages — please add pages to the template first.');
-        setCreating(false);
-        return;
+      let freshFilePath: string | null = null;
+      if (pdfPages.length > 0) {
+        setStatus('Preparing template...');
+        const rebuildRes = await authedFetch('/api/templates/rebuild-merged', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ template_id: selectedTemplate.id }),
+        });
+        if (!rebuildRes.ok) {
+          setStatus('Failed to prepare template. Please try again.');
+          setCreating(false);
+          return;
+        }
+        const rebuildData = await rebuildRes.json();
+        freshFilePath = rebuildData.file_path || null;
       }
 
       // ── 1. Get creator name ─────────────────────────────────────────
@@ -125,7 +126,7 @@ export default function CreateFromTemplate({
         type?: 'group';
         link_url?: string;
         link_label?: string;
-      }> = pages.map((p) => ({
+      }> = pdfPages.map((p) => ({
         name: p.title ?? `Page ${p.position + 1}`,
         indent: p.indent ?? 0,
         ...(p.link_url   ? { link_url:   p.link_url   } : {}),
@@ -180,8 +181,9 @@ export default function CreateFromTemplate({
           crm_identifier:  crmIdentifier.trim()  || null,
           description:     description.trim()    || null,
           file_path:       freshFilePath,
-          file_size_bytes: (selectedTemplate as any).file_size_bytes ?? 0,
+          file_size_bytes: freshFilePath ? ((selectedTemplate as any).file_size_bytes ?? 0) : 0,
           page_names:      pageNames,
+          skip_default_pages: hasNonPdfPages,
           ...templateExtra,
           company_id:      companyId,
           created_by_name: creatorName,
@@ -276,19 +278,24 @@ export default function CreateFromTemplate({
       const newProposal = await res.json();
 
       // ── 4. Copy template data (pricing, text pages, packages) ───────
-      setStatus('Copying template data...');
-      try {
-        await authedFetch('/api/templates/copy-data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            template_id: selectedTemplate.id,
-            proposal_id: newProposal.proposal_id,
-            company_id:  companyId,
-          }),
-        });
-      } catch (err) {
-        console.error('Copy template data warning (non-fatal):', err);
+      if (hasNonPdfPages) {
+        setStatus('Copying template data...');
+        try {
+          const copyRes = await authedFetch('/api/templates/copy-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              template_id: selectedTemplate.id,
+              proposal_id: newProposal.proposal_id,
+              company_id:  companyId,
+            }),
+          });
+          if (!copyRes.ok) {
+            console.error('Copy template data failed:', await copyRes.text());
+          }
+        } catch (err) {
+          console.error('Copy template data warning (non-fatal):', err);
+        }
       }
 
       setStatus('Done!');
@@ -370,7 +377,7 @@ export default function CreateFromTemplate({
         </div>
         <div>
           <div className="text-sm font-medium text-ink">{selectedTemplate.name}</div>
-          <div className="text-xs text-faint">{pages.length} pages</div>
+          <div className="text-xs text-faint">{pages.length} page{pages.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
 

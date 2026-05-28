@@ -112,10 +112,17 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
     else onSave?.();
   }, [entityId, table, onSave, toast]);
 
+  const pendingStylingRef = useRef<PackageStyling | null>(null);
+  const pendingTiersRef = useRef<PackageTier[] | null>(null);
+
   const onStylingChange = (next: PackageStyling) => {
     setStyling(next);
+    pendingStylingRef.current = next;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => persistStyling(next), 800);
+    debounceRef.current = setTimeout(() => {
+      pendingStylingRef.current = null;
+      persistStyling(next);
+    }, 800);
   };
 
   /* ── Per-tier styling overrides save (write to packages page) ── */
@@ -137,11 +144,19 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
   const onTierChange = (tierId: string, changes: Partial<PackageTier>) => {
     const next = tiers.map((t) => (t.id === tierId ? { ...t, ...changes } : t));
     setTiers(next);
+    pendingTiersRef.current = next;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => persistTier(next), 800);
+    debounceRef.current = setTimeout(() => {
+      pendingTiersRef.current = null;
+      persistTier(next);
+    }, 800);
   };
 
-  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (pendingStylingRef.current) persistStyling(pendingStylingRef.current);
+    if (pendingTiersRef.current) persistTier(pendingTiersRef.current);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Render ─────────────────────────────────────────────────── */
   if (!loaded) {

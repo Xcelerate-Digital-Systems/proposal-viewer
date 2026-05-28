@@ -15,7 +15,7 @@ import { authFetch } from '@/lib/auth-fetch';
 import {
   Loader2, Upload, Trash2,
   Image as ImageIcon, RotateCcw, Hash, LayoutPanelTop,
-  Paintbrush, Package, DollarSign, ArrowUpRight,
+  Paintbrush, Package, DollarSign, ArrowUpRight, CheckSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import { fontFamily } from '@/lib/google-fonts';
@@ -205,6 +205,21 @@ interface ViewerStyleSectionProps {
   /** Entity title — surfaced in the Globals live preview so the user sees
    *  their actual title in the chosen font instead of "Sample page title". */
   entityTitle?: string;
+  /* ── Decision-page colours (proposals + templates) ──────── */
+  decisionBgColor: string | null;
+  setDecisionBgColor: (v: string | null) => void;
+  decisionTextColor: string | null;
+  setDecisionTextColor: (v: string | null) => void;
+  decisionHeadingColor: string | null;
+  setDecisionHeadingColor: (v: string | null) => void;
+  decisionAcceptButtonColor: string | null;
+  setDecisionAcceptButtonColor: (v: string | null) => void;
+  decisionDeclineButtonColor: string | null;
+  setDecisionDeclineButtonColor: (v: string | null) => void;
+  decisionRevisionButtonColor: string | null;
+  setDecisionRevisionButtonColor: (v: string | null) => void;
+  decisionCheckboxColor: string | null;
+  setDecisionCheckboxColor: (v: string | null) => void;
   /* ── Cover design panel — rendered when caller passes the
         cover entity. Documents/quotes don't pass it. ──── */
   coverEntity?: CoverEditorEntity;
@@ -288,6 +303,20 @@ export default function ViewerStyleSection({
   onTpResetToCompany,
   entityId,
   entityTitle,
+  decisionBgColor,
+  setDecisionBgColor,
+  decisionTextColor,
+  setDecisionTextColor,
+  decisionHeadingColor,
+  setDecisionHeadingColor,
+  decisionAcceptButtonColor,
+  setDecisionAcceptButtonColor,
+  decisionDeclineButtonColor,
+  setDecisionDeclineButtonColor,
+  decisionRevisionButtonColor,
+  setDecisionRevisionButtonColor,
+  decisionCheckboxColor,
+  setDecisionCheckboxColor,
   coverEntity,
   onCoverSave,
 }: ViewerStyleSectionProps) {
@@ -829,6 +858,90 @@ export default function ViewerStyleSection({
           entityId={entityId}
           entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
         />
+      )}
+
+      {/* ============================================================
+          5. DECISION PAGE
+          ============================================================ */}
+      {type !== 'document' && (
+        <>
+          <GroupHeading title="Decision Page" hint="Accept / Decline / Request Changes form" />
+
+          <SectionCard
+            title="Decision Design"
+            description="Colour the accept/decline/revision form shown to clients. Background, text and heading inherit from Text Page if left blank."
+            icon={<CheckSquare size={14} className="text-faint" />}
+            action={
+              <button
+                onClick={() => {
+                  setDecisionBgColor(null);
+                  setDecisionTextColor(null);
+                  setDecisionHeadingColor(null);
+                  setDecisionAcceptButtonColor(null);
+                  setDecisionDeclineButtonColor(null);
+                  setDecisionRevisionButtonColor(null);
+                  setDecisionCheckboxColor(null);
+                }}
+                className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
+              >
+                <RotateCcw size={12} />
+                Reset
+              </button>
+            }
+          >
+            <div className="space-y-4">
+              <ColorPickerField
+                label="Background"
+                value={decisionBgColor}
+                fallback={tpBgColor || companyDefaults.bg_color}
+                onChange={setDecisionBgColor}
+                onReset={() => setDecisionBgColor(null)}
+              />
+              <ColorPickerField
+                label="Text"
+                value={decisionTextColor}
+                fallback={tpTextColor || companyDefaults.text_color}
+                onChange={setDecisionTextColor}
+                onReset={() => setDecisionTextColor(null)}
+              />
+              <ColorPickerField
+                label="Headline"
+                value={decisionHeadingColor}
+                fallback={tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
+                onChange={setDecisionHeadingColor}
+                onReset={() => setDecisionHeadingColor(null)}
+              />
+              <ColorPickerField
+                label="Accept Button"
+                value={decisionAcceptButtonColor}
+                fallback={decisionHeadingColor || tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
+                onChange={setDecisionAcceptButtonColor}
+                onReset={() => setDecisionAcceptButtonColor(null)}
+              />
+              <ColorPickerField
+                label="Decline Button"
+                value={decisionDeclineButtonColor}
+                fallback="#dc2626"
+                onChange={setDecisionDeclineButtonColor}
+                onReset={() => setDecisionDeclineButtonColor(null)}
+              />
+              <ColorPickerField
+                label="Request Changes Button"
+                value={decisionRevisionButtonColor}
+                fallback={decisionHeadingColor || tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color}
+                onChange={setDecisionRevisionButtonColor}
+                onReset={() => setDecisionRevisionButtonColor(null)}
+              />
+              <ColorPickerField
+                label="Checkbox"
+                value={decisionCheckboxColor}
+                fallback={companyDefaults.accent_color}
+                onChange={setDecisionCheckboxColor}
+                onReset={() => setDecisionCheckboxColor(null)}
+              />
+            </div>
+          </SectionCard>
+        </>
       )}
 
     </div>

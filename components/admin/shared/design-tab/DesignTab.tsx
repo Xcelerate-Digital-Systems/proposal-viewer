@@ -66,6 +66,14 @@ interface DesignTabProps {
   initialPricingPaymentSchedulePriceColor?: string | null;
   initialPricingAccentBarColor?: string | null;
   initialPricingDotColor?: string | null;
+  /* Decision-page colour overrides — proposals + templates only. */
+  initialDecisionBgColor?: string | null;
+  initialDecisionTextColor?: string | null;
+  initialDecisionHeadingColor?: string | null;
+  initialDecisionAcceptButtonColor?: string | null;
+  initialDecisionDeclineButtonColor?: string | null;
+  initialDecisionRevisionButtonColor?: string | null;
+  initialDecisionCheckboxColor?: string | null;
   /** Cover entity for the Cover Page design section. Pass the proposal /
    *  template row directly so CoverDesignPanel can read/write design fields. */
   coverEntity?: import('@/components/admin/shared/cover-editor/CoverEditorTypes').CoverEditorEntity;
@@ -116,6 +124,13 @@ export default function DesignTab({
   initialPricingPaymentSchedulePriceColor,
   initialPricingAccentBarColor,
   initialPricingDotColor,
+  initialDecisionBgColor,
+  initialDecisionTextColor,
+  initialDecisionHeadingColor,
+  initialDecisionAcceptButtonColor,
+  initialDecisionDeclineButtonColor,
+  initialDecisionRevisionButtonColor,
+  initialDecisionCheckboxColor,
   coverEntity,
 }: DesignTabProps) {
   const table = tableByType[type];
@@ -204,6 +219,18 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   const [pricingDotColor, setPricingDotColor] = useState<string | null>(initialPricingDotColor ?? null);
 
   /* ================================================================ */
+  /*  DECISION PAGE COLOURS                                            */
+  /* ================================================================ */
+
+  const [decisionBgColor, setDecisionBgColor] = useState<string | null>(initialDecisionBgColor ?? null);
+  const [decisionTextColor, setDecisionTextColor] = useState<string | null>(initialDecisionTextColor ?? null);
+  const [decisionHeadingColor, setDecisionHeadingColor] = useState<string | null>(initialDecisionHeadingColor ?? null);
+  const [decisionAcceptButtonColor, setDecisionAcceptButtonColor] = useState<string | null>(initialDecisionAcceptButtonColor ?? null);
+  const [decisionDeclineButtonColor, setDecisionDeclineButtonColor] = useState<string | null>(initialDecisionDeclineButtonColor ?? null);
+  const [decisionRevisionButtonColor, setDecisionRevisionButtonColor] = useState<string | null>(initialDecisionRevisionButtonColor ?? null);
+  const [decisionCheckboxColor, setDecisionCheckboxColor] = useState<string | null>(initialDecisionCheckboxColor ?? null);
+
+  /* ================================================================ */
   /*  SAVE STATUS + REFS                                               */
   /* ================================================================ */
 
@@ -216,6 +243,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   const bodyHeadingFontInitializedRef = useRef(false);
   const pageNumInitializedRef = useRef(false);
   const pricingInitializedRef = useRef(false);
+  const decisionInitializedRef = useRef(false);
 
   /* ================================================================ */
   /*  COMPANY DEFAULTS                                                 */
@@ -337,6 +365,13 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       payload.pricing_payment_schedule_price_color = pricingPaymentSchedulePriceColor;
       payload.pricing_accent_bar_color = pricingAccentBarColor;
       payload.pricing_dot_color = pricingDotColor;
+      payload.decision_action_bg_color = decisionBgColor;
+      payload.decision_action_text_color = decisionTextColor;
+      payload.decision_action_heading_color = decisionHeadingColor;
+      payload.decision_action_accent_color = decisionAcceptButtonColor;
+      payload.decision_decline_button_color = decisionDeclineButtonColor;
+      payload.decision_revision_button_color = decisionRevisionButtonColor;
+      payload.decision_checkbox_color = decisionCheckboxColor;
     }
 
     await supabase.from(table).update(payload).eq('id', entityId);
@@ -352,6 +387,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     titleFontTransform, fontHeadingTransform, fontBodyTransform,
     pageNumCircleColor, pageNumTextColor,
     pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor, pricingAccentBarColor, pricingDotColor,
+    decisionBgColor, decisionTextColor, decisionHeadingColor, decisionAcceptButtonColor, decisionDeclineButtonColor, decisionRevisionButtonColor, decisionCheckboxColor,
     type, table, entityId, onSave,
   ]);
 
@@ -398,6 +434,12 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     if (!pricingInitializedRef.current) { pricingInitializedRef.current = true; return; }
     scheduleSave(800);
   }, [pricingHeaderTextColor, pricingTextColor, pricingPriceTitleColor, pricingPriceColor, pricingPaymentScheduleNameColor, pricingPaymentSchedulePriceColor, pricingAccentBarColor, pricingDotColor]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autosave: decision-page colours
+  useEffect(() => {
+    if (!decisionInitializedRef.current) { decisionInitializedRef.current = true; return; }
+    scheduleSave(800);
+  }, [decisionBgColor, decisionTextColor, decisionHeadingColor, decisionAcceptButtonColor, decisionDeclineButtonColor, decisionRevisionButtonColor, decisionCheckboxColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ================================================================ */
   /*  BACKGROUND IMAGE HANDLERS                                        */
@@ -534,6 +576,20 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       entityTitle={entityTitle}
       coverEntity={coverEntity}
       onCoverSave={onSave}
+      decisionBgColor={decisionBgColor}
+      setDecisionBgColor={setDecisionBgColor}
+      decisionTextColor={decisionTextColor}
+      setDecisionTextColor={setDecisionTextColor}
+      decisionHeadingColor={decisionHeadingColor}
+      setDecisionHeadingColor={setDecisionHeadingColor}
+      decisionAcceptButtonColor={decisionAcceptButtonColor}
+      setDecisionAcceptButtonColor={setDecisionAcceptButtonColor}
+      decisionDeclineButtonColor={decisionDeclineButtonColor}
+      setDecisionDeclineButtonColor={setDecisionDeclineButtonColor}
+      decisionRevisionButtonColor={decisionRevisionButtonColor}
+      setDecisionRevisionButtonColor={setDecisionRevisionButtonColor}
+      decisionCheckboxColor={decisionCheckboxColor}
+      setDecisionCheckboxColor={setDecisionCheckboxColor}
     />
   );
 }

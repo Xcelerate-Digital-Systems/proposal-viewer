@@ -59,23 +59,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, copied: 0 });
     }
 
-    // ── 2. Insert into proposal_pages_v2 ────────────────────────────────────
-    const toInsert = templatePages.map((tp) => ({
-      proposal_id,
-      company_id,
-      position:          tp.position,
-      type:              tp.type,
-      title:             tp.title,
-      indent:            tp.indent ?? 0,
-      enabled:           tp.enabled ?? true,
-      link_url:          tp.link_url   ?? null,
-      link_label:        tp.link_label ?? null,
-      orientation:       tp.orientation ?? 'auto',
-      show_title:        tp.show_title        ?? true,
-      show_member_badge: tp.show_member_badge  ?? false,
-      show_client_logo:  tp.show_client_logo   ?? false,
-      payload:           tp.payload ?? {},
-    }));
+    // ── 2. Find occupied positions so we can avoid conflicts ────────────────
+    const { data: existingPages } = await supabase
+      .from('proposal_pages_v2')
+      .select('position')
+      .eq('proposal_id', proposal_id);
+
+    const occupied = new Set((existingPages || []).map((p: { position: number }) => p.position));
+
+    // Remap non-PDF pages to the next free position if their original
+    // template position conflicts with an already-inserted PDF row.
+    let nextFree = Math.max(0, ...Array.from(occupied), ...templatePages.map((tp) => tp.position)) + 1;
+    const toInsert = templatePages.map((tp) => {
+      let pos = tp.position;
+      if (occupied.has(pos)) {
+        while (occupied.has(nextFree)) nextFree++;
+        pos = nextFree;
+        nextFree++;
+      }
+      occupied.add(pos);
+      return {
+        proposal_id,
+        company_id,
+        position:          pos,
+        type:              tp.type,
+        title:             tp.title,
+        indent:            tp.indent ?? 0,
+        enabled:           tp.enabled ?? true,
+        link_url:          tp.link_url   ?? null,
+        link_label:        tp.link_label ?? null,
+        orientation:       tp.orientation ?? 'auto',
+        show_title:        tp.show_title        ?? true,
+        show_member_badge: tp.show_member_badge  ?? false,
+        show_client_logo:  tp.show_client_logo   ?? false,
+        payload:           tp.payload ?? {},
+      };
+    });
 
     const { data: inserted, error: insertError } = await supabase
       .from('proposal_pages_v2')

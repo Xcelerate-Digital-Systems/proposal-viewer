@@ -110,6 +110,7 @@ export async function splitProposalPages(
       .select('position')
       .eq('template_id', templateId)
       .eq('type', 'pdf')
+      .eq('enabled', true)
       .order('position', { ascending: true });
 
     if (tmplPdfRows && tmplPdfRows.length === pageCount) {

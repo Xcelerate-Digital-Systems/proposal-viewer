@@ -50,6 +50,13 @@ export default function ProposalDesignPage() {
         initialPricingPaymentSchedulePriceColor={proposal.pricing_payment_schedule_price_color ?? null}
         initialPricingAccentBarColor={(proposal as { pricing_accent_bar_color?: string | null }).pricing_accent_bar_color ?? null}
         initialPricingDotColor={(proposal as { pricing_dot_color?: string | null }).pricing_dot_color ?? null}
+        initialDecisionBgColor={proposal.decision_action_bg_color ?? null}
+        initialDecisionTextColor={proposal.decision_action_text_color ?? null}
+        initialDecisionHeadingColor={proposal.decision_action_heading_color ?? null}
+        initialDecisionAcceptButtonColor={proposal.decision_action_accent_color ?? null}
+        initialDecisionDeclineButtonColor={proposal.decision_decline_button_color ?? null}
+        initialDecisionRevisionButtonColor={proposal.decision_revision_button_color ?? null}
+        initialDecisionCheckboxColor={proposal.decision_checkbox_color ?? null}
         coverEntity={proposal}
       />
     </div>
