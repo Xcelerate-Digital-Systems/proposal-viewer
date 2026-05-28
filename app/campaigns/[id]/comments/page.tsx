@@ -489,7 +489,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
         ) : (
           <div className="flex gap-6 h-full">
             {/* Left column — comments */}
-            <div className="flex-1 min-w-0 overflow-y-auto space-y-4">
+            <div className="w-[55%] min-w-0 overflow-y-auto space-y-4">
               {completions.length > 0 && (
                 <div className="bg-white rounded-2xl shadow-card overflow-hidden">
                   <button
@@ -625,7 +625,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             </div>
 
             {/* Right column — tasks panel */}
-            <div className="w-80 xl:w-96 shrink-0 overflow-y-auto hidden lg:block">
+            <div className="w-[45%] min-w-0 overflow-y-auto hidden lg:block">
               <div className="bg-white rounded-2xl shadow-card overflow-hidden">
                 <div className="px-5 py-3 border-b border-edge">
                   <div className="flex items-center gap-2">
