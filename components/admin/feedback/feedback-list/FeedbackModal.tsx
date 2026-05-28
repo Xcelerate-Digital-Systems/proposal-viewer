@@ -10,7 +10,6 @@ import { formatTimeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
 import { TYPE_ICONS, type CommentWithItem } from './types';
 import { Button } from '@/components/ui/Button';
-import AssignmentPicker from '@/components/feedback/comments/AssignmentPicker';
 import AssignmentBadge from '@/components/feedback/comments/AssignmentBadge';
 import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 
@@ -21,11 +20,9 @@ interface Props {
   onToggleResolve: (comment: CommentWithItem, resolved: boolean) => void;
   onSubmitReply: (parent: CommentWithItem, content: string) => Promise<boolean>;
   onDelete: (comment: CommentWithItem) => void;
-  /** Assignment callbacks — only provided for agency users */
-  participantsUrl?: string | null;
   assigneeLookup?: TeamMemberLookup;
   currentMemberId?: string | null;
-  onAssign?: (commentId: string, memberId: string, note: string) => Promise<void>;
+  onOpenAssignment?: () => void;
   onToggleAssignmentComplete?: (commentId: string, completed: boolean) => Promise<void>;
   onRemoveAssignment?: (commentId: string) => Promise<void>;
 }
@@ -37,17 +34,15 @@ export default function FeedbackModal({
   onToggleResolve,
   onSubmitReply,
   onDelete,
-  participantsUrl,
   assigneeLookup,
   currentMemberId,
-  onAssign,
+  onOpenAssignment,
   onToggleAssignmentComplete,
   onRemoveAssignment,
 }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
-  const [showAssignPicker, setShowAssignPicker] = useState(false);
 
   const replies = allComments
     .filter((c) => c.parent_comment_id === comment.id)
@@ -131,7 +126,7 @@ export default function FeedbackModal({
                 <p className="text-ink leading-relaxed">{comment.content}</p>
               </div>
 
-              {/* Assignment badge — shows when comment is assigned */}
+              {/* Assignment badge */}
               {comment.assigned_to && (
                 <AssignmentBadge
                   assignedTo={comment.assigned_to}
@@ -139,7 +134,7 @@ export default function FeedbackModal({
                   completedAt={comment.assignment_completed_at ?? null}
                   memberLookup={assigneeLookup}
                   currentMemberId={currentMemberId}
-                  isAdmin={!!onAssign}
+                  isAdmin={!!onOpenAssignment}
                   onComplete={
                     onToggleAssignmentComplete
                       ? () => onToggleAssignmentComplete(comment.id, true)
@@ -250,41 +245,32 @@ export default function FeedbackModal({
               </div>
 
               {/* Assignment section */}
-              {onAssign && (
+              {onOpenAssignment && (
                 <div>
                   <p className="text-xs font-medium text-dim mb-1.5">Assignment</p>
                   {comment.assigned_to ? (
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      comment.assignment_completed_at
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}>
+                    <button
+                      onClick={onOpenAssignment}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80 ${
+                        comment.assignment_completed_at
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}
+                    >
                       {comment.assignment_completed_at ? (
                         <><CheckCircle2 size={12} /> Done</>
                       ) : (
                         <><UserPlus size={12} /> Assigned</>
                       )}
-                    </span>
+                    </button>
                   ) : (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowAssignPicker(true)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-dim border border-dashed border-gray-300 hover:border-teal hover:text-teal transition-colors"
-                      >
-                        <UserPlus size={12} />
-                        Assign
-                      </button>
-                      {showAssignPicker && participantsUrl && (
-                        <AssignmentPicker
-                          participantsUrl={participantsUrl}
-                          onAssign={async (memberId, note) => {
-                            await onAssign(comment.id, memberId, note);
-                            setShowAssignPicker(false);
-                          }}
-                          onClose={() => setShowAssignPicker(false)}
-                        />
-                      )}
-                    </div>
+                    <button
+                      onClick={onOpenAssignment}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-teal hover:bg-teal-hover transition-colors"
+                    >
+                      <UserPlus size={12} />
+                      Assign
+                    </button>
                   )}
                 </div>
               )}

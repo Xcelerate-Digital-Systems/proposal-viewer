@@ -10,6 +10,7 @@ interface Props {
   onSelect: () => void;
   onViewItem: () => void;
   onToggleResolve: () => void;
+  onOpenAssignment?: () => void;
   assigneeName?: string | null;
 }
 
@@ -18,6 +19,7 @@ export default function FeedbackRow({
   onSelect,
   onViewItem,
   onToggleResolve,
+  onOpenAssignment,
   assigneeName,
 }: Props) {
   const TypeIcon = TYPE_ICONS[comment.item_type] || MessageSquare;
@@ -116,6 +118,19 @@ export default function FeedbackRow({
 
       {/* Hover actions */}
       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        {onOpenAssignment && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenAssignment();
+            }}
+            title={hasAssignment ? 'View assignment' : 'Assign to team member'}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium text-teal hover:bg-teal/8 transition-colors"
+          >
+            <UserPlus size={11} />
+            {hasAssignment ? 'Assignment' : 'Assign'}
+          </button>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();

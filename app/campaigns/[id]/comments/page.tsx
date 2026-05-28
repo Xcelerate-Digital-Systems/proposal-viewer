@@ -7,6 +7,7 @@ import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHe
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
 import FeedbackRow from '@/components/admin/feedback/feedback-list/FeedbackRow';
 import FeedbackModal from '@/components/admin/feedback/feedback-list/FeedbackModal';
+import AssignmentModal from '@/components/admin/feedback/feedback-list/AssignmentModal';
 import type { CommentWithItem } from '@/components/admin/feedback/feedback-list/types';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment } from '@/lib/supabase';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
@@ -93,33 +94,30 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [completionsOpen, setCompletionsOpen] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [assigningComment, setAssigningComment] = useState<CommentWithItem | null>(null);
   const [tmNameMap, setTmNameMap] = useState<Record<string, { name: string; avatarUrl: string | null }>>({});
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
   const currentMemberId = teamMember?.id ?? null;
-  const participantsUrl = project ? `/api/review-projects/${project.id}/participants` : null;
-
-  // Fetch team member names for assignment display
+  // Fetch all company team members for assignment name display
   useEffect(() => {
-    if (!participantsUrl) return;
+    if (!companyId) return;
     let cancelled = false;
     (async () => {
-      try {
-        const { authFetch } = await import('@/lib/auth-fetch');
-        const res = await authFetch(participantsUrl);
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        const map: Record<string, { name: string; avatarUrl: string | null }> = {};
-        for (const p of data.participants ?? []) {
-          if (p.kind === 'team' && p.id) {
-            map[p.id] = { name: p.name || p.email || 'Team member', avatarUrl: null };
-          }
-        }
-        if (!cancelled) setTmNameMap(map);
-      } catch { /* swallow */ }
+      const { data } = await supabase
+        .from('team_members')
+        .select('id, name, email')
+        .eq('company_id', companyId);
+      if (cancelled) return;
+      const map: Record<string, { name: string; avatarUrl: string | null }> = {};
+      for (const m of data ?? []) {
+        const tm = m as { id: string; name: string | null; email: string };
+        map[tm.id] = { name: tm.name?.trim() || tm.email, avatarUrl: null };
+      }
+      setTmNameMap(map);
     })();
     return () => { cancelled = true; };
-  }, [participantsUrl]);
+  }, [companyId]);
 
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
@@ -429,7 +427,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             </p>
           </div>
         ) : (
-          <div className="max-w-4xl space-y-4">
+          <div className="max-w-6xl space-y-4">
             {completions.length > 0 && (
               <div className="bg-white rounded-2xl shadow-card overflow-hidden">
                 <button
@@ -556,6 +554,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                         )
                       }
                       onToggleResolve={() => handleToggleResolve(comment, !comment.resolved)}
+                      onOpenAssignment={() => setAssigningComment(comment)}
                       assigneeName={comment.assigned_to ? (tmNameMap[comment.assigned_to]?.name ?? null) : null}
                     />
                   ))}
@@ -575,12 +574,25 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onToggleResolve={handleToggleResolve}
           onSubmitReply={handleSubmitReply}
           onDelete={handleDeleteComment}
-          participantsUrl={participantsUrl}
           assigneeLookup={tmNameMap}
           currentMemberId={currentMemberId}
-          onAssign={assignComment}
+          onOpenAssignment={() => setAssigningComment(selectedComment)}
           onToggleAssignmentComplete={toggleAssignmentComplete}
           onRemoveAssignment={removeAssignment}
+        />
+      )}
+
+      {/* Assignment Modal */}
+      {assigningComment && (
+        <AssignmentModal
+          comment={assigningComment}
+          companyId={companyId}
+          currentMemberId={currentMemberId}
+          onAssign={assignComment}
+          onToggleComplete={toggleAssignmentComplete}
+          onRemove={removeAssignment}
+          onClose={() => setAssigningComment(null)}
+          assigneeName={assigningComment.assigned_to ? (tmNameMap[assigningComment.assigned_to]?.name ?? null) : null}
         />
       )}
     </div>
