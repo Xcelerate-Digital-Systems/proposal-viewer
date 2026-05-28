@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2,
-  FileText, Clock, Eye, CheckCircle2, X, PenLine } from 'lucide-react';
+  FileText, Clock, Eye, CheckCircle2, X, PenLine, BookTemplate } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
+import { authedFetch } from '@/lib/api-fetch';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
@@ -55,6 +56,9 @@ export default function ProposalDetailHeader({
   const toast = useToast();
 
   const [copied, setCopied] = useState(false);
+  const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const copyLink = () => {
     const url = buildProposalUrl(proposal.share_token, customDomain ?? null, window.location.origin);
@@ -89,6 +93,30 @@ export default function ProposalDetailHeader({
       const label = statusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
       toast.success(`Pitch marked as ${label}`);
       onProposalChange?.({ ...proposal, status: newStatus } as Proposal);
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    const name = templateName.trim();
+    if (!name) return;
+    setSavingTemplate(true);
+    try {
+      const res = await authedFetch(`/api/proposals/${proposal.id}/save-as-template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to save template');
+      }
+      toast.success('Template saved!');
+      setShowSaveAsTemplate(false);
+      setTemplateName('');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save template');
+    } finally {
+      setSavingTemplate(false);
     }
   };
 
@@ -174,6 +202,48 @@ export default function ProposalDetailHeader({
             <ExternalLink size={14} />
             Preview
           </a>
+
+          {/* Save as Template */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={BookTemplate}
+              onClick={() => {
+                setTemplateName(proposal.title || '');
+                setShowSaveAsTemplate((v) => !v);
+              }}
+            >
+              Save as Template
+            </Button>
+            {showSaveAsTemplate && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl border border-edge shadow-lg p-4 z-50">
+                <label className="block text-sm font-medium text-ink mb-1">Template Name</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAsTemplate(); }}
+                  placeholder="e.g. Standard Website Proposal"
+                  className="w-full px-3 py-2 text-sm border border-edge rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 mb-3"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setShowSaveAsTemplate(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAsTemplate}
+                    loading={savingTemplate}
+                    disabled={!templateName.trim()}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Delete */}
           <button
