@@ -456,7 +456,7 @@ function ItemViewerContent({
   // ── Task callbacks (internal-only) ──
   const createTask = async (commentId: string, memberId: string, instructions: string, attachments: CommentTaskAttachment[]) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks?company_id=${companyId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assigned_to: memberId, instructions: instructions || undefined, attachments }),
@@ -476,7 +476,7 @@ function ItemViewerContent({
 
   const toggleTaskComplete = async (commentId: string, taskId: string, completed: boolean) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks?company_id=${companyId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ task_id: taskId, completed }),
@@ -498,7 +498,7 @@ function ItemViewerContent({
 
   const removeTask = async (commentId: string, taskId: string) => {
     const { authFetch } = await import('@/lib/auth-fetch');
-    const res = await authFetch(`/api/review-comments/${commentId}/tasks`, {
+    const res = await authFetch(`/api/review-comments/${commentId}/tasks?company_id=${companyId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ task_id: taskId }),
