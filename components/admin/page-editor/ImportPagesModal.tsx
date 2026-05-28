@@ -79,6 +79,7 @@ export default function ImportPagesModal({
   const [loadingLibrary, setLoadingLibrary]     = useState(false);
   const [selectedLibIds, setSelectedLibIds]     = useState<Set<string>>(new Set());
   const [librarySignedUrls, setLibrarySignedUrls] = useState<Record<string, string>>({});
+  const [savedToLibIds, setSavedToLibIds]       = useState<Set<string>>(new Set());
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -94,6 +95,7 @@ export default function ImportPagesModal({
       setLibraryPages([]);
       setSelectedLibIds(new Set());
       setLibrarySignedUrls({});
+      setSavedToLibIds(new Set());
     }
   }, [open]);
 
@@ -185,6 +187,25 @@ export default function ImportPagesModal({
       setLibraryPages((prev) => prev.filter((p) => p.id !== id));
       setSelectedLibIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
       toast.success('Removed from library');
+    }
+  };
+
+  // Save a template page to the library
+  const handleSaveTemplatePageToLib = async (pageId: string) => {
+    try {
+      const res = await authedFetch('/api/page-library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_page_id: pageId,
+          source_entity_type: 'template',
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setSavedToLibIds((prev) => new Set(prev).add(pageId));
+      toast.success('Saved to page library');
+    } catch {
+      toast.error('Failed to save to library');
     }
   };
 
@@ -529,12 +550,13 @@ export default function ImportPagesModal({
                     const isSelected = selectedIds.has(page.id);
                     const Icon = PAGE_TYPE_ICON[page.type] || FileText;
                     const thumbnailUrl = signedUrls[page.id];
+                    const alreadySaved = savedToLibIds.has(page.id);
 
                     return (
-                      <button
+                      <div
                         key={page.id}
                         onClick={() => togglePage(page.id)}
-                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-3 ${
+                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-3 cursor-pointer ${
                           isSelected
                             ? 'bg-teal/5 ring-1 ring-teal/30'
                             : 'hover:bg-gray-50'
@@ -573,7 +595,21 @@ export default function ImportPagesModal({
                             {PAGE_TYPE_LABEL[page.type] || page.type}
                           </p>
                         </div>
-                      </button>
+
+                        {/* Save to library */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if (!alreadySaved) handleSaveTemplatePageToLib(page.id); }}
+                          disabled={alreadySaved}
+                          className={`shrink-0 p-1.5 rounded transition-colors ${
+                            alreadySaved
+                              ? 'text-emerald-400 cursor-default'
+                              : 'text-gray-300 hover:text-teal hover:bg-teal/5'
+                          }`}
+                          title={alreadySaved ? 'Saved to library' : 'Save to page library'}
+                        >
+                          {alreadySaved ? <Check size={13} /> : <BookOpen size={13} />}
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
