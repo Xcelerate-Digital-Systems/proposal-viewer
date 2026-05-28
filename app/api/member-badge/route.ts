@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     // Direct storage path lookup — validate against allowed prefixes to
     // prevent arbitrary file reads via path traversal.
     if (path) {
-      const ALLOWED_PREFIXES = ['avatars/', 'company-logos/', 'client-logo/'];
+      const ALLOWED_PREFIXES = ['avatars/', 'company-logos/', 'client-logo/', 'page-library/'];
       const normalised = path.replace(/\\/g, '/');
       if (
         normalised.includes('..') ||

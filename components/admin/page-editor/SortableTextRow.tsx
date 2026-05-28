@@ -3,7 +3,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ArrowLeft, CornerDownRight, Trash2, FileText } from 'lucide-react';
+import { GripVertical, ArrowLeft, CornerDownRight, Trash2, FileText, BookOpen } from 'lucide-react';
 import PageLinkInput from './PageLinkInput';
 
 interface SortableTextRowProps {
@@ -16,6 +16,7 @@ interface SortableTextRowProps {
   onSelect: () => void;
   onToggleIndent: () => void;
   onRemove: () => void;
+  onSaveToLibrary?: () => void;
   linkUrl?: string;
   linkLabel?: string;
   onLinkChange?: (url: string, label: string) => void;
@@ -32,6 +33,7 @@ export default function SortableTextRow({
   onSelect,
   onToggleIndent,
   onRemove,
+  onSaveToLibrary,
   linkUrl,
   linkLabel,
   onLinkChange,
@@ -109,6 +111,15 @@ export default function SortableTextRow({
               onChange={onLinkChange}
               variant="teal"
             />
+          )}
+          {onSaveToLibrary && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSaveToLibrary(); }}
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-teal hover:bg-teal/5 transition-colors"
+              title="Save to page library"
+            >
+              <BookOpen size={12} />
+            </button>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onRemove(); }}

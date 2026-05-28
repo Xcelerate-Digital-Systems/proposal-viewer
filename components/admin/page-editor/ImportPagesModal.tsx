@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Check, FileText, DollarSign, Package,
-  FolderOpen, List, Loader2, Library,
+  FolderOpen, List, Loader2, Library, BookOpen, Trash2,
 } from 'lucide-react';
 import { supabase, type ProposalTemplate } from '@/lib/supabase';
 import { authedFetch } from '@/lib/api-fetch';
@@ -12,6 +12,15 @@ import { useToast } from '@/components/ui/Toast';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import type { UnifiedPage, PageType } from '@/lib/page-operations';
+
+interface LibraryPage {
+  id: string;
+  type: PageType;
+  title: string;
+  label: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
 
 interface ImportPagesModalProps {
   open: boolean;
@@ -41,6 +50,7 @@ const PAGE_TYPE_LABEL: Record<PageType, string> = {
 };
 
 type Step = 'pick-template' | 'pick-pages';
+type Source = 'templates' | 'library';
 
 export default function ImportPagesModal({
   open,
@@ -52,6 +62,7 @@ export default function ImportPagesModal({
 }: ImportPagesModalProps) {
   const toast = useToast();
 
+  const [source, setSource]                 = useState<Source>('templates');
   const [step, setStep]                     = useState<Step>('pick-template');
   const [templates, setTemplates]           = useState<ProposalTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
@@ -63,9 +74,16 @@ export default function ImportPagesModal({
   const [signedUrls, setSignedUrls]         = useState<Record<string, string>>({});
   const [search, setSearch]                 = useState('');
 
+  // Page Library state
+  const [libraryPages, setLibraryPages]         = useState<LibraryPage[]>([]);
+  const [loadingLibrary, setLoadingLibrary]     = useState(false);
+  const [selectedLibIds, setSelectedLibIds]     = useState<Set<string>>(new Set());
+  const [librarySignedUrls, setLibrarySignedUrls] = useState<Record<string, string>>({});
+
   // Reset state when modal opens/closes
   useEffect(() => {
     if (open) {
+      setSource('templates');
       setStep('pick-template');
       setSelectedTemplate(null);
       setPages([]);
@@ -73,6 +91,9 @@ export default function ImportPagesModal({
       setImporting(false);
       setSignedUrls({});
       setSearch('');
+      setLibraryPages([]);
+      setSelectedLibIds(new Set());
+      setLibrarySignedUrls({});
     }
   }, [open]);
 
@@ -94,6 +115,78 @@ export default function ImportPagesModal({
         setLoadingTemplates(false);
       });
   }, [open, companyId, entityId, entityType]);
+
+  // Load library pages when source switches to library
+  useEffect(() => {
+    if (!open || source !== 'library') return;
+    setLoadingLibrary(true);
+    authedFetch('/api/page-library')
+      .then((res) => res.ok ? res.json() : [])
+      .then((data: LibraryPage[]) => {
+        setLibraryPages(data);
+        setLoadingLibrary(false);
+        // Signed URLs for PDF library pages
+        const pdfs = data.filter((p) => p.type === 'pdf' && p.payload?.file_path);
+        if (pdfs.length > 0) {
+          Promise.all(
+            pdfs.map(async (p) => {
+              const fp = p.payload.file_path as string;
+              const { data: urlData } = await supabase.storage.from('proposals').createSignedUrl(fp, 600);
+              return [p.id, urlData?.signedUrl ?? null] as const;
+            }),
+          ).then((entries) => {
+            const map: Record<string, string> = {};
+            for (const [id, url] of entries) { if (url) map[id] = url; }
+            setLibrarySignedUrls(map);
+          });
+        }
+      });
+  }, [open, source]);
+
+  // Import from library
+  const handleLibraryImport = async () => {
+    if (selectedLibIds.size === 0) return;
+    setImporting(true);
+    try {
+      const res = await authedFetch('/api/page-library/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          library_page_ids: Array.from(selectedLibIds),
+          target_entity_id: entityId,
+          target_entity_type: entityType,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? 'Failed to import pages');
+        setImporting(false);
+        return;
+      }
+      const { pages: imported, imported: count } = await res.json();
+      toast.success(`Imported ${count} page${count === 1 ? '' : 's'} from library`);
+      onImported(imported);
+      onClose();
+    } catch {
+      toast.error('Failed to import pages');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Delete from library
+  const handleLibraryDelete = async (id: string) => {
+    const res = await authedFetch('/api/page-library', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) {
+      setLibraryPages((prev) => prev.filter((p) => p.id !== id));
+      setSelectedLibIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+      toast.success('Removed from library');
+    }
+  };
 
   // Load pages when a template is selected
   const selectTemplate = useCallback(async (t: ProposalTemplate) => {
@@ -203,10 +296,151 @@ export default function ImportPagesModal({
       )
     : templates;
 
+  const filteredLibrary = search
+    ? libraryPages.filter((p) =>
+        (p.label || p.title || '').toLowerCase().includes(search.toLowerCase()),
+      )
+    : libraryPages;
+
   return (
-    <Modal open={open} onClose={onClose} title="Import Pages from Template" size="lg">
+    <Modal open={open} onClose={onClose} title="Import Pages" size="lg">
       <Modal.Body>
-        {step === 'pick-template' && (
+        {/* Source toggle — only show when on the initial step */}
+        {(step === 'pick-template' || source === 'library') && (
+          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 mb-3">
+            <button
+              onClick={() => { setSource('templates'); setStep('pick-template'); setSearch(''); setSelectedLibIds(new Set()); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                source === 'templates' ? 'bg-white text-ink shadow-sm' : 'text-faint hover:text-dim'
+              }`}
+            >
+              <Library size={12} />
+              Templates
+            </button>
+            <button
+              onClick={() => { setSource('library'); setSearch(''); setSelectedIds(new Set()); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                source === 'library' ? 'bg-white text-ink shadow-sm' : 'text-faint hover:text-dim'
+              }`}
+            >
+              <BookOpen size={12} />
+              Page Library
+            </button>
+          </div>
+        )}
+
+        {/* ── Page Library source ────────────────────────────────── */}
+        {source === 'library' && (
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Search library pages…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-edge rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+            />
+
+            {loadingLibrary ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={20} className="animate-spin text-faint" />
+              </div>
+            ) : filteredLibrary.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpen size={28} className="mx-auto text-gray-200 mb-2" />
+                <p className="text-sm text-faint">
+                  {search ? 'No matching pages' : 'Your page library is empty'}
+                </p>
+                <p className="text-xs text-gray-300 mt-1">
+                  Save pages from the page editor to build your library
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setSelectedLibIds((prev) =>
+                        prev.size === filteredLibrary.length
+                          ? new Set()
+                          : new Set(filteredLibrary.map((p) => p.id)),
+                      )
+                    }
+                    className="text-xs font-medium text-teal hover:text-teal/80 transition-colors"
+                  >
+                    {selectedLibIds.size === filteredLibrary.length ? 'Deselect all' : 'Select all'}
+                  </button>
+                  <span className="text-xs text-faint">
+                    {selectedLibIds.size} of {filteredLibrary.length} selected
+                  </span>
+                </div>
+
+                <div className="max-h-[400px] overflow-y-auto space-y-1">
+                  {filteredLibrary.map((lp) => {
+                    const isSelected = selectedLibIds.has(lp.id);
+                    const Icon = PAGE_TYPE_ICON[lp.type] || FileText;
+                    const thumbUrl = librarySignedUrls[lp.id];
+
+                    return (
+                      <div
+                        key={lp.id}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
+                          isSelected ? 'bg-teal/5 ring-1 ring-teal/30' : 'hover:bg-gray-50'
+                        }`}
+                        onClick={() =>
+                          setSelectedLibIds((prev) => {
+                            const n = new Set(prev);
+                            if (n.has(lp.id)) n.delete(lp.id); else n.add(lp.id);
+                            return n;
+                          })
+                        }
+                      >
+                        <div className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          isSelected ? 'bg-teal border-teal' : 'border-gray-300'
+                        }`}>
+                          {isSelected && <Check size={12} className="text-white" />}
+                        </div>
+
+                        {lp.type === 'pdf' && thumbUrl ? (
+                          <div className="shrink-0 w-10 h-14 rounded border border-edge overflow-hidden bg-gray-50">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="shrink-0 w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
+                            <Icon size={14} className="text-dim" />
+                          </div>
+                        )}
+
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-prose truncate">
+                            {lp.label || lp.title || 'Untitled'}
+                          </p>
+                          <p className="text-xs text-faint">
+                            {PAGE_TYPE_LABEL[lp.type] || lp.type}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleLibraryDelete(lp.id); }}
+                          className="shrink-0 p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                          style={{ opacity: undefined }}
+                          title="Remove from library"
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = ''; }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Templates source ──────────────────────────────────── */}
+        {source === 'templates' && step === 'pick-template' && (
           <div className="space-y-3">
             <input
               type="text"
@@ -252,7 +486,7 @@ export default function ImportPagesModal({
           </div>
         )}
 
-        {step === 'pick-pages' && (
+        {source === 'templates' && step === 'pick-pages' && (
           <div className="space-y-3">
             {/* Back + template name */}
             <div className="flex items-center gap-2">
@@ -353,7 +587,7 @@ export default function ImportPagesModal({
         <Button variant="ghost" onClick={onClose} disabled={importing}>
           Cancel
         </Button>
-        {step === 'pick-pages' && (
+        {source === 'templates' && step === 'pick-pages' && (
           <Button
             onClick={handleImport}
             disabled={selectedIds.size === 0 || importing}
@@ -365,6 +599,21 @@ export default function ImportPagesModal({
               </>
             ) : (
               <>Import {selectedIds.size > 0 ? `${selectedIds.size} Page${selectedIds.size === 1 ? '' : 's'}` : 'Pages'}</>
+            )}
+          </Button>
+        )}
+        {source === 'library' && (
+          <Button
+            onClick={handleLibraryImport}
+            disabled={selectedLibIds.size === 0 || importing}
+          >
+            {importing ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Importing…
+              </>
+            ) : (
+              <>Import {selectedLibIds.size > 0 ? `${selectedLibIds.size} Page${selectedLibIds.size === 1 ? '' : 's'}` : 'Pages'}</>
             )}
           </Button>
         )}

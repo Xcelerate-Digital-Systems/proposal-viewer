@@ -28,6 +28,7 @@ import SortableTocRow       from './SortableTocRow';
 import InsertPageMenu       from './InsertPageMenu';
 import AddPageButtons       from './AddPageButtons';
 import ImportPagesModal     from './ImportPagesModal';
+import SavePageToLibraryModal from './SavePageToLibraryModal';
 import PreviewRouter        from './PreviewRouter';
 import StickyPreviewAside   from '@/components/admin/shared/StickyPreviewAside';
 
@@ -53,6 +54,7 @@ export default function PageEditor({
   const entityType = tableName2EntityType(tableName);
   const { companyId } = useAuth();
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [libraryTarget, setLibraryTarget] = useState<{ id: string; title: string; type: string } | null>(null);
 
   const editor = usePageEditor(proposalId, entityType);
   const {
@@ -246,6 +248,7 @@ export default function PageEditor({
                           onSelect={() => setSelectedId(page.id)}
                           onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
                           onRemove={() => handleDeletePage(page.id)}
+                          onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
                           linkUrl={page.link_url ?? ''}
                           linkLabel={page.link_label ?? ''}
                           onLinkChange={(url, label) => updatePage(page.id, { link_url: url, link_label: label })}
@@ -266,6 +269,7 @@ export default function PageEditor({
                           onSelect={() => setSelectedId(page.id)}
                           onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
                           onRemove={() => handleDeletePage(page.id)}
+                          onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
                           linkUrl={page.link_url ?? ''}
                           linkLabel={page.link_label ?? ''}
                           onLinkChange={(url, label) => updatePage(page.id, { link_url: url, link_label: label })}
@@ -287,6 +291,7 @@ export default function PageEditor({
                           onSelect={() => setSelectedId(page.id)}
                           onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
                           onRemove={() => handleDeletePage(page.id)}
+                          onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
                           renderInsertAfter={insertAfterMenu}
                         />
                       );
@@ -313,6 +318,7 @@ export default function PageEditor({
                         onUpdate={(changes) => updatePage(page.id, changes as Parameters<typeof updatePage>[1])}
                         onReplacePage={(file) => replacePdfPage(page.id, file)}
                         onDeletePage={() => handleDeletePage(page.id)}
+                        onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
                         renderInsertAfter={insertAfterMenu}
                       />
                     );
@@ -354,6 +360,17 @@ export default function PageEditor({
           entityType={entityType}
           companyId={companyId}
           onImported={() => editor.loadPages()}
+        />
+      )}
+
+      {libraryTarget && (
+        <SavePageToLibraryModal
+          open={!!libraryTarget}
+          onClose={() => setLibraryTarget(null)}
+          pageId={libraryTarget.id}
+          pageTitle={libraryTarget.title}
+          pageType={libraryTarget.type as import('@/lib/page-operations').PageType}
+          entityType={entityType}
         />
       )}
     </div>

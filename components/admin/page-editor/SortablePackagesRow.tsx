@@ -3,7 +3,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ArrowLeft, CornerDownRight, Package, Loader2, Trash2 } from 'lucide-react';
+import { GripVertical, ArrowLeft, CornerDownRight, Package, Loader2, Trash2, BookOpen } from 'lucide-react';
 import PageLinkInput from '@/components/admin/page-editor/PageLinkInput';
 
 interface SortablePackagesRowProps {
@@ -16,6 +16,7 @@ interface SortablePackagesRowProps {
   onSelect: () => void;
   onToggleIndent: () => void;
   onRemove?: () => void;
+  onSaveToLibrary?: () => void;
   linkUrl: string;
   linkLabel: string;
   onLinkChange: (url: string, label: string) => void;
@@ -23,7 +24,7 @@ interface SortablePackagesRowProps {
 }
 
 export default function SortablePackagesRow({
-  id, title, indent, isFirst, isSelected, processing, onSelect, onToggleIndent, onRemove, linkUrl, linkLabel, onLinkChange, renderInsertAfter,
+  id, title, indent, isFirst, isSelected, processing, onSelect, onToggleIndent, onRemove, onSaveToLibrary, linkUrl, linkLabel, onLinkChange, renderInsertAfter,
 }: SortablePackagesRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -85,6 +86,17 @@ export default function SortablePackagesRow({
             onChange={onLinkChange}
             variant="teal"
           />
+
+          {/* Save to library */}
+          {onSaveToLibrary && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSaveToLibrary(); }}
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-teal hover:bg-teal/5 transition-colors"
+              title="Save to page library"
+            >
+              <BookOpen size={12} />
+            </button>
+          )}
 
           {/* Remove button */}
           {onRemove && (

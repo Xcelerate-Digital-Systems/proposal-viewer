@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
   Check, CornerDownRight, ArrowLeft,
-  Upload, Loader2, Trash2, GripVertical,
+  Upload, Loader2, Trash2, GripVertical, BookOpen,
 } from 'lucide-react';
 import { UnifiedPage } from '@/lib/page-operations';
 import PageLinkInput from './PageLinkInput';
@@ -29,6 +29,7 @@ interface SortablePdfRowProps {
   }) => void;
   onReplacePage: (file: File) => void;
   onDeletePage: () => void;
+  onSaveToLibrary?: () => void;
   /** Slot for rendering insert menu after this row */
   renderInsertAfter?: React.ReactNode;
 }
@@ -37,7 +38,7 @@ export default function SortablePdfRow({
   id, page, visualNum, isSelected,
   status, processing, pageCount, index,
   onSelect, onToggleIndent, onUpdate,
-  onReplacePage, onDeletePage, renderInsertAfter,
+  onReplacePage, onDeletePage, onSaveToLibrary, renderInsertAfter,
 }: SortablePdfRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -115,6 +116,15 @@ export default function SortablePdfRow({
             })}
             variant="teal"
           />
+          {onSaveToLibrary && (
+            <button
+              onClick={onSaveToLibrary}
+              className="p-1.5 rounded-lg flex items-center justify-center border text-gray-300 border-edge hover:text-teal hover:border-teal/25 hover:bg-teal/5 transition-colors"
+              title="Save to page library"
+            >
+              <BookOpen size={13} />
+            </button>
+          )}
           <label
             className={`p-1.5 rounded-lg flex items-center justify-center border transition-colors ${
               processing
