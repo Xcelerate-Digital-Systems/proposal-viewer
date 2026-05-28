@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, FileText, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTemplate, KanbanSquare } from 'lucide-react';
+import { Plus, FileText, FilePlus2, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTemplate, KanbanSquare } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
@@ -42,7 +42,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadInitialTab, setUploadInitialTab] = useState<'upload' | 'template'>('upload');
+  const [uploadInitialTab, setUploadInitialTab] = useState<'upload' | 'template' | 'blank'>('upload');
   const [showNewDropdown, setShowNewDropdown] = useState(false);
   const newDropdownRef = useRef<HTMLDivElement>(null);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
@@ -122,7 +122,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const openModal = (tab: 'upload' | 'template') => {
+  const openModal = (tab: 'upload' | 'template' | 'blank') => {
     setUploadInitialTab(tab);
     setShowUpload(true);
     setShowNewDropdown(false);
@@ -231,6 +231,16 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                   <div>
                     <div className="font-medium">Pitch from Template</div>
                     <div className="text-xs text-faint">Use a pitch template</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => openModal('blank')}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-prose hover:bg-surface transition-colors text-left border-t border-edge"
+                >
+                  <FilePlus2 size={15} className="text-faint shrink-0" />
+                  <div>
+                    <div className="font-medium">Blank Pitch</div>
+                    <div className="text-xs text-faint">Build from scratch</div>
                   </div>
                 </button>
               </div>

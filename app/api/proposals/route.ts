@@ -64,12 +64,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    if (!isQuote && !file_path) {
-      return NextResponse.json(
-        { error: 'Missing required field: file_path' },
-        { status: 400 },
-      );
-    }
+    const isBlank = !isQuote && !file_path;
 
     const companyId = auth.companyId;
 
@@ -135,7 +130,7 @@ export async function POST(req: NextRequest) {
     const proposalId = proposal.id;
 
     let pageCount = 0;
-    if (!isQuote) {
+    if (!isQuote && !isBlank) {
       try {
         const splitResult = await splitProposalPages(proposalId, 'proposal', false);
         pageCount = splitResult.pageCount ?? 0;
@@ -144,6 +139,19 @@ export async function POST(req: NextRequest) {
           `Non-fatal: failed to split pages for new proposal ${proposalId}:`,
           splitErr,
         );
+      }
+    } else if (isBlank) {
+      try {
+        await addPage(supabase, 'proposal', {
+          entityId:  proposalId,
+          companyId,
+          type:      'text',
+          title:     'Introduction',
+          position:  0,
+        });
+        pageCount = 1;
+      } catch (pageErr) {
+        console.error(`Non-fatal: failed to seed blank proposal ${proposalId}:`, pageErr);
       }
     } else {
       try {

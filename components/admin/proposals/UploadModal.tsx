@@ -15,7 +15,7 @@ interface UploadModalProps {
   companyId: string;
   onClose: () => void;
   onSuccess: () => void;
-  initialTab?: 'upload' | 'template' | 'quote' | 'quote-template';
+  initialTab?: 'upload' | 'template' | 'blank' | 'quote' | 'quote-template';
 }
 
 const formatSize = (bytes: number | null) => {
@@ -27,6 +27,7 @@ const formatSize = (bytes: number | null) => {
 const modalTitles = {
   upload:           'New Pitch',
   template:         'New Pitch from Template',
+  blank:            'Blank Pitch',
   quote:            'New Quote',
   'quote-template': 'New Quote from Template',
 };
@@ -36,6 +37,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
   const toast = useToast();
   const mode = initialTab;
   const [form, setForm] = useState({ title: '', client_name: '', client_email: '', crm_identifier: '', description: '' });
+  const [blankForm, setBlankForm] = useState({ title: '', client_name: '', client_email: '' });
   const [quoteForm, setQuoteForm] = useState({ title: '', client_name: '', client_email: '' });
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -114,6 +116,57 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
     } catch (err) {
       console.error(err);
       toast.error('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+      setStatus('');
+    }
+  };
+
+  const handleCreateBlank = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blankForm.title || !blankForm.client_name) return;
+    setUploading(true);
+    setStatus('Creating pitch...');
+
+    const { supabase } = await import('@/lib/supabase');
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      let creatorName: string | null = null;
+      if (sessionData?.session?.user?.id) {
+        const { data: member } = await supabase
+          .from('team_members')
+          .select('name')
+          .eq('user_id', sessionData.session.user.id)
+          .single();
+        creatorName = member?.name || null;
+      }
+
+      const res = await authedFetch('/api/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:           blankForm.title,
+          client_name:     blankForm.client_name,
+          client_email:    blankForm.client_email || null,
+          company_id:      companyId,
+          created_by_name: creatorName,
+          prepared_by:     creatorName,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+      onSuccess();
+      onClose();
+      router.push(`/proposals/${data.proposal_id}/pages`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to create pitch. Please try again.');
     } finally {
       setUploading(false);
       setStatus('');
@@ -252,6 +305,65 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
             onSuccess={() => { onSuccess(); onClose(); }}
           />
         </Modal.Body>
+      )}
+
+      {mode === 'blank' && (
+        <form onSubmit={handleCreateBlank} className="flex flex-col min-h-0 flex-1">
+          <Modal.Body className="space-y-4">
+            <p className="text-sm text-dim">
+              Start from scratch — add pages, text, quotes, and import content from your templates.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-prose mb-1">
+                Pitch Title <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={blankForm.title}
+                onChange={(e) => setBlankForm({ ...blankForm, title: e.target.value })}
+                placeholder="e.g. Website Redesign Proposal"
+                required
+                autoFocus
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-prose mb-1">
+                Client Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={blankForm.client_name}
+                onChange={(e) => setBlankForm({ ...blankForm, client_name: e.target.value })}
+                placeholder="e.g. Acme Corp"
+                required
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-prose mb-1">
+                Client Email <span className="text-faint font-normal">(optional)</span>
+              </label>
+              <input
+                type="email"
+                value={blankForm.client_email}
+                onChange={(e) => setBlankForm({ ...blankForm, client_email: e.target.value })}
+                placeholder="client@example.com"
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
+              />
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              type="submit"
+              fullWidth
+              loading={uploading}
+              disabled={!blankForm.title || !blankForm.client_name}
+            >
+              Create Pitch
+            </Button>
+          </Modal.Footer>
+        </form>
       )}
 
       {mode === 'quote-template' && (
