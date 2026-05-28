@@ -1,8 +1,9 @@
 // components/admin/page-editor/PageEditor.tsx
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
+import { useAuth } from '@/hooks/useAuth';
 import {
   DndContext, closestCenter, DragEndEvent,
   PointerSensor, useSensor, useSensors,
@@ -26,6 +27,7 @@ import SortablePackagesRow  from './SortablePackagesRow';
 import SortableTocRow       from './SortableTocRow';
 import InsertPageMenu       from './InsertPageMenu';
 import AddPageButtons       from './AddPageButtons';
+import ImportPagesModal     from './ImportPagesModal';
 import PreviewRouter        from './PreviewRouter';
 import StickyPreviewAside   from '@/components/admin/shared/StickyPreviewAside';
 
@@ -49,6 +51,8 @@ export default function PageEditor({
 }: PageEditorProps) {
 
   const entityType = tableName2EntityType(tableName);
+  const { companyId } = useAuth();
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const editor = usePageEditor(proposalId, entityType);
   const {
@@ -131,6 +135,7 @@ export default function PageEditor({
               onAddText={() => handleInsertText(null)}
               onAddSection={handleAddSection}
               onAddToc={handleAddToc}
+              onImportFromTemplate={!isDocuments ? () => setImportModalOpen(true) : undefined}
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -340,6 +345,17 @@ export default function PageEditor({
           />
         </StickyPreviewAside>
       </div>
+
+      {companyId && (
+        <ImportPagesModal
+          open={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          entityId={proposalId}
+          entityType={entityType}
+          companyId={companyId}
+          onImported={() => editor.loadPages()}
+        />
+      )}
     </div>
   );
 }

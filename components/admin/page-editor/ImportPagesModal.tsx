@@ -1,0 +1,374 @@
+// components/admin/page-editor/ImportPagesModal.tsx
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  ArrowLeft, Check, FileText, DollarSign, Package,
+  FolderOpen, List, Loader2, Library,
+} from 'lucide-react';
+import { supabase, type ProposalTemplate } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
+import { useToast } from '@/components/ui/Toast';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import type { UnifiedPage, PageType } from '@/lib/page-operations';
+
+interface ImportPagesModalProps {
+  open: boolean;
+  onClose: () => void;
+  entityId: string;
+  entityType: 'template' | 'proposal' | 'document';
+  companyId: string;
+  onImported: (pages: UnifiedPage[]) => void;
+}
+
+const PAGE_TYPE_ICON: Record<PageType, typeof FileText> = {
+  pdf:      FileText,
+  text:     FileText,
+  pricing:  DollarSign,
+  packages: Package,
+  section:  FolderOpen,
+  toc:      List,
+};
+
+const PAGE_TYPE_LABEL: Record<PageType, string> = {
+  pdf:      'PDF',
+  text:     'Text',
+  pricing:  'Quote',
+  packages: 'Packages',
+  section:  'Section',
+  toc:      'Contents',
+};
+
+type Step = 'pick-template' | 'pick-pages';
+
+export default function ImportPagesModal({
+  open,
+  onClose,
+  entityId,
+  entityType,
+  companyId,
+  onImported,
+}: ImportPagesModalProps) {
+  const toast = useToast();
+
+  const [step, setStep]                     = useState<Step>('pick-template');
+  const [templates, setTemplates]           = useState<ProposalTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<ProposalTemplate | null>(null);
+  const [pages, setPages]                   = useState<UnifiedPage[]>([]);
+  const [loadingPages, setLoadingPages]     = useState(false);
+  const [selectedIds, setSelectedIds]       = useState<Set<string>>(new Set());
+  const [importing, setImporting]           = useState(false);
+  const [signedUrls, setSignedUrls]         = useState<Record<string, string>>({});
+  const [search, setSearch]                 = useState('');
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setStep('pick-template');
+      setSelectedTemplate(null);
+      setPages([]);
+      setSelectedIds(new Set());
+      setImporting(false);
+      setSignedUrls({});
+      setSearch('');
+    }
+  }, [open]);
+
+  // Load templates on mount
+  useEffect(() => {
+    if (!open) return;
+    setLoadingTemplates(true);
+    supabase
+      .from('proposal_templates')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('name', { ascending: true })
+      .then(({ data }) => {
+        // When importing into a template, exclude the target template itself
+        const filtered = entityType === 'template'
+          ? (data || []).filter((t) => t.id !== entityId)
+          : data || [];
+        setTemplates(filtered);
+        setLoadingTemplates(false);
+      });
+  }, [open, companyId, entityId, entityType]);
+
+  // Load pages when a template is selected
+  const selectTemplate = useCallback(async (t: ProposalTemplate) => {
+    setSelectedTemplate(t);
+    setStep('pick-pages');
+    setLoadingPages(true);
+    setSelectedIds(new Set());
+    setSignedUrls({});
+
+    const { data } = await supabase
+      .from('template_pages_v2')
+      .select('*')
+      .eq('template_id', t.id)
+      .order('position', { ascending: true });
+
+    const rows = (data || []) as unknown as UnifiedPage[];
+    setPages(rows);
+    setLoadingPages(false);
+
+    // Generate signed URLs for PDF pages
+    const pdfPages = rows.filter((p) => p.type === 'pdf' && (p.payload as Record<string, unknown>)?.file_path);
+    if (pdfPages.length > 0) {
+      const entries = await Promise.all(
+        pdfPages.map(async (p) => {
+          const filePath = (p.payload as Record<string, unknown>).file_path as string;
+          const { data: urlData } = await supabase.storage
+            .from('proposals')
+            .createSignedUrl(filePath, 600);
+          return [p.id, urlData?.signedUrl ?? null] as const;
+        }),
+      );
+      const urlMap: Record<string, string> = {};
+      for (const [id, url] of entries) {
+        if (url) urlMap[id] = url;
+      }
+      setSignedUrls(urlMap);
+    }
+  }, []);
+
+  // Toggle page selection
+  const togglePage = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(pages.map((p) => p.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Import selected pages
+  const handleImport = async () => {
+    if (selectedIds.size === 0) return;
+    setImporting(true);
+
+    const apiPath = entityType === 'template'
+      ? '/api/templates/pages/import'
+      : entityType === 'proposal'
+      ? '/api/proposals/pages/import'
+      : '/api/documents/pages/import';
+
+    const targetKey = entityType === 'template'
+      ? 'target_template_id'
+      : entityType === 'proposal'
+      ? 'target_proposal_id'
+      : 'target_document_id';
+
+    try {
+      const res = await authedFetch(apiPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_page_ids: Array.from(selectedIds),
+          [targetKey]: entityId,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? 'Failed to import pages');
+        setImporting(false);
+        return;
+      }
+
+      const { pages: imported, imported: count } = await res.json();
+      toast.success(`Imported ${count} page${count === 1 ? '' : 's'}`);
+      onImported(imported);
+      onClose();
+    } catch {
+      toast.error('Failed to import pages');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const filteredTemplates = search
+    ? templates.filter((t) =>
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        (t.description || '').toLowerCase().includes(search.toLowerCase()),
+      )
+    : templates;
+
+  return (
+    <Modal open={open} onClose={onClose} title="Import Pages from Template" size="lg">
+      <Modal.Body>
+        {step === 'pick-template' && (
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Search templates…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-edge rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+              autoFocus
+            />
+
+            {loadingTemplates ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={20} className="animate-spin text-faint" />
+              </div>
+            ) : filteredTemplates.length === 0 ? (
+              <p className="text-sm text-faint py-8 text-center">
+                {search ? 'No templates match your search.' : 'No other templates found.'}
+              </p>
+            ) : (
+              <div className="max-h-[400px] overflow-y-auto space-y-1">
+                {filteredTemplates.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => selectTemplate(t)}
+                    className="w-full text-left px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                  >
+                    <div className="shrink-0 w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center">
+                      <Library size={16} className="text-teal" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-prose truncate">{t.name}</p>
+                      {t.description && (
+                        <p className="text-xs text-faint truncate">{t.description}</p>
+                      )}
+                    </div>
+                    <span className="text-xs text-faint opacity-0 group-hover:opacity-100 transition-opacity">
+                      Select →
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 'pick-pages' && (
+          <div className="space-y-3">
+            {/* Back + template name */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setStep('pick-template'); setSearch(''); }}
+                className="p-1 rounded hover:bg-gray-100 transition-colors"
+              >
+                <ArrowLeft size={16} className="text-dim" />
+              </button>
+              <span className="text-sm font-medium text-prose truncate">
+                {selectedTemplate?.name}
+              </span>
+            </div>
+
+            {loadingPages ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={20} className="animate-spin text-faint" />
+              </div>
+            ) : pages.length === 0 ? (
+              <p className="text-sm text-faint py-8 text-center">
+                This template has no pages.
+              </p>
+            ) : (
+              <>
+                {/* Select all / none */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={selectedIds.size === pages.length ? deselectAll : selectAll}
+                    className="text-xs font-medium text-teal hover:text-teal/80 transition-colors"
+                  >
+                    {selectedIds.size === pages.length ? 'Deselect all' : 'Select all'}
+                  </button>
+                  <span className="text-xs text-faint">
+                    {selectedIds.size} of {pages.length} selected
+                  </span>
+                </div>
+
+                <div className="max-h-[400px] overflow-y-auto space-y-1">
+                  {pages.map((page) => {
+                    const isSelected = selectedIds.has(page.id);
+                    const Icon = PAGE_TYPE_ICON[page.type] || FileText;
+                    const thumbnailUrl = signedUrls[page.id];
+
+                    return (
+                      <button
+                        key={page.id}
+                        onClick={() => togglePage(page.id)}
+                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-3 ${
+                          isSelected
+                            ? 'bg-teal/5 ring-1 ring-teal/30'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <div className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          isSelected
+                            ? 'bg-teal border-teal'
+                            : 'border-gray-300'
+                        }`}>
+                          {isSelected && <Check size={12} className="text-white" />}
+                        </div>
+
+                        {/* Thumbnail or type icon */}
+                        {page.type === 'pdf' && thumbnailUrl ? (
+                          <div className="shrink-0 w-10 h-14 rounded border border-edge overflow-hidden bg-gray-50">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={thumbnailUrl}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="shrink-0 w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
+                            <Icon size={14} className="text-dim" />
+                          </div>
+                        )}
+
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-prose truncate">
+                            {page.title || `Page ${page.position + 1}`}
+                          </p>
+                          <p className="text-xs text-faint">
+                            {PAGE_TYPE_LABEL[page.type] || page.type}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="ghost" onClick={onClose} disabled={importing}>
+          Cancel
+        </Button>
+        {step === 'pick-pages' && (
+          <Button
+            onClick={handleImport}
+            disabled={selectedIds.size === 0 || importing}
+          >
+            {importing ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Importing…
+              </>
+            ) : (
+              <>Import {selectedIds.size > 0 ? `${selectedIds.size} Page${selectedIds.size === 1 ? '' : 's'}` : 'Pages'}</>
+            )}
+          </Button>
+        )}
+      </Modal.Footer>
+    </Modal>
+  );
+}

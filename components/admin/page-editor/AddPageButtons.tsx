@@ -2,7 +2,7 @@
 'use client';
 
 import {
-  DollarSign, Package, FileText, FolderOpen, List,
+  DollarSign, Package, FileText, FolderOpen, List, Library,
 } from 'lucide-react';
 
 interface AddPageButtonsProps {
@@ -14,6 +14,7 @@ interface AddPageButtonsProps {
   onAddText: () => void;
   onAddSection: () => void;
   onAddToc: () => void;
+  onImportFromTemplate?: () => void;
 }
 
 const btnClass =
@@ -28,6 +29,7 @@ export default function AddPageButtons({
   onAddText,
   onAddSection,
   onAddToc,
+  onImportFromTemplate,
 }: AddPageButtonsProps) {
   return (
     <div className="flex flex-wrap gap-2 mb-3">
@@ -55,6 +57,12 @@ export default function AddPageButtons({
         <button onClick={onAddToc} className={btnClass}>
           <List size={12} />
           Add Contents Page
+        </button>
+      )}
+      {onImportFromTemplate && (
+        <button onClick={onImportFromTemplate} className={btnClass}>
+          <Library size={12} />
+          Import from Template
         </button>
       )}
     </div>
