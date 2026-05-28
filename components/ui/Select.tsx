@@ -4,7 +4,7 @@
 // keep the visual treatment consistent across the admin.
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -19,13 +19,15 @@ const BASE_CLASSES =
   'disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer';
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { label, hint, error, className = '', children, ...rest }, ref,
+  { label, hint, error, className = '', children, id: idProp, ...rest }, ref,
 ) {
+  const autoId = useId();
+  const id = idProp ?? autoId;
   return (
     <div className="space-y-1">
-      {label && <label className="block text-xs font-medium text-prose">{label}</label>}
+      {label && <label htmlFor={id} className="block text-xs font-medium text-prose">{label}</label>}
       <div className="relative">
-        <select ref={ref} {...rest} className={`${BASE_CLASSES} ${className}`}>{children}</select>
+        <select ref={ref} id={id} {...rest} className={`${BASE_CLASSES} ${className}`}>{children}</select>
         <ChevronDown
           size={14}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"

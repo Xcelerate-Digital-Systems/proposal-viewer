@@ -182,8 +182,7 @@ export default function WorkspaceSwitcher({
                       }`}
                     >
                       <div
-                        className="w-5 h-5 rounded flex items-center justify-center shrink-0 text-2xs font-bold"
-                        style={{ background: 'rgba(138,217,209,0.12)', color: '#8AD9D1' }}
+                        className="w-5 h-5 rounded flex items-center justify-center shrink-0 text-2xs font-bold bg-surface-dark-accent/[0.12] text-surface-dark-accent"
                       >
                         {(company?.name ?? '?').charAt(0).toUpperCase()}
                       </div>

@@ -1,0 +1,16 @@
+{
+  "name": "AgencyViz",
+  "short_name": "AgencyViz",
+  "description": "Create proposals, quotes, and creative review boards that win clients.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#017C87",
+  "icons": [
+    {
+      "src": "/agencyviz_icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

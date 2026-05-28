@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Chrome, BarChart3, Plug, Unplug } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 type Source = 'oauth_extension' | 'oauth_client';
 
@@ -27,6 +28,7 @@ function iconFor(app: ConnectedApp) {
 }
 
 export default function ConnectedAppsManager() {
+  const confirm = useConfirm();
   const [apps, setApps] = useState<ConnectedApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
@@ -50,7 +52,8 @@ export default function ConnectedAppsManager() {
 
   const disconnect = async (app: ConnectedApp) => {
     const who = app.user_email ?? app.user_name ?? 'this user';
-    if (!confirm(`Disconnect ${app.label} for ${who}? They will need to reauthorize to use it again.`)) return;
+    const ok = await confirm({ title: 'Disconnect app', message: `Disconnect ${app.label} for ${who}? They will need to reauthorize to use it again.`, confirmLabel: 'Disconnect', destructive: true });
+    if (!ok) return;
     const groupKey = `${app.source}|${app.label}|${app.user_id}`;
     setDisconnecting(groupKey);
     const params = new URLSearchParams({

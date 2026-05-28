@@ -22,10 +22,31 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: 'AgencyViz',
-  description: 'Agency Toolbox by AgencyViz',
+  title: {
+    default: 'AgencyViz',
+    template: '%s | AgencyViz',
+  },
+  description:
+    'Create proposals, quotes, and creative review boards that win clients. All the tools your agency needs in one place.',
   icons: {
     icon: '/favicon.svg',
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: '/manifest.json',
+  openGraph: {
+    title: 'AgencyViz',
+    description:
+      'Create proposals, quotes, and creative review boards that win clients.',
+    url: process.env.NEXT_PUBLIC_APP_URL,
+    siteName: 'AgencyViz',
+    locale: 'en_AU',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'AgencyViz',
+    description:
+      'Create proposals, quotes, and creative review boards that win clients.',
   },
 };
 

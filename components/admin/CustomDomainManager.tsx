@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 interface DnsInstruction {
   type: string;
@@ -46,6 +47,7 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   // Input for new domain
   const [domainInput, setDomainInput] = useState('');
@@ -174,7 +176,8 @@ export default function CustomDomainManager({ companyId, isOwner }: CustomDomain
   };
 
   const handleRemove = async () => {
-    if (!confirm('Remove custom domain? Proposal links using this domain will stop working.')) return;
+    const ok = await confirm({ title: 'Remove domain', message: 'Remove custom domain? Proposal links using this domain will stop working.', confirmLabel: 'Remove', destructive: true });
+    if (!ok) return;
     setError('');
     setRemoving(true);
 

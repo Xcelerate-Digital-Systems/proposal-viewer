@@ -7,12 +7,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Folder, FolderOpen, MoreVertical, Pencil, Trash2, ChevronRight, Users } from 'lucide-react';
 import { useSwipeFileContext } from '@/components/admin/ads/swipe/SwipeFileContext';
 import SwipeFolderModal from '@/components/admin/ads/swipe/SwipeFolderModal';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import type { SwipeType } from '@/lib/supabase';
 
 export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const swipe = useSwipeFileContext();
   const pathname = usePathname();
   const router = useRouter();
+  const confirm = useConfirm();
   const [modal, setModal] = useState<{ open: boolean; type?: SwipeType }>({ open: false });
   const [menuFor, setMenuFor] = useState<string | null>(null);
 
@@ -25,7 +27,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
       <Link
         href="/dashboard"
         onClick={onNavigate}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors mb-1"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-surface-dark-hover transition-colors mb-1"
       >
         <ArrowLeft size={14} />
         <span>Back</span>
@@ -55,11 +57,11 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                   href={`/ads/swipe/${type.id}`}
                   onClick={onNavigate}
                   className={`flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-w-0 ${
-                    active ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-[#013036]'
+                    active ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-surface-dark-hover'
                   }`}
                 >
                   {active
-                    ? <FolderOpen size={15} className="text-[#8AD9D1] shrink-0" />
+                    ? <FolderOpen size={15} className="text-surface-dark-accent shrink-0" />
                     : <Folder size={15} className="text-white/40 group-hover:text-white/60 shrink-0" />}
                   <span className="flex-1 truncate">{type.name}</span>
                   {(isShared || isSharedOut) && (
@@ -70,7 +72,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                     />
                   )}
                   <span className="text-2xs text-white/40 shrink-0">{type.file_count}</span>
-                  {active && <ChevronRight size={12} className="text-[#8AD9D1]/50 shrink-0" />}
+                  {active && <ChevronRight size={12} className="text-surface-dark-accent/50 shrink-0" />}
                 </Link>
                 {/* Owner-only actions: rename / delete / change share list. */}
                 {isOwned && (
@@ -94,7 +96,8 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
                     </button>
                     <button
                       onClick={async () => {
-                        if (confirm(`Delete ad type "${type.name}" and all its swipes?`)) {
+                        const ok = await confirm({ title: 'Delete ad type', message: `Delete ad type "${type.name}" and all its swipes?`, confirmLabel: 'Delete', destructive: true });
+                        if (ok) {
                           await swipe.deleteType(type.id);
                           if (currentTypeId === type.id) {
                             const next = swipe.types.find((t) => t.id !== type.id);
@@ -116,7 +119,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
 
         <button
           onClick={() => setModal({ open: true })}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-[#8AD9D1] hover:bg-[#013036] transition-colors mt-1"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-surface-dark-accent hover:bg-surface-dark-hover transition-colors mt-1"
         >
           <Plus size={15} />
           New Ad Type

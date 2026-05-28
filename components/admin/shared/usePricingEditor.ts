@@ -8,6 +8,7 @@ import {
 } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import { authFetch } from '@/lib/auth-fetch';
 
@@ -181,6 +182,7 @@ export function usePricingEditor({
   extraPostFields,
 }: UsePricingEditorOptions) {
   const toast = useToast();
+  const confirm = useConfirm();
 
   const [loaded, setLoaded] = useState(false);
   const [allPages, setAllPages] = useState<ProposalPricing[]>([]);
@@ -402,7 +404,8 @@ export function usePricingEditor({
 
   const deletePage = useCallback(
     async (id: string) => {
-      if (!confirm('Delete this quote page? This cannot be undone.')) return;
+      const ok = await confirm({ title: 'Delete page', message: 'Delete this quote page? This cannot be undone.', confirmLabel: 'Delete', destructive: true });
+      if (!ok) return;
       try {
         const res = await authFetch(apiBase, {
           method: 'DELETE',

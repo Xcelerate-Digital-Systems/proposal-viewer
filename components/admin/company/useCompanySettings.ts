@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CompanyData, isValidHex6 } from '@/lib/company-utils';
 import { setBrandingColors } from '@/components/ui/ColorPickerField';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 /* ─── Auth helper ────────────────────────────────────────────────────────── */
 
@@ -16,6 +17,7 @@ async function getAuthHeaders() {
 /* ─── Hook ───────────────────────────────────────────────────────────────── */
 
 export function useCompanySettings(companyId: string) {
+  const confirm = useConfirm();
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState<string | null>(null);
@@ -352,7 +354,8 @@ export function useCompanySettings(companyId: string) {
   };
 
   const handleLogoRemove = async () => {
-    if (!confirm('Remove company logo?')) return;
+    const ok = await confirm({ title: 'Remove logo', message: 'Remove company logo?', confirmLabel: 'Remove', destructive: true });
+    if (!ok) return;
     setLogoUploading(true);
     const headers = await getAuthHeaders();
     const res = await fetch(`/api/company/logo?company_id=${companyId}`, { method: 'DELETE', headers });

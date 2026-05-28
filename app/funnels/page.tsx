@@ -11,6 +11,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import { supabase, type Funnel } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { FUNNEL_TEMPLATES, type FunnelTemplate } from '@/lib/funnel/templates';
 import { createFunnelFromTemplate } from '@/lib/funnel/create-from-template';
 import { duplicateFunnelAsScenario } from '@/lib/funnel/duplicate-funnel';
@@ -44,6 +45,7 @@ function FunnelsGate({ accountType, companyId, userId }: { accountType?: 'agency
 function FunnelsContent({ companyId, userId }: { companyId: string; userId: string | null }) {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const [funnels, setFunnels] = useState<Funnel[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -104,7 +106,8 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Delete this funnel? All steps and connections will be removed.')) return;
+    const ok = await confirm({ title: 'Delete funnel', message: 'Delete this funnel? All steps and connections will be removed.', confirmLabel: 'Delete', destructive: true });
+    if (!ok) return;
     await supabase.from('funnels').delete().eq('id', id);
     setFunnels((prev) => prev.filter((f) => f.id !== id));
   };

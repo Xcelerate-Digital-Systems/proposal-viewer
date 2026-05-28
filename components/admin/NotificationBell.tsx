@@ -70,7 +70,7 @@ export default function NotificationBell({
         onClick={() => setOpen((v) => !v)}
         className={`relative p-1.5 rounded-full transition-colors ${
           variant === 'sidebar'
-            ? 'text-white/50 hover:text-white hover:bg-[#013036]'
+            ? 'text-white/50 hover:text-white hover:bg-surface-dark-hover'
             : 'text-dim hover:text-ink hover:bg-gray-100'
         }`}
         title="Notifications"

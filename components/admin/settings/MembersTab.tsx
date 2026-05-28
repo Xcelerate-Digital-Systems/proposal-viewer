@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { InviteManager } from '@/components/admin/InviteManager';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 type Role = 'owner' | 'admin' | 'member';
 
@@ -95,6 +96,7 @@ export default function MembersTab({
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const confirm = useConfirm();
   const isOwner = currentRole === 'owner';
   const isAdmin = currentRole === 'admin';
   const canManage = isOwner || isAdmin || isSuperAdmin;
@@ -185,7 +187,8 @@ export default function MembersTab({
   };
 
   const handleRemove = async (memberId: string) => {
-    if (!confirm('Remove this team member?')) return;
+    const ok = await confirm({ title: 'Remove member', message: 'Remove this team member? They will lose access to this workspace.', confirmLabel: 'Remove', destructive: true });
+    if (!ok) return;
     setActionLoading(memberId);
     setActionMenuId(null);
     const headers = await authHeaders();

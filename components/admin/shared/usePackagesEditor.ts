@@ -9,6 +9,7 @@ import {
 } from '@/lib/supabase';
 import { CompanyBranding } from '@/hooks/useProposal';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { DEFAULT_BRANDING } from '@/lib/branding-defaults';
 import { authFetch } from '@/lib/auth-fetch';
 
@@ -115,6 +116,7 @@ export function usePackagesEditor({
   extraPostFields,
 }: UsePackagesEditorOptions) {
   const toast = useToast();
+  const confirm = useConfirm();
 
   const [loaded, setLoaded] = useState(false);
   const [allPages, setAllPages] = useState<ProposalPackages[]>([]);
@@ -327,7 +329,8 @@ export function usePackagesEditor({
 
   const deletePage = useCallback(
     async (id: string) => {
-      if (!confirm('Delete this packages page? This cannot be undone.')) return;
+      const ok = await confirm({ title: 'Delete page', message: 'Delete this packages page? This cannot be undone.', confirmLabel: 'Delete', destructive: true });
+      if (!ok) return;
       try {
         const res = await authFetch(apiBase, {
           method: 'DELETE',

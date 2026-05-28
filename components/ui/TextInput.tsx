@@ -5,7 +5,7 @@
 // './inputClasses' (works in both server and client components).
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { inputClasses } from './inputClasses';
 
 // Re-export for callers that already do
@@ -20,12 +20,14 @@ interface TextInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement
 }
 
 const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
-  { label, hint, error, className = '', ...rest }, ref,
+  { label, hint, error, className = '', id: idProp, ...rest }, ref,
 ) {
+  const autoId = useId();
+  const id = idProp ?? autoId;
   return (
     <div className="space-y-1">
-      {label && <label className="block text-xs font-medium text-prose">{label}</label>}
-      <input ref={ref} {...rest} className={inputClasses(className)} />
+      {label && <label htmlFor={id} className="block text-xs font-medium text-prose">{label}</label>}
+      <input ref={ref} id={id} {...rest} className={inputClasses(className)} />
       {error
         ? <p className="text-detail text-red-500">{error}</p>
         : hint ? <p className="text-detail text-faint">{hint}</p> : null}

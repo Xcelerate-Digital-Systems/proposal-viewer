@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import ErrorState from '@/components/ui/ErrorState';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
 import { supabase } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -184,26 +185,18 @@ function AccountsContent() {
   };
 
   return (
-    <div className="px-6 lg:px-10 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-xl font-semibold text-ink font-[family-name:var(--font-display)]">
-            Accounts
-          </h1>
-          <p className="text-sm text-faint mt-0.5">
-            {companies.length} account{companies.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <Button
-          leftIcon={Plus}
-          size="sm"
-          onClick={() => setShowCreate(true)}
-        >
-          New Account
-        </Button>
-      </div>
+    <div>
+      <PageHeader
+        title="Accounts"
+        description={`${companies.length} account${companies.length !== 1 ? 's' : ''}`}
+        actions={
+          <Button leftIcon={Plus} size="sm" onClick={() => setShowCreate(true)}>
+            New Account
+          </Button>
+        }
+      />
 
+      <div className="px-6 lg:px-10 py-8">
       {/* Loading / Error / Content */}
       {loading ? (
         <EntityListSkeleton viewMode="grid" />
@@ -332,6 +325,8 @@ function AccountsContent() {
           ))}
         </div>
       )}
+
+      </div>
 
       {/* Create modal */}
       {showCreate && (

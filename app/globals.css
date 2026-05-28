@@ -2,18 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --brand-dark: #0f0f0f;
-  --brand-accent: #01434A;
-  --brand-accent-hover: #e85d00;
-  --brand-surface: #1a1a1a;
-  --brand-surface-light: #222222;
-  --brand-border: #2a2a2a;
-  --brand-muted: #333333;
-  --brand-text: #ffffff;
-  --brand-text-secondary: #999999;
-}
-
 @keyframes sketch-dashflow {
   from { stroke-dashoffset: 32; }
   to { stroke-dashoffset: 0; }
@@ -53,6 +41,11 @@ body {
 
 .react-pdf__Page__annotations {
   display: none !important;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
 }
 
 ::-webkit-scrollbar {

@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Plus, Copy, Check, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 interface ApiKey {
   id: string;
@@ -15,6 +16,7 @@ interface ApiKey {
 }
 
 export default function ApiKeyManager() {
+  const confirm = useConfirm();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -57,7 +59,8 @@ export default function ApiKeyManager() {
   };
 
   const revoke = async (id: string) => {
-    if (!confirm('Revoke this key? Any extension or integration using it will stop working.')) return;
+    const ok = await confirm({ title: 'Revoke API key', message: 'Revoke this key? Any extension or integration using it will stop working.', confirmLabel: 'Revoke', destructive: true });
+    if (!ok) return;
     await fetch(`/api/settings/api-keys?id=${id}`, { method: 'DELETE', headers: await authHeader() });
     load();
   };

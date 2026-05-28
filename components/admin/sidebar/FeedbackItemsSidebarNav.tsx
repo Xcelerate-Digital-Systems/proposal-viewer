@@ -53,7 +53,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
       <Link
         href="/campaigns"
         onClick={onNavigate}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-[#013036] transition-colors mb-1"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-surface-dark-hover transition-colors mb-1"
       >
         <ArrowLeft size={14} />
         <span>All Campaigns</span>
@@ -71,7 +71,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
         )}
       </div>
 
-      <div className="border-t border-[#01434A] my-2" />
+      <div className="border-t border-surface-dark-border my-2" />
 
       <div className="px-3 pt-1 pb-2 flex items-center justify-between">
         <span className="text-2xs font-semibold uppercase tracking-wider text-white/30">
@@ -87,7 +87,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
       ) : unplacedItems.length === 0 ? (
         placedItems.length > 0 ? (
           <div className="px-3 py-3 flex items-center gap-2 text-xs text-white/50">
-            <CheckCircle2 size={14} className="text-[#8AD9D1]" />
+            <CheckCircle2 size={14} className="text-surface-dark-accent" />
             All assets on the board
           </div>
         ) : (
@@ -101,9 +101,9 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
               <button
                 key={item.id}
                 onClick={() => placeItem(item.id)}
-                className="group w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left text-white/70 hover:text-white hover:bg-[#013036]"
+                className="group w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left text-white/70 hover:text-white hover:bg-surface-dark-hover"
               >
-                <span className="w-5 flex justify-center text-white/40 group-hover:text-[#8AD9D1]">
+                <span className="w-5 flex justify-center text-white/40 group-hover:text-surface-dark-accent">
                   {TYPE_ICONS[item.type] || <Eye size={13} />}
                 </span>
                 <span className="flex-1 min-w-0">
@@ -113,7 +113,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
                   </span>
                 </span>
                 <span className={`w-2 h-2 rounded-full shrink-0 ${statusDef.dot}`} />
-                <Plus size={13} className="text-white/30 group-hover:text-[#8AD9D1] transition-colors shrink-0" />
+                <Plus size={13} className="text-white/30 group-hover:text-surface-dark-accent transition-colors shrink-0" />
               </button>
             );
           })}
@@ -122,7 +122,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
 
       <button
         onClick={openAddItem}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-[#8AD9D1] hover:bg-[#013036] transition-colors mt-2"
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-surface-dark-accent hover:bg-surface-dark-hover transition-colors mt-2"
       >
         <Plus size={15} />
         New Asset
@@ -130,10 +130,10 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
 
       {placedItems.length > 0 && (
         <>
-          <div className="border-t border-[#01434A] my-3" />
+          <div className="border-t border-surface-dark-border my-3" />
           <button
             onClick={() => setShowPlaced(!showPlaced)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#013036] transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-surface-dark-hover transition-colors"
           >
             <span className="text-2xs font-semibold uppercase tracking-wider text-white/30">
               On Board ({placedItems.length})
@@ -152,7 +152,7 @@ export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: (
                 return (
                   <div
                     key={item.id}
-                    className="group flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[#013036] transition-colors"
+                    className="group flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-surface-dark-hover transition-colors"
                   >
                     <span className={`w-2 h-2 rounded-full shrink-0 ${statusDef.dot}`} />
                     <span className="flex-1 text-xs text-white/60 truncate">{item.title}</span>
