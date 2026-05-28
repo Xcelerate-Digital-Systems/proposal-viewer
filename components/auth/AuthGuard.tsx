@@ -3,9 +3,10 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+import AppLoader from '@/components/ui/AppLoader';
 
 interface AuthGuardProps {
   children: (auth: ReturnType<typeof useAuth>) => React.ReactNode;
@@ -64,11 +65,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   }, [onboardingState, pathname, router]);
 
   if (auth.loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <Loader2 className="w-6 h-6 text-teal animate-spin" />
-      </div>
-    );
+    return <AppLoader />;
   }
 
   if (!auth.session) return null;
@@ -107,11 +104,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   // redirect. Without this we'd briefly render the dashboard before the
   // useEffect above kicks the user out — which is jarring on a slow network.
   if (onboardingState === undefined) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <Loader2 className="w-6 h-6 text-teal animate-spin" />
-      </div>
-    );
+    return <AppLoader />;
   }
 
   // Workspace was deleted by its owner. Block access; sign-out forces a
@@ -143,11 +136,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (onboardingState === null && !pathname.startsWith('/onboarding')) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <Loader2 className="w-6 h-6 text-teal animate-spin" />
-      </div>
-    );
+    return <AppLoader />;
   }
 
   return <>{children(auth)}</>;

@@ -16,9 +16,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, AlertTriangle, CreditCard } from 'lucide-react';
+import { AlertTriangle, CreditCard } from 'lucide-react';
 import { authFetch } from '@/lib/auth-fetch';
 import { Button } from '@/components/ui/Button';
+import AppLoader from '@/components/ui/AppLoader';
 
 interface BillingGuardProps {
   companyId: string;
@@ -110,11 +111,7 @@ export function BillingGuard({ companyId, accountType, role, children }: Billing
   // this a self-serve customer would see the dashboard for a frame before
   // the lockout kicks in, which is jarring.
   if (!loaded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <Loader2 className="w-6 h-6 text-teal animate-spin" />
-      </div>
-    );
+    return <AppLoader />;
   }
 
   // Clients (and any case where state somehow resolved to null) — render
