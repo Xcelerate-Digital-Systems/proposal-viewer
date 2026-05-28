@@ -425,6 +425,21 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     toast.success('Task removed');
   };
 
+  const changePriority = async (comment: CommentWithItem, priority: FeedbackCommentPriority) => {
+    const { authFetch } = await import('@/lib/auth-fetch');
+    const res = await authFetch(`/api/review-comments/${comment.id}?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priority }),
+    });
+    if (res.ok) {
+      setAllComments((prev) => prev.map((c) => (c.id === comment.id ? { ...c, priority } : c)));
+      setSelectedComment((prev) => prev?.id === comment.id ? { ...prev, priority } : prev);
+    } else {
+      toast.error('Failed to update priority');
+    }
+  };
+
   // Keep selectedComment in sync with tasks
   useEffect(() => {
     if (!selectedComment) return;
@@ -693,6 +708,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onOpenTasks={() => { setTaskingComment(selectedComment); }}
           onToggleTaskComplete={toggleTaskComplete}
           onRemoveTask={removeTask}
+          onPriorityChange={changePriority}
         />
       )}
 

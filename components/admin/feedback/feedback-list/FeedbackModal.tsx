@@ -8,9 +8,10 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { formatTimeAgo } from '@/lib/review-utils';
 import { supabase, type FeedbackComment } from '@/lib/supabase';
-import type { CommentTask } from '@/lib/types/feedback';
+import type { CommentTask, FeedbackCommentPriority } from '@/lib/types/feedback';
 import { TYPE_ICONS, type CommentWithItem } from './types';
 import { Button } from '@/components/ui/Button';
+import PrioritySelector from '@/components/feedback/comments/PrioritySelector';
 
 interface Props {
   comment: CommentWithItem;
@@ -24,6 +25,7 @@ interface Props {
   onOpenTasks?: () => void;
   onToggleTaskComplete?: (commentId: string, taskId: string, completed: boolean) => Promise<void>;
   onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
+  onPriorityChange?: (comment: CommentWithItem, priority: FeedbackCommentPriority) => void;
 }
 
 export default function FeedbackModal({
@@ -38,6 +40,7 @@ export default function FeedbackModal({
   onOpenTasks,
   onToggleTaskComplete,
   onRemoveTask,
+  onPriorityChange,
 }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const [replyText, setReplyText] = useState('');
@@ -281,6 +284,18 @@ export default function FeedbackModal({
                   )}
                 </button>
               </div>
+
+              {/* Priority */}
+              {onPriorityChange && (
+                <div>
+                  <p className="text-xs font-medium text-dim mb-1.5">Priority</p>
+                  <PrioritySelector
+                    value={comment.priority || 'none'}
+                    onChange={(p) => onPriorityChange(comment, p)}
+                    compact={false}
+                  />
+                </div>
+              )}
 
               {/* Tasks section */}
               {onOpenTasks && (

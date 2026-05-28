@@ -54,17 +54,24 @@ export async function PATCH(req: NextRequest, props: RouteContext) {
     const { supabase } = ctx;
 
     const body = await req.json();
-    const content = typeof body?.content === 'string' ? body.content.trim() : '';
-    if (!content) {
-      return NextResponse.json({ error: 'Content required' }, { status: 400 });
+    const content = typeof body?.content === 'string' ? body.content.trim() : undefined;
+    const priority = typeof body?.priority === 'string' ? body.priority : undefined;
+    const validPriorities = ['high', 'medium', 'low', 'none'];
+
+    if (!content && !priority) {
+      return NextResponse.json({ error: 'Content or priority required' }, { status: 400 });
     }
+    if (priority && !validPriorities.includes(priority)) {
+      return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
+    }
+
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (content) updates.content = content;
+    if (priority) updates.priority = priority;
 
     const { data: updated, error: updateErr } = await supabase
       .from('review_comments')
-      .update({
-        content,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', params.id)
       .select()
       .single();
@@ -74,20 +81,19 @@ export async function PATCH(req: NextRequest, props: RouteContext) {
       return NextResponse.json({ error: 'Failed to update comment' }, { status: 500 });
     }
 
-    // Resync @mentions for the edited content. No notification fires on
-    // edit — Filestage parity — but the join table needs to track the new
-    // mention set so future reads / cron-batched notifications are honest.
-    try {
-      const { syncCommentMentions } = await import('@/lib/feedback/persist-mentions');
-      const memberEmail = (ctx.auth.member as { email?: string | null })?.email ?? null;
-      await syncCommentMentions(supabase, {
-        commentId: params.id,
-        content,
-        projectId: null,
-        actorEmail: memberEmail,
-      });
-    } catch (err) {
-      console.error('Failed to resync mentions on edit:', err);
+    if (content) {
+      try {
+        const { syncCommentMentions } = await import('@/lib/feedback/persist-mentions');
+        const memberEmail = (ctx.auth.member as { email?: string | null })?.email ?? null;
+        await syncCommentMentions(supabase, {
+          commentId: params.id,
+          content,
+          projectId: null,
+          actorEmail: memberEmail,
+        });
+      } catch (err) {
+        console.error('Failed to resync mentions on edit:', err);
+      }
     }
 
     return NextResponse.json(updated);
