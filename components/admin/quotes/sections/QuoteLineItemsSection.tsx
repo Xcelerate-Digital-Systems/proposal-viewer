@@ -2,8 +2,8 @@
 // Lean line items table matching QuoteWin: Item | Description | Qty | Unit $
 // | Total. No column toggles, no stage label, no validity-days knob, no
 // optional items, no payment schedule. Quote-level pricing settings (GST,
-// deposit) live in PricingSettingsSection; full-quote templates load through
-// LoadTemplateBar in the footer; line-item templates live in the header bar.
+// deposit) live in PricingSettingsSection; line-item templates live in the
+// header bar via LineItemsLibraryBar.
 'use client';
 
 import { useEffect, useMemo } from 'react';
@@ -20,7 +20,6 @@ import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext'
 import CurrencyInput from '@/components/ui/CurrencyInput';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import LineItemsLibraryBar from '@/components/admin/proposals/quote-builder/LineItemsLibraryBar';
-import LoadTemplateBar from '@/components/admin/proposals/quote-builder/LoadTemplateBar';
 
 interface Props {
   proposal: Proposal;
@@ -168,7 +167,7 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
         ))}
       </div>
 
-      {/* Footer: Add Line Item + Load Template (full-quote) + running subtotal */}
+      {/* Footer: Add Line Item + running subtotal */}
       <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-edge">
         <button
           type="button"
@@ -178,8 +177,6 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
           <Plus size={12} />
           Add Line Item
         </button>
-
-        <LoadTemplateBar proposal={proposal} companyId={companyId} onApplied={onApplied} />
 
         <div className="ml-auto text-xs text-faint tabular-nums">
           Subtotal · <span className="text-prose font-medium">{formatAUD(subtotal)}</span>

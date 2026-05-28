@@ -14,7 +14,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2, Download, BookmarkPlus,
   FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  Paintbrush, Wand2, SlidersHorizontal, Files, Loader2,
+  Paintbrush, SlidersHorizontal, Files, Loader2,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -44,9 +44,9 @@ const statusOptions: StatusOption<ProposalStatus>[] = [
 ];
 
 const tabs = [
-  { key: '',         label: 'Builder',  icon: Wand2,             segment: '' },
   { key: 'cover',    label: 'Cover',    icon: Paintbrush,        segment: 'cover' },
-  { key: 'settings', label: 'Settings', icon: SlidersHorizontal, segment: 'settings' },
+  { key: '',         label: 'Builder',  icon: PenLine,           segment: '' },
+  { key: 'settings', label: 'Design',   icon: SlidersHorizontal, segment: 'settings' },
 ];
 
 function activeKeyFromPath(pathname: string | null): string {

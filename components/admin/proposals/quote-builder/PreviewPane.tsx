@@ -13,9 +13,12 @@ import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 interface PreviewPaneProps {
   proposal: Proposal;
   companyId: string;
+  /** Disable the built-in sticky positioning — use when the preview is wrapped
+   *  in an outer sticky container (e.g. dual-preview layout). */
+  noSticky?: boolean;
 }
 
-export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
+export default function PreviewPane({ proposal, companyId, noSticky }: PreviewPaneProps) {
   const [pricing, setPricing] = useState<ProposalPricing | null>(null);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [companyMeta, setCompanyMeta] = useState<{
@@ -104,7 +107,7 @@ export default function PreviewPane({ proposal, companyId }: PreviewPaneProps) {
   }, [refetch, proposal.updated_at]);
 
   return (
-    <div className="bg-white rounded-2xl border border-edge-strong overflow-hidden flex flex-col sticky top-6 max-h-[calc(100vh-140px)]">
+    <div className={`bg-white rounded-2xl border border-edge-strong overflow-hidden flex flex-col ${noSticky ? 'max-h-[60vh]' : 'sticky top-6 max-h-[calc(100vh-140px)]'}`}>
       <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-edge bg-surface">
         <div className="flex items-center gap-1.5 text-xs font-medium text-dim">
           <Eye size={12} />

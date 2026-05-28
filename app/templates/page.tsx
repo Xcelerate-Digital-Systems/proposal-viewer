@@ -22,6 +22,7 @@ import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import PackageTemplateEditorModal from '@/components/admin/templates/PackageTemplateEditorModal';
+import LineItemTemplateEditorModal from '@/components/admin/templates/LineItemTemplateEditorModal';
 import type { PackageTier } from '@/lib/types/packages';
 
 async function authHeaders(): Promise<HeadersInit> {
@@ -93,6 +94,28 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   const confirm = useConfirm();
   const [editingPackage, setEditingPackage] = useState<PackageTemplateRow | null>(null);
   const [showPackageEditor, setShowPackageEditor] = useState(false);
+  const [editingLineItem, setEditingLineItem] = useState<LineItemTemplateRow | null>(null);
+  const [showLineItemEditor, setShowLineItemEditor] = useState(false);
+
+  const openNewLineItem = () => {
+    setEditingLineItem(null);
+    setShowLineItemEditor(true);
+  };
+
+  const openEditLineItem = (t: LineItemTemplateRow) => {
+    setEditingLineItem(t);
+    setShowLineItemEditor(true);
+  };
+
+  const handleLineItemSaved = (saved: { id: string; name: string; description: string | null; items: unknown[]; created_at: string }) => {
+    setLineItemTemplates((prev) => {
+      const exists = prev.find((p) => p.id === saved.id);
+      if (exists) {
+        return prev.map((p) => (p.id === saved.id ? { ...p, ...saved } : p));
+      }
+      return [saved as LineItemTemplateRow, ...prev];
+    });
+  };
 
   const openNewPackage = () => {
     setEditingPackage(null);
@@ -318,7 +341,15 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             >
               New Package
             </Button>
-          ) : activeTab !== 'line_items' && (
+          ) : activeTab === 'line_items' ? (
+            <Button
+              size="sm"
+              leftIcon={Plus}
+              onClick={openNewLineItem}
+            >
+              New Line Items
+            </Button>
+          ) : (
             <Button
               size="sm"
               leftIcon={Plus}
@@ -373,6 +404,13 @@ function TemplatesContent({ companyId }: { companyId: string }) {
           />
         )}
 
+        <LineItemTemplateEditorModal
+          open={showLineItemEditor}
+          onClose={() => setShowLineItemEditor(false)}
+          template={editingLineItem}
+          onSaved={handleLineItemSaved}
+        />
+
         <PackageTemplateEditorModal
           open={showPackageEditor}
           onClose={() => setShowPackageEditor(false)}
@@ -398,6 +436,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             allCount={lineItemTemplates.length}
             searchQuery={searchQuery}
             onDelete={deleteLineItemTemplate}
+            onEdit={openEditLineItem}
           />
         ) : activeTab === 'packages' ? (
           <PackageTemplatesView
@@ -493,11 +532,13 @@ function LineItemTemplatesView({
   allCount,
   searchQuery,
   onDelete,
+  onEdit,
 }: {
   templates: LineItemTemplateRow[];
   allCount: number;
   searchQuery: string;
   onDelete: (t: LineItemTemplateRow) => void;
+  onEdit: (t: LineItemTemplateRow) => void;
 }) {
   if (templates.length === 0 && searchQuery) {
     return <NoResults message={`No line-item templates matching “${searchQuery}”`} />;
@@ -514,19 +555,32 @@ function LineItemTemplatesView({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
       {templates.map((t) => (
-        <div
+        <button
           key={t.id}
-          className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md transition-shadow"
+          type="button"
+          onClick={() => onEdit(t)}
+          className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all text-left"
         >
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
-            <button
-              onClick={() => onDelete(t)}
-              className="opacity-0 group-hover:opacity-100 text-faint hover:text-red-500 transition"
-              title="Delete"
-            >
-              <Trash2 size={14} />
-            </button>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+              <span
+                role="button"
+                onClick={(e) => { e.stopPropagation(); onEdit(t); }}
+                className="p-1 text-faint hover:text-teal"
+                title="Edit"
+              >
+                <Pencil size={13} />
+              </span>
+              <span
+                role="button"
+                onClick={(e) => { e.stopPropagation(); onDelete(t); }}
+                className="p-1 text-faint hover:text-red-500"
+                title="Delete"
+              >
+                <Trash2 size={13} />
+              </span>
+            </div>
           </div>
           {t.description && (
             <p className="text-xs text-muted line-clamp-2 mb-3">{t.description}</p>
@@ -538,7 +592,7 @@ function LineItemTemplatesView({
             </span>
             <span>{new Date(t.created_at).toLocaleDateString()}</span>
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

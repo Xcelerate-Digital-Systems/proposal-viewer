@@ -77,10 +77,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     description: body.description?.trim() || null,
     company_id: auth.companyId,
     section_headers: source.page_names ?? null,
+    entity_type: source.entity_type || 'proposal',
+    file_path: (source as Record<string, unknown>).file_path || '',
   };
   for (const col of COPY_COLUMNS) {
+    if (col === 'file_path' || col === 'entity_type') continue;
     const v = (source as Record<string, unknown>)[col];
-    if (v !== undefined) templateRow[col] = v;
+    if (v !== undefined && v !== null) templateRow[col] = v;
   }
 
   const { data: template, error: tmplErr } = await supabase

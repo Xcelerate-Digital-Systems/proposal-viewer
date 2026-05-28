@@ -188,7 +188,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
 
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow flex flex-col">
+      <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all flex flex-col">
         {/* ─── Visual header — click to open ──────────────────── */}
         <button
           onClick={() => router.push(`/campaigns/${project.id}`)}

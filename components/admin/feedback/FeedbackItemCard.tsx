@@ -188,7 +188,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow flex flex-col">
+    <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all flex flex-col">
       {/* Thumbnail — click to open viewer */}
       <button
         onClick={() => onOpenViewer(item.id)}

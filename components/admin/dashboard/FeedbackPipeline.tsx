@@ -95,7 +95,7 @@ function FeedbackProjectCard({
 
   return (
     <div
-      className={`group relative bg-white rounded-2xl shadow-card-soft hover:shadow-card-hover p-3.5 transition-all ${
+      className={`group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 p-3.5 transition-all ${
         deleting ? 'opacity-50 pointer-events-none' : ''
       }`}
     >

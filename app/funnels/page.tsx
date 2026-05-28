@@ -186,7 +186,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((f) => (
-              <div key={f.id} className="group bg-white rounded-2xl border border-edge p-4 hover:shadow-md transition-shadow flex flex-col">
+              <div key={f.id} className="group bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all flex flex-col p-4">
                 <button
                   onClick={() => router.push(`/funnels/${f.id}/board`)}
                   className="text-left flex-1"

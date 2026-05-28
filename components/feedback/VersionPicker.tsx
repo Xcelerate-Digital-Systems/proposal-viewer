@@ -3,9 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, History, ChevronDown, Check, Pencil } from 'lucide-react';
 import type { VersionView } from '@/lib/feedback/versions';
-import type { FeedbackStatus } from '@/lib/types/feedback';
-import { getFeedbackStatusDef } from '@/lib/feedback/status';
-
 interface VersionPickerProps {
   versions: VersionView[];
   activeVersionId: string | null;
@@ -14,10 +11,8 @@ interface VersionPickerProps {
   onAddVersion?: () => void;
   /** Optional admin affordance: opens the editor for the given version. */
   onEditVersion?: (versionId: string | null) => void;
-  /** Current parent-item status. Shown as a pill next to the active version
-   *  in the trigger button. We only have one status per item (no historical
-   *  per-version status), so non-active rows render as "Superseded". */
-  itemStatus?: FeedbackStatus;
+  /** @deprecated Status is now shown via ClientStatusControl instead. */
+  itemStatus?: unknown;
   compact?: boolean;
 }
 
@@ -47,7 +42,6 @@ export default function VersionPicker({
   const ordered = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
 
   const padding = compact ? 'px-2 py-1 text-detail' : 'px-2.5 py-1 text-xs';
-  const statusDef = itemStatus ? getFeedbackStatusDef(itemStatus) : null;
 
   return (
     <div ref={wrapperRef} className="relative flex items-center gap-1">
@@ -59,14 +53,6 @@ export default function VersionPicker({
       >
         <History size={compact ? 12 : 13} className="text-faint" />
         <span className="tabular-nums">v{active.versionNumber}</span>
-        {statusDef && (
-          <span
-            className={`inline-flex items-center gap-1 ml-0.5 px-1.5 py-0 rounded-full text-[9px] font-medium border ${statusDef.bg} ${statusDef.text} ${statusDef.border}`}
-          >
-            <span className={`w-1 h-1 rounded-full ${statusDef.dot}`} />
-            {statusDef.label}
-          </span>
-        )}
         <ChevronDown size={compact ? 11 : 12} className="text-faint" />
       </button>
 

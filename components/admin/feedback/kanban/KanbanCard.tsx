@@ -56,7 +56,7 @@ export default function KanbanCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative bg-white rounded-2xl shadow-card-soft hover:shadow-card-hover p-3.5 transition-all ${
+      className={`group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 p-3.5 transition-all ${
         isDragging ? 'ring-2 ring-teal/40' : ''
       }`}
     >

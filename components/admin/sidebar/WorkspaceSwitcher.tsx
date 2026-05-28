@@ -4,31 +4,19 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
-  Building2, ChevronDown, Check, ArrowLeft, Shield,
+  Building2, ChevronDown, Check, ArrowLeft, Shield, UserSquare2,
 } from 'lucide-react';
 import { supabase, type TeamMember } from '@/lib/supabase';
 
-/**
- * Workspace switcher (Stage 2 of the multi-workspace refactor).
- *
- * Lists the workspaces the user is a *real* team_member of (Markup.io-style:
- * one auth identity, N workspace memberships), plus a "Platform Admin" link
- * for super admins. Switching between real workspaces never goes through
- * the company-override mechanism — that path stays as a super-admin
- * escape hatch driven from /admin (Stage 3).
- *
- * If an override IS active when this opens (e.g. a super admin used "view
- * as" on /admin), we render a header strip with a one-click return to the
- * active workspace.
- */
 interface WorkspaceSwitcherProps {
   memberships: TeamMember[];
   activeMembershipId: string | null;
   onSwitch: (membershipId: string) => void;
   isSuperAdmin?: boolean;
-  /** Active "view as" override (from useAuth). Surfaced for context only. */
+  isAgencyAdmin?: boolean;
   companyOverride?: { companyId: string; companyName: string } | null;
   onClearOverride?: () => void;
+  onSetOverride?: (companyId: string, companyName: string) => void;
 }
 
 type CompanyLite = { id: string; name: string; account_type: 'agency' | 'client' };
@@ -38,11 +26,14 @@ export default function WorkspaceSwitcher({
   activeMembershipId,
   onSwitch,
   isSuperAdmin = false,
+  isAgencyAdmin = false,
   companyOverride,
   onClearOverride,
+  onSetOverride,
 }: WorkspaceSwitcherProps) {
   const [open, setOpen] = useState(false);
   const [companiesById, setCompaniesById] = useState<Record<string, CompanyLite>>({});
+  const [clientAccounts, setClientAccounts] = useState<CompanyLite[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,15 +46,11 @@ export default function WorkspaceSwitcher({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch company name + type for each membership in one round trip.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const ids = Array.from(new Set(memberships.map((m) => m.company_id)));
-      if (ids.length === 0) {
-        setCompaniesById({});
-        return;
-      }
+      if (ids.length === 0) { setCompaniesById({}); return; }
       const { data } = await supabase
         .from('companies')
         .select('id, name, account_type')
@@ -75,27 +62,49 @@ export default function WorkspaceSwitcher({
       }
       setCompaniesById(map);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [memberships]);
+
+  useEffect(() => {
+    if (!isAgencyAdmin && !isSuperAdmin) { setClientAccounts([]); return; }
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || cancelled) return;
+      const res = await fetch('/api/clients', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok || cancelled) return;
+      const data = await res.json();
+      if (cancelled) return;
+      setClientAccounts(
+        (Array.isArray(data) ? data : []).map((c: { id: string; name: string }) => ({
+          id: c.id,
+          name: c.name,
+          account_type: 'client' as const,
+        })),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [isAgencyAdmin, isSuperAdmin]);
 
   const activeMembership = memberships.find((m) => m.id === activeMembershipId) ?? null;
   const activeCompany = activeMembership ? companiesById[activeMembership.company_id] : null;
 
-  // When a super admin has overridden to view another company, that label
-  // takes over the button so the chrome reflects what you're actually
-  // looking at (matches the prior AccountSwitcher behaviour).
-  const buttonLabel = companyOverride?.companyName
-    || activeCompany?.name
-    || 'My Workspace';
+  const buttonLabel = companyOverride?.companyName || activeCompany?.name || 'My Workspace';
 
   const handleSelect = (membershipId: string) => {
     setOpen(false);
     onSwitch(membershipId);
-    // Hard nav so any in-flight queries scoped to the old workspace don't
-    // come back and overwrite state with stale rows.
     window.location.href = '/';
+  };
+
+  const handleSelectClient = (client: CompanyLite) => {
+    setOpen(false);
+    if (onSetOverride) {
+      onSetOverride(client.id, client.name);
+      window.location.href = '/';
+    }
   };
 
   const handleReturnFromOverride = () => {
@@ -104,9 +113,8 @@ export default function WorkspaceSwitcher({
     window.location.href = '/';
   };
 
-  // Single-membership + not super admin: no dropdown affordance, just a
-  // labelled chip. (Keeps the chrome compact for normal users.)
-  const showDropdownChevron = memberships.length > 1 || isSuperAdmin || !!companyOverride;
+  const showDropdownChevron = memberships.length > 1 || isSuperAdmin || !!companyOverride || clientAccounts.length > 0;
+  const isOverridingClient = companyOverride && clientAccounts.some((c) => c.id === companyOverride.companyId);
 
   return (
     <div ref={dropdownRef} className="relative px-2 pb-2">
@@ -118,10 +126,17 @@ export default function WorkspaceSwitcher({
             : 'text-white/70 hover:text-white hover:bg-surface-dark-hover'
         }`}
       >
-        <Building2
-          size={15}
-          className={open ? 'text-surface-dark-accent shrink-0' : 'text-white/40 group-hover:text-white/60 shrink-0'}
-        />
+        {isOverridingClient ? (
+          <UserSquare2
+            size={15}
+            className={open ? 'text-surface-dark-accent shrink-0' : 'text-white/40 group-hover:text-white/60 shrink-0'}
+          />
+        ) : (
+          <Building2
+            size={15}
+            className={open ? 'text-surface-dark-accent shrink-0' : 'text-white/40 group-hover:text-white/60 shrink-0'}
+          />
+        )}
         <span className="flex-1 truncate text-left text-xs font-medium">{buttonLabel}</span>
         {showDropdownChevron && (
           <ChevronDown
@@ -140,18 +155,19 @@ export default function WorkspaceSwitcher({
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-surface-dark-accent/80 hover:text-surface-dark-accent hover:bg-white/5 transition-colors"
               >
                 <ArrowLeft size={12} />
-                <span>Stop viewing {companyOverride.companyName}</span>
+                <span>Return to my account</span>
               </button>
               <div className="mx-3 border-t border-surface-dark-border" />
             </>
           )}
 
-          {memberships.length > 0 && (
-            <>
-              <p className="px-3 pt-2.5 pb-1 text-2xs font-semibold uppercase tracking-wider text-white/25">
-                My Workspaces
-              </p>
-              <div className="max-h-64 overflow-y-auto py-1">
+          <div className="max-h-80 overflow-y-auto py-1.5">
+            {/* Agency workspaces */}
+            {memberships.length > 0 && (
+              <>
+                <p className="px-3 pt-1 pb-1 text-2xs font-semibold uppercase tracking-wider text-white/25">
+                  {clientAccounts.length > 0 ? 'Agency Accounts' : 'My Workspaces'}
+                </p>
                 {memberships.map((m) => {
                   const company = companiesById[m.company_id];
                   const isActive = m.id === activeMembershipId && !companyOverride;
@@ -173,17 +189,49 @@ export default function WorkspaceSwitcher({
                       </div>
                       <span className="flex-1 min-w-0 text-left">
                         <span className="block truncate">{company?.name ?? 'Workspace'}</span>
-                        <span className="block text-2xs text-white/30 truncate capitalize">
-                          {m.role}{company?.account_type === 'client' ? ' · client' : ''}
-                        </span>
+                        <span className="block text-2xs text-white/30 truncate capitalize">{m.role}</span>
                       </span>
                       {isActive && <Check size={11} className="shrink-0" />}
                     </button>
                   );
                 })}
-              </div>
-            </>
-          )}
+              </>
+            )}
+
+            {/* Client accounts */}
+            {clientAccounts.length > 0 && (
+              <>
+                <div className="mx-3 my-1.5 border-t border-surface-dark-border" />
+                <p className="px-3 pt-1 pb-1 text-2xs font-semibold uppercase tracking-wider text-white/25 flex items-center gap-1.5">
+                  <UserSquare2 size={10} />
+                  Client Accounts
+                </p>
+                {clientAccounts.map((client) => {
+                  const isActive = companyOverride?.companyId === client.id;
+                  return (
+                    <button
+                      key={client.id}
+                      onClick={() => handleSelectClient(client)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                        isActive
+                          ? 'text-surface-dark-accent bg-white/5'
+                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div
+                        className="w-5 h-5 rounded flex items-center justify-center shrink-0 text-2xs font-bold"
+                        style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
+                      >
+                        {client.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="flex-1 truncate text-left">{client.name}</span>
+                      {isActive && <Check size={11} className="shrink-0" />}
+                    </button>
+                  );
+                })}
+              </>
+            )}
+          </div>
 
           {isSuperAdmin && (
             <>

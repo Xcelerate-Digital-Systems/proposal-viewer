@@ -56,6 +56,7 @@ export default function AdminSidebar({
   accountType = 'agency',
   companyOverride,
   onClearOverride,
+  onSetOverride,
   memberships = [],
   activeMembershipId = null,
   onSwitchMembership,
@@ -74,9 +75,12 @@ export default function AdminSidebar({
     return () => { cancelled = true; };
   }, [memberAvatarPath]);
 
-  const visibleSections = ALL_SECTIONS.filter(
-    (s) => s.key !== 'campaigns' || accountType === 'agency'
-  );
+  const CLIENT_ALLOWED_SECTIONS = new Set(['pitch']);
+  const visibleSections = ALL_SECTIONS.filter((s) => {
+    if (accountType === 'client') return CLIENT_ALLOWED_SECTIONS.has(s.key);
+    if (s.key === 'campaigns' && accountType !== 'agency') return false;
+    return true;
+  });
 
   const activeSection = getActiveSection(pathname, visibleSections);
   const inSwipeSection = pathname.startsWith('/ads/swipe');
@@ -163,7 +167,7 @@ export default function AdminSidebar({
       <div className="space-y-0.5">
         {renderNavLink({ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard })}
         {visibleSections.map(renderSectionEntry)}
-        {WORKSPACE_ITEMS.map((item) => renderNavLink(item))}
+        {accountType !== 'client' && WORKSPACE_ITEMS.map((item) => renderNavLink(item))}
       </div>
 
       {/* Spacer */}
@@ -177,13 +181,10 @@ export default function AdminSidebar({
       </div>
       <div className="space-y-0.5">
         {showClients && renderNavLink({ href: '/clients', label: 'Clients', icon: UserSquare2 })}
-        {/* Super-admin-only platform entry. Gated by isSuperAdmin which only
-            lights up for the platform owner (single team_members row with
-            is_super_admin=true today). The /accounts page itself + the
-            /api/admin/* endpoints repeat the check server-side so this is
-            purely a navigation affordance, not the access boundary. */}
         {isSuperAdmin && renderNavLink({ href: '/accounts', label: 'Accounts', icon: Shield })}
-        {STANDALONE_ITEMS.map((item) => renderNavLink(item))}
+        {STANDALONE_ITEMS.filter((item) =>
+          accountType === 'client' ? item.href === '/settings' : true
+        ).map((item) => renderNavLink(item))}
       </div>
     </div>
   );
@@ -242,15 +243,17 @@ export default function AdminSidebar({
           admin (gets the Platform Admin link), or currently overriding into
           another company. Single-membership users with no admin powers
           don't need the switcher at all. */}
-      {(memberships.length > 1 || isSuperAdmin || !!companyOverride) && (
+      {(memberships.length > 1 || isSuperAdmin || isAgencyAdmin || !!companyOverride) && (
         <div className="border-b border-surface-dark-border py-2">
           <WorkspaceSwitcher
             memberships={memberships}
             activeMembershipId={activeMembershipId}
             onSwitch={(id) => onSwitchMembership?.(id)}
             isSuperAdmin={isSuperAdmin}
+            isAgencyAdmin={isAgencyAdmin}
             companyOverride={companyOverride}
             onClearOverride={onClearOverride}
+            onSetOverride={onSetOverride}
           />
         </div>
       )}
