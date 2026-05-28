@@ -55,7 +55,7 @@ function FeedbackGate({ accountType, projectId, companyId, session, teamMember }
   projectId: string;
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
-  teamMember: { name?: string; email?: string } | null;
+  teamMember: { id?: string; name?: string; email?: string } | null;
 }) {
   const router = useRouter();
   const allowed = accountType === 'agency';
@@ -77,7 +77,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   projectId: string;
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
-  teamMember: { name?: string; email?: string } | null;
+  teamMember: { id?: string; name?: string; email?: string } | null;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -93,8 +93,33 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [completionsOpen, setCompletionsOpen] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [tmNameMap, setTmNameMap] = useState<Record<string, { name: string; avatarUrl: string | null }>>({});
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
+  const currentMemberId = teamMember?.id ?? null;
+  const participantsUrl = project ? `/api/review-projects/${project.id}/participants` : null;
+
+  // Fetch team member names for assignment display
+  useEffect(() => {
+    if (!participantsUrl) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { authFetch } = await import('@/lib/auth-fetch');
+        const res = await authFetch(participantsUrl);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const map: Record<string, { name: string; avatarUrl: string | null }> = {};
+        for (const p of data.participants ?? []) {
+          if (p.kind === 'team' && p.id) {
+            map[p.id] = { name: p.name || p.email || 'Team member', avatarUrl: null };
+          }
+        }
+        if (!cancelled) setTmNameMap(map);
+      } catch { /* swallow */ }
+    })();
+    return () => { cancelled = true; };
+  }, [participantsUrl]);
 
   const fetchProject = useCallback(async () => {
     const { data, error } = await supabase
@@ -109,7 +134,6 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   }, [projectId, companyId, router]);
 
   const fetchData = useCallback(async () => {
-    // Fetch items
     const { data: itemsData } = await supabase
       .from('review_items')
       .select('*')
@@ -119,7 +143,6 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     const fetchedItems = itemsData || [];
     setItems(fetchedItems);
 
-    // Fetch all comments for all items in project
     const itemIds = fetchedItems.map((i) => i.id);
     if (itemIds.length > 0) {
       const { data: commentsData } = await supabase
@@ -131,7 +154,6 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
       setAllComments(commentsData || []);
     }
 
-    // Fetch completion submissions (reviewers hitting the Finish flow)
     const { data: completionsData } = await supabase
       .from('review_completions')
       .select('*')
@@ -163,8 +185,6 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   // Build enriched top-level comments with item info + reply counts
   const enrichedComments: CommentWithItem[] = useMemo(() => {
     const itemMap = new Map(items.map((i) => [i.id, i]));
-
-    // Only top-level comments (no parent)
     const topLevel = allComments.filter((c) => !c.parent_comment_id);
 
     return topLevel.map((c) => {
@@ -226,7 +246,6 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
 
     setAllComments((prev) => [...prev, data as FeedbackComment]);
 
-    // Notify project participants of the reply.
     if (project?.share_token) {
       const item = items.find((i) => i.id === parent.review_item_id);
       fetch('/api/review-notify', {
@@ -294,7 +313,6 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
       })
       .eq('id', comment.id);
 
-    // Refresh
     setAllComments((prev) =>
       prev.map((c) =>
         c.id === comment.id
@@ -303,12 +321,66 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
       )
     );
 
-    // Update selected if open
     if (selectedComment?.id === comment.id) {
       setSelectedComment((prev) =>
         prev ? { ...prev, resolved, resolved_at: resolved ? new Date().toISOString() : null } : prev
       );
     }
+  };
+
+  // ── Assignment callbacks ──────────────────────────────────────────
+  const assignComment = async (commentId: string, memberId: string, note: string) => {
+    const { authFetch } = await import('@/lib/auth-fetch');
+    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assigned_to: memberId, note: note || undefined }),
+    });
+    if (!res.ok) {
+      toast.error('Failed to assign comment');
+      return;
+    }
+    const updated = await res.json();
+    setAllComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+    if (selectedComment?.id === commentId) {
+      setSelectedComment((prev) => prev ? { ...prev, ...updated } : prev);
+    }
+    toast.success('Comment assigned');
+  };
+
+  const toggleAssignmentComplete = async (commentId: string, completed: boolean) => {
+    const { authFetch } = await import('@/lib/auth-fetch');
+    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed }),
+    });
+    if (!res.ok) {
+      toast.error('Failed to update assignment');
+      return;
+    }
+    const updated = await res.json();
+    setAllComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+    if (selectedComment?.id === commentId) {
+      setSelectedComment((prev) => prev ? { ...prev, ...updated } : prev);
+    }
+  };
+
+  const removeAssignment = async (commentId: string) => {
+    const { authFetch } = await import('@/lib/auth-fetch');
+    const res = await authFetch(`/api/review-comments/${commentId}/assignment`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      toast.error('Failed to remove assignment');
+      return;
+    }
+    const updated = await res.json();
+    setAllComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c)));
+    if (selectedComment?.id === commentId) {
+      setSelectedComment((prev) => prev ? { ...prev, ...updated } : prev);
+    }
+    toast.success('Assignment removed');
   };
 
   if (!project && !loading) return null;
@@ -484,6 +556,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                         )
                       }
                       onToggleResolve={() => handleToggleResolve(comment, !comment.resolved)}
+                      assigneeName={comment.assigned_to ? (tmNameMap[comment.assigned_to]?.name ?? null) : null}
                     />
                   ))}
                 </div>
@@ -502,6 +575,12 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onToggleResolve={handleToggleResolve}
           onSubmitReply={handleSubmitReply}
           onDelete={handleDeleteComment}
+          participantsUrl={participantsUrl}
+          assigneeLookup={tmNameMap}
+          currentMemberId={currentMemberId}
+          onAssign={assignComment}
+          onToggleAssignmentComplete={toggleAssignmentComplete}
+          onRemoveAssignment={removeAssignment}
         />
       )}
     </div>

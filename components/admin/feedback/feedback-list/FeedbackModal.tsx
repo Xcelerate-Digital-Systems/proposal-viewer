@@ -3,23 +3,31 @@
 import { useState } from 'react';
 import {
   CheckCircle2, ChevronDown, ChevronUp, Clock, ExternalLink, MessageSquare,
-  Send, Trash2, X,
+  Send, Trash2, UserPlus, X,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { formatTimeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
 import { TYPE_ICONS, type CommentWithItem } from './types';
 import { Button } from '@/components/ui/Button';
+import AssignmentPicker from '@/components/feedback/comments/AssignmentPicker';
+import AssignmentBadge from '@/components/feedback/comments/AssignmentBadge';
+import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 
 interface Props {
   comment: CommentWithItem;
-  /** All comments for the project — used to render the reply thread. */
   allComments: FeedbackComment[];
   onClose: () => void;
   onToggleResolve: (comment: CommentWithItem, resolved: boolean) => void;
-  /** Returns true on success so the composer can clear/collapse. */
   onSubmitReply: (parent: CommentWithItem, content: string) => Promise<boolean>;
   onDelete: (comment: CommentWithItem) => void;
+  /** Assignment callbacks — only provided for agency users */
+  participantsUrl?: string | null;
+  assigneeLookup?: TeamMemberLookup;
+  currentMemberId?: string | null;
+  onAssign?: (commentId: string, memberId: string, note: string) => Promise<void>;
+  onToggleAssignmentComplete?: (commentId: string, completed: boolean) => Promise<void>;
+  onRemoveAssignment?: (commentId: string) => Promise<void>;
 }
 
 export default function FeedbackModal({
@@ -29,10 +37,17 @@ export default function FeedbackModal({
   onToggleResolve,
   onSubmitReply,
   onDelete,
+  participantsUrl,
+  assigneeLookup,
+  currentMemberId,
+  onAssign,
+  onToggleAssignmentComplete,
+  onRemoveAssignment,
 }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
+  const [showAssignPicker, setShowAssignPicker] = useState(false);
 
   const replies = allComments
     .filter((c) => c.parent_comment_id === comment.id)
@@ -52,7 +67,7 @@ export default function FeedbackModal({
   const TypeIcon = TYPE_ICONS[comment.item_type] || MessageSquare;
 
   return (
-    <Modal open onClose={onClose} size="xl">
+    <Modal open onClose={onClose} size="2xl">
       <Modal.Header>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
@@ -114,8 +129,34 @@ export default function FeedbackModal({
 
               <div>
                 <p className="text-ink leading-relaxed">{comment.content}</p>
-                <p className="text-xs text-faint mt-2 italic">No description</p>
               </div>
+
+              {/* Assignment badge — shows when comment is assigned */}
+              {comment.assigned_to && (
+                <AssignmentBadge
+                  assignedTo={comment.assigned_to}
+                  assignmentNote={comment.assignment_note ?? null}
+                  completedAt={comment.assignment_completed_at ?? null}
+                  memberLookup={assigneeLookup}
+                  currentMemberId={currentMemberId}
+                  isAdmin={!!onAssign}
+                  onComplete={
+                    onToggleAssignmentComplete
+                      ? () => onToggleAssignmentComplete(comment.id, true)
+                      : undefined
+                  }
+                  onReopen={
+                    onToggleAssignmentComplete
+                      ? () => onToggleAssignmentComplete(comment.id, false)
+                      : undefined
+                  }
+                  onRemove={
+                    onRemoveAssignment
+                      ? () => onRemoveAssignment(comment.id)
+                      : undefined
+                  }
+                />
+              )}
 
               {replies.length > 0 && (
                 <div className="border-t border-edge pt-4">
@@ -143,22 +184,22 @@ export default function FeedbackModal({
                 </div>
               )}
 
-              {/* Reply composer */}
+              {/* Reply composer — full width */}
               <div className="border-t border-edge pt-4">
-                <div className="flex items-end gap-2">
-                  <textarea
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                        e.preventDefault();
-                        handleReplySubmit();
-                      }
-                    }}
-                    placeholder="Reply to this feedback…"
-                    rows={2}
-                    className="flex-1 px-3 py-2 border border-edge-strong rounded-lg text-sm text-ink placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
-                  />
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      handleReplySubmit();
+                    }
+                  }}
+                  placeholder="Reply to this feedback…"
+                  rows={3}
+                  className="w-full px-3 py-2.5 border border-edge-strong rounded-lg text-sm text-ink placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
+                />
+                <div className="flex justify-end mt-2">
                   <Button
                     size="sm"
                     loading={submittingReply}
@@ -173,7 +214,7 @@ export default function FeedbackModal({
             </div>
 
             {/* Right — metadata sidebar */}
-            <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-edge p-6 bg-surface/50 shrink-0 space-y-5">
+            <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-edge p-6 bg-surface/50 shrink-0 space-y-5">
               <div className="text-xs text-faint">
                 {new Date(comment.created_at).toLocaleDateString('en-AU', {
                   day: 'numeric', month: 'short', year: 'numeric',
@@ -207,6 +248,46 @@ export default function FeedbackModal({
                   )}
                 </button>
               </div>
+
+              {/* Assignment section */}
+              {onAssign && (
+                <div>
+                  <p className="text-xs font-medium text-dim mb-1.5">Assignment</p>
+                  {comment.assigned_to ? (
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                      comment.assignment_completed_at
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      {comment.assignment_completed_at ? (
+                        <><CheckCircle2 size={12} /> Done</>
+                      ) : (
+                        <><UserPlus size={12} /> Assigned</>
+                      )}
+                    </span>
+                  ) : (
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowAssignPicker(true)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-dim border border-dashed border-gray-300 hover:border-teal hover:text-teal transition-colors"
+                      >
+                        <UserPlus size={12} />
+                        Assign
+                      </button>
+                      {showAssignPicker && participantsUrl && (
+                        <AssignmentPicker
+                          participantsUrl={participantsUrl}
+                          onAssign={async (memberId, note) => {
+                            await onAssign(comment.id, memberId, note);
+                            setShowAssignPicker(false);
+                          }}
+                          onClose={() => setShowAssignPicker(false)}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <p className="text-xs font-medium text-dim mb-1.5">Item</p>

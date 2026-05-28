@@ -1,18 +1,16 @@
 'use client';
 
-import { CheckCircle2, ExternalLink, MessageSquare, RotateCcw } from 'lucide-react';
+import { CheckCircle2, CircleDashed, ExternalLink, MessageSquare, RotateCcw, UserPlus } from 'lucide-react';
 import { getPriorityDef } from '@/components/feedback/comments/PrioritySelector';
 import { formatTimeAgo } from '@/lib/review-utils';
 import { TYPE_ICONS, type CommentWithItem } from './types';
 
 interface Props {
   comment: CommentWithItem;
-  /** Open the detail modal */
   onSelect: () => void;
-  /** Navigate to the source item viewer */
   onViewItem: () => void;
-  /** Toggle resolved state from the row */
   onToggleResolve: () => void;
+  assigneeName?: string | null;
 }
 
 export default function FeedbackRow({
@@ -20,11 +18,15 @@ export default function FeedbackRow({
   onSelect,
   onViewItem,
   onToggleResolve,
+  assigneeName,
 }: Props) {
   const TypeIcon = TYPE_ICONS[comment.item_type] || MessageSquare;
   const priorityDef =
     comment.priority && comment.priority !== 'none' ? getPriorityDef(comment.priority) : null;
   const PriorityIcon = priorityDef?.icon;
+
+  const hasAssignment = !!comment.assigned_to;
+  const assignmentDone = !!comment.assignment_completed_at;
 
   return (
     <div
@@ -48,21 +50,51 @@ export default function FeedbackRow({
         )}
       </div>
 
+      {/* Screenshot thumbnail */}
+      {comment.screenshot_url && (
+        <div className="w-14 h-14 rounded-lg border border-edge overflow-hidden shrink-0 bg-surface mt-0.5">
+          <img
+            src={comment.screenshot_url}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2">
           <p className="text-sm text-ink line-clamp-2 leading-relaxed flex-1">
             {comment.content}
           </p>
-          {priorityDef && PriorityIcon && (
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-detail font-medium shrink-0 ${priorityDef.badgeClass}`}
-              title={`Priority: ${priorityDef.label}`}
-            >
-              <PriorityIcon size={10} className={priorityDef.iconClass} />
-              {priorityDef.label} priority
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {priorityDef && PriorityIcon && (
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-detail font-medium ${priorityDef.badgeClass}`}
+                title={`Priority: ${priorityDef.label}`}
+              >
+                <PriorityIcon size={10} className={priorityDef.iconClass} />
+                {priorityDef.label} priority
+              </span>
+            )}
+            {hasAssignment && (
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-detail font-medium ${
+                  assignmentDone
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}
+                title={`${assignmentDone ? 'Completed' : 'Assigned'}${assigneeName ? ` — ${assigneeName}` : ''}`}
+              >
+                {assignmentDone ? (
+                  <CheckCircle2 size={10} />
+                ) : (
+                  <CircleDashed size={10} />
+                )}
+                {assigneeName || 'Assigned'}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 mt-1.5 text-xs text-faint">
           <TypeIcon size={12} />
