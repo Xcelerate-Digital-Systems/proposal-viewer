@@ -244,7 +244,6 @@ export default function CreateFromTemplate({
           post_accept_redirect_url:       selectedTemplate.post_accept_redirect_url || null,
           post_accept_message:            selectedTemplate.post_accept_message || null,
           package_styling:                selectedTemplate.package_styling ?? null,
-          section_headers:                selectedTemplate.section_headers ?? null,
           quote_page_bg_color:            (selectedTemplate as { quote_page_bg_color?: string | null }).quote_page_bg_color ?? null,
           quote_header_bg_style:          (selectedTemplate as { quote_header_bg_style?: string | null }).quote_header_bg_style ?? null,
           quote_header_bg_color_1:        selectedTemplate.quote_header_bg_color_1 ?? null,

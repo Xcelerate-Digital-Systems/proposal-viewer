@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       created_by_name,
       prepared_by,
       entity_type,
+      section_headers: _sh,
       ...rest
     } = body;
 
