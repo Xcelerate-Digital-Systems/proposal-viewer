@@ -401,16 +401,15 @@ function Shell({ children }: { children: React.ReactNode }) {
 
         <div className="relative z-10 space-y-6">
           <h2 className="text-3xl font-semibold text-white font-[family-name:var(--font-manrope)] tracking-tight leading-snug">
-            Win more clients<br />with stunning pitches
+            The agency toolbox.
           </h2>
           <p className="text-surface-dark-accent/70 text-sm leading-relaxed max-w-[340px]">
-            Create proposals, quotes, and review boards that wow your clients.
-            All the tools your agency needs in one place.
+            Proposals, feedback, ad tracking, and reporting integrations &mdash; in one place for agencies and their clients.
           </p>
 
           {/* Feature pills */}
           <div className="flex flex-wrap gap-2 pt-2">
-            {['Proposals', 'Quotes', 'Creative Review', 'Templates'].map((f) => (
+            {['Proposals', 'Quotes', 'Creative Review', 'Ad Reporting', 'Templates'].map((f) => (
               <span
                 key={f}
                 className="px-3 py-1.5 rounded-full text-xs font-medium border border-surface-dark-border text-surface-dark-accent/80"
