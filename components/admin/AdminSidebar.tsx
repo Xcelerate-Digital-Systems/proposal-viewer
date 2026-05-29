@@ -1,7 +1,7 @@
 // components/admin/AdminSidebar.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -19,8 +19,6 @@ import {
 import type { TeamMember } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import type { SidebarBranding } from '@/hooks/useCompanyBranding';
-
-/* ─── Props ──────────────────────────────────────────────────────────────── */
 
 interface AdminSidebarProps {
   memberName?: string;
@@ -42,7 +40,41 @@ interface AdminSidebarProps {
   sidebarBranding?: SidebarBranding | null;
 }
 
-/* ─── Component ──────────────────────────────────────────────────────────── */
+interface SidebarColors {
+  bg: string;
+  bgHover: string;
+  border: string;
+  accent: string;
+  text: string;
+  textMuted: string;
+  textFaint: string;
+  activeItemBg: string;
+}
+
+function hexWithAlpha(hex: string, alpha: number): string {
+  const a = Math.round(alpha * 255).toString(16).padStart(2, '0');
+  return `${hex}${a}`;
+}
+
+function lighten(hex: string, amount: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const nr = Math.min(255, Math.round(r + (255 - r) * amount));
+  const ng = Math.min(255, Math.round(g + (255 - g) * amount));
+  const nb = Math.min(255, Math.round(b + (255 - b) * amount));
+  return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
+}
+
+function darken(hex: string, amount: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const nr = Math.max(0, Math.round(r * (1 - amount)));
+  const ng = Math.max(0, Math.round(g * (1 - amount)));
+  const nb = Math.max(0, Math.round(b * (1 - amount)));
+  return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
+}
 
 export default function AdminSidebar({
   memberName,
@@ -65,6 +97,28 @@ export default function AdminSidebar({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const branded = !!sidebarBranding;
+
+  const c = useMemo<SidebarColors>(() => {
+    if (!sidebarBranding) {
+      return {
+        bg: '', bgHover: '', border: '', accent: '', text: '',
+        textMuted: '', textFaint: '', activeItemBg: '',
+      };
+    }
+    const { bgPrimary, bgSecondary, accentColor, sidebarTextColor } = sidebarBranding;
+    return {
+      bg: bgPrimary,
+      bgHover: lighten(bgPrimary, 0.08),
+      border: bgSecondary,
+      accent: accentColor,
+      text: sidebarTextColor,
+      textMuted: hexWithAlpha(sidebarTextColor, 0.6),
+      textFaint: hexWithAlpha(sidebarTextColor, 0.4),
+      activeItemBg: hexWithAlpha(sidebarTextColor, 0.1),
+    };
+  }, [sidebarBranding]);
 
   useEffect(() => {
     if (!memberAvatarPath) { setAvatarUrl(null); return; }
@@ -115,6 +169,28 @@ export default function AdminSidebar({
   const renderNavLink = (item: NavItem) => {
     const Icon = item.icon;
     const active = isActive(item.href);
+
+    if (branded) {
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-3 px-3 py-2 rounded-full text-sm font-medium transition-colors group"
+          style={{
+            color: active ? c.text : c.textMuted,
+            backgroundColor: active ? c.activeItemBg : 'transparent',
+          }}
+          onMouseEnter={(e) => { if (!active) e.currentTarget.style.backgroundColor = c.bgHover; e.currentTarget.style.color = c.text; }}
+          onMouseLeave={(e) => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = c.textMuted; }}
+        >
+          <Icon size={18} style={{ color: active ? c.accent : c.textFaint }} />
+          <span className="flex-1">{item.label}</span>
+          {active && <ChevronRight size={14} style={{ color: hexWithAlpha(c.accent, 0.5) }} />}
+        </Link>
+      );
+    }
+
     return (
       <Link
         key={item.href}
@@ -140,6 +216,25 @@ export default function AdminSidebar({
 
   const renderSectionEntry = (section: SectionDef) => {
     const Icon = section.icon;
+
+    if (branded) {
+      return (
+        <Link
+          key={section.key}
+          href={section.defaultHref}
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-3 px-3 py-2 rounded-full text-sm font-medium transition-colors group"
+          style={{ color: c.textMuted }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = c.bgHover; e.currentTarget.style.color = c.text; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = c.textMuted; }}
+        >
+          <Icon size={18} style={{ color: c.textFaint }} />
+          <span className="flex-1">{section.label}</span>
+          <ChevronRight size={14} style={{ color: hexWithAlpha(c.text, 0.2) }} />
+        </Link>
+      );
+    }
+
     return (
       <Link
         key={section.key}
@@ -158,9 +253,11 @@ export default function AdminSidebar({
 
   const renderTopLevelNav = () => (
     <div className="animate-nav-fade contents">
-      {/* WORKSPACE section */}
       <div className="px-3 pt-1 pb-2">
-        <span className="text-2xs font-semibold uppercase tracking-[3px] text-surface-dark-accent/50">
+        <span
+          className={branded ? 'text-2xs font-semibold uppercase tracking-[3px]' : 'text-2xs font-semibold uppercase tracking-[3px] text-surface-dark-accent/50'}
+          style={branded ? { color: hexWithAlpha(c.accent, 0.5) } : undefined}
+        >
           Workspace
         </span>
       </div>
@@ -170,12 +267,13 @@ export default function AdminSidebar({
         {accountType !== 'client' && WORKSPACE_ITEMS.map((item) => renderNavLink(item))}
       </div>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* ACCOUNT section */}
       <div className="px-3 pt-1 pb-2">
-        <span className="text-2xs font-semibold uppercase tracking-[3px] text-surface-dark-accent/50">
+        <span
+          className={branded ? 'text-2xs font-semibold uppercase tracking-[3px]' : 'text-2xs font-semibold uppercase tracking-[3px] text-surface-dark-accent/50'}
+          style={branded ? { color: hexWithAlpha(c.accent, 0.5) } : undefined}
+        >
           Account
         </span>
       </div>
@@ -196,13 +294,19 @@ export default function AdminSidebar({
       <Link
         href="/dashboard"
         onClick={() => setMobileOpen(false)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-surface-dark-hover transition-colors mb-1"
+        className={branded ? 'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors mb-1' : 'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-surface-dark-hover transition-colors mb-1'}
+        style={branded ? { color: c.textMuted } : undefined}
+        onMouseEnter={branded ? (e) => { e.currentTarget.style.backgroundColor = c.bgHover; e.currentTarget.style.color = c.text; } : undefined}
+        onMouseLeave={branded ? (e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = c.textMuted; } : undefined}
       >
         <ArrowLeft size={14} />
         <span>Back</span>
       </Link>
       <div className="px-3 pt-1 pb-2">
-        <span className="text-2xs font-semibold uppercase tracking-wider text-white/30">
+        <span
+          className={branded ? 'text-2xs font-semibold uppercase tracking-wider' : 'text-2xs font-semibold uppercase tracking-wider text-white/30'}
+          style={branded ? { color: hexWithAlpha(c.text, 0.3) } : undefined}
+        >
           {section.label}
         </span>
       </div>
@@ -217,16 +321,23 @@ export default function AdminSidebar({
   const sidebarContent = (
     <div className="flex flex-col h-full" data-tour="sidebar">
       {companyOverride && (
-        <div className="px-3 py-2.5 bg-surface-dark-accent/15 border-b border-surface-dark-border">
+        <div
+          className={branded ? 'px-3 py-2.5 border-b' : 'px-3 py-2.5 bg-surface-dark-accent/15 border-b border-surface-dark-border'}
+          style={branded ? { backgroundColor: hexWithAlpha(c.accent, 0.15), borderColor: c.border } : undefined}
+        >
           <div className="flex items-center gap-2 mb-1.5">
-            <Building2 size={13} className="text-surface-dark-accent shrink-0" />
-            <span className="text-xs font-medium text-surface-dark-accent truncate">
+            <Building2 size={13} style={branded ? { color: c.accent } : undefined} className={branded ? 'shrink-0' : 'text-surface-dark-accent shrink-0'} />
+            <span
+              className={branded ? 'text-xs font-medium truncate' : 'text-xs font-medium text-surface-dark-accent truncate'}
+              style={branded ? { color: c.accent } : undefined}
+            >
               {companyOverride.companyName}
             </span>
           </div>
           <button
             onClick={handleExitAccount}
-            className="flex items-center gap-1.5 text-xs text-surface-dark-accent/70 hover:text-surface-dark-accent transition-colors"
+            className={branded ? 'flex items-center gap-1.5 text-xs transition-colors' : 'flex items-center gap-1.5 text-xs text-surface-dark-accent/70 hover:text-surface-dark-accent transition-colors'}
+            style={branded ? { color: hexWithAlpha(c.accent, 0.7) } : undefined}
           >
             <ArrowLeft size={11} />
             {isSuperAdmin ? 'Back to my account' : 'Back'}
@@ -234,7 +345,10 @@ export default function AdminSidebar({
         </div>
       )}
 
-      <div className="px-4 py-5 border-b border-surface-dark-border">
+      <div
+        className={branded ? 'px-4 py-5 border-b' : 'px-4 py-5 border-b border-surface-dark-border'}
+        style={branded ? { borderColor: c.border } : undefined}
+      >
         {sidebarBranding?.logoUrl ? (
           <img src={sidebarBranding.logoUrl} alt={sidebarBranding.companyName} className="h-7 max-w-[160px] object-contain" />
         ) : (
@@ -242,13 +356,11 @@ export default function AdminSidebar({
         )}
       </div>
 
-      {/* Show the workspace switcher when the user has any kind of cross-
-          workspace navigation available: multiple real memberships, super-
-          admin (gets the Platform Admin link), or currently overriding into
-          another company. Single-membership users with no admin powers
-          don't need the switcher at all. */}
       {(memberships.length > 1 || isSuperAdmin || isAgencyAdmin || !!companyOverride) && (
-        <div className="border-b border-surface-dark-border py-2">
+        <div
+          className={branded ? 'border-b py-2' : 'border-b border-surface-dark-border py-2'}
+          style={branded ? { borderColor: c.border } : undefined}
+        >
           <WorkspaceSwitcher
             memberships={memberships}
             activeMembershipId={activeMembershipId}
@@ -273,20 +385,44 @@ export default function AdminSidebar({
         }
       </nav>
 
-      <div className="border-t border-surface-dark-border p-3">
+      <div
+        className={branded ? 'border-t p-3' : 'border-t border-surface-dark-border p-3'}
+        style={branded ? { borderColor: c.border } : undefined}
+      >
         <div className="flex items-center gap-3 px-2 py-2 mb-1">
           {avatarUrl ? (
-            <img src={avatarUrl} alt={memberName || 'Avatar'} className="w-8 h-8 rounded-full object-cover shrink-0 border border-surface-dark-border" />
+            <img
+              src={avatarUrl}
+              alt={memberName || 'Avatar'}
+              className="w-8 h-8 rounded-full object-cover shrink-0 border"
+              style={branded ? { borderColor: c.border } : undefined}
+            />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-surface-dark-hover border border-surface-dark-border flex items-center justify-center shrink-0">
-              <span className="text-xs font-medium text-surface-dark-accent">{initials}</span>
+            <div
+              className={branded ? 'w-8 h-8 rounded-full border flex items-center justify-center shrink-0' : 'w-8 h-8 rounded-full bg-surface-dark-hover border border-surface-dark-border flex items-center justify-center shrink-0'}
+              style={branded ? { backgroundColor: c.bgHover, borderColor: c.border } : undefined}
+            >
+              <span
+                className={branded ? 'text-xs font-medium' : 'text-xs font-medium text-surface-dark-accent'}
+                style={branded ? { color: c.accent } : undefined}
+              >
+                {initials}
+              </span>
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-white truncate">
+            <p
+              className={branded ? 'text-sm font-medium truncate' : 'text-sm font-medium text-white truncate'}
+              style={branded ? { color: c.text } : undefined}
+            >
               {memberName || 'Team Member'}
             </p>
-            <p className="text-xs text-white/40 truncate">{memberEmail}</p>
+            <p
+              className={branded ? 'text-xs truncate' : 'text-xs text-white/40 truncate'}
+              style={branded ? { color: c.textFaint } : undefined}
+            >
+              {memberEmail}
+            </p>
           </div>
           <NotificationBell
             userId={userId ?? null}
@@ -296,7 +432,10 @@ export default function AdminSidebar({
         </div>
         <button
           onClick={onSignOut}
-          className="flex items-center gap-3 w-full px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-surface-dark-hover transition-colors"
+          className={branded ? 'flex items-center gap-3 w-full px-3 py-1.5 rounded-full text-sm transition-colors' : 'flex items-center gap-3 w-full px-3 py-1.5 rounded-full text-sm text-white/50 hover:text-white hover:bg-surface-dark-hover transition-colors'}
+          style={branded ? { color: c.textMuted } : undefined}
+          onMouseEnter={branded ? (e) => { e.currentTarget.style.backgroundColor = c.bgHover; e.currentTarget.style.color = c.text; } : undefined}
+          onMouseLeave={branded ? (e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = c.textMuted; } : undefined}
         >
           <LogOut size={16} />
           Sign out
@@ -305,11 +444,17 @@ export default function AdminSidebar({
     </div>
   );
 
+  const containerStyle = branded ? {
+    backgroundColor: c.bg,
+    borderColor: c.border,
+  } : undefined;
+
   return (
     <>
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-surface-dark border border-surface-dark-border rounded-lg flex items-center justify-center text-white/70 hover:text-white transition-colors"
+        className={branded ? 'lg:hidden fixed top-4 left-4 z-50 w-10 h-10 border rounded-lg flex items-center justify-center transition-colors' : 'lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-surface-dark border border-surface-dark-border rounded-lg flex items-center justify-center text-white/70 hover:text-white transition-colors'}
+        style={branded ? { backgroundColor: c.bg, borderColor: c.border, color: c.textMuted } : undefined}
       >
         <Menu size={18} />
       </button>
@@ -320,18 +465,16 @@ export default function AdminSidebar({
           onClick={() => setMobileOpen(false)}
         >
           <div
-            className="w-[260px] h-full bg-surface-dark border-r border-surface-dark-border"
+            className={branded ? 'w-[260px] h-full border-r' : 'w-[260px] h-full bg-surface-dark border-r border-surface-dark-border'}
             onClick={(e) => e.stopPropagation()}
-            style={sidebarBranding ? {
-              backgroundColor: sidebarBranding.bgPrimary,
-              borderColor: sidebarBranding.bgSecondary,
-            } : undefined}
+            style={containerStyle}
           >
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute top-4 right-4 text-white/40 hover:text-white"
+              className="absolute top-4 right-4"
+              style={branded ? { color: c.textFaint } : undefined}
             >
-              <X size={18} />
+              <X size={18} className={branded ? '' : 'text-white/40 hover:text-white'} />
             </button>
             {sidebarContent}
           </div>
@@ -339,13 +482,8 @@ export default function AdminSidebar({
       )}
 
       <aside
-        className="hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 bg-surface-dark border-r border-surface-dark-border h-screen sticky top-0"
-        style={sidebarBranding ? {
-          backgroundColor: sidebarBranding.bgPrimary,
-          borderColor: sidebarBranding.bgSecondary,
-          '--sb-accent': sidebarBranding.accentColor,
-          '--sb-text': sidebarBranding.sidebarTextColor,
-        } as React.CSSProperties : undefined}
+        className={branded ? 'hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 border-r h-screen sticky top-0' : 'hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 bg-surface-dark border-r border-surface-dark-border h-screen sticky top-0'}
+        style={containerStyle}
       >
         {sidebarContent}
       </aside>
