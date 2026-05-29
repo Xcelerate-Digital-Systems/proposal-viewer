@@ -367,7 +367,7 @@ export default function CommentThread({
 
       {/* Actions */}
       {!editing && (
-        <div className="flex items-center gap-2 mt-3 ml-11">
+        <div className="flex items-center gap-2 mt-3 ml-11 flex-wrap">
           {!showReply && (
             <Button
               variant="ghost"
@@ -403,7 +403,7 @@ export default function CommentThread({
             </Button>
           )}
           {isAdmin && (onQuickAssign || onOpenTasks) && (
-            <div className="relative">
+            <div className="relative shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
