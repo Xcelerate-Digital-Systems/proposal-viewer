@@ -77,14 +77,22 @@ export default function PendingPinPopover({
         className="relative bg-white rounded-2xl border border-edge-strong z-50"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Tail — rotated square on the popover's adjacent edge */}
+        {/* Tail — rotated square on the popover's adjacent edge, positioned
+             to match the pin's vertical alignment within the popover. */}
         <div
           aria-hidden
-          className={`absolute top-6 w-3 h-3 bg-white rotate-45 ${
+          className={`absolute w-3 h-3 bg-white rotate-45 ${
             tailOnLeft
               ? '-left-[7px] border-l border-b border-edge-strong'
               : '-right-[7px] border-r border-t border-edge-strong'
           }`}
+          style={
+            pinY > 60
+              ? { bottom: 24 }
+              : pinY >= 40
+                ? { top: '50%', marginTop: -6 }
+                : { top: 24 }
+          }
         />
 
         <PendingPinForm

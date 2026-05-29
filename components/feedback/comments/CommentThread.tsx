@@ -192,10 +192,21 @@ export default function CommentThread({
   return (
     <div
       data-comment-id={comment.id}
-      className={`rounded-2xl bg-white px-5 py-4 shadow-card transition-all duration-300 ${
+      className={`relative rounded-2xl bg-white px-5 py-4 shadow-card transition-all duration-300 group/thread ${
         highlighted ? 'ring-2 ring-teal ring-offset-1' : ''
       }`}
     >
+      {/* Three-dot menu — top-right, visible on hover */}
+      {!editing && canModify && (onEdit || onDelete) && (
+        <div className="absolute top-3 right-3 opacity-0 group-hover/thread:opacity-100 transition-opacity">
+          <ThreadMenu
+            align="end"
+            onEdit={onEdit ? () => { setEditText(comment.content); setEditing(true); } : undefined}
+            onDelete={onDelete ? handleDelete : undefined}
+          />
+        </div>
+      )}
+
       {/* Pin badge */}
       {comment.comment_type === 'pin' && comment.thread_number && (
         <div className="flex items-center gap-2 mb-3">
@@ -401,14 +412,6 @@ export default function CommentThread({
               <Loader2 size={12} className="animate-spin" />
               Deleting…
             </span>
-          )}
-          {canModify && (onEdit || onDelete) && (
-            <ThreadMenu
-              align="start"
-              className="ml-auto"
-              onEdit={onEdit ? () => { setEditText(comment.content); setEditing(true); } : undefined}
-              onDelete={onDelete ? handleDelete : undefined}
-            />
           )}
         </div>
       )}
