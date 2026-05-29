@@ -2,17 +2,18 @@
 'use client';
 
 import type { SwipeFile } from '@/lib/supabase';
+import { buildSwipeUrl } from '@/lib/proposal-url';
 import SwipeMetaMockup from './SwipeMetaMockup';
 
 type Props = {
   file: SwipeFile;
-  /** Called after the link is copied so the parent can persist has_been_shared. */
+  customDomain?: string | null;
   onShared: () => Promise<void>;
 };
 
-export default function SwipeFileCard({ file, onShared }: Props) {
+export default function SwipeFileCard({ file, customDomain, onShared }: Props) {
   const handleShare = async () => {
-    const url = `${window.location.origin}/swipe/${file.share_token}`;
+    const url = buildSwipeUrl(file.share_token, customDomain, window.location.origin);
     await navigator.clipboard.writeText(url);
     await onShared();
   };

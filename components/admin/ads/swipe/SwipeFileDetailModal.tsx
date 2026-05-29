@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { SwipeFile, SwipeType } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+import { buildSwipeUrl } from '@/lib/proposal-url';
 import SwipeMetaMockup from './SwipeMetaMockup';
 import AccordionSection from './AccordionSection';
 
@@ -20,6 +21,7 @@ type Props = {
   onEdit: (file: SwipeFile) => void;
   onDelete: (file: SwipeFile) => Promise<void>;
   onShared: (file: SwipeFile) => Promise<void>;
+  customDomain?: string | null;
   types?: SwipeType[];
   onMove?: (file: SwipeFile, newTypeId: string) => Promise<void>;
   onFieldUpdate?: (file: SwipeFile, field: string, value: string | null) => Promise<void>;
@@ -42,7 +44,7 @@ function hostFromUrl(url: string | null): string | null {
 }
 
 export default function SwipeFileDetailModal({
-  files, currentIndex, onNavigate, onClose, onEdit, onDelete, onShared, types, onMove, onFieldUpdate, readOnly = false,
+  files, currentIndex, onNavigate, onClose, onEdit, onDelete, onShared, customDomain, types, onMove, onFieldUpdate, readOnly = false,
 }: Props) {
   const file = files[currentIndex];
   const [copied, setCopied] = useState(false);
@@ -121,7 +123,7 @@ export default function SwipeFileDetailModal({
   const handleShare = async () => {
     setSharing(true);
     try {
-      const url = `${window.location.origin}/swipe/${file.share_token}`;
+      const url = buildSwipeUrl(file.share_token, customDomain, window.location.origin);
       await navigator.clipboard.writeText(url);
       await onShared(file);
       setCopied(true);

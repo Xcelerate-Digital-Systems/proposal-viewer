@@ -32,45 +32,54 @@ export function buildDocumentUrl(
   return `${origin}/doc/${shareToken}`;
 }
 
-/**
- * Build the public URL for a creative review PROJECT (card grid of all items).
- * Always uses the main app domain — custom domains are only for proposals/documents.
- *
- * Signature keeps customDomain param for backward compat but ignores it.
- */
 export function buildReviewProjectUrl(
   shareToken: string,
-  _customDomain?: string | null,
+  customDomain?: string | null,
   fallbackOrigin?: string
 ): string {
+  if (customDomain) return `https://${customDomain}/review/${shareToken}`;
   const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
   return `${origin}/review/${shareToken}`;
 }
 
-/**
- * Build the public URL for a single review ITEM (detail view with comments).
- * Always uses the main app domain.
- */
 export function buildReviewItemUrl(
   shareToken: string,
-  _customDomain?: string | null,
+  customDomain?: string | null,
   fallbackOrigin?: string
 ): string {
+  if (customDomain) return `https://${customDomain}/review/${shareToken}`;
   const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
   return `${origin}/review/${shareToken}`;
 }
 
-/**
- * Build the public URL for a review WHITEBOARD (React Flow canvas).
- * Always uses the main app domain.
- */
 export function buildReviewWhiteboardUrl(
   shareToken: string,
-  _customDomain?: string | null,
+  customDomain?: string | null,
   fallbackOrigin?: string
 ): string {
+  if (customDomain) return `https://${customDomain}/whiteboard/${shareToken}`;
   const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
   return `${origin}/whiteboard/${shareToken}`;
+}
+
+export function buildFunnelUrl(
+  shareToken: string,
+  customDomain?: string | null,
+  fallbackOrigin?: string
+): string {
+  if (customDomain) return `https://${customDomain}/funnel/${shareToken}`;
+  const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
+  return `${origin}/funnel/${shareToken}`;
+}
+
+export function buildSwipeUrl(
+  shareToken: string,
+  customDomain?: string | null,
+  fallbackOrigin?: string
+): string {
+  if (customDomain) return `https://${customDomain}/swipe/${shareToken}`;
+  const origin = (fallbackOrigin || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
+  return `${origin}/swipe/${shareToken}`;
 }
 
 /**
@@ -78,8 +87,8 @@ export function buildReviewWhiteboardUrl(
  */
 export function buildReviewUrl(
   shareToken: string,
-  _customDomain?: string | null,
+  customDomain?: string | null,
   fallbackOrigin?: string
 ): string {
-  return buildReviewProjectUrl(shareToken, null, fallbackOrigin);
+  return buildReviewProjectUrl(shareToken, customDomain, fallbackOrigin);
 }

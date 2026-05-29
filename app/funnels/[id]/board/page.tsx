@@ -10,6 +10,7 @@ import FunnelSettingsMenu from '@/components/admin/funnels/board/FunnelSettingsM
 import ScenarioSwitcher from '@/components/admin/funnels/board/ScenarioSwitcher';
 import { useToast } from '@/components/ui/Toast';
 import { supabase, type Funnel } from '@/lib/supabase';
+import { buildFunnelUrl } from '@/lib/proposal-url';
 import { duplicateFunnelAsScenario } from '@/lib/funnel/duplicate-funnel';
 
 export default function FunnelBoardPage(props: { params: Promise<{ id: string }> }) {
@@ -37,9 +38,17 @@ function BoardContent({ funnelId }: { funnelId: string }) {
   const toast = useToast();
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
+
+  const companyId = ctx?.companyId;
+  useEffect(() => {
+    if (!companyId) return;
+    supabase.from('companies').select('custom_domain, domain_verified').eq('id', companyId).single()
+      .then(({ data }) => { if (data?.domain_verified && data.custom_domain) setCustomDomain(data.custom_domain); });
+  }, [companyId]);
 
   if (!ctx) return null;
-  const { funnel, loading, setFunnel, companyId, userId } = ctx;
+  const { funnel, loading, setFunnel, companyId: cid, userId } = ctx;
 
   const saveName = async () => {
     const next = nameDraft.trim();
@@ -51,7 +60,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
 
   const copyShareLink = async () => {
     if (!funnel) return;
-    const url = `${window.location.origin}/funnel/${funnel.share_token}`;
+    const url = buildFunnelUrl(funnel.share_token, customDomain, window.location.origin);
     await navigator.clipboard.writeText(url);
     toast.success('Share link copied');
   };
@@ -60,7 +69,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
     if (!funnel) return;
     const created = await duplicateFunnelAsScenario({
       source: funnel,
-      companyId,
+      companyId: cid,
       userId,
       scenarioName: `${funnel.name} (Template)`,
       asTemplate: true,
@@ -108,7 +117,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
 
         {funnel && (
           <div className="ml-2">
-            <ScenarioSwitcher funnel={funnel} companyId={companyId} userId={userId} />
+            <ScenarioSwitcher funnel={funnel} companyId={cid} userId={userId} />
           </div>
         )}
 

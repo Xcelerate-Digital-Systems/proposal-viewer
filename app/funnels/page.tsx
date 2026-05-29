@@ -9,6 +9,7 @@ import ErrorState from '@/components/ui/ErrorState';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import PageHeader from '@/components/ui/PageHeader';
 import { supabase, type Funnel } from '@/lib/supabase';
+import { buildFunnelUrl } from '@/lib/proposal-url';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -51,6 +52,12 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from('companies').select('custom_domain, domain_verified').eq('id', companyId).single()
+      .then(({ data }) => { if (data?.domain_verified && data.custom_domain) setCustomDomain(data.custom_domain); });
+  }, [companyId]);
 
   const load = useCallback(async () => {
     setFetchError(null);
@@ -113,7 +120,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
   };
 
   const copyShareLink = async (token: string) => {
-    const url = `${window.location.origin}/funnel/${token}`;
+    const url = buildFunnelUrl(token, customDomain, window.location.origin);
     await navigator.clipboard.writeText(url);
     toast.success('Share link copied');
   };

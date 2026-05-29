@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Upload, Bookmark, X } from 'lucide-react';
 import { useSwipeFileContext } from './SwipeFileContext';
 import type { SwipeFile } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import SwipeFileForm from './SwipeFileForm';
 import SwipeFileCard from './SwipeFileCard';
 import SwipeBulkUploadModal from './SwipeBulkUploadModal';
@@ -24,6 +25,12 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from('companies').select('custom_domain, domain_verified').eq('id', companyId).single()
+      .then(({ data }) => { if (data?.domain_verified && data.custom_domain) setCustomDomain(data.custom_domain); });
+  }, [companyId]);
 
   // Load files whenever typeId changes
   useEffect(() => {
@@ -151,6 +158,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
                   >
                     <SwipeFileCard
                       file={file}
+                      customDomain={customDomain}
                       onShared={async () => {
                         if (!file.has_been_shared) {
                           await swipe.updateFile(file.id, file.type_id, { has_been_shared: true });
@@ -170,6 +178,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
         <SwipeFileDetailModal
           files={files}
           currentIndex={detailIndex}
+          customDomain={customDomain}
           onNavigate={setDetailIndex}
           onClose={() => setDetailIndex(null)}
           onEdit={(f) => { setDetailIndex(null); setFileForm({ open: true, file: f }); }}
