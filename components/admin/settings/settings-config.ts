@@ -84,18 +84,6 @@ export const WEBHOOK_EVENTS: WebhookEvent[] = [
     description: 'When a client requests revisions',
     icon: PenLine,
   },
-  {
-    key: 'comment_added',
-    label: 'Comment Added',
-    description: 'When someone adds a comment',
-    icon: MessageSquare,
-  },
-  {
-    key: 'comment_resolved',
-    label: 'Comment Resolved',
-    description: 'When a comment is marked as resolved',
-    icon: CheckCheck,
-  },
 ];
 
 /* ─── Markup webhook events ──────────────────────────────────── */
@@ -104,37 +92,37 @@ export const REVIEW_WEBHOOK_EVENTS: WebhookEvent[] = [
   {
     key: 'review_comment_added',
     label: 'Comment Added',
-    description: 'When someone comments on a markup item',
+    description: 'When a client or reviewer comments on an asset',
     icon: MessageSquare,
   },
   {
     key: 'review_comment_resolved',
     label: 'Comment Resolved',
-    description: 'When a markup comment is resolved',
+    description: 'When an asset comment is marked as resolved',
     icon: CheckCheck,
   },
   {
     key: 'review_item_approved',
-    label: 'Item Approved',
-    description: 'When a markup item is approved',
+    label: 'Asset Approved',
+    description: 'When an asset is approved by the reviewer',
     icon: CheckCircle2,
   },
   {
     key: 'review_item_revision_needed',
-    label: 'Revision Needed',
-    description: 'When a markup item needs revision',
+    label: 'Asset Revision Needed',
+    description: 'When an asset is flagged as needing changes',
     icon: AlertCircle,
   },
   {
     key: 'review_item_new_version',
     label: 'New Version Uploaded',
-    description: 'When a new version is uploaded',
+    description: 'When a new version of an asset is uploaded',
     icon: Package,
   },
   {
     key: 'review_feedback_marked_complete',
-    label: 'Review Completed',
-    description: 'When a reviewer marks their review as complete',
+    label: 'Markup Completed',
+    description: 'When a reviewer finishes and submits their markup',
     icon: PartyPopper,
   },
 ];
