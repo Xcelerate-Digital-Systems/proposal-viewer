@@ -453,6 +453,10 @@ function ItemViewerContent({
   };
 
   // ── Task callbacks (internal-only) ──
+  const quickAssign = async (commentId: string, memberId: string, instructions: string) => {
+    await createTask(commentId, memberId, instructions, []);
+  };
+
   const createTask = async (commentId: string, memberId: string, instructions: string, attachments: CommentTaskAttachment[]) => {
     const { authFetch } = await import('@/lib/auth-fetch');
     const res = await authFetch(`/api/review-comments/${commentId}/tasks?company_id=${companyId}`, {
@@ -578,6 +582,7 @@ function ItemViewerContent({
         onEditComment={editComment}
         onDeleteComment={deleteComment}
         onOpenTasks={(cId) => setTaskingCommentId(cId)}
+        onQuickAssign={quickAssign}
         onToggleTaskComplete={toggleTaskComplete}
         onRemoveTask={removeTask}
         currentMemberId={teamMember?.id ?? null}

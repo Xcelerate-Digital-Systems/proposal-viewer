@@ -376,6 +376,10 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   };
 
   // ── Task callbacks ────────────────────────────────────────────────
+  const quickAssign = async (commentId: string, memberId: string, instructions: string) => {
+    await createTask(commentId, memberId, instructions, []);
+  };
+
   const createTask = async (commentId: string, memberId: string, instructions: string, attachments: CommentTaskAttachment[]) => {
     const { authFetch } = await import('@/lib/auth-fetch');
     const res = await authFetch(`/api/review-comments/${commentId}/tasks?company_id=${companyId}`, {
@@ -703,9 +707,11 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           memberNameMap={memberNameMap}
           currentMemberId={currentMemberId}
           onOpenTasks={() => { setTaskingComment(selectedComment); }}
+          onQuickAssign={(memberId, instructions) => quickAssign(selectedComment.id, memberId, instructions)}
           onToggleTaskComplete={toggleTaskComplete}
           onRemoveTask={removeTask}
           onPriorityChange={changePriority}
+          participantsUrl={project ? `/api/campaigns/${project.id}/participants` : null}
         />
       )}
 

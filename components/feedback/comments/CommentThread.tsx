@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import MentionEditor, { type MentionEditorHandle } from '@/components/feedback/mentions/MentionEditor';
 import CommentContent from '@/components/feedback/mentions/CommentContent';
 import AssignmentBadge from './AssignmentBadge';
+import AssignmentPicker from './AssignmentPicker';
 
 interface CommentThreadProps {
   comment: FeedbackComment;
@@ -66,6 +67,8 @@ interface CommentThreadProps {
   // ── Tasks (admin-only, internal) ──
   /** Open the task creation modal for this comment */
   onOpenTasks?: () => void;
+  /** Inline quick-assign: create a task for a team member directly from the thread */
+  onQuickAssign?: (memberId: string, instructions: string) => Promise<void>;
   /** Toggle task completion */
   onToggleTaskComplete?: (taskId: string, completed: boolean) => Promise<void>;
   /** Remove a task */
@@ -96,6 +99,7 @@ export default function CommentThread({
   highlighted = false,
   memberLookup,
   onOpenTasks,
+  onQuickAssign,
   onToggleTaskComplete,
   onRemoveTask,
   currentMemberId,
@@ -110,6 +114,7 @@ export default function CommentThread({
   const [savingEdit, setSavingEdit] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showAssignPicker, setShowAssignPicker] = useState(false);
   const replyEditorRef = useRef<MentionEditorHandle | null>(null);
 
   const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim();
@@ -330,7 +335,7 @@ export default function CommentThread({
               />
             </div>
           )}
-          {(comment.tasks ?? []).length > 0 && (
+          {isAdmin && (comment.tasks ?? []).length > 0 && (
             <AssignmentBadge
               tasks={comment.tasks!}
               memberLookup={assigneeLookup}
@@ -397,15 +402,27 @@ export default function CommentThread({
               {resolving ? 'Reopening…' : 'Reopen'}
             </Button>
           )}
-          {isAdmin && onOpenTasks && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenTasks}
-              leftIcon={UserPlus}
-            >
-              Task
-            </Button>
+          {isAdmin && (onQuickAssign || onOpenTasks) && (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onQuickAssign ? setShowAssignPicker((v) => !v) : onOpenTasks?.()}
+                leftIcon={UserPlus}
+              >
+                Assign
+              </Button>
+              {showAssignPicker && onQuickAssign && (
+                <AssignmentPicker
+                  participantsUrl={participantsUrl ?? null}
+                  onAssign={async (memberId, note) => {
+                    await onQuickAssign(memberId, note);
+                    setShowAssignPicker(false);
+                  }}
+                  onClose={() => setShowAssignPicker(false)}
+                />
+              )}
+            </div>
           )}
           {deleting && (
             <span className="flex items-center gap-1 text-xs text-faint">

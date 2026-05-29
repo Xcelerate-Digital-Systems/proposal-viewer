@@ -69,6 +69,8 @@ interface CommentsPanelProps {
   // ── Tasks (admin-only, internal) ──
   /** Open task creation modal for a comment */
   onOpenTasks?: (commentId: string) => void;
+  /** Inline quick-assign: create a task on a comment */
+  onQuickAssign?: (commentId: string, memberId: string, instructions: string) => Promise<void>;
   /** Toggle task completion */
   onToggleTaskComplete?: (commentId: string, taskId: string, completed: boolean) => Promise<void>;
   /** Remove a task from a comment */
@@ -102,6 +104,7 @@ export default function CommentsPanel({
   commentFormAlwaysExpanded,
   participantsUrl,
   onOpenTasks,
+  onQuickAssign,
   onToggleTaskComplete,
   onRemoveTask,
   currentMemberId,
@@ -203,6 +206,7 @@ export default function CommentsPanel({
             highlighted={highlightCommentId === c.id}
             memberLookup={memberLookup}
             onOpenTasks={onOpenTasks ? () => onOpenTasks(c.id) : undefined}
+            onQuickAssign={onQuickAssign ? (memberId, instructions) => onQuickAssign(c.id, memberId, instructions) : undefined}
             onToggleTaskComplete={onToggleTaskComplete ? (taskId, completed) => onToggleTaskComplete(c.id, taskId, completed) : undefined}
             onRemoveTask={onRemoveTask ? (taskId) => onRemoveTask(c.id, taskId) : undefined}
             currentMemberId={currentMemberId}

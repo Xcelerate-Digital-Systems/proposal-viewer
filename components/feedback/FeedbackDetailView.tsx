@@ -77,6 +77,8 @@ interface ReviewDetailViewProps {
   onDeleteComment?: (commentId: string) => Promise<void>;
   /** Open task creation modal for a comment (admin only, internal) */
   onOpenTasks?: (commentId: string) => void;
+  /** Inline quick-assign: create a task on a comment (admin only, internal) */
+  onQuickAssign?: (commentId: string, memberId: string, instructions: string) => Promise<void>;
   /** Toggle task completion (admin only, internal) */
   onToggleTaskComplete?: (commentId: string, taskId: string, completed: boolean) => Promise<void>;
   /** Remove a task from a comment (admin only, internal) */
@@ -164,6 +166,7 @@ export default function FeedbackDetailView({
   onEditComment,
   onDeleteComment,
   onOpenTasks,
+  onQuickAssign,
   onToggleTaskComplete,
   onRemoveTask,
   currentMemberId,
@@ -650,6 +653,7 @@ export default function FeedbackDetailView({
               participantsUrl={participantsUrl}
               shareToken={shareToken}
               onOpenTasks={isAdmin ? onOpenTasks : undefined}
+              onQuickAssign={isAdmin ? onQuickAssign : undefined}
               onToggleTaskComplete={isAdmin ? onToggleTaskComplete : undefined}
               onRemoveTask={isAdmin ? onRemoveTask : undefined}
               currentMemberId={isAdmin ? currentMemberId : undefined}

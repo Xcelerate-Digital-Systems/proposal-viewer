@@ -12,6 +12,7 @@ import type { CommentTask, FeedbackCommentPriority } from '@/lib/types/feedback'
 import { TYPE_ICONS, type CommentWithItem } from './types';
 import { Button } from '@/components/ui/Button';
 import PrioritySelector from '@/components/feedback/comments/PrioritySelector';
+import AssignmentPicker from '@/components/feedback/comments/AssignmentPicker';
 
 interface Props {
   comment: CommentWithItem;
@@ -23,9 +24,11 @@ interface Props {
   memberNameMap?: Record<string, string>;
   currentMemberId?: string | null;
   onOpenTasks?: () => void;
+  onQuickAssign?: (memberId: string, instructions: string) => Promise<void>;
   onToggleTaskComplete?: (commentId: string, taskId: string, completed: boolean) => Promise<void>;
   onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
   onPriorityChange?: (comment: CommentWithItem, priority: FeedbackCommentPriority) => void;
+  participantsUrl?: string | null;
 }
 
 export default function FeedbackModal({
@@ -38,13 +41,16 @@ export default function FeedbackModal({
   memberNameMap,
   currentMemberId,
   onOpenTasks,
+  onQuickAssign,
   onToggleTaskComplete,
   onRemoveTask,
   onPriorityChange,
+  participantsUrl,
 }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
+  const [showAssignPicker, setShowAssignPicker] = useState(false);
 
   const replies = allComments
     .filter((c) => c.parent_comment_id === comment.id)
@@ -298,13 +304,13 @@ export default function FeedbackModal({
               )}
 
               {/* Tasks section */}
-              {onOpenTasks && (
+              {(onQuickAssign || onOpenTasks) && (
                 <div>
                   <p className="text-xs font-medium text-dim mb-1.5">Tasks</p>
-                  {taskCount > 0 ? (
+                  {taskCount > 0 && (
                     <button
                       onClick={onOpenTasks}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80 ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80 mb-2 ${
                         completedCount === taskCount
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -313,15 +319,26 @@ export default function FeedbackModal({
                       <ListTodo size={12} />
                       {completedCount}/{taskCount} done
                     </button>
-                  ) : (
+                  )}
+                  <div className="relative">
                     <button
-                      onClick={onOpenTasks}
+                      onClick={() => onQuickAssign ? setShowAssignPicker((v) => !v) : onOpenTasks?.()}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-teal hover:bg-teal-hover transition-colors"
                     >
                       <UserPlus size={12} />
-                      Create task
+                      Assign
                     </button>
-                  )}
+                    {showAssignPicker && onQuickAssign && (
+                      <AssignmentPicker
+                        participantsUrl={participantsUrl ?? null}
+                        onAssign={async (memberId, note) => {
+                          await onQuickAssign(memberId, note);
+                          setShowAssignPicker(false);
+                        }}
+                        onClose={() => setShowAssignPicker(false)}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
 
