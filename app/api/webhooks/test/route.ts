@@ -9,25 +9,65 @@ import { rateLimit } from '@/lib/rate-limit';
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
 function sampleProposalPayload(eventType: string) {
+  const now = new Date().toISOString();
   const base = {
     event: eventType,
-    timestamp: new Date().toISOString(),
+    timestamp: now,
     proposal: {
       id: 'sample-proposal-id-abc123',
       title: 'Website Redesign Proposal',
+      entity_type: 'proposal',
+      status: eventType === 'proposal_sent' ? 'sent'
+        : eventType === 'proposal_viewed' ? 'viewed'
+        : eventType === 'proposal_accepted' ? 'accepted'
+        : eventType === 'proposal_declined' ? 'declined'
+        : eventType === 'proposal_revision_requested' ? 'revision_requested'
+        : 'sent',
       client_name: 'Acme Corp',
       client_email: 'client@acme.com',
+      client_organisation: 'Acme Corporation Pty Ltd',
       crm_identifier: 'CRM-001',
+      quote_number: null,
+      valid_until: null,
       viewer_url: `${APP_URL}/view/sample-share-token`,
+      created_at: now,
+      updated_at: now,
+      sent_at: now,
+      first_viewed_at: eventType !== 'proposal_sent' ? now : null,
+      last_viewed_at: eventType !== 'proposal_sent' ? now : null,
+      accepted_at: eventType === 'proposal_accepted' ? now : null,
+      accepted_by_name: eventType === 'proposal_accepted' ? 'Jane Smith' : null,
+      declined_at: eventType === 'proposal_declined' ? now : null,
+      declined_by_name: eventType === 'proposal_declined' ? 'Jane Smith' : null,
+      decline_reason: eventType === 'proposal_declined' ? 'Budget constraints' : null,
+      revision_requested_at: eventType === 'proposal_revision_requested' ? now : null,
+      revision_requested_by_name: eventType === 'proposal_revision_requested' ? 'Jane Smith' : null,
+      revision_notes: eventType === 'proposal_revision_requested' ? 'Please revise the timeline on page 2' : null,
     },
+    pricing: [
+      {
+        id: 'sample-pricing-id-001',
+        title: 'Project Pricing',
+        position: 1,
+        tax_enabled: true,
+        tax_rate: 10,
+        tax_label: 'GST',
+        items: [
+          { id: 'li-1', label: 'Discovery & Strategy', description: 'Initial research and planning', amount: 2500, qty: null, unit_price: null, discount_pct: null },
+          { id: 'li-2', label: 'Design & Development', description: 'UI/UX design and frontend build', amount: 8500, qty: null, unit_price: null, discount_pct: null },
+          { id: 'li-3', label: 'Testing & Launch', description: 'QA, staging, and go-live', amount: 1500, qty: null, unit_price: null, discount_pct: null },
+        ],
+        optional_items: [
+          { id: 'oi-1', label: 'SEO Setup', description: 'On-page SEO optimisation', amount: 1200, discount_pct: null },
+        ],
+        payment_schedule: null,
+        subtotal: 12500,
+        discount: 0,
+        tax: 1250,
+        total: 13750,
+      },
+    ],
   };
-
-  if (eventType === 'proposal_sent') {
-    return {
-      ...base,
-      sent_at: new Date().toISOString(),
-    };
-  }
 
   if (eventType === 'comment_added') {
     return {

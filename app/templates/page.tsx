@@ -7,7 +7,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText, Upload, LayoutGrid, List, Search, Trash2, Pencil } from 'lucide-react';
+import {
+  Plus, FileText, Upload, LayoutGrid, List, Search, Trash2, Pencil,
+  Type, Image, DollarSign, Package, ListOrdered, Check, X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
@@ -31,7 +34,7 @@ async function authHeaders(): Promise<HeadersInit> {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
-type TabKey = 'proposal' | 'quote' | 'line_items' | 'packages';
+type TabKey = 'proposal' | 'quote' | 'line_items' | 'packages' | 'pages';
 
 interface LineItemTemplateRow {
   id: string;
@@ -49,11 +52,21 @@ interface PackageTemplateRow {
   created_at: string;
 }
 
+interface PageLibraryRow {
+  id: string;
+  type: string;
+  title: string;
+  label: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'proposal', label: 'Proposals' },
   { key: 'quote', label: 'Quotes' },
   { key: 'line_items', label: 'Line items' },
   { key: 'packages', label: 'Packages' },
+  { key: 'pages', label: 'Pages' },
 ];
 
 export default function TemplatesPage() {
@@ -69,6 +82,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [lineItemTemplates, setLineItemTemplates] = useState<LineItemTemplateRow[]>([]);
   const [packageTemplates, setPackageTemplates] = useState<PackageTemplateRow[]>([]);
+  const [libraryPages, setLibraryPages] = useState<PageLibraryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
@@ -80,7 +94,8 @@ function TemplatesContent({ companyId }: { companyId: string }) {
         stored === 'proposal' ||
         stored === 'quote' ||
         stored === 'line_items' ||
-        stored === 'packages'
+        stored === 'packages' ||
+        stored === 'pages'
       ) return stored;
     }
     return 'proposal';
@@ -173,6 +188,13 @@ function TemplatesContent({ companyId }: { companyId: string }) {
     setPackageTemplates(json.templates ?? []);
   }, []);
 
+  const fetchLibraryPages = useCallback(async () => {
+    const res = await fetch('/api/page-library', { headers: await authHeaders() });
+    if (!res.ok) throw new Error(`Failed to load page library (${res.status})`);
+    const json = await res.json();
+    setLibraryPages(json ?? []);
+  }, []);
+
   const refetch = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
@@ -181,6 +203,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
         fetchProposalTemplates(),
         fetchLineItemTemplates(),
         fetchPackageTemplates(),
+        fetchLibraryPages(),
       ]);
     } catch (err) {
       console.error('Failed to fetch templates:', err);
@@ -188,7 +211,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
     } finally {
       setLoading(false);
     }
-  }, [fetchProposalTemplates, fetchLineItemTemplates, fetchPackageTemplates]);
+  }, [fetchProposalTemplates, fetchLineItemTemplates, fetchPackageTemplates, fetchLibraryPages]);
 
   useEffect(() => {
     refetch();
@@ -220,7 +243,14 @@ function TemplatesContent({ companyId }: { companyId: string }) {
       )
     : packageTemplates;
 
-  const showRecent = !searchQuery && activeTab !== 'line_items' && activeTab !== 'packages' && scoped.length >= 8;
+  const filteredLibraryPages = searchQuery
+    ? libraryPages.filter((p) =>
+        (p.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (p.label?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+      )
+    : libraryPages;
+
+  const showRecent = !searchQuery && activeTab !== 'line_items' && activeTab !== 'packages' && activeTab !== 'pages' && scoped.length >= 8;
   const recent = showRecent
     ? [...scoped]
         .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at))
@@ -232,12 +262,16 @@ function TemplatesContent({ companyId }: { companyId: string }) {
       ? lineItemTemplates.length
       : activeTab === 'packages'
       ? packageTemplates.length
+      : activeTab === 'pages'
+      ? libraryPages.length
       : scoped.length;
   const tabNoun =
     activeTab === 'line_items'
       ? 'line-item template'
       : activeTab === 'packages'
       ? 'package template'
+      : activeTab === 'pages'
+      ? 'saved page'
       : 'template';
 
   const deletePackageTemplate = async (t: PackageTemplateRow) => {
@@ -288,7 +322,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
         description={`${tabCount} ${tabNoun}${tabCount !== 1 ? 's' : ''}`}
         actions={<>
           {/* View toggle (only meaningful for proposal/quote tabs) */}
-          {activeTab !== 'line_items' && (
+          {activeTab !== 'line_items' && activeTab !== 'packages' && activeTab !== 'pages' && (
             <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
               <button
                 onClick={() => toggleView('grid')}
@@ -325,6 +359,8 @@ function TemplatesContent({ companyId }: { companyId: string }) {
                   ? 'line-item templates'
                   : activeTab === 'packages'
                   ? 'package templates'
+                  : activeTab === 'pages'
+                  ? 'saved pages'
                   : 'templates'
               }...`}
               value={searchQuery}
@@ -349,7 +385,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             >
               New Line Items
             </Button>
-          ) : (
+          ) : activeTab === 'pages' ? null : (
             <Button
               size="sm"
               leftIcon={Plus}
@@ -371,6 +407,8 @@ function TemplatesContent({ companyId }: { companyId: string }) {
                 ? lineItemTemplates.length
                 : tab.key === 'packages'
                 ? packageTemplates.length
+                : tab.key === 'pages'
+                ? libraryPages.length
                 : templates.filter((t) => (t.entity_type ?? 'proposal') === tab.key).length;
             return (
               <button
@@ -445,6 +483,47 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             searchQuery={searchQuery}
             onDelete={deletePackageTemplate}
             onEdit={openEditPackage}
+          />
+        ) : activeTab === 'pages' ? (
+          <PageLibraryView
+            pages={filteredLibraryPages}
+            allCount={libraryPages.length}
+            searchQuery={searchQuery}
+            onDelete={async (p) => {
+              const ok = await confirm({
+                title: 'Delete saved page?',
+                message: `"${p.label || p.title}" will be removed from the library.`,
+                confirmLabel: 'Delete',
+                destructive: true,
+              });
+              if (!ok) return;
+              const res = await fetch('/api/page-library', {
+                method: 'DELETE',
+                headers: await authHeaders(),
+                body: JSON.stringify({ id: p.id }),
+              });
+              if (res.ok) {
+                setLibraryPages((prev) => prev.filter((x) => x.id !== p.id));
+                toast.success('Page removed from library');
+              } else {
+                toast.error('Failed to delete');
+              }
+            }}
+            onRename={async (p, newTitle) => {
+              const res = await fetch('/api/page-library', {
+                method: 'PATCH',
+                headers: await authHeaders(),
+                body: JSON.stringify({ id: p.id, title: newTitle }),
+              });
+              if (res.ok) {
+                setLibraryPages((prev) =>
+                  prev.map((x) => (x.id === p.id ? { ...x, title: newTitle, updated_at: new Date().toISOString() } : x))
+                );
+                toast.success('Page renamed');
+              } else {
+                toast.error('Failed to rename');
+              }
+            }}
           />
         ) : filteredProposalTemplates.length === 0 && searchQuery ? (
           <NoResults message={`No templates matching “${searchQuery}”`} />
@@ -675,6 +754,147 @@ function PackageTemplatesView({
               <span>{new Date(t.created_at).toLocaleDateString()}</span>
             </div>
           </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Page library view ──────────────────────────────────────────── */
+
+const PAGE_TYPE_ICONS: Record<string, typeof FileText> = {
+  text: Type,
+  pdf: Image,
+  pricing: DollarSign,
+  packages: Package,
+  toc: ListOrdered,
+  section: FileText,
+  decision: FileText,
+};
+
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  text: 'Text',
+  pdf: 'PDF',
+  pricing: 'Pricing',
+  packages: 'Packages',
+  toc: 'Table of Contents',
+  section: 'Section',
+  decision: 'Decision',
+};
+
+function PageLibraryView({
+  pages,
+  allCount,
+  searchQuery,
+  onDelete,
+  onRename,
+}: {
+  pages: PageLibraryRow[];
+  allCount: number;
+  searchQuery: string;
+  onDelete: (p: PageLibraryRow) => void;
+  onRename: (p: PageLibraryRow, newTitle: string) => void;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  if (pages.length === 0 && searchQuery) {
+    return <NoResults message={`No saved pages matching "${searchQuery}"`} />;
+  }
+  if (allCount === 0) {
+    return (
+      <EmptyState
+        icon={FileText}
+        title="No saved pages yet"
+        description="Inside any proposal, quote, or template editor, click the bookmark icon on a page row to save it to your library. Saved pages can be imported into any entity."
+      />
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
+      {pages.map((p) => {
+        const Icon = PAGE_TYPE_ICONS[p.type] ?? FileText;
+        const typeLabel = PAGE_TYPE_LABELS[p.type] ?? p.type;
+        const isEditing = editingId === p.id;
+
+        return (
+          <div
+            key={p.id}
+            className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all"
+          >
+            <div className="flex items-start justify-between gap-2 mb-2">
+              {isEditing ? (
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <input
+                    type="text"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && editValue.trim()) {
+                        onRename(p, editValue.trim());
+                        setEditingId(null);
+                      }
+                      if (e.key === 'Escape') setEditingId(null);
+                    }}
+                    autoFocus
+                    className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-edge bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
+                  />
+                  <button
+                    onClick={() => {
+                      if (editValue.trim()) {
+                        onRename(p, editValue.trim());
+                        setEditingId(null);
+                      }
+                    }}
+                    className="p-1 text-teal hover:text-teal-hover"
+                    title="Save"
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="p-1 text-faint hover:text-muted"
+                    title="Cancel"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-sm font-semibold text-ink truncate flex-1 min-w-0">
+                    {p.label || p.title}
+                  </h3>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                    <button
+                      onClick={() => { setEditingId(p.id); setEditValue(p.label || p.title); }}
+                      className="p-1 text-faint hover:text-teal"
+                      title="Rename"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => onDelete(p)}
+                      className="p-1 text-faint hover:text-red-500"
+                      title="Delete"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            {p.label && p.label !== p.title && !isEditing && (
+              <p className="text-xs text-muted truncate mb-2">{p.title}</p>
+            )}
+            <div className="flex items-center justify-between text-detail text-faint mt-auto pt-1">
+              <span className="flex items-center gap-1.5">
+                <Icon size={12} />
+                {typeLabel}
+              </span>
+              <span>{new Date(p.created_at).toLocaleDateString()}</span>
+            </div>
+          </div>
         );
       })}
     </div>

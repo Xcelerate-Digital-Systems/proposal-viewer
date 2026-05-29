@@ -18,6 +18,7 @@ import {
 } from './sidebar/sidebar-config';
 import type { TeamMember } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+import type { SidebarBranding } from '@/hooks/useCompanyBranding';
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 
@@ -34,13 +35,11 @@ interface AdminSidebarProps {
   companyOverride?: { companyId: string; companyName: string } | null;
   onClearOverride?: () => void;
   onSetOverride?: (companyId: string, companyName: string) => void;
-  /** All team_members rows for the signed-in user. */
   memberships?: TeamMember[];
-  /** id of the membership currently in effect (null when there are none). */
   activeMembershipId?: string | null;
-  /** Switch to a different real workspace the user is a member of. */
   onSwitchMembership?: (membershipId: string) => void;
   onSignOut: () => Promise<void>;
+  sidebarBranding?: SidebarBranding | null;
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -61,6 +60,7 @@ export default function AdminSidebar({
   activeMembershipId = null,
   onSwitchMembership,
   onSignOut,
+  sidebarBranding = null,
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -235,7 +235,11 @@ export default function AdminSidebar({
       )}
 
       <div className="px-4 py-5 border-b border-surface-dark-border">
-        <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
+        {sidebarBranding?.logoUrl ? (
+          <img src={sidebarBranding.logoUrl} alt={sidebarBranding.companyName} className="h-7 max-w-[160px] object-contain" />
+        ) : (
+          <img src="/logo-agencyviz.svg" alt="AgencyViz" className="h-7" />
+        )}
       </div>
 
       {/* Show the workspace switcher when the user has any kind of cross-
@@ -318,6 +322,10 @@ export default function AdminSidebar({
           <div
             className="w-[260px] h-full bg-surface-dark border-r border-surface-dark-border"
             onClick={(e) => e.stopPropagation()}
+            style={sidebarBranding ? {
+              backgroundColor: sidebarBranding.bgPrimary,
+              borderColor: sidebarBranding.bgSecondary,
+            } : undefined}
           >
             <button
               onClick={() => setMobileOpen(false)}
@@ -330,7 +338,15 @@ export default function AdminSidebar({
         </div>
       )}
 
-      <aside className="hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 bg-surface-dark border-r border-surface-dark-border h-screen sticky top-0">
+      <aside
+        className="hidden lg:flex lg:flex-col lg:w-[240px] lg:shrink-0 bg-surface-dark border-r border-surface-dark-border h-screen sticky top-0"
+        style={sidebarBranding ? {
+          backgroundColor: sidebarBranding.bgPrimary,
+          borderColor: sidebarBranding.bgSecondary,
+          '--sb-accent': sidebarBranding.accentColor,
+          '--sb-text': sidebarBranding.sidebarTextColor,
+        } as React.CSSProperties : undefined}
+      >
         {sidebarContent}
       </aside>
     </>

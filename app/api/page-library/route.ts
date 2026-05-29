@@ -134,6 +134,43 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PATCH — rename / update a page in the library
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { id, title, label } = await req.json();
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (typeof title === 'string' && title.trim()) updates.title = title.trim();
+    if (typeof label === 'string') updates.label = label.trim() || null;
+
+    if (Object.keys(updates).length === 1) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+    }
+
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from('page_library')
+      .update(updates)
+      .eq('id', id)
+      .eq('company_id', auth.companyId)
+      .select()
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({ error: 'Page not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error('[page-library] PATCH error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 // DELETE — remove a page from the library
 export async function DELETE(req: NextRequest) {
   try {

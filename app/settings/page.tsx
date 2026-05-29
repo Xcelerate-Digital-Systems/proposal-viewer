@@ -31,7 +31,7 @@ const TABS: TabDef[] = [
   { key: 'members',   label: 'Members',   icon: Users,       description: 'Team, notifications, and invites' },
   { key: 'roles',     label: 'Roles',     icon: KeyRound,    description: 'What each role can do' },
   { key: 'billing',   label: 'Billing',   icon: CreditCard,  description: 'Plan, payment, invoices' },
-  { key: 'developer', label: 'Developer', icon: Code2,       description: 'Webhooks and API keys' },
+  { key: 'developer', label: 'Developer',  icon: Code2,       description: 'Webhooks, API keys, and connected apps' },
 ];
 
 export default function SettingsPage() {
@@ -187,21 +187,23 @@ function SettingsContent({ auth }: {
               <div>
                 <SectionHeader
                   title="Webhooks"
-                  description="Send HTTP POST requests when events occur in your workspace."
+                  description="Receive real-time HTTP POST notifications when proposals, quotes, or markup items change status. Payloads include line items, pricing, and client details."
                 />
                 <WebhookManager companyId={companyId} isSuperAdmin={isSuperAdmin} />
               </div>
+              <hr className="border-edge" />
               <div>
                 <SectionHeader
                   title="Connected Apps"
-                  description="Integrations authorized via OAuth — Chrome extension, Looker Studio connector, and other approved apps."
+                  description="Apps authorized to access your workspace — Chrome extension, Looker Studio connector, and other integrations."
                 />
                 <ConnectedAppsManager />
               </div>
+              <hr className="border-edge" />
               <div>
                 <SectionHeader
                   title="API Keys"
-                  description="Personal access tokens for the AgencyViz API."
+                  description="Generate access tokens for external integrations. Each key is scoped to your workspace."
                 />
                 <ApiKeyManager />
               </div>

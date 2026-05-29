@@ -51,90 +51,90 @@ export const NOTIFICATION_OPTIONS: NotificationOption[] = [
   },
 ];
 
-/* ─── Proposal webhook events ────────────────────────────────── */
+/* ─── Pitch webhook events (proposals + quotes) ────────────────── */
 
 export const WEBHOOK_EVENTS: WebhookEvent[] = [
   {
     key: 'proposal_sent',
-    label: 'Proposal Sent',
-    description: 'Fires when a proposal is marked as sent to a client',
+    label: 'Sent',
+    description: 'When a proposal or quote is marked as sent',
     icon: Send,
   },
   {
     key: 'proposal_viewed',
-    label: 'Proposal Viewed',
-    description: 'Fires when a client opens a proposal for the first time',
+    label: 'Viewed',
+    description: 'When a client opens a proposal or quote for the first time',
     icon: Eye,
   },
   {
     key: 'proposal_accepted',
-    label: 'Proposal Accepted',
-    description: 'Fires when a client accepts a proposal',
+    label: 'Accepted',
+    description: 'When a client accepts a proposal or quote',
     icon: CheckCircle2,
   },
   {
     key: 'proposal_declined',
-    label: 'Proposal Declined',
-    description: 'Fires when a client declines a proposal',
+    label: 'Declined',
+    description: 'When a client declines a proposal or quote',
     icon: XCircle,
   },
   {
     key: 'proposal_revision_requested',
     label: 'Changes Requested',
-    description: 'Fires when a client requests revisions on a proposal',
+    description: 'When a client requests revisions',
     icon: PenLine,
   },
   {
     key: 'comment_added',
     label: 'Comment Added',
-    description: 'Fires when someone adds a comment on a proposal',
+    description: 'When someone adds a comment',
     icon: MessageSquare,
   },
   {
     key: 'comment_resolved',
     label: 'Comment Resolved',
-    description: 'Fires when a comment is marked as resolved',
+    description: 'When a comment is marked as resolved',
     icon: CheckCheck,
   },
 ];
 
-/* ─── Review webhook events ──────────────────────────────────── */
+/* ─── Markup webhook events ──────────────────────────────────── */
 
 export const REVIEW_WEBHOOK_EVENTS: WebhookEvent[] = [
   {
     key: 'review_comment_added',
-    label: 'Feedback Comment Added',
-    description: 'Fires when someone comments on a feedback item',
+    label: 'Comment Added',
+    description: 'When someone comments on a markup item',
     icon: MessageSquare,
   },
   {
     key: 'review_comment_resolved',
-    label: 'Feedback Comment Resolved',
-    description: 'Fires when a review comment is resolved',
+    label: 'Comment Resolved',
+    description: 'When a markup comment is resolved',
     icon: CheckCheck,
   },
   {
     key: 'review_item_approved',
-    label: 'Feedback Item Approved',
-    description: 'Fires when a feedback item is marked as approved',
+    label: 'Item Approved',
+    description: 'When a markup item is approved',
     icon: CheckCircle2,
   },
   {
     key: 'review_item_revision_needed',
-    label: 'Feedback Revision Needed',
-    description: 'Fires when a feedback item is marked as needing revision',
+    label: 'Revision Needed',
+    description: 'When a markup item needs revision',
     icon: AlertCircle,
   },
   {
     key: 'review_item_new_version',
     label: 'New Version Uploaded',
-    description: 'Fires when a new version is uploaded for a feedback item',
+    description: 'When a new version is uploaded',
     icon: Package,
   },
   {
     key: 'review_feedback_marked_complete',
     label: 'Review Completed',
-    description: 'Fires when a reviewer marks their review as complete',
+    description: 'When a reviewer marks their review as complete',
     icon: PartyPopper,
   },
 ];

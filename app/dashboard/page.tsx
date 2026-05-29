@@ -11,6 +11,7 @@ import type { FeedbackStatus } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
 import InboxItem, { type InboxComment } from '@/components/admin/dashboard/InboxItem';
 import DashboardPipeline from '@/components/admin/dashboard/DashboardPipeline';
+import ClientPipeline from '@/components/admin/dashboard/ClientPipeline';
 import FeedbackPipeline from '@/components/admin/dashboard/FeedbackPipeline';
 import FeedbackActionWidgets from '@/components/admin/dashboard/FeedbackActionWidgets';
 import ErrorState from '@/components/ui/ErrorState';
@@ -198,37 +199,94 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
 
   /* ── Client view ──────────────────────────────────────── */
   if (isClient) {
-    const totalCount = pipeline.length;
-    const acceptedCount = pipeline.filter((p) => p.accepted_at).length;
+    const nonDraft = pipeline.filter((p) => p.status !== 'draft');
+    const proposals = nonDraft.filter((p) => p.entity_type === 'proposal');
+    const quotes = nonDraft.filter((p) => p.entity_type === 'quote');
+    const sentCount = nonDraft.filter((p) => p.status === 'sent').length;
+    const viewedCount = nonDraft.filter((p) => p.status === 'viewed').length;
+    const acceptedCount = nonDraft.filter((p) => p.status === 'accepted').length;
+    const declinedCount = nonDraft.filter((p) => p.status === 'declined').length;
+    const awaitingAction = sentCount + viewedCount;
+
     return (
       <div className="flex flex-col h-full">
         <PageHeader
           title={`${getGreeting()}, ${firstName}`}
-          description={`You have ${totalCount - acceptedCount} proposals waiting for your review.`}
+          description={
+            loading
+              ? 'Loading…'
+              : awaitingAction > 0
+                ? `You have ${awaitingAction} ${awaitingAction === 1 ? 'item' : 'items'} awaiting your review.`
+                : nonDraft.length === 0
+                  ? 'No proposals or quotes yet.'
+                  : 'All caught up — nothing awaiting your review.'
+          }
         />
         <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
-            <div className="bg-white rounded-2xl shadow-card p-6 animate-enter-up" style={{ animationDelay: '0ms' }}>
-              <div className="flex items-center gap-2">
-                <FileText size={14} className="text-muted" />
-                <span className="text-caption font-medium text-muted">Active Proposals</span>
+          <div className="flex flex-col gap-5">
+            {/* Summary stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-enter-up" style={{ animationDelay: '0ms' }}>
+              <div className="bg-white rounded-2xl shadow-card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Timer size={14} className="text-amber-500" />
+                  <span className="text-caption font-medium text-muted">Awaiting Review</span>
+                </div>
+                <p className="text-[28px] font-bold text-ink leading-none">{awaitingAction}</p>
               </div>
-              <p className="text-[32px] font-bold text-ink leading-none mt-3">{totalCount}</p>
-              <div className="flex items-center gap-1 mt-3">
-                <Timer size={14} className="text-muted" />
-                <span className="text-xs font-medium text-muted">{totalCount - acceptedCount} awaiting your review</span>
+              <div className="bg-white rounded-2xl shadow-card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 size={14} className="text-emerald-600" />
+                  <span className="text-caption font-medium text-muted">Accepted</span>
+                </div>
+                <p className="text-[28px] font-bold text-ink leading-none">{acceptedCount}</p>
+              </div>
+              <div className="bg-white rounded-2xl shadow-card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText size={14} className="text-muted" />
+                  <span className="text-caption font-medium text-muted">Proposals</span>
+                </div>
+                <p className="text-[28px] font-bold text-ink leading-none">{proposals.length}</p>
+              </div>
+              <div className="bg-white rounded-2xl shadow-card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Reply size={14} className="text-muted" />
+                  <span className="text-caption font-medium text-muted">Quotes</span>
+                </div>
+                <p className="text-[28px] font-bold text-ink leading-none">{quotes.length}</p>
               </div>
             </div>
-            <div className="bg-white rounded-2xl shadow-card p-6 animate-enter-up" style={{ animationDelay: '50ms' }}>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={14} className="text-emerald-600" />
-                <span className="text-caption font-medium text-muted">Reviewed</span>
-              </div>
-              <p className="text-[32px] font-bold text-ink leading-none mt-3">{acceptedCount}</p>
-              <span className="text-xs font-medium text-faint mt-3 block">
-                {totalCount > 0 ? `${Math.round((acceptedCount / totalCount) * 100)}% acceptance rate` : 'No proposals yet'}
-              </span>
-            </div>
+
+            {/* Pipeline kanban (read-only) */}
+            <section
+              className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col animate-enter-up"
+              style={{ animationDelay: '50ms' }}
+            >
+              <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
+                    <FileText size={14} className="text-muted" />
+                  </div>
+                  <h2 className="text-base font-semibold text-ink">Proposals &amp; Quotes</h2>
+                  <span className="text-detail text-muted">
+                    {proposals.length} {proposals.length === 1 ? 'proposal' : 'proposals'} · {quotes.length} {quotes.length === 1 ? 'quote' : 'quotes'}
+                  </span>
+                </div>
+              </header>
+
+              {loading ? (
+                <div className="px-5 py-12 text-center text-caption text-muted">Loading pipeline…</div>
+              ) : nonDraft.length === 0 ? (
+                <div className="px-5 py-12 flex flex-col items-center text-center">
+                  <FileText size={24} className="text-faint mb-2" />
+                  <p className="text-sm font-medium text-ink">No proposals or quotes yet</p>
+                  <p className="text-xs text-muted mt-1">When your agency sends you a proposal or quote, it will appear here.</p>
+                </div>
+              ) : (
+                <div className="pb-5 h-[520px]">
+                  <ClientPipeline items={nonDraft} />
+                </div>
+              )}
+            </section>
           </div>
         </div>
       </div>

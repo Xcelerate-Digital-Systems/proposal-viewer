@@ -43,13 +43,13 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
           <Loader2 size={16} className="animate-spin text-faint" />
         </div>
       ) : (
-        <div className={`grid gap-4 ${isSuperAdmin ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
-          {/* Proposal webhooks */}
+        <div className={`grid gap-6 ${isSuperAdmin ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-lg'}`}>
           <div className="space-y-3">
             <div className="mb-1">
               <span className="text-2xs font-semibold uppercase tracking-wider text-faint px-1">
-                Proposal Events
+                Pitch Events
               </span>
+              <span className="text-detail text-faint ml-1.5">Proposals &amp; Quotes</span>
             </div>
             {WEBHOOK_EVENTS.map((evt) => (
               <WebhookEventCard
@@ -65,15 +65,11 @@ export default function WebhookManager({ companyId, isSuperAdmin }: WebhookManag
             ))}
           </div>
 
-          {/* Review webhooks — super admin only */}
           {isSuperAdmin && (
             <div className="space-y-3">
-              <div className="mb-1 flex items-center gap-2">
+              <div className="mb-1">
                 <span className="text-2xs font-semibold uppercase tracking-wider text-faint px-1">
-                  Feedback Events
-                </span>
-                <span className="text-2xs font-semibold uppercase tracking-wider bg-teal/10 text-teal px-1.5 py-0.5 rounded">
-                  Feedback
+                  Markup Events
                 </span>
               </div>
               {REVIEW_WEBHOOK_EVENTS.map((evt) => (
